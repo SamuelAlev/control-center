@@ -12490,6 +12490,48 @@ class AppLocalizationsNb extends AppLocalizations {
       'Identitet, policy og konvensjoner delt av alle i dette arbeidsområdet.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Kreditering av commits';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Velg om agent-commits skal kreditere Control Center. Administratorer for arbeidsområdet kan overstyre dette valget for alle i et arbeidsområde.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Agentkreditering';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Krediter Control Center i agent-commits';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Når dette er på, står Control Center som forfatter av commits, og du er oppført som medforfatter. Når det er av, bruker commits Git-identiteten din uten å kreditere agenten.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Dette arbeidsområdet overstyrer ditt personlige valg. Preferansen din er lagret, men gjelder ikke her.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Laster inn krediteringsinnstillinger…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Velg om agent-commits skal kreditere Control Center. Valget for arbeidsområdet overstyrer hvert medlems personlige preferanse.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Bruk hvert medlems preferanse';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Krediter alltid Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Krediter aldri Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Notatmaler og lagrede stemmer for møter i dette arbeidsområdet.';
 
@@ -13986,6 +14028,20 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Sak';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Alle pullforespørslene i dette området er slått sammen. Vil du arkivere området?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Nei, behold dette området';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Du blir ikke spurt igjen om dette området.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'Alle pullforespørsler slått sammen';
 
   @override
   String get archiveSpace => 'Arkiver område';

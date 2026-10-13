@@ -1,7 +1,9 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_infra/src/messaging/agent_question_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,7 +44,7 @@ class _FakeMessagingRepo implements MessagingRepository {
     _messages[msgId] = Message(
       id: msgId,
       spaceId: spaceId,
-      conversationId: spaceId,
+      conversationId: conversationId!,
       content: content,
       senderId: senderId,
       senderType: _parseSenderType(senderType),
@@ -107,6 +109,27 @@ class _FakeMessagingRepo implements MessagingRepository {
   }) async => throw UnimplementedError();
 }
 
+class _FakeConversations implements ConversationRepository {
+  @override
+  Future<Conversation?> getById({
+    required String workspaceId,
+    required String conversationId,
+  }) async {
+    if (workspaceId != _workspaceId || conversationId != 'conv-1') return null;
+    return Conversation(
+      id: conversationId,
+      workspaceId: workspaceId,
+      spaceId: 'ch-1',
+      title: '',
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   late _FakeMessagingRepo messaging;
   late AgentQuestionService service;
@@ -115,6 +138,7 @@ void main() {
     messaging = _FakeMessagingRepo();
     service = AgentQuestionService(
       messaging,
+      conversations: _FakeConversations(),
       timeout: const Duration(seconds: 2),
     );
   });
@@ -125,6 +149,7 @@ void main() {
         const AgentQuestionRequest(
           workspaceId: _workspaceId,
           spaceId: '',
+          conversationId: '',
           question: 'What?',
         ),
       );
@@ -135,6 +160,7 @@ void main() {
       const request = AgentQuestionRequest(
         workspaceId: _workspaceId,
         spaceId: 'ch-1',
+        conversationId: 'conv-1',
         question: 'Approve?',
         options: [
           AgentQuestionOption(label: 'Yes', value: 'yes'),
@@ -155,6 +181,7 @@ void main() {
 
       final questionMsg = messaging._messages[msgId]!;
       expect(questionMsg.messageType, MessageType.userQuestion);
+      expect(questionMsg.conversationId, 'conv-1');
       expect(service.isPending(questionMsg.id), isTrue);
 
       // Submit an answer
@@ -170,12 +197,14 @@ void main() {
     test('returns null on timeout', () async {
       final shortService = AgentQuestionService(
         messaging,
+        conversations: _FakeConversations(),
         timeout: const Duration(milliseconds: 50),
       );
 
       const request = AgentQuestionRequest(
         workspaceId: _workspaceId,
         spaceId: 'ch-1',
+        conversationId: 'conv-1',
         question: 'Timeout?',
         askedByAgentId: 'agent-1',
       );
@@ -187,12 +216,14 @@ void main() {
     test('Duration.zero waits indefinitely', () async {
       final foreverService = AgentQuestionService(
         messaging,
+        conversations: _FakeConversations(),
         timeout: Duration.zero,
       );
 
       const request = AgentQuestionRequest(
         workspaceId: _workspaceId,
         spaceId: 'ch-1',
+        conversationId: 'conv-1',
         question: 'Wait forever',
         askedByAgentId: 'agent-1',
       );
@@ -201,18 +232,19 @@ void main() {
         request,
       );
 
-      // Submit answer immediately after ask (synchronously, not via Future.delayed)
-      final msgIds = messaging._messages.keys
-          .where((k) => messaging._messages[k]!.senderId == 'agent-1')
-          .toList();
-      if (msgIds.isNotEmpty) {
-        await foreverService.submitAnswer(
-          _workspaceId,
-          messaging._messages[msgIds.first]!,
-          const AgentQuestionAnswer(selectedLabels: ['OK']),
-        );
+      // The conversation lookup is asynchronous; wait until the question is
+      // posted before answering it.
+      for (var i = 0; i < 200; i++) {
+        final id = messaging._messages.keys.firstOrNull;
+        if (id != null && foreverService.isPending(id)) break;
+        await Future<void>.delayed(const Duration(milliseconds: 1));
       }
-
+      final question = messaging._messages.values.single;
+      await foreverService.submitAnswer(
+        _workspaceId,
+        question,
+        const AgentQuestionAnswer(selectedLabels: ['OK']),
+      );
       final answer = await answerFuture.timeout(const Duration(seconds: 5));
       expect(answer, isNotNull);
       expect(answer!.selectedLabels, ['OK']);
@@ -224,6 +256,7 @@ void main() {
       const request = AgentQuestionRequest(
         workspaceId: _workspaceId,
         spaceId: 'ch-1',
+        conversationId: 'conv-1',
         question: 'Test',
         askedByAgentId: 'agent-1',
       );
@@ -280,6 +313,7 @@ void main() {
       const request = AgentQuestionRequest(
         workspaceId: _workspaceId,
         spaceId: 'ch-1',
+        conversationId: 'conv-1',
         question: 'Choose',
         context: 'This is why I need to know',
         askedByAgentId: 'agent-1',
@@ -306,6 +340,7 @@ void main() {
       const request = AgentQuestionRequest(
         workspaceId: _workspaceId,
         spaceId: 'ch-1',
+        conversationId: 'conv-1',
         question: 'Q',
         askedByAgentId: 'agent-1',
         askedByName: 'Codex',

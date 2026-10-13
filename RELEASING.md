@@ -29,6 +29,10 @@ CI and release workflows use GitHub's [native background steps](https://github.b
 
 `rhttp` is built from a checksum-pinned pub.dev archive by `scripts/natives/build_rhttp.sh`, independently of Flutter plugin builds. Update its Dart pin, headless patch and native archive version/checksum together, retain `pub.dev:443` in the native-build egress allowlist, and include `librhttp.dylib`, `librhttp.so` or `rhttp.dll` in the corresponding server bundle.
 
+**Managed media is also mandatory.** `scripts/natives/build_media.sh` downloads checksum-pinned FFmpeg/FFprobe and PDFium binaries for macOS ARM64, Linux x64, Windows x64 and Windows ARM64. Only our small PDFium C++ wrapper and resvg-based Rust SVG wrapper are compiled locally; users need no compiler, media tools, fonts or downloads on `PATH`. The adjacent `media/` directory travels with standalone and embedded servers, including Docker. It contains the executables, PDFium library, bundled Manrope/Fira Code fonts, licenses and provenance. `scripts/lib/media.sh` validates versions, architecture, required codecs/filters, notices and platform dependencies both before and after relocation.
+
+`dart build cli` lists the root-level FFI libraries registered by `apps/cc_server/hook/build.dart`; it does not copy `build/natives/media/`. The release packagers, including `scripts/release/cc_server_package.sh`, add that directory as `bin/media/` beside the server executable. FFmpeg/FFprobe and `cc_pdf_render`/`cc_svg_render` are subprocess executables; PDFium is the PDF helper's private shared library, and resvg is linked into the SVG helper. Distribute the release-packaged bundle, not the raw Dart CLI output.
+
 **Linux runs on the host's glibc.** The AppImage and tarball are built on `ubuntu-22.04`, the oldest supported Ubuntu LTS, because [AppImageHub](https://appimage.github.io) only lists an AppImage that starts there with stock packages (its test runs it offline under Xvfb on that runner). `scripts/lib/linux_desktop.sh` records that floor (glibc 2.35, `GLIBCXX_3.4.30`) and what the host provides: GTK 3 and its closure, libcurl (a bundled copy would carry Debian's CA path) and libpulse. `bundle_linux_deps.sh` copies only the libraries listed there (today libnotify and libsecret), with their Debian copyright notices, and refuses anything else a new plugin links until it is reviewed. `lint_appdir.sh` fails the release on any ELF past the floor or with an unresolvable library. `natives.yml` and the `e2e` job run on the same runner, and the natives cache key carries the runner image, so a release never restores natives linked against a newer glibc. Media playback uses the system's libmpv, which a stock desktop lacks, so without it the desktop starts with playback hidden rather than failing to boot.
 
 ## Encrypted client resources
@@ -227,6 +231,8 @@ Every artifact must carry `LICENSE` and generated `THIRD-PARTY-LICENSES.txt`: ma
 
 `desktop` and `server` in that table are artifacts, not native-build roles: desktop embeds server natives. Only standalone archives vendor code-server. **Statically linked libmp3lame is LGPL-2.1**; the notice identifies pinned source/checksum/shim/build script so recipients can relink under section 6. If that ceases to be possible, link it dynamically. Bundled fonts (Manrope, Fira Code, Phosphor) need matching license texts when changed. Flutter engine `NOTICES` covers Dart/Flutter dependencies; shipped text is the third-party notice channel. `test/tooling/third_party_licenses_test.dart` guards matrix coverage and LGPL inclusion.
 
+The codec-rich FFmpeg prebuilts are **GPL-3.0-or-later separate command-line programs**, not LGPL-only builds. `media/ffmpeg-SOURCE.txt` records the selected archives, FFmpeg source and publisher recipe references; zlib remains statically linked inside those binaries. **Public-release prerequisite:** the selected publishers' executable archives do not supply a complete corresponding-source and transitive dependency-notice bundle. Recording provenance and shipping the GPL text does not resolve that redistribution requirement. Obtain and review the matching complete source/notices before distributing these artifacts; do not describe the current package as having completed that review. PDFium's dependency notices and every locked SVG crate's shipped license/notice files are retained under `media/pdfium-licenses/` and `media/svg-licenses/`; the SVG font licenses travel with the fonts.
+
 ## Scripts
 
 The workflow delegates to locally runnable scripts. Keep **every** `scripts/release/*.sh` listed: `test/tooling/release_docs_test.dart` checks names. Header `Usage:` lines document their arguments.
@@ -241,6 +247,7 @@ The workflow delegates to locally runnable scripts. Keep **every** `scripts/rele
 | `scripts/lib/third_party.sh` | Licensed-component table |
 | `scripts/natives/lib/natives_common.sh` | macOS/Linux native build helpers |
 | `scripts/natives/build_natives.sh`, `scripts/natives/build_inference.sh` | Native builds; pinned sherpa-onnx link/ABI verification |
+| `scripts/natives/build_media.sh`, `scripts/lib/media.sh` | Pinned prebuilt FFmpeg/PDFium, PDF/SVG wrappers, fonts, notices and relocated media-bundle verification |
 | `scripts/release/windows_natives.sh` | Windows MSVC DLL builds |
 | `scripts/release/dry_run.sh` | Full local pipeline for one platform |
 | `scripts/release/verify_natives.sh` | Required-native bundle check |

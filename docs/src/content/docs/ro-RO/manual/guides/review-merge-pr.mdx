@@ -2,7 +2,7 @@
 title: Revizuiește și îmbină un PR
 description: Deschide un banc de lucru pentru un PR, citește diff-ul, lasă comentarii inline, trimite o revizuire și îmbină.
 slug: ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Acest ghid îți arată cum să revizuiești și să îmbini un pull request.
@@ -28,6 +28,32 @@ Tab-ul Prezentare conține metadatele PR-ului (autor, ramură, etichete, persoan
 asignate, reacții, commit-uri, starea verificărilor) și rândul de acțiuni:
 reîmprospătare, **Revizuire**, **Fuzionează**, deschidere în IDE și un meniu
 flotant ⋯.
+
+### Deschide un PR dintr-o stivă a spațiului
+
+Secțiunea **General → Pull request-uri** a spațiului grupează PR-urile legate și
+pe cele cu ramuri potrivite, pe depozit. Când ramura de bază a unui PR este
+ramura head a PR-ului anterior, ele apar într-o stivă care poate fi restrânsă.
+Antetul ei identifică PR-ul de jos, ramura țintă și numărul; rândurile
+numerotate merg de la PR-ul de jos (1) spre vârf. Numerele descriu ordinea de
+dependență, nu gradul de pregătire pentru îmbinare.
+
+Fiecare rând afișează titlul, numărul PR-ului și starea. Treci cu mouse-ul peste
+un rând sau focalizează-l ca să citești titlul complet și numele ramurilor; dă
+clic sau apasă Enter pentru a deschide bancul de lucru al PR-ului. Focalizează
+antetul unei stive și apasă Enter sau Space pentru a o restrânge sau extinde.
+PR-urile fără legătură rămân separate, iar legăturile de ramuri incomplete sau
+ambigue nu sunt prezentate ca o stivă ordonată.
+
+În **Control sursă**, **Pull request-uri stivuite (N)** deschide un selector cu
+părțile publicate ale stivei, de jos în sus. Fiecare intrare arată numărul
+PR-ului, eticheta părții și poziția; partea la care s-a făcut checkout este
+marcată. Selectează o intrare pentru a deschide bancul de lucru al PR-ului ei.
+**Publică stiva** apare doar când descoperirea PR-urilor s-a încheiat și cel
+puțin o parte nu are PR. Acest lucru se aplică și meniului de ramuri. PR-urile
+create în afara Control Center contează și ele ca publicate. Stivele publicate
+parțial oferă ambele acțiuni; munca pe o singură ramură păstrează acțiunile
+individuale de creare/vizualizare a PR-ului.
 
 ## Citește diff-ul
 

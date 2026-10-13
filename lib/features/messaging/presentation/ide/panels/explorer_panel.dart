@@ -15,6 +15,7 @@ import 'package:control_center/features/messaging/providers/space_worktrees_prov
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -113,6 +114,8 @@ class ExplorerPanel extends ConsumerStatefulWidget {
     super.key,
     required this.workspaceId,
     this.spaceId,
+    this.activeFile,
+    this.revealKey,
     required this.onOpenFile,
     this.onQuickViewFile,
   });
@@ -124,6 +127,12 @@ class ExplorerPanel extends ConsumerStatefulWidget {
   /// the tree shows and the trees every read runs against. Null (no
   /// conversation open) falls back to the workspace's linked checkouts.
   final String? spaceId;
+
+  /// The focused editor's repo-relative file; revealed on mount and changes.
+  final ({String repoId, String path})? activeFile;
+
+  /// Navigation identity, including distinct tabs displaying the same file.
+  final Object? revealKey;
 
   /// Called with `(repoId, path)` when a file is opened (the default — opens
   /// the code-server editor).
@@ -167,6 +176,14 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
   /// while still attached and reset the scroll position on every append.
   ScrollController? _resultsController;
 
+  final ScrollController _treeController = ScrollController();
+  final GlobalKey _treePrototypeKey = GlobalKey();
+  bool _treeWasVisible = false;
+  bool _treeLoading = false;
+  bool _revealPending = false;
+  bool _revealExpanded = false;
+  int _revealGeneration = 0;
+
   /// The search the scroll listener currently pages (updated each build so
   /// the listener never acts on a stale closure's query or `hasMore`).
   RepoFileSearchArgs? _activeSearchArgs;
@@ -201,9 +218,93 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
   }
 
   @override
+  void didUpdateWidget(covariant ExplorerPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.activeFile != widget.activeFile ||
+        oldWidget.revealKey != widget.revealKey ||
+        oldWidget.workspaceId != widget.workspaceId ||
+        oldWidget.spaceId != widget.spaceId) {
+      _requestReveal();
+    }
+  }
+
+  void _requestReveal() {
+    _revealPending = widget.activeFile != null;
+    _revealExpanded = false;
+    _revealGeneration++;
+  }
+
+  void _expandActiveFile(Map<String, Repo> repoById) {
+    final file = widget.activeFile;
+    if (!_revealPending ||
+        _revealExpanded ||
+        file == null ||
+        !repoById.containsKey(file.repoId)) {
+      return;
+    }
+    _revealExpanded = true;
+    _view.collapsedRepos.remove(file.repoId);
+    for (
+      var slash = file.path.indexOf('/');
+      slash >= 0;
+      slash = file.path.indexOf('/', slash + 1)
+    ) {
+      _view.expandedDirs.add(
+        _dirKey(file.repoId, file.path.substring(0, slash)),
+      );
+    }
+  }
+
+  void _scheduleReveal(List<_TreeRow> rows) {
+    if (!_revealPending) {
+      return;
+    }
+    final file = widget.activeFile!;
+    final index = rows.indexWhere(
+      (row) =>
+          row.node?.repoId == file.repoId &&
+          row.node?.fullRelativePath == file.path &&
+          row.node?.isDirectory == false,
+    );
+    if (index < 0) {
+      return;
+    }
+    final generation = _revealGeneration;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          !_revealPending ||
+          !_treeWasVisible ||
+          generation != _revealGeneration ||
+          !_treeController.hasClients) {
+        return;
+      }
+      final prototype =
+          _treePrototypeKey.currentContext?.findRenderObject() as RenderBox?;
+      final position = _treeController.position;
+      if (prototype == null || !position.hasContentDimensions) {
+        return;
+      }
+      _revealPending = _treeLoading;
+      final offset =
+          AppSpacing.xs +
+          (index + 0.5) * prototype.size.height -
+          position.viewportDimension / 2;
+      // Pagination can rebuild this panel before the sliver updates its
+      // cached scroll extent. Derive the bound from the rows being rendered.
+      final maxOffset =
+          (rows.length * prototype.size.height +
+                  2 * AppSpacing.xs -
+                  position.viewportDimension)
+              .clamp(0.0, double.infinity);
+      _treeController.jumpTo(offset.clamp(0.0, maxOffset));
+    });
+  }
+
+  @override
   void dispose() {
     _debounce?.cancel();
     _resultsController?.dispose();
+    _treeController.dispose();
     _filterController.dispose();
     _includeController.dispose();
     _excludeController.dispose();
@@ -244,6 +345,8 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
 
   void _toggleRow(_TreeRow row) {
     setState(() {
+      // An explicit collapse wins over an in-flight automatic reveal.
+      _revealPending = false;
       final view = _view;
       if (row.depth == 0) {
         final id = row.node!.repoId;
@@ -338,6 +441,14 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
       );
     }
     final isContent = _view.mode == ExplorerSearchMode.content;
+    final treeVisible = !isContent && _view.query.isEmpty;
+    if (treeVisible && !_treeWasVisible) {
+      _requestReveal();
+    }
+    _treeWasVisible = treeVisible;
+    if (treeVisible) {
+      _expandActiveFile(repoById);
+    }
 
     // Each mode owns its provider + retention; both surface a (loading, body).
     final (loading, body) = isContent
@@ -509,6 +620,7 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
       final rows = <_TreeRow>[];
       final drain = <RepoDirectoryListingArgs>[];
       final stale = <RepoDirectoryListingArgs>[];
+      _treeLoading = false;
       final collapsedRepos = _view.collapsedRepos;
       for (final repo in repoById.values) {
         rows.add(
@@ -543,6 +655,10 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
       // so consuming the one-shot there would skip the revalidation entirely.
       if (repoById.isNotEmpty) {
         _scheduleRevalidate(stale);
+      }
+      // Cached rows are about to revalidate; reveal on that rebuild instead.
+      if (stale.isEmpty) {
+        _scheduleReveal(rows);
       }
       return (false, _buildTreeBody(rows, repoById, l10n));
     }
@@ -604,6 +720,11 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
     );
     final async = ref.watch(repoDirectoryListingProvider(args));
     final listing = async.value;
+    _treeLoading |=
+        async.isLoading ||
+        (listing != null &&
+            !listing.failed &&
+            (listing.hasMore || listing.loadingMore));
     if (listing == null) {
       rows.add(
         _TreeRow.placeholder(
@@ -755,23 +876,43 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
             : l10n.noReposInConversation,
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      itemCount: rows.length,
-      itemBuilder: (context, i) => _TreeRowTile(
-        row: rows[i],
-        onToggle: _toggleRow,
-        onOpenFile: (node) => widget.onOpenFile((
-          repoId: node.repoId,
-          path: node.fullRelativePath,
-        )),
-        onQuickViewFile: widget.onQuickViewFile == null
-            ? null
-            : (node) => widget.onQuickViewFile!((
-                repoId: node.repoId,
-                path: node.fullRelativePath,
-              )),
-        onRetry: _retryRow,
+    return NotificationListener<UserScrollNotification>(
+      onNotification: (notification) {
+        if (notification.direction != ScrollDirection.idle) {
+          _revealPending = false;
+        }
+        return false;
+      },
+      child: ListView.builder(
+        controller: _treeController,
+        // One measured row extent keeps far-off files addressable without
+        // building the entire tree, and follows font/locale/text-scale changes.
+        prototypeItem: SizedBox(
+          key: _treePrototypeKey,
+          child: _TreeRowTile(
+            row: rows.first,
+            onToggle: _toggleRow,
+            onOpenFile: (_) {},
+            onRetry: _retryRow,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+        itemCount: rows.length,
+        itemBuilder: (context, i) => _TreeRowTile(
+          row: rows[i],
+          onToggle: _toggleRow,
+          onOpenFile: (node) => widget.onOpenFile((
+            repoId: node.repoId,
+            path: node.fullRelativePath,
+          )),
+          onQuickViewFile: widget.onQuickViewFile == null
+              ? null
+              : (node) => widget.onQuickViewFile!((
+                  repoId: node.repoId,
+                  path: node.fullRelativePath,
+                )),
+          onRetry: _retryRow,
+        ),
       ),
     );
   }

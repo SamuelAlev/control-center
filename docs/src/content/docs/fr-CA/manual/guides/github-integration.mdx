@@ -2,7 +2,7 @@
 title: Configurer l’intégration GitHub
 description: Connectez-vous à GitHub pour que la surface des PR, l’enregistrement des dépôts et les exécutions d’agents fonctionnent.
 slug: fr-CA/manuel/guides/integration-github
-sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
+sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
 ---
 
 Ce guide couvre les volets propres à GitHub de la configuration. GitHub est l’un
@@ -111,10 +111,7 @@ toutes les deux minutes.
   interroge la règle **Pousser vers un dépôt distant** puis le transmet avec un
   jeton d’écriture que l’agent ne détient jamais. Voir
   [Configurer les politiques de bac à sable](/fr-CA/manuel/guides/politiques-de-bac-a-sable/)
-- Les commits créés par un agent sont signés **en tant qu’agent** — le nom
-  affiché suivi de ` (agent)`, à une adresse synthétique indexée par l’ID de
-  l’agent — jamais en tant qu’humain. La personne à l’origine de la demande est
-  créditée par un trailer `Co-Authored-By`
+- Par défaut, les commits des agents sont attribués à **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`); la personne qui a fait la demande est créditée dans une ligne `Co-Authored-By`. Dans **Paramètres → Vous → Attribution des commits**, désactivez l’attribution à l’agent pour n’utiliser que votre identité Git. La règle de **Paramètres → Espace de travail → Général** prévaut et verrouille le commutateur personnel. L’attribution propre à Claude Code est toujours désactivée
 - Avec une GitHub App configurée, le courtier génère à chaque lancement des jetons
   d’installation à granularité fine, limités au dépôt et d’une durée d’environ une
   heure, au lieu de transmettre un jeton large. L’installation est résolue à

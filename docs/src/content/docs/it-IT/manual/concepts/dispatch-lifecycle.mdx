@@ -2,7 +2,7 @@
 title: "Ciclo di vita dell'invio degli agenti"
 description: "Cosa accade tra l'arrivo di un messaggio e la chiusura di un log di esecuzione: composizione del prompt, worktree, identità, cosa delimita un'esecuzione e come il suo esito viene registrato con onestà."
 slug: it-IT/manuale/concetti/ciclo-di-vita-invio
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Che cos'è un invio
@@ -52,7 +52,7 @@ Il copy-on-write è l'**unica** implementazione ovunque `rift` sia distribuito, 
 
 Per ogni esecuzione vengono risolte due identità, prima che qualsiasi processo venga avviato.
 
-**Paternità Git.** I commit creati da un agente sono attribuiti _all'agente_ — `<Name> (agent) <agentId@agents.control-center.local>` sia in `GIT_AUTHOR_*` sia in `GIT_COMMITTER_*` — senza mai impersonare una persona. La parte locale è l'UUID dell'agente, non lo slug del suo nome. Alla persona richiedente viene riconosciuto un trailer `Co-Authored-By:`, trasportato nell'ambiente e indicato nel prompt di sistema. Un'identità esplicita impostata dal chiamante vince sempre su entrambe.
+**Paternità Git.** Per impostazione predefinita, i commit degli agenti usano `Control Center <hi@usectrl.dev>` (l'account GitHub `@usectrl`) sia in `GIT_AUTHOR_*` sia in `GIT_COMMITTER_*`, mentre la persona che ha fatto la richiesta è accreditata nel trailer `Co-Authored-By:`. Disattiva l'attribuzione all'agente in **Impostazioni → Tu → Attribuzione dei commit** per usare solo la tua identità Git. Un amministratore può imporre o disattivare l'attribuzione in **Impostazioni → Spazio di lavoro → Generale**; questa scelta prevale e disabilita l'interruttore personale senza modificare la preferenza salvata. Le modifiche si applicano dalla prossima esecuzione. Le firme autonome di Claude Code nei commit e nelle PR sono sempre disabilitate. I valori d'identità Git impostati esplicitamente dal chiamante hanno comunque la precedenza; le credenziali del servizio Git restano invariate.
 
 **Identità della forge.** La credenziale GitHub dell'esecuzione è sempre e solo quella del broker — un token di installazione dell'App con ambito sul repo, o il suo fallback PAT dall'ambiente — mai il token memorizzato del membro richiedente. `actingUserId` delimita il fallback PAT, così un membro che non è il proprietario del server non eredita la portata del server; non sovrappone un token personale all'ambiente dell'agente.
 

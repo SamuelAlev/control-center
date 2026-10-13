@@ -20,6 +20,7 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -320,6 +321,7 @@ class _KeptFeedRow {
   const _KeptFeedRow({
     required this.message,
     required this.collapseHeader,
+    required this.steeringMessages,
     required this.highlighted,
     required this.onOpenThread,
     required this.onStartThread,
@@ -328,6 +330,7 @@ class _KeptFeedRow {
 
   final Message message;
   final bool collapseHeader;
+  final List<Message> steeringMessages;
   final bool highlighted;
   final void Function(String threadId)? onOpenThread;
   final void Function(Message message)? onStartThread;

@@ -185,19 +185,18 @@ abstract final class MacosSandbox {
 
     if (config.network.isRestricted) {
       lines.add('(deny network*)');
-      // Local IP binding is needed for outbound connection setup (the
-      // kernel binds an ephemeral local port). This does NOT open egress —
-      // egress is gated by the (remote ...) rules below.
-      lines.add('(allow network* (local ip))');
+      // Permit local binding, not every network operation with a local IP:
+      // `network* (local ip)` also admits outbound connections and lets a
+      // child bypass the proxies by clearing its environment.
+      lines.add('(allow network-bind (local ip))');
       if (httpProxyPort != null) {
         lines.add('(allow network* (remote tcp "localhost:$httpProxyPort"))');
       }
       if (socksProxyPort != null) {
         lines.add('(allow network* (remote tcp "localhost:$socksProxyPort"))');
       }
-      // The server's own agent endpoint (MCP, the agent run gateway). Named
-      // explicitly rather than left to the `(local ip)` allowance above, so
-      // the profile says what it relies on.
+      // The server's own agent endpoint (MCP, the agent run gateway) is
+      // reachable only on the explicitly registered loopback ports.
       for (final port in config.network.loopbackPorts) {
         lines.add('(allow network* (remote tcp "localhost:$port"))');
       }

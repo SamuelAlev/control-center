@@ -9,6 +9,7 @@ import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
+import 'package:cc_domain/core/domain/value_objects/agent_commit_attribution.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/llm_call_purpose.dart'
@@ -55,6 +56,8 @@ import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/claude_refusal_message.dart';
 import 'package:cc_infra/src/dispatch/claude_subagent_runs.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session_deps.dart';
+import 'package:cc_infra/src/dispatch/read_media_capture.dart';
+import 'package:cc_infra/src/dispatch/render_media_image_refs.dart';
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
 import 'package:cc_infra/src/harness/harness_run_accounting.dart';
@@ -63,6 +66,7 @@ import 'package:cc_infra/src/harness/harness_tool_registry_builder.dart';
 import 'package:cc_infra/src/harness/harness_tool_surface.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
+import 'package:cc_infra/src/media/media_read_scope.dart';
 import 'package:cc_infra/src/messaging/prompt_attachments.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
@@ -73,6 +77,7 @@ import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
 import 'package:cc_infra/src/skills/active_repo_tracker.dart';
 import 'package:cc_infra/src/skills/repo_skill_projector.dart';
 import 'package:cc_infra/src/util/command_redaction.dart';
+import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
@@ -552,6 +557,15 @@ class DispatchSession implements SteeringSessionView {
   /// Periodic timer that checks for silence and terminates if exceeded.
   Timer? silenceTimer;
 
+  /// Only waits from this run may suspend its inactivity watchdog.
+  final Set<String> _pendingHumanWaitIds = {};
+  StreamSubscription<AgentAwaitingInput>? _humanWaitStartSub;
+  StreamSubscription<AgentInputResolved>? _humanWaitEndSub;
+
+  /// Closing the last wait gives the agent a full silence window to resume,
+  /// even if its most recent output predates the time it spent waiting.
+  DateTime? _lastHumanWaitResolvedAt;
+
   /// Interval between silence checks.
   static const Duration silenceCheckInterval = Duration(seconds: 30);
 
@@ -582,6 +596,18 @@ class DispatchSession implements SteeringSessionView {
   /// Cancels the built-in harness loop (and any in-flight subagent loops, which
   /// share this token) when the session is terminated.
   final CancellationTokenSource _cancelSource = CancellationTokenSource();
+
+  /// File-read authority shared by the run's built-in and MCP media tools.
+  MediaReadScope? get mediaReadScope {
+    if (_cancelSource.isCancelled || controller.isClosed) {
+      return null;
+    }
+    return MediaReadScope(
+      workingDirectory: agentDirHostPath,
+      sharedRoots: _workspaceSharedRoots(),
+      abandoned: _cancelSource.token.whenCancelled,
+    );
+  }
 
   /// Mid-run steering inbox. A client can push a message here while a run is
   /// active (via [steer]); the built-in harness drains it at the next turn
@@ -730,82 +756,71 @@ class DispatchSession implements SteeringSessionView {
     return '';
   }
 
-  /// Per-run git author/committer identity + co-author trailer env, computed
-  /// once by [_prepareRunIdentity] before any transport launches. Commits an
-  /// agent makes are authored AS the agent (never impersonating a human), with
-  /// the requesting human credited via a co-author trailer.
+  /// Per-run Git author/committer identity and optional requester co-author.
+  /// Attribution enabled: Control Center authors; disabled: the requester does.
   Map<String, String> _gitIdentityEnv = const {};
 
-  /// The `Co-Authored-By: Name <email>` trailer for the requesting human's
-  /// git identity, or null when no resolver is wired / resolution failed.
+  /// The requester's co-author trailer, only when agent attribution is enabled.
   String? _coAuthorTrailer;
 
   /// Env var carrying the co-author trailer to the spawned agent CLI, so any
   /// tooling in the run can stamp it onto commit messages.
   static const String coAuthorTrailerEnvKey = 'CC_GIT_COAUTHOR_TRAILER';
 
-  /// Resolves per-run git identity (best-effort; failure never blocks dispatch).
-  ///
-  /// `GIT_AUTHOR_*` / `GIT_COMMITTER_*` name the agent (display + " (agent)",
-  /// synthetic address by agent id). [coAuthorTrailerEnvKey] carries the
-  /// requesting human's `Co-Authored-By:` (owner fallback). Forge credential
-  /// stays the broker/app — never the member's PAT. Caller-set env keys win.
+  /// Resolves attribution before any transport starts. Caller-set identity keys
+  /// still win; forge credentials remain the broker's, never the member's PAT.
   Future<void> _prepareRunIdentity() async {
-    final env = <String, String>{};
-
-    // Agent identity: threaded display name, else a repo lookup, else the id.
-    var name = agentName;
-    final identityWorkspaceId = workspaceId;
-    if ((name == null || name.trim().isEmpty) &&
-        agentId != null &&
-        agentId!.isNotEmpty &&
-        identityWorkspaceId != null &&
-        identityWorkspaceId.isNotEmpty) {
-      try {
-        final agent = await deps.agentRepo.getById(
-          identityWorkspaceId,
-          agentId!,
-        );
-        name = agent?.name;
-      } catch (_) {
-        // Lookup is best-effort; fall through to the id.
-      }
-    }
-    final displayName = (name == null || name.trim().isEmpty)
-        ? (agentId ?? 'agent')
-        : name.trim();
-    final idSlug = (agentId ?? 'oneshot').toLowerCase().replaceAll(
-      RegExp(r'\s+'),
-      '-',
-    );
-    final authorName = '$displayName (agent)';
-    final authorEmail = '$idSlug@agents.control-center.local';
-    env['GIT_AUTHOR_NAME'] = authorName;
-    env['GIT_COMMITTER_NAME'] = authorName;
-    env['GIT_AUTHOR_EMAIL'] = authorEmail;
-    env['GIT_COMMITTER_EMAIL'] = authorEmail;
-
-    // Requesting human → co-author trailer (owner fallback when null).
+    final creditAgent =
+        await deps.resolveAgentAttribution?.call(
+          requestedByUserId,
+          workspaceId: workspaceId,
+        ) ??
+        true;
+    ({String name, String email})? human;
+    // The requesting human is the co-author, or sole author after opting out.
     final resolveIdentity = deps.resolveGitIdentity;
     if (resolveIdentity != null) {
       try {
-        final human = await resolveIdentity(
+        human = await resolveIdentity(
           requestedByUserId,
           workspaceId: workspaceId,
         );
-        if (human != null) {
-          _coAuthorTrailer = 'Co-Authored-By: ${human.name} <${human.email}>';
-          env[coAuthorTrailerEnvKey] = _coAuthorTrailer!;
-        }
       } catch (e) {
+        if (!creditAgent) {
+          rethrow;
+        }
         CcInfraLog.warning(
           'DispatchSession: git co-author resolution failed: $e',
         );
       }
     }
 
-    // Caller env wins: drop any key the caller explicitly set.
-    env.removeWhere((key, _) => callerEnv.containsKey(key));
+    if (!creditAgent && human == null) {
+      throw StateError(
+        'Agent attribution is disabled, but the requester has no Git identity.',
+      );
+    }
+    final authorName = creditAgent ? 'Control Center' : human!.name;
+    final authorEmail = creditAgent ? 'hi@usectrl.dev' : human!.email;
+    final env = <String, String>{
+      'GIT_AUTHOR_NAME': authorName,
+      'GIT_COMMITTER_NAME': authorName,
+      'GIT_AUTHOR_EMAIL': authorEmail,
+      'GIT_COMMITTER_EMAIL': authorEmail,
+    };
+    _coAuthorTrailer = creditAgent && human != null
+        ? 'Co-Authored-By: ${human.name} <${human.email}>'
+        : null;
+
+    // Explicit caller identity wins for every transport, including the harness.
+    for (final key in env.keys) {
+      final explicit = callerEnv[key];
+      if (explicit != null) {
+        env[key] = explicit;
+      }
+    }
+    // This policy-owned key also masks stale caller and inherited trailers.
+    env[coAuthorTrailerEnvKey] = _coAuthorTrailer ?? '';
     _gitIdentityEnv = env;
   }
 
@@ -1246,10 +1261,9 @@ class DispatchSession implements SteeringSessionView {
       // over RPC. A failed authenticated git/HTTP call embeds
       // `https://x-access-token:ghp_…@github.com` in its message — the NDJSON
       // run log already redacts, the live stream did not.
-      addEvent(
-        ErrorEvent(content: redactSecrets('[sandbox] dispatch failed: $e')),
-      );
-      _closeController();
+      _failRun(redactSecrets('[sandbox] dispatch failed: $e'));
+      addEvent(DoneEvent());
+      _completeRun();
     }
   }
 
@@ -1333,9 +1347,8 @@ class DispatchSession implements SteeringSessionView {
       fileSearch: deps.fileSearch,
       mcpRegistry: deps.mcpRegistry,
       protectedPaths: _protectedPaths,
-      // `ask_user` renders into the run's SPACE (where the human is watching),
-      // never its conversation id — the same distinction the MCP bridge draws
-      // when it injects `space_id`.
+      // `ask_user` renders in this run's conversation within its space.
+      // Both scopes must reach the tool so the answer returns to this run.
       agentQuestionPort: deps.agentQuestionPort,
       spaceId: spaceId,
       // Diagnostics + navigation. The ledger is PER RUN (a new run should hear
@@ -1683,22 +1696,17 @@ class DispatchSession implements SteeringSessionView {
     return parts.assemble();
   }
 
-  /// Builds the merged environment for a dispatch. Precedence (later wins):
-  /// git identity → caller → broker → backend default → per-adapter override
-  /// → capability, with the broker env re-asserted last.
+  /// Builds the merged environment for a dispatch. Adapter defaults cannot
+  /// replace the resolved attribution policy or the broker's forge credentials.
   ///
-  /// The per-run git author/committer identity sits FIRST so an explicit
-  /// caller-provided identity wins (and [_prepareRunIdentity] already dropped
-  /// any key the caller set). The run's GitHub credential is ONLY ever the
-  /// broker's (a repo-scoped App installation token, or its environment
-  /// fallback) — never the requesting member's own token, so nothing an agent
-  /// does on the forge is authored as the human who asked for the run.
+  /// [_prepareRunIdentity] already applies explicit caller Git identities.
+  /// The run's GitHub credential is always the broker's, never the requesting
+  /// member's token.
   Map<String, String> _mergedEnv({
     required Map<String, String> scopedEnv,
     required Map<String, String> backendEnv,
   }) {
     final merged = <String, String>{
-      ..._gitIdentityEnv,
       ...callerEnv,
       ...scopedEnv,
       ...backendEnv,
@@ -1725,6 +1733,7 @@ class DispatchSession implements SteeringSessionView {
     // `adapterEnvOverride`'s own doc promised the opposite ("caller/broker env
     // still wins for security-critical keys"). Now it does.
     merged.addAll(scopedEnv);
+    merged.addAll(_gitIdentityEnv);
     // The gateway's git config goes on top of everything: an adapter's own
     // `GIT_CONFIG_*` entries are appended to, never replaced, and nothing a
     // caller sets can unroute a push from the policy.
@@ -1863,6 +1872,9 @@ class DispatchSession implements SteeringSessionView {
     // Cancel the built-in harness loop and any in-flight subagent loops (they
     // share this token) before tearing the session down.
     _cancelSource.cancel('terminated');
+    // Record the stop before yielding: killing the child can complete `run()`
+    // and close the transcript while process teardown is still in progress.
+    _failRun('Terminated by user request');
     _claudeParser = null;
     unawaited(_closeClaudeSubagents());
     await _teardownAcp();
@@ -1878,11 +1890,11 @@ class DispatchSession implements SteeringSessionView {
     // (otherwise the last timestamp dies in the debounce window) and writes the
     // NDJSON `end` record. Idempotent — the normal completion path calls it too.
     await _closeRunLog(error: 'terminated by user request');
-    _failRun('Terminated by user request');
     await _releaseRunCredentials();
-    unawaited(eventsSub?.cancel());
-    eventsSub = null;
-    _closeController();
+    if (!emittedDone) {
+      addEvent(DoneEvent());
+      _completeRun();
+    }
   }
 
   /// Tears down an active ACP subprocess (cancel the turn, close the client,
@@ -1929,14 +1941,53 @@ class DispatchSession implements SteeringSessionView {
   void _cancelSilenceWatchdog() {
     silenceTimer?.cancel();
     silenceTimer = null;
+    unawaited(_humanWaitStartSub?.cancel());
+    unawaited(_humanWaitEndSub?.cancel());
+    _humanWaitStartSub = null;
+    _humanWaitEndSub = null;
+    _pendingHumanWaitIds.clear();
+    _lastHumanWaitResolvedAt = null;
   }
 
   void _startSilenceWatchdog() {
     _cancelSilenceWatchdog();
+    final bus = deps.eventBus;
+    if (bus != null &&
+        workspaceId?.isNotEmpty == true &&
+        conversationId?.isNotEmpty == true &&
+        agentId?.isNotEmpty == true) {
+      _humanWaitStartSub = bus.on<AgentAwaitingInput>().listen((event) {
+        if (event.kind != AgentInputKind.question ||
+            event.workspaceId != workspaceId ||
+            event.conversationId != conversationId ||
+            event.agentId != agentId) {
+          return;
+        }
+        _pendingHumanWaitIds.add(event.waitId);
+      });
+      _humanWaitEndSub = bus.on<AgentInputResolved>().listen((event) {
+        if (event.workspaceId != workspaceId ||
+            !_pendingHumanWaitIds.remove(event.waitId)) {
+          return;
+        }
+        if (_pendingHumanWaitIds.isEmpty) {
+          _lastHumanWaitResolvedAt = clock.now();
+        }
+      });
+    }
     final threshold = silenceThreshold;
     silenceTimer = Timer.periodic(silenceCheckInterval, (_) {
+      if (_pendingHumanWaitIds.isNotEmpty) {
+        return;
+      }
       final last = lastOutputAt;
-      if (last != null && DateTime.now().difference(last) >= threshold) {
+      final resumed = _lastHumanWaitResolvedAt;
+      final activeSince =
+          resumed != null && (last == null || resumed.isAfter(last))
+          ? resumed
+          : last;
+      if (activeSince != null &&
+          clock.now().difference(activeSince) >= threshold) {
         _cancelSilenceWatchdog();
         addEvent(
           ErrorEvent(
@@ -2014,6 +2065,11 @@ class DispatchSession implements SteeringSessionView {
   }
 
   void _forwardSandboxEvent(SandboxEvent event) {
+    // The stop path owns completion. Late output from the dying process must
+    // not replace its reason or leak unparsed stream-json into the transcript.
+    if (_cancelSource.isCancelled) {
+      return;
+    }
     switch (event.type) {
       case SandboxEventType.stdout:
         _tryParseStructuredOutput(event.content);
@@ -2342,17 +2398,32 @@ class DispatchSession implements SteeringSessionView {
     addEvent(ErrorEvent(content: message));
   }
 
+  late final _readMedia = ReadMediaCapture(
+    emit: _emitEvent,
+    workingDirectory: agentDirHostPath,
+    workspaceId: workspaceId,
+    store: deps.blobStore,
+    renderer: deps.mediaRenderer,
+    agentId: agentId,
+    spaceId: spaceId,
+    conversationId: conversationId,
+  );
+
   /// Emits an [AgentProcessEvent] to the session stream, updates the last
   /// output timestamp and logs the event for persistence.
   void addEvent(AgentProcessEvent event) {
     if (event is ToolCallEvent) {
       _observeRepoTouch(event);
     }
+    lastOutputAt = clock.now();
+    _updateRunLogLastOutput();
+    _readMedia.add(event);
+  }
+
+  void _emitEvent(AgentProcessEvent event) {
     if (!controller.isClosed) {
       controller.add(event);
     }
-    lastOutputAt = DateTime.now();
-    _updateRunLogLastOutput();
     _logWriter.logEvent(event);
     _emitTaskLifecycle(event);
   }
@@ -2544,14 +2615,20 @@ class DispatchSession implements SteeringSessionView {
   }
 
   Future<void> _closeRunLog({int? exitCode, Object? error}) async {
+    await _readMedia.drained;
     await _finalizeLastOutput();
     await _logWriter.close(exitCode: exitCode, error: error);
   }
 
   void _closeController() {
-    if (!controller.isClosed) {
-      controller.close();
-    }
+    _cancelSilenceWatchdog();
+    unawaited(
+      _readMedia.drained.then((_) {
+        if (!controller.isClosed) {
+          unawaited(controller.close());
+        }
+      }),
+    );
   }
 }
 

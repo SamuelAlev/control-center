@@ -515,6 +515,7 @@ log "Staged $SCM_COUNT .scm queries"
 # Every DLL must be a PE image for the target architecture: a wrong-arch DLL
 # passes verify_natives.sh by name and then fails LoadLibrary at boot.
 assert_pe_machine "$WIN_ARCH" build/natives
+bash "$REPO_ROOT/scripts/natives/build_media.sh" "$REPO_ROOT/build/natives" "$WIN_ARCH"
 
 log "Staged Windows native libraries ($WIN_ARCH):"
 ls -la build/natives

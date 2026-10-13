@@ -6,6 +6,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submissio
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
@@ -48,7 +49,7 @@ class ReviewOverlayButton extends ConsumerStatefulWidget {
 
 class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
   final OverlayPortalController _popupCtrl = OverlayPortalController();
-  final TextEditingController _commentCtrl = TextEditingController();
+  late TextEditingController _commentCtrl;
   final FocusNode _commentFocus = FocusNode();
   final _buttonKey = GlobalKey();
 
@@ -62,19 +63,51 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
     skipTraversal: true,
   );
   Timer? _draftTimer;
-  bool _draftLoaded = false;
-  bool _saving = false;
+  int _draftRevision = 0;
+  bool _canRestoreDraft = false;
+  final Set<TextDraftKey> _loadedDraftKeys = {};
+  Future<void> _draftWrites = Future<void>.value();
+  PrReviewRepository? _draftRepo;
   Offset? _overlayOffset;
 
-  /// Resolved per call, not captured in `initState`: the repository is bound
-  /// to the PR's own repo via its key, and the binding must follow the key if
-  /// the widget is reused across a PR→PR hop.
+  TextDraftKey get _draftKey => (
+    workspaceId: widget.prRef.workspaceId,
+    surface: 'pr-review-body',
+    destination: (widget.prRef.repoFullName, widget.prRef.number),
+  );
+
+  /// Resolve per call so a reused widget follows the PR's repository key.
   PrReviewRepository? get _repo => ref.read(prRepositoryProvider(widget.prRef));
 
   @override
   void initState() {
     super.initState();
+    _draftRepo = _repo;
+    final provider = textDraftControllerProvider(_draftKey);
+    _canRestoreDraft = !ref.exists(provider);
+    _commentCtrl = ref.read(provider);
     _commentCtrl.addListener(_onCommentChanged);
+  }
+
+  @override
+  void didUpdateWidget(ReviewOverlayButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.prRef != widget.prRef) {
+      if (_commentCtrl.text.isNotEmpty || _draftRevision > 0) {
+        _saveDraftFor(_draftRepo, oldWidget.prRef, _commentCtrl.text);
+      }
+      _draftTimer?.cancel();
+      _commentCtrl.removeListener(_onCommentChanged);
+      _draftRepo = _repo;
+      final provider = textDraftControllerProvider(_draftKey);
+      _canRestoreDraft = !ref.exists(provider);
+      _commentCtrl = ref.read(provider);
+      _draftRevision = 0;
+      _commentCtrl.addListener(_onCommentChanged);
+      if (_popupCtrl.isShowing) {
+        _close(saveDraft: false);
+      }
+    }
   }
 
   @override
@@ -82,10 +115,11 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
     if (_popupCtrl.isShowing) {
       _popupCtrl.hide();
     }
-    unawaited(_saveDraft());
     _draftTimer?.cancel();
+    if (_commentCtrl.text.isNotEmpty || _draftRevision > 0) {
+      _saveDraftFor(_draftRepo, widget.prRef, _commentCtrl.text);
+    }
     _commentCtrl.removeListener(_onCommentChanged);
-    _commentCtrl.dispose();
     _commentFocus.dispose();
     _buttonFocus.dispose();
     _panelFocus.dispose();
@@ -93,6 +127,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
   }
 
   void _onCommentChanged() {
+    _draftRevision++;
     _autoReplaceShortcodes();
     _scheduleDraftSave();
   }
@@ -125,63 +160,58 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
 
   void _scheduleDraftSave() {
     _draftTimer?.cancel();
-    _draftTimer = Timer(const Duration(milliseconds: 800), _saveDraft);
+    _draftRepo = _repo ?? _draftRepo;
+    final repo = _draftRepo;
+    final pr = widget.prRef;
+    final controller = _commentCtrl;
+    _draftTimer = Timer(
+      const Duration(milliseconds: 800),
+      () => _saveDraftFor(repo, pr, controller.text),
+    );
   }
 
-  Future<void> _saveDraft() async {
-    if (_saving) {
-      return;
-    }
-
-    final text = _commentCtrl.text;
-    if (text.isEmpty) {
-      return;
-    }
-
-    if (widget.owner.isEmpty || widget.repo.isEmpty) {
-      return;
-    }
-
-    final repo = _repo;
+  void _saveDraftFor(PrReviewRepository? repo, PrRef pr, String text) {
     if (repo == null) {
       return;
     }
-    try {
-      _saving = true;
-      await repo.upsertDraft(widget.prRef.number, text);
-    } finally {
-      _saving = false;
-    }
-  }
-
-  Future<void> _clearDraft() async {
-    if (widget.owner.isEmpty || widget.repo.isEmpty) {
-      return;
-    }
-
-    final repo = _repo;
-    if (repo != null) {
-      await repo.clearDraft(widget.prRef.number);
-    }
+    _draftWrites = _draftWrites.then((_) async {
+      try {
+        if (text.isEmpty) {
+          await repo.clearDraft(pr.number);
+        } else {
+          await repo.upsertDraft(pr.number, text);
+        }
+      } on Object {
+        // The session controller remains authoritative when the server is down.
+      }
+    });
   }
 
   Future<void> _loadDraft() async {
-    if (_draftLoaded) {
+    final key = _draftKey;
+    _draftRepo = _repo ?? _draftRepo;
+    final repo = _draftRepo;
+    final controller = _commentCtrl;
+    final revision = _draftRevision;
+    final prNumber = widget.prRef.number;
+    if (!_canRestoreDraft ||
+        repo == null ||
+        controller.text.isNotEmpty ||
+        !_loadedDraftKeys.add(key)) {
       return;
     }
-
-    if (widget.owner.isEmpty || widget.repo.isEmpty) {
-      return;
-    }
-
-    final repo = _repo;
-    if (repo == null) {
-      return;
-    }
-    final draft = await repo.getDraft(widget.prRef.number);
-    if (draft != null && draft.isNotEmpty) {
-      _commentCtrl.text = draft;
-      _draftLoaded = true;
+    try {
+      final draft = await repo.getDraft(prNumber);
+      if (draft != null &&
+          draft.isNotEmpty &&
+          controller.text.isEmpty &&
+          _draftRevision == revision &&
+          mounted &&
+          _draftKey == key) {
+        controller.text = draft;
+      }
+    } on Object {
+      _loadedDraftKeys.remove(key);
     }
   }
 
@@ -198,19 +228,18 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
     _popupCtrl.show();
     _loadDraft();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _commentFocus.requestFocus();
+      if (mounted) {
+        _commentFocus.requestFocus();
+      }
     });
     setState(() {});
   }
 
-  /// Closes the panel. [saveDraft] is false when the body is being SUBMITTED:
-  /// saving and clearing the draft are both fire-and-forget, so a save on the
-  /// way out can land after the post-submit clear and resurrect a body the
-  /// reviewer already sent.
+  /// Closing preserves both the session draft and the existing server draft.
   void _close({bool saveDraft = true}) {
     _draftTimer?.cancel();
     if (saveDraft) {
-      unawaited(_saveDraft());
+      _saveDraftFor(_draftRepo, widget.prRef, _commentCtrl.text);
     }
     final focusInside = _panelFocus.hasFocus;
     _popupCtrl.hide();
@@ -272,7 +301,11 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
   ) async {
     final toaster = CcToastScope.of(context);
     final l10n = AppLocalizations.of(context);
-    final comment = _commentCtrl.text.trim();
+    final draftCtrl = _commentCtrl;
+    final comment = draftCtrl.text.trim();
+    final originalText = draftCtrl.text;
+    final prRef = widget.prRef;
+    final repo = _repo;
     final ctl = _inlineComments;
     final queued = ctl.pendingReviewThreads.length;
     // GitHub rejects a comment-only review with neither a body nor comments.
@@ -281,9 +314,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
       return;
     }
     if (optimistic != null) {
-      ref
-          .read(prOptimisticReviewStateProvider.notifier)
-          .set(widget.prRef, optimistic);
+      ref.read(prOptimisticReviewStateProvider.notifier).set(prRef, optimistic);
     }
     _close(saveDraft: false);
     try {
@@ -293,20 +324,24 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
           body: comment.isEmpty ? null : comment,
         );
       } else {
-        final repo = _repo;
         if (repo == null) {
           return;
         }
         await repo.submitReview(
-          prNumber: widget.prRef.number,
+          prNumber: prRef.number,
           event: event,
           body: comment.isEmpty ? null : comment,
         );
       }
-      unawaited(_clearDraft());
+      if (draftCtrl.text == originalText) {
+        if (identical(_commentCtrl, draftCtrl)) {
+          _draftTimer?.cancel();
+        }
+        draftCtrl.clear();
+        _saveDraftFor(repo, prRef, '');
+      }
       if (mounted) {
-        _commentCtrl.clear();
-        _refreshAfterSubmit(postedComments: queued > 0);
+        _refreshAfterSubmit(prRef, postedComments: queued > 0);
       }
       toaster.show(successMessage(l10n), variant: CcToastVariant.success);
     } on Object catch (e) {
@@ -314,9 +349,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
         return;
       }
       if (optimistic != null) {
-        ref
-            .read(prOptimisticReviewStateProvider.notifier)
-            .set(widget.prRef, null);
+        ref.read(prOptimisticReviewStateProvider.notifier).set(prRef, null);
       }
       toaster.show(
         l10n.failedToSubmitReview('$e'),
@@ -336,8 +369,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
   /// operator presses refresh. Invalidating re-subscribes with a clean
   /// fingerprint, which is the same thing that makes the refresh button work.
   /// Mirrors `PrEditNotifier._refreshReviewers`.
-  void _refreshAfterSubmit({required bool postedComments}) {
-    final pr = widget.prRef;
+  void _refreshAfterSubmit(PrRef pr, {required bool postedComments}) {
     ref
       ..invalidate(prReviewersProvider(pr))
       ..invalidate(prDetailProvider(pr))

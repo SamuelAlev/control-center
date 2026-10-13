@@ -2,7 +2,7 @@
 title: Parler à Control Center depuis une PR GitHub
 description: Demandez au bot de la GitHub App de votre serveur une revue ou posez-lui une question directement depuis la conversation de la PR, sans webhook ni URL publique.
 slug: fr-FR/manuel/guides/conversations-pr-github
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Ce guide explique comment travailler avec Control Center sans quitter GitHub :
@@ -29,8 +29,9 @@ comporte exactement comme un déploiement public.
 
 ## Trouver le nom de votre bot
 
-L’identifiant de connexion du bot est `<appslug>[bot]`, où `appslug` est le nom
-que vous avez donné à l’application au moment de l’enregistrer.
+Mentionnez `@usectrl`, le compte GitHub dédié à Control Center. C’est le déclencheur par défaut ; la GitHub App configurée sur votre serveur traite toujours la demande et publie les réponses. Vous n’avez pas besoin des identifiants du compte `usectrl`.
+
+L’identifiant propre à l’application, `<appslug>[bot]`, et sa forme courte `@appslug` fonctionnent aussi. Pour trouver cet alias facultatif :
 
 1. Ouvrez **Paramètres → Serveur → Authentification unique** et faites défiler
    jusqu’à la carte **Applications fournisseur**
@@ -39,10 +40,7 @@ que vous avez donné à l’application au moment de l’enregistrer.
    champ vide, l’identifiant est toujours `<appslug>[bot]` — saisissez-le, ou
    bien la forme courte `@appslug`
 
-GitHub ne propose pas les comptes d’application dans son autocomplétion `@`,
-l’identifiant doit donc être saisi à la main — c’est pourquoi la carte de
-paramètres le rend copiable en un clic. Le suffixe `[bot]` est facultatif :
-`@myapp` et `@myapp[bot]` s’adressent tous deux au bot.
+GitHub ne propose pas les comptes d’application dans l’autocomplétion `@` ; il faut donc saisir ou copier leurs alias. Le compte dédié `@usectrl` est le moyen par défaut de lancer une demande ; `@myapp` et `@myapp[bot]` restent tous deux acceptés comme alias de l’application.
 
 :::note[Choisissez un nom d’application distinctif]
 La forme courte est comparée en tant que texte. Si un utilisateur GitHub humain
@@ -61,7 +59,7 @@ bouton **Ask AI** :
   d’application ne peuvent pas occuper le créneau natif de relecteur demandé.
   Il n’y a aucun commentaire auquel réagir, donc rien n’est publié sur GitHub ;
   la revue démarre dans Control Center
-- **Commentez `@myapp review`** (ou simplement `@myapp`) dans la conversation de
+- **Commentez `@usectrl review`** (ou simplement `@usectrl`) dans la conversation de
   la PR. Le bot réagit avec 👀, puis répond lorsque la revue a démarré (ou
   qu’une revue est déjà en cours)
 
@@ -80,7 +78,7 @@ revue — après un push, par exemple — mentionnez le bot.
 Commentez dans la conversation de la PR :
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Ce qui se passe, dans l’ordre :
@@ -103,7 +101,7 @@ commentaire sur le diff qu’il a laissé, ou une réponse qu’il a publiée da
 fil. Aucune mention n’est nécessaire ; le fil **est** l’adressage :
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

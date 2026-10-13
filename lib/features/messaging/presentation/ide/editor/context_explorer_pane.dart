@@ -1,16 +1,32 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_inspection.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/context_usage_flyout.dart';
 import 'package:control_center/features/messaging/providers/context_inspection_provider.dart';
 import 'package:control_center/features/messaging/providers/context_usage_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Full transcript for the explorer's conversation, not the space's standing
+/// conversation (which may belong to a different tab).
+final _explorerMessagesProvider = StreamProvider.autoDispose
+    .family<List<Message>, ConversationRef>((ref, conversation) {
+      return ref
+          .watch(messagingRepositoryProvider)
+          .watchMessages(
+            ref.requireWorkspaceId(),
+            conversation.spaceId,
+            conversation.conversationId,
+          )
+          .distinct(listEquals);
+    });
 
 /// What the explorer's detail pane renders: the whole context, one whole
 /// segment, or a single part.
@@ -41,6 +57,7 @@ class ContextExplorerPane extends ConsumerStatefulWidget {
     super.key,
     required this.workspaceId,
     required this.spaceId,
+    required this.conversationId,
     required this.agentId,
   });
 
@@ -50,6 +67,9 @@ class ContextExplorerPane extends ConsumerStatefulWidget {
 
   /// The space whose context to explore.
   final String spaceId;
+
+  /// The conversation whose messages and context are inspected.
+  final String conversationId;
 
   /// The agent whose context window this is.
   final String agentId;
@@ -77,6 +97,7 @@ class _ContextExplorerPaneState extends ConsumerState<ContextExplorerPane> {
     ref.invalidate(
       contextInspectionProvider((
         spaceId: widget.spaceId,
+        conversationId: widget.conversationId,
         agentId: widget.agentId,
         includeContent: true,
       )),
@@ -94,13 +115,21 @@ class _ContextExplorerPaneState extends ConsumerState<ContextExplorerPane> {
     final async = ref.watch(
       contextInspectionProvider((
         spaceId: widget.spaceId,
+        conversationId: widget.conversationId,
         agentId: widget.agentId,
         includeContent: true,
       )),
     );
     final inspection = async.value;
     final messages =
-        ref.watch(spaceMessagesProvider(widget.spaceId)).value ??
+        ref
+            .watch(
+              _explorerMessagesProvider((
+                spaceId: widget.spaceId,
+                conversationId: widget.conversationId,
+              )),
+            )
+            .value ??
         const <Message>[];
     final conversation = buildConversationContextSegment(
       messages,
@@ -110,12 +139,18 @@ class _ContextExplorerPaneState extends ConsumerState<ContextExplorerPane> {
         .watch(
           conversationContextUsageProvider((
             spaceId: widget.spaceId,
+            conversationId: widget.conversationId,
             agentId: widget.agentId,
           )),
         )
         .windowTokens;
     final totals = ref
-        .watch(conversationTokenTotalsProvider(widget.spaceId))
+        .watch(
+          conversationTokenTotalsProvider((
+            spaceId: widget.spaceId,
+            conversationId: widget.conversationId,
+          )),
+        )
         .value;
     final breakdown = composeContextBreakdown(
       inspection,

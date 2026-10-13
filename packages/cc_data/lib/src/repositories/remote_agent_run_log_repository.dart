@@ -275,8 +275,8 @@ class RemoteAgentRunLogRepository {
   /// Raw run-activity relay frames for [runId] (`seed` / `updates` — see
   /// `runTranscriptEventFromWire` for the typed decode). Completes when the run
   /// reaches a terminal state.
-  Stream<Map<String, dynamic>> watchRunTranscript(String runId) =>
-      _client.subscribe('agent_run_log.watchRunTranscript', {'run_id': runId});
+  Stream<Map<String, dynamic>> watchRunTranscript(String runId) => _client
+      .subscribeEvents('agent_run_log.watchRunTranscript', {'run_id': runId});
 
   List<AgentRunLogDto> _logs(Map<String, dynamic> data) =>
       ((data['logs'] as List?) ?? const [])

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
@@ -757,6 +758,144 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle(const Duration(seconds: 5));
   });
+
+  for (final keepMounted in [true, false]) {
+    testWidgets('completed turn rehydrates after returning to '
+        '${keepMounted ? 'a hidden' : 'a remounted'} conversation', (
+      tester,
+    ) async {
+      final unfinished = Message(
+        id: 'turn-1',
+        spaceId: 'ch-1',
+        conversationId: 'ch-1',
+        senderId: 'agent-1',
+        senderType: SenderType.agent,
+        content: 'Partial answer',
+        messageType: MessageType.agentTurn,
+        metadata: const {
+          'agentName': 'Architect',
+          'streamComplete': false,
+          'segments_elided': true,
+        },
+        createdAt: DateTime(2024),
+      );
+      var detail = unfinished;
+      final window =
+          StreamController<
+            ({List<Message> messages, bool hasMore})
+          >.broadcast();
+      final selected = ValueNotifier(0);
+      addTearDown(window.close);
+      addTearDown(selected.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            activeWorkspaceIdOverride(),
+            spaceFeedWindowedProvider((
+              spaceId: 'ch-1',
+              conversationId: 'ch-1',
+            )).overrideWith((ref) async* {
+              // Navigation can replay an unfinished RPC snapshot before
+              // the live subscription supplies the completed list row.
+              yield (messages: [unfinished], hasMore: false);
+              yield* window.stream;
+            }),
+            messageDetailProvider('turn-1').overrideWith((ref) {
+              // The real detail read stays warm briefly across navigation.
+              ref.keepAlive();
+              return Stream.value(detail);
+            }),
+            spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
+            codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
+            spaceUserLastReadAtProvider(
+              'ch-1',
+            ).overrideWith((ref) => Stream.value(null)),
+            spaceReadRepositoryProvider.overrideWithValue(
+              _FakeSpaceReadRepository(),
+            ),
+            agentDetailProvider('agent-1').overrideWith((ref) async => null),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: _wrap(
+              ValueListenableBuilder<int>(
+                valueListenable: selected,
+                builder: (context, index, _) {
+                  const feed = SpaceMessageFeed(
+                    spaceId: 'ch-1',
+                    conversationId: 'ch-1',
+                  );
+                  final other = Center(
+                    child: Text(keepMounted ? 'Another space' : 'Pull request'),
+                  );
+                  return keepMounted
+                      ? IndexedStack(
+                          index: index,
+                          sizing: StackFit.expand,
+                          children: [feed, other],
+                        )
+                      : index == 0
+                      ? feed
+                      : other;
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+      expect(find.text('Partial answer', findRichText: true), findsOneWidget);
+
+      selected.value = 1;
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+      expect(
+        find.text(keepMounted ? 'Another space' : 'Pull request'),
+        findsOneWidget,
+      );
+      detail = unfinished.copyWith(
+        content: 'Final answer',
+        metadata: {
+          'agentName': 'Architect',
+          'streamComplete': true,
+          'segments': encodeTranscript([
+            TextSegment(
+              text: 'Final transcript after navigation',
+              startedAt: DateTime(2024),
+              durationMs: 10,
+            ),
+          ]),
+        },
+      );
+      selected.value = 0;
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+      window.add((
+        messages: [
+          detail.copyWith(
+            metadata: const {
+              'agentName': 'Architect',
+              'streamComplete': true,
+              'segments_elided': true,
+            },
+          ),
+        ],
+        hasMore: false,
+      ));
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.text('Final transcript after navigation', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.text('Partial answer', findRichText: true), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('opening a permalink (notification tap) throws nothing', (
     tester,

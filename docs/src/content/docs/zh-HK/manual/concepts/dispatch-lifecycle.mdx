@@ -2,7 +2,7 @@
 title: 代理派發生命週期
 description: 從訊息送達到執行記錄關閉之間發生的事——提示詞組裝、worktree、身分、甚麼為一次執行設下界限，以及它的結果如何被誠實地記錄下來。
 slug: zh-HK/手冊/概念/派發生命週期
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## 甚麼是派發
@@ -52,7 +52,7 @@ sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 
 每次執行都會在啟動任何行程之前解析兩個身分。
 
-**Git 作者身分。** 代理所作的提交，作者身分都是*以代理之名*——`<Name> (agent) <agentId@agents.control-center.local>`，同時用於 `GIT_AUTHOR_*` 與 `GIT_COMMITTER_*`——永不冒充人類。本機部分是代理的 UUID，而不是它的名稱 slug。提出請求的人類則以 `Co-Authored-By:` 尾註記名，該尾註放在環境中，並在系統提示中指示。呼叫者明確設定的身分一律勝過兩者。
+**Git 作者身分。** 預設情況下，代理的提交在 `GIT_AUTHOR_*` 和 `GIT_COMMITTER_*` 中均使用 `Control Center <hi@usectrl.dev>`（GitHub 帳戶 `@usectrl`），並透過 `Co-Authored-By:` 尾註記入提出請求者的貢獻。在 **設定 → 你 → 提交署名** 關閉代理署名，即可只使用你自己的 Git 身分。工作區管理員可在 **設定 → 工作區 → 通用** 強制開啟或關閉署名；此設定優先，並會停用個人開關，但不會更改已儲存的偏好。變更會由下一次執行起生效。Claude Code 自帶的提交和 PR 署名一律停用。呼叫者明確設定的 Git 身分值仍然優先；程式碼託管平台的憑證不受影響。
 
 **程式碼託管身分。** 執行的 GitHub 憑證永遠只是仲介的憑證——範圍限於單一程式庫的 App 安裝權杖，或其環境 PAT 後備——絕不是提出請求成員自己儲存的權杖。`actingUserId` 會限制 PAT 後備，讓不是伺服器擁有者的成員不會繼承伺服器的觸達範圍；它不會把個人權杖覆蓋到代理環境上。
 

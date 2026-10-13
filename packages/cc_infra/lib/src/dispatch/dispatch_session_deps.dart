@@ -3,6 +3,7 @@ import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/git_repo_inspector_port.dart';
+import 'package:cc_domain/core/domain/ports/media_render_port.dart';
 import 'package:cc_domain/core/domain/ports/process_control_port.dart';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
@@ -53,6 +54,7 @@ class SandboxDispatchDeps {
     this.execGrantService,
     this.agentQuestionPort,
     this.blobStore,
+    this.mediaRenderer,
     this.lspSupervisor,
     this.astParsers,
     this.transcriptStore,
@@ -73,6 +75,7 @@ class SandboxDispatchDeps {
     this.harnessProviderFactory = const HarnessProviderFactory(),
     this.agentLoop = const AgentLoopRunner(),
     this.resolveGitIdentity,
+    this.resolveAgentAttribution,
     this.repoInspector,
     this.autonomyResolver,
     this.processControl,
@@ -125,7 +128,7 @@ class SandboxDispatchDeps {
   /// Credential broker that mints per-run scoped tokens.
   final CredentialBrokerPort broker;
 
-  /// Agent repository (display-name lookup for the run's git identity).
+  /// Agent repository used by dispatch and delegated runs.
   final AgentRepository agentRepo;
 
   /// Optional run-log repository.
@@ -266,6 +269,9 @@ class SandboxDispatchDeps {
   /// "screenshot taken" and no screenshot. Null keeps that old behaviour.
   final BlobStore? blobStore;
 
+  /// Shared renderer for durable previews of images Read cannot display natively.
+  final MediaRenderPort? mediaRenderer;
+
   /// Optional [AgentQuestionPort] backing the `ask_user` tool: the agent asks
   /// a structured question and blocks until a human answers it in the
   /// conversation. Distinct from [confirmationPort], which is a yes/no gate on
@@ -348,15 +354,19 @@ class SandboxDispatchDeps {
   /// The harness agent loop implementation.
   final AgentLoop agentLoop;
 
-  /// Resolves the git author identity of the human a run executes for, used to
-  /// build the commit co-author trailer. Called with the run's
-  /// `requestedByUserId` (null resolves to the server owner). Injected at the
-  /// composition root, which owns the user repository; null skips the trailer.
+  /// Resolves the requesting human's Git identity (null user → server owner).
+  /// Used as co-author when agent attribution is on, or author when it is off.
   final Future<({String name, String email})?> Function(
     String? userId, {
     String? workspaceId,
   })?
   resolveGitIdentity;
+
+  /// Whether this run credits Control Center. Workspace policy overrides the
+  /// user's preference; absent wiring defaults on. Resolution failures stop
+  /// dispatch rather than silently ignoring an opt-out.
+  final Future<bool> Function(String? userId, {String? workspaceId})?
+  resolveAgentAttribution;
 
   /// Inspects a run's working directory for its `origin` forge coordinates so
   /// the credential broker can mint a fine-grained GitHub App installation

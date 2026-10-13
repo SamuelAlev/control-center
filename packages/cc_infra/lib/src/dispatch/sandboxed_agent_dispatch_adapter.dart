@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/git_repo_inspector_port.dart';
+import 'package:cc_domain/core/domain/ports/media_render_port.dart';
 import 'package:cc_domain/core/domain/ports/process_control_port.dart';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
@@ -40,6 +41,7 @@ import 'package:cc_infra/src/eval/eval_kernel.dart';
 import 'package:cc_infra/src/harness/ast_parser_provider.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
+import 'package:cc_infra/src/media/media_read_scope.dart';
 import 'package:cc_infra/src/messaging/run_transcript_recorder.dart';
 import 'package:cc_infra/src/sandboxing/claude_mcp_discovery_cache.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
@@ -77,6 +79,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     this.execGrantService,
     AgentQuestionPort? agentQuestionPort,
     BlobStore? blobStore,
+    MediaRenderPort? mediaRenderer,
     LspSupervisor? lspSupervisor,
     AstParserProvider? astParsers,
     HarnessTranscriptStore? transcriptStore,
@@ -109,6 +112,8 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
       String? workspaceId,
     })?
     resolveGitIdentity,
+    Future<bool> Function(String? userId, {String? workspaceId})?
+    resolveAgentAttribution,
     GitRepoInspectorPort? repoInspector,
     ProcessControlPort? processControl,
     FileSearchPort? fileSearch,
@@ -131,6 +136,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          execGrantService: execGrantService,
          agentQuestionPort: agentQuestionPort,
          blobStore: blobStore,
+         mediaRenderer: mediaRenderer,
          lspSupervisor: lspSupervisor,
          astParsers: astParsers,
          transcriptStore: transcriptStore,
@@ -152,6 +158,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          harnessProviderFactory: harnessProviderFactory,
          agentLoop: agentLoop,
          resolveGitIdentity: resolveGitIdentity,
+         resolveAgentAttribution: resolveAgentAttribution,
          repoInspector: repoInspector,
          processControl: processControl,
          fileSearch: fileSearch,
@@ -200,6 +207,31 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     for (final s in _dispatchSessions.values)
       if (s.conversationId == conversationId) s,
   ];
+
+  /// Resolves only the authenticated caller's active execution filesystem.
+  ///
+  /// Reusing the live session preserves the exact Read boundary, including
+  /// per-conversation overlays and the roots shared with nested subagents.
+  MediaReadScope? mediaReadScopeFor(MediaRenderRequest request) {
+    MediaReadScope? result;
+    for (final session in _dispatchSessions.values) {
+      if (session.workspaceId != request.workspaceId ||
+          session.agentId != request.agentId ||
+          session.spaceId != request.spaceId ||
+          session.conversationId != request.conversationId) {
+        continue;
+      }
+      final scope = session.mediaReadScope;
+      if (scope == null) {
+        continue;
+      }
+      if (result != null) {
+        return null;
+      }
+      result = scope;
+    }
+    return result;
+  }
 
   @override
   DispatchHandle start({

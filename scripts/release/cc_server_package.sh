@@ -14,6 +14,7 @@ set -euo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 source "$REPO_ROOT/scripts/lib/common.sh"
+source "$REPO_ROOT/scripts/lib/media.sh"
 
 VERSION="${1:?usage: cc_server_package.sh <version> [os]}"
 
@@ -98,6 +99,7 @@ done
 # staged dir, so both are searched and missing from both means this archive
 # cannot boot.
 bash scripts/release/verify_natives.sh --dir "$DIST/lib" --dir "$STAGE" "$OS" server
+cc_media_stage "$NATIVES" "$DIST/bin/media" "$OS" "$ARCH"
 # Windows on Arm: every PE image in the archive (cc_server.exe, the bundled and
 # the staged natives) must be an Arm64 image — see pe_machine in common.sh.
 if [ "$OS" = windows ] && [ "$ARCH" = arm64 ]; then

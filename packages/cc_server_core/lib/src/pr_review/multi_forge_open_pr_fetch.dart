@@ -86,8 +86,33 @@ class ForgeClientOpenPrFetchAdapter implements OpenPrFetchPort {
     String? workspaceId,
   }) async {
     try {
-      return await _clientFor(repo, workspaceId: workspaceId).wasMerged(prNumber);
+      return await _clientFor(
+        repo,
+        workspaceId: workspaceId,
+      ).wasMerged(prNumber);
     } on Object {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<PullRequest>?> fetchBranchHistory(
+    Repo repo,
+    String branch, {
+    String? workspaceId,
+  }) async {
+    final client = _clientFor(repo, workspaceId: workspaceId);
+    if (client is! ForgeBranchPrHistoryClient) {
+      return null;
+    }
+    try {
+      return await (client as ForgeBranchPrHistoryClient)
+          .listPullRequestsForBranch(branch);
+    } on Object catch (e) {
+      CcHostLog.warning(
+        'open_pr_poll: ${repo.forge.displayName} branch history failed for '
+        '${repo.fullName}: $e',
+      );
       return null;
     }
   }
@@ -239,6 +264,19 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
       return null;
     }
     return delegate.wasMerged(repo, prNumber, workspaceId: workspaceId);
+  }
+
+  @override
+  Future<List<PullRequest>?> fetchBranchHistory(
+    Repo repo,
+    String branch, {
+    String? workspaceId,
+  }) async {
+    final delegate = _delegateFor(repo);
+    if (delegate == null) {
+      return null;
+    }
+    return delegate.fetchBranchHistory(repo, branch, workspaceId: workspaceId);
   }
 
   @override

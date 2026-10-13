@@ -318,6 +318,7 @@ class TranscriptFolder {
         startedAt: event.timestamp,
         durationMs: 0,
         images: event.images,
+        attachments: event.attachments,
       );
       _segments.add(seg);
       final idx = _segments.length - 1;
@@ -352,6 +353,7 @@ class TranscriptFolder {
       durationMs: durationMs,
       // Screenshots ride the final result only; a partial never carries them.
       images: event.images.isEmpty ? null : event.images,
+      attachments: event.attachments.isEmpty ? null : event.attachments,
     );
     _segments[target] = closed;
     if (event.toolCallId.isNotEmpty) {
@@ -460,8 +462,7 @@ class TranscriptFolder {
     return List<Map<String, dynamic>>.of(encoded);
   }
 
-  /// The trailing error/violation prose of a turn that produced no answer text,
-  /// or null when the turn did not end on a failure.
+  /// The trailing error/violation prose, or null when the turn recovered.
   ///
   /// Walks the transcript backwards and stops at the first visible answer, so an
   /// error the agent recovered from mid-run never marks the whole turn failed.

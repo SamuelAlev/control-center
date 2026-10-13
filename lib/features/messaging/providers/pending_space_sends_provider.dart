@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
@@ -156,11 +157,10 @@ final pendingSpaceSendsProvider =
 /// worktree + overlay + `.mcp.json` setup and flips the status back to
 /// `provisioning` → `ready`/`failed`.
 final retrySpaceProvisioningProvider =
-    Provider<Future<void> Function(String spaceId)>((ref) {
-      return (spaceId) => ref.read(rpcClientProvider).call(
-        'messaging.retrySpaceProvisioning',
-        {'space_id': spaceId},
-      );
+    Provider<Future<void> Function(String workspaceId, String spaceId)>((ref) {
+      return RemoteMessagingRepository(
+        ref.watch(rpcClientProvider),
+      ).retrySpaceProvisioning;
     });
 
 /// Stops a space's in-flight workspace preparation.
@@ -170,9 +170,8 @@ final retrySpaceProvisioningProvider =
 /// further repo and flips the space to `cancelled` (from where the banner's
 /// Retry re-provisions).
 final cancelSpaceProvisioningProvider =
-    Provider<Future<void> Function(String spaceId)>((ref) {
-      return (spaceId) => ref.read(rpcClientProvider).call(
-        'messaging.cancelSpaceProvisioning',
-        {'space_id': spaceId},
-      );
+    Provider<Future<void> Function(String workspaceId, String spaceId)>((ref) {
+      return RemoteMessagingRepository(
+        ref.watch(rpcClientProvider),
+      ).cancelSpaceProvisioning;
     });

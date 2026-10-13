@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/ide/messaging_ide_layout.dart';
 import 'package:control_center/features/messaging/presentation/widgets/conversations_sidebar_section.dart';
+import 'package:control_center/features/messaging/presentation/widgets/merged_space_archive_prompt.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/router/routes.dart';
@@ -157,11 +158,23 @@ class _MessagingScreenState extends ConsumerState<MessagingScreen> {
       },
       child: workspaceId == null
           ? const Center(child: CcSpinner())
-          : MessagingIdeLayout(
-              workspaceId: workspaceId,
-              selectedSpaceId: selectedId,
-              focusedTabKey: _tabKey,
-              actions: _ideActions,
+          : Column(
+              children: [
+                if (selectedId != null)
+                  MergedSpaceArchivePrompt(
+                    key: ValueKey((workspaceId, selectedId)),
+                    workspaceId: workspaceId,
+                    spaceId: selectedId,
+                  ),
+                Expanded(
+                  child: MessagingIdeLayout(
+                    workspaceId: workspaceId,
+                    selectedSpaceId: selectedId,
+                    focusedTabKey: _tabKey,
+                    actions: _ideActions,
+                  ),
+                ),
+              ],
             ),
     );
   }

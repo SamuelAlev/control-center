@@ -49,6 +49,7 @@ export 'record_observation_tool.dart';
 export 'record_team_activity_tool.dart';
 export 'remember_tool.dart';
 export 'request_peer_review_tool.dart';
+export 'render_media_tool.dart';
 export 'resolve_review_node_tool.dart';
 export 'rig_use_tool.dart';
 export 'runtime_profile_tools.dart';

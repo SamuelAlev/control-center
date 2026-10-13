@@ -12530,6 +12530,48 @@ class AppLocalizationsNl extends AppLocalizations {
       'Identiteit, beleid en conventies die iedereen in deze werkruimte deelt.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Toeschrijving van commits';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Kies of Control Center wordt vermeld bij commits van agents. Beheerders van de werkruimte kunnen deze keuze voor iedereen in een werkruimte overschrijven.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Vermelding van de agent';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Vermeld Control Center bij commits van agents';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Wanneer dit is ingeschakeld, is Control Center de auteur van commits en word jij als mede-auteur vermeld. Wanneer dit is uitgeschakeld, gebruiken commits jouw Git-identiteit zonder vermelding van de agent.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Deze werkruimte heeft voorrang op je persoonlijke keuze. Je voorkeur blijft opgeslagen, maar geldt hier niet.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Instellingen voor toeschrijving laden…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Kies of Control Center wordt vermeld bij commits van agents. De instelling van de werkruimte heeft voorrang op de persoonlijke voorkeur van elk lid.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Gebruik de voorkeur van elk lid';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Vermeld Control Center altijd';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Vermeld Control Center nooit';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Notitiesjablonen en opgeslagen stemmen voor vergaderingen in deze werkruimte.';
 
@@ -14028,6 +14070,20 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Ticket';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Alle pull requests in deze ruimte zijn samengevoegd. Deze ruimte archiveren?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Nee, deze ruimte behouden';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Je wordt voor deze ruimte niet opnieuw gevraagd.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'Alle pull requests samengevoegd';
 
   @override
   String get archiveSpace => 'Ruimte archiveren';

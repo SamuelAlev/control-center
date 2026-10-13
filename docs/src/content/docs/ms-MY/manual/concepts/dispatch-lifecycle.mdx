@@ -2,7 +2,7 @@
 title: Kitaran hayat penghantaran ejen
 description: Apa yang berlaku antara ketibaan mesej dan penutupan log larian — pemasangan prompt, worktree, identiti, apa yang membatasi larian dan bagaimana hasilnya direkodkan secara jujur.
 slug: ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Apakah itu penghantaran
@@ -52,7 +52,7 @@ Salin-semasa-tulis ialah **satu-satunya** pelaksanaan di mana sahaja `rift` diha
 
 Dua identiti diselesaikan bagi setiap larian, sebelum mana-mana proses dilancarkan.
 
-**Pengarangan Git.** Commit yang dibuat oleh ejen dikarang _sebagai ejen_ — `<Name> (agent) <agentId@agents.control-center.local>` dalam kedua-dua `GIT_AUTHOR_*` dan `GIT_COMMITTER_*` — tidak pernah menyamar sebagai manusia. Bahagian setempat ialah UUID ejen, bukan slug namanya. Manusia yang membuat permintaan diberi kredit melalui treler `Co-Authored-By:`, dibawa dalam persekitaran dan diarahkan dalam prompt sistem. Identiti eksplisit yang ditetapkan pemanggil sentiasa mengatasi kedua-duanya.
+**Pengarangan Git.** Secara lalai, komit ejen menggunakan `Control Center <hi@usectrl.dev>` (akaun GitHub `@usectrl`) dalam kedua-dua `GIT_AUTHOR_*` dan `GIT_COMMITTER_*`, manakala peminta dikreditkan melalui treler `Co-Authored-By:`. Matikan atribusi ejen dalam **Tetapan → Anda → Atribusi komit** untuk menggunakan identiti Git anda sahaja. Pentadbir ruang kerja boleh mewajibkan atau mematikan atribusi dalam **Tetapan → Ruang kerja → Umum**; tetapan ini mengatasi pilihan peribadi dan menyahaktifkan suis peribadi tanpa mengubah keutamaan yang disimpan. Perubahan berkuat kuasa pada larian seterusnya. Baris kredit commit dan PR milik Claude Code sendiri sentiasa dinyahaktifkan. Nilai identiti Git yang ditetapkan pemanggil secara jelas tetap diutamakan; kelayakan perkhidmatan Git tidak terjejas.
 
 **Identiti forge.** Kelayakan GitHub larian itu sentiasa hanya milik broker — token pemasangan App berlingkup repo, atau sandaran PAT persekitarannya — tidak pernah token tersimpan ahli yang membuat permintaan sendiri. `actingUserId` membatasi sandaran PAT supaya ahli yang bukan pemilik pelayan tidak mewarisi jangkauan pelayan; ia tidak melapisi token peribadi ke atas persekitaran ejen.
 

@@ -68,6 +68,11 @@ Message _makeMessage({
 
 final _defaultCreatedAt = DateTime(2025, 1, 1);
 
+class _ReviewWorkspaceId extends ActiveWorkspaceIdNotifier {
+  @override
+  String? build() => 'ws';
+}
+
 /// Builds a test app wrapping [child] in ProviderScope with overrides that
 /// supply [messages] (or a never-emitting stream for loading / an error stream
 /// for errors) to [spaceWideMessagesProvider].
@@ -82,6 +87,7 @@ Widget _buildTestApp(
 
   return ProviderScope(
     overrides: [
+      activeWorkspaceIdProvider.overrideWith(_ReviewWorkspaceId.new),
       agentDetailProvider.overrideWith((ref, id) async => null),
       workspacesProvider.overrideWith(
         (ref) => const Stream<List<Workspace>>.empty(),

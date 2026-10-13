@@ -26,12 +26,22 @@ class TodoReadTool extends McpTool {
   String get name => 'todo_read';
 
   @override
+  Set<String> get forcedScopeKeys => const {'conversation_id'};
+
+  @override
+  Set<String> get requiredScopeKeys => const {
+    'workspace_id',
+    'conversation_id',
+  };
+
+  @override
   String get description =>
       'Read the persisted task checklist for this conversation (the '
       'read-back half of `todo_write`). Returns the ordered list of '
       '{id, content, status} items, where status is one of pending, '
       'in_progress, completed. Use it to recover your plan after a context '
-      'reset or when resuming work.';
+      'reset or when resuming work. workspace_id and conversation_id come '
+      'from the session; do not guess or pass them. Supplied IDs are ignored.';
 
   @override
   Map<String, dynamic> get inputSchema => {
@@ -43,10 +53,10 @@ class TodoReadTool extends McpTool {
       },
       'conversation_id': {
         'type': 'string',
-        'description': 'The conversation whose task list to read.',
+        'description': 'Filled from the session; supplied values are ignored.',
       },
     },
-    'required': ['workspace_id', 'conversation_id'],
+    'required': <String>[],
   };
 
   @override
@@ -69,9 +79,7 @@ class TodoReadTool extends McpTool {
       conversationId: conversationId,
     );
     if (conversation == null) {
-      return CallResult.error(
-        'Conversation belongs to a different workspace.',
-      );
+      return CallResult.error('Conversation not found in this workspace.');
     }
 
     final items = await _todos.list(workspaceId, conversationId);

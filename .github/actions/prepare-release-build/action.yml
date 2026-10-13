@@ -56,6 +56,11 @@ runs:
       id: natives-cache
       uses: $/.github/actions/natives-cache
 
+    - name: Install GNU make for FFmpeg (Windows cache miss)
+      if: inputs.os == 'windows' && steps.natives-cache.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: choco install make --version=4.4.1 --yes --no-progress
+
     # Skipped on a cache hit. No rift on Windows (`git worktree` is the backend).
     - name: Build native FFI libraries
       if: steps.natives-cache.outputs.cache-hit != 'true'
@@ -84,6 +89,9 @@ runs:
         [ "$OS" = "windows" ] && arch_args=(--arch "$ARCH")
         bash scripts/release/verify_natives.sh "${arch_args[@]}" build/natives "$OS" desktop
         bash scripts/release/verify_natives.sh "${arch_args[@]}" build/natives "$OS" server
+        source scripts/lib/common.sh
+        source scripts/lib/media.sh
+        cc_media_verify build/natives/media "$OS" "$ARCH"
 
     # Missing secrets are not an error; the build ships no baked credentials.
     - name: Inject built-in app credentials

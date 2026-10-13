@@ -40,9 +40,15 @@ final testMessage = Message(
   createdAt: DateTime(2024, 1, 1),
 );
 
+class _ReviewWorkspaceId extends ActiveWorkspaceIdNotifier {
+  @override
+  String? build() => 'ws';
+}
+
 Widget _buildTestApp(Widget child) {
   return ProviderScope(
     overrides: [
+      activeWorkspaceIdProvider.overrideWith(_ReviewWorkspaceId.new),
       agentDetailProvider.overrideWith((ref, id) async => null),
       workspacesProvider.overrideWith(
         (ref) => const Stream<List<Workspace>>.empty(),
@@ -87,6 +93,59 @@ ReviewAccordionItem _buildWidget({
 }
 
 void main() {
+  testWidgets('finding reply survives remount and stays with its finding', (
+    tester,
+  ) async {
+    final target = ValueNotifier<String?>('msg-1');
+    addTearDown(target.dispose);
+    await tester.pumpWidget(
+      _buildTestApp(
+        ValueListenableBuilder<String?>(
+          valueListenable: target,
+          builder: (_, id, _) {
+            if (id == null) {
+              return const SizedBox.shrink();
+            }
+            final message = Message(
+              id: id,
+              spaceId: 'ch-1',
+              conversationId: 'ch-1',
+              senderId: 'agent-1',
+              senderType: SenderType.agent,
+              content: 'Finding',
+              messageType: MessageType.reviewNode,
+              metadata: testMessage.metadata,
+              createdAt: testMessage.createdAt,
+            );
+            return _buildWidget(message: message);
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(find.byType(CcTextField), 'reply to first finding');
+    target.value = null;
+    await tester.pump();
+    target.value = 'msg-1';
+    await tester.pump();
+    expect(
+      tester.widget<CcTextField>(find.byType(CcTextField)).controller?.text,
+      'reply to first finding',
+    );
+    target.value = 'msg-2';
+    await tester.pump();
+    expect(
+      tester.widget<CcTextField>(find.byType(CcTextField)).controller?.text,
+      isEmpty,
+    );
+    target.value = 'msg-1';
+    await tester.pump();
+    expect(
+      tester.widget<CcTextField>(find.byType(CcTextField)).controller?.text,
+      'reply to first finding',
+    );
+  });
+
   testWidgets('collapsed row renders kind label', (tester) async {
     await tester.pumpWidget(_buildTestApp(_buildWidget()));
     await tester.pump();

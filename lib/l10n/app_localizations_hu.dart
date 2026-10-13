@@ -12537,6 +12537,48 @@ class AppLocalizationsHu extends AppLocalizations {
       'Identitás, szabályzat és konvenciók, amelyeket a munkaterület minden tagja megoszt.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Commit-hozzárendelés';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Válaszd ki, hogy az ügynökök commitjai feltüntessék-e a Control Centert. A munkaterület adminisztrátorai ezt a beállítást mindenkinél felülírhatják.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Ügynök feltüntetése';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'A Control Center feltüntetése az ügynökök commitjainál';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Bekapcsolva a commitok szerzője a Control Center, te pedig társszerzőként szerepelsz. Kikapcsolva a commitok a te Git-identitásodat használják, az ügynök feltüntetése nélkül.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'A munkaterület beállítása felülírja a személyes választásodat. A beállításod megmarad, de itt nem érvényesül.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Hozzárendelési beállítások betöltése…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Válaszd ki, hogy az ügynökök commitjai feltüntessék-e a Control Centert. A munkaterületi beállítás felülírja az egyes tagok személyes beállítását.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Az egyes tagok beállításának használata';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'A Control Center mindig legyen feltüntetve';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'A Control Center soha ne legyen feltüntetve';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Jegyzetsablonok és mentett hangok a munkaterület megbeszéléseihez.';
 
@@ -14039,6 +14081,20 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Jegy';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'A tér összes pull requestje egyesítve lett. Archiválja a teret?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Nem, maradjon meg ez a tér';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Ennél a térnél többé nem tesszük fel ezt a kérdést.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'Minden pull request egyesítve';
 
   @override
   String get archiveSpace => 'Tér archiválása';

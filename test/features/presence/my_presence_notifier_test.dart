@@ -132,4 +132,29 @@ void main() {
       expect(container.read(myPresenceProvider).typingSpaceId, isNull);
     },
   );
+
+  test(
+    'composer teardown clears typing after the lifecycle callback',
+    () async {
+      final container = makeContainer();
+      final notifier = container.read(myPresenceProvider.notifier);
+      notifier.setTyping('space-a');
+      notifier.clearTypingAfterUnmount('space-a');
+      expect(container.read(myPresenceProvider).typingSpaceId, 'space-a');
+      await Future<void>.value();
+      expect(container.read(myPresenceProvider).typingSpaceId, isNull);
+    },
+  );
+
+  test('a newer keystroke supersedes queued composer teardown', () async {
+    final container = makeContainer();
+    final notifier = container.read(myPresenceProvider.notifier);
+    for (final destination in ['space-a', 'space-b']) {
+      notifier.setTyping('space-a');
+      notifier.clearTypingAfterUnmount('space-a');
+      notifier.setTyping(destination);
+      await Future<void>.value();
+      expect(container.read(myPresenceProvider).typingSpaceId, destination);
+    }
+  });
 }

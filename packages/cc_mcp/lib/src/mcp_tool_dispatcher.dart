@@ -13,14 +13,15 @@ import 'package:cc_mcp/src/log/cc_mcp_log.dart';
 import 'package:cc_mcp/src/mcp_protocol.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// Ceiling on the total characters one tool result may carry back.
+/// Ceiling on text and ordinary tool result characters.
 ///
-/// 1 MiB is far above any legitimate answer (the largest real ones are a code
-/// search or a message page, both in the low hundreds of KB) and far below the
-/// point where it threatens the context window or the relay. Bridged external
-/// tools are capped tighter (256 KB, `tool_bridge.dart`) because their output
-/// is not ours to trust at all.
+/// 1 MiB bounds search/message text and untrusted result payloads. The
+/// first-party render_media image pieces have a separate per-image cap below.
+/// Bridged external tools are capped tighter (256 KB, `tool_bridge.dart`).
 const int _maxResultChars = 1024 * 1024;
+
+/// Image payloads have a separate per-image budget from text metadata.
+const int _maxRenderMediaImageChars = 5 * 1024 * 1024;
 
 /// Mcp tool dispatcher.
 class McpToolDispatcher implements RpcDispatcher {
@@ -256,8 +257,18 @@ class McpToolDispatcher implements RpcDispatcher {
     var budget = _maxResultChars;
     var truncated = false;
     final kept = <CallResultContent>[];
+    var images = 0;
     for (final piece in result.content) {
       final data = piece.data;
+      if (toolName == 'render_media' && piece.isImage) {
+        images++;
+        if (images <= 4 && piece.data!.length <= _maxRenderMediaImageChars) {
+          kept.add(piece);
+        } else {
+          truncated = true;
+        }
+        continue;
+      }
       if (data != null) {
         if (data.length > budget) {
           truncated = true;
@@ -285,6 +296,12 @@ class McpToolDispatcher implements RpcDispatcher {
     }
     if (!truncated) {
       return result;
+    }
+    if (toolName == 'render_media') {
+      return CallResult.error(
+        'Rendered images exceed the 5 MiB per-image delivery limit. '
+        'Try a smaller max_dimension.',
+      );
     }
     CcMcpLog.w(
       'MCP',
@@ -315,6 +332,18 @@ class McpToolDispatcher implements RpcDispatcher {
     final tool = registry.resolve(toolName);
     if (tool == null) {
       return _errorResponse(-32602, _unknownToolMessage(toolName), request.id);
+    }
+    final missingScope = (scope ?? const McpCallScope()).firstMissing(
+      tool.requiredScopeKeys,
+    );
+    if (missingScope != null) {
+      return {
+        'jsonrpc': '2.0',
+        'id': request.id,
+        'result': CallResult.error(
+          '${tool.name} requires a session $missingScope.',
+        ).toJson(),
+      };
     }
 
     final rawArgs = request.params['arguments'];

@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_payload.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
@@ -99,7 +100,8 @@ class ReviewAccordionItem extends ConsumerStatefulWidget {
 
 class _ReviewAccordionItemState extends ConsumerState<ReviewAccordionItem> {
   bool _expanded = true;
-  final _replyController = TextEditingController();
+  late TextEditingController _replyController;
+  late TextDraftKey _activeReplyKey;
 
   bool get _open => widget.alwaysExpanded || _expanded;
   bool _sending = false;
@@ -107,10 +109,27 @@ class _ReviewAccordionItemState extends ConsumerState<ReviewAccordionItem> {
   /// The status move in flight, so the pressed button is the one that spins.
   ReviewNodeStatus? _pendingStatus;
 
+  TextDraftKey get _replyKey => (
+    workspaceId: ref.requireWorkspaceId(),
+    surface: 'pr-review-finding-reply',
+    destination: (widget.spaceId, widget.message.id),
+  );
+
   @override
-  void dispose() {
-    _replyController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _activeReplyKey = _replyKey;
+    _replyController = ref.read(textDraftControllerProvider(_activeReplyKey));
+  }
+
+  @override
+  void didUpdateWidget(ReviewAccordionItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_activeReplyKey != _replyKey) {
+      _activeReplyKey = _replyKey;
+      _replyController = ref.read(textDraftControllerProvider(_activeReplyKey));
+      _sending = false;
+    }
   }
 
   @override
@@ -310,25 +329,31 @@ class _ReviewAccordionItemState extends ConsumerState<ReviewAccordionItem> {
   }
 
   Future<void> _sendReply() async {
-    final text = _replyController.text.trim();
+    final controller = _replyController;
+    final originalText = controller.text;
+    final text = originalText.trim();
     if (text.isEmpty) {
       return;
     }
+    final workspaceId = ref.requireWorkspaceId();
+    final spaceId = widget.spaceId;
+    final nodeId = widget.message.id;
+    final repository = ref.read(messagingRepositoryProvider);
     setState(() => _sending = true);
     try {
-      await ref
-          .read(messagingRepositoryProvider)
-          .sendMessage(
-            workspaceId: ref.requireWorkspaceId(),
-            spaceId: widget.spaceId,
-            content: text,
-            senderId: 'user',
-            senderType: 'user',
-            metadata: {'reviewNodeId': widget.message.id},
-          );
-      _replyController.clear();
+      await repository.sendMessage(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        content: text,
+        senderId: 'user',
+        senderType: 'user',
+        metadata: {'reviewNodeId': nodeId},
+      );
+      if (controller.text == originalText) {
+        controller.clear();
+      }
     } finally {
-      if (mounted) {
+      if (mounted && identical(_replyController, controller)) {
         setState(() => _sending = false);
       }
     }

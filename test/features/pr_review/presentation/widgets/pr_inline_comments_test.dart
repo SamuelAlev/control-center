@@ -168,6 +168,143 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 5));
     });
   });
+  group('PrCommentComposer session drafts', () {
+    testWidgets(
+      'remount, PR, workspace and inline anchor keep independent text',
+      (tester) async {
+        const otherPr = (
+          workspaceId: 'ws',
+          repoFullName: 'owner/repo',
+          number: 2,
+        );
+        const otherWorkspace = (
+          workspaceId: 'ws-2',
+          repoFullName: 'owner/repo',
+          number: 1,
+        );
+        final target = ValueNotifier(0);
+        addTearDown(target.dispose);
+        await tester.pumpWidget(
+          _wrap(
+            ValueListenableBuilder<int>(
+              valueListenable: target,
+              builder: (_, index, _) {
+                if (index < 0) {
+                  return const SizedBox.shrink();
+                }
+                final pr = switch (index) {
+                  2 => otherPr,
+                  3 => otherWorkspace,
+                  _ => _prRef,
+                };
+                return PrCommentComposer(
+                  key: const ValueKey('reused-composer'),
+                  prRef: pr,
+                  draftDestination: index == 1
+                      ? ('lib/a.dart', 42)
+                      : ('lib/a.dart', 12),
+                  autofocus: false,
+                  onSubmit: (_) {},
+                  onCancel: () {},
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+        final field = find.byType(CcTextField);
+        await tester.enterText(field, 'first location');
+        target.value = -1;
+        await tester.pump();
+        target.value = 0;
+        await tester.pump();
+        expect(
+          tester.widget<CcTextField>(field).controller?.text,
+          'first location',
+        );
+        for (final index in [1, 2, 3]) {
+          target.value = index;
+          await tester.pump();
+          expect(tester.widget<CcTextField>(field).controller?.text, isEmpty);
+          await tester.enterText(field, 'location $index');
+        }
+        target.value = 0;
+        await tester.pump();
+        expect(
+          tester.widget<CcTextField>(field).controller?.text,
+          'first location',
+        );
+        target.value = 1;
+        await tester.pump();
+        expect(
+          tester.widget<CcTextField>(field).controller?.text,
+          'location 1',
+        );
+      },
+    );
+
+    testWidgets(
+      'seeded initial text is not restored over a cleared session draft',
+      (tester) async {
+        final visible = ValueNotifier(true);
+        addTearDown(visible.dispose);
+        await tester.pumpWidget(
+          _wrap(
+            ValueListenableBuilder<bool>(
+              valueListenable: visible,
+              builder: (_, show, _) => show
+                  ? PrCommentComposer(
+                      prRef: _prRef,
+                      draftDestination: ('seed.dart', 1),
+                      initialText: 'suggestion source',
+                      autofocus: false,
+                      onSubmit: (_) {},
+                      onCancel: () {},
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        );
+        await tester.pump();
+        final field = find.byType(CcTextField);
+        expect(
+          tester.widget<CcTextField>(field).controller?.text,
+          'suggestion source',
+        );
+        await tester.enterText(field, '');
+        visible.value = false;
+        await tester.pump();
+        visible.value = true;
+        await tester.pump();
+        expect(tester.widget<CcTextField>(field).controller?.text, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'send clears the submitted inline draft but not a sibling anchor',
+      (tester) async {
+        String? submitted;
+        await tester.pumpWidget(
+          _wrap(
+            PrCommentComposer(
+              prRef: _prRef,
+              draftDestination: ('one.dart', 10),
+              autofocus: false,
+              onSubmit: (body) => submitted = body,
+              onCancel: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+        final field = find.byType(CcTextField);
+        await tester.enterText(field, 'queued comment');
+        await tester.tap(find.byIcon(AppIcons.arrowUp));
+        await tester.pump();
+        expect(submitted, 'queued comment');
+        expect(tester.widget<CcTextField>(field).controller?.text, isEmpty);
+      },
+    );
+  });
 
   group('PrCommentComposer', () {
     testWidgets('renders with seeded original code', (tester) async {
@@ -703,7 +840,11 @@ void main() {
     testWidgets('renders empty body without crash', (tester) async {
       await tester.pumpWidget(
         _wrap(
-          const SuggestionAwareMarkdown(prRef: _prRef, body: '', originalCode: 'original'),
+          const SuggestionAwareMarkdown(
+            prRef: _prRef,
+            body: '',
+            originalCode: 'original',
+          ),
         ),
       );
       await tester.pumpAndSettle(const Duration(seconds: 5));

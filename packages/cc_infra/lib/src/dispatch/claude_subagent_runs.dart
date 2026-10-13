@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/ports/media_render_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
+import 'package:cc_infra/src/blobs/blob_store.dart';
+import 'package:cc_infra/src/dispatch/read_media_capture.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/messaging/run_transcript_recorder.dart';
 import 'package:cc_infra/src/sandboxing/claude_stream_json.dart';
@@ -29,6 +32,9 @@ class ClaudeSubagentRuns {
     this.modelId,
     this.repo,
     this.recorder,
+    this.workingDirectory,
+    this.blobStore,
+    this.mediaRenderer,
   });
 
   /// The `claude -p` run the subagents belong to.
@@ -55,7 +61,18 @@ class ClaudeSubagentRuns {
   /// Where child transcripts are recorded. Null records rows only.
   final RunTranscriptRecorder? recorder;
 
+  /// Parent cwd for relative Read paths; absent when no file capture is wired.
+  final String? workingDirectory;
+
+  /// Workspace blob storage for successfully read media.
+  final BlobStore? blobStore;
+
+  /// Shared renderer for successfully read, unsupported image formats.
+  final MediaRenderPort? mediaRenderer;
+
   final Map<String, _ChildRun> _children = {};
+  final Set<String> _closedSpawns = {};
+  final Set<Future<void>> _closing = {};
 
   /// Spawn call id → its description, from the call's input.
   final Map<String, String> _labels = {};
@@ -86,12 +103,32 @@ class ClaudeSubagentRuns {
   /// Folds one subagent event into its child run, opening the run on first
   /// sight.
   void onEvent(ClaudeSubagentEvent event) {
+    if (_closedSpawns.contains(event.spawnToolUseId)) {
+      return;
+    }
+    if (event is ClaudeSubagentFinished) {
+      unawaited(
+        _finish(
+          event.spawnToolUseId,
+          status: event.status == ClaudeSubagentStatus.completed
+              ? RunStatus.completed
+              : RunStatus.error,
+          outcome: switch (event.status) {
+            ClaudeSubagentStatus.completed => TurnOutcome.completed,
+            ClaudeSubagentStatus.failed => TurnOutcome.failed,
+            ClaudeSubagentStatus.stopped => TurnOutcome.interrupted,
+          },
+          summary: event.summary,
+        ),
+      );
+      return;
+    }
     final child = _open(
       event.spawnToolUseId,
       label: event is ClaudeSubagentStarted ? event.description : null,
     );
     switch (event) {
-      case ClaudeSubagentStarted():
+      case ClaudeSubagentStarted() || ClaudeSubagentFinished():
         break;
       case ClaudeSubagentText(:final text):
         child.textSinceTool = true;
@@ -117,6 +154,7 @@ class ClaudeSubagentRuns {
             outputs: result.outputs,
             toolName: child.toolNames.remove(result.id),
             isError: result.isError,
+            images: result.images,
           ),
         );
         // A nested subagent ends on its parent subagent's lane.
@@ -126,31 +164,57 @@ class ClaudeSubagentRuns {
 
   /// Closes the child that the spawn call [result] answers, if one ran.
   ///
-  /// The spawn call's result is the subagent's final answer: `claude` does not
-  /// replay that last message on the subagent's own lane, so it is appended
-  /// to the child's transcript unless the child already ended on text.
+  /// A background-launch acknowledgement leaves the child open for its task
+  /// lifecycle event. Foreground results append the final answer unless the
+  /// child already ended on its own text.
   Future<void> complete(ClaudeToolResult result) async {
-    final child = _children.remove(result.id);
+    if (result.isAsync && !result.isError) {
+      return;
+    }
+    await _finish(
+      result.id,
+      status: result.isError ? RunStatus.error : RunStatus.completed,
+      outcome: result.isError ? TurnOutcome.failed : TurnOutcome.completed,
+      summary: result.outputs,
+    );
+  }
+
+  Future<void> _finish(
+    String spawnId, {
+    required RunStatus status,
+    required TurnOutcome outcome,
+    String? summary,
+  }) async {
+    final child = _children.remove(spawnId);
     if (child == null) {
       return;
     }
-    final answer = result.outputs.trim();
-    if (!child.textSinceTool && answer.isNotEmpty) {
+    _closedSpawns.add(spawnId);
+    final answer = summary?.trim();
+    if (!child.textSinceTool && answer != null && answer.isNotEmpty) {
       child.record(TextEvent(content: answer));
     }
-    await child.close(
-      status: result.isError ? RunStatus.error : RunStatus.completed,
-      outcome: result.isError ? TurnOutcome.failed : TurnOutcome.completed,
-      summary: answer.isEmpty ? null : answer,
+    final closing = child.close(
+      status: status,
+      outcome: outcome,
+      summary: answer == null || answer.isEmpty ? null : answer,
     );
+    _closing.add(closing);
+    try {
+      await closing;
+    } finally {
+      _closing.remove(closing);
+    }
   }
 
   /// Closes every child still open — the parent process ended, or was
   /// stopped, before their spawn calls returned.
   Future<void> closeAll() async {
     final open = [..._children.values];
+    _closedSpawns.addAll(_children.keys);
     _children.clear();
     await Future.wait([
+      ..._closing,
       for (final child in open)
         child.close(status: RunStatus.error, outcome: TurnOutcome.interrupted),
     ]);
@@ -171,6 +235,13 @@ class ClaudeSubagentRuns {
         startedAt: startedAt,
       ),
       repo: repo,
+      workingDirectory: workingDirectory,
+      workspaceId: workspaceId,
+      mediaRenderer: mediaRenderer,
+      agentId: agentId,
+      spaceId: spaceId,
+      conversationId: conversationId,
+      blobStore: blobStore,
       row: AgentRunLog(
         id: runId,
         agentId: agentId,
@@ -199,12 +270,29 @@ class _ChildRun {
     required this.recording,
     required this.repo,
     required this.row,
-  });
+    required String? workingDirectory,
+    required String workspaceId,
+    required BlobStore? blobStore,
+    required MediaRenderPort? mediaRenderer,
+    required String agentId,
+    required String? spaceId,
+    required String? conversationId,
+  }) : media = ReadMediaCapture(
+         emit: (event) => recording?.add(event),
+         workingDirectory: workingDirectory ?? '',
+         workspaceId: workspaceId,
+         store: workingDirectory == null ? null : blobStore,
+         renderer: mediaRenderer,
+         agentId: agentId,
+         spaceId: spaceId,
+         conversationId: conversationId,
+       );
 
   final String runId;
   final RunTranscriptRecording? recording;
   final AgentRunLogRepository? repo;
   AgentRunLog row;
+  final ReadMediaCapture media;
 
   /// Tool name per open call: a result names only the id it answers.
   final Map<String, String> toolNames = {};
@@ -215,7 +303,7 @@ class _ChildRun {
   /// Row writes, chained so the completion can never land before the start.
   Future<void> _writes = Future.value();
 
-  void record(AgentProcessEvent event) => recording?.add(event);
+  void record(AgentProcessEvent event) => media.add(event);
 
   void write(AgentRunLog next) {
     row = next;
@@ -237,6 +325,7 @@ class _ChildRun {
     required TurnOutcome outcome,
     String? summary,
   }) async {
+    await media.drained;
     await recording?.finish(outcome);
     write(
       row.copyWith(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/run_transcript_repository.dart';
@@ -170,6 +172,235 @@ void main() {
     expect(registry.isActive(row.id), isFalse);
   });
 
+  test('a background task notification completes its recorded run', () async {
+    final parser = ClaudeStreamJsonParser(
+      ClaudeStreamJsonCallbacks(onSubagent: runs.onEvent),
+    );
+    parser
+      ..process({
+        'type': 'system',
+        'subtype': 'task_started',
+        'task_id': 'task-a',
+        'tool_use_id': 'tu_a',
+        'subagent_type': 'general-purpose',
+      })
+      ..process({
+        'type': 'assistant',
+        'parent_tool_use_id': 'tu_a',
+        'message': {
+          'content': [
+            {'type': 'text', 'text': 'The change is implemented.'},
+          ],
+        },
+      })
+      ..process({
+        'type': 'system',
+        'subtype': 'task_notification',
+        'task_id': 'task-a',
+        'tool_use_id': 'tu_a',
+        'status': 'completed',
+        'summary': 'Implemented the change',
+      });
+    await settle();
+
+    final row = logs.rows['run-1-sub-tu_a']!;
+    expect(row.status, RunStatus.completed);
+    expect(row.completedAt, isNotNull);
+    expect(registry.isActive(row.id), isFalse);
+
+    parser.process({
+      'type': 'assistant',
+      'parent_tool_use_id': 'tu_a',
+      'message': {
+        'content': [
+          {'type': 'text', 'text': 'The change is implemented.'},
+        ],
+      },
+    });
+    await runs.closeAll();
+    expect(logs.rows[row.id]!.status, RunStatus.completed);
+    expect(registry.isActive(row.id), isFalse);
+  });
+
+  test('an async launch stays active until its task update ends it', () async {
+    final parser = ClaudeStreamJsonParser(
+      ClaudeStreamJsonCallbacks(
+        onToolCall: runs.noteSpawnCall,
+        onToolResult: (result) => unawaited(runs.complete(result)),
+        onSubagent: runs.onEvent,
+      ),
+    );
+    parser
+      ..process({
+        'type': 'stream_event',
+        'event': {
+          'type': 'content_block_start',
+          'index': 0,
+          'content_block': {'type': 'tool_use', 'id': 'tu_a', 'name': 'Agent'},
+        },
+      })
+      ..process({
+        'type': 'stream_event',
+        'event': {'type': 'content_block_stop', 'index': 0},
+      })
+      ..process({
+        'type': 'system',
+        'subtype': 'task_started',
+        'task_id': 'task-a',
+        'tool_use_id': 'tu_a',
+        'task_type': 'local_agent',
+        'description': 'Background work',
+      })
+      ..process({
+        'type': 'user',
+        'tool_use_result': {'status': 'async_launched', 'agentId': 'task-a'},
+        'message': {
+          'content': [
+            {
+              'type': 'tool_result',
+              'tool_use_id': 'tu_a',
+              'content': 'Background agent launched.',
+            },
+          ],
+        },
+      });
+    await settle();
+    expect(logs.rows['run-1-sub-tu_a']!.status, RunStatus.running);
+    expect(registry.isActive('run-1-sub-tu_a'), isTrue);
+
+    parser.process({
+      'type': 'system',
+      'subtype': 'task_updated',
+      'task_id': 'task-a',
+      'patch': {'status': 'completed'},
+    });
+    // Parent shutdown must wait for an already-closing child's final writes.
+    await runs.closeAll();
+    expect(logs.rows['run-1-sub-tu_a']!.status, RunStatus.completed);
+    expect(registry.isActive('run-1-sub-tu_a'), isFalse);
+  });
+
+  test('nested background results do not finish their child early', () async {
+    final parser = ClaudeStreamJsonParser(
+      ClaudeStreamJsonCallbacks(onSubagent: runs.onEvent),
+    );
+    parser
+      ..process({
+        'type': 'assistant',
+        'parent_tool_use_id': 'tu_outer',
+        'message': {
+          'content': [
+            {
+              'type': 'tool_use',
+              'id': 'tu_inner',
+              'name': 'Agent',
+              'input': {'description': 'Nested background work'},
+            },
+          ],
+        },
+      })
+      ..process({
+        'type': 'system',
+        'subtype': 'task_started',
+        'parent_tool_use_id': 'tu_outer',
+        'task_id': 'inner',
+        'tool_use_id': 'tu_inner',
+        'task_type': 'local_agent',
+      })
+      ..process({
+        'type': 'user',
+        'parent_tool_use_id': 'tu_outer',
+        'tool_use_result': {'status': 'async_launched', 'isAsync': true},
+        'message': {
+          'content': [
+            {
+              'type': 'tool_result',
+              'tool_use_id': 'tu_inner',
+              'content': 'Background agent launched.',
+            },
+          ],
+        },
+      });
+    await settle();
+    const innerId = 'run-1-sub-tu_inner';
+    expect(logs.rows[innerId]!.status, RunStatus.running);
+    expect(logs.rows[innerId]!.parentRunId, 'run-1-sub-tu_outer');
+    parser.process({
+      'type': 'system',
+      'subtype': 'task_notification',
+      'parent_tool_use_id': 'tu_outer',
+      'task_id': 'inner',
+      'status': 'completed',
+    });
+    await settle();
+    expect(logs.rows[innerId]!.status, RunStatus.completed);
+    expect(logs.rows['run-1-sub-tu_outer']!.status, RunStatus.running);
+    await runs.closeAll();
+  });
+
+  test('a late notification cannot finish a resumed task run', () async {
+    final parser = ClaudeStreamJsonParser(
+      ClaudeStreamJsonCallbacks(onSubagent: runs.onEvent),
+    );
+    for (final (spawnId, runId) in [('tu_old', 'r1'), ('tu_new', 'r2')]) {
+      parser.process({
+        'type': 'system',
+        'subtype': 'task_started',
+        'task_id': 'reused-task',
+        'tool_use_id': spawnId,
+        'run_id': runId,
+        'task_type': 'local_agent',
+      });
+      if (runId == 'r1') {
+        await runs.complete(
+          const ClaudeToolResult(id: 'tu_old', outputs: 'First run done.'),
+        );
+      }
+    }
+    parser.process({
+      'type': 'system',
+      'subtype': 'task_notification',
+      'task_id': 'reused-task',
+      'run_id': 'r1',
+      'status': 'completed',
+    });
+    await settle();
+    expect(logs.rows['run-1-sub-tu_new']!.status, RunStatus.running);
+
+    parser.process({
+      'type': 'system',
+      'subtype': 'task_notification',
+      'task_id': 'reused-task',
+      'run_id': 'r2',
+      'status': 'completed',
+    });
+    await runs.closeAll();
+    expect(logs.rows['run-1-sub-tu_new']!.status, RunStatus.completed);
+  });
+
+  test('background shell lifecycle messages never create agent rows', () async {
+    final parser = ClaudeStreamJsonParser(
+      ClaudeStreamJsonCallbacks(onSubagent: runs.onEvent),
+    );
+    parser
+      ..process({
+        'type': 'system',
+        'subtype': 'task_started',
+        'task_id': 'shell',
+        'tool_use_id': 'tu_bash',
+        'task_type': 'local_bash',
+      })
+      ..process({
+        'type': 'system',
+        'subtype': 'task_notification',
+        'task_id': 'shell',
+        'tool_use_id': 'tu_bash',
+        'status': 'completed',
+      });
+    await runs.closeAll();
+    expect(logs.rows, isEmpty);
+  });
+
   group('transcript', () {
     late _Transcripts transcripts;
     late ClaudeSubagentRuns recorded;
@@ -188,6 +419,34 @@ void main() {
       for (final seg in transcripts.finalSegments['run-2-sub-tu_a']!)
         seg['type'] as String?,
     ];
+
+    for (final (status, outcome) in [
+      ('failed', TurnOutcome.failed),
+      ('stopped', TurnOutcome.interrupted),
+    ]) {
+      test('a $status background task records its terminal outcome', () async {
+        final parser = ClaudeStreamJsonParser(
+          ClaudeStreamJsonCallbacks(onSubagent: recorded.onEvent),
+        );
+        parser
+          ..process({
+            'type': 'system',
+            'subtype': 'task_started',
+            'task_id': 'task-a',
+            'tool_use_id': 'tu_a',
+            'task_type': 'local_agent',
+          })
+          ..process({
+            'type': 'system',
+            'subtype': 'task_notification',
+            'task_id': 'task-a',
+            'status': status,
+          });
+        await recorded.closeAll();
+        expect(transcripts.outcomes['run-2-sub-tu_a'], outcome);
+        expect(registry.isActive('run-2-sub-tu_a'), isFalse);
+      });
+    }
 
     test('keeps its own last words instead of repeating the result', () async {
       recorded

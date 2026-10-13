@@ -12457,6 +12457,47 @@ class AppLocalizationsEn extends AppLocalizations {
       'Identity, policy and conventions shared by everyone in this workspace.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Commit attribution';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Choose whether agent commits credit Control Center. Workspace admins can override this choice for everyone in a workspace.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Agent attribution';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Credit Control Center on agent commits';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'When enabled, commits are authored by Control Center and include you as a co-author. When disabled, commits use your Git identity without agent credit.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'This workspace overrides your personal choice. Your preference is saved but does not apply here.';
+
+  @override
+  String get settingsAgentAttributionLoading => 'Loading attribution settings…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Choose whether agent commits credit Control Center. A workspace choice overrides each member\'s personal preference.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Use each member\'s preference';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Always credit Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Never credit Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Note templates and saved voices for meetings in this workspace.';
 
@@ -13945,6 +13986,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Ticket';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'All pull requests in this space have been merged. Archive this space?';
+
+  @override
+  String get spaceKeepAfterMerge => 'No, keep this space';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'You won’t be asked again for this space.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'All pull requests merged';
 
   @override
   String get archiveSpace => 'Archive space';

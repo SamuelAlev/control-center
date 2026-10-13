@@ -93,6 +93,13 @@ class _FakePort implements OpenPrFetchPort {
   }) async => fail ? null : true;
 
   @override
+  Future<List<PullRequest>?> fetchBranchHistory(
+    Repo repo,
+    String branch, {
+    String? workspaceId,
+  }) async => fail ? null : const [];
+
+  @override
   Future<PrMergeableState> mergeState(
     Repo repo,
     int prNumber, {
@@ -122,27 +129,50 @@ void main() {
       final bb = _repo('docs', ForgeHost.bitbucket);
 
       final adapter = MultiForgeOpenPrFetchAdapter({
-        ForgeHost.github: _FakePort(prNumbersByRepoId: {'web': [1, 2]}),
-        ForgeHost.gitlab: _FakePort(prNumbersByRepoId: {'api': [7]}),
-        ForgeHost.bitbucket: _FakePort(prNumbersByRepoId: {'docs': [9]}),
+        ForgeHost.github: _FakePort(
+          prNumbersByRepoId: {
+            'web': [1, 2],
+          },
+        ),
+        ForgeHost.gitlab: _FakePort(
+          prNumbersByRepoId: {
+            'api': [7],
+          },
+        ),
+        ForgeHost.bitbucket: _FakePort(
+          prNumbersByRepoId: {
+            'docs': [9],
+          },
+        ),
       });
 
       final result = await adapter.fetchGroups([gh, gl, bb]);
 
       expect(result.resolvedRepoIds, {'web', 'api', 'docs'});
-      expect(
-        result.groups.map((g) => g.repo.id).toSet(),
-        {'web', 'api', 'docs'},
-      );
-      expect(
-        result.groups.expand((g) => g.prs).map((p) => p.number).toSet(),
-        {1, 2, 7, 9},
-      );
+      expect(result.groups.map((g) => g.repo.id).toSet(), {
+        'web',
+        'api',
+        'docs',
+      });
+      expect(result.groups.expand((g) => g.prs).map((p) => p.number).toSet(), {
+        1,
+        2,
+        7,
+        9,
+      });
     });
 
     test('each forge is asked only about its own repos', () async {
-      final github = _FakePort(prNumbersByRepoId: {'web': [1]});
-      final gitlab = _FakePort(prNumbersByRepoId: {'api': [7]});
+      final github = _FakePort(
+        prNumbersByRepoId: {
+          'web': [1],
+        },
+      );
+      final gitlab = _FakePort(
+        prNumbersByRepoId: {
+          'api': [7],
+        },
+      );
       final adapter = MultiForgeOpenPrFetchAdapter({
         ForgeHost.github: github,
         ForgeHost.gitlab: gitlab,
@@ -163,7 +193,11 @@ void main() {
       // repo ids either, which is what tells the poller to keep its previous
       // entries for those repos rather than publish "merged/closed" for each.
       final adapter = MultiForgeOpenPrFetchAdapter({
-        ForgeHost.github: _FakePort(prNumbersByRepoId: {'web': [1]}),
+        ForgeHost.github: _FakePort(
+          prNumbersByRepoId: {
+            'web': [1],
+          },
+        ),
         ForgeHost.bitbucket: _FakePort(fail: true),
       });
 
@@ -178,7 +212,11 @@ void main() {
 
     test('a repo on an unregistered forge is skipped, not guessed', () async {
       final adapter = MultiForgeOpenPrFetchAdapter({
-        ForgeHost.github: _FakePort(prNumbersByRepoId: {'web': [1]}),
+        ForgeHost.github: _FakePort(
+          prNumbersByRepoId: {
+            'web': [1],
+          },
+        ),
       });
 
       final result = await adapter.fetchGroups([
@@ -201,33 +239,74 @@ void main() {
         (await adapter.probeRepo(_repo('web', ForgeHost.github), null)).changed,
         isTrue,
       );
-      expect(await adapter.wasMerged(_repo('web', ForgeHost.github), 1), isTrue);
+      expect(
+        await adapter.wasMerged(_repo('web', ForgeHost.github), 1),
+        isTrue,
+      );
       // An unregistered forge answers "unknown", never "closed".
       expect(await adapter.wasMerged(_repo('x', ForgeHost.gitlab), 1), isNull);
     });
 
-    test('an unregistered forge reports no change rather than churning',
-        () async {
-      final adapter = MultiForgeOpenPrFetchAdapter({
-        ForgeHost.github: _FakePort(),
-      });
-      final probe = await adapter.probeRepo(_repo('x', ForgeHost.gitlab), null);
-      expect(probe.changed, isFalse);
-    });
+    test(
+      'branch history routes to the repo forge and preserves failures',
+      () async {
+        final adapter = MultiForgeOpenPrFetchAdapter({
+          ForgeHost.github: _FakePort(),
+          ForgeHost.gitlab: _FakePort(fail: true),
+        });
+        expect(
+          await adapter.fetchBranchHistory(
+            _repo('web', ForgeHost.github),
+            'space/a',
+          ),
+          isEmpty,
+        );
+        expect(
+          await adapter.fetchBranchHistory(
+            _repo('api', ForgeHost.gitlab),
+            'space/a',
+          ),
+          isNull,
+        );
+        expect(
+          await adapter.fetchBranchHistory(
+            _repo('docs', ForgeHost.bitbucket),
+            'space/a',
+          ),
+          isNull,
+        );
+      },
+    );
 
-    test('checks overlays merge across forges and survive one failing',
-        () async {
-      final adapter = MultiForgeOpenPrFetchAdapter({
-        ForgeHost.github: _FakePort(),
-        ForgeHost.gitlab: _FakePort(fail: true),
-      });
+    test(
+      'an unregistered forge reports no change rather than churning',
+      () async {
+        final adapter = MultiForgeOpenPrFetchAdapter({
+          ForgeHost.github: _FakePort(),
+        });
+        final probe = await adapter.probeRepo(
+          _repo('x', ForgeHost.gitlab),
+          null,
+        );
+        expect(probe.changed, isFalse);
+      },
+    );
 
-      final overlays = await adapter.fetchChecks([
-        _repo('web', ForgeHost.github),
-        _repo('api', ForgeHost.gitlab),
-      ]);
+    test(
+      'checks overlays merge across forges and survive one failing',
+      () async {
+        final adapter = MultiForgeOpenPrFetchAdapter({
+          ForgeHost.github: _FakePort(),
+          ForgeHost.gitlab: _FakePort(fail: true),
+        });
 
-      expect(overlays.keys, ['web']);
-    });
+        final overlays = await adapter.fetchChecks([
+          _repo('web', ForgeHost.github),
+          _repo('api', ForgeHost.gitlab),
+        ]);
+
+        expect(overlays.keys, ['web']);
+      },
+    );
   });
 }

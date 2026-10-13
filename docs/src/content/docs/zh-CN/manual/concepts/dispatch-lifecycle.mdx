@@ -2,7 +2,7 @@
 title: 智能体派发生命周期
 description: 从消息到达、到运行日志关闭之间发生了什么——提示词组装、工作树、身份、什么限制一次运行，以及它的结果如何被如实记录。
 slug: zh-CN/手册/概念/派发生命周期
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## 什么是派发
@@ -52,7 +52,7 @@ sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
 
 每次运行都会在任何进程启动之前解析两种身份。
 
-**Git 作者身份。** 智能体所做的提交都是_以智能体的身份_署名的——`GIT_AUTHOR_*` 和 `GIT_COMMITTER_*` 中都是 `<Name> (agent) <agentId@agents.control-center.local>`——绝不冒充人类。local-part 是智能体的 UUID，而不是它的名称 slug。发起的人类通过一条 `Co-Authored-By:` 尾行署名，这条尾行会放在环境里，并在系统提示词中作出交代。调用方显式设置的身份总是压过这两者。
+**Git 作者身份。** 默认情况下，智能体提交在 `GIT_AUTHOR_*` 和 `GIT_COMMITTER_*` 中均使用 `Control Center <hi@usectrl.dev>`（GitHub 账号 `@usectrl`），并通过 `Co-Authored-By:` 尾注为发起请求的人署名。在 **设置 → 你 → 提交署名** 中关闭智能体署名，即可仅使用你自己的 Git 身份。工作区管理员可在 **设置 → 工作区 → 通用** 中强制开启或关闭智能体署名；这一设置优先于个人选择，并会禁用个人开关，但不会改动已保存的偏好。更改从下一次运行起生效。Claude Code 自带的提交和 PR 署名始终关闭。调用方显式设置的 Git 身份值仍有优先权；代码托管平台的凭证不受影响。
 
 **代码托管身份。** 运行的 GitHub 凭据永远只是代理的——一个限定到仓库的 App 安装令牌，或它的环境 PAT 回退——绝不是发起成员自己存的令牌。`actingUserId` 限定了 PAT 回退的范围，这样不是服务器所有者的成员就不会继承服务器的权限范围；它不会把个人令牌叠加到智能体环境中。
 

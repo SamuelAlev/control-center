@@ -221,13 +221,16 @@ extension _BuildMethods on _SpaceMessageFeedState {
     } else {
       final m = item as MessageItem;
       rowKey = _ensureRowKey(m.message.id);
-      final highlighted = m.message.id == _highlightedMessageId;
+      final highlighted =
+          m.message.id == _highlightedMessageId ||
+          m.steeringMessages.any((s) => s.id == _highlightedMessageId);
       final openThread = widget.onOpenThread;
       final startThread = widget.onStartThread;
       final kept = _keptRows[m.message.id];
       if (kept != null &&
           kept.message == m.message &&
           kept.collapseHeader == m.collapseHeader &&
+          listEquals(kept.steeringMessages, m.steeringMessages) &&
           kept.highlighted == highlighted &&
           (kept.onOpenThread == null) == (openThread == null) &&
           (kept.onStartThread == null) == (startThread == null)) {
@@ -236,6 +239,7 @@ extension _BuildMethods on _SpaceMessageFeedState {
         final bubble = SpaceMessageBubble(
           message: m.message,
           collapseHeader: m.collapseHeader,
+          steeringMessages: m.steeringMessages,
           onStartThread: startThread == null
               ? null
               : () => widget.onStartThread!(m.message),
@@ -247,6 +251,7 @@ extension _BuildMethods on _SpaceMessageFeedState {
         _keptRows[m.message.id] = _KeptFeedRow(
           message: m.message,
           collapseHeader: m.collapseHeader,
+          steeringMessages: m.steeringMessages,
           highlighted: highlighted,
           onOpenThread: openThread,
           onStartThread: startThread,

@@ -2,7 +2,7 @@
 title: Talk to Control Center from a GitHub PR
 description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
 slug: en-GB/manual/guides/github-pr-conversations
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 This guide shows you how to work with Control Center without leaving GitHub:
@@ -27,8 +27,9 @@ exactly like a public deploy.
 
 ## Find your bot's name
 
-The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
-app when registering it.
+Mention `@usectrl`, the dedicated Control Center GitHub account. This is the default trigger; your server's configured GitHub App still handles the request and posts replies. You do not need credentials for the `usectrl` account.
+
+The App's own login, `<appslug>[bot]`, and short `@appslug` form also work. To look up that optional alias:
 
 1. Go to **Settings → Server → Single sign-on** and scroll to the
    **Provider apps** card
@@ -36,9 +37,7 @@ app when registering it.
 3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
    login is always `<appslug>[bot]` — type that, or the short `@appslug`
 
-GitHub does not offer app accounts in its `@` autocomplete, so the login has to
-be typed — that is why the settings card makes it one click to copy. The
-`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+GitHub does not offer App accounts in its `@` autocomplete, so App aliases must be typed or copied. The dedicated `@usectrl` user is the default invocation; both `@myapp` and `@myapp[bot]` remain accepted App aliases.
 
 :::note[Pick a distinctive app name]
 The short form is matched as text. If a human GitHub user happens to share your
@@ -55,7 +54,7 @@ button starts:
   offers to assigning the bot as a reviewer — app accounts cannot hold the
   native requested-reviewer slot. There is no comment to react to, so nothing
   is posted on GitHub; the review starts in Control Center
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
+- **Comment `@usectrl review`** (or just `@usectrl`) on the PR conversation. The
   bot reacts with 👀, then replies when the review has started (or that one is
   already running)
 
@@ -73,7 +72,7 @@ bot.
 Comment on the PR conversation:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 What happens, in order:
@@ -95,7 +94,7 @@ left, or an answer it posted in that thread. No mention is needed; the thread
 **is** the addressing:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

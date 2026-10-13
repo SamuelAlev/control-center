@@ -5,6 +5,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
@@ -62,11 +63,11 @@ class PrSourceControlTab extends ConsumerStatefulWidget {
 }
 
 class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
-  final _message = TextEditingController();
-
   /// The combined-list index (staged then unstaged) the user last jumped to.
   int _focusedIndex = 0;
-  bool _busy = false;
+  final _committingTargets = <RepoChangesArgs>{};
+
+  bool get _busy => _committingTargets.contains(_lastArgs);
   bool _stagedCollapsed = false;
   bool _changesCollapsed = false;
 
@@ -89,7 +90,6 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
   @override
   void dispose() {
     _poll?.cancel();
-    _message.dispose();
     _diffScrollController.dispose();
     super.dispose();
   }
@@ -204,84 +204,96 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
   /// staged first (`git add -A`, VS Code's smart commit). The commit is
   /// attributed to the acting human.
   Future<void> _runCommit(
-    String spaceId,
-    String repoId,
+    RepoChangesArgs target,
+    PrRef prRef,
+    String headRef,
+    TextEditingController controller,
     ScmCommitAction action,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final workspaceId = ref.read(activeWorkspaceIdProvider);
-    final message = _message.text.trim();
+    final originalText = controller.text;
+    final message = originalText.trim();
     // Every action but an amend (which can rewrite just the message) needs one.
-    if (workspaceId == null ||
-        (message.isEmpty && action != ScmCommitAction.amend)) {
+    if (message.isEmpty && action != ScmCommitAction.amend) {
       return;
     }
     final push =
         action == ScmCommitAction.commitAndPush ||
         action == ScmCommitAction.commitAndSync;
-    setState(() => _busy = true);
-    final changes = _lastArgs == null
-        ? null
-        : ref.read(repoChangesGroupedProvider(_lastArgs!)).value;
-    final ready = await stageAllWhenIndexEmpty(
-      ref.read(rpcClientProvider),
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      repoId: repoId,
-      stagedCount: changes?.staged.length ?? 0,
-      unstagedCount: changes?.unstaged.length ?? 0,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (!ready) {
-      setState(() => _busy = false);
-      CcToastScope.maybeOf(
-        context,
-      )?.show(l10n.commitFailed, variant: CcToastVariant.danger);
-      return;
-    }
+    final rpc = ref.read(rpcClientProvider);
+    final changes = ref.read(repoChangesGroupedProvider(target)).value;
     final me = ref.read(currentIdentityProvider).value?.user;
-    final res = await commitAndPushWorktree(
-      ref.read(rpcClientProvider),
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      repoId: repoId,
-      message: message,
-      paths: const [],
-      push: push,
-      amend: action == ScmCommitAction.amend,
-      sync: action == ScmCommitAction.commitAndSync,
-      pushBranch: widget.pr.headRef,
-      authorName: me?.gitAuthorName ?? me?.displayName,
-      authorEmail: me?.gitAuthorEmail ?? me?.email,
-    );
-    if (!mounted) {
-      return;
-    }
-    setState(() => _busy = false);
-    final toast = CcToastScope.maybeOf(context);
-    if (res == null || !res.committed) {
-      toast?.show(
-        res?.error ?? l10n.commitFailed,
-        variant: CcToastVariant.danger,
+    var editedDuringCommit = false;
+    void markEdited() => editedDuringCommit = true;
+    controller.addListener(markEdited);
+    setState(() => _committingTargets.add(target));
+    try {
+      final ready = await stageAllWhenIndexEmpty(
+        rpc,
+        workspaceId: target.workspaceId,
+        spaceId: target.spaceId!,
+        repoId: target.repoId,
+        stagedCount: changes?.staged.length ?? 0,
+        unstagedCount: changes?.unstaged.length ?? 0,
       );
-      return;
-    }
-    // The commit landed: clear the box, refresh the tree, mark the diff stale.
-    _message.clear();
-    _refreshChanges();
-    ref.read(prDetailPollingProvider(widget.prRef).notifier).notifyDiffStale();
-    if (push) {
-      toast?.show(
-        res.pushed ? l10n.pushedToPr : (res.error ?? l10n.pushFailed),
-        variant: res.pushed ? CcToastVariant.success : CcToastVariant.danger,
+      if (!ready) {
+        if (mounted) {
+          CcToastScope.maybeOf(
+            context,
+          )?.show(l10n.commitFailed, variant: CcToastVariant.danger);
+        }
+        return;
+      }
+      final res = await commitAndPushWorktree(
+        rpc,
+        workspaceId: target.workspaceId,
+        spaceId: target.spaceId!,
+        repoId: target.repoId,
+        message: message,
+        paths: const [],
+        push: push,
+        amend: action == ScmCommitAction.amend,
+        sync: action == ScmCommitAction.commitAndSync,
+        pushBranch: headRef,
+        authorName: me?.gitAuthorName ?? me?.displayName,
+        authorEmail: me?.gitAuthorEmail ?? me?.email,
       );
-    } else {
-      toast?.show(
-        action == ScmCommitAction.amend ? l10n.commitAmended : l10n.committed,
-        variant: CcToastVariant.success,
-      );
+      if (res == null || !res.committed) {
+        if (mounted) {
+          CcToastScope.maybeOf(context)?.show(
+            res?.error ?? l10n.commitFailed,
+            variant: CcToastVariant.danger,
+          );
+        }
+        return;
+      }
+      // A failed push leaves the requested action unfinished; a newer edit
+      // made while this call was in flight must also remain untouched.
+      if ((!push || res.pushed) && !editedDuringCommit) {
+        controller.clear();
+      }
+      if (!mounted || _lastArgs != target) {
+        return;
+      }
+      _refreshChanges();
+      ref.read(prDetailPollingProvider(prRef).notifier).notifyDiffStale();
+      final toast = CcToastScope.maybeOf(context);
+      if (push) {
+        toast?.show(
+          res.pushed ? l10n.pushedToPr : (res.error ?? l10n.pushFailed),
+          variant: res.pushed ? CcToastVariant.success : CcToastVariant.danger,
+        );
+      } else {
+        toast?.show(
+          action == ScmCommitAction.amend ? l10n.commitAmended : l10n.committed,
+          variant: CcToastVariant.success,
+        );
+      }
+    } finally {
+      controller.removeListener(markEdited);
+      if (mounted) {
+        setState(() => _committingTargets.remove(target));
+      }
     }
   }
 
@@ -408,6 +420,13 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
           repoId: repoId,
           spaceId: spaceId,
         );
+        final messageController = ref.watch(
+          textDraftControllerProvider((
+            workspaceId: workspaceId,
+            surface: 'scm.commit',
+            destination: (spaceId: spaceId, repoId: repoId),
+          )),
+        );
         _lastArgs = args;
         final async = ref.watch(repoChangesGroupedProvider(args));
         return async.when(
@@ -427,12 +446,18 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
             // layout): message + a Commit split button whose dropdown offers
             // commit & push, commit & sync, and amend.
             final commitBox = ScmCommitBox(
-              controller: _message,
+              controller: messageController,
               busy: _busy,
               stagedCount: staged.length,
               unstagedCount: unstaged.length,
               canPush: widget.pr.headRef.isNotEmpty,
-              onAction: (action) => _runCommit(spaceId, repoId, action),
+              onAction: (action) => _runCommit(
+                args,
+                widget.prRef,
+                widget.pr.headRef,
+                messageController,
+                action,
+              ),
             );
             return Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,

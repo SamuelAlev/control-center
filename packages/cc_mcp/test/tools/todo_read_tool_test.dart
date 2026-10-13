@@ -34,7 +34,6 @@ void main() {
       'conversation_id': 'conv-other',
     });
     expect(result.isError, isTrue);
-    expect(result.content.first.text, contains('different workspace'));
   });
 
   test('returns the persisted checklist', () async {

@@ -2,7 +2,7 @@
 title: Bir PR'ı inceleme ve birleştirme
 description: Bir PR çalışma tezgahını açın, farkı okuyun, satır içi yorumlar bırakın, bir inceleme gönderin ve birleştirin.
 slug: tr-TR/kilavuz/nasil-yapilir/pr-inceleme-ve-birlestirme
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Bu kılavuz, bir pull request'i nasıl inceleyeceğinizi ve birleştireceğinizi gösterir.
@@ -26,6 +26,30 @@ hatırlanır.
 Genel bakış sekmesi, PR'ın üst verilerini (yazar, dal, etiketler, atananlar,
 tepkiler, commit'ler, kontrol durumu) ve eylem satırını taşır: yenile, **İncele**,
 **Birleştir**, IDE'de aç ve bir ⋯ taşma menüsü.
+
+### Bir alanın yığınından PR açma
+
+Alanın **Genel → Pull request'ler** bölümü, bağlantılı ve dalı eşleşen PR'ları
+depoya göre gruplar. Bir PR'ın temel dalı bir önceki PR'ın head dalı olduğunda,
+bu PR'lar daraltılabilir bir yığın içinde görünür. Yığının başlığı en alttaki
+PR'ı, hedef dalı ve adedi belirtir; numaralı satırlar en alttaki PR'dan (1) uca
+doğru ilerler. Numaralar bağımlılık sırasını anlatır; birleştirmeye hazır olma
+durumunu değil.
+
+Her satır başlığı, PR numarasını ve durumu gösterir. Tam başlığını ve dal
+adlarını okumak için bir satırın üzerine gelin ya da satıra odaklanın; PR çalışma
+tezgahını açmak için tıklayın veya Enter'a basın. Bir yığın başlığına odaklanıp
+daraltmak veya genişletmek için Enter ya da Space'e basın. İlgisiz PR'lar ayrı
+kalır ve eksik ya da belirsiz dal bağlantıları sıralı bir yığın olarak sunulmaz.
+
+**Kaynak denetimi**'nde **Yığınlanmış pull request'ler (N)**, yığının yayınlanmış
+parçalarını en alttan başlayarak gösteren bir seçici açar. Her girdi PR
+numarasını, parça etiketini ve konumunu gösterir; checkout edilmiş parça
+işaretlenir. PR çalışma tezgahını açmak için bir girdi seçin. **Yığını yayınla**
+yalnızca PR keşfi tamamlandığında ve en az bir parçanın PR'ı olmadığında görünür.
+Bu, dal menüsü için de geçerlidir. Control Center dışında oluşturulan PR'lar da
+yayınlanmış sayılır. Kısmen yayınlanmış yığınlar her iki eylemi de sunar; tek
+dallı işler ise PR oluşturma/görüntüleme eylemlerini ayrı ayrı korur.
 
 ## Farkı okuyun
 

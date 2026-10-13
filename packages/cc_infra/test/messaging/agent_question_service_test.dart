@@ -1,9 +1,12 @@
 import 'dart:async' show Completer;
 import 'dart:typed_data';
 
+import 'package:cc_domain/cc_domain.dart' show WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_infra/src/messaging/agent_question_service.dart';
 import 'package:test/test.dart';
@@ -23,12 +26,14 @@ void main() {
     messaging = _FakeMessagingRepository();
     service = AgentQuestionService(
       messaging,
+      conversations: _FakeConversations(),
       timeout: const Duration(seconds: 1),
     );
   });
 
   AgentQuestionRequest request({
     String spaceId = 'c1',
+    String conversationId = 'conv-side',
     String? askedByAgentId = 'agent-1',
     String? askedByName,
     List<AgentQuestionOption> options = const [],
@@ -39,6 +44,7 @@ void main() {
     return AgentQuestionRequest(
       workspaceId: ws,
       spaceId: spaceId,
+      conversationId: conversationId,
       question: 'Pick one',
       context: context,
       options: options,
@@ -49,11 +55,15 @@ void main() {
     );
   }
 
-  Message questionMessage(String id, {Map<String, dynamic>? metadata}) {
+  Message questionMessage(
+    String id, {
+    String conversationId = 'conv-side',
+    Map<String, dynamic>? metadata,
+  }) {
     return Message(
       id: id,
       spaceId: 'c1',
-      conversationId: 'c1',
+      conversationId: conversationId,
       senderId: 'agent-1',
       senderType: SenderType.agent,
       content: 'Pick one',
@@ -68,6 +78,53 @@ void main() {
       expect(await service.ask(request(spaceId: '')), isNull);
       expect(messaging.sentMessages, isEmpty);
     });
+
+    test('does not post without a conversation id', () async {
+      expect(await service.ask(request(conversationId: '')), isNull);
+      expect(messaging.sentMessages, isEmpty);
+    });
+
+    test('rejects a conversation from another space or workspace', () async {
+      await expectLater(
+        service.ask(request(conversationId: 'conv-other-space')),
+        throwsA(isA<WorkspaceMismatchException>()),
+      );
+      await expectLater(
+        service.ask(request(conversationId: 'conv-other-workspace')),
+        throwsA(isA<WorkspaceMismatchException>()),
+      );
+      expect(messaging.sentMessages, isEmpty);
+    });
+
+    test(
+      'same-space conversations keep separate questions and answers',
+      () async {
+        messaging.nextMessageId = 'm-standing';
+        final standing = service.ask(request(conversationId: 'conv-standing'));
+        await Future<void>.delayed(Duration.zero);
+        messaging.nextMessageId = 'm-side';
+        final side = service.ask(request(conversationId: 'conv-side'));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          messaging.sentMessages.map((message) => message.conversationId),
+          ['conv-standing', 'conv-side'],
+        );
+        await service.submitAnswer(
+          ws,
+          questionMessage('m-side'),
+          const AgentQuestionAnswer(selectedLabels: ['side']),
+        );
+        expect((await side)?.selectedLabels, ['side']);
+        expect(service.isPending('m-standing'), isTrue);
+        await service.submitAnswer(
+          ws,
+          questionMessage('m-standing', conversationId: 'conv-standing'),
+          const AgentQuestionAnswer(selectedLabels: ['standing']),
+        );
+        expect((await standing)?.selectedLabels, ['standing']);
+      },
+    );
 
     test('posts a user_question message with rich metadata', () async {
       messaging.nextMessageId = 'm-1';
@@ -84,6 +141,8 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       final sent = messaging.sentMessages.single;
       expect(sent.workspaceId, ws);
+      expect(sent.spaceId, 'c1');
+      expect(sent.conversationId, 'conv-side');
       expect(sent.messageType, 'user_question');
       expect(sent.content, 'Pick one');
       expect(sent.senderId, 'agent-1');
@@ -135,6 +194,7 @@ void main() {
     test('returns null on timeout', () async {
       service = AgentQuestionService(
         messaging,
+        conversations: _FakeConversations(),
         timeout: const Duration(milliseconds: 10),
       );
       messaging.nextMessageId = 'm-4';
@@ -148,6 +208,7 @@ void main() {
       final closed = <String>[];
       service = AgentQuestionService(
         messaging,
+        conversations: _FakeConversations(),
         timeout: const Duration(milliseconds: 10),
         onAsked: (request, messageId) => asked.add((request, messageId)),
         onClosed: closed.add,
@@ -167,7 +228,11 @@ void main() {
 
     test('reports an answered question as closed', () async {
       final closed = <String>[];
-      service = AgentQuestionService(messaging, onClosed: closed.add);
+      service = AgentQuestionService(
+        messaging,
+        conversations: _FakeConversations(),
+        onClosed: closed.add,
+      );
       messaging.nextMessageId = 'm-answered';
       final future = service.ask(request());
       await Future<void>.delayed(Duration.zero);
@@ -221,7 +286,11 @@ void main() {
     );
 
     test('Duration.zero waits indefinitely (no timeout)', () async {
-      service = AgentQuestionService(messaging, timeout: Duration.zero);
+      service = AgentQuestionService(
+        messaging,
+        conversations: _FakeConversations(),
+        timeout: Duration.zero,
+      );
       messaging.nextMessageId = 'm-5';
       final future = service.ask(request());
       // Pump well past what a default timeout would have been.
@@ -378,10 +447,42 @@ void main() {
   });
 }
 
+class _FakeConversations implements ConversationRepository {
+  @override
+  Future<Conversation?> getById({
+    required String workspaceId,
+    required String conversationId,
+  }) async {
+    if (workspaceId != 'ws-1' || conversationId == 'conv-other-workspace') {
+      return null;
+    }
+    final spaceId = switch (conversationId) {
+      'conv-side' || 'conv-standing' => 'c1',
+      'conv-other-space' => 'other-space',
+      _ => null,
+    };
+    if (spaceId == null) {
+      return null;
+    }
+    return Conversation(
+      id: conversationId,
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      title: conversationId,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class _SentMessage {
   _SentMessage({
     required this.workspaceId,
     required this.spaceId,
+    required this.conversationId,
     required this.content,
     required this.senderId,
     required this.senderType,
@@ -390,6 +491,7 @@ class _SentMessage {
   });
   final String workspaceId;
   final String spaceId;
+  final String conversationId;
   final String content;
   final String senderId;
   final String senderType;
@@ -426,6 +528,7 @@ class _FakeMessagingRepository implements MessagingRepository {
       _SentMessage(
         workspaceId: workspaceId,
         spaceId: spaceId,
+        conversationId: conversationId!,
         content: content,
         senderId: senderId,
         senderType: senderType,

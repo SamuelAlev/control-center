@@ -2,7 +2,7 @@
 title: Configurar la integración con GitHub
 description: Inicia sesión en GitHub para que funcionen la superficie de PR, el registro de repos y las ejecuciones de agentes.
 slug: es-ES/manual/guias/integracion-github
-sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
+sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
 ---
 
 Esta guía cubre las partes específicas de GitHub de la puesta en marcha. GitHub
@@ -105,10 +105,7 @@ minutos.
   regla **Enviar a un remoto** y luego lo reenvía con un token de escritura que
   el agente nunca tiene. Consulta
   [Configurar políticas del entorno aislado](/es-ES/manual/guias/politicas-de-entorno-aislado/)
-- Los commits que hace un agente se firman **como el agente** — el nombre
-  visible más ` (agent)`, en una dirección sintética derivada del id del agente
-  —, nunca como una persona. Quien lo pidió aparece acreditado con un trailer
-  `Co-Authored-By`
+- Por defecto, los commits del agente se atribuyen a **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`), y quien los solicitó aparece en un trailer `Co-Authored-By`. En **Ajustes → Tú → Atribución de commits** puedes desactivar la atribución al agente para usar solo tu identidad de Git. La opción del espacio de trabajo en **Ajustes → Espacio de trabajo → General** prevalece y bloquea el interruptor personal. La atribución propia de Claude Code siempre está desactivada
 - Con una GitHub App configurada, el bróker acuña tokens de instalación de grano
   fino, con alcance de repositorio y alrededor de una hora de vigencia, en cada
   lanzamiento, en lugar de entregar un token amplio. La instalación se resuelve

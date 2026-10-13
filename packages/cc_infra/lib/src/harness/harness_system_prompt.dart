@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/agent_commit_attribution.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 
 /// The harness system prompt, decomposed: the standing base instructions, the
@@ -93,15 +94,17 @@ class HarnessSystemPromptBuilder {
       '(read, write, edit, bash, search, find, search_files) for the '
       'filesystem. Work in the current directory. Be concise and report '
       'what you did. Questions to the operator go through `ask_user` — '
-      'never as a chat message.',
+      'never as a chat message. Use render_media for still images including SVG, '
+      'HEIC and WebP, video or GIF/APNG frames, and PDF or PDF-compatible AI pages. '
+      'It returns images using bundled renderers, so do not ask the user to '
+      'install FFmpeg or invoke system media tools.',
     );
     if (workspaceId.isNotEmpty) {
       buffer.write(' Workspace: $workspaceId.');
     }
 
-    // Credit the requesting human on machine commits: the commit is authored
-    // by the agent (per-run GIT_AUTHOR_* env) and the trailer records who
-    // asked for the work.
+    buffer.write('\n\n$agentCommitAttributionInstruction');
+    // Include the exact requester trailer when Control Center is the author.
     if (coAuthorTrailer != null) {
       buffer.write(
         '\n\nWhen you create git commits, append this trailer line to the '
@@ -132,10 +135,10 @@ class HarnessSystemPromptBuilder {
     // demand.
     var skills = const <HarnessSkillInfo>[];
     try {
-      skills = await const HarnessSkillScanner().scan(
-        [agentConfigDir, workingDirectory],
-        permittedLinkRoots: permittedLinkRoots,
-      );
+      skills = await const HarnessSkillScanner().scan([
+        agentConfigDir,
+        workingDirectory,
+      ], permittedLinkRoots: permittedLinkRoots);
     } on Object catch (e) {
       onWarning?.call('DispatchSession: skill scan failed: $e');
     }

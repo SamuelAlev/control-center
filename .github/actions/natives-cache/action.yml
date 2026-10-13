@@ -31,4 +31,4 @@ runs:
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: build/natives
-        key: natives-v1-${{ runner.os }}-${{ steps.image.outputs.os }}-${{ runner.arch }}-${{ hashFiles('scripts/lib/native_pins.env', 'scripts/lib/common.sh', 'scripts/lib/natives.sh', 'scripts/natives/**', 'scripts/release/windows_natives.sh', 'packages/cc_natives/native/**') }}
+        key: natives-v1-${{ runner.os }}-${{ steps.image.outputs.os }}-${{ runner.arch }}-${{ hashFiles('scripts/lib/native_pins.env', 'scripts/lib/common.sh', 'scripts/lib/natives.sh', 'scripts/lib/media.sh', 'scripts/natives/**', 'scripts/release/windows_natives.sh', 'packages/cc_natives/native/**', 'packages/cc_ui/fonts/Manrope-Variable.ttf', 'packages/cc_ui/fonts/FiraCode-VF.ttf', 'third_party/licenses/manrope-font-LICENSE.txt', 'third_party/licenses/firacode-font-LICENSE.txt') }}

@@ -120,6 +120,42 @@ void main() {
     });
   });
 
+  group('GitHubPrClient.listBranchPullRequestsPage', () {
+    test(
+      'scopes all-state pagination to an exact head owner and branch',
+      () async {
+        final b = build(
+          (r) => httpTextResponse(
+            r,
+            [
+              {
+                'number': 12,
+                'title': 'merged',
+                'state': 'closed',
+                'merged_at': '2026-01-01T00:00:00Z',
+                'head': {'ref': 'space/alpha'},
+              },
+            ],
+            headers: {'link': '<x>; rel="next"'},
+          ),
+        );
+        final page = await b.client.listBranchPullRequestsPage(
+          owner,
+          repo,
+          'space/alpha',
+          page: 2,
+        );
+        expect(page.items.single.mergedAt, isNotNull);
+        expect(page.hasMore, true);
+        final req = b.fake.requests.single;
+        expect(req.url, '/repos/$owner/$repo/pulls');
+        expect(req.query!['state'], 'all');
+        expect(req.query!['head'], '$owner:space/alpha');
+        expect(req.query!['page'], '2');
+      },
+    );
+  });
+
   group('GitHubPrClient.listRequestedReviews / listReviewedByMePrNumbers', () {
     test(
       'search/issues query for requested reviews decodes PR nodes',

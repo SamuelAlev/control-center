@@ -2,7 +2,7 @@
 title: Examiner et fusionner une PR
 description: Ouvrez l’aire de travail d’une PR, lisez le diff, laissez des commentaires en ligne, soumettez une revue et fusionnez.
 slug: fr-CA/manuel/guides/examiner-et-fusionner-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Ce guide vous montre comment examiner et fusionner une demande de tirage.
@@ -28,6 +28,34 @@ L’onglet **Aperçu** porte les métadonnées de la PR (auteur, branche, étiqu
 personnes assignées, réactions, commits, état des vérifications) et la rangée
 d’actions : actualiser, **Revue**, **Merge**, ouvrir dans l’IDE et un menu de
 débordement ⋯.
+
+### Ouvrir une PR à partir de la pile d’un espace
+
+La section **Général → Demandes de tirage** de l’espace regroupe par dépôt les
+PR liées et celles dont la branche correspond. Lorsque la branche de base d’une
+PR est la branche de tête de la PR précédente, elles apparaissent dans une pile
+repliable. Son en-tête identifie la PR du bas, la branche cible et le nombre
+d’éléments ; les lignes numérotées vont de la PR du bas (1) vers le sommet. Les
+numéros décrivent l’ordre de dépendance, et non l’état de préparation à la
+fusion.
+
+Chaque ligne affiche le titre, le numéro de la PR et son état. Survolez une ligne
+ou placez-y le focus pour lire son titre complet et les noms de branches ; cliquez
+dessus ou appuyez sur Entrée pour ouvrir l’aire de travail de la PR. Placez le
+focus sur l’en-tête d’une pile et appuyez sur Entrée ou sur Espace pour la
+replier ou la déplier. Les PR sans lien restent séparées, et les liens de
+branches incomplets ou ambigus ne sont pas présentés comme une pile ordonnée.
+
+Dans **Contrôle de source**, **Demandes de tirage empilées (N)** ouvre un
+sélecteur des parties publiées de la pile, en commençant par le bas. Chaque
+entrée affiche le numéro de la PR, l’étiquette de la partie et sa position ; la
+partie active est indiquée. Sélectionnez une entrée pour ouvrir l’aire de travail
+de sa PR. **Publier la pile** n’apparaît que lorsque la découverte des PR est
+terminée et qu’au moins une partie n’a pas de PR. Cela vaut aussi pour le menu de
+branche. Les PR créées à l’extérieur de Control Center comptent elles aussi comme
+publiées ; les piles partiellement publiées offrent les deux actions, alors que
+le travail sur une seule branche conserve les actions individuelles de création
+et d’affichage d’une PR.
 
 ## Lire le diff
 

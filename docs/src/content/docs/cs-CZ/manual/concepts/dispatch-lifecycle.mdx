@@ -2,7 +2,7 @@
 title: Životní cyklus odeslání agenta
 description: Co se stane mezi příchodem zprávy a uzavřením záznamu běhu. Skládání promptu, worktree, identita, co běh ohraničuje a jak se výsledek zapíše poctivě.
 slug: cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Co je odeslání
@@ -52,7 +52,7 @@ Copy-on-write je **jediná** implementace všude, kde se dodává `rift`, a stoj
 
 Na každý běh se před startem jakéhokoli procesu vyřeší dvě identity.
 
-**Autorství v Gitu.** Commit, který agent udělá, je autorovaný _jako agent_: `<Name> (agent) <agentId@agents.control-center.local>` v `GIT_AUTHOR_*` i v `GIT_COMMITTER_*`. Za člověka se nikdy nevydává. Místní část adresy je UUID agenta, ne slug jména. Žádající člověk je v traileru `Co-Authored-By:`, který jede v prostředí a je přikázaný v systémovém promptu. Identita, kterou volající nastaví výslovně, vyhraje nad oběma.
+**Autorství v Gitu.** Ve výchozím nastavení mají commity agenta v `GIT_AUTHOR_*` i `GIT_COMMITTER_*` identitu `Control Center <hi@usectrl.dev>` (účet GitHub `@usectrl`) a žádající člověk je uveden v traileru `Co-Authored-By:`. Připisování agentovi můžeš vypnout v **Nastavení → Vy → Připisování autorství commitů** a používat jen svou identitu Gitu. Správce pracovního prostoru může připisování vynutit či vypnout v **Nastavení → Pracovní prostor → Obecné**; tato volba má přednost a uzamkne osobní přepínač, aniž změní uloženou předvolbu. Změny se projeví od dalšího spuštění. Vlastní řádky Claude Code s autorstvím commitů a PR jsou vždy vypnuté. Hodnoty identity Gitu výslovně zadané volajícím mají nadále přednost; přihlašovací údaje k forge se nemění.
 
 **Identita ve forgi.** Pověření GitHubu pro běh je vždy jen od brokeru: token instalace App vázaný na repozitář, nebo záložní PAT z prostředí. Nikdy uložený token žádajícího člena. `actingUserId` ohraničí záložní PAT, aby člen, který není vlastníkem serveru, nezdědil dosah serveru. Osobní token do prostředí agenta nepřekryje.
 

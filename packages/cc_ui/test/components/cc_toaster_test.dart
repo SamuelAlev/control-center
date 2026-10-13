@@ -61,6 +61,48 @@ void main() {
     expect(find.text('Saved'), findsNothing);
   });
 
+  for (final autoDismiss in [true, false]) {
+    testWidgets(
+      'toast dismissed ${autoDismiss ? 'by timeout' : 'by handle'} before '
+      'its first frame does not reappear',
+      (tester) async {
+        late CcToastHandle toaster;
+
+        await tester.pumpWidget(
+          ccTestApp(
+            CcToastScope(
+              duration: const Duration(milliseconds: 500),
+              child: Builder(
+                builder: (context) {
+                  toaster = CcToastScope.of(context);
+                  return const SizedBox.expand();
+                },
+              ),
+            ),
+          ),
+        );
+
+        final dismiss = toaster.show('Queued outcome');
+        if (autoDismiss) {
+          // Timers still run while the app cannot render the queued overlay.
+          await tester.pump(const Duration(seconds: 1));
+        } else {
+          dismiss();
+        }
+        await tester.pumpAndSettle();
+        expect(find.text('Queued outcome'), findsNothing);
+
+        // Removing the expired entry must leave the host usable.
+        toaster.show('Next outcome', duration: const Duration(minutes: 1));
+        await tester.pumpAndSettle();
+        expect(find.text('Next outcome'), findsOneWidget);
+        await tester.tap(find.bySemanticsLabel('Dismiss'));
+        await tester.pumpAndSettle();
+        expect(find.text('Next outcome'), findsNothing);
+      },
+    );
+  }
+
   testWidgets('CcToast renders an optional semibold title above the message', (
     tester,
   ) async {

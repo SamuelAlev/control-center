@@ -2,7 +2,7 @@
 title: Gjennomgå og slå sammen en PR
 description: Åpne PR-arbeidsflaten, les diffen, legg igjen kommentarer i linjen, send inn en gjennomgang og slå sammen.
 slug: nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Denne guiden viser deg hvordan du gjennomgår og slår sammen en pull request.
@@ -25,6 +25,31 @@ oppdages på PR-en. Fanoppsettet ditt huskes per PR.
 Fanen Oversikt har PR-ens metadata (forfatter, gren, etiketter, tildelte,
 reaksjoner, commits, sjekkstatus) og handlingsraden: oppdater, **Gjennomgang**,
 **Slå sammen**, åpne i IDE og en overflytsmeny ⋯.
+
+### Åpne en PR fra stabelen til et område
+
+Seksjonen **Generelt → Pull requests** i området grupperer tilknyttede PR-er og
+PR-er som samsvarer på gren, etter repo. Når basisgrenen til én PR er head-grenen
+til den forrige, vises de i en stabel som kan klappes sammen. Overskriften
+identifiserer PR-en nederst, målgrenen og antallet; nummererte rader går fra
+PR-en nederst (1) og opp mot tippen. Tallene beskriver
+avhengighetsrekkefølgen, ikke hvor klar PR-en er for sammenslåing.
+
+Hver rad viser tittelen, PR-nummeret og tilstanden. Hold musen over eller sett
+fokus på en rad for å lese hele tittelen og grennavnene; klikk eller trykk Enter
+for å åpne PR-arbeidsflaten. Sett fokus på overskriften til en stabel og trykk
+Enter eller Mellomrom for å klappe den sammen eller utvide den. PR-er uten
+tilknytning holdes atskilt, og ufullstendige eller tvetydige grenkoblinger vises
+ikke som en ordnet stabel.
+
+I **Kildekontroll** åpner **Stablede pull requests (N)** en velger over stabelens
+publiserte deler, nederst først. Hver oppføring viser PR-nummeret, delnavnet og
+posisjonen; delen som er sjekket ut, er merket. Velg en oppføring for å åpne
+PR-arbeidsflaten til den. **Publiser stabelen** vises bare når PR-oppdagelsen er
+ferdig og minst én del ikke har noen PR. Dette gjelder også grenmenyen. PR-er som
+er opprettet utenfor Control Center, regnes også som publiserte. Delvis
+publiserte stabler tilbyr begge handlingene; arbeid på en enkelt gren beholder de
+individuelle handlingene for å opprette/vise PR.
 
 ## Les diffen
 

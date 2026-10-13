@@ -174,40 +174,6 @@ void main() {
       expect(profile, isNot(contains('(allow network*)')));
     });
 
-    test('network restricted — deny-all with local-ip + DNS, sockets denied', () {
-      const config = SandboxConfig(
-        sessionId: 't',
-        network: NetworkConfig(
-          allowAll: false,
-          allowedDomains: ['api.example.com'],
-        ),
-        filesystem: FilesystemConfig(),
-      );
-      final profile = MacosSandbox.generateSeatbeltProfile(config);
-      expect(profile, contains('(deny network*)'));
-      // Local IP binding is allowed (ephemeral local port for outbound setup),
-      // but loopback egress is NOT blanket-allowed and unix-sockets are NOT
-      // allowed — egress is gated by explicit (remote ...) proxy-port rules.
-      expect(profile, contains('(allow network* (local ip))'));
-      expect(profile, isNot(contains('(allow network* (remote ip "localhost')));
-      expect(
-        profile,
-        isNot(contains('(allow network-outbound (remote unix-socket))')),
-      );
-      // DNS resolution via macOS mDNSResponder.
-      expect(
-        profile,
-        contains(
-          '(allow network-outbound (literal "/private/var/run/mDNSResponder"))',
-        ),
-      );
-      // Container/runtime sockets are explicitly denied (belt-and-suspenders).
-      expect(
-        profile,
-        contains('(deny network-outbound (literal "/var/run/docker.sock"))'),
-      );
-    });
-
     test('network restricted without proxy ports — no TCP port rules', () {
       const config = SandboxConfig(
         sessionId: 't',
@@ -410,37 +376,34 @@ void main() {
         denyExecutables: paths,
       );
 
-      test(
-        'skips the realpath deny for a multi-call binary, so its other '
-        'applets stay runnable',
-        () {
-          // Nix ships coreutils 9.x as ONE binary dispatching on argv[0], with
-          // a symlink per applet. `rm`, `dd` and `chroot` all resolve to it, so
-          // denying the realpath blocked every applet the package ships — `cat`,
-          // `echo`, `env`, `dirname`, `chmod` — about a hundred commands, to
-          // deny three. Seatbelt has no argv[0] predicate, so on such a build
-          // the exec layer genuinely cannot tell `dd` from `cat`.
-          File('$root/bin/coreutils').writeAsStringSync('#!/bin/sh\n');
-          for (final applet in ['rm', 'dd', 'chroot', 'cat', 'echo']) {
-            Link('$root/bin/$applet').createSync('$root/bin/coreutils');
-          }
+      test('skips the realpath deny for a multi-call binary, so its other '
+          'applets stay runnable', () {
+        // Nix ships coreutils 9.x as ONE binary dispatching on argv[0], with
+        // a symlink per applet. `rm`, `dd` and `chroot` all resolve to it, so
+        // denying the realpath blocked every applet the package ships — `cat`,
+        // `echo`, `env`, `dirname`, `chmod` — about a hundred commands, to
+        // deny three. Seatbelt has no argv[0] predicate, so on such a build
+        // the exec layer genuinely cannot tell `dd` from `cat`.
+        File('$root/bin/coreutils').writeAsStringSync('#!/bin/sh\n');
+        for (final applet in ['rm', 'dd', 'chroot', 'cat', 'echo']) {
+          Link('$root/bin/$applet').createSync('$root/bin/coreutils');
+        }
 
-          final profile = MacosSandbox.generateSeatbeltProfile(
-            configDenying(['$root/bin/rm']),
-          );
+        final profile = MacosSandbox.generateSeatbeltProfile(
+          configDenying(['$root/bin/rm']),
+        );
 
-          expect(
-            profile,
-            isNot(contains('(deny process-exec (literal "$root/bin/coreutils")')),
-            reason: 'denying the multiplexer takes out every applet with it',
-          );
-          expect(
-            profile,
-            contains(';; skipped realpath deny for $root/bin/rm'),
-            reason: 'the skip must be visible in the profile, not silent',
-          );
-        },
-      );
+        expect(
+          profile,
+          isNot(contains('(deny process-exec (literal "$root/bin/coreutils")')),
+          reason: 'denying the multiplexer takes out every applet with it',
+        );
+        expect(
+          profile,
+          contains(';; skipped realpath deny for $root/bin/rm'),
+          reason: 'the skip must be visible in the profile, not silent',
+        );
+      });
 
       test('still denies the realpath of an ordinary symlink farm', () {
         // Same basename on both ends: `/usr/bin/rm` → `/opt/…/bin/rm` is one
@@ -492,33 +455,37 @@ void main() {
         expect(
           allowGrant,
           greaterThan(denyHome),
-          reason: 'Seatbelt is last-match-wins: the grant must come after '
+          reason:
+              'Seatbelt is last-match-wins: the grant must come after '
               'the \$HOME block it is re-opening.',
         );
       });
 
-      test('with no grant, the writable-dir deny still blocks the worktree', () {
-        final profile = MacosSandbox.generateSeatbeltProfile(
-          SandboxConfig(
-            sessionId: 't',
-            network: const NetworkConfig(),
-            filesystem: const FilesystemConfig(),
-            policy: SandboxPolicySpec(
+      test(
+        'with no grant, the writable-dir deny still blocks the worktree',
+        () {
+          final profile = MacosSandbox.generateSeatbeltProfile(
+            SandboxConfig(
               sessionId: 't',
-              denyRead: const [],
-              allowWrite: const [],
-              denyWrite: const [],
-              denyExecutables: const [],
-              allowedDomains: const [],
-              deniedDomains: const [],
-              networkOn: false,
-              homeDir: root,
+              network: const NetworkConfig(),
+              filesystem: const FilesystemConfig(),
+              policy: SandboxPolicySpec(
+                sessionId: 't',
+                denyRead: const [],
+                allowWrite: const [],
+                denyWrite: const [],
+                denyExecutables: const [],
+                allowedDomains: const [],
+                deniedDomains: const [],
+                networkOn: false,
+                homeDir: root,
+              ),
             ),
-          ),
-        );
-        expect(profile, contains('(deny process-exec (subpath "$root"))'));
-        expect(profile, isNot(contains('(allow process-exec (subpath ')));
-      });
+          );
+          expect(profile, contains('(deny process-exec (subpath "$root"))'));
+          expect(profile, isNot(contains('(allow process-exec (subpath ')));
+        },
+      );
 
       test(
         'the kernel honours a grant: a worktree binary runs only once granted',
@@ -526,9 +493,9 @@ void main() {
           // The rule ordering above is necessary but not sufficient — this is
           // the claim that matters, checked against the real Seatbelt
           // evaluator rather than against our own idea of it.
-          Directory('$root/worktree/node_modules/.bin').createSync(
-            recursive: true,
-          );
+          Directory(
+            '$root/worktree/node_modules/.bin',
+          ).createSync(recursive: true);
           final tool = File('$root/worktree/node_modules/.bin/is-ci')
             ..writeAsStringSync('#!/bin/sh\necho TOOL_RAN\n');
           Process.runSync('chmod', ['+x', tool.path]);

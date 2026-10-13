@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_status.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
@@ -12,6 +13,8 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/artifacts/presentation/widgets/artifact_detail_view.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_activity_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_activity_tab.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/agent_shell_output_pane.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/agent_shell_output_tab.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/browser_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_window_pool.dart';
@@ -203,6 +206,9 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   /// into the seed beforehand would be silently dropped.
   bool _layoutRestored = false;
 
+  /// Background tab reconciliation must not publish intermediate URL focus.
+  bool _syncingConversationTabs = false;
+
   /// How many *hidden* webview tabs ([MessagingTabKinds.isWebview]) keep their
   /// live platform view mounted. Hidden webviews beyond the most-recently-visible
   /// cap are suspended ([EditorSuspendedPane]) and rebuilt fresh on reveal.
@@ -289,7 +295,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     _tabUrl = EditorTabUrlTracker(
       initialKey: widget.focusedTabKey,
       focusKey: _focusTabByKey,
-      focusDefault: _focusDefaultTab,
       writeKey: _writeTabKey,
     );
     // Restore this conversation's persisted layout once the first frame (and
@@ -371,17 +376,18 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       _unwireActions(oldWidget.actions);
       _wireActions(widget.actions);
     }
-    if (oldWidget.selectedSpaceId != widget.selectedSpaceId) {
+    final spaceChanged = oldWidget.selectedSpaceId != widget.selectedSpaceId;
+    if (spaceChanged) {
       _switchConversation(oldWidget.selectedSpaceId, widget.selectedSpaceId);
     }
-    if (oldWidget.focusedTabKey != widget.focusedTabKey) {
-      // Back/forward or a deep-link changed `?tab=`: apply it a frame later —
-      // focusing mutates the layout, which must not happen mid-build. A
-      // simultaneous space switch wins the race: its restore force-applies
-      // the URL key against the NEW conversation's tab set afterwards.
+    if (!spaceChanged && oldWidget.focusedTabKey != widget.focusedTabKey) {
+      // Same-space back/forward or deep link: focus after this build.
+      // A space switch applies its URL key as part of restore instead;
+      // applying a null key again would reset the restored selection.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _tabUrl.apply(_layout, widget.focusedTabKey);
+          _syncRestoredTabUrl();
         }
       });
     }
@@ -403,13 +409,27 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     unawaited(updateEditorTabRoute(uri, key));
   }
 
-  /// Back/forward to a tab-less location returns to the surface's initial
-  /// state: the first tab of the active leaf (the seeded chat tab).
-  void _focusDefaultTab() {
-    final controller = _layout.activeLeaf.controller;
-    if (!controller.isEmpty) {
-      controller.selectedIndex = 0;
+  /// Replaces a space-entry URL with its resolved tab, including in GoRouter's
+  /// route state. Wait for conversation tabs before resolving a deep link;
+  /// it may name a conversation that was not in the cached layout.
+  void _syncRestoredTabUrl() {
+    if (widget.selectedSpaceId == null ||
+        _conversationTabsSyncedFor != widget.selectedSpaceId) {
+      return;
     }
+    final router = GoRouter.maybeOf(context);
+    if (router == null) {
+      return;
+    }
+    final uri = GoRouterState.of(context).uri;
+    final location = locationWithEditorTab(uri, activeEditorTabKey(_layout));
+    if (location == uri.toString()) {
+      return;
+    }
+    _tabUrl.resync(_layout);
+    // Resolving saved focus is part of opening the space, not another Back
+    // step. Ordinary tab presses still use the lightweight platform writer.
+    Router.neglect(context, () => router.go(location));
   }
 
   /// Focuses the tab a `?tab=` [key] names, mapping across the standing
@@ -753,6 +773,26 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     );
   }
 
+  /// Focusing an existing tab must not replace its viewer and restart polling.
+  void _openAgentShell(AgentShellProcess process) {
+    final workspaceId = _workspaceId;
+    final spaceId = widget.selectedSpaceId;
+    if (workspaceId == null ||
+        spaceId == null ||
+        process.workspaceId != workspaceId ||
+        process.spaceId != spaceId) {
+      return;
+    }
+    final tab = agentShellOutputTab(
+      process: process,
+      fallbackLabel: AppLocalizations.of(context).shellOutput,
+    );
+    if (_layout.focusTab((candidate) => candidate.dedupKey == tab.dedupKey)) {
+      return;
+    }
+    _layout.openInActiveLeaf(tab);
+  }
+
   /// Opens/focuses a conversation's chat tab (the pane's
   /// `onSelectConversation`: opening a thread, starting one).
   ///
@@ -989,52 +1029,58 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       return;
     }
     _conversationTabsSyncedFor = spaceId;
-    final active = conversations
-        .where((c) => !c.isArchived)
-        .toList(growable: false);
-    final open = _layout
-        .allTabs()
-        .where((t) => t.kind == MessagingTabKinds.chat)
-        .toList(growable: false);
-    // A persisted layout can still carry a conversation archived in a
-    // previous session (or from another device): its tab closes rather than
-    // resurrecting an archived stream.
-    for (final t in open) {
-      final id = t.args['conversationId'] as String?;
-      final conv = id == null ? null : _conversationsById[id];
-      if (conv != null && conv.isArchived) {
-        _layout.closeTabByIdentity(t);
+    _syncingConversationTabs = true;
+    try {
+      final active = conversations
+          .where((c) => !c.isArchived)
+          .toList(growable: false);
+      final open = _layout
+          .allTabs()
+          .where((t) => t.kind == MessagingTabKinds.chat)
+          .toList(growable: false);
+      // A persisted layout can still carry a conversation archived in a
+      // previous session (or from another device): its tab closes rather than
+      // resurrecting an archived stream.
+      for (final t in open) {
+        final id = t.args['conversationId'] as String?;
+        final conv = id == null ? null : _conversationsById[id];
+        if (conv != null && conv.isArchived) {
+          _layout.closeTabByIdentity(t);
+        }
       }
-    }
-    // A conversation already shown by some chat tab is left alone — including
-    // the standing one shown by the no-arg seeded tab.
-    bool covered(Conversation c) => open.any(
-      (t) =>
-          t.args['conversationId'] == c.id ||
-          (t.args['conversationId'] == null &&
-              t.args['spaceId'] == spaceId &&
-              c.id == standingId),
-    );
-    // The standing conversation goes first (as the no-arg tab, like the seed)
-    // so the reversed walk below can insert every other conversation right
-    // after the first chat tab and come out in list order.
-    final standing = _conversationsById[standingId];
-    if (standing != null && !standing.isArchived && !covered(standing)) {
-      _layout.ensureBackgroundTab(
-        _chatTab(spaceId, title: standing.title),
-        afterKind: MessagingTabKinds.chat,
+      // A conversation already shown by some chat tab is left alone — including
+      // the standing one shown by the no-arg seeded tab.
+      bool covered(Conversation c) => open.any(
+        (t) =>
+            t.args['conversationId'] == c.id ||
+            (t.args['conversationId'] == null &&
+                t.args['spaceId'] == spaceId &&
+                c.id == standingId),
       );
-    }
-    for (final c in active.reversed) {
-      if (c.id == standingId || covered(c)) {
-        continue;
+      // The standing conversation goes first (as the no-arg tab, like the seed)
+      // so the reversed walk below can insert every other conversation right
+      // after the first chat tab and come out in list order.
+      final standing = _conversationsById[standingId];
+      if (standing != null && !standing.isArchived && !covered(standing)) {
+        _layout.ensureBackgroundTab(
+          _chatTab(spaceId, title: standing.title),
+          afterKind: MessagingTabKinds.chat,
+        );
       }
-      _layout.ensureBackgroundTab(
-        _chatTab(spaceId, conversationId: c.id, title: c.title),
-        afterKind: MessagingTabKinds.chat,
-      );
+      for (final c in active.reversed) {
+        if (c.id == standingId || covered(c)) {
+          continue;
+        }
+        _layout.ensureBackgroundTab(
+          _chatTab(spaceId, conversationId: c.id, title: c.title),
+          afterKind: MessagingTabKinds.chat,
+        );
+      }
+      _tabUrl.apply(_layout, widget.focusedTabKey, force: true);
+    } finally {
+      _syncingConversationTabs = false;
     }
-    _tabUrl.apply(_layout, widget.focusedTabKey, force: true);
+    _syncRestoredTabUrl();
   }
 
   void _onLayoutChanged() {
@@ -1050,7 +1096,9 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     // workbench. Rebuilding this host too used to rebuild the sidebar and every
     // visited body a second time for each tab press.
     _schedulePersist();
-    _tabUrl.writeFromLayout(_layout);
+    if (!_syncingConversationTabs) {
+      _tabUrl.writeFromLayout(_layout);
+    }
     _recordRecentFile();
   }
 
@@ -1305,6 +1353,27 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         );
       case MessagingTabKinds.terminal:
         return _buildTerminalPane(tab);
+      case MessagingTabKinds.agentShellOutput:
+        final tabWorkspaceId = tab.args['workspaceId'] as String?;
+        final tabSpaceId = tab.args['spaceId'] as String?;
+        final outputId = tab.args['outputId'] as String?;
+        if (workspaceId == null ||
+            tabWorkspaceId != workspaceId ||
+            tabSpaceId == null ||
+            tabSpaceId != widget.selectedSpaceId ||
+            outputId == null ||
+            outputId.isEmpty) {
+          return CcEmptyState(
+            icon: AppIcons.terminal,
+            message: l10n.unavailable,
+          );
+        }
+        return AgentShellOutputPane(
+          workspaceId: workspaceId,
+          spaceId: tabSpaceId,
+          outputId: outputId,
+          command: tab.args['command'] as String? ?? '',
+        );
       case MessagingTabKinds.browser:
         return BrowserPane(initialUrl: tab.args['url'] as String?);
       case MessagingTabKinds.rig:
@@ -1398,12 +1467,14 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       case MessagingTabKinds.contextExplorer:
         final explorerWorkspaceId = tab.args['workspaceId'] as String?;
         final explorerSpaceId = tab.args['spaceId'] as String?;
+        final explorerConversationId = tab.args['conversationId'] as String?;
         final explorerAgentId = tab.args['agentId'] as String?;
         // Workspace isolation: a restored layout must never render another
         // tenant's context breakdown. The layout cache is workspace-scoped so
         // this should be unreachable — deny visibly rather than render.
         if (explorerWorkspaceId == null ||
             explorerSpaceId == null ||
+            explorerConversationId == null ||
             explorerAgentId == null ||
             workspaceId == null ||
             workspaceId != explorerWorkspaceId) {
@@ -1412,6 +1483,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         return ContextExplorerPane(
           workspaceId: explorerWorkspaceId,
           spaceId: explorerSpaceId,
+          conversationId: explorerConversationId,
           agentId: explorerAgentId,
         );
       case MessagingTabKinds.agentActivity:
@@ -1735,6 +1807,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
                 width: _sidebarWidth,
                 child: IdeSidebar(
                   tabNotifier: _sidebarTab,
+                  layout: _layout,
                   workspaceId: widget.workspaceId,
                   spaceId: widget.selectedSpaceId,
                   onFocusBrowserTab: _focusBrowserTab,
@@ -1791,6 +1864,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
                   onViewSource: _openWorktreeFile,
                   onRevertFiles: _revertFiles,
                   onOpenAgentRun: _openAgentRun,
+                  onOpenAgentShell: _openAgentShell,
                   onFocusTerminal: _focusOrOpenTerminal,
                   onKillTerminal: _killTerminal,
                   // Focusing a machine selects (or opens) ITS tab: the match is

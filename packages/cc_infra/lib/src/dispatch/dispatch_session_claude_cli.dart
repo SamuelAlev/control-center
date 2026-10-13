@@ -328,7 +328,7 @@ extension _ClaudeCliMethods on DispatchSession {
     // sending a result, in which case the prompt has no proven delivery.
     var completedTurn = false;
     var i = 0;
-    while (i < attempts.length) {
+    while (i < attempts.length && !_cancelSource.isCancelled) {
       final attempt = attempts[i];
       ClaudeTerminalError? terminal;
       completedTurn = false;
@@ -370,6 +370,7 @@ extension _ClaudeCliMethods on DispatchSession {
                 outputs: tr.outputs,
                 toolName: _claudeToolNames.remove(tr.id),
                 isError: tr.isError,
+                images: tr.images,
               ),
             );
             final subagents = _claudeSubagents;
@@ -497,6 +498,9 @@ extension _ClaudeCliMethods on DispatchSession {
         _closeClaudeStdin();
       }
       _claudeParser = null;
+      if (_cancelSource.isCancelled) {
+        break;
+      }
 
       final failure = terminal;
       final hasNext = i + 1 < attempts.length;
@@ -611,12 +615,19 @@ extension _ClaudeCliMethods on DispatchSession {
 
     // What is still queued now converts to a follow-up message at run end.
     _steering.onEnqueued = null;
+    // `terminate()` owns the stop notice, run log and terminal event. In
+    // particular, its SIGTERM is not a Claude failure or an account retry.
+    if (_cancelSource.isCancelled) {
+      return;
+    }
     // Land the final accounting baseline + native session id, so the next
     // ordinary follow-up turn resumes this session instead of rebuilding it.
-    // A cancelled run skips this (it never reaches here) but keeps whatever the
-    // last result persisted, which is what lets an interrupted session resume.
+    // Cancellation keeps the last result's baseline so the session can resume.
     await _persistClaudeRecord(normalExit: exitCode == 0 && completedTurn);
     await _closeClaudeSubagents();
+    if (_cancelSource.isCancelled) {
+      return;
+    }
     unawaited(_closeRunLog(exitCode: exitCode));
 
     if (exitCode == 127) {
@@ -763,6 +774,9 @@ extension _ClaudeCliMethods on DispatchSession {
       modelId: modelId,
       repo: deps.runLogRepo,
       recorder: deps.runTranscriptRecorder,
+      workingDirectory: agentDirHostPath,
+      blobStore: deps.blobStore,
+      mediaRenderer: deps.mediaRenderer,
     );
   }
 
@@ -802,6 +816,9 @@ extension _ClaudeCliMethods on DispatchSession {
       // old one, so any change here forks rather than continuing under
       // instructions the model no longer holds.
       'standing=${promptParts?.standingRevision ?? ''}',
+      // Native sessions retain both the original environment and its credit
+      // instructions. A preference/profile change must start a fresh session.
+      'git=${jsonEncode(_gitIdentityEnv)}',
       'mcp=${sha256.convert(utf8.encode(mcp))}',
       'settings=${sha256.convert(utf8.encode(settingsJson ?? ''))}',
       'append=${ClaudeCliBackend.appendedSystemPrompt(hasControlCenterMcp: hasControlCenterMcp)}',

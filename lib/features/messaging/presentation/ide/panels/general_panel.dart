@@ -1,5 +1,5 @@
 import 'package:cc_domain/cc_domain.dart' show UndoClass;
-import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_domain/features/todos/domain/entities/conversation_goal.dart';
 import 'package:cc_domain/features/todos/domain/entities/todo_item.dart';
 import 'package:cc_domain/features/todos/domain/value_objects/todo_status.dart';
@@ -10,12 +10,12 @@ import 'package:control_center/features/messaging/presentation/ide/editor/messag
 import 'package:control_center/features/messaging/presentation/ide/panels/agent_run_target.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/agents_section.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/goals_section.dart';
+import 'package:control_center/features/messaging/presentation/ide/panels/pull_requests_section.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/rigs_sections.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/terminals_section.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/plan_studio/providers/plan_studio_providers.dart';
 import 'package:control_center/features/plan_studio/providers/space_plan_execution_provider.dart';
-import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/features/todos/providers/todo_providers.dart';
@@ -25,13 +25,12 @@ import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/collapsible_sidebar_section.dart';
-import 'package:control_center/shared/widgets/pr_title_text.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The "General" IDE-sidebar panel: a session dashboard showing the active
-/// conversation's PULL REQUESTS (the linked PR, when there is one), TODOS,
+/// conversation's PULL REQUESTS (linked and branch-matched), TODOS,
 /// AGENTS (live run tree), TERMINALS and MACHINES (browser / computer rigs).
 class GeneralPanel extends ConsumerWidget {
   /// Creates a [GeneralPanel].
@@ -39,6 +38,7 @@ class GeneralPanel extends ConsumerWidget {
     super.key,
     required this.workspaceId,
     required this.onOpenAgentRun,
+    required this.onOpenAgentShell,
     required this.onFocusTerminal,
     required this.onKillTerminal,
     required this.onFocusRig,
@@ -51,6 +51,9 @@ class GeneralPanel extends ConsumerWidget {
 
   /// Opens (or focuses) the tapped agent run — see [AgentRunTarget].
   final ValueChanged<AgentRunTarget> onOpenAgentRun;
+
+  /// Opens (or focuses) a running agent command's read-only output.
+  final ValueChanged<AgentShellProcess> onOpenAgentShell;
 
   /// Focuses (or opens) the terminal identified by its session id.
   final ValueChanged<String> onFocusTerminal;
@@ -91,7 +94,7 @@ class GeneralPanel extends ConsumerWidget {
             conversationId: conversationId,
             workspaceId: workspaceId,
           ),
-        // The conversation's linked pull request, when there is one.
+        // Linked review PRs and PRs opened from the space's branches.
         _PullRequestsSection(spaceId: spaceId),
         // An approved plan shows up as this conversation's GOAL (inside TODOS),
         // not as a surface of its own.
@@ -109,6 +112,7 @@ class GeneralPanel extends ConsumerWidget {
           spaceId: spaceId,
           workspaceId: workspaceId,
           onFocusTerminal: onFocusTerminal,
+          onOpenAgentShell: onOpenAgentShell,
           onKillTerminal: onKillTerminal,
         ),
         // The machines this conversation can drive: browsers first (there can
@@ -164,12 +168,7 @@ String? focusedConversationId(
 // PULL REQUESTS
 
 /// The pull requests this conversation is about, from either direction.
-/// A PR reaches a conversation two ways and only one of them writes a row.
-/// [spaceBranchPullRequestsProvider] covers it by matching the worktree branch to an open
-/// PR's head, which works however the PR was opened (compose screen, `gh`, the web UI, an
-/// agent).
-/// The association wins on a tie: it is an explicit link, and one PR must not render twice
-/// when both directions resolve it.
+/// Linked review PRs and worktree/stack branch PRs share the sidebar inventory.
 class _PullRequestsSection extends ConsumerWidget {
   const _PullRequestsSection({required this.spaceId});
 
@@ -177,118 +176,16 @@ class _PullRequestsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final linked = ref.watch(spacePrDetailProvider(spaceId)).asData?.value;
-    final authored =
-        ref.watch(spaceBranchPullRequestsProvider(spaceId)).value ?? const [];
-
-    // Keyed by `owner/repo#number` — a space can own a worktree per repo, so
-    // this legitimately holds more than one PR.
-    final prs = <String, PullRequest>{};
-    if (linked != null) {
-      prs['${linked.repoFullName}#${linked.number}'] = linked;
-    }
-    for (final match in authored) {
-      prs.putIfAbsent(
-        '${match.pr.repoFullName}#${match.pr.number}',
-        () => match.pr,
-      );
-    }
-    if (prs.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return CollapsibleSidebarSection(
-      icon: AppIcons.gitPullRequest,
-      label: AppLocalizations.of(context).pullRequests,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [for (final pr in prs.values) _ConversationPrCard(pr: pr)],
-      ),
-    );
-  }
-}
-
-/// Compact card for the single PR linked to the conversation.
-class _ConversationPrCard extends ConsumerWidget {
-  const _ConversationPrCard({required this.pr});
-
-  final PullRequest pr;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
+    final prs = ref.watch(spacePullRequestsProvider(spaceId));
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
-
-    return CcTappable(
-      onPressed: workspaceId == null
+    return PullRequestsSection(
+      pullRequests: prs,
+      onOpen: workspaceId == null
           ? null
-          : () => context.push(
+          : (pr) => context.push(
               pullRequestDetailRoute(workspaceId, pr.repoFullName, pr.number),
             ),
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        return Container(
-          margin: const EdgeInsets.fromLTRB(8, 2, 8, 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: hovered ? t.hover : t.bgPrimary,
-            borderRadius: AppRadii.brMd,
-            border: Border.all(color: t.borderSecondary),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(_stateIcon(pr), size: 18, color: _stateColor(pr, t)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    PrTitleText(
-                      pr.title,
-                      leading: [TextSpan(text: '#${pr.number}  ')],
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: t.textPrimary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${pr.repoFullName}  ·  ${pr.baseRef} ← ${pr.headRef}',
-                      style: TextStyle(fontSize: 11, color: t.textTertiary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
-  }
-
-  IconData _stateIcon(PullRequest pr) {
-    if (pr.isDraft) {
-      return AppIcons.gitPullRequestDraft;
-    }
-    if (pr.state == PrState.closed) {
-      return AppIcons.gitPullRequestClosed;
-    }
-    return AppIcons.gitPullRequest;
-  }
-
-  Color _stateColor(PullRequest pr, DesignSystemTokens t) {
-    if (pr.state == PrState.closed) {
-      return t.textErrorPrimary;
-    }
-    if (pr.isDraft) {
-      return t.textTertiary;
-    }
-    return t.textSuccessPrimary;
   }
 }
 

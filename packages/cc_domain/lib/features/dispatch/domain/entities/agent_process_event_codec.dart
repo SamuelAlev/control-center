@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_classes_with_only_static_members
 
 import 'package:cc_domain/core/domain/value_objects/llm_call_purpose.dart';
+import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
@@ -51,6 +52,8 @@ abstract final class AgentProcessEventCodec {
         :final toolName,
         :final isError,
         :final isPartial,
+        :final images,
+        :final attachments,
       ) =>
         <String, dynamic>{
           'kind': 'toolResult',
@@ -60,6 +63,12 @@ abstract final class AgentProcessEventCodec {
           'toolName': ?toolName,
           'isError': isError,
           'isPartial': isPartial,
+          if (images.isNotEmpty)
+            'images': [for (final image in images) image.toJson()],
+          if (attachments.isNotEmpty)
+            'attachments': [
+              for (final attachment in attachments) attachment.toJson(),
+            ],
         },
       UsageEvent(
         :final usage,
@@ -193,6 +202,12 @@ abstract final class AgentProcessEventCodec {
           toolName: _stringOrNull(json['toolName']),
           isError: _bool(json['isError']),
           isPartial: _bool(json['isPartial']),
+          images: [
+            for (final raw in (json['images'] as List?) ?? const [])
+              if (raw is Map)
+                ?ToolImageRef.fromJson(raw.cast<String, dynamic>()),
+          ],
+          attachments: MessageAttachment.attachmentsFromMetadata(json),
           timestamp: timestamp,
         );
       case 'usage':

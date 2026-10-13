@@ -88,6 +88,13 @@ class _WorkspacePollState {
   final StreamController<bool> sweepingChanges =
       StreamController<bool>.broadcast();
 
+  /// Sweeps tick the space branch feed even when the open-list ETag is
+  /// unchanged: a PR can be opened and merged between two open-list probes.
+  // Closed in OpenPrPollingService.dispose.
+  // ignore: close_sinks
+  final StreamController<void> historyRefresh =
+      StreamController<void>.broadcast();
+
   DateTime? lastSweepAt;
 }
 
@@ -123,6 +130,12 @@ class OpenPrPollingService {
 
   /// Cache key (single row per workspace) for the persisted snapshot.
   static const cacheKey = 'v1';
+
+  /// Persisted exact-head history, separate from the open-list wire frame.
+  static const branchHistoryCacheKind = 'branchPrHistory';
+
+  /// Maximum age of a successfully resolved branch inventory.
+  static const branchHistoryRefreshInterval = Duration(minutes: 5);
 
   /// Minimum spacing between sweeps of one workspace triggered by
   /// subscription churn (`pollSoon` bursts), so re-navigating to the PR list
@@ -205,6 +218,8 @@ class OpenPrPollingService {
   final Duration inaccessibleRetryInterval;
 
   final Map<String, _WorkspacePollState> _states = {};
+
+  final Map<String, Future<List<Map<String, dynamic>>?>> _historyInflight = {};
   Timer? _timer;
   int _tick = 0;
   bool _disposed = false;
@@ -227,6 +242,7 @@ class OpenPrPollingService {
     _timer?.cancel();
     _timer = null;
     for (final st in _states.values) {
+      unawaited(st.historyRefresh.close());
       unawaited(st.sweepingChanges.close());
     }
   }
@@ -342,6 +358,9 @@ class OpenPrPollingService {
     try {
       final parsed = jsonDecode(raw);
       if (parsed is Map<String, dynamic>) {
+        // Terminal history feeds only space-branch lookups, never the open
+        // queue's client payload.
+        parsed.remove('terminal_prs');
         return parsed;
       }
     } on Object {
@@ -392,18 +411,26 @@ class OpenPrPollingService {
     }
   }
 
-  /// Ticks once on subscribe and again whenever a sweep persists a changed
-  /// snapshot for [workspaceId] — the change feed for derived views (a
-  /// space's branch PRs) that re-ask [openPrForHeadBranch] rather than hold
-  /// the whole list. Like [watchRepoAccessForWorkspace] it registers no list
-  /// interest, so the idle cadence applies, but subscribing kicks one
-  /// freshness pass: a just-opened surface sees a PR opened on the forge
-  /// since the last sweep.
-  Stream<void> watchSnapshotChanges(String workspaceId) {
-    unawaited(pollSoon(workspaceId));
-    return _cache(
-      workspaceId,
-    ).watch(workspaceId, cacheKind, cacheKey).map((_) {});
+  /// Ticks on persisted open-list changes and on the workspace's normal sweep
+  /// cadence, including a 304: historical branches can acquire a PR entirely
+  /// between open-list probes. No independent timer or per-space poller.
+  Stream<void> watchSnapshotChanges(String workspaceId) async* {
+    final st = _stateFor(workspaceId);
+    final controller = StreamController<void>();
+    final snapshotSub = _cache(workspaceId)
+        .watch(workspaceId, cacheKind, cacheKey)
+        .listen((_) => controller.add(null));
+    final refreshSub = st.historyRefresh.stream.listen(
+      (_) => controller.add(null),
+    );
+    try {
+      unawaited(pollSoon(workspaceId));
+      yield* controller.stream;
+    } finally {
+      await snapshotSub.cancel();
+      await refreshSub.cancel();
+      unawaited(controller.close());
+    }
   }
 
   /// Requests a near-term freshness pass for [workspaceId] (subscribe, or an
@@ -459,6 +486,148 @@ class OpenPrPollingService {
       }
     }
     return null;
+  }
+
+  /// Complete branch history is fetched only for linked space head refs, then
+  /// persisted per workspace/repo/branch. The existing workspace sweep ticks
+  /// refresh it on a bounded cadence so a PR opened and merged between
+  /// open-list sweeps is still discovered. A failed/incomplete lookup is never
+  /// an empty answer: `complete` must gate "every PR merged".
+  Future<({List<Map<String, dynamic>> prs, bool complete})> prsForHeadBranch({
+    required String workspaceId,
+    required Repo repo,
+    required String branch,
+  }) async {
+    if (branch.isEmpty) {
+      return (prs: <Map<String, dynamic>>[], complete: false);
+    }
+    final key = jsonEncode([repo.id, repo.fullName, branch]);
+    final raw = await _cache(
+      workspaceId,
+    ).read(workspaceId, branchHistoryCacheKind, key);
+    Map<String, dynamic>? history;
+    try {
+      final decoded = raw == null ? null : jsonDecode(raw);
+      if (decoded is Map<String, dynamic> &&
+          decoded['repo_id'] == repo.id &&
+          decoded['repo_full_name'] == repo.fullName &&
+          decoded['branch'] == branch &&
+          decoded['prs'] is List) {
+        history = decoded;
+      }
+    } on Object {
+      // Corrupt history cannot be evidence for "all merged".
+    }
+    final checkedAt = DateTime.tryParse(
+      history?['checked_at'] as String? ?? '',
+    );
+    var complete =
+        checkedAt != null &&
+        _now().difference(checkedAt) < branchHistoryRefreshInterval;
+    if (!complete) {
+      final requestKey = jsonEncode([workspaceId, key]);
+      final discovered = await (_historyInflight[requestKey] ??=
+          _discoverBranchHistory(workspaceId, repo, branch, key).whenComplete(
+            () {
+              // Returning remove's Future would make this future await itself.
+              _historyInflight.remove(requestKey);
+            },
+          ));
+      if (discovered != null) {
+        history = {
+          'prs': discovered,
+          'repo_id': repo.id,
+          'repo_full_name': repo.fullName,
+          'branch': branch,
+          'checked_at': _now().toIso8601String(),
+        };
+        complete = true;
+      }
+    }
+    final st = _stateFor(workspaceId);
+    final snapshot = st.snapshotLoaded
+        ? st.snapshot
+        : await _readPersistedSnapshot(workspaceId);
+    final byNumber = <int, Map<String, dynamic>>{};
+    void include(Object? value) {
+      if (value is! Map ||
+          value['number'] is! num ||
+          value['head_ref'] != branch) {
+        return;
+      }
+      byNumber[(value['number'] as num).toInt()] = value
+          .cast<String, dynamic>();
+    }
+
+    for (final pr in (history?['prs'] as List?) ?? const []) {
+      include(pr);
+    }
+    for (final raw in (snapshot?['terminal_prs'] as List?) ?? const []) {
+      if (raw is Map &&
+          raw['repo_id'] == repo.id &&
+          raw['repo_full_name'] == repo.fullName) {
+        include(raw['pull_request']);
+      }
+    }
+    for (final raw in (snapshot?['repos'] as List?) ?? const []) {
+      if (raw is Map &&
+          raw['repo_id'] == repo.id &&
+          raw['repo_full_name'] == repo.fullName) {
+        for (final pr in (raw['prs'] as List?) ?? const []) {
+          include(pr);
+        }
+      }
+    }
+    final inaccessible = (snapshot?['inaccessible_repos'] as List?) ?? const [];
+    return (
+      prs: byNumber.values.toList(),
+      complete:
+          complete &&
+          !inaccessible.any(
+            (entry) => entry is Map && entry['repo_id'] == repo.id,
+          ) &&
+          !byNumber.values.any((pr) => pr['status_unconfirmed'] == true),
+    );
+  }
+
+  Future<List<Map<String, dynamic>>?> _discoverBranchHistory(
+    String workspaceId,
+    Repo repo,
+    String branch,
+    String key,
+  ) async {
+    try {
+      final prs = await _port.fetchBranchHistory(
+        repo,
+        branch,
+        workspaceId: workspaceId,
+      );
+      if (prs == null) {
+        return null;
+      }
+      final wires = [
+        for (final pr in prs)
+          if (pr.headRef == branch) _prToWire(pr),
+      ];
+      await _cache(workspaceId).put(
+        workspaceId,
+        branchHistoryCacheKind,
+        key,
+        jsonEncode({
+          'repo_id': repo.id,
+          'repo_full_name': repo.fullName,
+          'branch': branch,
+          'checked_at': _now().toIso8601String(),
+          'prs': wires,
+        }),
+      );
+      return wires;
+    } on Object catch (e) {
+      CcHostLog.warning(
+        'open_pr_poll: branch history persist failed for ${repo.fullName}: $e',
+      );
+      return null;
+    }
   }
 
   /// Runs (or joins) a sweep of [workspaceId]. Only one sweep runs per
@@ -644,11 +813,18 @@ class OpenPrPollingService {
         // Access transitions alone (a repo parked, or one recovering behind a
         // 304) still have to reach every client's notice.
         await _persistAccessOnly(workspaceId, st);
-      } else if (!listChanged && includeChecks && st.snapshot != null) {
-        await _checksPass(workspaceId, fetchable, st);
+      } else if (!listChanged && st.snapshot != null) {
+        if (includeChecks) {
+          await _checksPass(workspaceId, fetchable, st);
+        }
+        await _resolveUnknownTerminals(workspaceId, fetchable, st);
       }
     } on Object catch (e) {
       CcHostLog.warning('open_pr_poll: sweep failed for $workspaceId: $e');
+    } finally {
+      if (!st.historyRefresh.isClosed) {
+        st.historyRefresh.add(null);
+      }
     }
   }
 
@@ -795,6 +971,7 @@ class OpenPrPollingService {
       'authenticated': true,
       'repos': repos,
       'inaccessible_repos': inaccessible,
+      'terminal_prs': [...?(previous?['terminal_prs'] as List?)],
     };
   }
 
@@ -1180,9 +1357,19 @@ class OpenPrPollingService {
     _mergeConfirms = 0;
     _approverLookups = 0;
     _viewerLoginCache.clear();
+    final terminal = (fresh['terminal_prs'] as List).cast<dynamic>();
     for (final repo in repos) {
       final before = _prsByNumber(previous, repo.fullName);
       final after = _prsByNumber(fresh, repo.fullName);
+      // A reopened PR is open again; don't leave its previous merged/closed
+      // record behind to become the answer after a later list transition.
+      terminal.removeWhere(
+        (raw) =>
+            raw is Map &&
+            raw['repo_id'] == repo.id &&
+            raw['repo_full_name'] == repo.fullName &&
+            after.containsKey(raw['number']),
+      );
       if (isBaseline) {
         continue;
       }
@@ -1281,25 +1468,130 @@ class OpenPrPollingService {
         if (after.containsKey(number)) {
           continue;
         }
-        // The PR left the open list: merged or closed.
-        final merged = await _port.wasMerged(
-          repo,
-          number,
-          workspaceId: workspaceId,
+        // This previously observed PR left the open list. Retain its wire
+        // identity (including head ref), but never turn a failed status
+        // confirmation into a merge. Unknown can be retried on idle sweeps.
+        bool? merged;
+        try {
+          merged = await _port.wasMerged(
+            repo,
+            number,
+            workspaceId: workspaceId,
+          );
+        } on Object catch (e) {
+          CcHostLog.warning('open_pr_poll: PR status lookup failed: $e');
+        }
+        final old = before[number]!;
+        terminal.removeWhere(
+          (raw) =>
+              raw is Map &&
+              raw['repo_id'] == repo.id &&
+              raw['repo_full_name'] == repo.fullName &&
+              raw['number'] == number,
         );
+        terminal.add({
+          'repo_id': repo.id,
+          'repo_full_name': repo.fullName,
+          'number': number,
+          'pull_request': {
+            ...old,
+            'state': switch (merged) {
+              true => 'merged',
+              false => 'closed',
+              null => old['state'] ?? 'open',
+            },
+            if (merged == null) 'status_unconfirmed': true,
+          },
+        });
+        if (merged != null) {
+          _eventBus?.publish(
+            PullRequestStatusChanged(
+              status: merged ? 'merged' : 'closed',
+              workspaceId: workspaceId,
+              repoFullName: repo.fullName,
+              prNumber: number,
+              occurredAt: _now(),
+            ),
+          );
+        }
+        _signals.notify(
+          workspaceId: workspaceId,
+          repoFullName: repo.fullName,
+          prNumber: number,
+        );
+      }
+    }
+  }
+
+  /// Retry status lookups that failed on the transition sweep, without
+  /// re-fetching the historical list or polling one request per space row.
+  Future<void> _resolveUnknownTerminals(
+    String workspaceId,
+    List<Repo> repos,
+    _WorkspacePollState st,
+  ) async {
+    final snapshot = st.snapshot;
+    if (snapshot == null) {
+      return;
+    }
+    final linked = {for (final repo in repos) repo.id: repo};
+    final terminal = (snapshot['terminal_prs'] as List?) ?? const [];
+    var attempts = 0;
+    var changed = false;
+    final updated = <dynamic>[];
+    final confirmed = <({Repo repo, int number, bool merged})>[];
+    for (final raw in terminal) {
+      if (raw is! Map || raw['pull_request'] is! Map) {
+        updated.add(raw);
+        continue;
+      }
+      final pr = raw['pull_request'] as Map;
+      final repo = linked[raw['repo_id']];
+      final number = raw['number'];
+      if (pr['status_unconfirmed'] != true ||
+          repo == null ||
+          repo.fullName != raw['repo_full_name'] ||
+          number is! int ||
+          attempts >= _maxMergeConfirmsPerPass) {
+        updated.add(raw);
+        continue;
+      }
+      attempts++;
+      bool? merged;
+      try {
+        merged = await _port.wasMerged(repo, number, workspaceId: workspaceId);
+      } on Object catch (e) {
+        CcHostLog.warning('open_pr_poll: PR status retry failed: $e');
+      }
+      if (merged == null) {
+        updated.add(raw);
+        continue;
+      }
+      changed = true;
+      confirmed.add((repo: repo, number: number, merged: merged));
+      updated.add({
+        ...raw,
+        'pull_request': {...pr, 'state': merged ? 'merged' : 'closed'}
+          ..remove('status_unconfirmed'),
+      });
+    }
+    if (changed) {
+      st.snapshot = {...snapshot, 'terminal_prs': updated};
+      await _persistSnapshot(workspaceId, st.snapshot!);
+      for (final result in confirmed) {
         _eventBus?.publish(
           PullRequestStatusChanged(
-            status: merged == true ? 'merged' : 'closed',
+            status: result.merged ? 'merged' : 'closed',
             workspaceId: workspaceId,
-            repoFullName: repo.fullName,
-            prNumber: number,
+            repoFullName: result.repo.fullName,
+            prNumber: result.number,
             occurredAt: _now(),
           ),
         );
         _signals.notify(
           workspaceId: workspaceId,
-          repoFullName: repo.fullName,
-          prNumber: number,
+          repoFullName: result.repo.fullName,
+          prNumber: result.number,
         );
       }
     }

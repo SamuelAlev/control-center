@@ -2,7 +2,7 @@
 title: Rozmawiaj z Control Center z PR w GitHub
 description: Poproś bota aplikacji GitHub App swojego serwera o recenzję albo zadaj mu pytanie bezpośrednio z rozmowy w PR — bez webhooka i publicznego adresu URL.
 slug: pl-PL/podrecznik/poradniki/rozmowy-w-pr-github
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Ten poradnik pokazuje, jak pracować z Control Center bez opuszczania GitHuba:
@@ -27,8 +27,9 @@ dokładnie jak publiczne wdrożenie.
 
 ## Znajdź nazwę swojego bota
 
-Login bota to `<appslug>[bot]`, gdzie `appslug` to nazwa, którą nadałeś
-aplikacji przy jej rejestrowaniu.
+Wspomnij `@usectrl`, dedykowane konto GitHub Control Center. To domyślny wyzwalacz; skonfigurowana na Twoim serwerze GitHub App nadal obsługuje żądanie i publikuje odpowiedzi. Nie potrzebujesz danych uwierzytelniających do konta `usectrl`.
+
+Login samej aplikacji, `<appslug>[bot]`, oraz krótka forma `@appslug` również działają. Aby znaleźć ten opcjonalny alias:
 
 1. Przejdź do **Ustawienia → Serwer → Logowanie jednokrotne** i przewiń do
    karty **Aplikacje dostawców**
@@ -37,10 +38,7 @@ aplikacji przy jej rejestrowaniu.
    o pustym polu, login to zawsze `<appslug>[bot]` — wpisz go albo krótką formę
    `@appslug`
 
-GitHub nie oferuje kont aplikacji w swoim autouzupełnianiu `@`, więc login
-trzeba wpisać ręcznie — dlatego karta ustawień pozwala skopiować go jednym
-kliknięciem. Przyrostek `[bot]` jest opcjonalny: `@myapp` i `@myapp[bot]`
-kierują do bota tak samo.
+GitHub nie podpowiada kont aplikacji przy wpisywaniu `@`, więc aliasy aplikacji trzeba wpisać lub skopiować. Dedykowany użytkownik `@usectrl` to domyślne wywołanie; `@myapp` i `@myapp[bot]` nadal są akceptowanymi aliasami aplikacji.
 
 :::note[Wybierz wyróżniającą się nazwę aplikacji]
 Forma krótka jest dopasowywana jako tekst. Jeśli człowiek-użytkownik GitHuba ma
@@ -58,7 +56,7 @@ uruchamia przycisk **Zapytaj AI**:
   natywnego miejsca żądanego recenzenta. Nie ma komentarza, na który trzeba by
   zareagować, więc nic nie jest publikowane na GitHubie; recenzja startuje
   w Control Center
-- **Skomentuj `@myapp review`** (albo samo `@myapp`) w rozmowie w PR. Bot
+- **Skomentuj `@usectrl review`** (albo samo `@usectrl`) w rozmowie w PR. Bot
   reaguje 👀, a następnie odpowiada, gdy recenzja się rozpoczęła (albo że jedna
   już trwa)
 
@@ -76,7 +74,7 @@ wypchnięciu zmian — wspomnij bota.
 Skomentuj rozmowę w PR:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Co się dzieje, po kolei:
@@ -99,7 +97,7 @@ opublikował w tym wątku. Wzmianka nie jest potrzebna; to wątek **jest**
 adresowaniem:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

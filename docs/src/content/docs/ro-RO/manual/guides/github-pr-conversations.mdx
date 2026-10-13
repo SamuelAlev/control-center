@@ -2,7 +2,7 @@
 title: Vorbește cu Control Center dintr-un PR GitHub
 description: Cere botului GitHub App al serverului o revizuire sau pune o întrebare chiar din conversația PR-ului, fără webhook și fără URL public.
 slug: ro-RO/manual/ghiduri-practice/conversatii-pr-github
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Acest ghid îți arată cum să lucrezi cu Control Center fără să părăsești GitHub:
@@ -29,8 +29,9 @@ publică.
 
 ## Găsește numele botului tău
 
-Loginul botului este `<appslug>[bot]`, unde `appslug` este numele pe care l-ai
-dat aplicației când ai înregistrat-o.
+Menționează `@usectrl`, contul GitHub dedicat al Control Center. Acesta este declanșatorul implicit; GitHub App configurată pe serverul tău gestionează în continuare solicitarea și publică răspunsurile. Nu ai nevoie de acreditările contului `usectrl`.
+
+Loginul propriu al aplicației, `<appslug>[bot]`, și forma scurtă `@appslug` funcționează și ele. Ca să găsești acest alias opțional:
 
 1. Mergi la **Setări → Server → Autentificare unică** și derulează până la
    cardul **Aplicații provider**
@@ -39,10 +40,7 @@ dat aplicației când ai înregistrat-o.
    câmp gol, loginul este întotdeauna `<appslug>[bot]` — tastează asta, sau
    forma scurtă `@appslug`
 
-GitHub nu oferă conturile de aplicație în autocompletarea pentru `@`, așa că
-loginul trebuie tastat — de aceea cardul din setări îl face copiabil cu un
-singur clic. Sufixul `[bot]` este opțional: atât `@myapp`, cât și `@myapp[bot]`
-ajung la bot.
+GitHub nu afișează conturile App în autocompletarea pentru `@`, așa că aliasurile aplicației trebuie tastate sau copiate. Utilizatorul dedicat `@usectrl` este invocarea implicită; atât `@myapp`, cât și `@myapp[bot]` rămân aliasuri acceptate ale aplicației.
 
 :::note[Alege un nume de aplicație distinct]
 Forma scurtă este potrivită ca text. Dacă un utilizator GitHub obișnuit are din
@@ -61,7 +59,7 @@ pornește butonul **Întreabă AI**:
   ocupa locul nativ de recenzent solicitat. Nu există niciun comentariu la care
   să se reacționeze, așa că nu se publică nimic pe GitHub; revizuirea pornește în
   Control Center
-- **Comentează `@myapp review`** (sau doar `@myapp`) în conversația PR-ului.
+- **Comentează `@usectrl review`** (sau doar `@usectrl`) în conversația PR-ului.
   Botul reacționează cu 👀, apoi răspunde când revizuirea a pornit (sau că una
   rulează deja)
 
@@ -80,7 +78,7 @@ revizuire — după un push, de exemplu — menționează botul.
 Comentează în conversația PR-ului:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Ce se întâmplă, în ordine:
@@ -102,7 +100,7 @@ pe diff lăsat de el, sau un răspuns postat de el în acel fir. Nu e nevoie de
 nicio mențiune; firul **este** adresarea:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

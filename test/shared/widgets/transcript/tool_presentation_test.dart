@@ -10,11 +10,13 @@ void main() {
     String name, {
     Map<String, dynamic>? inputs,
     String outputs = '',
+    List<ToolImageRef> images = const [],
   }) => ToolSegment(
     toolName: name,
     toolCallId: 'c',
     inputs: inputs,
     outputs: outputs,
+    images: images,
     startedAt: ts,
   );
 
@@ -221,6 +223,21 @@ void main() {
       );
       expect(p.verb, 'First line');
     });
+  });
+
+  test('render_media shows a path, opens with all saved images', () {
+    final seg = tool(
+      'mcp__control-center__render_media',
+      inputs: {'path': 'videos/sample.mp4'},
+      images: [
+        for (var i = 0; i < 4; i++)
+          ToolImageRef(ref: 'blob:sha256:$i', mediaType: 'image/jpeg'),
+      ],
+    );
+    final presentation = resolveToolPresentation(seg);
+    expect(presentation.verb, 'Render');
+    expect(presentation.subtitle, 'videos/sample.mp4');
+    expect(toolBodyOpensByDefault(seg), isTrue);
   });
 
   group('toolDiffStats', () {

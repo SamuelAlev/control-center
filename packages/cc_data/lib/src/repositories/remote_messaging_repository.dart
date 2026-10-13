@@ -376,7 +376,10 @@ class RemoteMessagingRepository {
         if (raw is! List) {
           return const <String>[];
         }
-        return [for (final item in raw) if (item is String) item];
+        return [
+          for (final item in raw)
+            if (item is String) item,
+        ];
       });
 
   /// Live size of a conversation's live region — `{tokens, chars}` — computed
@@ -398,8 +401,8 @@ class RemoteMessagingRepository {
   /// Carries no `workspace_id`: `SpaceTurnRelayPort` is keyed by space
   /// alone, so this subscription stays on the client's ambient active workspace
   /// — the only surface here that does.
-  Stream<Map<String, dynamic>> watchSpaceTurns(String spaceId) =>
-      _client.subscribe('messaging.watchSpaceTurns', {'space_id': spaceId});
+  Stream<Map<String, dynamic>> watchSpaceTurns(String spaceId) => _client
+      .subscribeEvents('messaging.watchSpaceTurns', {'space_id': spaceId});
 
   /// Live per-space activity signals for [workspaceId] — or for the client's
   /// ambient active workspace when it is omitted (see [watchSpaces] for why

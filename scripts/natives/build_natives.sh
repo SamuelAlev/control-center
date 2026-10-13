@@ -30,6 +30,7 @@ bash "$SCRIPT_DIR/build_watcher.sh" "$DEST"
 bash "$SCRIPT_DIR/build_inference.sh" "$DEST"
 # SAML SSO (pure-Rust; no C toolchain beyond cargo itself).
 bash "$SCRIPT_DIR/build_saml.sh" "$DEST"
+bash "$SCRIPT_DIR/build_media.sh" "$DEST"
 
 echo "==> Staged native libraries:"
 ls -la "$DEST"

@@ -6,6 +6,7 @@ import 'package:cc_domain/features/messaging/domain/value_objects/conversation_t
 import 'package:cc_harness/context.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/messaging/providers/context_usage_provider.dart';
+import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Server-side context inspection reads (the `context.inspect` RPC op).
@@ -13,7 +14,7 @@ final contextInspectionRepositoryProvider = Provider<RemoteContextRepository>(
   (ref) => RemoteContextRepository(ref.watch(rpcClientProvider)),
 );
 
-/// The server-side PERSISTENT context breakdown for one (space, agent) pair:
+/// The server-side PERSISTENT context breakdown for one conversation and agent:
 /// system prompt, rules, skills, tool surface, subagents and memory. For a
 /// built-in-harness agent never the conversation, whose size arrives
 /// separately as an aggregate ([conversationTokenTotalsProvider]) and whose
@@ -26,12 +27,19 @@ final contextInspectionRepositoryProvider = Provider<RemoteContextRepository>(
 final contextInspectionProvider = FutureProvider.autoDispose
     .family<
       ContextInspection,
-      ({String spaceId, String agentId, bool includeContent})
+      ({
+        String spaceId,
+        String conversationId,
+        String agentId,
+        bool includeContent,
+      })
     >(
       (ref, args) => ref
           .watch(contextInspectionRepositoryProvider)
           .inspect(
+            workspaceId: ref.requireWorkspaceId(),
             spaceId: args.spaceId,
+            conversationId: args.conversationId,
             agentId: args.agentId,
             includeContent: args.includeContent,
           ),
@@ -253,15 +261,19 @@ ContextSegment _resized(ContextSegment segment, int tokens) {
 }
 
 /// The merged breakdown (server summary + client conversation) for one
-/// (space, agent) pair — what the context flyout renders. The explorer tab
+/// conversation and agent — what the context flyout renders. The explorer tab
 /// needs verbatim part contents, so it composes its own breakdown from
 /// [contextInspectionProvider] with `includeContent: true` through the same
 /// [composeContextBreakdown] helper.
 final contextBreakdownProvider = Provider.autoDispose
-    .family<ContextBreakdown, ({String spaceId, String agentId})>((ref, args) {
+    .family<
+      ContextBreakdown,
+      ({String spaceId, String conversationId, String agentId})
+    >((ref, args) {
       final async = ref.watch(
         contextInspectionProvider((
           spaceId: args.spaceId,
+          conversationId: args.conversationId,
           agentId: args.agentId,
           includeContent: false,
         )),
@@ -275,7 +287,14 @@ final contextBreakdownProvider = Provider.autoDispose
       // [buildConversationContextSegment]; it is a tab someone opens, not the
       // cost of opening a chat.
       final totals =
-          ref.watch(conversationTokenTotalsProvider(args.spaceId)).value ??
+          ref
+              .watch(
+                conversationTokenTotalsProvider((
+                  spaceId: args.spaceId,
+                  conversationId: args.conversationId,
+                )),
+              )
+              .value ??
           ConversationTokenTotals.empty;
       final conversation = ContextSegment(
         kind: ContextSegmentKind.conversation,
@@ -287,6 +306,7 @@ final contextBreakdownProvider = Provider.autoDispose
           .watch(
             conversationContextUsageProvider((
               spaceId: args.spaceId,
+              conversationId: args.conversationId,
               agentId: args.agentId,
             )),
           )

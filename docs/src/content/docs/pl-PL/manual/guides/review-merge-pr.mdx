@@ -2,7 +2,7 @@
 title: Zrecenzuj i scal PR
 description: Otwórz warsztat PR, przeczytaj diff, zostaw komentarze w linii, wyślij recenzję i scal ją.
 slug: pl-PL/podrecznik/poradniki/recenzja-i-scalanie-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Ten poradnik pokazuje, jak zrecenzować i scalić pull request.
@@ -26,6 +26,30 @@ PR-a.
 Karta Przegląd niesie metadane PR-a (autor, gałąź, etykiety, przypisane osoby,
 reakcje, commity, stan kontroli) oraz wiersz akcji: odśwież, **Recenzja**,
 **Scal**, otwórz w IDE i menu przepełnienia ⋯.
+
+### Otwórz PR ze stosu przestrzeni
+
+Sekcja **Ogólne → Pull requesty** przestrzeni grupuje powiązane i dopasowane po
+gałęzi PR-y według repozytorium. Gdy gałąź bazowa jednego PR-a jest gałęzią head
+poprzedniego, pojawiają się one w zwijanym stosie. Jego nagłówek wskazuje dolny
+PR, gałąź docelową i liczbę; numerowane wiersze biegną od dolnego PR-a (1) ku
+wierzchołkowi. Numery opisują kolejność zależności, a nie gotowość do scalenia.
+
+Każdy wiersz pokazuje tytuł, numer PR-a i stan. Najedź kursorem lub ustaw fokus
+na wierszu, aby odczytać pełny tytuł i nazwy gałęzi; kliknij lub naciśnij Enter,
+aby otworzyć warsztat PR. Ustaw fokus na nagłówku stosu i naciśnij Enter lub
+Space, aby go zwinąć lub rozwinąć. Niepowiązane PR-y pozostają osobno, a
+niekompletne lub niejednoznaczne powiązania gałęzi nie są prezentowane jako
+uporządkowany stos.
+
+W **Kontroli wersji** opcja **Stos pull requestów (N)** otwiera selektor
+opublikowanych części stosu, zaczynając od dolnej. Każdy wpis pokazuje numer
+PR-a, etykietę części i pozycję; wyewidencjonowana część jest oznaczona. Wybierz
+wpis, aby otworzyć jego warsztat PR. **Opublikuj stos** pojawia się tylko wtedy,
+gdy wykrywanie PR-ów się zakończyło i co najmniej jedna część nie ma PR-a.
+Dotyczy to także menu gałęzi. PR-y utworzone poza Control Center również liczą
+się jako opublikowane. Częściowo opublikowane stosy oferują obie akcje; praca na
+pojedynczej gałęzi zachowuje pojedyncze akcje tworzenia i wyświetlania PR-a.
 
 ## Przeczytaj diff
 

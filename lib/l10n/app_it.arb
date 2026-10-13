@@ -6788,6 +6788,17 @@
   "settingsAboutDescription": "Identità della build e aggiornamenti.",
   "settingsDiagnosticsDescription": "Isolamento, indicizzazione, sincronizzazione, log e segnalazione errori di questa installazione.",
   "settingsWorkspaceGeneralDescription": "Identità, criteri e convenzioni condivisi da tutti in questo spazio di lavoro.",
+  "settingsAgentAttributionTitle": "Attribuzione dei commit",
+  "settingsAgentAttributionDescription": "Scegli se attribuire a Control Center i commit degli agenti. Gli amministratori dello spazio di lavoro possono sostituire questa scelta per tutti i membri.",
+  "settingsAgentCoauthorSection": "Attribuzione all'agente",
+  "settingsAgentCoauthorTitle": "Attribuisci a Control Center i commit degli agenti",
+  "settingsAgentCoauthorDescription": "Se attiva, i commit hanno Control Center come autore e te come coautore. Se disattiva, usano la tua identità Git senza attribuzione all'agente.",
+  "settingsAgentCoauthorWorkspaceOverride": "L'impostazione di questo spazio di lavoro prevale sulla tua scelta personale. La tua preferenza resta salvata, ma qui non si applica.",
+  "settingsAgentAttributionLoading": "Caricamento delle impostazioni di attribuzione…",
+  "settingsWorkspaceAgentCoauthorDescription": "Scegli se attribuire a Control Center i commit degli agenti. La scelta dello spazio di lavoro prevale sulla preferenza personale di ciascun membro.",
+  "settingsWorkspaceAgentCoauthorInherit": "Usa la preferenza di ciascun membro",
+  "settingsWorkspaceAgentCoauthorAlways": "Attribuisci sempre a Control Center",
+  "settingsWorkspaceAgentCoauthorNever": "Non attribuire mai a Control Center",
   "settingsWorkspaceMeetingsDescription": "Modelli di note e voci salvate per le riunioni di questo spazio di lavoro.",
   "settingsWorkspacePolicyLabel": "Criteri dello spazio di lavoro",
   "settingsWorkspacePolicyDescription": "Si applica a ogni membro e ogni agente di questo spazio di lavoro.",
@@ -7483,6 +7494,10 @@
   "@reviewKindTicket": {
     "description": "Review finding kind: a ticket spawned from the review"
   },
+  "spaceAllPrsMerged": "Tutte le pull request in questo spazio sono state unite. Archiviare lo spazio?",
+  "spaceKeepAfterMerge": "No, mantieni questo spazio",
+  "spaceKeepAfterMergeHint": "Non ti verrà chiesto di nuovo per questo spazio.",
+  "spaceAllPrsMergedLabel": "Tutte le pull request unite",
   "archiveSpace": "Archivia spazio",
   "@archiveSpace": {
     "description": "Archive a space (soft hide, restorable) — row menu, header button and tooltip"

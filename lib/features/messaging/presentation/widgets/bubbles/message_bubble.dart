@@ -24,6 +24,7 @@ class SpaceMessageBubble extends ConsumerWidget {
     super.key,
     required this.message,
     this.collapseHeader = false,
+    this.steeringMessages = const [],
     this.onStartThread,
     this.onOpenThread,
   });
@@ -33,6 +34,9 @@ class SpaceMessageBubble extends ConsumerWidget {
 
   /// Whether to collapse the sender header (consecutive same-sender turn).
   final bool collapseHeader;
+
+  /// Injected messages placed inside this agent turn's transcript.
+  final List<Message> steeringMessages;
 
   /// Hover-rail "start thread" affordance, forwarded to text bubbles only —
   /// cards (ticket/plan/artifact/question/review/orchestration/system) never
@@ -92,6 +96,7 @@ class SpaceMessageBubble extends ConsumerWidget {
             message: message,
             codeFont: codeFont,
             collapseHeader: collapseHeader,
+            steeringMessages: steeringMessages,
             onStartThread: onStartThread,
           );
 

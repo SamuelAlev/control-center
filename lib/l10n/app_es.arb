@@ -6785,6 +6785,17 @@
   "settingsAboutDescription": "Identidad de la compilación y actualizaciones.",
   "settingsDiagnosticsDescription": "Aislamiento, indexación, sincronización, registro e informes de errores de esta instalación.",
   "settingsWorkspaceGeneralDescription": "Identidad, políticas y convenciones que comparten todos en este espacio de trabajo.",
+  "settingsAgentAttributionTitle": "Atribución de commits",
+  "settingsAgentAttributionDescription": "Elige si los commits de los agentes atribuyen el trabajo a Control Center. Los administradores del espacio de trabajo pueden imponer esta opción a todos sus miembros.",
+  "settingsAgentCoauthorSection": "Atribución al agente",
+  "settingsAgentCoauthorTitle": "Atribuir los commits de los agentes a Control Center",
+  "settingsAgentCoauthorDescription": "Si se activa, Control Center figura como autor de los commits y tú como coautor. Si se desactiva, los commits usan tu identidad de Git sin atribución al agente.",
+  "settingsAgentCoauthorWorkspaceOverride": "La configuración de este espacio de trabajo prevalece sobre tu elección personal. Tu preferencia se guarda, pero no se aplica aquí.",
+  "settingsAgentAttributionLoading": "Cargando ajustes de atribución…",
+  "settingsWorkspaceAgentCoauthorDescription": "Elige si los commits de los agentes atribuyen el trabajo a Control Center. La elección del espacio de trabajo prevalece sobre la preferencia personal de cada miembro.",
+  "settingsWorkspaceAgentCoauthorInherit": "Usar la preferencia de cada miembro",
+  "settingsWorkspaceAgentCoauthorAlways": "Atribuir siempre a Control Center",
+  "settingsWorkspaceAgentCoauthorNever": "No atribuir nunca a Control Center",
   "settingsWorkspaceMeetingsDescription": "Plantillas de notas y voces guardadas para las reuniones de este espacio de trabajo.",
   "settingsWorkspacePolicyLabel": "Política del espacio de trabajo",
   "settingsWorkspacePolicyDescription": "Se aplica a cada miembro y cada agente de este espacio de trabajo.",
@@ -7480,6 +7491,10 @@
   "@reviewKindTicket": {
     "description": "Review finding kind: a ticket spawned from the review"
   },
+  "spaceAllPrsMerged": "Se han fusionado todas las solicitudes de incorporación de este espacio. ¿Quieres archivarlo?",
+  "spaceKeepAfterMerge": "No, conservar este espacio",
+  "spaceKeepAfterMergeHint": "No volveremos a preguntarte por este espacio.",
+  "spaceAllPrsMergedLabel": "Todas las solicitudes de incorporación fusionadas",
   "archiveSpace": "Archivar espacio",
   "@archiveSpace": {
     "description": "Archive a space (soft hide, restorable) — row menu, header button and tooltip"

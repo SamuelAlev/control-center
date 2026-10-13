@@ -102,6 +102,11 @@ RUN groupadd --gid 10001 ccserver \
 # lib/ once it is byte-identical to the staged one, because both directories are
 # searched and carrying each native twice cost 49 MB of image for nothing.
 COPY bundle /app
+RUN test -x /app/bin/media/ffmpeg \
+ && test -x /app/bin/media/ffprobe \
+ && test -x /app/bin/media/cc_pdf_render \
+ && test -s /app/bin/media/libpdfium.so \
+ && test -s /app/bin/media/pdfium-licenses/pdfium.txt
 
 # Which binary in the bundle to run: `cc_server` (default) or `cc_demo_server`.
 # The CI job extracts the matching standalone archive into ./bundle.

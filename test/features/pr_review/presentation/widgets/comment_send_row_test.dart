@@ -184,11 +184,58 @@ void main() {
       calls.agentReply!.complete();
       await tester.pump();
       expect(
+        tester.widget<CcTextField>(find.byType(CcTextField)).controller?.text,
+        isEmpty,
+      );
+      expect(
         tester.widget<CcIconButton>(_send('Send to agent')).loading,
         isFalse,
       );
       expect(calls.comments, isEmpty);
       expect(calls.batched, isEmpty);
+    });
+
+    testWidgets('failed agent send retains the draft for retry', (
+      tester,
+    ) async {
+      var fail = true;
+      final sent = <String>[];
+      await tester.pumpWidget(
+        _host(
+          PrCommentComposer(
+            prRef: null,
+            onSubmit: (_) {},
+            onSendToAgent: (text) async {
+              sent.add(text);
+              if (fail) {
+                throw StateError('offline');
+              }
+            },
+            onCancel: () {},
+            autofocus: false,
+          ),
+          prefs: AppPreferences.inMemory(),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Agent'));
+      await tester.pump();
+      await _type(tester, 'A careful reply');
+      await tester.tap(_send('Send to agent'));
+      await tester.pump();
+      expect(sent, ['A careful reply']);
+      expect(
+        tester.widget<CcTextField>(find.byType(CcTextField)).controller?.text,
+        'A careful reply',
+      );
+      fail = false;
+      await tester.tap(_send('Send to agent'));
+      await tester.pump();
+      expect(sent, ['A careful reply', 'A careful reply']);
+      expect(
+        tester.widget<CcTextField>(find.byType(CcTextField)).controller?.text,
+        isEmpty,
+      );
     });
 
     testWidgets('an empty draft sends nothing', (tester) async {

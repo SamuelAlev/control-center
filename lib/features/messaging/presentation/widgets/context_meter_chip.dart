@@ -18,16 +18,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// Tapping it opens a [ContextUsageFlyout] with the per-category breakdown.
 class ContextMeterChip extends ConsumerStatefulWidget {
-  /// Creates a [ContextMeterChip] for the [spaceId] / [agentId] pair.
+  /// Creates a [ContextMeterChip] for the conversation and agent.
   const ContextMeterChip({
     super.key,
     required this.spaceId,
+    required this.conversationId,
     required this.agentId,
     this.showAgent = false,
   });
 
   /// The space whose usage to show.
   final String spaceId;
+
+  /// The selected conversation whose usage to show.
+  final String conversationId;
 
   /// The agent whose context window bounds the meter.
   final String agentId;
@@ -73,6 +77,7 @@ class _ContextMeterChipState extends ConsumerState<ContextMeterChip> {
       ref.invalidate(
         contextInspectionProvider((
           spaceId: widget.spaceId,
+          conversationId: widget.conversationId,
           agentId: widget.agentId,
           includeContent: false,
         )),
@@ -90,6 +95,7 @@ class _ContextMeterChipState extends ConsumerState<ContextMeterChip> {
     final breakdown = ref.watch(
       contextBreakdownProvider((
         spaceId: widget.spaceId,
+        conversationId: widget.conversationId,
         agentId: widget.agentId,
       )),
     );
@@ -129,6 +135,7 @@ class _ContextMeterChipState extends ConsumerState<ContextMeterChip> {
       semanticLabel: label,
       overlayBuilder: (context, _) => ContextUsageFlyout(
         spaceId: widget.spaceId,
+        conversationId: widget.conversationId,
         agentId: widget.agentId,
         controller: _controller,
         agentName: agentName,

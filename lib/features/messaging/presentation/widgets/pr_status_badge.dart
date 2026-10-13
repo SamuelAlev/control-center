@@ -42,25 +42,30 @@ enum PrSidebarStatus {
     return PrSidebarStatus.open;
   }
 
-  /// Collapses a space's PRs into one representative status, or `null` when
-  /// there are none. An *active* PR dominates so the glyph reflects what still
-  /// needs attention: any open (ready) → open, else any draft → draft, else any
-  /// merged → merged, else closed.
+  /// Collapses a space's PRs into one representative status. Active PRs take
+  /// precedence; merged means EVERY PR merged, never just one terminal PR.
   static PrSidebarStatus? aggregate(List<PullRequest> prs) {
     if (prs.isEmpty) {
       return null;
     }
-    final statuses = prs.map(fromPullRequest).whereType<PrSidebarStatus>();
-    if (statuses.contains(PrSidebarStatus.open)) {
-      return PrSidebarStatus.open;
+    var hasDraft = false;
+    var hasClosed = false;
+    for (final pr in prs) {
+      switch (fromPullRequest(pr)!) {
+        case PrSidebarStatus.open:
+          return PrSidebarStatus.open;
+        case PrSidebarStatus.draft:
+          hasDraft = true;
+        case PrSidebarStatus.closed:
+          hasClosed = true;
+        case PrSidebarStatus.merged:
+          break;
+      }
     }
-    if (statuses.contains(PrSidebarStatus.draft)) {
+    if (hasDraft) {
       return PrSidebarStatus.draft;
     }
-    if (statuses.contains(PrSidebarStatus.merged)) {
-      return PrSidebarStatus.merged;
-    }
-    return PrSidebarStatus.closed;
+    return hasClosed ? PrSidebarStatus.closed : PrSidebarStatus.merged;
   }
 
   /// Distinct glyph per state — the shape differentiator that keeps this from

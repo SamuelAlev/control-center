@@ -36,13 +36,16 @@ CC_THIRD_PARTY=(
   "rhttp (Rust HTTP engine)|@RHTTP_VERSION|MIT|https://codeberg.org/Tienisto/rhttp|rhttp-MIT.txt|static|server"
   "code-server|@codeServerVersion|MIT|https://github.com/coder/code-server|code-server-MIT.txt|bundled|server"
   "AppImage runtime|20251108|MIT|https://github.com/AppImage/type2-runtime|appimage-runtime-MIT.txt|bundled|desktop"
-  # Fonts. Vendored into packages/cc_ui/fonts/ and compiled into the Flutter
-  # asset bundle, so they ship in the app and never in the server archive. The
-  # texts here are copies of the ones beside the .ttf files, which is where a
+  "FFmpeg (managed media CLI)|@FFMPEG_MEDIA_VERSION|GPL-3.0-or-later|https://ffmpeg.org/|ffmpeg-GPL-3.0.txt|bundled|server"
+  "PDFium binaries (managed PDF renderer)|@PDFIUM_MEDIA_VERSION|MIT|https://github.com/bblanchon/pdfium-binaries|pdfium-binaries-MIT.txt|bundled|server"
+  "resvg (managed SVG renderer)|0.48.1|Apache-2.0 OR MIT|https://github.com/linebender/resvg|resvg-MIT.txt|static|server"
+  # Fonts. The server's SVG helper also ships the two text fonts as fallbacks;
+  # no system font installation is required. These notices match the ones
+  # alongside the source .ttf files, which is where a
   # font swap updates them first. Manrope is an explicit freeze: the GitHub
   # repo is gone and upstream no longer tags releases.
-  "Manrope (font)|4.505|OFL-1.1|https://github.com/sharanda/manrope|manrope-font-LICENSE.txt|bundled|desktop"
-  "Fira Code (font)|6.2|OFL-1.1|https://github.com/tonsky/FiraCode|firacode-font-LICENSE.txt|bundled|desktop"
+  "Manrope (font)|4.505|OFL-1.1|https://github.com/sharanda/manrope|manrope-font-LICENSE.txt|bundled|desktop,server"
+  "Fira Code (font)|6.2|OFL-1.1|https://github.com/tonsky/FiraCode|firacode-font-LICENSE.txt|bundled|desktop,server"
   "Phosphor Icons (font)|2.0.8|MIT|https://github.com/phosphor-icons/core|phosphor-font-LICENSE.txt|bundled|desktop"
   "WebDriverAgent|v16.14.2|BSD-3-Clause|https://github.com/appium/WebDriverAgent|webdriveragent-BSD-3-Clause.txt|bundled|desktop"
   # Windows ARM64 desktop only (role windows-arm64): media-kit's minimal

@@ -65,6 +65,16 @@ extension _DispatchSessionSubagent on DispatchSession {
       workspaceId: ws,
       startedAt: startedAt,
     );
+    final readMedia = ReadMediaCapture(
+      emit: (event) => recording?.add(event),
+      workingDirectory: agentDirHostPath,
+      workspaceId: ws,
+      store: deps.blobStore,
+      renderer: deps.mediaRenderer,
+      agentId: childAgentId,
+      spaceId: spaceId,
+      conversationId: conversationId,
+    );
     int? childWindow;
     late final HarnessRunAccounting childAccounting;
     childAccounting = HarnessRunAccounting(
@@ -80,7 +90,7 @@ extension _DispatchSessionSubagent on DispatchSession {
       onCall: (record) => _emitHarnessProviderCall(
         record,
         accounting: childAccounting,
-        emit: (event) => recording?.add(event),
+        emit: readMedia.add,
         contextWindow: childWindow,
       ),
     );
@@ -317,9 +327,9 @@ extension _DispatchSessionSubagent on DispatchSession {
         switch (event) {
           case LoopTextDelta(:final text):
             buf.write(text);
-            recording?.add(TextEvent(content: text));
+            readMedia.add(TextEvent(content: text));
           case LoopThinkingDelta(:final thinking):
-            recording?.add(ThinkingEvent(content: thinking));
+            readMedia.add(ThinkingEvent(content: thinking));
           case LoopTurnComplete(:final message):
             final text = message.textContent;
             if (text.trim().isNotEmpty) {
@@ -333,7 +343,7 @@ extension _DispatchSessionSubagent on DispatchSession {
             :final toolUseId,
             :final args,
           ):
-            recording?.add(
+            readMedia.add(
               ToolCallEvent(
                 toolName: toolName,
                 toolCallId: toolUseId,
@@ -350,18 +360,18 @@ extension _DispatchSessionSubagent on DispatchSession {
             :final toolUseId,
             :final result,
           ):
-            recording?.add(
+            readMedia.add(
               ToolResultEvent(
                 toolCallId: toolUseId,
                 outputs: result.content,
                 toolName: toolName,
                 isError: result.isError,
-                images: await _externalizeToolImages(result.images),
+                images: await _toolImageRefs(toolName, result),
               ),
             );
           case LoopError(:final message):
             isError = true;
-            recording?.add(ErrorEvent(content: message, source: 'harness'));
+            readMedia.add(ErrorEvent(content: message, source: 'harness'));
             addEvent(
               DebugEvent(
                 content: '[harness] subagent "${req.label}" error: $message',
@@ -370,7 +380,7 @@ extension _DispatchSessionSubagent on DispatchSession {
           case LoopDone(:final reason):
             if (reason != LoopDoneReason.completed) {
               isError = true;
-              recording?.add(
+              readMedia.add(
                 ErrorEvent(
                   content: 'Subagent stopped: ${reason.name}.',
                   source: 'harness',
@@ -383,7 +393,7 @@ extension _DispatchSessionSubagent on DispatchSession {
       }
     } on Object catch (e) {
       isError = true;
-      recording?.add(ErrorEvent(content: '[harness] $e', source: 'harness'));
+      readMedia.add(ErrorEvent(content: '[harness] $e', source: 'harness'));
       addEvent(
         DebugEvent(content: '[harness] subagent "${req.label}" crashed: $e'),
       );
@@ -392,6 +402,7 @@ extension _DispatchSessionSubagent on DispatchSession {
       await childAccounting.flush();
     }
 
+    await readMedia.drained;
     await recording?.finish(
       isError ? TurnOutcome.failed : TurnOutcome.completed,
     );

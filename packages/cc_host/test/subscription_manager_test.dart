@@ -133,6 +133,51 @@ void main() {
       expect(params['rev'], before + 2);
     });
 
+    test(
+      'event bursts preserve repeated deltas and their completion',
+      () async {
+        final events = StreamController<Map<String, dynamic>>();
+        final rendered = StringBuffer();
+        var completed = false;
+        final manager = SubscriptionManager(
+          registry: WatchQueryRegistry([
+            WatchQuery(
+              name: 'transcript.events',
+              isEventStream: true,
+              handler: (_) => events.stream,
+            ),
+          ]),
+          deviceId: 'device',
+          userId: 'user',
+          send: (frame) {
+            final data = (frame['params'] as Map)['data'] as Map;
+            if (data['text'] case final String delta) {
+              rendered.write(delta);
+            }
+            if (data['complete'] == true) {
+              completed = true;
+            }
+          },
+        );
+        addTearDown(events.close);
+        addTearDown(manager.dispose);
+        manager.subscribe(
+          id: 1,
+          params: const {
+            'query': 'transcript.events',
+            'args': {'workspace_id': 'workspace'},
+          },
+        );
+        events.add({'text': 'Typecheck '});
+        events.add({'text': 'passed. '});
+        events.add({'text': 'passed. '});
+        events.add({'complete': true});
+        await pumpEventQueue(times: 10);
+        expect(rendered.toString(), 'Typecheck passed. passed. ');
+        expect(completed, isTrue);
+      },
+    );
+
     test('an identical re-emission is not re-sent; a change is', () async {
       final mgr = _harness();
       addTearDown(mgr.dispose);

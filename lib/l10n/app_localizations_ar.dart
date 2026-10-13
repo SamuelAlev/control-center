@@ -12685,6 +12685,47 @@ class AppLocalizationsAr extends AppLocalizations {
       'الهوية والسياسة والاصطلاحات المشتركة بين الجميع في مساحة العمل هذه.';
 
   @override
+  String get settingsAgentAttributionTitle => 'إسناد الإيداعات';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'اختر ما إذا كانت إيداعات الوكلاء تنسب الفضل إلى Control Center. يمكن لمسؤولي مساحة العمل تجاوز هذا الخيار للجميع فيها.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'نسبة الفضل إلى الوكيل';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'نسب إيداعات الوكلاء إلى Control Center';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'عند التفعيل، يكون Control Center مؤلف الإيداعات ويُضاف اسمك كمؤلف مشارك. عند التعطيل، تستخدم الإيداعات هويتك في Git دون نسب الفضل إلى الوكيل.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'يتجاوز إعداد مساحة العمل هذه خيارك الشخصي. يبقى تفضيلك محفوظًا لكنه لا يُطبَّق هنا.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'جارٍ تحميل إعدادات إسناد الإيداعات…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'اختر ما إذا كانت إيداعات الوكلاء تنسب الفضل إلى Control Center. يتجاوز خيار مساحة العمل التفضيل الشخصي لكل عضو.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit => 'استخدام تفضيل كل عضو';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'نسب الفضل دائمًا إلى Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'عدم نسب الفضل أبدًا إلى Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'قوالب الملاحظات والأصوات المحفوظة لاجتماعات مساحة العمل هذه.';
 
@@ -14189,6 +14230,20 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'تذكرة';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'دُمجت جميع طلبات السحب في هذه المساحة. هل تريد أرشفة هذه المساحة؟';
+
+  @override
+  String get spaceKeepAfterMerge => 'لا، احتفظ بهذه المساحة';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'لن يُطرح عليك هذا السؤال مجددًا بشأن هذه المساحة.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'دُمجت جميع طلبات السحب';
 
   @override
   String get archiveSpace => 'أرشفة المساحة';

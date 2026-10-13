@@ -105,6 +105,7 @@ class ModeToolPolicy {
     'list_agents',
     'list_skills',
     'read',
+    'render_media',
     // Ticketing — the typed tools that replaced the retired `ticket_cli`.
     // Review spaces can capture, edit, link and act on work.
     'create_ticket',
@@ -149,6 +150,7 @@ class ModeToolPolicy {
     'list_agents',
     'list_skills',
     'read',
+    'render_media',
     // Ticketing — the typed tools let a plan agent work on the ticket it was
     // dispatched against (edit / comment / close), but not orchestrate new
     // work (no create / assign / delegate here).
@@ -192,6 +194,7 @@ class ModeToolPolicy {
     'list_tickets',
     'get_ticket',
     'read',
+    'render_media',
   };
 
   /// Whether [toolName] is permitted in [mode]. Pure and in-memory.

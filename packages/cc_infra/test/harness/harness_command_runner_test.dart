@@ -3,6 +3,7 @@ library;
 
 import 'dart:io';
 
+import 'package:cc_domain/core/domain/entities/agent_shell_output.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
@@ -12,6 +13,8 @@ import 'package:cc_domain/features/guardrails/domain/value_objects/action_decisi
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/harness/harness_command_runner.dart';
+import 'package:cc_infra/src/process/agent_shell_file_output.dart';
+import 'package:cc_infra/src/process/agent_shell_process_service.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:test/test.dart';
@@ -210,6 +213,87 @@ void main() {
       );
       expect(res.stdout, contains('to-stdout'));
       expect(res.stderr, contains('to-stderr'));
+    });
+    test(
+      'publishes bounded live stdout and stderr and retains final snapshot',
+      () async {
+        final registry = HarnessShellRegistry();
+        final command = SandboxedHarnessCommandRunner(
+          mode: Mode.chat,
+          networkEnabled: false,
+          workspaceId: 'ws',
+          spaceId: 'space-1',
+          agentId: 'a',
+          shellRegistry: registry,
+        );
+        final pending = command.run(
+          'echo live-out; echo live-err >&2; sleep 1; echo completed',
+          workdir: cwd.path,
+        );
+        String? id;
+        for (var attempt = 0; attempt < 100; attempt++) {
+          final active = registry.forSpace('ws', 'space-1');
+          if (active.isNotEmpty) {
+            id = active.single.outputId;
+            final snapshot = registry.readOutput('ws', 'space-1', id);
+            if (snapshot!.output.contains('live-err') &&
+                snapshot.output.contains('live-out')) {
+              expect(snapshot.state, AgentShellOutputState.running);
+              break;
+            }
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        }
+        expect(id, isNotNull);
+        final outputId = id!;
+        expect(registry.readOutput('elsewhere', 'space-1', outputId), isNull);
+        expect(registry.readOutput('ws', 'other', outputId), isNull);
+        await pending;
+        expect(registry.forSpace('ws', 'space-1'), isEmpty);
+        final finalOutput = registry.readOutput('ws', 'space-1', outputId)!;
+        expect(finalOutput.state, AgentShellOutputState.exited);
+        expect(finalOutput.output, contains('completed'));
+        expect(finalOutput.output, contains('live-err'));
+      },
+    );
+
+    test('redacts a secret split across harness output chunks', () {
+      final registry = HarnessShellRegistry();
+      String? id;
+      final close = registry.register(
+        pid: 42,
+        workspaceId: 'ws',
+        spaceId: 'space-1',
+        agentId: 'a',
+        command: 'echo token',
+        onRegistered: (value) => id = value,
+      );
+      final outputId = id!;
+      registry.append(outputId, 'request started\nAuthorization: Bea');
+      registry.append(outputId, 'rer sensitive-value\nrequest finished');
+      final output = registry.readOutput('ws', 'space-1', outputId)!.output;
+      expect(output, isNot(contains('sensitive-value')));
+      expect(output, contains('request started'));
+      expect(output, contains('request finished'));
+      close();
+    });
+    test('bounds the harness snapshot independently of tool output', () {
+      final registry = HarnessShellRegistry();
+      String? id;
+      final close = registry.register(
+        pid: 43,
+        workspaceId: 'ws',
+        spaceId: 'space-1',
+        agentId: 'a',
+        command: 'output flood',
+        onRegistered: (value) => id = value,
+      );
+      final outputId = id!;
+      registry.append(outputId, 'x' * (AgentShellFileOutput.maxBytes + 1024));
+      final snapshot = registry.readOutput('ws', 'space-1', outputId)!;
+      expect(snapshot.truncated, isTrue);
+      expect(snapshot.output.length, AgentShellFileOutput.maxBytes);
+      close();
     });
   });
 

@@ -115,9 +115,9 @@ Future<Set<String>> _openFeed(
         // A row that gets as far as fetching its elided transcript would dial
         // the server; the point of the test is that most rows never do.
         for (var i = 0; i < _windowSize; i++)
-          messageTranscriptProvider(
+          messageDetailProvider(
             'm$i',
-          ).overrideWith((ref) => Stream.value(const [])),
+          ).overrideWith((ref) => Stream.value(null)),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,

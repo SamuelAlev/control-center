@@ -2,7 +2,7 @@
 title: Semak dan cantumkan PR
 description: Buka meja kerja PR, baca diff, tinggalkan komen sebaris, hantar semakan dan cantumkan.
 slug: ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Panduan ini menunjukkan cara menyemak dan mencantumkan pull request.
@@ -26,6 +26,33 @@ bagi setiap PR.
 Tab Gambaran keseluruhan membawa metadata PR itu (pengarang, cawangan, label,
 penerima tugasan, tindak balas, commit, status pemeriksaan) dan baris tindakan:
 muat semula, **Semakan**, **Cantum**, buka dalam IDE dan menu limpahan ⋯.
+
+### Buka PR daripada tindanan sesuatu ruang
+
+Bahagian **Umum → Pull request** sesuatu ruang mengelompokkan PR berpaut dan PR
+yang dipadankan melalui cawangan mengikut repositori. Apabila cawangan asas
+sesuatu PR ialah cawangan head PR sebelumnya, ia dipaparkan dalam tindanan yang
+boleh diruntuhkan. Pengepalanya mengenal pasti PR paling bawah, cawangan sasaran
+dan kiraan; baris bernombor bermula daripada PR paling bawah (1) dan bergerak ke
+arah hujung tindanan. Nombor itu menerangkan susunan kebergantungan, bukan
+kesediaan cantuman.
+
+Setiap baris memaparkan tajuk, nombor PR dan keadaan. Tudingkan kursor atau
+fokuskan sesuatu baris untuk membaca tajuk penuh dan nama cawangannya; klik atau
+tekan Enter untuk membuka meja kerja PR. Fokuskan pengepala tindanan dan tekan
+Enter atau Space untuk meruntuhkan atau mengembangkannya. PR yang tidak berkaitan
+kekal berasingan, dan pautan cawangan yang tidak lengkap atau kabur tidak
+dipaparkan sebagai tindanan tersusun.
+
+Dalam **Kawalan sumber**, **Pull request bertindan (N)** membuka pemilih bahagian
+tindanan yang telah diterbitkan, bermula dari bawah. Setiap entri memaparkan
+nombor PR, label bahagian dan kedudukan; bahagian yang di-checkout ditandakan.
+Pilih satu entri untuk membuka meja kerja PR itu. **Terbitkan tindanan** muncul
+hanya apabila penemuan PR telah selesai dan sekurang-kurangnya satu bahagian
+tiada PR. Ini turut terpakai pada menu cawangan. PR yang dicipta di luar Control
+Center juga dikira sebagai diterbitkan. Tindanan yang diterbitkan sebahagiannya
+menawarkan kedua-dua tindakan; kerja cawangan tunggal mengekalkan tindakan
+cipta/lihat PR individu.
 
 ## Baca diff
 

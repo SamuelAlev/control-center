@@ -2,7 +2,7 @@
 title: GitHub entegrasyonunu kurma
 description: PR yüzeyi, depo kaydı ve ajan çalıştırmaları çalışsın diye GitHub'da oturum açın.
 slug: tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu
-sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
+sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
 ---
 
 Bu kılavuz, kurulumun GitHub'a özgü kısımlarını ele alır. GitHub, desteklenen üç
@@ -105,9 +105,7 @@ için çipe tıklayın. Durumlar her iki dakikada bir kendiliğinden yenilenir.
   ajanın asla elinde tutmadığı bir yazma token'ıyla ileten Control Center'dan
   geçer. Bkz.
   [Sandbox politikalarını yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/)
-- Bir ajanın yaptığı commit'ler **ajan olarak** yazılır — görünen ad artı
-  ` (agent)`, ajanın kimliğine göre anahtarlanmış sentetik bir adreste — asla bir
-  insan olarak değil. İsteyen kişi bir `Co-Authored-By` trailer'ıyla anılır
+- Varsayılan olarak ajanın commit'lerinde yazar **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`) olur; isteği yapan kişi `Co-Authored-By` satırında anılır. **Ayarlar → Siz → Commit atfı** bölümünden ajana atfı kapatıp yalnızca kendi Git kimliğinizi kullanabilirsiniz. **Ayarlar → Çalışma alanı → Genel** bölümündeki çalışma alanı ayarı önceliklidir ve kişisel anahtarı kilitler. Claude Code'un kendi atfı her zaman kapalıdır
 - Bir GitHub App yapılandırıldığında broker, geniş bir token vermek yerine her
   başlatma için ince taneli, depo kapsamlı, kabaca bir saatlik kurulum token'ları
   üretir. Kurulum, çalıştırmanın deposunun **sahibinden** çözülür; böylece birkaç

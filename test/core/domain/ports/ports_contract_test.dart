@@ -376,10 +376,12 @@ void main() {
     test('constructs with required fields and defaults', () {
       const req = AgentQuestionRequest(
         workspaceId: 'ws1',
-        spaceId: 'conv-1',
+        spaceId: 'space-1',
+        conversationId: 'conv-1',
         question: 'Which branch?',
       );
-      expect(req.spaceId, 'conv-1');
+      expect(req.spaceId, 'space-1');
+      expect(req.conversationId, 'conv-1');
       expect(req.question, 'Which branch?');
       expect(req.context, isNull);
       expect(req.options, isEmpty);
@@ -396,7 +398,8 @@ void main() {
       ];
       final req = AgentQuestionRequest(
         workspaceId: 'ws1',
-        spaceId: 'conv-2',
+        spaceId: 'space-1',
+        conversationId: 'conv-2',
         question: 'Merge into which branch?',
         context: 'The PR has conflicts.',
         options: options,
@@ -415,7 +418,8 @@ void main() {
     test('multiSelect is configurable', () {
       const req = AgentQuestionRequest(
         workspaceId: 'ws1',
-        spaceId: 'conv-3',
+        spaceId: 'space-1',
+        conversationId: 'conv-3',
         question: 'Select files',
         multiSelect: true,
       );
@@ -426,6 +430,7 @@ void main() {
       const req = AgentQuestionRequest(
         workspaceId: 'ws1',
         spaceId: 'c',
+        conversationId: 'conv-c',
         question: 'q',
       );
       expect(req.options, isEmpty);
@@ -762,7 +767,8 @@ void main() {
       final answer = await port.ask(
         const AgentQuestionRequest(
           workspaceId: 'ws1',
-          spaceId: 'conv-1',
+          spaceId: 'space-1',
+          conversationId: 'conv-1',
           question: 'Test?',
         ),
       );

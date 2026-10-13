@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_send_row.dart';
 import 'package:control_center/features/pr_review/providers/comment_composer_mode_provider.dart';
@@ -28,6 +29,7 @@ class PrCommentComposer extends ConsumerStatefulWidget {
     super.key,
     required this.prRef,
     required this.onSubmit,
+    this.draftDestination,
     required this.onCancel,
     this.onSubmitBatched,
     this.onSendToAgent,
@@ -61,6 +63,9 @@ class PrCommentComposer extends ConsumerStatefulWidget {
   /// The PR this composer posts to; its repo drives the `#` autocomplete.
   final PrRef? prRef;
 
+  /// Exact inline anchor (file, side, range and columns), distinct per PR.
+  final Object? draftDestination;
+
   /// Called when the user cancels or presses Escape.
   final VoidCallback onCancel;
 
@@ -80,21 +85,49 @@ class PrCommentComposer extends ConsumerStatefulWidget {
 
 class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
   final _focus = FocusNode();
-  late final _ctrl = TextEditingController(text: widget.initialText ?? '');
+  late TextEditingController _ctrl;
+  late TextDraftKey _draftKey;
   OverlayEntry? _slashMenu;
   bool _sending = false;
 
   @override
   void initState() {
     super.initState();
+    _attachDraft();
+  }
+
+  TextDraftKey get _key => (
+    workspaceId: widget.prRef?.workspaceId ?? '',
+    surface: 'pr-inline-comment',
+    destination: (widget.prRef, widget.draftDestination),
+  );
+
+  void _attachDraft() {
+    _draftKey = _key;
+    final provider = textDraftControllerProvider(_draftKey);
+    final fresh = !ref.exists(provider);
+    _ctrl = ref.read(provider);
+    if (fresh && widget.initialText != null) {
+      _ctrl.text = widget.initialText!;
+    }
     _ctrl.addListener(_onTextChanged);
+  }
+
+  @override
+  void didUpdateWidget(PrCommentComposer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_draftKey != _key) {
+      _ctrl.removeListener(_onTextChanged);
+      _closeSlashMenu();
+      _attachDraft();
+      _sending = false;
+    }
   }
 
   @override
   void dispose() {
     _ctrl.removeListener(_onTextChanged);
     _closeSlashMenu();
-    _ctrl.dispose();
     _focus.dispose();
     super.dispose();
   }
@@ -173,7 +206,9 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
   );
 
   Future<void> _send(CommentComposerMode mode) async {
-    final text = _ctrl.text.trim();
+    final draftCtrl = _ctrl;
+    final originalText = draftCtrl.text;
+    final text = originalText.trim();
     if (text.isEmpty || _sending) {
       return;
     }
@@ -187,15 +222,30 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
         setState(() => _sending = true);
         try {
           await toAgent(text);
+          if (draftCtrl.text == originalText) {
+            draftCtrl.clear();
+          }
+        } on Object {
+          // The host reports the error; leave this draft available for retry.
         } finally {
-          if (mounted) {
+          if (mounted && identical(_ctrl, draftCtrl)) {
             setState(() => _sending = false);
           }
         }
       case CommentComposerMode.review:
-        widget.onSubmitBatched?.call(text);
+        final submit = widget.onSubmitBatched;
+        if (submit == null) {
+          return;
+        }
+        submit(text);
+        if (draftCtrl.text == originalText) {
+          draftCtrl.clear();
+        }
       case CommentComposerMode.comment:
         widget.onSubmit(text);
+        if (draftCtrl.text == originalText) {
+          draftCtrl.clear();
+        }
     }
   }
 

@@ -8,7 +8,7 @@ import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/agent_turn.dart';
-import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_flow.dart';
+import 'package:control_center/features/messaging/providers/live_turn_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -153,8 +153,10 @@ void main() {
 
     Future<void> pumpWithRuns(
       WidgetTester tester,
-      List<AgentRunLog> activeRuns,
-    ) async {
+      List<AgentRunLog> activeRuns, {
+      Message? persisted,
+      bool agentUnavailable = false,
+    }) async {
       tester.view.physicalSize = const Size(800, 400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -165,7 +167,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            agentDetailProvider('agent-1').overrideWith((ref) async => _agent),
+            agentDetailProvider(
+              'agent-1',
+            ).overrideWith((ref) async => agentUnavailable ? null : _agent),
+            messageDetailProvider(
+              'run-1',
+            ).overrideWith((ref) => Stream.value(persisted)),
             activeStreamRegistryProvider.overrideWithValue(
               ActiveStreamRegistry(),
             ),
@@ -218,9 +225,118 @@ void main() {
 
       expect(find.text('Thinking…'), findsNothing);
     });
+
+    testWidgets('recovers a cached placeholder after the run has ended', (
+      tester,
+    ) async {
+      await pumpWithRuns(
+        tester,
+        const [],
+        agentUnavailable: true,
+        persisted: Message(
+          id: 'run-1',
+          spaceId: 'c1',
+          conversationId: 'c1',
+          senderId: 'agent-1',
+          senderType: SenderType.agent,
+          content: 'I need your answer before changing the older tests.',
+          messageType: MessageType.agentTurn,
+          createdAt: DateTime(2024),
+          metadata: {
+            'agentName': 'Architect',
+            'streamComplete': true,
+            'outcome': 'interrupted',
+            'segments': encodeTranscript([
+              TextSegment(
+                text: 'I need your answer before changing the older tests.',
+                startedAt: DateTime(2024),
+                durationMs: 10,
+              ),
+            ]),
+          },
+        ),
+      );
+
+      expect(
+        find.textContaining('I need your answer', findRichText: true),
+        findsWidgets,
+      );
+      expect(find.text('Architect'), findsOneWidget);
+      expect(find.text('agen'), findsNothing);
+      expect(find.text('Thinking…'), findsNothing);
+    });
   });
 
-  testWidgets('a live list flush keeps the transcript slot', (tester) async {
+  testWidgets('completion replaces a watched unfinished detail', (
+    tester,
+  ) async {
+    final unfinished = _msg(content: 'Partial answer').copyWith(
+      metadata: const {'streamComplete': false, 'segments_elided': true},
+    );
+    final listed = ValueNotifier(unfinished);
+    addTearDown(listed.dispose);
+    var detail = unfinished;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          agentDetailProvider('agent-1').overrideWith((ref) async => _agent),
+          activeStreamRegistryProvider.overrideWithValue(
+            ActiveStreamRegistry(),
+          ),
+          messageDetailProvider(
+            't1',
+          ).overrideWith((ref) => Stream.value(detail)),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: _wrap(
+              ValueListenableBuilder<Message>(
+                valueListenable: listed,
+                builder: (context, message, _) =>
+                    AgentTurn(message: message, codeFont: 'monospace'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Partial answer', findRichText: true), findsOneWidget);
+
+    detail = unfinished.copyWith(
+      content: 'Final answer',
+      metadata: {
+        'streamComplete': true,
+        'segments': encodeTranscript([
+          TextSegment(
+            text: 'Final transcript after completion',
+            startedAt: DateTime(2024),
+            durationMs: 10,
+          ),
+        ]),
+      },
+    );
+    // Rebuild below ProviderScope, as a feed emission does. Re-pumping the
+    // entire app would let the scope be dirtied during its own rebuild.
+    listed.value = detail.copyWith(
+      metadata: const {'streamComplete': true, 'segments_elided': true},
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(
+      find.text('Final transcript after completion', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.text('Partial answer', findRichText: true), findsNothing);
+  });
+
+  testWidgets('live text survives list flushes and font changes', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 600);
     tester.view.devicePixelRatio = 1;
     addTearDown(() {
@@ -257,26 +373,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.textContaining('Hel', findRichText: true), findsWidgets);
 
-    final slot = find.ancestor(
-      of: find.byType(TranscriptFlow),
-      matching: find.byType(ValueListenableBuilder<int>),
-    );
-    expect(slot, findsOneWidget);
-    final before = tester.widget(slot);
-
     // The feed row's stored text moved on. The open transcript did not.
     host.currentState!.show('Hello stored by the flush');
     await tester.pump();
-    expect(identical(tester.widget(slot), before), isTrue);
     expect(find.textContaining('Hel', findRichText: true), findsWidgets);
 
     host.currentState!.show('Hello stored by the flush', font: 'serif');
     await tester.pump();
-    expect(identical(tester.widget(slot), before), isFalse);
     expect(find.textContaining('Hel', findRichText: true), findsWidgets);
   });
 
-  testWidgets('a settled turn keeps its slot across equal re-emissions', (
+  testWidgets('a persisted turn displays updated text on the same row', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 600);
@@ -303,22 +410,10 @@ void main() {
     );
     await tester.pump();
 
-    final slot = find.ancestor(
-      of: find.byType(TurnProse),
-      matching: find.byType(ValueListenableBuilder<int>),
-    );
-    expect(slot, findsOneWidget);
-    final before = tester.widget(slot);
-
-    // The feed re-emits the row (a drift write elsewhere): a fresh but equal
-    // message must not rebuild the body.
-    host.currentState!.show('Hel');
-    await tester.pump();
-    expect(identical(tester.widget(slot), before), isTrue);
+    expect(find.textContaining('Hel', findRichText: true), findsWidgets);
 
     host.currentState!.show('Hello, edited');
     await tester.pump();
-    expect(identical(tester.widget(slot), before), isFalse);
     expect(
       find.textContaining('Hello, edited', findRichText: true),
       findsWidgets,

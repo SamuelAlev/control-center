@@ -33,10 +33,27 @@ void main() {
     test('classifies from the name when no type was reported', () {
       expect(
         attachmentMediaKind(name: 'diagram.svg'),
-        AttachmentMediaKind.image,
+        AttachmentMediaKind.other,
+      );
+      expect(
+        attachmentMediaKind(mimeType: 'application/pdf', name: 'diagram.svg'),
+        AttachmentMediaKind.other,
       );
       expect(attachmentMediaKind(name: 'talk.mp4'), AttachmentMediaKind.video);
       expect(attachmentMediaKind(name: 'song.flac'), AttachmentMediaKind.audio);
+      expect(
+        attachmentMediaKind(name: 'animated.apng'),
+        AttachmentMediaKind.image,
+      );
+      expect(attachmentMediaKind(name: 'legacy.ai'), AttachmentMediaKind.other);
+      expect(attachmentMediaKind(name: 'photo.heic'), AttachmentMediaKind.other);
+      expect(
+        attachmentMediaKind(
+          mimeType: 'application/pdf',
+          name: 'pdf-compatible.ai',
+        ),
+        AttachmentMediaKind.pdf,
+      );
     });
 
     test('ignores an unhelpfully generic reported type', () {

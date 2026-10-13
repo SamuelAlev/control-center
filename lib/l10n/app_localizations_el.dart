@@ -12600,6 +12600,49 @@ class AppLocalizationsEl extends AppLocalizations {
       'Ταυτότητα, πολιτική και συμβάσεις που μοιράζονται όλοι σε αυτόν τον χώρο εργασίας.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Απόδοση συνεισφοράς στα commit';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Επιλέξτε αν τα commit των πρακτόρων θα αποδίδουν τη συνεισφορά στο Control Center. Οι διαχειριστές του χώρου εργασίας μπορούν να παρακάμψουν αυτή την επιλογή για όλους.';
+
+  @override
+  String get settingsAgentCoauthorSection =>
+      'Απόδοση συνεισφοράς στον πράκτορα';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Αναφορά του Control Center στα commit των πρακτόρων';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Όταν είναι ενεργό, συντάκτης των commit είναι το Control Center και εσείς αναφέρεστε ως συνδημιουργός. Όταν είναι ανενεργό, τα commit χρησιμοποιούν την ταυτότητά σας στο Git χωρίς αναφορά στον πράκτορα.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Η ρύθμιση αυτού του χώρου εργασίας υπερισχύει της προσωπικής σας επιλογής. Η προτίμησή σας παραμένει αποθηκευμένη, αλλά δεν ισχύει εδώ.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Φόρτωση ρυθμίσεων απόδοσης συνεισφοράς…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Επιλέξτε αν τα commit των πρακτόρων θα αποδίδουν τη συνεισφορά στο Control Center. Η επιλογή του χώρου εργασίας υπερισχύει της προσωπικής προτίμησης κάθε μέλους.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Χρήση της προτίμησης κάθε μέλους';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Πάντα απόδοση συνεισφοράς στο Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Ποτέ απόδοση συνεισφοράς στο Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Πρότυπα σημειώσεων και αποθηκευμένες φωνές για τις συσκέψεις αυτού του χώρου εργασίας.';
 
@@ -14113,6 +14156,21 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Εισιτήριο';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Όλα τα αιτήματα ενσωμάτωσης σε αυτόν τον χώρο έχουν συγχωνευτεί. Να αρχειοθετηθεί ο χώρος;';
+
+  @override
+  String get spaceKeepAfterMerge => 'Όχι, διατήρηση του χώρου';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Δεν θα ερωτηθείτε ξανά για αυτόν τον χώρο.';
+
+  @override
+  String get spaceAllPrsMergedLabel =>
+      'Όλα τα αιτήματα ενσωμάτωσης συγχωνεύτηκαν';
 
   @override
   String get archiveSpace => 'Αρχειοθέτηση χώρου';

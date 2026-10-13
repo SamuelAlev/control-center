@@ -130,6 +130,7 @@ class ToolOutputLimitTable {
       ),
       // Shell/build: the tail (result + exit code) matters most.
       'bash': ToolOutputLimits(characterLimit: 50000, lineLimit: 2000),
+      'render_media': ToolOutputLimits(maxImages: 4),
       'shell': ToolOutputLimits(characterLimit: 50000, lineLimit: 2000),
       // Enclosure (rig) tools return a screenshot per call. Text stays small
       // (a status line + extracted state); the image is the payload, so it

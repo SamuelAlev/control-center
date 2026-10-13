@@ -38,15 +38,16 @@ AgentRunLog _run({
 );
 
 class _StaticRunLogRepo implements AgentRunLogRepository {
-  _StaticRunLogRepo(this.logs);
+  _StaticRunLogRepo(this.logs, {this.updates});
 
   final List<AgentRunLog> logs;
+  final Stream<List<AgentRunLog>>? updates;
 
   // The AGENTS panel is a SPACE-level surface: it lists who has worked in the
   // space, across every conversation in it, so it reads the space stream.
   @override
   Stream<List<AgentRunLog>> watchBySpace(String workspaceId, String spaceId) =>
-      Stream.value(logs);
+      updates ?? Stream.value(logs);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -67,13 +68,14 @@ void main() {
   Future<List<AgentRunTarget>> pump(
     WidgetTester tester, {
     required List<AgentRunLog> logs,
+    Stream<List<AgentRunLog>>? updates,
   }) async {
     final opened = <AgentRunTarget>[];
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           agentRunLogRepositoryProvider.overrideWithValue(
-            _StaticRunLogRepo(logs),
+            _StaticRunLogRepo(logs, updates: updates),
           ),
         ],
         child: MaterialApp(
@@ -345,13 +347,13 @@ void main() {
     );
   });
 
-  testWidgets('each subagent dot reports its own outcome', (tester) async {
-    // One glance has to separate the subagent that finished from the one that
-    // failed, the one still working and the one still queued.
+  testWidgets('terminal children disappear while active children remain', (
+    tester,
+  ) async {
     await pump(
       tester,
       logs: [
-        _run(id: 'main', status: RunStatus.running, summary: 'working'),
+        _run(id: 'main', status: RunStatus.running),
         _run(
           id: 'sub-ok',
           status: RunStatus.completed,
@@ -379,20 +381,68 @@ void main() {
       ],
     );
 
-    final t = DesignSystemTokens.light();
-    final dots = tester
-        .widgetList<AgentStatusDot>(find.byType(AgentStatusDot))
-        .map((d) => d.visual.dotColor)
-        .toList();
+    expect(find.text('finished well'), findsNothing);
+    expect(find.text('blew up'), findsNothing);
+    expect(find.text('still going'), findsOneWidget);
+    expect(find.text('not started'), findsOneWidget);
+  });
 
-    // Agent row first, then its subagents in order.
-    expect(dots, [
-      t.fgBrandPrimary, // main run: running -> accent
-      t.fgSuccessSecondary, // finished well -> green
-      t.fgErrorSecondary, // blew up -> red
-      t.fgBrandPrimary, // still going -> accent
-      t.fgQuaternary, // not started -> grey
+  testWidgets('completion removes a child without waiting for its parent', (
+    tester,
+  ) async {
+    final updates = StreamController<List<AgentRunLog>>();
+    addTearDown(updates.close);
+    await pump(tester, logs: const [], updates: updates.stream);
+    updates.add(parentAndChild);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('scout the repo'), findsOneWidget);
+    expect(find.text('0/2'), findsOneWidget);
+
+    updates.add([
+      parentAndChild.first,
+      parentAndChild.last.copyWith(
+        status: RunStatus.completed,
+        completedAt: _t0.add(const Duration(minutes: 1)),
+      ),
     ]);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('scout the repo'), findsNothing);
+    expect(find.text('agent-1'), findsOneWidget);
+    expect(find.text('0/1'), findsOneWidget);
+  });
+
+  testWidgets('an active grandchild survives its parent completing', (
+    tester,
+  ) async {
+    final opened = await pump(
+      tester,
+      logs: [
+        parentAndChild.first,
+        parentAndChild.last.copyWith(status: RunStatus.completed),
+        _run(
+          id: 'grandchild',
+          status: RunStatus.running,
+          summary: 'nested background work',
+          parentRunId: 'run-child',
+        ),
+        _run(
+          id: 'completed-orphan',
+          agentId: 'orphan-agent',
+          parentRunId: 'missing-parent',
+          summary: 'finished orphan',
+        ),
+      ],
+    );
+    expect(find.text('scout the repo'), findsNothing);
+    expect(find.text('orphan-agent'), findsNothing);
+    expect(find.text('nested background work'), findsOneWidget);
+    expect(find.text('0/2'), findsOneWidget);
+    await tester.tap(find.text('nested background work'));
+    expect(opened.single.runId, 'grandchild');
+    expect(opened.single.isSubAgent, isTrue);
   });
 
   testWidgets('the header count matches the rendered rows', (tester) async {

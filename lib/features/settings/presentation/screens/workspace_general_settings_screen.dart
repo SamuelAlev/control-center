@@ -1,6 +1,7 @@
 import 'package:control_center/features/settings/presentation/screens/settings_page.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/sync_health_card.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/branch_template_section.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/workspace/agent_attribution_workspace_section.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/workspace/workspace_policy_section.dart';
 import 'package:control_center/features/settings/settings_extensions.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -37,6 +38,7 @@ class WorkspaceGeneralSettingsScreen extends StatelessWidget {
       slot: SettingsSlot.workspaceGeneral,
       sections: [
         WorkspacePolicySection(workspaceId: workspaceId),
+        const AgentAttributionWorkspaceSection(),
         const BranchTemplateSection(),
         const SyncHealthCard(),
       ],

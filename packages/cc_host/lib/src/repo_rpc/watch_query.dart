@@ -27,8 +27,8 @@ class WatchQueryContext {
   final String userId;
 }
 
-/// Produces the snapshot stream for one subscription. Each emission is a full
-/// snapshot map (e.g. `{tickets: [...]}`) pushed to the client as `sub/snapshot`.
+/// Produces one subscription's snapshots, or ordered events when
+/// [WatchQuery.isEventStream] is set.
 typedef WatchQueryHandler =
     Stream<Map<String, dynamic>> Function(WatchQueryContext ctx);
 
@@ -44,6 +44,7 @@ class WatchQuery {
     required this.name,
     required this.handler,
     this.workspaceScoped = true,
+    this.isEventStream = false,
     this.minRole,
     this.serverAuthority = ServerAuthority.none,
   });
@@ -54,6 +55,13 @@ class WatchQuery {
   /// Whether the session's bound workspace is injected (and an unbound session
   /// rejected). False only for genuinely global streams (e.g. newsfeed).
   final bool workspaceScoped;
+
+  /// Every emission is an ordered event, not a replaceable snapshot.
+  ///
+  /// Event streams bypass snapshot coalescing and equality suppression.
+  /// Clients use `RemoteRpcClient.subscribeEvents` without last-frame replay;
+  /// the handler supplies a seed when the stream's protocol requires one.
+  final bool isEventStream;
 
   /// Explicit minimum workspace role required to open this stream. Null
   /// (default) = [WorkspaceRole.guest] via [effectiveMinRole] — membership
@@ -73,7 +81,7 @@ class WatchQuery {
   /// this: the role gate only runs for workspace-scoped queries.
   final ServerAuthority serverAuthority;
 
-  /// Opens the snapshot stream.
+  /// Opens the declared snapshot or event stream.
   final WatchQueryHandler handler;
 }
 

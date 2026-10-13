@@ -6,7 +6,7 @@ import 'package:cc_server_core/src/context/context_inspection_service.dart';
 /// Repo-RPC ops exposing a conversation's context-window composition.
 ///
 /// `context.inspect` re-derives — server-side, without running anything — what
-/// the next built-in-harness dispatch for the (workspace, space, agent) would
+/// the next dispatch for the (workspace, space, conversation, agent) would
 /// send, sliced into per-category segments. `include_content: false` (the
 /// flyout) returns sizes only; `true` (the explorer) carries every part's
 /// verbatim text.
@@ -18,11 +18,12 @@ List<RepoOp> buildContextOps({required ContextInspectionService inspection}) =>
       RepoOp(
         name: 'context.inspect',
         kind: RepoOpKind.read,
-        requiredArgs: const ['space_id', 'agent_id'],
+        requiredArgs: const ['space_id', 'conversation_id', 'agent_id'],
         handler: (ctx) async {
           final result = await inspection.inspect(
             workspaceId: ctx.workspaceId!,
             spaceId: ctx.args['space_id'] as String,
+            conversationId: ctx.args['conversation_id'] as String,
             agentId: ctx.args['agent_id'] as String,
             includeContent: ctx.args['include_content'] == true,
           );

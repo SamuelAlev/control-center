@@ -218,6 +218,7 @@ class GitLabApiClient {
     String projectId, {
     required String state,
     String? authorUsername,
+    String? sourceBranch,
     int perPage = kGitLabMaxPerPage,
     int page = 1,
     String orderBy = 'updated_at',
@@ -236,6 +237,8 @@ class GitLabApiClient {
         'with_labels_details': 'true',
         if (authorUsername != null && authorUsername.isNotEmpty)
           'author_username': authorUsername,
+        if (sourceBranch != null && sourceBranch.isNotEmpty)
+          'source_branch': sourceBranch,
       },
       cancelToken: cancelToken,
     );

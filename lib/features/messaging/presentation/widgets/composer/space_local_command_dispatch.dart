@@ -125,6 +125,7 @@ Future<String?> dispatchLocalSlashCommand({
         context: context,
         args: parsed.args,
         spaceId: spaceId,
+        conversationId: conversationId,
         workspaceId: workspaceId,
       );
     }

@@ -23,6 +23,28 @@ The Overview tab carries the PR's metadata (author, branch, labels, assignees,
 reactions, commits, check status) and the action row: refresh, **Review**,
 **Merge**, open in IDE and a ⋯ overflow menu.
 
+### Open a PR from a space's stack
+
+The space's **General → Pull requests** section groups linked and branch-matched
+PRs by repository. When one PR's base branch is the previous PR's head branch,
+they appear in a collapsible stack. Its header identifies the bottom PR, target
+branch and count; numbered rows run from the bottom PR (1) toward the tip.
+The numbers describe dependency order, not merge readiness.
+
+Each row shows the title, PR number and state. Hover or focus a row to read its
+full title and branch names; click or press Enter to open the PR workbench.
+Focus a stack header and press Enter or Space to collapse or expand it.
+Unrelated PRs stay separate, and incomplete or ambiguous branch links are not
+presented as an ordered stack.
+
+In **Source control**, **Stacked pull requests (N)** opens a picker of the stack's
+published parts, bottom first. Each entry shows the PR number, part label and
+position; the checked-out part is marked. Select an entry to open its PR workbench.
+**Publish stack** appears only when PR discovery has finished and at least one
+part has no PR. This also applies to the branch menu. PRs created outside Control
+Center count as published, too. Partially published stacks offer both actions;
+single-branch work keeps the individual create/view PR actions.
+
 ## Read the diff
 
 Open the **Diff** tab to see the whole PR diff at once, with a file tree for

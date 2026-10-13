@@ -2,7 +2,7 @@
 title: GitHub PR から Control Center に話しかける
 description: Webhook も公開 URL も不要で、PR 会話そのものからサーバーの GitHub App ボットにレビューや質問を依頼できます。
 slug: ja-JP/マニュアル/ハウツーガイド/github-pr-会話
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 このガイドでは、GitHub から離れずに Control Center を操作する方法を説明します。
@@ -27,8 +27,9 @@ PR ページから AI レビューを依頼し、コメントでボットに質�
 
 ## ボットの名前を調べる
 
-ボットのログイン名は `<appslug>[bot]` です。ここで `appslug` は、アプリを登録した
-ときに付けた名前です。
+Control Center 専用の GitHub アカウント `@usectrl` をメンションします。これがデフォルトの起動方法です。リクエストの処理と返信の投稿は、引き続きサーバーに設定された GitHub App が行います。`usectrl` アカウントの認証情報は不要です。
+
+アプリ固有のログイン名 `<appslug>[bot]` と短縮形 `@appslug` も使えます。この任意の別名を確認するには:
 
 1. **設定 → サーバー → シングルサインオン**に移動し、**プロバイダーアプリ**カードまで
    スクロールします
@@ -37,10 +38,7 @@ PR ページから AI レビューを依頼し、コメントでボットに質�
    場合は、ログイン名は常に `<appslug>[bot]` です — それを入力するか、短縮形の
    `@appslug` を入力します
 
-GitHub は `@` オートコンプリートでアプリのアカウントを候補に出さないため、
-ログイン名は手入力する必要があります — 設定カードがワンクリックでコピーできる
-ようにしているのはそのためです。`[bot]` サフィックスは省略できます。`@myapp` と
-`@myapp[bot]` はどちらもボットに届きます。
+GitHub の `@` オートコンプリートには App アカウントが表示されないため、App の別名は手入力するかコピーする必要があります。専用ユーザー `@usectrl` がデフォルトの呼び出し先です。`@myapp` と `@myapp[bot]` も引き続き App の別名として使用できます。
 
 :::note[特徴のあるアプリ名を付ける]
 短縮形はテキストとして照合されます。GitHub の人間のユーザーがたまたまあなたの
@@ -58,7 +56,7 @@ GitHub は `@` オートコンプリートでアプリのアカウントを候�
   ネイティブの「レビュー依頼」スロットを保持できません。リアクションを付ける対象の
   コメントがないため、GitHub には何も投稿されず、レビューは Control Center で
   開始されます
-- **PR 会話に `@myapp review`**（または単に `@myapp`）**をコメントする**。ボットは
+- **PR 会話に `@usectrl review`**（または単に `@usectrl`）**をコメントする**。ボットは
   👀 でリアクションし、レビューが開始されたとき（またはすでに実行中であるとき）に
   返信します
 
@@ -76,7 +74,7 @@ GitHub に何かが公開されることはありません。
 PR 会話にコメントします:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 何が起きるか、順番に:
@@ -98,7 +96,7 @@ diff コメント、またはそのスレッドに投稿した回答です。メ
 スレッド**自体が**宛先指定です:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

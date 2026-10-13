@@ -90,15 +90,16 @@ Future<void> updateEditorTabRoute(Uri current, String? key) =>
 /// The applying flag closes that hole.
 class EditorTabUrlTracker {
   /// Creates a tracker seeded with the route's current `?tab=` value.
+  /// With no default-focus callback, a tab-less location keeps the selection.
   EditorTabUrlTracker({
     required String? initialKey,
     required this._focusKey,
-    required this._focusDefault,
+    this._focusDefault,
     required this._writeKey,
   }) : _lastKey = initialKey;
 
   final void Function(String key) _focusKey;
-  final VoidCallback _focusDefault;
+  final VoidCallback? _focusDefault;
   final void Function(String? key) _writeKey;
 
   /// The last key written to or applied from the URL.
@@ -124,9 +125,8 @@ class EditorTabUrlTracker {
   /// With [force], [key] is applied even when it equals [lastKey] — used
   /// right after a layout restore, which replaces the tab set the tracker was
   /// synced against. A null key means the URL has no opinion: [force] merely
-  /// [resync]s (keep the seeded/restored selection), otherwise the surface
-  /// returns to its default tab (back/forward landed on a location written
-  /// before any tab switch).
+  /// [resync]s (keep the seeded/restored selection). Otherwise [_focusDefault],
+  /// when supplied, chooses the host's default before resyncing.
   void apply(EditorLayoutController layout, String? key, {bool force = false}) {
     if (_applying) {
       return;
@@ -156,7 +156,7 @@ class EditorTabUrlTracker {
         _lastKey = key;
         _focusKey(key);
       } else {
-        _focusDefault();
+        _focusDefault?.call();
         resync(layout);
       }
     } finally {

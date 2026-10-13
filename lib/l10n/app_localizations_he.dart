@@ -12504,6 +12504,46 @@ class AppLocalizationsHe extends AppLocalizations {
       'זהות, מדיניות ומוסכמות המשותפות לכולם בסביבת העבודה הזו.';
 
   @override
+  String get settingsAgentAttributionTitle => 'ייחוס קומיטים';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'בחרו אם לתת קרדיט ל-Control Center בקומיטים של סוכנים. מנהלי סביבת העבודה יכולים לשנות את הבחירה הזו עבור כולם בסביבת העבודה.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'ייחוס לסוכן';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'לתת קרדיט ל-Control Center בקומיטים של סוכנים';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'כשהאפשרות מופעלת, Control Center הוא מחבר הקומיטים ואתם מופיעים כמחברים שותפים. כשהיא כבויה, הקומיטים נכתבים בזהות ה-Git שלכם ללא קרדיט לסוכן.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'ההגדרה של סביבת העבודה הזו גוברת על הבחירה האישית שלכם. ההעדפה שלכם נשמרת, אך אינה חלה כאן.';
+
+  @override
+  String get settingsAgentAttributionLoading => 'הגדרות הייחוס נטענות…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'בחרו אם לתת קרדיט ל-Control Center בקומיטים של סוכנים. הבחירה של סביבת העבודה גוברת על ההעדפה האישית של כל חבר.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit => 'להשתמש בהעדפה של כל חבר';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'תמיד לתת קרדיט ל-Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'לעולם לא לתת קרדיט ל-Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'תבניות הערות וקולות שמורים לפגישות בסביבת העבודה הזו.';
 
@@ -13986,6 +14026,20 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'כרטיס';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'כל בקשות המשיכה במרחב הזה מוזגו. להעביר את המרחב לארכיון?';
+
+  @override
+  String get spaceKeepAfterMerge => 'לא, להשאיר את המרחב הזה';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'לא נציג שוב את השאלה הזו עבור המרחב הזה.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'כל בקשות המשיכה מוזגו';
 
   @override
   String get archiveSpace => 'העברת המרחב לארכיון';

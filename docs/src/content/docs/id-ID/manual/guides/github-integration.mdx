@@ -2,7 +2,7 @@
 title: Siapkan integrasi GitHub
 description: Masuk ke GitHub agar permukaan PR, pendaftaran repo, dan eksekusi agen berfungsi.
 slug: id-ID/panduan-pengguna/panduan-praktis/integrasi-github
-sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
+sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
 ---
 
 Panduan ini membahas bagian-bagian penyiapan yang khusus untuk GitHub. GitHub
@@ -103,10 +103,7 @@ segarkan. Statusnya diperbarui sendiri setiap dua menit.
   Push melewati Control Center, yang menanyakan aturan **Push ke remote** lalu
   meneruskannya dengan token tulis yang tidak pernah dipegang agen. Lihat
   [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/)
-- Commit yang dibuat agen ditulis **atas nama agen** — nama tampilan ditambah
-  ` (agent)`, pada alamat sintetis yang dikunci berdasarkan id agen — tidak
-  pernah atas nama manusia. Orang yang memintanya dicantumkan lewat trailer
-  `Co-Authored-By`
+- Secara default, commit agen ditulis atas nama **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`), sedangkan peminta dicantumkan dalam trailer `Co-Authored-By`. Di **Pengaturan → Anda → Atribusi commit**, matikan atribusi agen agar hanya identitas Git Anda yang digunakan. Pengaturan ruang kerja di **Pengaturan → Ruang kerja → Umum** diutamakan dan mengunci tombol pribadi. Atribusi bawaan Claude Code selalu dinonaktifkan
 - Jika GitHub App dikonfigurasi, broker menerbitkan token instalasi
   fine-grained, terbatas pada repo, berdurasi sekitar satu jam untuk setiap
   peluncuran, alih-alih menyerahkan token yang luas. Instalasinya ditentukan

@@ -116,20 +116,22 @@ HarnessToolRegistry buildHarnessToolRegistry({
   if (toolOutputStore != null) {
     registry.register(ToolOutputReadTool(toolOutputStore));
   }
-  // `ask_user` needs somewhere to render the form and someone to answer it, so
-  // it is offered ONLY when both a port and a target space exist. Registering
-  // it without them would advertise a tool whose every call ends in a timeout.
+  // `ask_user` needs a port and the run's exact conversation to render the
+  // form. Without all three scope ids it cannot offer a question safely.
   if (agentQuestionPort != null &&
       workspaceId != null &&
       workspaceId.isNotEmpty &&
       spaceId != null &&
-      spaceId.isNotEmpty) {
+      spaceId.isNotEmpty &&
+      conversationId != null &&
+      conversationId.isNotEmpty) {
     registry.register(
       AskUserTool(
         port: agentQuestionPort,
         workspaceId: workspaceId,
         spaceId: spaceId,
         askedByAgentId: agentId,
+        conversationId: conversationId,
         askedByName: agentDisplayName,
       ),
     );
@@ -239,9 +241,8 @@ HarnessToolRegistry buildHarnessToolRegistry({
   if (mcpRegistry != null) {
     // Arguments the bridge fills from the run's context are hidden from the
     // model-facing schema — but only the ones this run can actually supply.
-    // `agent_id` is deliberately NOT hidden: on some tools it names the CALLER
-    // ("your own agent id") and on others a TARGET ("agent to assign"), so the
-    // model must stay able to choose it.
+    // `agent_id` is hidden only for tools that FORCE it to the caller: other
+    // tools use it as a target the model must remain able to choose.
     final hiddenScopeParams = <String>{
       if (workspaceId != null && workspaceId.isNotEmpty) 'workspace_id',
       if (conversationId != null && conversationId.isNotEmpty)
@@ -256,7 +257,15 @@ HarnessToolRegistry buildHarnessToolRegistry({
       final mcpTool = mcpRegistry.lookup(toolName);
       if (mcpTool != null) {
         registry.register(
-          McpToolBridge(mcpTool, hiddenScopeParams: hiddenScopeParams),
+          McpToolBridge(
+            mcpTool,
+            hiddenScopeParams:
+                agentId != null &&
+                    agentId.isNotEmpty &&
+                    mcpTool.forcedScopeKeys.contains('agent_id')
+                ? {...hiddenScopeParams, 'agent_id'}
+                : hiddenScopeParams,
+          ),
         );
       }
     }

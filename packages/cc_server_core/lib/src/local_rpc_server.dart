@@ -58,6 +58,7 @@ void _e(String m, [Object? err, StackTrace? st]) =>
     CcHostLog.error('LocalRpcServer: $m', err, st);
 void _i(String m) => CcHostLog.info('LocalRpcServer: $m');
 void _w(String m) => CcHostLog.warning('LocalRpcServer: $m');
+final _unsafeDownloadFilenameChar = RegExp(r'[\x00-\x1f\x7f]');
 
 /// Parses a streaming lane's declared content type into a header value.
 ///
@@ -1579,6 +1580,20 @@ class LocalRpcServer implements McpHostServer {
     if (resolved == null || !resolved.file.existsSync()) {
       await _closeProxy(res, HttpStatus.notFound);
       return;
+    }
+    if (q['download'] == '1') {
+      final requestedName = (q['name'] ?? hash).replaceAll('\\', '/');
+      final lastSlash = requestedName.lastIndexOf('/');
+      final basename = requestedName.substring(lastSlash + 1);
+      final filename = basename.replaceAll(_unsafeDownloadFilenameChar, '_');
+      res.headers.set(
+        'Content-Disposition',
+        "attachment; filename*=UTF-8''${Uri.encodeComponent(filename.isEmpty ? hash : filename)}",
+      );
+    }
+    res.headers.set('X-Content-Type-Options', 'nosniff');
+    if (resolved.contentType.toLowerCase().startsWith('image/svg+xml')) {
+      res.headers.set('Content-Security-Policy', "sandbox; default-src 'none'");
     }
     // Content-addressed, so the bytes behind a hash can never change: this is
     // the one response in the server that is safe to cache immutably.

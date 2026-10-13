@@ -21272,6 +21272,72 @@ abstract class AppLocalizations {
   /// **'Identity, policy and conventions shared by everyone in this workspace.'**
   String get settingsWorkspaceGeneralDescription;
 
+  /// Page and section title for agent commit attribution settings
+  ///
+  /// In en, this message translates to:
+  /// **'Commit attribution'**
+  String get settingsAgentAttributionTitle;
+
+  /// Description of the personal agent commit attribution setting
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether agent commits credit Control Center. Workspace admins can override this choice for everyone in a workspace.'**
+  String get settingsAgentAttributionDescription;
+
+  /// Section label for Control Center agent attribution
+  ///
+  /// In en, this message translates to:
+  /// **'Agent attribution'**
+  String get settingsAgentCoauthorSection;
+
+  /// User toggle to credit Control Center on agent commits
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Control Center on agent commits'**
+  String get settingsAgentCoauthorTitle;
+
+  /// Explanation of enabled and disabled agent commit attribution
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, commits are authored by Control Center and include you as a co-author. When disabled, commits use your Git identity without agent credit.'**
+  String get settingsAgentCoauthorDescription;
+
+  /// Notice shown when a workspace setting disables the personal co-author toggle
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace overrides your personal choice. Your preference is saved but does not apply here.'**
+  String get settingsAgentCoauthorWorkspaceOverride;
+
+  /// Status shown while personal and workspace attribution settings load
+  ///
+  /// In en, this message translates to:
+  /// **'Loading attribution settings…'**
+  String get settingsAgentAttributionLoading;
+
+  /// Description of the workspace agent attribution override
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether agent commits credit Control Center. A workspace choice overrides each member\'s personal preference.'**
+  String get settingsWorkspaceAgentCoauthorDescription;
+
+  /// Workspace agent commit attribution option that inherits each user's preference
+  ///
+  /// In en, this message translates to:
+  /// **'Use each member\'s preference'**
+  String get settingsWorkspaceAgentCoauthorInherit;
+
+  /// Workspace option to always credit Control Center
+  ///
+  /// In en, this message translates to:
+  /// **'Always credit Control Center'**
+  String get settingsWorkspaceAgentCoauthorAlways;
+
+  /// Workspace option to never credit Control Center
+  ///
+  /// In en, this message translates to:
+  /// **'Never credit Control Center'**
+  String get settingsWorkspaceAgentCoauthorNever;
+
   /// Locale string for settingsWorkspaceMeetingsDescription
   ///
   /// In en, this message translates to:
@@ -23773,6 +23839,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ticket'**
   String get reviewKindTicket;
+
+  /// Inline archive prompt shown when all pull requests in a space are merged
+  ///
+  /// In en, this message translates to:
+  /// **'All pull requests in this space have been merged. Archive this space?'**
+  String get spaceAllPrsMerged;
+
+  /// Decline the archive prompt for a space whose pull requests have all been merged
+  ///
+  /// In en, this message translates to:
+  /// **'No, keep this space'**
+  String get spaceKeepAfterMerge;
+
+  /// Explains that declining the archive prompt suppresses future prompts for this space
+  ///
+  /// In en, this message translates to:
+  /// **'You won’t be asked again for this space.'**
+  String get spaceKeepAfterMergeHint;
+
+  /// Sidebar status for a space whose pull requests have all been merged
+  ///
+  /// In en, this message translates to:
+  /// **'All pull requests merged'**
+  String get spaceAllPrsMergedLabel;
 
   /// Archive a space (soft hide, restorable) — row menu, header button and tooltip
   ///

@@ -12681,6 +12681,48 @@ class AppLocalizationsPl extends AppLocalizations {
       'Tożsamość, zasady i konwencje wspólne dla wszystkich w tym obszarze roboczym.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Przypisanie autorstwa commitów';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Wybierz, czy commity agenta mają wskazywać Control Center jako autora. Administratorzy obszaru roboczego mogą zastąpić ten wybór dla wszystkich w obszarze roboczym.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Wskazanie agenta jako autora';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Uwzględniaj Control Center w autorstwie commitów agenta';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Gdy opcja jest włączona, autorem commitów jest Control Center, a Ty figurujesz jako współautor. Gdy jest wyłączona, commity używają Twojej tożsamości Git bez wskazania agenta.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Ustawienie tego obszaru roboczego zastępuje Twój osobisty wybór. Twoja preferencja jest zapisana, ale nie obowiązuje tutaj.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Wczytywanie ustawień autorstwa…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Wybierz, czy commity agenta mają wskazywać Control Center jako autora. Ustawienie obszaru roboczego zastępuje osobistą preferencję każdego członka.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Użyj preferencji każdego członka';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Zawsze wskazuj Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Nigdy nie wskazuj Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Szablony notatek i zapisane głosy na spotkania w tym obszarze roboczym.';
 
@@ -14188,6 +14230,20 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Zgłoszenie';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Wszystkie żądania scalenia w tej przestrzeni zostały scalone. Zarchiwizować tę przestrzeń?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Nie, zachowaj tę przestrzeń';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Nie zapytamy ponownie o tę przestrzeń.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'Wszystkie żądania scalenia scalone';
 
   @override
   String get archiveSpace => 'Archiwizuj przestrzeń';

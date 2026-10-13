@@ -25,6 +25,8 @@ Decorated single-line `CcTextField` inputs reserve their control height (~40px d
 
 Pass `presentation: CcDialogPresentation.immediate` to `showCcDialog` for keyboard-first command surfaces. It removes route transitions and backdrop blur without replacing the shared focus trap, Escape/barrier policy, text style or focus restoration. Standard dialogs retain their existing animation/reduced-motion policy.
 
+`CcToastScope` starts each toast's dwell time when `show` enqueues it; hovering pauses the countdown. A timeout or returned dismisser used before the first rendered frame removes the queued toast without playing its entrance, so delayed rendering cannot resurrect a dismissed notification. Visible toasts remain dismissible through their close control while hovered.
+
 ## Adding a component
 
 1. Build `lib/src/components/cc_<name>.dart` on `flutter/widgets.dart`, using `context.designSystem` or shared `CcCardTokens`/`CcInputTokens` resolvers.

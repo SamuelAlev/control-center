@@ -550,6 +550,12 @@ class _CcToastState extends State<_CcToast>
     if (!mounted) {
       return;
     }
+    // The dwell timer or returned handle can dismiss before the overlay's
+    // first frame, before this state subscribed to the controller.
+    if (widget.entry.controller.dismissing) {
+      widget.onDismissed();
+      return;
+    }
     _animation.duration = CcMotion.reduced(context)
         ? CcMotion.fade
         : CcMotion.moderate;

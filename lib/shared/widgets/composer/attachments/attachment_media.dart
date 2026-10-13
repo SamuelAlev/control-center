@@ -1,10 +1,9 @@
 // What an attachment IS, for the two decisions that depend on it: which glyph
 // its chip carries, and which renderer the preview pane reaches for.
 //
-// Classification is by MIME type when the platform reported one and by
-// extension otherwise. A drop off the desktop usually reports nothing — macOS
-// hands over a file URL and leaves the type to the receiver — so the extension
-// path is the common case, not the fallback.
+// Classification uses a reported MIME type or the extension on desktop drops.
+// SVG and unsupported image formats never enter a raw image renderer: Read
+// supplies a separately signed, server-normalized PNG when available.
 library;
 
 import 'package:path/path.dart' as p;
@@ -52,10 +51,18 @@ String? mediaTypeForFileName(String name) {
     '.png' => 'image/png',
     '.jpg' || '.jpeg' => 'image/jpeg',
     '.gif' => 'image/gif',
+    '.apng' => 'image/apng',
     '.webp' => 'image/webp',
     '.bmp' => 'image/bmp',
     '.heic' => 'image/heic',
+    '.heif' => 'image/heif',
+    '.avif' => 'image/avif',
+    '.tif' || '.tiff' => 'image/tiff',
+    '.jxl' => 'image/jxl',
     '.svg' => 'image/svg+xml',
+    '.ai' || '.eps' || '.ps' => 'application/postscript',
+    '.emf' || '.wmf' || '.cdr' || '.dxf' || '.svgz' =>
+      'application/octet-stream',
     '.mp4' || '.m4v' => 'video/mp4',
     '.mov' => 'video/quicktime',
     '.webm' => 'video/webm',
@@ -167,13 +174,34 @@ const Set<String> _codeFilenames = {
 
 /// Classifies an attachment from whatever is known about it.
 ///
-/// [mimeType] wins when present and specific; [name] answers the (common) case
-/// of a desktop drop that reported no type. Both null is [AttachmentMediaKind.other].
+/// [mimeType] wins when present and specific, except SVG always uses the safe
+/// file fallback; [name] answers a desktop drop with no reported type.
 AttachmentMediaKind attachmentMediaKind({String? mimeType, String? name}) {
   final mime = (mimeType ?? '').toLowerCase();
   final effective = mime.isNotEmpty && mime != 'application/octet-stream'
       ? mime
       : (name == null ? '' : (mediaTypeForFileName(name) ?? ''));
+  final ext = name == null ? '' : p.extension(name).toLowerCase();
+  if (ext == '.svg' || ext == '.svgz') {
+    return AttachmentMediaKind.other;
+  }
+  if (effective == 'application/pdf') {
+    return AttachmentMediaKind.pdf;
+  }
+  if ({'.ai', '.eps', '.ps', '.emf', '.wmf', '.cdr', '.dxf'}
+          .contains(ext) ||
+      (effective.startsWith('image/') &&
+          !{
+            'image/png',
+            'image/jpeg',
+            'image/jpg',
+            'image/gif',
+            'image/apng',
+            'image/webp',
+            'image/bmp',
+          }.contains(effective))) {
+    return AttachmentMediaKind.other;
+  }
   if (effective.startsWith('image/')) {
     return AttachmentMediaKind.image;
   }
@@ -182,9 +210,6 @@ AttachmentMediaKind attachmentMediaKind({String? mimeType, String? name}) {
   }
   if (effective.startsWith('audio/')) {
     return AttachmentMediaKind.audio;
-  }
-  if (effective == 'application/pdf') {
-    return AttachmentMediaKind.pdf;
   }
   if (effective == 'text/markdown') {
     return AttachmentMediaKind.markdown;

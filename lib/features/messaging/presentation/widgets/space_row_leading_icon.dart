@@ -2,7 +2,7 @@ part of 'space_row_adornments.dart';
 
 /// The leading icon for a space row: a spinner while an agent is running,
 /// otherwise the aggregate PR-status badge (with a count of open PRs) when the
-/// space is linked to a PR or one of its worktree branches has an open PR.
+/// space is linked to a PR or one of its worktree branches has a PR.
 /// With neither, it shows [absent], or a pencil glyph when [absent] is null.
 /// Association state hydrates from cache; a PR opened outside the app arrives
 /// with the branch match. The row renders immediately and never blocks on
@@ -40,7 +40,7 @@ class SpaceLeadingIcon extends ConsumerWidget {
     }
     final (:status, :openCount) = ref.watch(_spacePrBadgeProvider(spaceId));
     if (status == null) {
-      // Nothing open and nothing linked — a fresh conversation.
+      // No resolved PR status yet — a fresh or still-loading space.
       return absent ?? const Icon(AppIcons.pencil, size: 18);
     }
     final badge = PrStatusBadge(
@@ -48,6 +48,13 @@ class SpaceLeadingIcon extends ConsumerWidget {
       color: selected ? t.accentOn : null,
     );
     if (openCount < 1) {
+      if (status == PrSidebarStatus.merged) {
+        final label = AppLocalizations.of(context).spaceAllPrsMergedLabel;
+        return CcTooltip(
+          message: label,
+          child: Semantics(label: label, child: badge),
+        );
+      }
       return badge;
     }
     // The badge already conveys the (aggregate) state; the count tells the user
@@ -68,17 +75,11 @@ class SpaceLeadingIcon extends ConsumerWidget {
 /// yet the badge rarely changes — so the row repaints only when it does.
 final _spacePrBadgeProvider = Provider.autoDispose
     .family<({PrSidebarStatus? status, int openCount}), String>((ref, spaceId) {
-      final prs = pullRequestsForSpaceRow(
-        linked: ref.watch(spacePrsProvider(spaceId)),
-        branchMatched:
-            ref
-                .watch(spaceBranchPullRequestsProvider(spaceId))
-                .value
-                ?.map((match) => match.pr) ??
-            const <PullRequest>[],
-      );
+      final prs = ref.watch(spacePullRequestsProvider(spaceId));
+      final allMerged = ref.watch(spaceAllPrsMergedProvider(spaceId));
+      final status = PrSidebarStatus.aggregate(prs);
       return (
-        status: PrSidebarStatus.aggregate(prs),
+        status: status == PrSidebarStatus.merged && !allMerged ? null : status,
         openCount: prs.where((pr) => pr.isOpen).length,
       );
     });

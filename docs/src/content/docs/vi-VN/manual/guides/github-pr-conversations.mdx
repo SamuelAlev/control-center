@@ -2,7 +2,7 @@
 title: Nói chuyện với Control Center từ một PR GitHub
 description: Yêu cầu bot GitHub App của máy chủ đánh giá hoặc đặt câu hỏi ngay từ cuộc hội thoại trong PR, không cần webhook hay URL công khai.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Hướng dẫn này chỉ cách làm việc với Control Center mà không cần rời khỏi GitHub:
@@ -29,8 +29,9 @@ khai.
 
 ## Tìm tên bot của bạn
 
-Tên đăng nhập của bot là `<appslug>[bot]`, trong đó `appslug` là tên bạn đã đặt
-cho app khi đăng ký nó.
+Hãy nhắc đến `@usectrl`, tài khoản GitHub riêng của Control Center. Đây là cách kích hoạt mặc định; GitHub App đã cấu hình trên máy chủ của bạn vẫn xử lý yêu cầu và đăng câu trả lời. Bạn không cần thông tin xác thực của tài khoản `usectrl`.
+
+Tên đăng nhập riêng của App, `<appslug>[bot]`, và dạng ngắn `@appslug` cũng hoạt động. Để tìm bí danh tùy chọn này:
 
 1. Vào **Cài đặt → Máy chủ → Đăng nhập một lần** và cuộn tới thẻ
    **Ứng dụng nhà cung cấp**
@@ -39,10 +40,7 @@ cho app khi đăng ký nó.
    thị gợi ý trống, thì tên đăng nhập luôn là `<appslug>[bot]` — hãy gõ giá trị
    đó, hoặc dạng ngắn `@appslug`
 
-GitHub không cung cấp tài khoản app trong tính năng tự động hoàn thành `@` của
-mình, nên tên đăng nhập phải được gõ thủ công — đó là lý do thẻ cài đặt giúp bạn
-sao chép nó chỉ bằng một cú nhấp. Hậu tố `[bot]` là tùy chọn: cả `@myapp` lẫn
-`@myapp[bot]` đều gọi tới bot.
+GitHub không gợi ý tài khoản App trong tính năng tự động hoàn thành `@`, nên bạn phải gõ hoặc sao chép bí danh của App. Người dùng riêng `@usectrl` là cách gọi mặc định; `@myapp` và `@myapp[bot]` vẫn được chấp nhận làm bí danh App.
 
 :::note[Chọn một tên app đủ đặc trưng]
 Dạng ngắn được so khớp như văn bản. Nếu một người dùng GitHub nào đó trùng slug
@@ -60,7 +58,7 @@ nút **Hỏi AI** khởi động:
   người được yêu cầu đánh giá gốc của GitHub. Không có bình luận nào để thả cảm
   xúc, nên không có gì được đăng lên GitHub; lượt đánh giá bắt đầu trong Control
   Center
-- **Bình luận `@myapp review`** (hoặc chỉ `@myapp`) trong cuộc hội thoại của PR.
+- **Bình luận `@usectrl review`** (hoặc chỉ `@usectrl`) trong cuộc hội thoại của PR.
   Bot thả cảm xúc 👀, rồi trả lời khi lượt đánh giá đã bắt đầu (hoặc rằng một
   lượt đang chạy rồi)
 
@@ -78,7 +76,7 @@ sau một lần push — hãy nhắc đến bot.
 Bình luận trong cuộc hội thoại của PR:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Những gì diễn ra, theo thứ tự:
@@ -100,7 +98,7 @@ luận trên diff do bot để lại, hoặc một câu trả lời bot đã đ�
 Không cần nhắc đến ai; chính luồng **là** cách gọi tới bot:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

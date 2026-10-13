@@ -75,9 +75,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
     if (seg is ToolSegment && seg.status == ToolSegmentStatus.error) {
       return true;
     }
-    // File changes open expanded: for an edit or a write, the body *is* the
-    // information ("Edit foo.dart" alone says nothing), so the diff shows
-    // inline where the change happened instead of one click away.
+    // Reads and file changes show their results inline until the user closes them.
     if (seg is ToolSegment && toolBodyOpensByDefault(seg)) {
       return true;
     }
@@ -116,11 +114,16 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
     );
 
     final header = canExpand
-        ? CcTappable(
-            onPressed: () => setState(() => _userOpen = !_open),
-            builder: (context, states) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: summaryRow,
+        ? MergeSemantics(
+            child: Semantics(
+              expanded: _open,
+              child: CcTappable(
+                onPressed: () => setState(() => _userOpen = !_open),
+                builder: (context, states) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: summaryRow,
+                ),
+              ),
             ),
           )
         : Padding(
@@ -406,8 +409,16 @@ Color _categoryAccent(TranscriptSegment seg, DesignSystemTokens tokens) {
 }
 
 bool _hasExpandable(TranscriptSegment seg) => switch (seg) {
-  ToolSegment(:final inputs, :final outputs) =>
-    (inputs != null && inputs.isNotEmpty) || outputs.isNotEmpty,
+  ToolSegment(
+    :final inputs,
+    :final outputs,
+    :final images,
+    :final attachments,
+  ) =>
+    (inputs != null && inputs.isNotEmpty) ||
+        outputs.isNotEmpty ||
+        images.isNotEmpty ||
+        attachments.isNotEmpty,
   ReasoningSegment(:final text) => text.length > 80,
   ErrorSegment(:final message) => message.length > 80,
   ViolationSegment(:final message) => message.length > 80,

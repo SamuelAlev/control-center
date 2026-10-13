@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/entities/agent_shell_output.dart';
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_domain/core/domain/ports/agent_shell_process_port.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -8,18 +9,34 @@ import 'package:control_center/features/sandboxing/providers/terminal_sessions_p
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show Focus;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 class _RecordingPort implements AgentShellProcessPort {
   final killed = <(String, String, int)>[];
+  final read = <(String, String, String)>[];
 
   @override
   Future<List<AgentShellProcess>> list({
     required String workspaceId,
     required String spaceId,
   }) async => const [];
+
+  @override
+  Future<AgentShellOutput> readOutput({
+    required String workspaceId,
+    required String spaceId,
+    required String outputId,
+  }) async {
+    read.add((workspaceId, spaceId, outputId));
+    return const AgentShellOutput(
+      output: '',
+      state: AgentShellOutputState.running,
+    );
+  }
 
   @override
   Future<bool> kill({
@@ -43,6 +60,7 @@ class _Terminals extends SpaceTerminalsNotifier {
 
 AgentShellProcess _command(int pid, String command) => AgentShellProcess(
   pid: pid,
+  outputId: 'output-$pid',
   workspaceId: 'ws-1',
   spaceId: 's-1',
   agentId: 'engineer',
@@ -54,7 +72,14 @@ AgentShellProcess _command(int pid, String command) => AgentShellProcess(
 void main() {
   const key = (workspaceId: 'ws-1', spaceId: 's-1');
 
-  Future<({List<String> focused, List<String> killed, _RecordingPort port})>
+  Future<
+    ({
+      List<String> focused,
+      List<String> killed,
+      List<AgentShellProcess> opened,
+      _RecordingPort port,
+    })
+  >
   pump(
     WidgetTester tester, {
     List<TerminalMirror> terminals = const [],
@@ -62,6 +87,7 @@ void main() {
   }) async {
     final focused = <String>[];
     final killed = <String>[];
+    final opened = <AgentShellProcess>[];
     final port = _RecordingPort();
     await tester.pumpWidget(
       ProviderScope(
@@ -90,6 +116,7 @@ void main() {
                     workspaceId: 'ws-1',
                     onFocusTerminal: focused.add,
                     onKillTerminal: killed.add,
+                    onOpenAgentShell: opened.add,
                   ),
                 ],
               ),
@@ -99,7 +126,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    return (focused: focused, killed: killed, port: port);
+    return (focused: focused, killed: killed, opened: opened, port: port);
   }
 
   Future<void> hover(WidgetTester tester, Finder target) async {
@@ -156,15 +183,42 @@ void main() {
     await tester.tap(find.byIcon(AppIcons.circleStop));
     await tester.pumpAndSettle();
     expect(r.port.killed, [('ws-1', 's-1', 4242)]);
+    expect(r.opened, isEmpty);
+  });
+
+  testWidgets('a command row opens captured output with pointer and keyboard', (
+    tester,
+  ) async {
+    final command = _command(55, 'echo ready');
+    final r = await pump(tester, commands: [command]);
+    await tester.tap(find.text('echo ready'));
+    await tester.pump();
+    expect(r.opened, [command]);
+    final row = find
+        .ancestor(
+          of: find.text('echo ready'),
+          matching: find.byType(CcTappable),
+        )
+        .first;
+    final focus = find
+        .descendant(
+          of: row,
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Focus && widget.canRequestFocus,
+          ),
+        )
+        .first;
+    tester.widget<Focus>(focus).focusNode!.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(r.opened, [command, command]);
+    expect(r.port.killed, isEmpty);
+    expect(r.port.read, isEmpty);
   });
 
   testWidgets('a multi-line command shows its first line', (tester) async {
     await pump(tester, commands: [_command(7, 'cd web\npnpm build')]);
     expect(find.text('cd web'), findsOneWidget);
-  });
-
-  testWidgets('with nothing running the section says so', (tester) async {
-    await pump(tester);
-    expect(find.text('No terminals open'), findsOneWidget);
   });
 }

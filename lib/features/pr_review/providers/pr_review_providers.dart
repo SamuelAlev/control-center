@@ -1031,6 +1031,32 @@ final spacePrsProvider = Provider.autoDispose.family<List<PullRequest>, String>(
   },
 );
 
+/// Whether every linked PR has resolved successfully. A partially hydrated
+/// list must never make a space look fully merged.
+final spacePrsResolvedProvider = Provider.autoDispose.family<bool, String>((
+  ref,
+  spaceId,
+) {
+  final associations = ref.watch(spaceReviewAssociationsProvider(spaceId));
+  if (!associations.hasValue || associations.hasError || associations.isLoading) {
+    return false;
+  }
+  var resolved = true;
+  for (final a in associations.requireValue) {
+    final pr = ref.watch(
+      _associationPrProvider((
+        workspaceId: a.workspaceId,
+        repoFullName: a.repoFullName,
+        prNumber: a.prNumber,
+      )),
+    );
+    if (pr.value == null || pr.hasError || pr.isLoading) {
+      resolved = false;
+    }
+  }
+  return resolved;
+});
+
 /// A [spacePrsProvider] result that compares by its PRs, so a recompute that
 /// lands on the same PRs (an association re-emitting, an unrelated detail
 /// stream ticking) does not notify every row watching it.

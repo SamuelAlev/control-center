@@ -30,40 +30,51 @@ AskUserTool _tool(AgentQuestionPort port) => AskUserTool(
   port: port,
   workspaceId: 'ws1',
   spaceId: 'space1',
+  conversationId: 'conv-side',
   askedByAgentId: 'agent1',
   askedByName: 'Scout',
 );
 
 void main() {
   group('AskUserTool', () {
-    test('renders the question into the run workspace + space', () async {
-      final port = _RecordingPort(
-        const AgentQuestionAnswer(selectedLabels: ['Postgres']),
-      );
-      final result = await _tool(port).execute({
-        'question': 'Which database?',
-        'context': 'Both are already in the lockfile.',
-        'options': [
-          {'label': 'Postgres', 'description': 'What the rest of the app uses'},
-          {'label': 'SQLite'},
-        ],
-      }, _ctx);
+    test(
+      'renders in the run conversation despite a model-selected destination',
+      () async {
+        final port = _RecordingPort(
+          const AgentQuestionAnswer(selectedLabels: ['Postgres']),
+        );
+        final result = await _tool(port).execute({
+          'question': 'Which database?',
+          'context': 'Both are already in the lockfile.',
+          'conversation_id': 'conv-standing',
+          'space_id': 'space-other',
+          'workspace_id': 'ws-other',
+          'options': [
+            {
+              'label': 'Postgres',
+              'description': 'What the rest of the app uses',
+            },
+            {'label': 'SQLite'},
+          ],
+        }, _ctx);
 
-      expect(result.isError, isFalse);
-      expect(result.content, contains('Postgres'));
-      final asked = port.seen!;
-      expect(asked.workspaceId, 'ws1');
-      expect(asked.spaceId, 'space1');
-      expect(asked.askedByAgentId, 'agent1');
-      expect(asked.askedByName, 'Scout');
-      expect(asked.options.map((o) => o.label), ['Postgres', 'SQLite']);
-      expect(asked.options.first.description, isNotNull);
-      expect(
-        asked.options.last.description,
-        isNull,
-        reason: 'an omitted description must not become an empty string',
-      );
-    });
+        expect(result.isError, isFalse);
+        expect(result.content, contains('Postgres'));
+        final asked = port.seen!;
+        expect(asked.workspaceId, 'ws1');
+        expect(asked.spaceId, 'space1');
+        expect(asked.conversationId, 'conv-side');
+        expect(asked.askedByAgentId, 'agent1');
+        expect(asked.askedByName, 'Scout');
+        expect(asked.options.map((o) => o.label), ['Postgres', 'SQLite']);
+        expect(asked.options.first.description, isNotNull);
+        expect(
+          asked.options.last.description,
+          isNull,
+          reason: 'an omitted description must not become an empty string',
+        );
+      },
+    );
 
     test('free text defaults on when no options are offered', () async {
       final port = _RecordingPort(
@@ -156,6 +167,7 @@ void main() {
         port: port,
         workspaceId: 'ws1',
         spaceId: 'space1',
+        conversationId: 'conv-side',
         maxOptions: 3,
       ).execute({
         'question': 'Which?',

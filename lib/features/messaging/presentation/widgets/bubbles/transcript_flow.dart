@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/services/transcript_status.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_markdown/cc_markdown.dart';
@@ -5,6 +6,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/live_transcript_controller.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/steering_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -29,6 +31,7 @@ class TranscriptFlow extends StatefulWidget {
     required this.codeFont,
     this.isLive = false,
     this.live,
+    this.steeringMessages = const [],
   });
 
   /// The full transcript in chronological order (text segments included).
@@ -46,6 +49,9 @@ class TranscriptFlow extends StatefulWidget {
   /// Delta-cadence pulse + segment reader for open rows. Null on persisted
   /// (non-live) transcripts.
   final LiveTranscriptController? live;
+
+  /// User messages in injection order, interleaved at their recorded time.
+  final List<Message> steeringMessages;
 
   @override
   State<TranscriptFlow> createState() => _TranscriptFlowState();
@@ -84,17 +90,46 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
 
     final children = <Widget>[];
     TranscriptSegment? prev;
+    final steering = widget.steeringMessages;
+    var nextSteering = 0;
+    void insertSteering(Message message) {
+      if (children.isNotEmpty) {
+        children.add(const SizedBox(height: AppSpacing.md));
+      }
+      children.add(
+        SteeringBubble(
+          key: ValueKey(message.id),
+          message: message,
+          codeFont: widget.codeFont,
+        ),
+      );
+      prev = null;
+    }
+
     for (var i = 0; i < segments.length; i++) {
       final seg = segments[i];
+      while (nextSteering < steering.length &&
+          (steering[nextSteering].steerInjectedAt ??
+                  steering[nextSteering].createdAt.millisecondsSinceEpoch) <=
+              seg.startedAt.millisecondsSinceEpoch) {
+        insertSteering(steering[nextSteering++]);
+      }
       final rendered = _row(i, seg);
       if (rendered == null) {
         continue;
       }
       if (children.isNotEmpty) {
-        children.add(SizedBox(height: _gapBefore(prev, seg)));
+        children.add(
+          SizedBox(
+            height: prev == null ? AppSpacing.md : _gapBefore(prev, seg),
+          ),
+        );
       }
       children.add(rendered);
       prev = seg;
+    }
+    while (nextSteering < steering.length) {
+      insertSteering(steering[nextSteering++]);
     }
 
     if (widget.isLive && _showTail(segments)) {

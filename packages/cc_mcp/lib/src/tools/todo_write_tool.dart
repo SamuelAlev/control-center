@@ -26,6 +26,15 @@ class TodoWriteTool extends McpTool {
   String get name => 'todo_write';
 
   @override
+  Set<String> get forcedScopeKeys => const {'conversation_id'};
+
+  @override
+  Set<String> get requiredScopeKeys => const {
+    'workspace_id',
+    'conversation_id',
+  };
+
+  @override
   String get description =>
       'Record AND update the task checklist for this conversation. Pass the '
       'FULL list every call as `todos` (items are {content, status}, plus an '
@@ -42,7 +51,8 @@ class TodoWriteTool extends McpTool {
       'the `id` from `todo_read` when you want to be explicit.\n'
       'Appending new items without ever transitioning the old ones is the one '
       'way to use this tool wrong. The list is persisted per conversation and '
-      'shown to the user live.';
+      'shown to the user live. workspace_id and conversation_id come from '
+      'the session; do not guess or pass them. Supplied IDs are ignored.';
 
   @override
   Map<String, dynamic> get inputSchema => {
@@ -54,7 +64,7 @@ class TodoWriteTool extends McpTool {
       },
       'conversation_id': {
         'type': 'string',
-        'description': 'The conversation whose task list to write.',
+        'description': 'Filled from the session; supplied values are ignored.',
       },
       'todos': {
         'type': 'array',
@@ -81,7 +91,7 @@ class TodoWriteTool extends McpTool {
         },
       },
     },
-    'required': ['workspace_id', 'conversation_id', 'todos'],
+    'required': ['todos'],
   };
 
   @override
@@ -108,9 +118,7 @@ class TodoWriteTool extends McpTool {
       conversationId: conversationId,
     );
     if (conversation == null) {
-      return CallResult.error(
-        'Conversation belongs to a different workspace.',
-      );
+      return CallResult.error('Conversation not found in this workspace.');
     }
 
     // Reconcile against the stored list so unchanged items keep their identity

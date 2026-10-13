@@ -12570,6 +12570,47 @@ class AppLocalizationsDe extends AppLocalizations {
       'Identität, Richtlinien und Konventionen, die alle in diesem Arbeitsbereich teilen.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Commit-Zuordnung';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Lege fest, ob Agenten-Commits Control Center als Urheber nennen. Administratoren des Arbeitsbereichs können diese Auswahl für alle Mitglieder überschreiben.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Agenten als Urheber nennen';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Control Center bei Agenten-Commits nennen';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Wenn aktiviert, ist Control Center der Autor der Commits und du wirst als Mitautor genannt. Wenn deaktiviert, verwenden die Commits deine Git-Identität ohne Nennung des Agenten.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Dieser Arbeitsbereich überschreibt deine persönliche Auswahl. Deine Einstellung bleibt gespeichert, gilt hier aber nicht.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Einstellungen zur Commit-Zuordnung werden geladen…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Lege fest, ob Agenten-Commits Control Center als Urheber nennen. Die Auswahl des Arbeitsbereichs hat Vorrang vor der persönlichen Einstellung jedes Mitglieds.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Einstellung jedes Mitglieds verwenden';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Control Center immer nennen';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever => 'Control Center nie nennen';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Notizvorlagen und gespeicherte Stimmen für Meetings in diesem Arbeitsbereich.';
 
@@ -14071,6 +14112,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Ticket';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Alle Pull Requests in diesem Bereich wurden gemergt. Diesen Bereich archivieren?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Nein, diesen Bereich behalten';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Für diesen Bereich wirst du nicht erneut gefragt.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'Alle Pull Requests gemergt';
 
   @override
   String get archiveSpace => 'Bereich archivieren';

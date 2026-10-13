@@ -12247,6 +12247,43 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 워크스페이스의 모든 구성원이 공유하는 신원, 정책, 규칙입니다.';
 
   @override
+  String get settingsAgentAttributionTitle => '커밋 기여자 표시';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      '에이전트 커밋에 Control Center를 기여자로 표시할지 선택합니다. 워크스페이스 관리자는 모든 구성원에게 적용되는 설정으로 이 선택을 덮어쓸 수 있습니다.';
+
+  @override
+  String get settingsAgentCoauthorSection => '에이전트 기여 표시';
+
+  @override
+  String get settingsAgentCoauthorTitle => '에이전트 커밋에 Control Center 기여 표시';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      '켜면 커밋 작성자는 Control Center가 되고 나는 공동 작성자로 포함됩니다. 끄면 에이전트 기여 표시 없이 내 Git 신원으로 커밋합니다.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      '이 워크스페이스의 설정이 개인 선택보다 우선합니다. 개인 설정은 저장되지만 여기에는 적용되지 않습니다.';
+
+  @override
+  String get settingsAgentAttributionLoading => '기여자 표시 설정 불러오는 중…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      '에이전트 커밋에 Control Center를 기여자로 표시할지 선택합니다. 워크스페이스 설정이 각 구성원의 개인 설정보다 우선합니다.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit => '각 구성원의 개인 설정 사용';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways => '항상 Control Center 기여 표시';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever => 'Control Center 기여 표시 안 함';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       '이 워크스페이스의 회의에 쓰이는 노트 템플릿과 저장된 음성입니다.';
 
@@ -13682,6 +13719,18 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get reviewKindTicket => '티켓';
+
+  @override
+  String get spaceAllPrsMerged => '이 스페이스의 모든 풀 리퀘스트가 병합되었습니다. 이 스페이스를 보관할까요?';
+
+  @override
+  String get spaceKeepAfterMerge => '아니요, 이 스페이스 유지';
+
+  @override
+  String get spaceKeepAfterMergeHint => '이 스페이스에 대해서는 다시 묻지 않습니다.';
+
+  @override
+  String get spaceAllPrsMergedLabel => '모든 풀 리퀘스트 병합됨';
 
   @override
   String get archiveSpace => '스페이스 보관';

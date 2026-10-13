@@ -2,7 +2,7 @@
 title: GitHub PR에서 Control Center와 대화
 description: 웹훅이나 공개 URL 없이 PR 대화 자체에서 서버의 GitHub App 봇에게 리뷰나 질문을 요청합니다.
 slug: ko-KR/매뉴얼/사용-가이드/github-pr-대화
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 이 가이드에서는 GitHub를 벗어나지 않고 Control Center로 작업하는 방법을
@@ -26,8 +26,9 @@ sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 
 ## 봇의 이름 찾기
 
-봇의 로그인은 `<appslug>[bot]`이며, 여기서 `appslug`는 앱을 등록할 때 지정한
-이름입니다.
+Control Center 전용 GitHub 계정인 `@usectrl`을 멘션하세요. 기본 호출 방식이며, 요청 처리와 답글 게시는 계속 서버에 구성된 GitHub App이 담당합니다. `usectrl` 계정의 자격 증명은 필요하지 않습니다.
+
+앱 자체의 로그인인 `<appslug>[bot]`과 짧은 형식 `@appslug`도 사용할 수 있습니다. 이 선택적 별칭을 확인하려면:
 
 1. **설정 → 서버 → 싱글 사인온**으로 이동해 **프로바이더 앱** 카드까지
    스크롤합니다
@@ -36,9 +37,7 @@ sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
    항상 `<appslug>[bot]`이므로, 그 값을 직접 입력하거나 짧은 형식인
    `@appslug`를 입력합니다
 
-GitHub는 `@` 자동 완성에서 앱 계정을 제공하지 않으므로 로그인을 직접 입력해야
-합니다 — 설정 카드가 클릭 한 번으로 복사할 수 있게 해 주는 이유입니다. `[bot]`
-접미사는 선택 사항이라 `@myapp`과 `@myapp[bot]` 모두 봇을 가리킵니다.
+GitHub의 `@` 자동 완성에는 App 계정이 표시되지 않으므로 App 별칭은 직접 입력하거나 복사해야 합니다. 기본 호출 대상은 전용 사용자 `@usectrl`이며, `@myapp`과 `@myapp[bot]`도 App 별칭으로 계속 사용할 수 있습니다.
 
 :::note[눈에 띄는 앱 이름 고르기]
 짧은 형식은 텍스트로 매칭됩니다. 사람 GitHub 사용자가 우연히 여러분 앱의
@@ -55,7 +54,7 @@ GitHub는 `@` 자동 완성에서 앱 계정을 제공하지 않으므로 로그
   것에 가장 가까운 방법입니다 — 앱 계정은 GitHub의 기본 리뷰 요청자 자리를
   차지할 수 없습니다. 반응할 댓글이 없으므로 GitHub에는 아무것도 게시되지
   않고, 리뷰는 Control Center에서 시작됩니다
-- PR 대화에 **`@myapp review`**라고 댓글을 답니다(또는 `@myapp`만). 봇은 👀로
+- PR 대화에 **`@usectrl review`**라고 댓글을 답니다(또는 `@usectrl`만). 봇은 👀로
   반응한 뒤, 리뷰가 시작되었을 때(또는 이미 실행 중이라고) 답글을 답니다
 
 리뷰어들은 PR의 리뷰 스페이스에서 작업합니다. 발견 사항을 읽고 게시하는 방법은
@@ -71,7 +70,7 @@ GitHub는 `@` 자동 완성에서 앱 계정을 제공하지 않으므로 로그
 PR 대화에 댓글을 답니다:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 순서대로 일어나는 일은 다음과 같습니다.
@@ -93,7 +92,7 @@ PR 대화에 댓글을 답니다:
 **자체가** 주소 지정입니다:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

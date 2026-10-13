@@ -2,7 +2,7 @@
 title: Konfigurera GitHub-integration
 description: Logga in på GitHub så att PR-ytan, reporegistreringen och agentkörningarna fungerar.
 slug: sv-SE/handbok/how-to-guider/github-integration
-sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
+sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
 ---
 
 Den här guiden handlar om de GitHub-specifika delarna av uppsättningen. GitHub är
@@ -100,9 +100,7 @@ och en uppdateringsknapp. Statusarna uppdateras av sig själva varannan minut.
   kan läsa. En push går genom Control Center, som frågar regeln **Pusha till en
   remote** och sedan skickar den vidare med en skrivtoken som agenten aldrig
   har. Se [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/)
-- Commits som en agent gör skapas **som agenten** — visningsnamnet plus
-  ` (agent)`, på en syntetisk adress som härleds från agentens id — aldrig som en
-  människa. Personen som bad om det krediteras med en `Co-Authored-By`-trailer
+- Som standard anges **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`) som författare till agentens commits, medan den som begärde körningen krediteras i en `Co-Authored-By`-rad. Under **Inställningar → Du → Tillskrivning av commits** kan du stänga av agenttillskrivning och enbart använda din Git-identitet. En inställning för arbetsytan under **Inställningar → Arbetsyta → Allmänt** har företräde och låser det personliga reglaget. Claude Codes egen tillskrivning är alltid avstängd
 - Med en GitHub-app konfigurerad utfärdar mäklaren för inloggningsuppgifter
   finkorniga installationstoken, begränsade till repot och giltiga i ungefär en
   timme, per start i stället för att lämna över en bred token. Installationen

@@ -189,6 +189,7 @@ void main() {
       const AgentQuestionRequest(
         workspaceId: 'ws-1',
         spaceId: 'space-1',
+        conversationId: 'conv-side',
         question: 'Which database?',
         askedByAgentId: 'agent-1',
       ),
@@ -199,6 +200,8 @@ void main() {
     final event = published.single;
     expect(event.kind, AgentInputKind.question);
     expect(event.summary, 'Which database?');
+    expect(event.spaceId, 'space-1');
+    expect(event.conversationId, 'conv-side');
     expect(event.agentName, 'Ada');
     expect(event.waitId, 'm-1');
 

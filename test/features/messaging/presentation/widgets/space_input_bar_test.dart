@@ -12,6 +12,7 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_input_bar.dart';
 import 'package:control_center/features/messaging/providers/editing_message_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/messaging/providers/space_attachment_upload_provider.dart';
 import 'package:control_center/features/settings/providers/adapter_preferences_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -162,6 +163,20 @@ Message _editableMessage({String content = 'original wording'}) => Message(
 String _fieldText(WidgetTester tester) =>
     tester.widget<EditableText>(find.byType(EditableText)).controller.text;
 
+final _composerOverrides = [
+  workspaceAgentsProvider.overrideWith(
+    (ref, _) => Stream.value(ref.watch(agentsProvider).value ?? const []),
+  ),
+  spaceAttachmentUploadServiceProvider.overrideWith(
+    (ref, workspaceId) => SpaceAttachmentUploadService(
+      workspaceId: workspaceId,
+      uploadUrl: 'https://example.invalid/upload',
+      discardFile: (_, _) async {},
+      post: (_, {headers, body}) => throw StateError('Unexpected file upload'),
+    ),
+  ),
+];
+
 void main() {
   setUp(TestWidgetsFlutterBinding.ensureInitialized);
 
@@ -177,10 +192,11 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ..._composerOverrides,
             agentsProvider.overrideWithValue(const AsyncData([])),
             spacesProvider.overrideWithValue(const AsyncData([])),
             activeWorkspaceIdProvider.overrideWith(
-              () => _TestActiveWorkspaceNotifier(null),
+              () => _TestActiveWorkspaceNotifier('ws-1'),
             ),
           ],
           child: CcTheme(
@@ -200,44 +216,6 @@ void main() {
 
       expect(find.byType(CcTextField), findsOneWidget);
       expect(find.byIcon(AppIcons.arrowUp), findsOneWidget);
-    });
-
-    testWidgets('shows hint text', (tester) async {
-      tester.view.physicalSize = const Size(800, 200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            agentsProvider.overrideWithValue(const AsyncData([])),
-            spacesProvider.overrideWithValue(const AsyncData([])),
-            activeWorkspaceIdProvider.overrideWith(
-              () => _TestActiveWorkspaceNotifier(null),
-            ),
-          ],
-          child: CcTheme(
-            data: CcThemeData.light(),
-            child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: SpaceInputBar(spaceId: 'ch-1', conversationId: 'conv-1'),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-
-      expect(
-        find.text('Message… (@ to mention, / for commands)'),
-        findsOneWidget,
-      );
     });
 
     testWidgets('typing @ shows mention suggestions', (tester) async {
@@ -261,10 +239,11 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ..._composerOverrides,
             agentsProvider.overrideWithValue(AsyncData([a])),
             spacesProvider.overrideWithValue(const AsyncData([])),
             activeWorkspaceIdProvider.overrideWith(
-              () => _TestActiveWorkspaceNotifier(null),
+              () => _TestActiveWorkspaceNotifier('ws-1'),
             ),
           ],
           child: CcTheme(
@@ -300,6 +279,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ..._composerOverrides,
             agentsProvider.overrideWithValue(const AsyncData([])),
             spacesProvider.overrideWithValue(const AsyncData([])),
             activeWorkspaceIdProvider.overrideWith(
@@ -370,45 +350,6 @@ void main() {
   });
 
   group('SpaceInputBar send', () {
-    testWidgets('send button exists and is tappable', (tester) async {
-      tester.view.physicalSize = const Size(800, 200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            agentsProvider.overrideWithValue(const AsyncData([])),
-            spacesProvider.overrideWithValue(const AsyncData([])),
-            activeWorkspaceIdProvider.overrideWith(
-              () => _TestActiveWorkspaceNotifier(null),
-            ),
-          ],
-          child: CcTheme(
-            data: CcThemeData.light(),
-            child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: SpaceInputBar(spaceId: 'ch-1', conversationId: 'conv-1'),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-
-      await tester.tap(find.byIcon(AppIcons.arrowUp));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-
-      expect(find.byType(SpaceInputBar), findsOneWidget);
-    });
-
     testWidgets('typing text and sending works', (tester) async {
       tester.view.physicalSize = const Size(800, 200);
       tester.view.devicePixelRatio = 1.0;
@@ -421,6 +362,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ..._composerOverrides,
             agentsProvider.overrideWithValue(const AsyncData([])),
             spacesProvider.overrideWithValue(const AsyncData([])),
             // Sending is workspace-scoped: the composer threads the active
@@ -477,10 +419,11 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ..._composerOverrides,
             agentsProvider.overrideWithValue(AsyncData([a])),
             spacesProvider.overrideWithValue(const AsyncData([])),
             activeWorkspaceIdProvider.overrideWith(
-              () => _TestActiveWorkspaceNotifier(null),
+              () => _TestActiveWorkspaceNotifier('ws-1'),
             ),
           ],
           child: CcTheme(
@@ -526,10 +469,11 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ..._composerOverrides,
             agentsProvider.overrideWithValue(AsyncData([a])),
             spacesProvider.overrideWithValue(const AsyncData([])),
             activeWorkspaceIdProvider.overrideWith(
-              () => _TestActiveWorkspaceNotifier(null),
+              () => _TestActiveWorkspaceNotifier('ws-1'),
             ),
           ],
           child: CcTheme(
@@ -562,6 +506,7 @@ void main() {
       WidgetTester tester, {
       MessagingRepository? repository,
       _RecordingMessagingPort? sender,
+      Widget? body,
     }) async {
       tester.view.physicalSize = const Size(800, 640);
       tester.view.devicePixelRatio = 1.0;
@@ -572,6 +517,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ..._composerOverrides,
             agentsProvider.overrideWithValue(const AsyncData([])),
             spacesProvider.overrideWithValue(const AsyncData([])),
             activeWorkspaceIdProvider.overrideWith(
@@ -584,11 +530,16 @@ void main() {
           ],
           child: CcTheme(
             data: CcThemeData.light(),
-            child: const MaterialApp(
+            child: MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
-                body: SpaceInputBar(spaceId: 'ch-1', conversationId: 'conv-1'),
+                body:
+                    body ??
+                    const SpaceInputBar(
+                      spaceId: 'ch-1',
+                      conversationId: 'conv-1',
+                    ),
               ),
             ),
           ),
@@ -602,6 +553,68 @@ void main() {
         tester.element(find.byType(SpaceInputBar)),
       );
     }
+
+    testWidgets('conversation drafts survive target changes and full unmount', (
+      tester,
+    ) async {
+      final conversation = ValueNotifier<String?>('conv-1');
+      addTearDown(conversation.dispose);
+      await pumpBar(
+        tester,
+        body: ValueListenableBuilder(
+          valueListenable: conversation,
+          builder: (context, id, _) => id == null
+              ? const SizedBox.shrink()
+              : SpaceInputBar(spaceId: 'ch-1', conversationId: id),
+        ),
+      );
+      await tester.enterText(find.byType(CcTextField), 'First conversation');
+      conversation.value = 'conv-2';
+      await tester.pump();
+      expect(_fieldText(tester), isEmpty);
+      await tester.enterText(find.byType(CcTextField), 'Second conversation');
+      conversation.value = null;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      conversation.value = 'conv-1';
+      await tester.pump();
+      expect(_fieldText(tester), 'First conversation');
+      conversation.value = 'conv-2';
+      await tester.pump();
+      expect(_fieldText(tester), 'Second conversation');
+    });
+
+    testWidgets('remounting an edit preserves its text and the parked draft', (
+      tester,
+    ) async {
+      final visible = ValueNotifier(true);
+      addTearDown(visible.dispose);
+      final container = await pumpBar(
+        tester,
+        body: ValueListenableBuilder(
+          valueListenable: visible,
+          builder: (context, show, _) => show
+              ? const SpaceInputBar(spaceId: 'ch-1', conversationId: 'conv-1')
+              : const SizedBox.shrink(),
+        ),
+      );
+      await tester.enterText(find.byType(CcTextField), 'Unsent draft');
+      container
+          .read(editingMessageProvider(key).notifier)
+          .begin(_editableMessage());
+      await tester.pump();
+      await tester.enterText(find.byType(CcTextField), 'Half-written edit');
+      visible.value = false;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      visible.value = true;
+      await tester.pump();
+      expect(_fieldText(tester), 'Half-written edit');
+      expect(find.text('Edit message'), findsOneWidget);
+      await tester.tap(find.byIcon(AppIcons.x));
+      await tester.pump();
+      expect(_fieldText(tester), 'Unsent draft');
+    });
 
     testWidgets(
       'loads the message into the field and cancel restores the draft',

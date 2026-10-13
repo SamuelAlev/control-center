@@ -253,9 +253,23 @@ class ResilientRpcClient implements RemoteRpcClient {
   Stream<Map<String, dynamic>> subscribe(
     String query,
     Map<String, dynamic> args,
-  ) {
+  ) => _subscribe(query, args, events: false);
+
+  @override
+  Stream<Map<String, dynamic>> subscribeEvents(
+    String query,
+    Map<String, dynamic> args,
+  ) => _subscribe(query, args, events: true);
+
+  Stream<Map<String, dynamic>> _subscribe(
+    String query,
+    Map<String, dynamic> args, {
+    required bool events,
+  }) {
     final effectiveArgs = _frozenArgs(args);
-    final cache = _safeSubscriptions.contains(query) ? _snapshotCache : null;
+    final cache = !events && _safeSubscriptions.contains(query)
+        ? _snapshotCache
+        : null;
     final key = _snapshotKey('sub', query, effectiveArgs);
     late final StreamController<Map<String, dynamic>> controller;
     StreamSubscription<Map<String, dynamic>>? innerSub;
@@ -325,42 +339,41 @@ class ResilientRpcClient implements RemoteRpcClient {
         attachedDone = done;
         var failed = false;
         var denied = false;
-        innerSub = client
-            .subscribe(query, effectiveArgs)
-            .listen(
-              (snapshot) {
-                if (cancelled ||
-                    controller.isClosed ||
-                    _terminalError != null) {
-                  return;
-                }
-                cache?.write(key, snapshot);
-                controller.add(snapshot);
-              },
-              onError: (Object error, StackTrace stack) {
-                denied = _isAuthoritativeDenial(error);
-                if (denied) {
-                  _evictDeniedSnapshot(cache, key, effectiveArgs, error);
-                } else if (error is RemoteRpcClientClosedException ||
-                    error is TimeoutException ||
-                    !client.isOpen) {
-                  // Transport loss does not replace a cached render with an error.
-                  if (!done.isCompleted) {
-                    done.complete();
-                  }
-                  return;
-                }
-                failed = true;
-                if (!cancelled && !controller.isClosed) {
-                  controller.addError(error, stack);
-                }
-              },
-              onDone: () {
-                if (!done.isCompleted) {
-                  done.complete();
-                }
-              },
-            );
+        final source = events
+            ? client.subscribeEvents(query, effectiveArgs)
+            : client.subscribe(query, effectiveArgs);
+        innerSub = source.listen(
+          (snapshot) {
+            if (cancelled || controller.isClosed || _terminalError != null) {
+              return;
+            }
+            cache?.write(key, snapshot);
+            controller.add(snapshot);
+          },
+          onError: (Object error, StackTrace stack) {
+            denied = _isAuthoritativeDenial(error);
+            if (denied) {
+              _evictDeniedSnapshot(cache, key, effectiveArgs, error);
+            } else if (error is RemoteRpcClientClosedException ||
+                error is TimeoutException ||
+                !client.isOpen) {
+              // Transport loss does not replace a cached render with an error.
+              if (!done.isCompleted) {
+                done.complete();
+              }
+              return;
+            }
+            failed = true;
+            if (!cancelled && !controller.isClosed) {
+              controller.addError(error, stack);
+            }
+          },
+          onDone: () {
+            if (!done.isCompleted) {
+              done.complete();
+            }
+          },
+        );
         await done.future;
         attachedDone = null;
         await innerSub?.cancel();

@@ -33,7 +33,8 @@ import 'package:rhttp/rhttp.dart';
 /// flag); no commit-sha-anchored comments; no assignees, teams, viewed state,
 /// reactions, stacks, CI job detail, attachment upload, or draft PRs.
 /// [owner] is the Bitbucket workspace slug.
-class BitbucketForgePrClient implements ForgePrClient {
+class BitbucketForgePrClient
+    implements ForgePrClient, ForgeBranchPrHistoryClient {
   /// Creates a [BitbucketForgePrClient] for `owner/repo` over [_client].
   BitbucketForgePrClient({
     required this._client,
@@ -103,6 +104,12 @@ class BitbucketForgePrClient implements ForgePrClient {
       prs: page.items.map(_toDomain).toList(growable: false),
       hasMore: page.hasMore,
     );
+  }
+
+  @override
+  Future<List<PullRequest>> listPullRequestsForBranch(String branch) async {
+    final prs = await _client.listPullRequestsForBranch(owner, repo, branch);
+    return [for (final pr in prs) _toDomain(pr)];
   }
 
   /// Merged pull requests authored by [login], most recently merged first.

@@ -169,6 +169,14 @@ void main() {
       );
       expect(shown.map((pr) => pr.number), [412, 33982]);
     });
+
+    test('a confirmed branch merge supersedes a stale linked open PR', () {
+      final shown = pullRequestsForSpaceRow(
+        linked: [_pr()],
+        branchMatched: [_pr(state: PrState.merged)],
+      );
+      expect(shown.single.state, PrState.merged);
+    });
   });
 
   group('pullRequestForCheckedOutBranch', () {

@@ -37,7 +37,7 @@ import 'package:rhttp/rhttp.dart';
 /// `Draft: ` title prefix ([updatePullRequest] must re-apply it). False caps
 /// (`viewedStateSync`, `suggestedReviewers`, `stacks`, `notifications`) throw
 /// [ForgeUnsupportedError], not empty.
-class GitLabForgePrClient implements ForgePrClient {
+class GitLabForgePrClient implements ForgePrClient, ForgeBranchPrHistoryClient {
   /// Creates a [GitLabForgePrClient] for `owner/repo` on the instance [_client]
   /// is pointed at.
   ///
@@ -146,6 +146,33 @@ class GitLabForgePrClient implements ForgePrClient {
       ],
       hasMore: page.hasMore,
     );
+  }
+
+  @override
+  Future<List<PullRequest>> listPullRequestsForBranch(String branch) async {
+    final prs = <PullRequest>[];
+    for (var pageNumber = 1; pageNumber <= 100; pageNumber++) {
+      final page = await _client.listMergeRequests(
+        _projectId,
+        state: 'all',
+        sourceBranch: branch,
+        page: pageNumber,
+      );
+      for (final mr in page.items) {
+        if (mr.sourceBranch.isEmpty || mr.iid <= 0) {
+          throw const FormatException(
+            'GitLab returned a merge request without an identity/head ref',
+          );
+        }
+        if (mr.sourceBranch == branch) {
+          prs.add(pullRequestFromGitLab(mr, repoFullName: _repoFullName));
+        }
+      }
+      if (!page.hasMore) {
+        return prs;
+      }
+    }
+    throw StateError('GitLab branch PR history exceeded 100 pages');
   }
 
   /// Merge requests [login] authored that have been merged, most recently

@@ -2,7 +2,7 @@
 title: Livssyklus for agentutsending
 description: Hva som skjer fra en melding kommer inn til en kjøringslogg lukkes — sammensetting av prompten, worktrees, identitet, hva som begrenser en kjøring, og hvordan resultatet registreres ærlig.
 slug: nb-NO/handbok/konsepter/livssyklus-agentutsending
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Hva en utsending er
@@ -52,7 +52,7 @@ Copy-on-write er den **eneste** implementasjonen overalt der `rift` leveres, st�
 
 To identiteter løses per kjøring, før noen prosess startes.
 
-**Git-forfatterskap.** Commitene en agent lager, forfattes _som agenten_ — `<Name> (agent) <agentId@agents.control-center.local>` i både `GIT_AUTHOR_*` og `GIT_COMMITTER_*` — og utgir seg aldri for å være et menneske. Lokal-delen er agentens UUID, ikke navneslugen. Mennesket som ba om det, krediteres med en `Co-Authored-By:`-trailer, som bæres i miljøet og instrueres om i systemprompten. En eksplisitt identitet satt av kalleren vinner alltid over begge.
+**Git-forfatterskap.** Som standard bruker agentens commits `Control Center <hi@usectrl.dev>` (GitHub-kontoen `@usectrl`) i både `GIT_AUTHOR_*` og `GIT_COMMITTER_*`, mens personen som ba om kjøringen krediteres med en `Co-Authored-By:`-trailer. Slå av agentkreditering under **Innstillinger → Deg → Kreditering av commits** for å bruke bare din Git-identitet. En administrator kan tvinge krediteringen på eller av under **Innstillinger → Arbeidsområde → Generelt**; overstyringen gjelder foran og deaktiverer den personlige bryteren uten å endre det lagrede valget. Endringer gjelder fra neste kjøring. Claude Codes egne commit- og PR-signaturer er alltid deaktivert. Git-identitetsverdier som kalleren eksplisitt setter, har fortsatt forrang; GitHub-legitimasjonen påvirkes ikke.
 
 **Forge-identitet.** Kjøringens GitHub-legitimasjon er alltid bare meglerens — et App-installasjonstoken begrenset til repoet, eller dens PAT-reserveløsning fra miljøet — aldri det egne lagrede tokenet til medlemmet som ba om det. `actingUserId` begrenser PAT-reserveløsningen slik at et medlem som ikke er servereier, ikke arver serverens rekkevidde; den legger ikke et personlig token oppå agentmiljøet.
 

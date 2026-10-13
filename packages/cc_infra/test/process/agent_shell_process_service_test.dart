@@ -1,9 +1,12 @@
 import 'dart:io';
 
+import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/entities/agent_shell_output.dart';
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_infra/src/process/agent_shell_process_service.dart';
+import 'package:cc_infra/src/process/agent_shell_file_output.dart';
 import 'package:test/test.dart';
 
 class _RunLogs implements AgentRunLogRepository {
@@ -236,5 +239,215 @@ void main() {
       close();
       expect(harness.forSpace('ws', 's1'), isEmpty);
     });
+    test('reads bounded CLI file output, then retains final snapshot without '
+        'following a recycled pid', () async {
+      final temp = Directory.systemTemp.createTempSync('shell-output-');
+      addTearDown(() => temp.deleteSync(recursive: true));
+      final path = '${temp.resolveSymbolicLinksSync()}/command.log';
+      final file = File(path)..writeAsStringSync('before\n');
+      var ps = _ps;
+      var clock = now;
+      var descriptorCalls = 0;
+      final svc = AgentShellProcessService(
+        runLogs: _RunLogs([run()]),
+        harnessShells: HarnessShellRegistry(),
+        psSnapshot: () async => ps,
+        fileOutput: AgentShellFileOutput(
+          descriptors: (pid) async {
+            descriptorCalls++;
+            return 'p$pid\nf1\ntREG\nn$path\nf2\ntREG\nn$path\n';
+          },
+        ),
+        now: () => clock,
+        serverPid: 1,
+      );
+      final first = (await svc.list(workspaceId: 'ws', spaceId: 's1')).single;
+      final second = (await svc.list(workspaceId: 'ws', spaceId: 's1')).single;
+      expect(second.outputId, first.outputId);
+      expect(
+        () => svc.readOutput(
+          workspaceId: 'other',
+          spaceId: 's1',
+          outputId: first.outputId,
+        ),
+        throwsA(isA<NotFoundException>()),
+      );
+      expect(
+        () => svc.readOutput(
+          workspaceId: 'ws',
+          spaceId: 'other',
+          outputId: first.outputId,
+        ),
+        throwsA(isA<NotFoundException>()),
+      );
+      expect(descriptorCalls, 0);
+      var snapshot = await svc.readOutput(
+        workspaceId: 'ws',
+        spaceId: 's1',
+        outputId: first.outputId,
+      );
+      expect(snapshot.state, AgentShellOutputState.running);
+      expect(snapshot.output, 'before\n'); // same file on fd1+fd2, not doubled
+      file.writeAsStringSync('after\n', mode: FileMode.append);
+      snapshot = await svc.readOutput(
+        workspaceId: 'ws',
+        spaceId: 's1',
+        outputId: first.outputId,
+      );
+      expect(snapshot.output, 'before\nafter\n');
+      file.renameSync('$path.old');
+      File(path).writeAsStringSync('impostor\n');
+      snapshot = await svc.readOutput(
+        workspaceId: 'ws',
+        spaceId: 's1',
+        outputId: first.outputId,
+      );
+      expect(snapshot.output, 'before\nafter\n');
+      ps = _ps.replaceFirst('  200   101      04:12', '  200   101   09:00:00');
+      clock = clock.add(const Duration(seconds: 1));
+      snapshot = await svc.readOutput(
+        workspaceId: 'ws',
+        spaceId: 's1',
+        outputId: first.outputId,
+      );
+      expect(snapshot.state, AgentShellOutputState.exited);
+      expect(snapshot.output, 'before\nafter\n');
+      expect(descriptorCalls, 1); // retained fd, not a recycled pid's pathname
+      expect(
+        (await svc.list(workspaceId: 'ws', spaceId: 's1')),
+        isNot(contains(first)),
+      );
+      ps = _ps.replaceFirst('  200   101      04:12', '  200   101      00:08');
+      clock = clock.add(const Duration(seconds: 1));
+      final reused = (await svc.list(workspaceId: 'ws', spaceId: 's1')).single;
+      expect(reused.pid, first.pid);
+      expect(reused.outputId, isNot(first.outputId));
+      expect(
+        (await svc.readOutput(
+          workspaceId: 'ws',
+          spaceId: 's1',
+          outputId: first.outputId,
+        )).state,
+        AgentShellOutputState.exited,
+      );
+    }, skip: _noPsWalk);
+
+    test(
+      'does not expose output first opened after its process identity exits',
+      () async {
+        final temp = Directory.systemTemp.createTempSync('shell-output-race-');
+        addTearDown(() => temp.deleteSync(recursive: true));
+        final path = '${temp.resolveSymbolicLinksSync()}/replacement.log';
+        File(path).writeAsStringSync('another process output');
+        var ps = _ps;
+        final svc = AgentShellProcessService(
+          runLogs: _RunLogs([run()]),
+          harnessShells: HarnessShellRegistry(),
+          psSnapshot: () async => ps,
+          fileOutput: AgentShellFileOutput(
+            descriptors: (pid) async {
+              ps = '';
+              return 'p$pid\nf1\ntREG\nn$path\n';
+            },
+          ),
+          now: () => now,
+          serverPid: 1,
+        );
+        final process = (await svc.list(
+          workspaceId: 'ws',
+          spaceId: 's1',
+        )).single;
+        final snapshot = await svc.readOutput(
+          workspaceId: 'ws',
+          spaceId: 's1',
+          outputId: process.outputId,
+        );
+        expect(snapshot.output, isEmpty);
+        expect(snapshot.state, AgentShellOutputState.unavailable);
+        final next = await svc.readOutput(
+          workspaceId: 'ws',
+          spaceId: 's1',
+          outputId: process.outputId,
+        );
+        expect(
+          next.output,
+          isEmpty,
+          reason: 'the provisional descriptor is discarded',
+        );
+      },
+      skip: _noPsWalk,
+    );
+
+    test('rejects links, pipes, and unreadable CLI descriptors', () async {
+      final temp = Directory.systemTemp.createTempSync('shell-fd-');
+      addTearDown(() => temp.deleteSync(recursive: true));
+      final path = '${temp.resolveSymbolicLinksSync()}/capture.log';
+      File(path).writeAsStringSync('secret\n');
+      final reader = AgentShellFileOutput(
+        descriptors: (pid) async => 'p$pid\nf1\ntPIPE\nn$path\n',
+      );
+      expect(await reader.read(200), isNull);
+      final link = Link('$path.link')..createSync(path);
+      final links = AgentShellFileOutput(
+        descriptors: (pid) async => 'p$pid\nf1\ntREG\nn${link.path}\n',
+      );
+      expect(await links.read(200), isNull);
+    }, skip: _noPsWalk);
+
+    test('truncates by bytes and tolerates partial UTF-8', () async {
+      final temp = Directory.systemTemp.createTempSync('shell-utf8-');
+      addTearDown(() => temp.deleteSync(recursive: true));
+      final path = '${temp.resolveSymbolicLinksSync()}/capture.log';
+      File(path).writeAsStringSync('${'x' * AgentShellFileOutput.maxBytes}☃');
+      final reader = AgentShellFileOutput(
+        descriptors: (pid) async => 'p$pid\nf1\ntREG\nn$path\n',
+      );
+      final output = await reader.read(200);
+      expect(output?.truncated, isTrue);
+      expect(output?.output, endsWith('☃'));
+      expect(
+        output!.output.length,
+        lessThanOrEqualTo(AgentShellFileOutput.maxBytes),
+      );
+    }, skip: _noPsWalk);
+    test(
+      'reports unsupported CLI capture as unavailable, not empty success',
+      () async {
+        final svc = AgentShellProcessService(
+          runLogs: _RunLogs([run()]),
+          harnessShells: HarnessShellRegistry(),
+          psSnapshot: () async => _ps,
+          fileOutput: AgentShellFileOutput(
+            descriptors: (pid) async => 'p$pid\nf1\ntPIPE\nnignored\n',
+          ),
+          now: () => now,
+          serverPid: 1,
+        );
+        final outputId = (await svc.list(
+          workspaceId: 'ws',
+          spaceId: 's1',
+        )).single.outputId;
+        final snapshot = await svc.readOutput(
+          workspaceId: 'ws',
+          spaceId: 's1',
+          outputId: outputId,
+        );
+        expect(snapshot.state, AgentShellOutputState.unavailable);
+        expect(snapshot.output, isEmpty);
+      },
+      skip: _noPsWalk,
+    );
+
+    test('rejects an fd whose pathname was replaced before opening', () async {
+      final temp = Directory.systemTemp.createTempSync('shell-inode-');
+      addTearDown(() => temp.deleteSync(recursive: true));
+      final path = '${temp.resolveSymbolicLinksSync()}/capture.log';
+      File(path).writeAsStringSync('not the original descriptor');
+      final reader = AgentShellFileOutput(
+        descriptors: (pid) async =>
+            'p$pid\nf1\ntREG\ni1\nD0xdeadbeef\nn$path\n',
+      );
+      expect(await reader.read(200), isNull);
+    }, skip: Platform.isMacOS ? false : 'macOS lsof inode/device validation');
   });
 }

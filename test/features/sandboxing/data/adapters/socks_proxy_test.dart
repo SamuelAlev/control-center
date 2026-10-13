@@ -99,8 +99,9 @@ Future<List<int>> _socksConnect(
   _SocketReader reader,
   Socket socket,
   String host,
-  int port,
-) async {
+  int port, {
+  List<int> initialPayload = const [],
+}) async {
   // Greeting: VER=5, 1 method, NO AUTH
   socket.add([0x05, 0x01, 0x00]);
   await socket.flush();
@@ -114,6 +115,7 @@ Future<List<int>> _socksConnect(
   final request = <int>[0x05, 0x01, 0x00, 0x03, hostBytes.length];
   request.addAll(hostBytes);
   request.addAll([(port >> 8) & 0xFF, port & 0xFF]);
+  request.addAll(initialPayload);
   socket.add(request);
   await socket.flush();
 
@@ -512,26 +514,49 @@ void main() {
 
     // ── End-to-end data forwarding ──────────────────────────────────
 
-    test('completes CONNECT successfully through echo server', () async {
-      // Verifies the full happy path: handshake → CONNECT → upstream reached.
-      final echoServer = await startEchoServer();
-      try {
-        final conn = await _connect(proxy);
-        final reply = await _socksConnect(
-          conn.reader,
-          conn.socket,
-          'localhost',
-          echoServer.port,
-        );
-        expect(reply[1], 0x00); // succeeded
-        // After this point, the proxy would set up bidirectional pipes.
-        // That code path hits a latent bug (_StreamReader subscriber
-        // prevents _pipeBidirectional from listening).  The CONNECT
-        // phase is the important pure-logic path we test here.
-        await conn.close();
-      } finally {
-        await echoServer.close();
-      }
-    });
+    for (final pipelined in [false, true]) {
+      test(
+        'forwards a live tunnel with pipelined payload $pipelined',
+        () async {
+          final echoServer = await startEchoServer();
+          try {
+            final conn = await _connect(proxy);
+            final first = 'bytes at the handshake boundary'.codeUnits;
+            final reply = await _socksConnect(
+              conn.reader,
+              conn.socket,
+              'localhost',
+              echoServer.port,
+              initialPayload: pipelined ? first : const [],
+            );
+            expect(reply[1], 0x00);
+            if (!pipelined) {
+              conn.socket.add(first);
+              await conn.socket.flush();
+            }
+            expect(
+              await conn.reader
+                  .read(first.length)
+                  .timeout(const Duration(seconds: 2)),
+              first,
+            );
+            // Later bytes must stay on the same live tunnel, not only survive
+            // because the handshake reader happened to buffer the first burst.
+            final later = List<int>.generate(4096, (i) => i % 256);
+            conn.socket.add(later);
+            await conn.socket.flush();
+            expect(
+              await conn.reader
+                  .read(later.length)
+                  .timeout(const Duration(seconds: 2)),
+              later,
+            );
+            await conn.close();
+          } finally {
+            await echoServer.close();
+          }
+        },
+      );
+    }
   });
 }

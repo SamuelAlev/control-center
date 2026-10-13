@@ -2,7 +2,7 @@
 title: Revisiona e unisci una PR
 description: Apri il banco di lavoro di una PR, leggi il diff, lascia commenti inline, invia una revisione e unisci.
 slug: it-IT/manuale/guide/revisiona-e-unisci-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Questa guida mostra come revisionare e unire una pull request.
@@ -27,6 +27,33 @@ disposizione delle schede viene memorizzata per ogni PR.
 La scheda Panoramica contiene i metadati della PR (autore, branch, etichette,
 assegnatari, reazioni, commit, stato dei controlli) e la riga delle azioni:
 aggiorna, **Revisione**, **Merge**, apri nell'IDE e un menu a comparsa ⋯.
+
+### Apri una PR dallo stack di uno spazio
+
+La sezione **Generale → Pull request** dello spazio raggruppa per repository le
+PR collegate e quelle abbinate per branch. Quando il branch di base di una PR è
+il branch di origine della PR precedente, le due compaiono in uno stack
+comprimibile. La sua intestazione identifica la PR in fondo, il branch di
+destinazione e il conteggio; le righe numerate vanno dalla PR in fondo (1) verso
+la punta. I numeri descrivono l'ordine di dipendenza, non la prontezza al merge.
+
+Ogni riga mostra il titolo, il numero della PR e lo stato. Passa il puntatore
+del mouse su una riga o portala in focus per leggerne il titolo completo e i
+nomi dei branch; fai clic o premi Enter per aprire il banco di lavoro della PR.
+Porta il focus su un'intestazione di stack e premi Enter o Spazio per comprimerlo
+o espanderlo. Le PR non correlate restano separate, e i collegamenti di branch
+incompleti o ambigui non vengono presentati come uno stack ordinato.
+
+In **Controllo del codice**, **Pull request in stack (N)** apre un selettore
+delle parti pubblicate dello stack, a partire da quella più in basso. Ogni voce
+mostra il numero della PR, l'etichetta della parte e la posizione; la parte
+estratta è contrassegnata. Seleziona una voce per aprire il suo banco di lavoro
+della PR. **Pubblica lo stack** compare solo quando l'individuazione delle PR è
+terminata e almeno una parte non ha una PR. Questo vale anche per il menu del
+branch. Anche le PR create al di fuori di Control Center contano come
+pubblicate. Gli stack parzialmente pubblicati offrono entrambe le azioni; il
+lavoro su un singolo branch mantiene le singole azioni di creazione e
+visualizzazione della PR.
 
 ## Leggi il diff
 

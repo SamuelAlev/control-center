@@ -8,7 +8,6 @@ import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
-import 'package:control_center/features/messaging/presentation/widgets/context_meter_chip.dart';
 import 'package:control_center/features/messaging/presentation/widgets/manage_space_dialog.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_header.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -162,54 +161,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.text('2 agents'), findsOneWidget);
-    });
-
-    testWidgets('meters an agent even when several are in the space', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(800, 100);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            spaceParticipantsProvider('ch-1').overrideWith(
-              (ref) => Stream.value([agentParticipant, agentParticipant2]),
-            ),
-            agentDetailProvider('agent-1').overrideWith((ref) async => agent),
-            agentDetailProvider('agent-2').overrideWith((ref) async => agent2),
-          ],
-          child: CcTheme(
-            data: CcThemeData.light(),
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: SpaceHeader(
-                  space: testSpace,
-                  onManage: () {},
-                  onArchive: () {},
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-
-      // The meter used to render only for a single-agent space. It now follows
-      // the agent at work — nothing is running in this harness, so that is the
-      // first participant — and says whose window it is reading.
-      final chip = tester.widget<ContextMeterChip>(
-        find.byType(ContextMeterChip),
-      );
-      expect(chip.agentId, 'agent-1');
-      expect(chip.showAgent, isTrue);
     });
 
     testWidgets('renders space with no agents', (tester) async {
@@ -707,6 +658,14 @@ void main() {
               home: Scaffold(
                 body: SpaceHeader(
                   space: testSpace,
+                  conversation: Conversation(
+                    id: 'conv-narrow',
+                    workspaceId: 'ws-1',
+                    spaceId: testSpace.id,
+                    title: 'Conversation',
+                    createdAt: DateTime(2024),
+                    updatedAt: DateTime(2024),
+                  ),
                   onManage: () {},
                   onArchive: onArchive ?? () {},
                 ),

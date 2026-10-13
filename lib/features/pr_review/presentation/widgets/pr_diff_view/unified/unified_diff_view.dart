@@ -9,6 +9,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart';
@@ -1688,6 +1689,24 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     });
   }
 
+  Object _commentDestination(ComposerRequest req) => (
+    _document.files[req.fileIndex].filename,
+    req.side,
+    req.lineNoStart,
+    req.lineNoEnd,
+    req.startCol,
+    req.endCol,
+  );
+
+  TextDraftKey _commentDraftKey(ComposerRequest req) {
+    final pr = widget.inlineCommentsController!.pr;
+    return (
+      workspaceId: pr.workspaceId,
+      surface: 'pr-inline-comment',
+      destination: (pr, _commentDestination(req)),
+    );
+  }
+
   void _switchComposerToSuggestion(ComposerRequest req, String comment) {
     setState(() {
       _activeComposer = ComposerRequest(
@@ -1751,6 +1770,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       authorBody: body,
       batched: batched,
     );
+    final draft = ref.read(textDraftControllerProvider(_commentDraftKey(req)));
+    if (draft.text == req.initialComment) {
+      draft.clear();
+    }
     _cancelComposer(animate: false);
   }
 
@@ -1779,7 +1802,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       );
     } catch (_) {
       toasts.show(l10n.commentSendFailed, variant: CcToastVariant.danger);
-      return;
+      rethrow;
     }
     toasts.show(l10n.commentSentToAgent, variant: CcToastVariant.success);
     // A composer opened elsewhere while this one was sending is not ours to
@@ -3647,6 +3670,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
                       )
                     : PrCommentComposer(
                         prRef: widget.inlineCommentsController?.pr,
+                        draftDestination: _commentDestination(req),
                         reviewInProgress: reviewInProgress,
                         onSuggest: (comment) =>
                             _switchComposerToSuggestion(req, comment),

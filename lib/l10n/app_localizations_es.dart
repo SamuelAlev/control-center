@@ -12565,6 +12565,48 @@ class AppLocalizationsEs extends AppLocalizations {
       'Identidad, políticas y convenciones que comparten todos en este espacio de trabajo.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Atribución de commits';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Elige si los commits de los agentes atribuyen el trabajo a Control Center. Los administradores del espacio de trabajo pueden imponer esta opción a todos sus miembros.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Atribución al agente';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Atribuir los commits de los agentes a Control Center';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Si se activa, Control Center figura como autor de los commits y tú como coautor. Si se desactiva, los commits usan tu identidad de Git sin atribución al agente.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'La configuración de este espacio de trabajo prevalece sobre tu elección personal. Tu preferencia se guarda, pero no se aplica aquí.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Cargando ajustes de atribución…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Elige si los commits de los agentes atribuyen el trabajo a Control Center. La elección del espacio de trabajo prevalece sobre la preferencia personal de cada miembro.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Usar la preferencia de cada miembro';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Atribuir siempre a Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'No atribuir nunca a Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Plantillas de notas y voces guardadas para las reuniones de este espacio de trabajo.';
 
@@ -14072,6 +14114,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Ticket';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Se han fusionado todas las solicitudes de incorporación de este espacio. ¿Quieres archivarlo?';
+
+  @override
+  String get spaceKeepAfterMerge => 'No, conservar este espacio';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'No volveremos a preguntarte por este espacio.';
+
+  @override
+  String get spaceAllPrsMergedLabel =>
+      'Todas las solicitudes de incorporación fusionadas';
 
   @override
   String get archiveSpace => 'Archivar espacio';

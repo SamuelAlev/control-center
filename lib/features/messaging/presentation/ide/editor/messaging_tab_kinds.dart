@@ -17,6 +17,9 @@ abstract final class MessagingTabKinds {
   /// An interactive sandbox terminal.
   static const String terminal = 'terminal';
 
+  /// Ephemeral, read-only captured output from an agent command.
+  static const String agentShellOutput = 'agentShellOutput';
+
   /// An in-app webview browser.
   static const String browser = 'browser';
 
@@ -99,6 +102,8 @@ abstract final class MessagingTabKinds {
       case chat:
         return AppIcons.messageSquareText;
       case terminal:
+        return AppIcons.terminal;
+      case agentShellOutput:
         return AppIcons.terminal;
       case browser:
         return AppIcons.globe;

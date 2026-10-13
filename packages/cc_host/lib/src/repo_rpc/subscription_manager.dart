@@ -9,7 +9,7 @@ import 'package:cc_host/src/repo_rpc/repo_op_dispatcher.dart'
 import 'package:cc_host/src/repo_rpc/watch_query.dart';
 import 'package:cc_rpc/cc_rpc.dart' show kSubErrorUpstreamAuthKind;
 
-/// Session live subscriptions → `sub/snapshot` pushes (snapshot-only v1).
+/// Session subscriptions → snapshot pushes or lossless ordered event pushes.
 ///
 /// Workspace-scoped queries: refuse unknown ids via [workspaceExists] before
 /// the handler runs (opening creates the file). Cap [maxPerSession].
@@ -320,7 +320,11 @@ class SubscriptionManager {
           .listen(
             (data) {
               rev++;
-              _enqueueSnapshot(subId, rev, data);
+              if (query.isEventStream) {
+                _sendSnapshot(subId, rev, data, full: false);
+              } else {
+                _enqueueSnapshot(subId, rev, data);
+              }
             },
             onError: (Object e, StackTrace st) {
               // Include the coordinates: without them a doomed watch (a repo
@@ -498,17 +502,29 @@ class SubscriptionManager {
         continue;
       }
       _lastSent[entry.key] = snap.data;
-      send({
-        'jsonrpc': '2.0',
-        'method': RpcMethods.subSnapshot,
-        'params': {
-          'subscriptionId': entry.key,
-          'rev': snap.rev,
-          'full': true,
-          'data': snap.data,
-        },
-      });
+      _sendSnapshot(entry.key, snap.rev, snap.data, full: true);
     }
+  }
+
+  void _sendSnapshot(
+    String subId,
+    int rev,
+    Map<String, dynamic> data, {
+    required bool full,
+  }) {
+    if (!_subs.containsKey(subId)) {
+      return;
+    }
+    send({
+      'jsonrpc': '2.0',
+      'method': RpcMethods.subSnapshot,
+      'params': {
+        'subscriptionId': subId,
+        'rev': rev,
+        'full': full,
+        'data': data,
+      },
+    });
   }
 
   void _cancel(String subId) {

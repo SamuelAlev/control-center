@@ -2,7 +2,7 @@
 title: Siklus hidup pengiriman agen
 description: Apa yang terjadi antara pesan yang masuk dan penutupan log run — perakitan prompt, worktree, identitas, apa yang membatasi sebuah run, dan bagaimana hasilnya dicatat secara jujur.
 slug: id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Apa itu pengiriman
@@ -52,7 +52,7 @@ Copy-on-write adalah **satu-satunya** implementasi di mana pun `rift` disertakan
 
 Dua identitas diselesaikan per run, sebelum proses apa pun diluncurkan.
 
-**Kepengarangan Git.** Commit yang dibuat agen dikarang _sebagai agen_ — `<Name> (agent) <agentId@agents.control-center.local>` di `GIT_AUTHOR_*` maupun `GIT_COMMITTER_*` — tidak pernah menyamar sebagai manusia. Bagian lokalnya adalah UUID agen, bukan slug namanya. Manusia yang meminta dicantumkan lewat trailer `Co-Authored-By:`, yang dibawa di lingkungan dan diinstruksikan di prompt sistem. Identitas eksplisit yang ditetapkan pemanggil selalu menang atas keduanya.
+**Kepengarangan Git.** Secara default, commit agen memakai `Control Center <hi@usectrl.dev>` (akun GitHub `@usectrl`) pada `GIT_AUTHOR_*` dan `GIT_COMMITTER_*`, sedangkan peminta dicantumkan lewat trailer `Co-Authored-By:`. Matikan atribusi agen di **Pengaturan → Anda → Atribusi commit** agar hanya identitas Git Anda yang digunakan. Admin ruang kerja dapat mewajibkan atau menonaktifkan atribusi di **Pengaturan → Ruang kerja → Umum**; pengaturan itu diutamakan dan menonaktifkan tombol pribadi tanpa mengubah preferensi yang tersimpan. Perubahan berlaku mulai run berikutnya. Baris atribusi commit dan PR bawaan Claude Code selalu dinonaktifkan. Nilai identitas Git yang ditetapkan pemanggil secara eksplisit tetap diutamakan; kredensial layanan Git tidak terpengaruh.
 
 **Identitas forge.** Kredensial GitHub dalam run selalu hanya milik broker — token instalasi App yang berskop repo, atau fallback PAT dari lingkungannya — tidak pernah token tersimpan milik anggota yang meminta. `actingUserId` membatasi fallback PAT agar anggota yang bukan pemilik server tidak mewarisi jangkauan server; ini tidak menimpakan token pribadi ke lingkungan agen.
 

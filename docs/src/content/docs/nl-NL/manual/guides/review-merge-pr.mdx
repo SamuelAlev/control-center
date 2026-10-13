@@ -2,7 +2,7 @@
 title: Een PR reviewen en mergen
 description: Open de PR-werkbank, lees de diff, laat inline reacties achter, dien een review in en merge.
 slug: nl-NL/handleiding/gidsen/pr-reviewen-en-mergen
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Deze gids laat zien hoe je een pull request reviewt en merget.
@@ -26,6 +26,33 @@ tabindeling wordt per PR onthouden.
 Het tabblad Overzicht bevat de metadata van de PR (auteur, branch, labels,
 toegewezen personen, reacties, commits, controlestatus) en de actierij:
 vernieuwen, **Review**, **Merge**, openen in IDE en een ⋯-overloopmenu.
+
+### Een PR openen vanuit de stack van een ruimte
+
+De sectie **Algemeen → Pull requests** van de ruimte groepeert gekoppelde PR's en
+PR's met een overeenkomende branch per repository. Wanneer de basisbranch van een
+PR de head-branch van de vorige PR is, verschijnen ze in een uitklapbare stack.
+De kop ervan vermeldt de onderste PR, de doelbranch en het aantal; genummerde
+rijen lopen vanaf de onderste PR (1) naar de top. De nummers beschrijven de
+afhankelijkheidsorde, niet of de stack klaar is om te mergen.
+
+Elke rij toont de titel, het PR-nummer en de status. Beweeg de muis over een rij
+of geef er focus aan om de volledige titel en de branchnamen te lezen; klik of
+druk op Enter om de PR-werkbank te openen. Geef focus aan een stackkop en druk op
+Enter of de spatiebalk om die in of uit te klappen. Niet-gerelateerde PR's blijven
+gescheiden, en onvolledige of dubbelzinnige branchkoppelingen worden niet als een
+geordende stack gepresenteerd.
+
+In **Broncodebeheer** opent **Gestapelde pull requests (N)** een kiezer met de
+gepubliceerde delen van de stack, met het onderste deel eerst. Elke vermelding
+toont het PR-nummer, de deelnaam en de positie; het uitgecheckte deel is
+gemarkeerd. Selecteer een vermelding om de bijbehorende PR-werkbank te openen.
+**Stapel publiceren** verschijnt alleen als het detecteren van PR's is afgerond
+en minstens één deel nog geen PR heeft. Dit geldt ook voor het branchmenu. PR's
+die buiten Control Center zijn aangemaakt, gelden eveneens als gepubliceerd. Bij
+gedeeltelijk gepubliceerde stacks zijn beide acties beschikbaar; bij werk op één
+branch blijven de afzonderlijke acties voor het aanmaken en bekijken van een PR
+staan.
 
 ## De diff lezen
 

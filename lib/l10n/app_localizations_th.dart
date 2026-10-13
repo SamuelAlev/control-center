@@ -12380,6 +12380,48 @@ class AppLocalizationsTh extends AppLocalizations {
       'ตัวตน นโยบาย และธรรมเนียมที่ทุกคนในเวิร์กสเปซนี้ใช้ร่วมกัน';
 
   @override
+  String get settingsAgentAttributionTitle => 'การระบุที่มาในคอมมิต';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'เลือกว่าคอมมิตของเอเจนต์จะให้เครดิต Control Center หรือไม่ ผู้ดูแลเวิร์กสเปซสามารถกำหนดค่าแทนทุกคนในเวิร์กสเปซได้';
+
+  @override
+  String get settingsAgentCoauthorSection => 'การให้เครดิตเอเจนต์';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'ให้เครดิต Control Center ในคอมมิตของเอเจนต์';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'เมื่อเปิดใช้ คอมมิตจะมี Control Center เป็นผู้เขียนและมีคุณเป็นผู้ร่วมเขียน เมื่อปิดใช้ คอมมิตจะใช้ตัวตน Git ของคุณโดยไม่ให้เครดิตเอเจนต์';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'เวิร์กสเปซนี้ใช้ค่าแทนการเลือกส่วนตัวของคุณ ค่าที่คุณเลือกยังถูกบันทึกไว้ แต่ไม่มีผลที่นี่';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'กำลังโหลดการตั้งค่าการระบุที่มา…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'เลือกว่าคอมมิตของเอเจนต์จะให้เครดิต Control Center หรือไม่ การตั้งค่าของเวิร์กสเปซมีผลแทนการตั้งค่าส่วนตัวของสมาชิกแต่ละคน';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'ใช้ค่าที่สมาชิกแต่ละคนเลือก';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'ให้เครดิต Control Center เสมอ';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'ไม่ให้เครดิต Control Center เลย';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'แม่แบบบันทึกและเสียงที่บันทึกไว้สำหรับการประชุมในเวิร์กสเปซนี้';
 
@@ -13857,6 +13899,19 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'ตั๋วงาน';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'คำขอดึงทั้งหมดในสเปซนี้ถูกรวมแล้ว ต้องการเก็บสเปซนี้ถาวรหรือไม่?';
+
+  @override
+  String get spaceKeepAfterMerge => 'ไม่ เก็บสเปซนี้ไว้';
+
+  @override
+  String get spaceKeepAfterMergeHint => 'ระบบจะไม่ถามเรื่องสเปซนี้อีก';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'รวมคำขอดึงทั้งหมดแล้ว';
 
   @override
   String get archiveSpace => 'เก็บถาวรสเปซ';

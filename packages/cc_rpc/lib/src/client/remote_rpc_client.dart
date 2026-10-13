@@ -77,8 +77,9 @@ class RemoteRpcClient {
   /// so a handler that emits on listen — or a loopback transport that delivers
   /// the snapshot in the same burst as the ack — would otherwise drop the
   /// only emission and leave StreamProviders spinning in loading forever.
-  /// Last snapshot wins; a buffered error is replayed after it (terminal).
-  final Map<String, Map<String, dynamic>> _earlySnapshots = {};
+  /// Full snapshots replace earlier snapshots; event frames retain arrival
+  /// order, including their seed. A buffered error is replayed last.
+  final Map<String, List<Map<String, dynamic>>> _earlySnapshots = {};
   final Map<String, RemoteRpcException> _earlyErrors = {};
 
   /// Request ids of `sub/subscribe` setups abandoned before their ack arrived.
@@ -107,6 +108,7 @@ class RemoteRpcClient {
   StreamSubscription<Map<String, dynamic>>? _incomingSub;
   int _nextId = 0;
   bool _closing = false;
+  Future<void> _sendChain = Future<void>.value();
   RemoteResourceClient? _resources;
 
   /// The workspace this client acts in. It is injected as `workspace_id` into
@@ -538,6 +540,16 @@ class RemoteRpcClient {
     return shared.attach();
   }
 
+  /// Subscribes to ordered events independently for each listener.
+  ///
+  /// Unlike [subscribe], these streams cannot share a last-frame replay:
+  /// a transcript delta needs its seed; terminal bytes must start live.
+  /// The server query declares lossless delivery with `isEventStream`.
+  Stream<Map<String, dynamic>> subscribeEvents(
+    String query,
+    Map<String, dynamic> args,
+  ) => _subscribeRaw(query, _withWorkspace(args));
+
   /// Stable dedupe key for a subscription. Sorts the top-level args so callers
   /// that build the map in a different order still collide (subscription args
   /// are flat coordinate maps). A mismatch only costs a missed dedupe, never
@@ -667,14 +679,16 @@ class RemoteRpcClient {
     return controller.stream;
   }
 
-  /// Replays a snapshot / stream error that landed before [_subs] knew [id].
+  /// Replays snapshots/events and a stream error that arrived before the ack.
   void _replayEarly(
     String id,
     StreamController<Map<String, dynamic>> controller,
   ) {
-    final snapshot = _earlySnapshots.remove(id);
-    if (snapshot != null && !controller.isClosed) {
-      controller.add(snapshot);
+    final snapshots = _earlySnapshots.remove(id);
+    if (snapshots != null && !controller.isClosed) {
+      for (final snapshot in snapshots) {
+        controller.add(snapshot);
+      }
     }
     final error = _earlyErrors.remove(id);
     if (error != null && !controller.isClosed) {
@@ -705,6 +719,27 @@ class RemoteRpcClient {
     } catch (_) {}
   }
 
+  /// Respect transport backpressure even when many subscriptions start in one
+  /// turn. Queue requests, not encrypted frames; never send a queued mutation
+  /// after its caller has already timed out or cancelled it.
+  Future<bool> _send(Map<String, dynamic> frame, {int? requestId}) {
+    final operation = _sendChain.then((_) async {
+      if (requestId != null && !_pending.containsKey(requestId)) {
+        return false;
+      }
+      if (_closing || !_channel.isOpen) {
+        throw const RemoteRpcClientClosedException();
+      }
+      await _channel.send(frame);
+      return true;
+    });
+    _sendChain = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return operation;
+  }
+
   Future<Map<String, dynamic>> _request(
     String method,
     Map<String, dynamic> params, {
@@ -724,14 +759,12 @@ class RemoteRpcClient {
       },
     );
     unawaited(
-      Future<void>.sync(
-        () => _channel.send({
-          'jsonrpc': '2.0',
-          'id': id,
-          'method': method,
-          'params': params,
-        }),
-      ).then<void>(
+      _send({
+        'jsonrpc': '2.0',
+        'id': id,
+        'method': method,
+        'params': params,
+      }, requestId: id).then<void>(
         (_) {},
         onError: (Object error, StackTrace stack) {
           final pending = _pending.remove(id);
@@ -751,14 +784,12 @@ class RemoteRpcClient {
     final id = ++_nextId;
     final completer = Completer<Map<String, dynamic>>();
     _pending[id] = completer;
-    final sent = Future<void>.sync(
-      () => _channel.send({
-        'jsonrpc': '2.0',
-        'id': id,
-        'method': method,
-        'params': params,
-      }),
-    );
+    final sent = _send({
+      'jsonrpc': '2.0',
+      'id': id,
+      'method': method,
+      'params': params,
+    }, requestId: id);
     // Attach to the response before awaiting send: a listener may cancel
     // while an asynchronous transport is still flushing the outgoing frame.
     final future =
@@ -792,9 +823,9 @@ class RemoteRpcClient {
       // original frame so request-id cleanup cannot overtake setup.
       unawaited(
         sent
-            .then((_) async {
-              if (!_closing && _channel.isOpen) {
-                await _channel.send({
+            .then((dispatched) async {
+              if (dispatched && !_closing && _channel.isOpen) {
+                await _send({
                   'jsonrpc': '2.0',
                   'method': RpcMethods.cancelRequest,
                   'params': {'id': id},
@@ -860,8 +891,10 @@ class RemoteRpcClient {
           _subs[subId]!.add(data);
         } else if (_deadSubscriptions.contains(subId)) {
           return; // Abandoned setup / unsubscribed id: never buffer dead data.
+        } else if (params['full'] == false) {
+          (_earlySnapshots[subId] ??= []).add(data);
         } else {
-          _earlySnapshots[subId] = data;
+          _earlySnapshots[subId] = [data];
         }
       case RpcMethods.subError:
         final subId = params['subscriptionId'] as String?;

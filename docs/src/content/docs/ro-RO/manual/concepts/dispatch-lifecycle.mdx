@@ -2,7 +2,7 @@
 title: Ciclul de viață al trimiterii agenților
 description: Ce se întâmplă între sosirea unui mesaj și închiderea unui jurnal de rulare — asamblarea promptului, worktree-urile, identitatea, ce limitează o rulare și cum este înregistrat cu onestitate rezultatul ei.
 slug: ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Ce este o trimitere
@@ -52,7 +52,7 @@ Copy-on-write este **singura** implementare oriunde `rift` este livrat, susținu
 
 Două identități sunt rezolvate pentru fiecare rulare, înainte de lansarea oricărui proces.
 
-**Paternitatea Git.** Commit-urile făcute de un agent sunt scrise _ca agentul_ — `<Name> (agent) <agentId@agents.control-center.local>` atât în `GIT_AUTHOR_*`, cât și în `GIT_COMMITTER_*` — fără a se da vreodată drept o persoană. Partea locală este UUID-ul agentului, nu slug-ul numelui lui. Persoanei care a solicitat i se acordă credit printr-un trailer `Co-Authored-By:`, purtat în mediu și indicat în promptul de sistem. O identitate stabilită explicit de apelant câștigă mereu în fața ambelor.
+**Paternitatea Git.** În mod implicit, commit-urile agentului folosesc `Control Center <hi@usectrl.dev>` (contul GitHub `@usectrl`) atât în `GIT_AUTHOR_*`, cât și în `GIT_COMMITTER_*`, iar persoana care a făcut solicitarea este creditată printr-un trailer `Co-Authored-By:`. Dezactivează atribuirea agentului în **Setări → Tu → Atribuirea autorului commiturilor** pentru a folosi numai identitatea ta Git. Un administrator al spațiului de lucru poate impune sau dezactiva atribuirea din **Setări → Spațiu de lucru → General**; această setare are prioritate și dezactivează comutatorul personal fără să schimbe preferința salvată. Modificările se aplică de la următoarea rulare. Semnăturile proprii ale Claude Code în commit-uri și PR-uri sunt întotdeauna dezactivate. Valorile identității Git stabilite explicit de apelant au în continuare prioritate; acreditările pentru platforma Git nu sunt afectate.
 
 **Identitatea pe hostul de cod.** Datele de autentificare GitHub ale rulării sunt mereu doar ale brokerului — un token de instalare App limitat la depozit sau revenirea lui la PAT din mediu — niciodată tokenul stocat al membrului care solicită. `actingUserId` limitează revenirea la PAT, astfel încât un membru care nu este proprietarul serverului să nu moștenească anvergura serverului; nu suprapune un token personal peste mediul agentului.
 

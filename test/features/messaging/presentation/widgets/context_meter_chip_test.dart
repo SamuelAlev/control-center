@@ -3,13 +3,14 @@ import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_inspection.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_window_usage.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_token_totals.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/context_meter_chip.dart';
 import 'package:control_center/features/messaging/providers/context_inspection_provider.dart';
 import 'package:control_center/features/messaging/providers/context_usage_provider.dart';
-import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -24,6 +25,7 @@ import 'package:riverpod/misc.dart' show Override;
 
 const _workspaceId = 'ws-1';
 const _spaceId = 'sp-1';
+const _conversationId = 'cv-1';
 const _agentId = 'ag-1';
 
 class _FakeActiveWorkspaceId extends ActiveWorkspaceIdNotifier {
@@ -76,27 +78,55 @@ List<Message> _messages() => [
   ),
 ];
 
-List<Override> _overrides() => [
+class _Messages implements MessagingRepository {
+  @override
+  Stream<List<Message>> watchMessages(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+  ) => Stream.value(
+    workspaceId == _workspaceId &&
+            spaceId == _spaceId &&
+            conversationId == _conversationId
+        ? _messages()
+        : const <Message>[],
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+List<Override> _overrides({
+  ConversationTokenTotals totals = const ConversationTokenTotals(
+    tokens: 3,
+    chars: 11,
+  ),
+}) => [
   activeWorkspaceIdProvider.overrideWith(_FakeActiveWorkspaceId.new),
+  messagingRepositoryProvider.overrideWithValue(_Messages()),
+  conversationTokenTotalsProvider((
+    spaceId: _spaceId,
+    conversationId: _conversationId,
+  )).overrideWith((ref) => Stream.value(totals)),
   conversationContextUsageProvider((
     spaceId: _spaceId,
+    conversationId: _conversationId,
     agentId: _agentId,
   )).overrideWith(
     (ref) => const ContextWindowUsage(usedTokens: 8000, windowTokens: 256000),
   ),
   contextInspectionProvider((
     spaceId: _spaceId,
+    conversationId: _conversationId,
     agentId: _agentId,
     includeContent: false,
   )).overrideWith((ref) async => _inspection(withContent: false)),
   contextInspectionProvider((
     spaceId: _spaceId,
+    conversationId: _conversationId,
     agentId: _agentId,
     includeContent: true,
   )).overrideWith((ref) async => _inspection(withContent: true)),
-  spaceMessagesProvider(
-    _spaceId,
-  ).overrideWith((ref) => Stream.value(_messages())),
 ];
 
 Widget _wrap(Widget child) => CcTheme(
@@ -129,7 +159,11 @@ Future<void> _pumpChip(WidgetTester tester) async {
     ProviderScope(
       overrides: _overrides(),
       child: _wrap(
-        const ContextMeterChip(spaceId: _spaceId, agentId: _agentId),
+        const ContextMeterChip(
+          spaceId: _spaceId,
+          conversationId: _conversationId,
+          agentId: _agentId,
+        ),
       ),
     ),
   );
@@ -157,21 +191,20 @@ void main() {
     });
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          ..._overrides(),
-          conversationTokenTotalsProvider(_spaceId).overrideWith(
-            (ref) => Stream.value(
-              const ConversationTokenTotals(
-                tokens: 310000,
-                chars: 11,
-                reportedContextTokens: 150000,
-                reportedWindowTokens: 1000000,
-              ),
-            ),
+        overrides: _overrides(
+          totals: const ConversationTokenTotals(
+            tokens: 310000,
+            chars: 11,
+            reportedContextTokens: 150000,
+            reportedWindowTokens: 1000000,
           ),
-        ],
+        ),
         child: _wrap(
-          const ContextMeterChip(spaceId: _spaceId, agentId: _agentId),
+          const ContextMeterChip(
+            spaceId: _spaceId,
+            conversationId: _conversationId,
+            agentId: _agentId,
+          ),
         ),
       ),
     );
@@ -342,6 +375,7 @@ void main() {
         child: _wrap(
           const ContextMeterChip(
             spaceId: _spaceId,
+            conversationId: _conversationId,
             agentId: _agentId,
             showAgent: true,
           ),
@@ -390,15 +424,18 @@ void main() {
           activeWorkspaceIdProvider.overrideWith(_FakeActiveWorkspaceId.new),
           conversationContextUsageProvider((
             spaceId: _spaceId,
+            conversationId: _conversationId,
             agentId: _agentId,
           )).overrideWith((ref) => ContextWindowUsage.unknown),
           // An empty conversation and an inspection with no known window:
           // nothing to measure, so the chip hides.
-          spaceMessagesProvider(
-            _spaceId,
-          ).overrideWith((ref) => Stream.value(const <Message>[])),
+          conversationTokenTotalsProvider((
+            spaceId: _spaceId,
+            conversationId: _conversationId,
+          )).overrideWith((ref) => Stream.value(ConversationTokenTotals.empty)),
           contextInspectionProvider((
             spaceId: _spaceId,
+            conversationId: _conversationId,
             agentId: _agentId,
             includeContent: false,
           )).overrideWith(
@@ -415,7 +452,11 @@ void main() {
           ),
         ],
         child: _wrap(
-          const ContextMeterChip(spaceId: _spaceId, agentId: _agentId),
+          const ContextMeterChip(
+            spaceId: _spaceId,
+            conversationId: _conversationId,
+            agentId: _agentId,
+          ),
         ),
       ),
     );

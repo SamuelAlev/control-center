@@ -56,6 +56,15 @@ abstract interface class OpenPrFetchPort {
   /// unmerged (false), or couldn't be resolved (null).
   Future<bool?> wasMerged(Repo repo, int prNumber, {String? workspaceId});
 
+  /// One-time, exhaustive history discovery for a linked repo/head ref.
+  /// Null means unavailable/error (not "no PR"); callers must not treat it as
+  /// a complete empty branch. Successful empty lists may be cached durably.
+  Future<List<PullRequest>?> fetchBranchHistory(
+    Repo repo,
+    String branch, {
+    String? workspaceId,
+  });
+
   /// The forge's own mergeable verdict for ONE pull request.
   ///
   /// Deliberately not part of the list query: `mergeStateStatus` forces the

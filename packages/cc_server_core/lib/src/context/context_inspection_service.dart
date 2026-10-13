@@ -13,6 +13,7 @@ import 'package:cc_domain/features/dispatch/domain/usecases/build_conversation_c
 import 'package:cc_domain/features/dispatch/domain/usecases/build_memory_context_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_harness/context.dart';
@@ -22,7 +23,7 @@ import 'package:cc_infra/cc_infra.dart';
 import 'package:path/path.dart' as p;
 
 /// Rebuilds — headlessly, without a run — what the NEXT dispatch for a
-/// (workspace, space, agent) conversation would put in the model's context
+/// (workspace, space, conversation, agent) would put in the model's context
 /// window, sliced into the [ContextSegmentKind] categories with per-part sizes
 /// and, on request, verbatim content.
 ///
@@ -44,6 +45,7 @@ class ContextInspectionService {
   /// Creates a [ContextInspectionService].
   const ContextInspectionService({
     required this._agentRepository,
+    required this._conversationRepository,
     required this._messagingRepository,
     required this._modeResolver,
     required this._filesystem,
@@ -59,6 +61,7 @@ class ContextInspectionService {
   });
 
   final AgentRepository _agentRepository;
+  final ConversationRepository _conversationRepository;
   final MessagingRepository _messagingRepository;
   final ModeResolver _modeResolver;
   final WorkspaceFilesystemPort _filesystem;
@@ -90,16 +93,17 @@ class ContextInspectionService {
   /// ever reads frontmatter; the full body is an on-demand drill-in).
   static const int _maxSkillBodyChars = 64000;
 
-  /// Inspects the conversation [spaceId] for [agentId] in [workspaceId].
+  /// Inspects [conversationId] in [spaceId] for [agentId] in [workspaceId].
   ///
   /// [includeContent] fills every part's `content` (the explorer); without it
-  /// only sizes travel (the flyout). Throws when the agent or space does not
-  /// belong to [workspaceId] — an id from another workspace resolves to
-  /// nothing, never to that workspace's data.
+  /// only sizes travel (the flyout). Rejects agents, spaces and conversations
+  /// outside the requested workspace or conversations outside the space before
+  /// reading or modifying any inspection resources.
   Future<ContextInspection> inspect({
     required String workspaceId,
     required String spaceId,
     required String agentId,
+    required String conversationId,
     bool includeContent = false,
   }) async {
     final agent = await _agentRepository.getById(workspaceId, agentId);
@@ -109,6 +113,18 @@ class ContextInspectionService {
     final space = await _messagingRepository.getSpaceById(workspaceId, spaceId);
     if (space == null) {
       throw ArgumentError('Space $spaceId not found in workspace $workspaceId');
+    }
+    final conversation = await _conversationRepository.getById(
+      workspaceId: workspaceId,
+      conversationId: conversationId,
+    );
+    if (conversation == null ||
+        conversation.workspaceId != workspaceId ||
+        conversation.spaceId != spaceId) {
+      throw ArgumentError(
+        'Conversation $conversationId not found in space $spaceId '
+        'of workspace $workspaceId',
+      );
     }
 
     final mode = await _modeResolver.resolveForConversation(
@@ -171,7 +187,7 @@ class ContextInspectionService {
       env: const {},
       workspaceId: workspaceId,
       agentId: agentId,
-      conversationId: spaceId,
+      conversationId: conversationId,
       sandboxManager: _sandboxManager,
       confirmationPort: _confirmationPort,
       fileSearch: _fileSearch,
@@ -252,7 +268,7 @@ class ContextInspectionService {
     // never receives either — nor our AGENTS.md read, skills index, tool
     // surface or subagent profiles: its own stand-ins are the runner segment.
     if (harness) {
-        add(
+      add(
         ContextSegmentKind.systemPrompt,
         id: 'system:base',
         title: 'Base instructions',
@@ -289,7 +305,9 @@ class ContextInspectionService {
           ContextPart(
             id: 'skill:${skill.name}',
             title: skill.name,
-            subtitle: skill.description.isEmpty ? skill.path : skill.description,
+            subtitle: skill.description.isEmpty
+                ? skill.path
+                : skill.description,
             tokens: TokenEstimator.instance.estimate(indexLine),
             chars: indexLine.length,
             // The index line is what occupies the context; the body is what the
@@ -390,6 +408,7 @@ class ContextInspectionService {
       final history = await _claudeCodeHistory(
         workspaceId: workspaceId,
         spaceId: spaceId,
+        conversationId: conversationId,
         agent: agent,
         agentId: agentId,
       );
@@ -496,6 +515,7 @@ class ContextInspectionService {
   Future<String?> _claudeCodeHistory({
     required String workspaceId,
     required String spaceId,
+    required String conversationId,
     required Agent agent,
     required String agentId,
   }) async {
@@ -507,6 +527,7 @@ class ContextInspectionService {
       return await useCase.execute(
         workspaceId: workspaceId,
         spaceId: spaceId,
+        conversationId: conversationId,
         selfAgentId: agentId,
         selfAgentName: agent.name,
         // No prompt yet, so no semantic recall: the block's recent window is

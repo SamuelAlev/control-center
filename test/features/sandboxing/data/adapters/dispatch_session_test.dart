@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
-import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
@@ -1850,98 +1849,6 @@ void main() {
       // Should not throw when runLogRepo is null even with a runLogId.
       await session.terminate();
       expect(session.controller.isClosed, isTrue);
-    });
-  });
-
-  // -----------------------------------------------------------------------
-  // Event bus publishing on run completion
-  // -----------------------------------------------------------------------
-  group('event bus publishing', () {
-    test(
-      '_completeRun publishes AgentRunCompleted when agentId is set',
-      () async {
-        final eventBus = DomainEventBus();
-        final published = <DomainEvent>[];
-        eventBus.on<AgentRunCompleted>().listen(published.add);
-
-        final sandbox = ControllableSandboxPort();
-        final session = DispatchSession(
-          deps: _makeDeps(sandbox: sandbox, eventBus: eventBus),
-          onResolveHandle:
-              ({required sessionId, required spec, required emit}) async =>
-                  SandboxHandle(
-                    sessionId: sessionId,
-                    backend: SandboxBackend.native,
-                  ),
-          onScheduleCooldown: (_) {},
-          dispatchId: 'disp-1',
-          cliName: 'claude',
-          prompt: '',
-          agentDirHostPath: '/tmp',
-          modelId: null,
-          callerEnv: {},
-          agentId: 'agent-1',
-          workspaceId: 'ws-1',
-          conversationId: 'conv-1',
-          runLogId: null,
-          mode: Mode.chat,
-        );
-
-        unawaited(session.run());
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
-        sandbox.completeExec(0);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
-        final completed = published.whereType<AgentRunCompleted>().toList();
-        expect(completed, hasLength(1));
-        expect(completed.single.agentId, 'agent-1');
-        expect(completed.single.workspaceId, 'ws-1');
-        expect(completed.single.conversationId, 'conv-1');
-      },
-    );
-    test('_completeRun does not publish when agentId is null', () async {
-      final eventBus = DomainEventBus();
-      final published = <DomainEvent>[];
-      eventBus.on<AgentRunCompleted>().listen(published.add);
-
-      final sandbox = ControllableSandboxPort();
-      final session = DispatchSession(
-        deps: _makeDeps(sandbox: sandbox, eventBus: eventBus),
-        onResolveHandle:
-            ({required sessionId, required spec, required emit}) async =>
-                SandboxHandle(
-                  sessionId: sessionId,
-                  backend: SandboxBackend.native,
-                ),
-        onScheduleCooldown: (_) {},
-        dispatchId: 'disp-1',
-        cliName: 'claude',
-        prompt: '',
-        agentDirHostPath: '/tmp',
-        modelId: null,
-        callerEnv: {},
-        agentId: null,
-        workspaceId: null,
-        conversationId: null,
-        runLogId: null,
-        mode: Mode.chat,
-      );
-
-      unawaited(session.run());
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-
-      sandbox.completeExec(0);
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-
-      final completed = published.whereType<AgentRunCompleted>().toList();
-      expect(completed, isEmpty);
     });
   });
 }

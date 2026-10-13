@@ -121,6 +121,12 @@ const List<SettingsNavGroup> kSettingsNav = [
         route: settingsNotificationsRoute,
       ),
       SettingsNavItem(
+        id: 'you.attribution',
+        icon: AppIcons.gitCommit,
+        label: _attributionLabel,
+        route: settingsAgentAttributionRoute,
+      ),
+      SettingsNavItem(
         id: 'you.keybindings',
         icon: AppIcons.keyboard,
         label: _keybindingsLabel,
@@ -305,6 +311,7 @@ String _serverLabel(AppLocalizations l) => l.settingsScopeServer;
 String _profileLabel(AppLocalizations l) => l.settingsProfile;
 String _appearanceLabel(AppLocalizations l) => l.appearance;
 String _notificationsLabel(AppLocalizations l) => l.notifications;
+String _attributionLabel(AppLocalizations l) => l.settingsAgentAttributionTitle;
 String _keybindingsLabel(AppLocalizations l) => l.keybindings;
 String _audioSettingsLabel(AppLocalizations l) => l.settingsAudio;
 String _devicesLabel(AppLocalizations l) => l.settingsYourDevices;

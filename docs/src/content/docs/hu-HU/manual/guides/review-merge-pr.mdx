@@ -2,7 +2,7 @@
 title: PR átnézése és összefésülése
 description: Nyissa meg a PR-munkapadot, olvassa el a diffet, hagyjon soron belüli megjegyzéseket, küldjön be átnézést és fésülje össze.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Ez az útmutató bemutatja, hogyan nézhet át és fésülhet össze egy pull requestet.
@@ -28,6 +28,32 @@ Az Áttekintés fül hordozza a PR metaadatait (szerző, ág, címkék,
 hozzárendeltek, reakciók, commitok, ellenőrzési állapot) és a műveletsort:
 frissítés, **Átnézés**, **Összefésülés**, megnyitás IDE-ben és egy ⋯
 túlcsordulásmenü.
+
+### PR megnyitása egy tér vereméből
+
+A tér **Általános → Pull requestek** szakasza a csatolt és az ág alapján
+párosított PR-eket repó szerint csoportosítja. Amikor az egyik PR alapága az
+előző PR fejága, ezek egy összecsukható veremben jelennek meg. A verem fejléce
+azonosítja a legalul lévő PR-t, a célágat és a darabszámot; a számozott sorok a
+legalul lévő PR-től (1) haladnak a csúcs felé. A számok a függőségi sorrendet
+írják le, nem az összefésülésre való készültséget.
+
+Minden sor a címet, a PR számát és az állapotát mutatja. Vigye rá az egérmutatót
+egy sorra, vagy fókuszáljon rá, hogy elolvassa a teljes címét és az ágneveit;
+kattintson vagy nyomjon Entert a PR-munkapad megnyitásához. Fókuszáljon egy
+verem fejlécére, és nyomjon Entert vagy Szóközt az összecsukásához vagy
+kinyitásához. A nem összetartozó PR-ek külön maradnak, a hiányos vagy kétértelmű
+ághivatkozások pedig nem jelennek meg rendezett veremként.
+
+A **Verziókezelés** lapon a **Halmozott pull requestek (N)** megnyitja a verem
+közzétett részeinek választóját, legalulról indulva. Minden bejegyzés a PR
+számát, a rész címkéjét és a pozícióját mutatja; a kijelölt rész meg van jelölve.
+Válasszon ki egy bejegyzést a PR-munkapadja megnyitásához. A **Verem
+közzététele** csak akkor jelenik meg, ha a PR-felderítés befejeződött, és
+legalább egy résznek nincs PR-je. Ugyanez érvényes az ágmenüre is. A Control
+Centeren kívül létrehozott PR-ek is közzétettnek számítanak. A részben közzétett
+vermek mindkét műveletet felkínálják; az egyágú munka megtartja az egyedi PR
+létrehozása/megtekintése műveleteket.
 
 ## A diff elolvasása
 

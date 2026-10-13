@@ -12444,6 +12444,48 @@ class AppLocalizationsUr extends AppLocalizations {
       'شناخت، پالیسی اور روایات جو اس ورک اسپیس کے سب شیئر کرتے ہیں۔';
 
   @override
+  String get settingsAgentAttributionTitle => 'کمیٹ کی نسبت';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'منتخب کریں کہ ایجنٹ کمیٹس میں Control Center کو کریڈٹ دیا جائے یا نہیں۔ ورک اسپیس ایڈمن اس انتخاب کو ورک اسپیس کے سبھی ارکان کے لیے بدل سکتے ہیں۔';
+
+  @override
+  String get settingsAgentCoauthorSection => 'ایجنٹ کو کریڈٹ';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'ایجنٹ کمیٹس میں Control Center کو کریڈٹ دیں';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'فعال ہونے پر کمیٹس کا مصنف Control Center ہوگا اور آپ شریک مصنف ہوں گے۔ غیر فعال ہونے پر کمیٹس ایجنٹ کو کریڈٹ دیے بغیر آپ کی Git شناخت استعمال کریں گی۔';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'اس ورک اسپیس کی ترتیب آپ کے ذاتی انتخاب پر فوقیت رکھتی ہے۔ آپ کی ترجیح محفوظ ہے مگر یہاں لاگو نہیں ہوتی۔';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'نسبت کی ترتیبات لوڈ ہو رہی ہیں…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'منتخب کریں کہ ایجنٹ کمیٹس میں Control Center کو کریڈٹ دیا جائے یا نہیں۔ ورک اسپیس کا انتخاب ہر رکن کی ذاتی ترجیح پر فوقیت رکھتا ہے۔';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'ہر رکن کی ترجیح استعمال کریں';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Control Center کو ہمیشہ کریڈٹ دیں';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Control Center کو کبھی کریڈٹ نہ دیں';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'اس ورک اسپیس کی میٹنگز کے لیے نوٹ ٹیمپلیٹس اور محفوظ شدہ آوازیں۔';
 
@@ -13931,6 +13973,20 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'ٹکٹ';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'اس اسپیس کی تمام پل ریکویسٹیں ضم ہو چکی ہیں۔ کیا اس اسپیس کو آرکائیو کریں؟';
+
+  @override
+  String get spaceKeepAfterMerge => 'نہیں، یہ اسپیس برقرار رکھیں';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'اس اسپیس کے بارے میں دوبارہ نہیں پوچھا جائے گا۔';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'تمام پل ریکویسٹیں ضم ہو گئیں';
 
   @override
   String get archiveSpace => 'اسپیس آرکائیو کریں';

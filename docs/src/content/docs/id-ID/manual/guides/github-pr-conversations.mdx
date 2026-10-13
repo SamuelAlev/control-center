@@ -2,7 +2,7 @@
 title: Bicara ke Control Center dari PR GitHub
 description: Minta tinjauan atau ajukan pertanyaan kepada bot GitHub App milik server langsung dari percakapan PR, tanpa webhook atau URL publik.
 slug: id-ID/panduan-pengguna/panduan-praktis/percakapan-pr-github
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Panduan ini menunjukkan cara bekerja dengan Control Center tanpa meninggalkan
@@ -28,8 +28,9 @@ persis seperti deployment publik.
 
 ## Cari nama bot Anda
 
-Login bot adalah `<appslug>[bot]`, dengan `appslug` sebagai nama yang Anda
-berikan saat mendaftarkan app.
+Sebut `@usectrl`, akun GitHub khusus Control Center. Ini adalah pemicu default; GitHub App yang dikonfigurasi di server Anda tetap memproses permintaan dan mengirim balasan. Anda tidak memerlukan kredensial akun `usectrl`.
+
+Login app itu sendiri, `<appslug>[bot]`, dan bentuk singkat `@appslug` juga berlaku. Untuk mencari alias opsional tersebut:
 
 1. Buka **Pengaturan → Server → Single sign-on** dan gulir ke kartu
    **Aplikasi penyedia**
@@ -38,10 +39,7 @@ berikan saat mendaftarkan app.
    kosong, login-nya selalu `<appslug>[bot]` — ketik itu, atau bentuk pendeknya
    `@appslug`
 
-GitHub tidak menyediakan akun app di pelengkapan otomatis `@`-nya, jadi
-login-nya harus diketik — itulah sebabnya kartu pengaturan menyediakannya untuk
-disalin dalam satu klik. Akhiran `[bot]` bersifat opsional: `@myapp` dan
-`@myapp[bot]` sama-sama mengalamatkan bot.
+GitHub tidak menampilkan akun App di pelengkapan otomatis `@`, jadi alias App harus diketik atau disalin. Akun khusus `@usectrl` adalah cara default untuk memanggilnya; `@myapp` maupun `@myapp[bot]` tetap diterima sebagai alias App.
 
 :::note[Pilih nama app yang khas]
 Bentuk pendek dicocokkan sebagai teks. Jika ada pengguna GitHub manusia yang
@@ -60,7 +58,7 @@ yang dimulai tombol **Tanya AI**:
   mengisi slot peninjau yang diminta secara native. Tidak ada komentar untuk
   direaksikan, jadi tidak ada yang diposting ke GitHub; tinjauan dimulai di
   Control Center
-- **Komentari `@myapp review`** (atau cukup `@myapp`) di percakapan PR. Bot
+- **Komentari `@usectrl review`** (atau cukup `@usectrl`) di percakapan PR. Bot
   bereaksi dengan 👀, lalu membalas saat tinjauan sudah dimulai (atau bahwa satu
   tinjauan sedang berjalan)
 
@@ -79,7 +77,7 @@ menjalankan tinjauan lagi — misalnya setelah push — sebut bot.
 Komentari percakapan PR:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Apa yang terjadi, secara berurutan:
@@ -101,7 +99,7 @@ diff yang ditinggalkannya, atau jawaban yang dipostingnya di utas itu. Tidak
 perlu sebutan; utas itu sendiri **adalah** alamatnya:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

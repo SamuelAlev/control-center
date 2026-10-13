@@ -46,6 +46,7 @@ GitHubReviewComment _review(
 class _FakeGateway implements GitHubPrConversationGateway {
   String botLoginValue = _botLogin;
   List<GitHubViewerPr> mentioned = [];
+  List<GitHubViewerPr> botMentioned = [];
   List<GitHubViewerPr> shortMentioned = [];
   List<GitHubViewerPr> labeled = [];
   bool allSuspended = false;
@@ -79,6 +80,7 @@ class _FakeGateway implements GitHubPrConversationGateway {
   Future<
     ({
       List<GitHubViewerPr> mentioned,
+      List<GitHubViewerPr> botMentioned,
       List<GitHubViewerPr> shortMentioned,
       List<GitHubViewerPr> labeled,
     })
@@ -87,6 +89,7 @@ class _FakeGateway implements GitHubPrConversationGateway {
     searchCalls++;
     return (
       mentioned: mentioned,
+      botMentioned: botMentioned,
       shortMentioned: shortMentioned,
       labeled: labeled,
     );
@@ -287,6 +290,40 @@ void main() {
     expect(sink.inbound, isEmpty);
   });
 
+  test('@usectrl in a timeline comment reaches the bridge', () async {
+    repoLinks['acme/app'] = ['ws-a'];
+    gateway.mentioned = [_pr('acme/app', 7)];
+    gateway.setIssue('acme', 'app', 7, [
+      _issue(11, '@usectrl hello?', login: 'usectrl'),
+    ]);
+
+    await poller.pollOnce();
+
+    expect(sink.inbound.single.comment.body, '@usectrl hello?');
+    expect(sink.inbound.single.comment.authorIsBot, isFalse);
+  });
+
+  test('@usectrl in a review comment reaches the bridge', () async {
+    repoLinks['acme/app'] = ['ws-a'];
+    gateway.mentioned = [_pr('acme/app', 7)];
+    gateway.setReview('acme', 'app', 7, [_review(12, '@usectrl why?')]);
+
+    await poller.pollOnce();
+
+    expect(sink.inbound.single.comment.body, '@usectrl why?');
+    expect(sink.inbound.single.comment.isReviewComment, isTrue);
+  });
+
+  test('the App bot login remains a candidate-search alias', () async {
+    repoLinks['acme/app'] = ['ws-a'];
+    gateway.botMentioned = [_pr('acme/app', 7)];
+    gateway.setIssue('acme', 'app', 7, [_issue(13, '@$_botLogin hello?')]);
+
+    await poller.pollOnce();
+
+    expect(sink.inbound.single.comment.id, 13);
+  });
+
   test(
     'a short-alias mention (bare slug) is discovered like a full one',
     () async {
@@ -336,8 +373,8 @@ void main() {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7)];
     gateway.setIssue('acme', 'app', 7, [
-      _issue(11, '@$_botLogin thanks', login: _botLogin),
-      _issue(12, 'from another bot', login: 'copilot[bot]'),
+      _issue(11, '@usectrl thanks', login: _botLogin),
+      _issue(12, '@usectrl from another bot', login: 'copilot[bot]'),
     ]);
 
     await poller.pollOnce();
@@ -546,9 +583,9 @@ void main() {
     );
 
     await routed.pollOnce();
-    expect(
-      sink.inbound.map((e) => (e.workspaceId, e.comment.id)).toSet(),
-      {('ws-inherit', 12), ('ws-app-b', 11)},
-    );
+    expect(sink.inbound.map((e) => (e.workspaceId, e.comment.id)).toSet(), {
+      ('ws-inherit', 12),
+      ('ws-app-b', 11),
+    });
   });
 }

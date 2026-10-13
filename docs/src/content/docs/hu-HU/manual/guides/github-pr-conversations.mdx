@@ -2,7 +2,7 @@
 title: Beszélgetés a Control Centerrel GitHub PR-ből
 description: Kérjen átnézést vagy tegyen fel kérdést a szerver GitHub App botjának magából a PR-beszélgetésből, webhook és nyilvános URL nélkül.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/github-pr-beszelgetesek
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Ez az útmutató bemutatja, hogyan dolgozhat a Control Centerrel anélkül, hogy
@@ -28,8 +28,9 @@ pontosan úgy viselkedik, mint egy nyilvános telepítés.
 
 ## A bot nevének megkeresése
 
-A bot bejelentkezési neve `<appslug>[bot]`, ahol az `appslug` az a név, amelyet
-az alkalmazásnak a regisztráláskor adott.
+Említse meg a `@usectrl` nevet, a Control Center külön GitHub-fiókját. Ez az alapértelmezett aktiválási mód; a kérést továbbra is a szerveren beállított GitHub App kezeli, és az küldi a válaszokat. A `usectrl` fiókhoz nem kell hitelesítő adat.
+
+Az alkalmazás saját `<appslug>[bot]` bejelentkezési neve és a rövid `@appslug` alak is működik. Az opcionális alias megkeresése:
 
 1. Nyissa meg a **Beállítások → Szerver → Egyszeri bejelentkezés** oldalt, és
    görgessen a **Szolgáltatói alkalmazások** kártyához
@@ -38,10 +39,7 @@ az alkalmazásnak a regisztráláskor adott.
    mindig az üres súgószöveget mutatja, a bejelentkezési név mindig
    `<appslug>[bot]` — gépelje be, vagy használja a rövid `@appslug` alakot
 
-A GitHub nem kínál alkalmazásfiókokat a `@`-automatikus kiegészítésében, ezért
-a bejelentkezési nevet be kell gépelni — éppen ezért teszi a beállításkártya
-egyetlen kattintással másolhatóvá. A `[bot]` utótag elhagyható: a `@myapp` és a
-`@myapp[bot]` egyaránt a botot szólítja meg.
+A GitHub nem kínál alkalmazásfiókokat a `@`-automatikus kiegészítésben, ezért az alkalmazás aliasait be kell gépelni vagy ki kell másolni. Alapértelmezés szerint a külön `@usectrl` felhasználóval indítható a kérés; a `@myapp` és a `@myapp[bot]` továbbra is elfogadott alkalmazásalias.
 
 :::note[Válasszon jellegzetes alkalmazásnevet]
 A rövid alak szövegként kerül illesztésre. Ha egy emberi GitHub-felhasználónak
@@ -59,7 +57,7 @@ indítja el, amelyet a **Kérdezze az AI-t** gomb is:
   alkalmazásfiókok nem foglalhatják el a natív kért-átnéző helyet. Nincs
   hozzászólás, amelyre reagálni lehetne, így semmi nem kerül fel a GitHubra; az
   átnézés a Control Centerben indul el
-- **Szóljon hozzá `@myapp review`** (vagy csak `@myapp`) formában a PR
+- **Szóljon hozzá `@usectrl review`** (vagy csak `@usectrl`) formában a PR
   beszélgetéséhez. A bot 👀 reakcióval válaszol, majd jelentkezik, hogy elindult
   az átnézés (vagy hogy már fut egy)
 
@@ -78,7 +76,7 @@ mondjuk egy push után — említse meg a botot.
 Szóljon hozzá a PR beszélgetéséhez:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Mi történik, sorrendben:
@@ -101,7 +99,7 @@ Válaszoljon egy olyan beágyazott átnézési szálon belül, amelynek a bot is
 válaszban. Nem kell említés; maga a szál **a** megszólítás:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

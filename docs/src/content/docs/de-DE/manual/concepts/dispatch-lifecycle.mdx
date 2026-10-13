@@ -2,7 +2,7 @@
 title: Lebenszyklus der Agenten-Ausführung
 description: Was zwischen einer eintreffenden Nachricht und dem Schließen eines Laufprotokolls passiert, von Prompt-Aufbau und Worktrees über Identität bis zu den Grenzen eines Laufs und der ehrlichen Aufzeichnung seines Ergebnisses.
 slug: de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Was eine Ausführung ist
@@ -52,7 +52,7 @@ Copy-on-Write ist überall, wo `rift` mitgeliefert wird, die **einzige** Umsetzu
 
 Pro Lauf werden zwei Identitäten aufgelöst, bevor irgendein Prozess startet.
 
-**Git-Autorenschaft.** Commits eines Agenten entstehen *als der Agent*, `<Name> (agent) <agentId@agents.control-center.local>` sowohl in `GIT_AUTHOR_*` als auch in `GIT_COMMITTER_*`. Er gibt nie einen Menschen vor. Der Local-Part ist die UUID des Agenten, nicht der Slug seines Namens. Der anfragende Mensch wird mit einem Trailer `Co-Authored-By:` genannt. Der steht in der Umgebung und wird im System-Prompt angewiesen. Eine Identität, die der Aufrufer ausdrücklich setzt, gewinnt immer gegen beide.
+**Git-Autorenschaft.** Standardmäßig tragen Agenten-Commits in `GIT_AUTHOR_*` und `GIT_COMMITTER_*` `Control Center <hi@usectrl.dev>` (GitHub-Konto `@usectrl`); die anfragende Person wird im Trailer `Co-Authored-By:` genannt. Unter **Einstellungen → Du → Commit-Zuordnung** kannst du die Agentenzuordnung abschalten und ausschließlich deine Git-Identität verwenden. Ein Administrator kann die Zuordnung unter **Einstellungen → Arbeitsbereich → Allgemein** erzwingen oder abschalten. Diese Vorgabe hat Vorrang und sperrt den persönlichen Schalter, ohne deine gespeicherte Einstellung zu ändern. Änderungen gelten ab dem nächsten Lauf. Die eigenen Commit- und PR-Bylines von Claude Code sind stets deaktiviert. Explizit vom Aufrufer gesetzte Git-Identitätswerte haben weiterhin Vorrang; Forge-Zugangsdaten bleiben unberührt.
 
 **Forge-Identität.** Die GitHub-Zugangsdaten des Laufs sind immer nur die des Brokers: ein auf das Repo begrenztes App-Installationstoken oder ersatzweise das PAT aus der Umgebung, nie das gespeicherte Token des anfragenden Mitglieds. `actingUserId` begrenzt den PAT-Fallback, damit ein Mitglied, das nicht der Besitzer des Servers ist, nicht die Reichweite des Servers erbt. Es legt kein persönliches Token in die Umgebung des Agenten.
 

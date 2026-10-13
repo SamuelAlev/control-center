@@ -2,11 +2,16 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/entities/agent_shell_output.dart';
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_domain/core/domain/ports/agent_shell_process_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/process/agent_shell_file_output.dart';
 import 'package:cc_infra/src/rigs/host_shell_listeners.dart';
+import 'package:cc_infra/src/util/command_redaction.dart';
+import 'package:uuid/uuid.dart';
 
 /// Commands younger than this are left out of the list: a quick `ls` would
 /// otherwise flash a row in and out. What the list is for is the command that
@@ -27,6 +32,42 @@ class HarnessShellRegistry {
   static final HarnessShellRegistry shared = HarnessShellRegistry();
 
   final Map<int, AgentShellProcess> _byPid = {};
+  final Map<String, _OutputRecord> _output = {};
+  static const _ttl = Duration(minutes: 2);
+  static const _cap = 128;
+
+  void _prune() {
+    final now = DateTime.now();
+    _output.removeWhere(
+      (_, record) =>
+          record.exitedAt != null && now.difference(record.exitedAt!) > _ttl,
+    );
+    while (_output.length > _cap) {
+      final oldest = _output.keys.first;
+      _output.remove(oldest);
+    }
+  }
+
+  /// Appends already decoded process output to its bounded live snapshot.
+  void append(String outputId, String chunk) {
+    final record = _output[outputId];
+    if (record == null) {
+      return;
+    }
+    record.append(chunk);
+  }
+
+  /// Reads only this registry's server-issued output identity.
+  AgentShellOutput? readOutput(String workspaceId, String spaceId, String id) {
+    _prune();
+    final record = _output[id];
+    if (record == null ||
+        record.workspaceId != workspaceId ||
+        record.spaceId != spaceId) {
+      return null;
+    }
+    return record.snapshot();
+  }
 
   /// Records a spawned command. Returns the callback that removes it, called
   /// when the command exits. A spawn with no workspace or space is not
@@ -37,6 +78,7 @@ class HarnessShellRegistry {
     required String? spaceId,
     required String? agentId,
     required String command,
+    void Function(String outputId)? onRegistered,
   }) {
     if (pid <= 0 ||
         workspaceId == null ||
@@ -46,6 +88,7 @@ class HarnessShellRegistry {
       return () {};
     }
     final entry = AgentShellProcess(
+      outputId: const Uuid().v4(),
       pid: pid,
       workspaceId: workspaceId,
       spaceId: spaceId,
@@ -55,10 +98,14 @@ class HarnessShellRegistry {
       origin: AgentShellOrigin.harness,
     );
     _byPid[pid] = entry;
+    _output[entry.outputId] = _OutputRecord(workspaceId, spaceId);
+    _prune();
+    onRegistered?.call(entry.outputId);
     return () {
       if (identical(_byPid[pid], entry)) {
         _byPid.remove(pid);
       }
+      _output[entry.outputId]?.exit();
     };
   }
 
@@ -93,11 +140,13 @@ class AgentShellProcessService implements AgentShellProcessPort {
     PidSignaller? signal,
     DateTime Function()? now,
     int? serverPid,
+    AgentShellFileOutput? fileOutput,
   }) : _harness = harnessShells ?? HarnessShellRegistry.shared,
        _ps = psSnapshot ?? _defaultPs,
        _signal = signal ?? _defaultSignal,
        _now = now ?? DateTime.now,
-       _serverPid = serverPid ?? pid;
+       _serverPid = serverPid ?? pid,
+       _fileOutput = fileOutput ?? AgentShellFileOutput();
 
   final AgentRunLogRepository _runLogs;
   final HarnessShellRegistry _harness;
@@ -105,6 +154,91 @@ class AgentShellProcessService implements AgentShellProcessPort {
   final PidSignaller _signal;
   final DateTime Function() _now;
   final int _serverPid;
+  final AgentShellFileOutput _fileOutput;
+  final Map<String, _CliOutputRecord> _cliOutputs = {};
+  final Map<String, Future<AgentShellOutput>> _pendingReads = {};
+  static const _outputRetention = Duration(minutes: 2);
+  static const _maxRecords = 128;
+
+  void _pruneOutputs() {
+    _cliOutputs.removeWhere((id, record) {
+      final expired =
+          record.exitedAt != null &&
+          _now().difference(record.exitedAt!) > _outputRetention;
+      if (expired) {
+        _fileOutput.forget(id);
+      }
+      return expired;
+    });
+    while (_cliOutputs.length > _maxRecords) {
+      final oldest = _cliOutputs.keys.first;
+      _cliOutputs.remove(oldest);
+      _fileOutput.forget(oldest);
+    }
+  }
+
+  @override
+  Future<AgentShellOutput> readOutput({
+    required String workspaceId,
+    required String spaceId,
+    required String outputId,
+  }) async {
+    final harness = _harness.readOutput(workspaceId, spaceId, outputId);
+    if (harness != null) {
+      return harness;
+    }
+    _pruneOutputs();
+    final record = _cliOutputs[outputId];
+    if (record == null ||
+        record.workspaceId != workspaceId ||
+        record.spaceId != spaceId) {
+      throw const NotFoundException('Agent command output not found');
+    }
+    return _pendingReads[outputId] ??= _readCliOutput(record).whenComplete(() {
+      _pendingReads.remove(outputId);
+    });
+  }
+
+  Future<AgentShellOutput> _readCliOutput(_CliOutputRecord record) async {
+    final workspaceId = record.workspaceId;
+    final spaceId = record.spaceId;
+    final outputId = record.id;
+    // Re-derive authority and process lifetime from this space's own runs.
+    final table = await _table(workspaceId, spaceId);
+    final live = table.found.any((p) => p.outputId == outputId);
+    if (!live) {
+      record.exitedAt ??= _now();
+      record.last = _fileOutput.readRetained(outputId) ?? record.last;
+      return record.snapshot();
+    }
+    final snapshot = await _fileOutput.read(record.pid, outputId: outputId);
+    // A pid may exit/recycle while lsof and the bounded file read run.
+    // Never commit bytes from a descriptor after that identity disappears.
+    if (!(await _table(
+      workspaceId,
+      spaceId,
+    )).found.any((p) => p.outputId == outputId)) {
+      record.exitedAt ??= _now();
+      if (record.last == null) {
+        // The first descriptor was opened during an identity change. It was
+        // never authorized by both observations, so even its cached bytes
+        // cannot be served on a later read.
+        _fileOutput.forget(outputId);
+      } else {
+        record.last = _fileOutput.readRetained(outputId) ?? record.last;
+      }
+      return record.snapshot();
+    }
+    if (snapshot == null) {
+      return AgentShellOutput(
+        output: redactSecrets(record.last?.output ?? ''),
+        state: AgentShellOutputState.unavailable,
+        truncated: record.last?.truncated ?? false,
+      );
+    }
+    record.last = snapshot;
+    return record.snapshot();
+  }
 
   @override
   Future<List<AgentShellProcess>> list({
@@ -149,6 +283,7 @@ class AgentShellProcessService implements AgentShellProcessPort {
     String spaceId,
   ) async {
     final now = _now();
+    _pruneOutputs();
     final found = <AgentShellProcess>[
       for (final p in _harness.forSpace(workspaceId, spaceId))
         if (now.difference(p.startedAt) >= kAgentShellMinAge) p,
@@ -170,27 +305,58 @@ class AgentShellProcessService implements AgentShellProcessPort {
       final rows = parsePsRows(ps);
       for (final run in runs) {
         final root = rows[run.pid];
-        // A recycled pid: the recorded process is gone and the number now
-        // belongs to something that started before this run did.
-        if (root == null ||
-            now
-                .subtract(root.elapsed)
-                .isBefore(run.startedAt.subtract(const Duration(minutes: 1)))) {
+        // A pid recycled after the run started must not root a different
+        // process tree. `etime` is second-granularity and dispatch setup can
+        // precede spawn briefly; both directions get the same small margin.
+        final rootStarted = root == null ? null : now.subtract(root.elapsed);
+        if (rootStarted == null ||
+            rootStarted.difference(run.startedAt).abs() >
+                const Duration(minutes: 2)) {
           continue;
         }
         for (final shell in cliCommandShells(rows, run.pid!)) {
           if (shell.elapsed < kAgentShellMinAge) {
             continue;
           }
+          final started = now.subtract(shell.elapsed);
+          if (started.isBefore(
+            rootStarted.subtract(const Duration(seconds: 2)),
+          )) {
+            continue;
+          }
+          // `etime` is rounded to seconds. Permit that clock jitter but never
+          // carry an identity over to a later process with the same pid.
+          final prior = _cliOutputs.values.where(
+            (r) =>
+                r.pid == shell.pid &&
+                r.runId == run.id &&
+                r.workspaceId == workspaceId &&
+                r.spaceId == spaceId &&
+                r.commandLine == shell.command &&
+                r.exitedAt == null &&
+                r.startedAt.difference(started).inSeconds.abs() <= 2,
+          );
+          final record = prior.isEmpty
+              ? _CliOutputRecord(
+                  pid: shell.pid,
+                  runId: run.id,
+                  workspaceId: workspaceId,
+                  spaceId: spaceId,
+                  commandLine: shell.command,
+                  startedAt: started,
+                )
+              : prior.first;
+          _cliOutputs[record.id] = record;
           found.add(
             AgentShellProcess(
               pid: shell.pid,
+              outputId: record.id,
               workspaceId: workspaceId,
               spaceId: spaceId,
               agentId: run.agentId,
               runId: run.id,
               command: agentCommandOf(shell.command) ?? shell.command,
-              startedAt: now.subtract(shell.elapsed),
+              startedAt: started,
               origin: AgentShellOrigin.cli,
             ),
           );
@@ -199,6 +365,14 @@ class AgentShellProcessService implements AgentShellProcessPort {
     } else if (found.isNotEmpty && !Platform.isWindows) {
       // Harness kills walk the tree too.
       ps = await _ps();
+    }
+    final liveIds = found.map((p) => p.outputId).toSet();
+    for (final record in _cliOutputs.values) {
+      if (record.workspaceId == workspaceId &&
+          record.spaceId == spaceId &&
+          !liveIds.contains(record.id)) {
+        record.exitedAt ??= now;
+      }
     }
     found.sort((a, b) => a.startedAt.compareTo(b.startedAt));
     return (found: found, ps: ps);
@@ -481,4 +655,88 @@ String? _readShellWord(String s, int start) {
     }
   }
   return out.toString();
+}
+
+/// Retains only the newest 64 KiB, in memory, for a live harness command.
+class _OutputRecord {
+  _OutputRecord(this.workspaceId, this.spaceId);
+  final String workspaceId;
+  final String spaceId;
+  final StringBuffer _data = StringBuffer();
+  bool truncated = false;
+  DateTime? exitedAt;
+
+  void append(String chunk) {
+    const cap = AgentShellFileOutput.maxBytes;
+    if (chunk.length > cap) {
+      chunk = chunk.substring(chunk.length - cap);
+      truncated = true;
+      _data.clear();
+    }
+    _data.write(chunk);
+    if (_data.length > cap + 4096) {
+      final tail = _data.toString();
+      _data
+        ..clear()
+        ..write(tail.substring(tail.length - cap));
+      truncated = true;
+    }
+    if (_data.length > cap) {
+      truncated = true;
+    }
+  }
+
+  void exit() => exitedAt ??= DateTime.now();
+
+  AgentShellOutput snapshot() {
+    final contents = _data.toString();
+    final output = contents.length > AgentShellFileOutput.maxBytes
+        ? contents.substring(contents.length - AgentShellFileOutput.maxBytes)
+        : contents;
+    return AgentShellOutput(
+      output: redactSecrets(output),
+      state: exitedAt == null
+          ? AgentShellOutputState.running
+          : AgentShellOutputState.exited,
+      truncated: truncated,
+    );
+  }
+}
+
+class _CliOutputRecord {
+  _CliOutputRecord({
+    required this.pid,
+    required this.runId,
+    required this.workspaceId,
+    required this.spaceId,
+    required this.commandLine,
+    required this.startedAt,
+  });
+
+  final String id = const Uuid().v4();
+  final int pid;
+  final String runId;
+  final String workspaceId;
+  final String spaceId;
+  final String commandLine;
+  final DateTime startedAt;
+  AgentShellOutput? last;
+  DateTime? exitedAt;
+
+  AgentShellOutput snapshot() {
+    final output = last;
+    if (output == null) {
+      return const AgentShellOutput(
+        output: '',
+        state: AgentShellOutputState.unavailable,
+      );
+    }
+    return AgentShellOutput(
+      output: redactSecrets(output.output),
+      state: exitedAt == null
+          ? AgentShellOutputState.running
+          : AgentShellOutputState.exited,
+      truncated: output.truncated,
+    );
+  }
 }

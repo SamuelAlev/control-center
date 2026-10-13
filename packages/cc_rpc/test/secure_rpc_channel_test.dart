@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:test/test.dart';
 
@@ -118,6 +119,81 @@ void main() {
         expect(jsonEncode(record), isNot(contains('private-message-')));
         expect(record['c'], isA<String>());
       }
+    },
+  );
+
+  test(
+    'subscription bursts leave the encrypted connection usable for mutations',
+    () async {
+      final link = await _connect();
+      final client = RemoteRpcClient(link.client, timeout: _timeout)..start();
+      addTearDown(client.close);
+      final connection = link.client.state.listen((state) {
+        if (state == RemoteChannelState.closed) {
+          unawaited(client.close());
+        }
+      });
+      addTearDown(connection.cancel);
+      final preferences = <String, String>{};
+      final server = link.server.incoming.asyncMap((frame) async {
+        final params = (frame['params'] as Map).cast<String, dynamic>();
+        if (frame['method'] == RpcMethods.subscribe) {
+          final spaceId = (params['args'] as Map)['space_id'] as String;
+          await link.server.send({
+            'jsonrpc': '2.0',
+            'id': frame['id'],
+            'result': {'subscriptionId': spaceId, 'rev': 0},
+          });
+          await link.server.send({
+            'jsonrpc': '2.0',
+            'method': RpcMethods.subSnapshot,
+            'params': {
+              'subscriptionId': spaceId,
+              'data': {'space_id': spaceId, 'status': 'ready'},
+            },
+          });
+        } else if (frame['method'] == RpcMethods.repoCall) {
+          final args = params['args'] as Map;
+          if (params['op'] == 'prefs.set') {
+            preferences[args['key'] as String] = args['value'] as String;
+          }
+          await link.server.send({
+            'jsonrpc': '2.0',
+            'id': frame['id'],
+            'result': {
+              'data': {'prefs': preferences},
+            },
+          });
+        } else if (frame['method'] == RpcMethods.unsubscribe) {
+          await link.server.send({
+            'jsonrpc': '2.0',
+            'id': frame['id'],
+            'result': {'ok': true},
+          });
+        }
+      }).listen((_) {});
+      addTearDown(server.cancel);
+
+      const count = SecureRpcChannel.windowRecords * 2 + 1;
+      final snapshots = await Future.wait([
+        for (var i = 0; i < count; i++)
+          client.subscribe('spaces.watch', {'space_id': 'space-$i'}).first,
+      ]).timeout(_timeout);
+      expect(snapshots, [
+        for (var i = 0; i < count; i++)
+          {'space_id': 'space-$i', 'status': 'ready'},
+      ]);
+
+      const folders = '[{"id":"folder","spaceIds":["space-0"]}]';
+      await client.call('prefs.set', {
+        'key': 'space_folders.ws-1',
+        'value': folders,
+      });
+      expect(await client.call('prefs.getAll', const {}), {
+        'prefs': {'space_folders.ws-1': folders},
+      });
+      expect(link.client.failure, isNull);
+      expect(link.server.failure, isNull);
     },
   );
 

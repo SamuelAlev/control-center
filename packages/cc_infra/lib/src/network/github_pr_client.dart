@@ -178,6 +178,41 @@ class GitHubPrClient {
     }
   }
 
+  /// Pages PRs for one head ref across every state. Unlike the open-list
+  /// poll, this is a one-time, branch-scoped history discovery; `head` is
+  /// qualified by the repository owner and the API paginates the complete
+  /// result so a closed PR cannot be hidden behind the first 100.
+  Future<PaginatedPullRequests> listBranchPullRequestsPage(
+    String owner,
+    String repo,
+    String branch, {
+    int page = 1,
+    CancelToken? cancelToken,
+  }) async {
+    _requireOwnerRepo(owner, repo);
+    try {
+      final response = await _httpClient.get(
+        '/repos/$owner/$repo/pulls',
+        query: {
+          'state': 'all',
+          'head': '$owner:$branch',
+          'per_page': '$_pullsPerPage',
+          'page': '$page',
+        },
+        cancelToken: cancelToken,
+      );
+      return PaginatedPullRequests(
+        items: _decodeList(httpJsonBody(response), GitHubPullRequest.fromJson),
+        hasMore: _hasNextPage(response),
+      );
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
+        rethrow;
+      }
+      throw mapHttpException(e);
+    }
+  }
+
   static bool _hasNextPage(HttpTextResponse response) {
     final link = response.headerMap['link'];
     if (link == null) {

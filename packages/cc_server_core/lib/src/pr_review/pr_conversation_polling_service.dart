@@ -54,7 +54,8 @@ class PrConversationAppIdentity {
     required this.gateway,
   });
 
-  /// The bot login (`<slug>[bot]`) commenters must @mention.
+  /// The App's actual bot login (`<slug>[bot]`), for loop detection and
+  /// compatibility mentions; the default invocation is @usectrl.
   final String botLogin;
 
   /// Workspaces that use this App. Mentions route only into these.
@@ -212,7 +213,9 @@ class PrConversationPollingService {
     }
   }
 
-  Future<void> _pollIdentities(List<PrConversationAppIdentity> identities) async {
+  Future<void> _pollIdentities(
+    List<PrConversationAppIdentity> identities,
+  ) async {
     if (identities.isEmpty) {
       _idleNoBot();
       return;
@@ -295,6 +298,7 @@ class PrConversationPollingService {
     String botLogin,
     ({
       List<GitHubViewerPr> mentioned,
+      List<GitHubViewerPr> botMentioned,
       List<GitHubViewerPr> shortMentioned,
       List<GitHubViewerPr> labeled,
     })
@@ -375,9 +379,10 @@ class PrConversationPollingService {
       }
     }
 
-    // Both mention lanes (full login + bare slug) funnel into the same
-    // candidate set; the targets map dedupes a PR hit by both.
+    // Dedicated account and compatible App-login mention lanes funnel into
+    // the same candidate set; a PR hit by several lanes is deduplicated.
     await addCandidates(results.mentioned);
+    await addCandidates(results.botMentioned);
     await addCandidates(results.shortMentioned);
     await addCandidates(results.labeled);
 

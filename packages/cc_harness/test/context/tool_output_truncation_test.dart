@@ -79,6 +79,8 @@ void main() {
       // observation formatter and the limit table would disagree.
       expect(table.forTool('search').direction, TruncateDirection.head);
       expect(table.forTool('mcp__fs__search').characterLimit, 30000);
+      expect(table.forTool('render_media').maxImages, 4);
+      expect(table.forTool('mcp__control-center__render_media').maxImages, 4);
     });
 
     test('falls back to the standard limits for unknown tools', () {

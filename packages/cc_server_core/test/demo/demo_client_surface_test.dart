@@ -71,6 +71,7 @@ void main() {
     // yields an empty list on a demo before calling, so no row (and no stop
     // button) ever renders there.
     'process.agentShells',
+    'process.agentShellOutput',
     'process.killAgentShell',
     // Settings surfaces that render their own "not available on this server"
     // state from an `opUnknown` (the SSO card's warning alert, the adapter

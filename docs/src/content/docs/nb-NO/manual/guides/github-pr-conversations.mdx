@@ -2,7 +2,7 @@
 title: Snakk med Control Center fra en GitHub-PR
 description: Be serverens GitHub App-bot om en gjennomgang eller still et spørsmål direkte fra PR-samtalen, uten webhook eller offentlig URL.
 slug: nb-NO/handbok/slik-gjor-du/github-pr-samtaler
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Denne guiden viser deg hvordan du kan jobbe med Control Center uten å forlate
@@ -27,8 +27,9 @@ oppfører seg nøyaktig som en offentlig utrulling.
 
 ## Finn navnet på boten din
 
-Botens pålogging er `<appslug>[bot]`, der `appslug` er navnet du ga appen da du
-registrerte den.
+Omtal `@usectrl`, den dedikerte GitHub-kontoen til Control Center. Dette er standardutløseren; serverens konfigurerte GitHub App håndterer fortsatt forespørselen og publiserer svar. Du trenger ikke legitimasjon for `usectrl`-kontoen.
+
+Appens egen pålogging, `<appslug>[bot]`, og kortformen `@appslug` fungerer også. Slik finner du dette valgfrie aliaset:
 
 1. Gå til **Innstillinger → Server → Enkel pålogging** og rull ned til
    **Leverandørapper**-kortet
@@ -37,9 +38,7 @@ registrerte den.
    for tomt felt, er påloggingen alltid `<appslug>[bot]` — skriv det, eller den
    korte formen `@appslug`
 
-GitHub tilbyr ikke appkontoer i `@`-autofullføringen, så påloggingen må
-skrives — derfor gjør innstillingskortet det til ett klikk å kopiere den.
-`[bot]`-endelsen er valgfri: både `@myapp` og `@myapp[bot]` adresserer boten.
+GitHub tilbyr ikke appkontoer i `@`-autofullføringen, så appaliaser må skrives inn eller kopieres. Den dedikerte brukeren `@usectrl` er standardmåten å kalle inn boten på; både `@myapp` og `@myapp[bot]` godtas fortsatt som appaliaser.
 
 :::note[Velg et særegent appnavn]
 Kortformen matches som tekst. Hvis en menneskelig GitHub-bruker tilfeldigvis
@@ -56,7 +55,7 @@ som **Spør AI**-knappen starter:
   kommer å tildele boten som reviewer — appkontoer kan ikke fylle den innebygde
   plassen for forespurte reviewere. Det er ingen kommentar å reagere på, så
   ingenting publiseres på GitHub; gjennomgangen starter i Control Center
-- **Kommenter `@myapp review`** (eller bare `@myapp`) i PR-samtalen. Boten
+- **Kommenter `@usectrl review`** (eller bare `@usectrl`) i PR-samtalen. Boten
   reagerer med 👀 og svarer deretter når gjennomgangen har startet (eller at en
   allerede kjører)
 
@@ -74,7 +73,7 @@ gjennomgang på nytt — etter en push, for eksempel — omtaler du boten.
 Kommenter i PR-samtalen:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Dette skjer, i rekkefølge:
@@ -96,7 +95,7 @@ diff-kommentar den la igjen, eller et svar den publiserte i den tråden. Ingen
 omtale er nødvendig; tråden **er** adresseringen:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

@@ -17,15 +17,18 @@ dependencies:
     path: ../cc_harness_runtime
   cc_natives:
     path: ../cc_natives
+  clock: any
   # SHA256 content-addressing for skill bundles + the skills-lock manifest.
   crypto: ^3.0.7
   rhttp: 0.18.0
 
+  ffi: ^2.2.0
   archive: ^4.5.1
   any_date: 1.2.2
   # Pure-Dart image decode/diff for the PR visual-diff golden harness.
   image: ^4.12.0
   html: 0.15.7
+  mime: ^2.0.0
   path: ^1.9.1
   pool: ^1.5.3
   rss_dart: ^1.0.14

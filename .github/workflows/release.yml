@@ -366,6 +366,7 @@ jobs:
             dl.google.com:443
             downloads.sourceforge.net:443
             esm.ubuntu.com:443
+            ffmpeg.org:443
             files.pythonhosted.org:443
             fulcio.sigstore.dev:443
             github.com:443
@@ -373,6 +374,7 @@ jobs:
             index.crates.io:443
             objects.githubusercontent.com:443
             pub.dev:443
+            raw.githubusercontent.com:443
             pypi.org:443
             rekor.sigstore.dev:443
             release-assets.githubusercontent.com:443

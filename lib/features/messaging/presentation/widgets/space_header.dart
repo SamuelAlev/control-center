@@ -149,7 +149,7 @@ class SpaceHeader extends ConsumerWidget {
           // the meter and the who's-here avatars are paid for. A narrow pane
           // (split editors, a docked terminal) folds the overflow into a
           // "More" menu instead of overflowing the fixed band.
-          final meterWidth = meteredAgentId == null
+          final meterWidth = meteredAgentId == null || conversation == null
               ? 0.0
               : _meterWidth + (agents.length > 1 ? _meterAgentWidth : 0);
           final visitorsWidth = visitorCount * _visitorWidth;
@@ -211,7 +211,9 @@ class SpaceHeader extends ConsumerWidget {
               // reading as soon as there is more than one.
               if (showMeter) ...[
                 ContextMeterChip(
+                  key: ValueKey((conversation!.id, meteredAgentId)),
                   spaceId: space.id,
+                  conversationId: conversation.id,
                   agentId: meteredAgentId!,
                   showAgent: agents.length > 1,
                 ),

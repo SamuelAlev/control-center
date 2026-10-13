@@ -6791,6 +6791,17 @@
   "settingsAboutDescription": "Build-identiteit en updates.",
   "settingsDiagnosticsDescription": "Isolatie, indexering, synchronisatie, logging en crashrapportage van deze installatie.",
   "settingsWorkspaceGeneralDescription": "Identiteit, beleid en conventies die iedereen in deze werkruimte deelt.",
+  "settingsAgentAttributionTitle": "Toeschrijving van commits",
+  "settingsAgentAttributionDescription": "Kies of Control Center wordt vermeld bij commits van agents. Beheerders van de werkruimte kunnen deze keuze voor iedereen in een werkruimte overschrijven.",
+  "settingsAgentCoauthorSection": "Vermelding van de agent",
+  "settingsAgentCoauthorTitle": "Vermeld Control Center bij commits van agents",
+  "settingsAgentCoauthorDescription": "Wanneer dit is ingeschakeld, is Control Center de auteur van commits en word jij als mede-auteur vermeld. Wanneer dit is uitgeschakeld, gebruiken commits jouw Git-identiteit zonder vermelding van de agent.",
+  "settingsAgentCoauthorWorkspaceOverride": "Deze werkruimte heeft voorrang op je persoonlijke keuze. Je voorkeur blijft opgeslagen, maar geldt hier niet.",
+  "settingsAgentAttributionLoading": "Instellingen voor toeschrijving laden…",
+  "settingsWorkspaceAgentCoauthorDescription": "Kies of Control Center wordt vermeld bij commits van agents. De instelling van de werkruimte heeft voorrang op de persoonlijke voorkeur van elk lid.",
+  "settingsWorkspaceAgentCoauthorInherit": "Gebruik de voorkeur van elk lid",
+  "settingsWorkspaceAgentCoauthorAlways": "Vermeld Control Center altijd",
+  "settingsWorkspaceAgentCoauthorNever": "Vermeld Control Center nooit",
   "settingsWorkspaceMeetingsDescription": "Notitiesjablonen en opgeslagen stemmen voor vergaderingen in deze werkruimte.",
   "settingsWorkspacePolicyLabel": "Werkruimtebeleid",
   "settingsWorkspacePolicyDescription": "Geldt voor elk lid en elke agent in deze werkruimte.",
@@ -7486,6 +7497,10 @@
   "@reviewKindTicket": {
     "description": "Review finding kind: a ticket spawned from the review"
   },
+  "spaceAllPrsMerged": "Alle pull requests in deze ruimte zijn samengevoegd. Deze ruimte archiveren?",
+  "spaceKeepAfterMerge": "Nee, deze ruimte behouden",
+  "spaceKeepAfterMergeHint": "Je wordt voor deze ruimte niet opnieuw gevraagd.",
+  "spaceAllPrsMergedLabel": "Alle pull requests samengevoegd",
   "archiveSpace": "Ruimte archiveren",
   "@archiveSpace": {
     "description": "Archive a space (soft hide, restorable) — row menu, header button and tooltip"

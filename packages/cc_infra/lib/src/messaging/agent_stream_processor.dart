@@ -427,13 +427,9 @@ class AgentStreamProcessor {
     ctx.folder.interruptRunningTools(now);
 
     final content = ctx.folder.currentText();
-    // A turn that answered nothing and ended on an error DID fail, even though
-    // the stream closed cleanly: an upstream refusal (e.g. the harness finding
-    // no provider credential) emits an ErrorEvent and then a DoneEvent, so it
-    // reaches `_onDone`, not `_onError`. Left as `completed` it produced an
-    // empty bubble with a "was this helpful?" bar, a content-less notification,
-    // and no retry affordance.
-    final failure = content.isEmpty ? ctx.folder.terminalFailure() : null;
+    // A trailing error fails the turn even after progress prose. The folder
+    // ignores errors followed by a recovered answer.
+    final failure = ctx.folder.terminalFailure();
     final outcome = failure != null
         ? TurnOutcome.failed
         : (ctx.doneOutcome ??
@@ -449,7 +445,7 @@ class AgentStreamProcessor {
       // a refusal, a spawn failure) persisted an empty string: the reader got a
       // blank agent bubble with a failed badge and no reason anywhere on the
       // surface, and the only account of what happened lived in the run log.
-      content: failure ?? content,
+      content: content.isEmpty ? failure ?? content : content,
       metadata: {
         ..._finalMetadata(ctx, outcome: outcome, now: now),
         // The same shape `_onError` writes, so the bubble's existing failed

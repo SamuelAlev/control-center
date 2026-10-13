@@ -5,14 +5,11 @@ import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:flutter/widgets.dart' show Axis, IconData;
 
-/// Shared JSON codec for editor split trees (structure only).
+/// Shared JSON codec for editor split trees.
 ///
-/// Persists shape, weights, tab order — not focus (always first tab of first
-/// leaf; `?tab=` is the only load-time override), not PTYs/webviews, not node
-/// ids (minted on decode). Malformed → `null`. Constructor: [restorableKinds],
-/// [dropOnEncode], [requiredStringArgs], [iconFor], [aliasKind],
-/// [rewriteArgsOnDecode] (e.g. stamp [deferStartArg] so enclosed VMs restore as
-/// affordances), [transientArgs] (never re-encoded).
+/// Persists shape, weights and tab order, plus the selected tab in each pane
+/// and active pane when [persistFocus] is enabled. Never persists live
+/// PTYs/webviews or node ids (minted on decode). Malformed → `null`.
 class EditorLayoutCodec {
   /// Creates a codec bound to one host's tab vocabulary.
   const EditorLayoutCodec({
@@ -23,6 +20,7 @@ class EditorLayoutCodec {
     this.aliasKind,
     this.rewriteArgsOnDecode,
     this.transientArgs = const {},
+    this.persistFocus = false,
   });
 
   /// Schema version of the persisted payload. Bumped only on a breaking change
@@ -58,11 +56,15 @@ class EditorLayoutCodec {
   /// Arg keys stripped on encode (flags a decode adds, never saved state).
   final Set<String> transientArgs;
 
+  /// Whether the host reopens its last focused pane and tab selections.
+  /// Without saved focus, each pane opens its first restorable tab.
+  final bool persistFocus;
+
   /// Serialises [controller]'s tree to a JSON string for the cache.
   String encode(EditorLayoutController controller) {
     return jsonEncode({
       'v': schemaVersion,
-      'root': _encodeNode(controller.root),
+      'root': _encodeNode(controller.root, controller.activeLeafId),
     });
   }
 
@@ -75,42 +77,53 @@ class EditorLayoutCodec {
       if (data is! Map || data['v'] != schemaVersion) {
         return null;
       }
-      final counter = _IdCounter();
-      final root = _decodeNode(data['root'], counter);
-      if (root == null || _countTabs(root) == 0) {
+      final state = _DecodeState();
+      final root = _decodeNode(data['root'], state);
+      if (root == null || state.firstPopulatedLeafId == null) {
         return null;
       }
-      // Focus is never restored: the first leaf's first tab is where a restored
-      // layout opens (each leaf decodes with `selectedIndex` 0).
       return EditorLayoutController.fromTree(
         root: root,
-        activeLeafId: _firstLeafId(root),
-        nextId: counter.value,
+        activeLeafId: persistFocus
+            ? state.activeLeafId ?? state.firstPopulatedLeafId!
+            : _firstLeafId(root),
+        nextId: state.value,
       );
     } catch (_) {
       return null;
     }
   }
 
-  Map<String, Object?> _encodeNode(EditorNode node) {
+  Map<String, Object?> _encodeNode(EditorNode node, String activeLeafId) {
     if (node is EditorLeafNode) {
       final kept = <Map<String, Object?>>[];
-      for (final tab in node.controller.tabs) {
-        final encoded = _encodeTab(tab);
+      final tabs = node.controller.tabs;
+      final selected = node.controller.selectedIndex;
+      var selection = 0;
+      for (var i = 0; i < tabs.length; i++) {
+        final encoded = _encodeTab(tabs[i]);
         if (encoded != null) {
+          if (i == selected) {
+            selection = kept.length;
+          }
           kept.add(encoded);
         }
       }
-      // Neither the selected tab nor the active leaf is written: a restore
-      // always opens on the first tab (see the class doc).
-      return {'t': 'leaf', 'tabs': kept};
+      return {
+        't': 'leaf',
+        'tabs': kept,
+        if (persistFocus) 'sel': selection,
+        if (persistFocus && node.id == activeLeafId) 'active': true,
+      };
     }
     final split = node as EditorSplitNode;
     return {
       't': 'split',
       'axis': split.axis == Axis.horizontal ? 'h' : 'v',
       'weights': split.weights,
-      'children': [for (final c in split.children) _encodeNode(c)],
+      'children': [
+        for (final c in split.children) _encodeNode(c, activeLeafId),
+      ],
     };
   }
 
@@ -142,7 +155,7 @@ class EditorLayoutCodec {
     };
   }
 
-  EditorNode? _decodeNode(Object? raw, _IdCounter counter) {
+  EditorNode? _decodeNode(Object? raw, _DecodeState state) {
     if (raw is! Map) {
       return null;
     }
@@ -150,22 +163,31 @@ class EditorLayoutCodec {
     if (type == 'leaf') {
       final controller = EditorTabGroupController();
       final tabsRaw = raw['tabs'];
+      final selected = persistFocus && raw['sel'] is int ? raw['sel'] : 0;
+      var selection = 0;
+      var tabCount = 0;
       if (tabsRaw is List) {
-        for (final t in tabsRaw) {
-          final tab = _decodeTab(t);
+        for (var i = 0; i < tabsRaw.length; i++) {
+          final tab = _decodeTab(tabsRaw[i]);
           if (tab != null) {
-            controller.insert(controller.tabs.length, tab);
+            if (i == selected) {
+              selection = tabCount;
+            }
+            controller.insert(tabCount++, tab);
           }
         }
       }
-      // Every leaf comes back on its first tab. The reset is explicit because
-      // `insert` selects what it inserts, so a populated group would otherwise
-      // sit on the LAST decoded tab.
-      controller.selectedIndex = 0;
-      return EditorLeafNode(
-        id: 'leaf-${counter.next()}',
-        controller: controller,
-      );
+      // Remap the saved selection around omitted tabs. Missing, stale or
+      // invalid selections fall back to the first surviving tab.
+      controller.selectedIndex = selection;
+      final id = 'leaf-${state.next()}';
+      if (!controller.isEmpty) {
+        state.firstPopulatedLeafId ??= id;
+        if (persistFocus && raw['active'] == true) {
+          state.activeLeafId ??= id;
+        }
+      }
+      return EditorLeafNode(id: id, controller: controller);
     }
     if (type == 'split') {
       final childrenRaw = raw['children'];
@@ -177,7 +199,7 @@ class EditorLayoutCodec {
       final children = <EditorNode>[];
       final weights = <double>[];
       for (var i = 0; i < childrenRaw.length; i++) {
-        final node = _decodeNode(childrenRaw[i], counter);
+        final node = _decodeNode(childrenRaw[i], state);
         if (node == null) {
           continue;
         }
@@ -198,7 +220,7 @@ class EditorLayoutCodec {
         return children.first;
       }
       return EditorSplitNode(
-        id: 'split-${counter.next()}',
+        id: 'split-${state.next()}',
         axis: axis,
         children: children,
         weights: _normalize(weights),
@@ -250,14 +272,6 @@ class EditorLayoutCodec {
     );
   }
 
-  int _countTabs(EditorNode node) {
-    if (node is EditorLeafNode) {
-      return node.controller.tabs.length;
-    }
-    final split = node as EditorSplitNode;
-    return split.children.fold(0, (sum, c) => sum + _countTabs(c));
-  }
-
   String _firstLeafId(EditorNode node) {
     if (node is EditorLeafNode) {
       return node.id;
@@ -274,8 +288,11 @@ class EditorLayoutCodec {
   }
 }
 
-/// Mints sequential numeric suffixes for fresh node ids during decode.
-class _IdCounter {
+/// Fresh node ids and surviving focus targets collected during one decode.
+class _DecodeState {
   int value = 0;
+  String? firstPopulatedLeafId;
+  String? activeLeafId;
+
   int next() => value++;
 }

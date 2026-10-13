@@ -12590,6 +12590,48 @@ class AppLocalizationsFr extends AppLocalizations {
       'Identité, règles et conventions partagées par tous les membres de cet espace de travail.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Attribution des commits';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Choisissez si les commits des agents créditent Control Center. Les administrateurs de l\'espace de travail peuvent imposer ce choix à tous ses membres.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Attribution à l\'agent';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Créditer Control Center pour les commits des agents';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Lorsque cette option est activée, Control Center est l\'auteur des commits et votre nom figure comme coauteur. Lorsqu\'elle est désactivée, les commits utilisent votre identité Git sans crédit pour l\'agent.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Le choix de cet espace de travail prime sur votre choix personnel. Votre préférence reste enregistrée, mais ne s\'applique pas ici.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Chargement des paramètres d\'attribution…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Choisissez si les commits des agents créditent Control Center. Le choix de l\'espace de travail prime sur la préférence personnelle de chaque membre.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Utiliser la préférence de chaque membre';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Toujours créditer Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Ne jamais créditer Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Modèles de notes et voix enregistrées pour les réunions de cet espace de travail.';
 
@@ -14099,6 +14141,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Ticket';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Toutes les demandes de fusion de cet espace ont été fusionnées. Archiver cet espace ?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Non, conserver cet espace';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Cette question ne vous sera plus posée pour cet espace.';
+
+  @override
+  String get spaceAllPrsMergedLabel =>
+      'Toutes les demandes de fusion sont fusionnées';
 
   @override
   String get archiveSpace => 'Archiver l\'espace';

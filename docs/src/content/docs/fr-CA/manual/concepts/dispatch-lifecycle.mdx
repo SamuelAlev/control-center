@@ -2,7 +2,7 @@
 title: Cycle de vie du lancement d’un agent
 description: Ce qui se passe entre l’arrivée d’un message et la fermeture d’un journal d’exécution — assemblage du prompt, arbres de travail, identité, ce qui borne une exécution et comment son résultat est consigné honnêtement.
 slug: fr-CA/manuel/concepts/cycle-de-vie-du-lancement
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Ce qu’est un lancement
@@ -52,7 +52,7 @@ La copie sur écriture est la **seule** implémentation partout où `rift` est l
 
 Deux identités sont résolues par exécution, avant le lancement de tout processus.
 
-**Paternité Git.** Les commits produits par un agent lui sont attribués _en tant qu’agent_ — `<Name> (agent) <agentId@agents.control-center.local>` dans `GIT_AUTHOR_*` et `GIT_COMMITTER_*` — sans jamais usurper l’identité d’un humain. La partie locale est l’UUID de l’agent, et non son slug de nom. La personne à l’origine de la demande est créditée d’une ligne de pied `Co-Authored-By:`, transportée dans l’environnement et prescrite dans le prompt système. Une identité explicite définie par l’appelant l’emporte toujours sur les deux.
+**Paternité Git.** Par défaut, les commits des agents utilisent `Control Center <hi@usectrl.dev>` (le compte GitHub `@usectrl`) dans `GIT_AUTHOR_*` et `GIT_COMMITTER_*`; la personne à l’origine de la demande est créditée dans une ligne `Co-Authored-By:`. Désactivez l’attribution à l’agent dans **Paramètres → Vous → Attribution des commits** pour n’utiliser que votre identité Git. Un administrateur peut imposer ou désactiver l’attribution dans **Paramètres → Espace de travail → Général**; cette règle prévaut et désactive le commutateur personnel sans modifier votre préférence enregistrée. Les changements s’appliquent à la prochaine exécution. Les propres mentions de Claude Code dans les commits et les PR sont toujours désactivées. Les valeurs d’identité Git définies explicitement par l’appelant restent prioritaires; les identifiants d’accès à la forge ne sont pas touchés.
 
 **Identité de la forge.** L’identifiant GitHub de l’exécution n’est jamais que celui du courtier — un jeton d’installation d’App limité à un dépôt, ou son repli par PAT défini dans l’environnement — jamais le jeton personnel enregistré du membre à l’origine de la demande. `actingUserId` borne le repli PAT pour qu’un membre qui n’est pas le propriétaire du serveur n’hérite pas de la portée du serveur ; il ne superpose pas un jeton personnel à l’environnement de l’agent.
 

@@ -8,11 +8,13 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_provisio
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/scm_branch_menu.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/scm_pull_conflict_dialog.dart';
+import 'package:control_center/features/messaging/presentation/ide/panels/scm_stack_pull_requests.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
@@ -71,8 +73,7 @@ class SourceControlPanel extends ConsumerStatefulWidget {
   final ValueChanged<({String repoId, List<String> paths})> onRevertFiles;
 
   @override
-  ConsumerState<SourceControlPanel> createState() =>
-      _SourceControlPanelState();
+  ConsumerState<SourceControlPanel> createState() => _SourceControlPanelState();
 }
 
 class _SourceControlPanelState extends ConsumerState<SourceControlPanel> {
@@ -133,7 +134,10 @@ class _SourceControlPanelState extends ConsumerState<SourceControlPanel> {
 
     final reposAsync = ref.watch(reposForWorkspaceProvider(widget.workspaceId));
     final worktreesAsync = ref.watch(
-      spaceWorktreesProvider((workspaceId: widget.workspaceId, spaceId: spaceId)),
+      spaceWorktreesProvider((
+        workspaceId: widget.workspaceId,
+        spaceId: spaceId,
+      )),
     );
     final repos = reposAsync.value;
     final worktrees = worktreesAsync.value;
@@ -160,8 +164,8 @@ class _SourceControlPanelState extends ConsumerState<SourceControlPanel> {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       itemCount: cloned.length,
       itemBuilder: (context, i) => _RepoSection(
-        // Keyed by repo so a re-order (or a repo leaving the space) moves the
-        // section's own state — its commit draft above all — with it.
+        // Keep collapse and focused-row state with the repo on re-order; the
+        // commit draft is independently keyed to its workspace worktree.
         key: ValueKey(cloned[i].id),
         workspaceId: widget.workspaceId,
         spaceId: spaceId,
@@ -229,12 +233,8 @@ class _RepoSection extends ConsumerStatefulWidget {
 
 class _RepoSectionState extends ConsumerState<_RepoSection>
     with AutomaticKeepAliveClientMixin {
-  final _message = TextEditingController();
-
-  // The sections are virtualized (a repo with a big refactor in it can hold
-  // hundreds of rows), and a disposed section would take the operator's
-  // half-typed commit message with it. Staying alive costs a few widgets per
-  // repo and keeps the draft, the collapse state and the focused row.
+  // Virtualization keeps the section alive while it scrolls offscreen; the
+  // provider keeps its commit input alive even when the panel itself unmounts.
   @override
   bool get wantKeepAlive => true;
 
@@ -242,6 +242,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
   bool _stagedCollapsed = false;
   bool _changesCollapsed = false;
   bool _busy = false;
+  bool _refreshing = false;
   String? _focused;
 
   /// The working tree lives on the SERVER and nothing pushes an edit to the
@@ -272,7 +273,6 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
   @override
   void dispose() {
     _pollTimer?.cancel();
-    _message.dispose();
     super.dispose();
   }
 
@@ -284,11 +284,49 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     ref.invalidate(repoChangesGroupedProvider(_args));
   }
 
+  Future<void> _refreshFromHeader() async {
+    if (_refreshing) {
+      return;
+    }
+    final args = _args;
+    final provider = repoChangesGroupedProvider(args);
+    setState(() => _refreshing = true);
+    try {
+      if (ref.read(provider).isLoading) {
+        // The server coalesces pending Git reads. Let the older capture finish
+        // before requesting the snapshot this explicit refresh promises.
+        try {
+          await ref.read(provider.future);
+        } on Object {
+          // A failed older read must not prevent the requested fresh read.
+        }
+      }
+      if (!mounted || _args != args) {
+        return;
+      }
+      ref.invalidate(provider);
+      await ref.read(provider.future);
+    } on Object catch (error) {
+      if (mounted && _args == args) {
+        CcToastScope.maybeOf(context)?.show(
+          '${AppLocalizations.of(context).failedToLoad}: $error',
+          variant: CcToastVariant.danger,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _refreshing = false);
+      }
+    }
+  }
+
   /// A poll tick leaves a read that is still running alone. Invalidating it
   /// would drop its result, and on a repository where one read outlasts the
   /// interval no result would ever land.
   void _poll() {
-    if (!mounted || ref.read(repoChangesGroupedProvider(_args)).isLoading) {
+    if (!mounted ||
+        _refreshing ||
+        ref.read(repoChangesGroupedProvider(_args)).isLoading) {
       return;
     }
     _refresh();
@@ -373,9 +411,14 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
   /// the push (when asked for) goes to the worktree's OWN branch. The server
   /// resolves that branch, which is what publishes a conversation branch
   /// GitHub has never seen.
-  Future<void> _runCommit(ScmCommitAction action) async {
+  Future<void> _runCommit(
+    ScmCommitAction action,
+    RepoChangesArgs target,
+    TextEditingController controller,
+  ) async {
     final l10n = AppLocalizations.of(context);
-    final message = _message.text.trim();
+    final originalText = controller.text;
+    final message = originalText.trim();
     // Every action but an amend (which can rewrite just the message) needs one.
     if (message.isEmpty && action != ScmCommitAction.amend) {
       return;
@@ -383,71 +426,85 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     final push =
         action == ScmCommitAction.commitAndPush ||
         action == ScmCommitAction.commitAndSync;
-    setState(() => _busy = true);
-    final changes = ref.read(repoChangesGroupedProvider(_args)).value;
-    final ready = await stageAllWhenIndexEmpty(
-      ref.read(rpcClientProvider),
-      workspaceId: widget.workspaceId,
-      spaceId: widget.spaceId,
-      repoId: widget.repo.id,
-      stagedCount: changes?.staged.length ?? 0,
-      unstagedCount: changes?.unstaged.length ?? 0,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (!ready) {
-      setState(() => _busy = false);
-      CcToastScope.maybeOf(
-        context,
-      )?.show(l10n.commitFailed, variant: CcToastVariant.danger);
-      return;
-    }
+    final branch = widget.branch;
+    final rpc = ref.read(rpcClientProvider);
+    final changes = ref.read(repoChangesGroupedProvider(target)).value;
     final me = ref.read(currentIdentityProvider).value?.user;
-    final res = await commitAndPushWorktree(
-      ref.read(rpcClientProvider),
-      workspaceId: widget.workspaceId,
-      spaceId: widget.spaceId,
-      repoId: widget.repo.id,
-      message: message,
-      push: push,
-      amend: action == ScmCommitAction.amend,
-      sync: action == ScmCommitAction.commitAndSync,
-      authorName: me?.gitAuthorName ?? me?.displayName,
-      authorEmail: me?.gitAuthorEmail ?? me?.email,
-    );
-    if (!mounted) {
-      return;
-    }
-    setState(() => _busy = false);
-    final toast = CcToastScope.maybeOf(context);
-    if (res == null || !res.committed) {
-      toast?.show(
-        res?.error ?? l10n.commitFailed,
-        variant: CcToastVariant.danger,
+    var editedDuringCommit = false;
+    void markEdited() => editedDuringCommit = true;
+    controller.addListener(markEdited);
+    setState(() => _busy = true);
+    try {
+      final ready = await stageAllWhenIndexEmpty(
+        rpc,
+        workspaceId: target.workspaceId,
+        spaceId: target.spaceId!,
+        repoId: target.repoId,
+        stagedCount: changes?.staged.length ?? 0,
+        unstagedCount: changes?.unstaged.length ?? 0,
       );
-      return;
-    }
-    _message.clear();
-    _refresh();
-    if (!push) {
-      toast?.show(
-        action == ScmCommitAction.amend ? l10n.commitAmended : l10n.committed,
-        variant: CcToastVariant.success,
+      if (!ready) {
+        if (mounted) {
+          CcToastScope.maybeOf(
+            context,
+          )?.show(l10n.commitFailed, variant: CcToastVariant.danger);
+        }
+        return;
+      }
+      final res = await commitAndPushWorktree(
+        rpc,
+        workspaceId: target.workspaceId,
+        spaceId: target.spaceId!,
+        repoId: target.repoId,
+        message: message,
+        push: push,
+        amend: action == ScmCommitAction.amend,
+        sync: action == ScmCommitAction.commitAndSync,
+        authorName: me?.gitAuthorName ?? me?.displayName,
+        authorEmail: me?.gitAuthorEmail ?? me?.email,
       );
-      return;
-    }
-    if (res.pushed) {
-      // The branch now exists on the forge, so the "create pull request"
-      // affordance can resolve against it — re-match now rather than wait for
-      // the poller's next snapshot change.
-      ref.invalidate(spaceBranchPullRequestsProvider(widget.spaceId));
-      toast?.show(
-        l10n.branchPublished(widget.branch),
-        variant: CcToastVariant.success,
-      );
-    } else {
-      toast?.show(res.error ?? l10n.pushFailed, variant: CcToastVariant.danger);
+      if (res == null || !res.committed) {
+        if (mounted) {
+          CcToastScope.maybeOf(context)?.show(
+            res?.error ?? l10n.commitFailed,
+            variant: CcToastVariant.danger,
+          );
+        }
+        return;
+      }
+      // The commit can land even when the requested push fails. In that case
+      // leave the message available until the full requested action succeeds.
+      if ((!push || res.pushed) && !editedDuringCommit) {
+        controller.clear();
+      }
+      if (!mounted || _args != target) {
+        return;
+      }
+      _refresh();
+      final toast = CcToastScope.maybeOf(context);
+      if (!push) {
+        toast?.show(
+          action == ScmCommitAction.amend ? l10n.commitAmended : l10n.committed,
+          variant: CcToastVariant.success,
+        );
+      } else if (res.pushed) {
+        // A published branch can now resolve the "create pull request" action.
+        ref.invalidate(spaceBranchPullRequestsProvider(target.spaceId!));
+        toast?.show(
+          l10n.branchPublished(branch),
+          variant: CcToastVariant.success,
+        );
+      } else {
+        toast?.show(
+          res.error ?? l10n.pushFailed,
+          variant: CcToastVariant.danger,
+        );
+      }
+    } finally {
+      controller.removeListener(markEdited);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
@@ -888,6 +945,14 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
 
+    final target = _args;
+    final messageController = ref.watch(
+      textDraftControllerProvider((
+        workspaceId: target.workspaceId,
+        surface: 'scm.commit',
+        destination: (spaceId: target.spaceId!, repoId: target.repoId),
+      )),
+    );
     final async = ref.watch(repoChangesGroupedProvider(_args));
     ref.listen(repoChangesGroupedProvider(_args), _followIntoReview);
     final changes = async.value ?? kEmptyRepoChanges;
@@ -901,6 +966,25 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
               const <SpaceStackLayer>[])
         if (layer.repoId == widget.repo.id) layer,
     ];
+    final hasStack = stackLayers.length >= 2;
+    final stackPrNumbers = <String, int>{
+      if (hasStack)
+        for (final pr in ref.watch(spacePullRequestsProvider(widget.spaceId)))
+          if (pr.repoFullName == widget.repo.fullName) pr.headRef: pr.number,
+      for (final layer in stackLayers)
+        if (layer.prNumber != null) layer.branch: layer.prNumber!,
+    };
+    // Recorded numbers also cover a just-published stack before its PR
+    // snapshots arrive. Otherwise wait for a complete branch lookup before
+    // treating an absent PR as an unpublished part.
+    final canPublishStack =
+        hasStack &&
+        stackLayers.any((layer) => !stackPrNumbers.containsKey(layer.branch)) &&
+        ref
+                .watch(spaceBranchPullRequestsProvider(widget.spaceId))
+                .value
+                ?.complete ==
+            true;
 
     _syncPolling(active: !_collapsed && TickerMode.valuesOf(context).enabled);
 
@@ -948,7 +1032,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
                 onCheckout: _checkout,
                 onStartNextPart: _startNextPart,
                 onCheckoutLayer: _checkoutLayer,
-                onPublishStack: stackLayers.length >= 2 ? _publishStack : null,
+                onPublishStack: canPublishStack ? _publishStack : null,
               ),
               if (syncLabel != null) ...[
                 const SizedBox(width: 4),
@@ -979,7 +1063,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
             (
               icon: AppIcons.refreshCw,
               tooltip: l10n.refresh,
-              onPressed: loading ? null : _refresh,
+              onPressed: loading || _refreshing ? null : _refreshFromHeader,
             ),
           ],
           children: [
@@ -992,14 +1076,15 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
               // The message field stays up on a clean tree, the way VS Code
               // does. Sync is the counts button on the repository row.
               ScmCommitBox(
-                controller: _message,
+                controller: messageController,
                 busy: _busy,
                 dense: true,
                 branch: widget.branch,
                 stagedCount: staged.length,
                 unstagedCount: unstaged.length,
                 canPush: widget.repo.hasForgeRemote && widget.branch.isNotEmpty,
-                onAction: _runCommit,
+                onAction: (action) =>
+                    _runCommit(action, target, messageController),
               ),
               if (total == 0)
                 Padding(
@@ -1064,7 +1149,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
               // A clean, published branch can still be a pull request: the
               // commits are ahead of the default branch, not of this branch's
               // own upstream.
-              if (stackLayers.length >= 2)
+              if (canPublishStack)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.sm,
@@ -1085,7 +1170,31 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
                     child: Text(l10n.stackPublish),
                   ),
                 ),
-              if (_canProposePullRequest(changes, total, existingPr != null))
+              if (hasStack)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.sm,
+                    AppSpacing.xs,
+                    AppSpacing.sm,
+                    AppSpacing.sm,
+                  ),
+                  child: ScmStackPullRequests(
+                    layers: stackLayers,
+                    prNumbers: stackPrNumbers,
+                    onOpen: (number) => context.go(
+                      pullRequestDetailRoute(
+                        widget.workspaceId,
+                        widget.repo.fullName,
+                        number,
+                      ),
+                    ),
+                  ),
+                )
+              else if (_canProposePullRequest(
+                changes,
+                total,
+                existingPr != null,
+              ))
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.sm,

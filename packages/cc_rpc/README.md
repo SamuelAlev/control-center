@@ -9,6 +9,15 @@ Flutter) shared by desktop, web and phone clients.
 - **`RemoteRpcClient`** — the client half of the protocol: `initialize`,
   `call(op, args)` and subscriptions. Injects `activeWorkspaceId` into requests;
   workspace authorization remains server-owned.
+  `subscribe` shares and replays replaceable snapshots; `subscribeEvents` opens
+  an independent event stream for each listener: seed-and-delta for transcripts,
+  live-only for terminal bytes. Events are never snapshot-cached or coalesced,
+  including events preceding the subscribe acknowledgement. Reconnection
+  re-subscribes; the query supplies a fresh seed when its protocol has one.
+  Outbound requests wait for the preceding transport send to finish, so a
+  subscription burst cannot exhaust the encrypted frame queue and disconnect
+  the client. Requests cancelled or timed out before dispatch are not sent;
+  in-flight mutations are never replayed after reconnect.
 - **`SecureRpcChannel` / `NoiseSession`** — mandatory signed-identity
   `Noise_NNpsk0_25519_ChaChaPoly_SHA256` above raw direct WebSocket and relay
   adapters. Shared directional counters, bounded fragmentation/credits, fresh

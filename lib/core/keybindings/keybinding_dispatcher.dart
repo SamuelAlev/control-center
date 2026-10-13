@@ -217,7 +217,9 @@ class KeybindingDispatcher with WidgetsBindingObserver {
     // focused text field permanently killed every shortcut in the app; each
     // later press fell through unhandled and rang the macOS system alert.
     if (inEditable) {
-      releaseStuckKeys();
+      // Focus can move while ⌘ is still held (⌘P then ⌘V). Releasing that
+      // modifier here would turn the next shortcut into an unmodified key.
+      releaseStuckKeys(preserveModifiers: true);
       // Capture the terminal-undo baseline (see [_bridgeTextUndoRedo]): the
       // text the focused field held when focus entered it. Recapture on every
       // focus entry — clicking back into a field re-anchors the floor — and

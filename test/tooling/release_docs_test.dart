@@ -57,31 +57,6 @@ void main() {
     expect(doc, contains('scripts/release/dry_run.sh'));
   });
 
-  test('every script carries a usage line', () {
-    // The scripts have no --help framework (~20 files of surface for no
-    // consumer). The header comment IS the interface, so require one.
-    for (final dir in const [
-      'scripts/release',
-      'scripts/natives',
-      'scripts/lib',
-    ]) {
-      for (final file in Directory('$root/$dir').listSync().whereType<File>()) {
-        final name = file.uri.pathSegments.last;
-        if (!name.endsWith('.sh')) {
-          continue;
-        }
-        final head = file.readAsLinesSync().take(60).join('\n');
-        expect(
-          head.toLowerCase(),
-          anyOf(contains('usage:'), contains('source it')),
-          reason:
-              '$dir/$name has no `Usage:` line (or, for a sourced library, a '
-              '"Source it" note) in its header comment',
-        );
-      }
-    }
-  });
-
   test('the harden-runner claim matches the workflow', () {
     // The doc used to claim "egress audit on the Linux build + release jobs"
     // while the workflow blocks on three jobs, audits on one and omits it

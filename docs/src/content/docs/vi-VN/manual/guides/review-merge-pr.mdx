@@ -2,7 +2,7 @@
 title: Xem xét và merge một PR
 description: Mở bàn làm việc PR, đọc diff, để lại bình luận nội tuyến, gửi một review và hợp nhất.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Hướng dẫn này chỉ cho bạn cách xem xét và hợp nhất một pull request.
@@ -25,6 +25,30 @@ PR. Bố cục tab của bạn được ghi nhớ theo từng PR.
 Tab Tổng quan mang siêu dữ liệu của PR (tác giả, nhánh, nhãn, người được giao,
 reaction, commit, trạng thái kiểm tra) và hàng hành động: làm mới, **Đánh giá**,
 **Hợp nhất**, mở trong IDE và một menu tràn ⋯.
+
+### Mở một PR từ stack của một space
+
+Phần **Chung → Pull requests** của space nhóm các PR được liên kết và khớp nhánh
+theo kho mã. Khi nhánh base của một PR là nhánh head của PR trước đó, chúng xuất
+hiện trong một stack có thể thu gọn. Tiêu đề của stack xác định PR dưới cùng,
+nhánh đích và số lượng; các hàng được đánh số chạy từ PR dưới cùng (1) lên tới
+đỉnh. Các con số mô tả thứ tự phụ thuộc, chứ không phải mức độ sẵn sàng để hợp
+nhất.
+
+Mỗi hàng hiển thị tiêu đề, số PR và trạng thái. Di chuột hoặc đưa tiêu điểm tới
+một hàng để đọc tiêu đề đầy đủ và tên các nhánh; nhấp hoặc nhấn Enter để mở bàn
+làm việc PR. Đưa tiêu điểm tới tiêu đề của stack rồi nhấn Enter hoặc Space để thu
+gọn hoặc mở rộng nó. Các PR không liên quan vẫn tách riêng, và những liên kết
+nhánh chưa hoàn chỉnh hoặc mập mờ không được trình bày như một stack có thứ tự.
+
+Trong **Kiểm soát mã nguồn**, **Pull request xếp chồng (N)** mở một trình chọn
+các phần đã xuất bản của stack, phần dưới cùng trước. Mỗi mục hiển thị số PR,
+nhãn phần và vị trí; phần đang được checkout sẽ được đánh dấu. Chọn một mục để mở
+bàn làm việc PR của nó. **Xuất bản ngăn xếp** chỉ xuất hiện khi quá trình phát
+hiện PR đã hoàn tất và có ít nhất một phần chưa có PR. Điều này cũng áp dụng cho
+menu nhánh. Các PR được tạo bên ngoài Control Center cũng được tính là đã xuất
+bản. Những stack được xuất bản một phần cung cấp cả hai hành động; công việc trên
+một nhánh đơn vẫn giữ các hành động tạo/xem PR riêng lẻ.
 
 ## Đọc diff
 

@@ -12507,6 +12507,47 @@ class AppLocalizationsMs extends AppLocalizations {
       'Identiti, polisi dan konvensyen yang dikongsi oleh semua orang dalam ruang kerja ini.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Atribusi komit';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Pilih sama ada komit ejen mengkreditkan Control Center. Pentadbir ruang kerja boleh mengatasi pilihan ini untuk semua orang dalam ruang kerja.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Atribusi ejen';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Kreditkan Control Center pada komit ejen';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Apabila dihidupkan, Control Center ialah pengarang komit dan anda disertakan sebagai penulis bersama. Apabila dimatikan, komit menggunakan identiti Git anda tanpa kredit kepada ejen.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Tetapan ruang kerja ini mengatasi pilihan peribadi anda. Keutamaan anda disimpan tetapi tidak terpakai di sini.';
+
+  @override
+  String get settingsAgentAttributionLoading => 'Memuatkan tetapan atribusi…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Pilih sama ada komit ejen mengkreditkan Control Center. Pilihan ruang kerja mengatasi keutamaan peribadi setiap ahli.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Gunakan keutamaan setiap ahli';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Sentiasa kreditkan Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Jangan sekali-kali kreditkan Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Templat nota dan suara tersimpan untuk mesyuarat dalam ruang kerja ini.';
 
@@ -14004,6 +14045,21 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Tiket';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Semua permintaan tarik dalam ruang ini telah digabungkan. Arkibkan ruang ini?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Tidak, kekalkan ruang ini';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Anda tidak akan ditanya lagi tentang ruang ini.';
+
+  @override
+  String get spaceAllPrsMergedLabel =>
+      'Semua permintaan tarik telah digabungkan';
 
   @override
   String get archiveSpace => 'Arkibkan ruang';

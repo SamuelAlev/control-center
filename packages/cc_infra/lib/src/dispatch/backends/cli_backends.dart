@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/core/domain/value_objects/agent_commit_attribution.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 
@@ -47,6 +49,11 @@ class ClaudeCliBackend implements AgentBackend {
   // Keep this shell-policy-safe for the same reason as the Bash instruction.
   static const _controlCenterSystemPrompt =
       '$bashDescriptionInstruction '
+      'For still images including SVG, HEIC and WebP, video or GIF/APNG frames, '
+      'and PDF or PDF-compatible AI pages, use tool search to load '
+      'mcp__control-center__render_media. It returns images using bundled '
+      'renderers. Do not ask the user to install FFmpeg or invoke system '
+      'media tools. '
       'For multi-step work or a user-provided task list, you MUST use the '
       'Control Center checklist. Use your tool search to load '
       'mcp__control-center__todo_read and mcp__control-center__todo_write '
@@ -59,14 +66,22 @@ class ClaudeCliBackend implements AgentBackend {
       'as you work, not only at the end. Keep existing item ids and content '
       'stable and retain unfinished items. Reconcile statuses before your '
       'final reply. A plan written in chat is not a substitute for the '
-      'checklist. Skip checklists for single-step replies.';
+      'checklist. Skip checklists for single-step replies. '
+      'When the task calls for publishing changes, invoke git push and '
+      'gh pr create as needed. Control Center requests approval when the '
+      'guarded action runs. Printing commands in chat does not request '
+      'approval. Do not hand the commands back to the user merely because '
+      'approval may be required. Respect a denial and report the blocker. '
+      'A network denial is also a boundary. Do not clear proxy variables, '
+      'change proxy settings or disable sandboxing to evade it. Report the '
+      'blocked destination instead.';
 
   /// The same appended prompt is used by launch and native-resume scoping.
   /// Without the MCP connection, leave Claude's own checklist available.
   static String appendedSystemPrompt({required bool hasControlCenterMcp}) =>
       hasControlCenterMcp
-      ? _controlCenterSystemPrompt
-      : bashDescriptionInstruction;
+      ? '$_controlCenterSystemPrompt $agentCommitAttributionInstruction'
+      : '$bashDescriptionInstruction $agentCommitAttributionInstruction';
 
   /// Builds the `claude -p` flag list (everything after the binary path,
   /// excluding the positional `-p` itself and the prompt). [modelId] selects
@@ -109,6 +124,10 @@ class ClaudeCliBackend implements AgentBackend {
       '--include-partial-messages',
       '--append-system-prompt',
       appendedSystemPrompt(hasControlCenterMcp: hasControlCenterMcp),
+      if (capabilities.supportsSubagentSystemPrompt) ...[
+        '--append-subagent-system-prompt',
+        agentCommitAttributionInstruction,
+      ],
     ];
     if (modelId != null && modelId.isNotEmpty) {
       args.addAll(['--model', modelId]);
@@ -136,9 +155,14 @@ class ClaudeCliBackend implements AgentBackend {
         nativeChecklistTools,
       ]);
     }
-    if (settingsJson != null && settingsJson.isNotEmpty) {
-      args.addAll(['--settings', settingsJson]);
-    }
+    // Command-line settings also cover non-pooled accounts and beat project
+    // settings. Preserve policy hooks, but never emit Claude's own bylines.
+    final settings = <String, dynamic>{
+      if (settingsJson != null && settingsJson.isNotEmpty)
+        ...jsonDecode(settingsJson) as Map<String, dynamic>,
+      'attribution': const {'commit': '', 'pr': ''},
+    };
+    args.addAll(['--settings', jsonEncode(settings)]);
     if (resumeSessionId != null &&
         resumeSessionId.isNotEmpty &&
         capabilities.supportsResume) {
@@ -296,6 +320,9 @@ class ClaudeCliBackend implements AgentBackend {
       supportsResume: flags.supportsResume,
       supportsSessionId: flags.supportsSessionId,
       effortValues: flags.effortValues,
+      supportsSubagentSystemPrompt:
+          flags.supportsSubagentSystemPrompt ||
+          ClaudeCliCapabilities._versionAtLeast(version, 205),
       restoresSessionTotals:
           ClaudeCliCapabilities.restoresSessionTotalsForVersion(version),
       version: version,
@@ -318,6 +345,7 @@ class ClaudeCliCapabilities {
     required this.supportsEffort,
     required this.supportsResume,
     required this.supportsSessionId,
+    this.supportsSubagentSystemPrompt = false,
     this.effortValues = const {'low', 'medium', 'high', 'xhigh', 'max'},
     this.restoresSessionTotals = false,
     this.version,
@@ -332,6 +360,7 @@ class ClaudeCliCapabilities {
     supportsEffort: true,
     supportsResume: true,
     supportsSessionId: true,
+    supportsSubagentSystemPrompt: true,
   );
 
   /// A binary whose help was READABLE but advertises none of these flags.
@@ -365,6 +394,11 @@ class ClaudeCliCapabilities {
 
   /// Whether `--session-id <uuid>` is accepted.
   final bool supportsSessionId;
+
+  /// Whether non-fork native subagents accept an appended system prompt.
+  /// The headless flag is absent from interactive help, so the version probe
+  /// also enables it starting with Claude Code 2.1.205.
+  final bool supportsSubagentSystemPrompt;
 
   /// The effort levels advertised by `--effort`, when it is present.
   final Set<String> effortValues;
@@ -405,7 +439,10 @@ class ClaudeCliCapabilities {
   /// Claude Code changed this in 2.1.277. An unknown or unparseable version is
   /// NOT credited with it: silently treating new figures as deltas against a
   /// baseline the CLI never restored is how spend disappears.
-  static bool restoresSessionTotalsForVersion(String? version) {
+  static bool restoresSessionTotalsForVersion(String? version) =>
+      _versionAtLeast(version, 277);
+
+  static bool _versionAtLeast(String? version, int minimumPatch) {
     if (version == null) {
       return false;
     }
@@ -422,7 +459,7 @@ class ClaudeCliCapabilities {
     if (minor != 1) {
       return minor > 1;
     }
-    return patch >= 277;
+    return patch >= minimumPatch;
   }
 
   /// Parses a `--help` dump. Returns null when the text is not recognizably
@@ -445,6 +482,9 @@ class ClaudeCliCapabilities {
       supportsEffort: effort,
       supportsResume: helpText.contains('--resume') || helpText.contains('-r,'),
       supportsSessionId: helpText.contains('--session-id'),
+      supportsSubagentSystemPrompt: helpText.contains(
+        '--append-subagent-system-prompt',
+      ),
       effortValues: effort ? _parseEffortValues(helpText) : const {},
       // Never from `--help`: it need not carry a version, and guessing
       // "modern" from its absence is what swallowed spend. The accounting

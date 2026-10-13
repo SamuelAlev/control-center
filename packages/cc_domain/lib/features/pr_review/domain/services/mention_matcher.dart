@@ -6,6 +6,10 @@
 /// question is how "the bot heard you but your notification didn't" happens.
 library;
 
+/// The human GitHub account addressed by default in PR conversations.
+/// The app's own bot login remains a separate, accepted alias.
+const githubPrConversationMentionLogin = 'usectrl';
+
 /// The logins a comment may @mention to address [login].
 ///
 /// For a GitHub App bot (`<slug>[bot]`) that is the full login AND the bare

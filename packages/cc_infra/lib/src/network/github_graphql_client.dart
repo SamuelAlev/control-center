@@ -5,6 +5,8 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/github_team_profile.dart';
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
+import 'package:cc_domain/features/pr_review/domain/services/mention_matcher.dart'
+    show githubPrConversationMentionLogin;
 import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/github/github_http.dart';
 import 'package:cc_infra/src/network/models/github_pr_review_state.dart';
@@ -1203,14 +1205,15 @@ fragment viewerPr on PullRequest {
     return out;
   }
 
-  /// Open PRs invoking the bot: @mentions of [botLogin] or bare slug (GitHub
-  /// does not resolve `@slug` to an app — needs `in:comments`), plus [label]
-  /// (apps cannot hold requested-reviewer). Same shape as
-  /// [searchViewerPullRequestActivity]: one aliased request, not `repo:`-scoped;
-  /// [since] bounds mention lanes only; label lane is an unbounded set.
+  /// Open PRs invoking the conversation bridge: mentions of the dedicated
+  /// @usectrl account, or compatible App bot full-login and bare-slug mentions
+  /// (the slug needs `in:comments` because GitHub does not resolve it to the
+  /// App), plus [label] (apps cannot hold requested-reviewer). One aliased
+  /// request, not `repo:`-scoped; [since] bounds only the mention lanes.
   Future<
     ({
       List<GitHubViewerPr> mentioned,
+      List<GitHubViewerPr> botMentioned,
       List<GitHubViewerPr> shortMentioned,
       List<GitHubViewerPr> labeled,
     })
@@ -1224,6 +1227,7 @@ fragment viewerPr on PullRequest {
     if (botLogin.isEmpty) {
       return (
         mentioned: const <GitHubViewerPr>[],
+        botMentioned: const <GitHubViewerPr>[],
         shortMentioned: const <GitHubViewerPr>[],
         labeled: const <GitHubViewerPr>[],
       );
@@ -1237,8 +1241,11 @@ fragment viewerPr on PullRequest {
     final stamp = window.toIso8601String().split('.').first;
 
     const query = r'''
-query($mn: String!, $sm: String!, $lb: String!, $first: Int!) {
+query($mn: String!, $bm: String!, $sm: String!, $lb: String!, $first: Int!) {
   mentioned: search(query: $mn, type: ISSUE, first: $first) {
+    nodes { ...viewerPr }
+  }
+  botMentioned: search(query: $bm, type: ISSUE, first: $first) {
     nodes { ...viewerPr }
   }
   shortMentioned: search(query: $sm, type: ISSUE, first: $first) {
@@ -1256,7 +1263,9 @@ fragment viewerPr on PullRequest {
 }''';
 
     final response = await _runQuery(query, <String, dynamic>{
-      'mn': 'is:pr mentions:"$botLogin" updated:>$stamp',
+      'mn':
+          'is:pr mentions:"$githubPrConversationMentionLogin" updated:>$stamp',
+      'bm': 'is:pr mentions:"$botLogin" updated:>$stamp',
       'sm': short.isEmpty
           ? 'is:pr no:label no:milestone'
           : 'is:pr in:comments "@$short" updated:>$stamp',
@@ -1269,6 +1278,7 @@ fragment viewerPr on PullRequest {
     final data = response?['data'] as Map<String, dynamic>?;
     return (
       mentioned: _viewerPrNodes(data, 'mentioned'),
+      botMentioned: _viewerPrNodes(data, 'botMentioned'),
       shortMentioned: short.isEmpty
           ? const <GitHubViewerPr>[]
           : _viewerPrNodes(data, 'shortMentioned'),

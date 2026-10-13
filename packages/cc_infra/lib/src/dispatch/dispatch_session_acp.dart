@@ -126,7 +126,10 @@ extension _AcpMethods on DispatchSession {
         model: modelId,
         mcpConfigPath: mcpConfigPath,
       );
-      await client.sessionPrompt(sessionId: sessionId, prompt: prompt);
+      await client.sessionPrompt(
+        sessionId: sessionId,
+        prompt: '$agentCommitAttributionInstruction\n\n$prompt',
+      );
       unawaited(_closeRunLog(exitCode: 0));
       addEvent(DebugEvent(content: '[acp] $cliName turn complete'));
     } on Object catch (e) {

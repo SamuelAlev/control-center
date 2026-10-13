@@ -61,8 +61,8 @@ class AgentQuestionService implements AgentQuestionPort {
     AgentQuestionRequest request, {
     Future<void>? abandoned,
   }) async {
-    if (request.spaceId.isEmpty) {
-      // Without a conversation there is nowhere to render the form.
+    if (request.spaceId.isEmpty || request.conversationId.isEmpty) {
+      // Without a destination there is nowhere to render the form.
       return null;
     }
 
@@ -86,6 +86,7 @@ class AgentQuestionService implements AgentQuestionPort {
     final messageId = await _messaging.sendMessage(
       workspaceId: request.workspaceId,
       spaceId: request.spaceId,
+      conversationId: request.conversationId,
       content: request.question,
       senderId: request.askedByAgentId ?? 'agent',
       senderType: 'agent',

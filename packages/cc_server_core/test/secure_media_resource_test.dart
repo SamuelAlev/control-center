@@ -24,6 +24,7 @@ void main() {
     late File audio;
     late File blobFile;
     late String psk;
+    late String blobMime;
     late String secondPsk;
     late bool workspaceRegistered;
     late bool member;
@@ -71,6 +72,7 @@ void main() {
       String h = hash,
       String? signature,
       String d = device,
+      String? downloadName,
     }) => Uri(
       path: '/blob',
       queryParameters: {
@@ -78,6 +80,8 @@ void main() {
         'h': h,
         'd': d,
         's': signature ?? sign('blob:$ws:$h'),
+        if (downloadName != null) 'download': '1',
+        if (downloadName != null) 'name': downloadName,
       },
     );
 
@@ -135,6 +139,7 @@ void main() {
       blobFile = File('${dataDir.path}/image.png');
       await audio.writeAsBytes(meetingBytes);
       await blobFile.writeAsBytes(blobBytes);
+      blobMime = 'image/png';
       psk = RemoteControlCrypto.generatePsk();
       secondPsk = RemoteControlCrypto.generatePsk();
       devices = _Devices({device: psk, secondDevice: secondPsk});
@@ -180,7 +185,7 @@ void main() {
           return workspaceId == workspace &&
                   hash ==
                       'a0b1c2d3e4f5060708090a0b0c0d0e0f102030405060708090a0b0c0d0e0f10'
-              ? (file: blobFile, contentType: 'image/png')
+              ? (file: blobFile, contentType: blobMime)
               : null;
         },
         blobPut:
@@ -290,6 +295,40 @@ void main() {
         expect(blobLookups, 2);
       },
     );
+
+    test('blob download stays scoped and cannot execute SVG inline', () async {
+      blobMime = 'image/svg+xml';
+      final inline = await get(blobUrl());
+      expect(inline.headers['content-security-policy']?.single, contains('sandbox'));
+      expect(inline.headers['x-content-type-options']?.single, 'nosniff');
+      expect(inline.headers['content-disposition'], isNull);
+      await inline.body.drain<void>();
+
+      final download = await get(
+        blobUrl(downloadName: '../drawing\r\nX-Injected: yes.svg'),
+      );
+      expect(download.statusCode, HttpStatus.ok);
+      expect(
+        download.headers['content-disposition']?.single,
+        "attachment; filename*=UTF-8''drawing__X-Injected%3A%20yes.svg",
+      );
+      expect(download.headers['x-injected'], isNull);
+      expect(await bytes(download), blobBytes);
+
+      expect(
+        await status(blobUrl(
+          downloadName: 'drawing.svg',
+          signature: sign('blob:$workspace:wrong'),
+        )),
+        HttpStatus.forbidden,
+      );
+      member = false;
+      expect(
+        await status(blobUrl(downloadName: 'drawing.svg')),
+        HttpStatus.forbidden,
+      );
+      expect(blobLookups, 2);
+    });
 
     test(
       'blob upload crosses the sealed lane in chunks and needs a distinct write signature',

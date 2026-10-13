@@ -12249,6 +12249,46 @@ class AppLocalizationsJa extends AppLocalizations {
       'このワークスペースの全メンバーで共有される識別情報、ポリシー、規約です。';
 
   @override
+  String get settingsAgentAttributionTitle => 'コミットの帰属';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'エージェントのコミットに Control Center のクレジットを付けるか選択します。ワークスペースの管理者は、全メンバーに対してこの設定を上書きできます。';
+
+  @override
+  String get settingsAgentCoauthorSection => 'エージェントへのクレジット';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'エージェントのコミットに Control Center のクレジットを付ける';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'オンにすると、コミットの作成者は Control Center となり、自分は共同作成者として記載されます。オフにすると、エージェントのクレジットなしで自分の Git ID が使用されます。';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'このワークスペースの設定が個人の選択より優先されます。個人の設定は保存されますが、ここでは適用されません。';
+
+  @override
+  String get settingsAgentAttributionLoading => '帰属設定を読み込み中…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'エージェントのコミットに Control Center のクレジットを付けるか選択します。ワークスペースの設定は各メンバーの個人設定より優先されます。';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit => '各メンバーの設定を使用';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      '常に Control Center のクレジットを付ける';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Control Center のクレジットを付けない';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'このワークスペースのミーティング用のノートテンプレートと保存済みの声です。';
 
@@ -13686,6 +13726,19 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'チケット';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'このスペースのすべてのプルリクエストがマージされました。このスペースをアーカイブしますか？';
+
+  @override
+  String get spaceKeepAfterMerge => 'いいえ、このスペースを残す';
+
+  @override
+  String get spaceKeepAfterMergeHint => 'このスペースについて再度確認することはありません。';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'すべてのプルリクエストをマージ済み';
 
   @override
   String get archiveSpace => 'スペースをアーカイブ';

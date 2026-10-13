@@ -10,6 +10,7 @@ REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 source "$REPO_ROOT/scripts/lib/common.sh"
 source "$REPO_ROOT/scripts/lib/artifact_names.sh"
+source "$REPO_ROOT/scripts/lib/media.sh"
 load_native_pins
 
 VERSION="${1:-${VERSION:?VERSION is required}}"
@@ -38,6 +39,7 @@ rm -rf "$BUNDLE/cc_server"
 mkdir -p "$BUNDLE/cc_server"
 cp -r "$CC_SERVER_BUNDLE/." "$BUNDLE/cc_server/"
 stage_natives "$NATIVES" "$BUNDLE/cc_server/lib" so
+cc_media_stage "$NATIVES" "$BUNDLE/cc_server/bin/media" linux
 
 # 1c. Verify both native sets before packaging. Every native is required (there
 # is no degraded mode), so a bundle missing one either crashes the desktop's
@@ -47,12 +49,15 @@ stage_natives "$NATIVES" "$BUNDLE/cc_server/lib" so
 # test/tooling/native_matrix_test.dart.
 bash scripts/release/verify_natives.sh "$BUNDLE/lib" linux desktop
 bash scripts/release/verify_natives.sh "$BUNDLE/cc_server/lib" linux server
+cc_media_verify "$BUNDLE/cc_server/bin/media" linux
 
 # 1d. Legal notices, written into the bundle so BOTH the tarball below and the
 # AppDir copied from it carry them.
 install -m644 LICENSE "$BUNDLE/LICENSE"
 bash scripts/release/gen_third_party_licenses.sh desktop \
   "$BUNDLE/THIRD-PARTY-LICENSES.txt"
+bash scripts/release/gen_third_party_licenses.sh server \
+  "$BUNDLE/cc_server/THIRD-PARTY-LICENSES.txt"
 
 # 1e. The libraries a stock desktop may lack, and RUNPATHs that find them: a
 # plugin's RUNPATH is the build tree's, so a library beside it is invisible.

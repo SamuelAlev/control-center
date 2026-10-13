@@ -20,18 +20,19 @@ const String kGithubPrReviewLabel = 'ai-review';
 /// background work no human clicked, which is the attribution rule the forge
 /// seams already follow.
 abstract interface class GitHubPrConversationGateway {
-  /// The bot account login (`<slug>[bot]`) commenters must @mention, or ''
-  /// when this server has no app identity — in which case the whole surface
-  /// idles, because there is no bot to talk to.
+  /// The installed App's bot account login (`<slug>[bot]`), used for the
+  /// author's loop guard and as a compatible invocation alias. The default
+  /// invocation is @usectrl. An empty login means there is no App identity,
+  /// so the conversation surface idles.
   Future<String> botLogin();
 
-  /// Open PRs the bot is being invoked on: PRs whose conversation mentions the
-  /// bot ([GitHubPrConversationGateway.botLogin]), and PRs carrying the
-  /// configured review label. [since] bounds only the mention lane; the label
-  /// lane is an unbounded set whose membership is itself the trigger state.
+  /// Open PRs addressed via @usectrl or the App bot's compatible mentions,
+  /// and PRs carrying the configured review label. [since] bounds only
+  /// mention lanes; the label lane's membership is itself trigger state.
   Future<
     ({
       List<GitHubViewerPr> mentioned,
+      List<GitHubViewerPr> botMentioned,
       List<GitHubViewerPr> shortMentioned,
       List<GitHubViewerPr> labeled,
     })
@@ -145,6 +146,7 @@ class AppBackedGitHubPrConversationGateway
   Future<
     ({
       List<GitHubViewerPr> mentioned,
+      List<GitHubViewerPr> botMentioned,
       List<GitHubViewerPr> shortMentioned,
       List<GitHubViewerPr> labeled,
     })
@@ -154,6 +156,7 @@ class AppBackedGitHubPrConversationGateway
     if (app == null) {
       return (
         mentioned: const <GitHubViewerPr>[],
+        botMentioned: const <GitHubViewerPr>[],
         shortMentioned: const <GitHubViewerPr>[],
         labeled: const <GitHubViewerPr>[],
       );
@@ -163,11 +166,13 @@ class AppBackedGitHubPrConversationGateway
     if (botLogin.isEmpty) {
       return (
         mentioned: const <GitHubViewerPr>[],
+        botMentioned: const <GitHubViewerPr>[],
         shortMentioned: const <GitHubViewerPr>[],
         labeled: const <GitHubViewerPr>[],
       );
     }
     final mentioned = <String, GitHubViewerPr>{};
+    final botMentioned = <String, GitHubViewerPr>{};
     final shortMentioned = <String, GitHubViewerPr>{};
     final labeled = <String, GitHubViewerPr>{};
     for (final installation in await app.installations()) {
@@ -185,6 +190,9 @@ class AppBackedGitHubPrConversationGateway
         for (final pr in result.mentioned) {
           mentioned[pr.key] = pr;
         }
+        for (final pr in result.botMentioned) {
+          botMentioned[pr.key] = pr;
+        }
         for (final pr in result.shortMentioned) {
           shortMentioned[pr.key] = pr;
         }
@@ -200,6 +208,7 @@ class AppBackedGitHubPrConversationGateway
     }
     return (
       mentioned: mentioned.values.toList(growable: false),
+      botMentioned: botMentioned.values.toList(growable: false),
       shortMentioned: shortMentioned.values.toList(growable: false),
       labeled: labeled.values.toList(growable: false),
     );

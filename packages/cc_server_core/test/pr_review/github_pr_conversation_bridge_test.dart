@@ -136,12 +136,7 @@ class _FakeMessagingPort implements MessagingPort {
   final addedAgents = <({String spaceId, String agentId})>[];
   final dispatches =
       <
-        ({
-          String spaceId,
-          String agentId,
-          String prompt,
-          String? requestedBy,
-        })
+        ({String spaceId, String agentId, String prompt, String? requestedBy})
       >[];
   String? dispatchRunId = 'run-1';
   Object? dispatchError;
@@ -320,11 +315,14 @@ Future<Map<String, dynamic>?> _readPending(
   WorkspaceDatabaseManager dbs,
   String runId,
 ) async {
-  final raw = await dbs.of(_workspaceId).cacheDao.read(
-    _workspaceId,
-    GitHubPrConversationBridge.pendingReplyCacheKind,
-    runId,
-  );
+  final raw = await dbs
+      .of(_workspaceId)
+      .cacheDao
+      .read(
+        _workspaceId,
+        GitHubPrConversationBridge.pendingReplyCacheKind,
+        runId,
+      );
   if (raw == null) {
     return null;
   }
@@ -425,12 +423,36 @@ void main() {
   });
 
   group('mention matching', () {
-    test('matches the exact bot login, case-insensitively', () {
+    test('dedicated account is default alongside App aliases', () {
+      expect(GitHubPrConversationBridge.acceptedMentionLogins(_botLogin), [
+        'usectrl',
+        _botLogin,
+        'cc-test',
+      ]);
       expect(
-        GitHubPrConversationBridge.mentionsBot(
-          'hey @CC-TEST[bot]!',
+        GitHubPrConversationBridge.mentionsBot('@USECTRL why?', _botLogin),
+        isTrue,
+      );
+      expect(
+        GitHubPrConversationBridge.stripMention(
+          '@usectrl why is this failing?',
           _botLogin,
         ),
+        'why is this failing?',
+      );
+      expect(
+        GitHubPrConversationBridge.mentionsBot('@usectrl[bot] why?', _botLogin),
+        isFalse,
+      );
+      expect(
+        GitHubPrConversationBridge.mentionsBot('@usectrl why?', ''),
+        isFalse,
+      );
+    });
+
+    test('matches the exact bot login, case-insensitively', () {
+      expect(
+        GitHubPrConversationBridge.mentionsBot('hey @CC-TEST[bot]!', _botLogin),
         isTrue,
       );
       expect(
@@ -489,10 +511,7 @@ void main() {
         GitHubPrConversationBridge.mentionsBot('@someone-else hi', _botLogin),
         isFalse,
       );
-      expect(
-        GitHubPrConversationBridge.mentionsBot('plain text', ''),
-        isFalse,
-      );
+      expect(GitHubPrConversationBridge.mentionsBot('plain text', ''), isFalse);
     });
 
     test('strips the mention for the command text', () {
@@ -530,6 +549,22 @@ void main() {
   });
 
   group('loop guard', () {
+    test('App-authored @usectrl comment is ignored', () async {
+      await bridge.handleInboundComment(
+        workspaceId: _workspaceId,
+        owner: 'acme',
+        repo: 'app',
+        prNumber: 7,
+        prTitle: 'T',
+        comment: _issueComment(2, '@usectrl review', bot: true),
+      );
+
+      expect(gateway.ackedIssueComments, isEmpty);
+      expect(messaging.dispatches, isEmpty);
+      expect(gateway.conversationComments, isEmpty);
+      expect(startedReviews, isEmpty);
+    });
+
     test('a bot-authored comment is dropped before anything happens', () async {
       await bridge.handleInboundComment(
         workspaceId: _workspaceId,
@@ -548,26 +583,51 @@ void main() {
   });
 
   group('review command', () {
-    test('a bare mention starts the review and replies on the timeline',
-        () async {
+    test(
+      'a bare mention starts the review and replies on the timeline',
+      () async {
+        await bridge.handleInboundComment(
+          workspaceId: _workspaceId,
+          owner: 'acme',
+          repo: 'app',
+          prNumber: 7,
+          prTitle: 'T',
+          comment: _issueComment(11, '@$_botLogin'),
+        );
+
+        expect(startedReviews.single, (
+          workspaceId: _workspaceId,
+          owner: 'acme',
+          repo: 'app',
+          prNumber: 7,
+        ));
+        expect(gateway.ackedIssueComments, [11]);
+        expect(
+          gateway.conversationComments.single.body,
+          contains('Review started'),
+        );
+        expect(gateway.conversationComments.single.body, contains('@octocat'));
+        expect(messaging.userMessages, isEmpty);
+      },
+    );
+
+    test('a bare @usectrl starts a review through the App gateway', () async {
       await bridge.handleInboundComment(
         workspaceId: _workspaceId,
         owner: 'acme',
         repo: 'app',
         prNumber: 7,
         prTitle: 'T',
-        comment: _issueComment(11, '@$_botLogin'),
+        comment: _issueComment(16, '@usectrl'),
       );
 
-      expect(startedReviews.single,
-          (workspaceId: _workspaceId, owner: 'acme', repo: 'app', prNumber: 7));
-      expect(gateway.ackedIssueComments, [11]);
+      expect(startedReviews.single.prNumber, 7);
+      expect(gateway.ackedIssueComments, [16]);
       expect(
         gateway.conversationComments.single.body,
         contains('Review started'),
       );
-      expect(gateway.conversationComments.single.body, contains('@octocat'));
-      expect(messaging.userMessages, isEmpty);
+      expect(messaging.dispatches, isEmpty);
     });
 
     test('an explicit review word behaves the same', () async {
@@ -622,14 +682,14 @@ void main() {
               required repo,
               required prNumber,
             }) async {
-          startedReviews.add((
-            workspaceId: workspaceId,
-            owner: owner,
-            repo: repo,
-            prNumber: prNumber,
-          ));
-          return {'status': 'started'};
-        },
+              startedReviews.add((
+                workspaceId: workspaceId,
+                owner: owner,
+                repo: repo,
+                prNumber: prNumber,
+              ));
+              return {'status': 'started'};
+            },
         ensureSpace:
             ({
               required workspaceId,
@@ -652,50 +712,56 @@ void main() {
         comment: _issueComment(14, '@$_botLogin review'),
       );
 
-      expect(gateway.conversationComments.single.body,
-          contains('do not know who you are'));
-    });
-
-    test('a thread reply without a mention is a question, never a re-review',
-        () async {
-      await bridge.handleInboundComment(
-        workspaceId: _workspaceId,
-        owner: 'acme',
-        repo: 'app',
-        prNumber: 7,
-        prTitle: 'T',
-        comment: _reviewComment(15, 'what about the error handling?'),
-        isBotThread: true,
-      );
-
-      expect(startedReviews, isEmpty);
-      expect(messaging.dispatches, isNotEmpty);
-    });
-  });
-
-  group('membership gate', () {
-    test('an unmapped login is refused and nothing enters the workspace',
-        () async {
-      await bridge.handleInboundComment(
-        workspaceId: _workspaceId,
-        owner: 'acme',
-        repo: 'app',
-        prNumber: 7,
-        prTitle: 'T',
-        comment: _issueComment(
-          21,
-          '@$_botLogin what do you think?',
-          login: 'stranger',
-        ),
-      );
-
       expect(
         gateway.conversationComments.single.body,
         contains('do not know who you are'),
       );
-      expect(messaging.userMessages, isEmpty);
-      expect(messaging.dispatches, isEmpty);
     });
+
+    test(
+      'a thread reply without a mention is a question, never a re-review',
+      () async {
+        await bridge.handleInboundComment(
+          workspaceId: _workspaceId,
+          owner: 'acme',
+          repo: 'app',
+          prNumber: 7,
+          prTitle: 'T',
+          comment: _reviewComment(15, 'what about the error handling?'),
+          isBotThread: true,
+        );
+
+        expect(startedReviews, isEmpty);
+        expect(messaging.dispatches, isNotEmpty);
+      },
+    );
+  });
+
+  group('membership gate', () {
+    test(
+      'an unmapped login is refused and nothing enters the workspace',
+      () async {
+        await bridge.handleInboundComment(
+          workspaceId: _workspaceId,
+          owner: 'acme',
+          repo: 'app',
+          prNumber: 7,
+          prTitle: 'T',
+          comment: _issueComment(
+            21,
+            '@$_botLogin what do you think?',
+            login: 'stranger',
+          ),
+        );
+
+        expect(
+          gateway.conversationComments.single.body,
+          contains('do not know who you are'),
+        );
+        expect(messaging.userMessages, isEmpty);
+        expect(messaging.dispatches, isEmpty);
+      },
+    );
 
     test('a read-only member is refused with the role named', () async {
       await bridge.handleInboundComment(
@@ -714,62 +780,107 @@ void main() {
 
   group('question path', () {
     test(
-        'posts the question as the member, dispatches to the last agent, and records the reply lane',
-        () async {
-      messagingRepository.participants = [
-        SpaceParticipant(
-          id: 'p1',
-          spaceId: _spaceId,
-          principalId: 'agent-9',
-          participantType: PrincipalType.agent,
-          role: 'agent',
-          joinedAt: DateTime(2026, 1, 1),
-        ),
-      ];
-      messagingRepository.spaceMessages = [_turnMessage('old', 'prior turn')];
+      'posts the question as the member, dispatches to the last agent, and records the reply lane',
+      () async {
+        messagingRepository.participants = [
+          SpaceParticipant(
+            id: 'p1',
+            spaceId: _spaceId,
+            principalId: 'agent-9',
+            participantType: PrincipalType.agent,
+            role: 'agent',
+            joinedAt: DateTime(2026, 1, 1),
+          ),
+        ];
+        messagingRepository.spaceMessages = [_turnMessage('old', 'prior turn')];
 
-      await bridge.handleInboundComment(
-        workspaceId: _workspaceId,
-        owner: 'acme',
-        repo: 'app',
-        prNumber: 7,
-        prTitle: 'A title',
-        comment: _issueComment(31, '@$_botLogin why does the flaky test fail?'),
-      );
+        await bridge.handleInboundComment(
+          workspaceId: _workspaceId,
+          owner: 'acme',
+          repo: 'app',
+          prNumber: 7,
+          prTitle: 'A title',
+          comment: _issueComment(
+            31,
+            '@$_botLogin why does the flaky test fail?',
+          ),
+        );
 
-      final sent = messaging.userMessages.single;
-      expect(sent.spaceId, _spaceId);
-      expect(sent.content, 'why does the flaky test fail?');
-      expect(sent.senderUserId, 'u1');
-      final provenance = sent.metadata?['github'] as Map<String, dynamic>;
-      expect(provenance['author_login'], 'octocat');
-      expect(provenance['pr_number'], 7);
-      // The last agent sender answers; nobody had to be added.
-      expect(messaging.dispatches.single.agentId, 'agent-9');
-      expect(messaging.dispatches.single.requestedBy, 'u1');
-      expect(messaging.addedAgents, isEmpty);
+        final sent = messaging.userMessages.single;
+        expect(sent.spaceId, _spaceId);
+        expect(sent.content, 'why does the flaky test fail?');
+        expect(sent.senderUserId, 'u1');
+        final provenance = sent.metadata?['github'] as Map<String, dynamic>;
+        expect(provenance['author_login'], 'octocat');
+        expect(provenance['pr_number'], 7);
+        // The last agent sender answers; nobody had to be added.
+        expect(messaging.dispatches.single.agentId, 'agent-9');
+        expect(messaging.dispatches.single.requestedBy, 'u1');
+        expect(messaging.addedAgents, isEmpty);
 
-      final pending = await _readPending(dbs, 'run-1');
-      expect(pending, isNotNull);
-      expect(pending?['kind'], 'issue');
-      expect(pending?['asker_login'], 'octocat');
-    });
+        final pending = await _readPending(dbs, 'run-1');
+        expect(pending, isNotNull);
+        expect(pending?['kind'], 'issue');
+        expect(pending?['asker_login'], 'octocat');
+      },
+    );
 
-    test('a first question on a fresh PR space wakes the coordinator',
-        () async {
+    test('@usectrl timeline question dispatches without the mention', () async {
       await bridge.handleInboundComment(
         workspaceId: _workspaceId,
         owner: 'acme',
         repo: 'app',
         prNumber: 7,
         prTitle: 'T',
-        comment: _issueComment(33, '@$_botLogin what does this PR do?'),
+        comment: _issueComment(32, '@usectrl what does this change?'),
       );
 
-      expect(messaging.addedAgents.single, (spaceId: _spaceId, agentId: 'agent-ceo'));
-      expect(messaging.dispatches.single.agentId, 'agent-ceo');
-      expect(messaging.dispatches.single.prompt, 'what does this PR do?');
+      expect(gateway.ackedIssueComments, [32]);
+      expect(messaging.userMessages.single.content, 'what does this change?');
+      expect(messaging.dispatches.single.prompt, 'what does this change?');
     });
+
+    test(
+      '@usectrl review-thread question dispatches without the mention',
+      () async {
+        await bridge.handleInboundComment(
+          workspaceId: _workspaceId,
+          owner: 'acme',
+          repo: 'app',
+          prNumber: 7,
+          prTitle: 'T',
+          comment: _reviewComment(33, '@usectrl what about null inputs?'),
+        );
+
+        expect(gateway.ackedReviewComments, [33]);
+        expect(
+          messaging.userMessages.single.content,
+          'what about null inputs?',
+        );
+        expect(messaging.dispatches.single.prompt, 'what about null inputs?');
+      },
+    );
+
+    test(
+      'a first question on a fresh PR space wakes the coordinator',
+      () async {
+        await bridge.handleInboundComment(
+          workspaceId: _workspaceId,
+          owner: 'acme',
+          repo: 'app',
+          prNumber: 7,
+          prTitle: 'T',
+          comment: _issueComment(33, '@$_botLogin what does this PR do?'),
+        );
+
+        expect(messaging.addedAgents.single, (
+          spaceId: _spaceId,
+          agentId: 'agent-ceo',
+        ));
+        expect(messaging.dispatches.single.agentId, 'agent-ceo');
+        expect(messaging.dispatches.single.prompt, 'what does this PR do?');
+      },
+    );
 
     test('a provisioning failure apologizes on the timeline', () async {
       ensureSpaceError = StateError('checkout failed');
@@ -828,37 +939,41 @@ void main() {
   });
 
   group('outbound lane', () {
-    test('a completed run posts the answer on the timeline, @-addressed',
-        () async {
-      await bridge.handleInboundComment(
-        workspaceId: _workspaceId,
-        owner: 'acme',
-        repo: 'app',
-        prNumber: 7,
-        prTitle: 'T',
-        comment: _issueComment(41, '@$_botLogin what does this PR do?'),
-      );
-
-      messagingRepository.messagesById['run-1'] = _turnMessage(
-        'run-1',
-        'It adds the polling lane.',
-      );
-      eventBus.publish(
-        AgentRunCompleted(
-          agentId: 'agent-ceo',
+    test(
+      'a completed run posts the answer on the timeline, @-addressed',
+      () async {
+        await bridge.handleInboundComment(
           workspaceId: _workspaceId,
-          conversationId: _spaceId,
-          runId: 'run-1',
-          occurredAt: DateTime(2026, 8, 26),
-        ),
-      );
-      await Future<void>.delayed(Duration.zero);
+          owner: 'acme',
+          repo: 'app',
+          prNumber: 7,
+          prTitle: 'T',
+          comment: _issueComment(41, '@$_botLogin what does this PR do?'),
+        );
 
-      expect(gateway.conversationComments.last.body,
-          '@octocat It adds the polling lane.');
-      // The pending row is consumed exactly once.
-      expect(await _readPending(dbs, 'run-1'), isNull);
-    });
+        messagingRepository.messagesById['run-1'] = _turnMessage(
+          'run-1',
+          'It adds the polling lane.',
+        );
+        eventBus.publish(
+          AgentRunCompleted(
+            agentId: 'agent-ceo',
+            workspaceId: _workspaceId,
+            conversationId: _spaceId,
+            runId: 'run-1',
+            occurredAt: DateTime(2026, 8, 26),
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          gateway.conversationComments.last.body,
+          '@octocat It adds the polling lane.',
+        );
+        // The pending row is consumed exactly once.
+        expect(await _readPending(dbs, 'run-1'), isNull);
+      },
+    );
 
     test('a completed thread run replies inside the review thread', () async {
       await bridge.handleInboundComment(
@@ -891,33 +1006,35 @@ void main() {
       expect(reply.body, 'Handled in step 3.');
     });
 
-    test('an empty completed turn posts nothing and still consumes the row',
-        () async {
-      await bridge.handleInboundComment(
-        workspaceId: _workspaceId,
-        owner: 'acme',
-        repo: 'app',
-        prNumber: 7,
-        prTitle: 'T',
-        comment: _issueComment(43, '@$_botLogin what does this PR do?'),
-      );
-      final commentsBefore = gateway.conversationComments.length;
-
-      messagingRepository.messagesById['run-1'] = _turnMessage('run-1', '  ');
-      eventBus.publish(
-        AgentRunCompleted(
-          agentId: 'agent-ceo',
+    test(
+      'an empty completed turn posts nothing and still consumes the row',
+      () async {
+        await bridge.handleInboundComment(
           workspaceId: _workspaceId,
-          conversationId: _spaceId,
-          runId: 'run-1',
-          occurredAt: DateTime(2026, 8, 26),
-        ),
-      );
-      await Future<void>.delayed(Duration.zero);
+          owner: 'acme',
+          repo: 'app',
+          prNumber: 7,
+          prTitle: 'T',
+          comment: _issueComment(43, '@$_botLogin what does this PR do?'),
+        );
+        final commentsBefore = gateway.conversationComments.length;
 
-      expect(gateway.conversationComments.length, commentsBefore);
-      expect(await _readPending(dbs, 'run-1'), isNull);
-    });
+        messagingRepository.messagesById['run-1'] = _turnMessage('run-1', '  ');
+        eventBus.publish(
+          AgentRunCompleted(
+            agentId: 'agent-ceo',
+            workspaceId: _workspaceId,
+            conversationId: _spaceId,
+            runId: 'run-1',
+            occurredAt: DateTime(2026, 8, 26),
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(gateway.conversationComments.length, commentsBefore);
+        expect(await _readPending(dbs, 'run-1'), isNull);
+      },
+    );
 
     test('a run without a pending row is ignored', () async {
       messagingRepository.messagesById['other-run'] = _turnMessage(

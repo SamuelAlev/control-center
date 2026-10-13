@@ -2,7 +2,7 @@
 title: Bercakap dengan Control Center dari PR GitHub
 description: Minta semakan atau ajukan soalan kepada bot GitHub App pelayan anda terus dari perbualan PR itu sendiri, tanpa webhook atau URL awam.
 slug: ms-MY/manual-pengguna/panduan-cara/perbualan-pr-github
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Panduan ini menunjukkan cara bekerja dengan Control Center tanpa meninggalkan
@@ -28,8 +28,9 @@ penerapan awam.
 
 ## Cari nama bot anda
 
-Log masuk bot itu ialah `<appslug>[bot]`, dengan `appslug` ialah nama yang anda
-berikan kepada aplikasi itu semasa mendaftarkannya.
+Sebut `@usectrl`, akaun GitHub khusus Control Center. Ini ialah pencetus lalai; GitHub App yang dikonfigurasikan pada pelayan anda masih mengendalikan permintaan dan menyiarkan balasan. Anda tidak memerlukan kelayakan bagi akaun `usectrl`.
+
+Log masuk aplikasi itu sendiri, `<appslug>[bot]`, serta bentuk ringkas `@appslug` juga berfungsi. Untuk mencari alias pilihan ini:
 
 1. Pergi ke **Tetapan → Pelayan → Daftar masuk tunggal** dan tatal ke kad
    **Apl penyedia**
@@ -38,10 +39,7 @@ berikan kepada aplikasi itu semasa mendaftarkannya.
    petunjuk kosong, log masuk itu sentiasa `<appslug>[bot]` — taip nilai itu,
    atau bentuk pendek `@appslug`
 
-GitHub tidak menawarkan akaun aplikasi dalam autolengkap `@`-nya, jadi log
-masuk itu perlu ditaip — sebab itulah kad tetapan menjadikannya boleh disalin
-dengan satu klik. Akhiran `[bot]` adalah pilihan: `@myapp` dan `@myapp[bot]`
-kedua-duanya menujukan bot itu.
+GitHub tidak memaparkan akaun App dalam autolengkap `@`, jadi alias App perlu ditaip atau disalin. Pengguna khusus `@usectrl` ialah cara panggilan lalai; `@myapp` dan `@myapp[bot]` masih diterima sebagai alias App.
 
 :::note[Pilih nama aplikasi yang tersendiri]
 Bentuk pendek dipadankan sebagai teks. Jika kebetulan seorang pengguna GitHub
@@ -60,7 +58,7 @@ seperti yang dimulakan oleh butang **Tanya AI**:
   boleh memegang slot penyemak yang diminta secara asli. Tiada komen untuk
   diberi reaksi, jadi tiada apa-apa disiarkan di GitHub; semakan itu bermula
   dalam Control Center
-- **Komen `@myapp review`** (atau hanya `@myapp`) pada perbualan PR. Bot itu
+- **Komen `@usectrl review`** (atau hanya `@usectrl`) pada perbualan PR. Bot itu
   memberi reaksi 👀, kemudian membalas apabila semakan telah bermula (atau
   bahawa satu semakan sedang berjalan)
 
@@ -80,7 +78,7 @@ bot itu.
 Komen pada perbualan PR:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Apa yang berlaku, mengikut urutan:
@@ -103,7 +101,7 @@ ditinggalkannya, atau jawapan yang disiarkannya dalam benang itu. Tiada sebutan
 diperlukan; benang itu **ialah** penujukannya:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

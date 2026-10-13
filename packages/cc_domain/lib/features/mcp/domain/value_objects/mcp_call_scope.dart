@@ -5,8 +5,8 @@
 /// Mirrors the built-in harness's `McpToolBridge` scoping semantics so the two
 /// transports enforce the same invariant: `workspace_id` is the isolation
 /// boundary and is FORCED to the scope's value when the tool schema declares
-/// it; `agent_id` / `conversation_id` / `space_id` are conveniences injected
-/// only when the caller omitted them.
+/// it; other identity fields are filled when omitted unless the tool requires
+/// or forces them as identifiers of the current run.
 class McpCallScope {
   /// Creates a call scope. Empty strings are treated as absent.
   const McpCallScope({
@@ -44,12 +44,29 @@ class McpCallScope {
       (conversationId == null || conversationId!.isEmpty) &&
       (spaceId == null || spaceId!.isEmpty);
 
+  /// The first required identity field absent from this trusted context.
+  String? firstMissing(Iterable<String> keys) {
+    for (final key in keys) {
+      final value = switch (key) {
+        'workspace_id' => workspaceId,
+        'agent_id' => agentId,
+        'conversation_id' => conversationId,
+        'space_id' => spaceId,
+        _ => null,
+      };
+      if (value == null || value.isEmpty) {
+        return key;
+      }
+    }
+    return null;
+  }
+
   /// Applies this scope to [args] for a tool whose input schema is [schema].
   ///
   /// Returns a new map; [args] is not mutated. Only argument names the schema
   /// declares under `properties` are touched. Keys in [force] are overwritten
-  /// with the scope's value when the scope has one. Tools opt in per argument
-  /// (`forcedScopeKeys`) when the argument names this run rather than a target.
+  /// with the scope's value, or removed when it has no trusted value. Tools
+  /// opt in per argument when the argument names this run rather than a target.
   Map<String, dynamic> apply(
     Map<String, dynamic> args,
     Map<String, dynamic> schema, {
@@ -68,14 +85,17 @@ class McpCallScope {
       scoped['workspace_id'] = ws;
     }
     void fillIfEmpty(String key, String? value) {
-      if (value == null || value.isEmpty || !props.containsKey(key)) {
+      if (!props.containsKey(key)) {
+        return;
+      }
+      if (value == null || value.isEmpty) {
+        if (force.contains(key)) {
+          scoped.remove(key);
+        }
         return;
       }
       final existing = scoped[key];
-      // [force] is for arguments that name THIS run, not a target the model
-      // chooses. A question has to render in the space the human is watching;
-      // a model-supplied space id would park the form where nobody is looking
-      // and the call would sit out its timeout.
+      // Forced keys name this run, not a model-selected target.
       if (force.contains(key) || existing == null || existing == '') {
         scoped[key] = value;
       }

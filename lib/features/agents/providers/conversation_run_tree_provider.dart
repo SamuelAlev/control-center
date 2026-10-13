@@ -7,10 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// A node in a conversation's live run tree: one run plus the subagent runs it
 /// spawned (linked via [AgentRunLog.parentRunId]).
 ///
-/// The tree holds exactly the rows the panel renders — one row per agent for its
-/// CURRENT run, then that run's subagents to whatever depth they nest. Nothing is
-/// carried that is not drawn, so the section's `settled/total` count can no
-/// longer disagree with what is on screen.
+/// The tree holds exactly the rows the panel renders: one current run per
+/// agent and its active subagents, at any depth. Terminal children remain in
+/// the raw run-log stream for history but leave this tree immediately.
 class RunTreeNode {
   /// Creates a [RunTreeNode].
   const RunTreeNode({
@@ -125,26 +124,39 @@ bool _supersedes(AgentRunLog candidate, AgentRunLog best) {
   return !candidate.startedAt.isBefore(best.startedAt);
 }
 
+bool _isTerminal(AgentRunLog run) =>
+    run.status == RunStatus.completed || run.status == RunStatus.error;
+
 List<RunTreeNode> _buildTree(List<AgentRunLog> logs) {
   final byParent = <String?, List<AgentRunLog>>{};
   for (final l in logs) {
     byParent.putIfAbsent(l.parentRunId, () => []).add(l);
   }
 
-  // Builds a spawned-subagent subtree (its task label stays its own summary).
-  RunTreeNode buildSub(AgentRunLog run) {
-    final children = (byParent[run.id] ?? const <AgentRunLog>[])
-        .map(buildSub)
-        .toList(growable: false);
-    return RunTreeNode(
-      runId: run.id,
-      agentId: run.agentId,
-      label: _labelFor(run),
-      status: _statusOf(run),
-      retryAttempt: run.retry.attempt,
-      startedAt: run.startedAt,
-      turnCount: children.length,
-      children: children,
+  // Finished children leave the sidebar, not history. If a nested background
+  // child is still active, keep it under the nearest visible ancestor.
+  void addSub(AgentRunLog run, List<RunTreeNode> nodes) {
+    if (_isTerminal(run)) {
+      for (final child in byParent[run.id] ?? const <AgentRunLog>[]) {
+        addSub(child, nodes);
+      }
+      return;
+    }
+    final children = <RunTreeNode>[];
+    for (final child in byParent[run.id] ?? const <AgentRunLog>[]) {
+      addSub(child, children);
+    }
+    nodes.add(
+      RunTreeNode(
+        runId: run.id,
+        agentId: run.agentId,
+        label: _labelFor(run),
+        status: _statusOf(run),
+        retryAttempt: run.retry.attempt,
+        startedAt: run.startedAt,
+        turnCount: children.length,
+        children: children,
+      ),
     );
   }
 
@@ -166,7 +178,13 @@ List<RunTreeNode> _buildTree(List<AgentRunLog> logs) {
   // top-level rows — the exact bug this shape avoids.
   final order = <String>[];
   final currentByAgent = <String, AgentRunLog>{};
-  for (final run in roots) {
+  void addRoot(AgentRunLog run) {
+    if (run.parentRunId != null && _isTerminal(run)) {
+      for (final child in byParent[run.id] ?? const <AgentRunLog>[]) {
+        addRoot(child);
+      }
+      return;
+    }
     final best = currentByAgent[run.agentId];
     if (best == null) {
       order.add(run.agentId);
@@ -176,6 +194,8 @@ List<RunTreeNode> _buildTree(List<AgentRunLog> logs) {
     }
   }
 
+  roots.forEach(addRoot);
+
   // Row order is the agent's FIRST appearance among roots, not its current run's
   // start time: the 1..9 shortcuts are positional and rows reshuffling under the
   // user's fingers on every turn is worse than a stable-but-older order.
@@ -183,10 +203,10 @@ List<RunTreeNode> _buildTree(List<AgentRunLog> logs) {
     for (final agentId in order)
       () {
         final run = currentByAgent[agentId]!;
-        final children = [
-          for (final child in byParent[run.id] ?? const <AgentRunLog>[])
-            buildSub(child),
-        ];
+        final children = <RunTreeNode>[];
+        for (final child in byParent[run.id] ?? const <AgentRunLog>[]) {
+          addSub(child, children);
+        }
         return RunTreeNode(
           runId: run.id,
           agentId: agentId,
@@ -227,4 +247,3 @@ final spaceRunTreeProvider = Provider.autoDispose
     .family<AsyncValue<List<RunTreeNode>>, SpaceRunsKey>((ref, key) {
       return ref.watch(spaceRunLogsProvider(key)).whenData(_buildTree);
     });
-

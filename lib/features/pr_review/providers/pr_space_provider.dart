@@ -159,7 +159,7 @@ String? prRepoIdFor(WidgetRef ref, PullRequest pr) {
   return null;
 }
 
-/// An open pull request whose head is one of a conversation's worktree
+/// A pull request whose head is one of a conversation's worktree
 /// branches: the `pr` itself plus the `repoId` / `branch` it was matched
 /// through, so a per-repo surface can pick out its own.
 typedef SpaceBranchPr = ({
@@ -169,19 +169,19 @@ typedef SpaceBranchPr = ({
   PullRequest pr,
 });
 
+/// Branch inventory plus whether the server resolved every branch successfully.
+typedef SpaceBranchPrSnapshot = ({List<SpaceBranchPr> matches, bool complete});
+
 /// The pull requests opened FROM this conversation, matched by head branch.
 /// The branch is the join, and it holds however the PR was opened — the compose screen,
 /// `gh`, the GitHub web UI, or an agent in the space's own terminal.
-/// Resolved SERVER-SIDE (`pr.watchForSpaceBranches`) off the open-PR poller's persisted
-/// snapshot, so this costs a cache read rather than a forge call and the client holds one
-/// PR instead of the whole open-PR list — which is deliberately autoDisposed (see
-/// `prsByRepoProvider`) precisely because it is too big to keep resident, and a space
-/// surface stays open while someone works. Live: a PR opened outside the app arrives
-/// with the poller's next sweep instead of waiting for a local git action to refetch.
+/// Resolved server-side (`pr.watchForSpaceBranches`) from persisted snapshots,
+/// including merged/closed PRs. The client subscribes only to this space's
+/// matches rather than retaining the workspace's whole PR inventory.
 final spaceBranchPullRequestsProvider = StreamProvider.autoDispose
-    .family<List<SpaceBranchPr>, String>((ref, spaceId) async* {
+    .family<SpaceBranchPrSnapshot, String>((ref, spaceId) async* {
       if (spaceId.isEmpty) {
-        yield const [];
+        yield (matches: const [], complete: true);
         return;
       }
       try {
@@ -189,27 +189,34 @@ final spaceBranchPullRequestsProvider = StreamProvider.autoDispose
             .watch(rpcClientProvider)
             .subscribe('pr.watchForSpaceBranches', {'space_id': spaceId})
             .map(
-              (data) => [
-                for (final raw in (data['matches'] as List?) ?? const [])
-                  if (raw is Map)
-                    (
-                      repoId: raw['repo_id'] as String? ?? '',
-                      repoFullName: raw['repo_full_name'] as String? ?? '',
-                      branch: raw['branch'] as String? ?? '',
-                      pr: pullRequestFromWireDto(
-                        PullRequestDto.fromJson(
-                          (raw['pull_request'] as Map).cast<String, dynamic>(),
+              (data) => (
+                matches: [
+                  for (final raw in (data['matches'] as List?) ?? const [])
+                    if (raw is Map)
+                      (
+                        repoId: raw['repo_id'] as String? ?? '',
+                        repoFullName: raw['repo_full_name'] as String? ?? '',
+                        branch: raw['branch'] as String? ?? '',
+                        pr: pullRequestFromWireDto(
+                          PullRequestDto.fromJson(
+                            (raw['pull_request'] as Map)
+                                .cast<String, dynamic>(),
+                          ),
                         ),
                       ),
-                    ),
-              ],
+                ],
+                complete: data['complete'] == true,
+              ),
             )
             // The open-PR poller re-sends the same snapshot on every sweep;
             // every space row badges off this, so an unchanged one stops here.
-            .distinct(listEquals);
+            .distinct(
+              (a, b) =>
+                  a.complete == b.complete && listEquals(a.matches, b.matches),
+            );
       } on RemoteRpcException catch (e) {
         if (e.code == RpcErrorCodes.opUnknown) {
-          yield const [];
+          yield (matches: const [], complete: false);
           return;
         }
         rethrow;
@@ -218,12 +225,9 @@ final spaceBranchPullRequestsProvider = StreamProvider.autoDispose
 
 /// PRs the space row in the global sidebar should badge.
 ///
-/// A PR reaches a space two ways and only one of them writes a row. [linked]
-/// is the review-space associations. [branchMatched] is every open PR whose
-/// head is a worktree branch of the space — the same join the space panel
-/// uses, which holds however the PR was opened (compose screen, `gh`, the
-/// web UI, an agent terminal). An association wins when both name the same
-/// PR, so it is not counted twice.
+/// [linked] contains review-space associations; [branchMatched] contains PRs
+/// on worktree and stack branches, however they were opened. A confirmed merge
+/// wins over a stale open snapshot; otherwise the explicit association wins.
 List<PullRequest> pullRequestsForSpaceRow({
   required List<PullRequest> linked,
   required Iterable<PullRequest> branchMatched,
@@ -232,10 +236,46 @@ List<PullRequest> pullRequestsForSpaceRow({
     for (final pr in linked) '${pr.repoFullName}#${pr.number}': pr,
   };
   for (final pr in branchMatched) {
-    prs.putIfAbsent('${pr.repoFullName}#${pr.number}', () => pr);
+    final key = '${pr.repoFullName}#${pr.number}';
+    final existing = prs[key];
+    if (existing == null || (pr.isMerged && !existing.isMerged)) {
+      prs[key] = pr;
+    }
   }
   return prs.values.toList(growable: false);
 }
+
+/// The same deduplicated PR inventory for the sidebar, space panel and prompt.
+final spacePullRequestsProvider = Provider.autoDispose
+    .family<List<PullRequest>, String>((ref, spaceId) {
+      return pullRequestsForSpaceRow(
+        linked: ref.watch(spacePrsProvider(spaceId)),
+        branchMatched:
+            ref
+                .watch(spaceBranchPullRequestsProvider(spaceId))
+                .value
+                ?.matches
+                .map((match) => match.pr) ??
+            const <PullRequest>[],
+      );
+    });
+
+/// Nonempty, fully resolved inventory with no unmerged PRs.
+final spaceAllPrsMergedProvider = Provider.autoDispose.family<bool, String>((
+  ref,
+  spaceId,
+) {
+  final linkedResolved = ref.watch(spacePrsResolvedProvider(spaceId));
+  final branches = ref.watch(spaceBranchPullRequestsProvider(spaceId));
+  final prs = ref.watch(spacePullRequestsProvider(spaceId));
+  return linkedResolved &&
+      branches.hasValue &&
+      !branches.hasError &&
+      !branches.isLoading &&
+      branches.requireValue.complete &&
+      prs.isNotEmpty &&
+      prs.every((pr) => pr.isMerged);
+});
 
 /// The open pull request for the branch checked out in this repo, or null.
 ///
@@ -253,7 +293,10 @@ final spaceBranchPullRequestForRepoProvider = Provider.autoDispose
         repoId: key.repoId,
         repoFullName: key.repoFullName,
         branchMatched:
-            ref.watch(spaceBranchPullRequestsProvider(key.spaceId)).value ??
+            ref
+                .watch(spaceBranchPullRequestsProvider(key.spaceId))
+                .value
+                ?.matches ??
             const [],
         linked: ref.watch(spacePrsProvider(key.spaceId)),
       );

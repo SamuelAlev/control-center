@@ -2,7 +2,7 @@
 title: Levenscyclus van agent-dispatch
 description: Wat er gebeurt tussen het aankomen van een bericht en het sluiten van een run-log — promptopbouw, worktrees, identiteit, wat een run begrenst en hoe de uitkomst ervan eerlijk wordt vastgelegd.
 slug: nl-NL/handleiding/concepten/dispatch-levenscyclus
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Wat een dispatch is
@@ -52,7 +52,7 @@ Copy-on-write is de **enige** implementatie overal waar `rift` meelevert, onders
 
 Per run worden twee identiteiten bepaald, voordat er een proces start.
 
-**Git-auteurschap.** Commits die een agent maakt, worden _als de agent_ toegeschreven — `<Name> (agent) <agentId@agents.control-center.local>` in zowel `GIT_AUTHOR_*` als `GIT_COMMITTER_*` — en nooit als een mens. Het local-part is de UUID van de agent, niet de slug van zijn naam. De mens die het verzoek doet, krijgt een `Co-Authored-By:`-trailer, die in de omgeving wordt meegegeven en in de systeemprompt wordt geïnstrueerd. Een expliciete identiteit die de aanroeper instelt, wint altijd van beide.
+**Git-auteurschap.** Standaard gebruiken commits van agents `Control Center <hi@usectrl.dev>` (het GitHub-account `@usectrl`) voor zowel `GIT_AUTHOR_*` als `GIT_COMMITTER_*`; de aanvrager wordt vermeld in een `Co-Authored-By:`-trailer. Schakel agentvermelding uit via **Instellingen → Jij → Toeschrijving van commits** om alleen je eigen Git-identiteit te gebruiken. Een werkruimtebeheerder kan de vermelding afdwingen of uitschakelen via **Instellingen → Werkruimte → Algemeen**; die instelling gaat voor en schakelt de persoonlijke knop uit zonder je opgeslagen voorkeur te wijzigen. Wijzigingen gelden vanaf de volgende run. De eigen commit- en PR-vermeldingen van Claude Code zijn altijd uitgeschakeld. Expliciet door de aanroeper ingestelde Git-identiteitswaarden blijven voorgaan; de credentials voor de forge veranderen niet.
 
 **Codehost-identiteit.** De GitHub-inloggegevens van de run zijn altijd alleen die van de broker — een App-installatietoken met repo-scope, of de PAT-fallback uit de omgeving — nooit het eigen opgeslagen token van het aanvragende lid. `actingUserId` begrenst de PAT-fallback, zodat een lid dat niet de servereigenaar is niet het bereik van de server erft; het legt geen persoonlijk token over de agentomgeving heen.
 

@@ -59,6 +59,7 @@ class SandboxSocksProxy {
 
   Future<void> _handle(Socket client) async {
     final reader = _StreamReader(client);
+    var handedOff = false;
     try {
       // Greeting: VER, NMETHODS, METHODS...
       final greeting = await reader.read(2);
@@ -117,20 +118,21 @@ class SandboxSocksProxy {
       client.add(_reply(0x00)); // succeeded
       await client.flush();
 
-      // Forward anything we already buffered in the reader, then pipe.
+      // Keep the socket's single subscription alive when handing it from the
+      // handshake reader to the tunnel. Canceling does not make a Socket
+      // listenable again; it closes the read side and drops permitted traffic.
       final pending = reader.drain();
-      // RELEASE the handshake subscription before the tunnel listens.
-      // `client` is a single-subscription Socket: leaving the reader attached
-      // made `_pipeBidirectional`'s `listen` throw "Stream has already been
-      // listened to", which the outer catch turned into a closed client — so
-      // every SOCKS CONNECT tunnel died the moment it was granted.
-      await reader.close();
       if (pending.isNotEmpty) {
         upstream.add(pending);
       }
-      _pipeBidirectional(client, upstream);
+      _pipeBidirectional(client, upstream, reader);
+      handedOff = true;
     } catch (_) {
       await client.close();
+    } finally {
+      if (!handedOff) {
+        await reader.close();
+      }
     }
   }
 
@@ -144,36 +146,38 @@ class SandboxSocksProxy {
     return matchesAny(host, _network.allowedDomains);
   }
 
-  void _pipeBidirectional(Socket a, Socket b) {
+  void _pipeBidirectional(Socket a, Socket b, _StreamReader reader) {
     // Both `done` futures need a listener BEFORE any write: a peer that
     // resets mid-tunnel reports the failure there, and an unobserved `done`
     // error is an unhandled async exception that takes down the whole
     // process (see the identical fix in SandboxHttpProxy).
     unawaited(a.done.catchError((_) {}));
     unawaited(b.done.catchError((_) {}));
-    void forward(Socket from, Socket to) {
-      from.listen(
-        (chunk) {
+    void forward(StreamSubscription<List<int>> from, Socket to) {
+      from
+        ..onData((chunk) {
           try {
             to.add(chunk);
           } on Object {
             // Write side already gone.
           }
-        },
-        onError: (_) {},
-        onDone: () {
+        })
+        ..onError((Object _) {})
+        ..onDone(() {
           try {
             unawaited(to.close().catchError((_) {}));
           } on Object {
             // Already closed.
           }
-        },
-        cancelOnError: false,
-      );
+        });
     }
 
-    forward(a, b);
-    forward(b, a);
+    forward(reader._sub, b);
+    forward(b.listen(null), a);
+    if (reader._done) {
+      // EOF may already have arrived while the upstream connection opened.
+      unawaited(b.close().catchError((_) {}));
+    }
   }
 
   // VER, REP, RSV, ATYP=IPv4, BND.ADDR=0.0.0.0, BND.PORT=0
@@ -268,7 +272,7 @@ class _StreamReader {
     }
   }
 
-  Future<void> close() async => _sub.cancel();
+  Future<void> close() => _sub.cancel();
 }
 
 class _ReadRequest {

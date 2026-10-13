@@ -29,7 +29,6 @@ void main() {
       ],
     });
     expect(result.isError, isTrue);
-    expect(result.content.first.text, contains('different workspace'));
   });
 
   test('preserves identity across full-list writes', () async {

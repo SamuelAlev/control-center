@@ -52,7 +52,20 @@ trap 'rm -f "$tmp"' EXIT
   echo "https://github.com/SamuelAlev/control-center/blob/main/LICENSE."
   echo
   echo "This artifact additionally redistributes the components listed below."
-  echo "Each one's full license text is reproduced in this file."
+  echo "Each one's main license text is reproduced here."
+  if [ "$ROLE" = server ]; then
+    echo "Managed media binaries accompany the server under bin/media/"
+    echo "(media/ next to its executable). FFmpeg is a separate GPLv3 program,"
+    echo "not an LGPL-only build or a library linked into Control Center."
+    echo "media/ffmpeg-SOURCE.txt records exact publisher archives, checksums,"
+    echo "source/recipe revisions and the platform-specific FFmpeg/zlib versions."
+    echo "The publisher archives do not supply a complete corresponding-source"
+    echo "and dependency-notice bundle; provenance links alone are not such a bundle."
+    echo "Review and satisfy those redistribution obligations before public release."
+    echo "PDFium dependency notices are in media/pdfium-licenses/; SVG renderer"
+    echo "dependency notices and pinned manifests are in media/svg-licenses/."
+    echo
+  fi
   echo
   if [ "$ROLE" != server ]; then
     echo "Dart and Flutter package dependencies, and the Flutter engine's own"

@@ -62,6 +62,7 @@ class AgentAwaitingInputPublisher {
       kind: AgentInputKind.question,
       summary: request.question,
       spaceId: request.spaceId,
+      conversationId: request.conversationId,
       agentId: request.askedByAgentId,
       agentName: request.askedByName,
     );

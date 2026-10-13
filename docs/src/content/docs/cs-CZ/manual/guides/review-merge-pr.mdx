@@ -2,7 +2,7 @@
 title: Zkontrolujte a sloučte PR
 description: Otevři pracovní plochu PR, přečti diff, nech řádkové komentáře, odešli kontrolu a slouč.
 slug: cs-CZ/prirucka/navody/kontrola-a-slouceni-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Tenhle návod ukazuje, jak pull request zkontrolovat a sloučit.
@@ -12,19 +12,42 @@ Tenhle návod ukazuje, jak pull request zkontrolovat a sloučit.
 1. V postranním panelu přejdi na **Pull requesty**
 2. Vyber PR ze seznamu
 
-PR se otevře jako pracovní plocha se záložkami. Ve výchozím stavu je jich pět,
-v tomhle pořadí: **Přehled**, **Diff**, **Správa zdrojového kódu**, **Chat**
-a **Akce** (kontroly CI seskupené podle workflow). **Kontrola** — nejdřív
-průběh pipeline kontroly, potom artefakt, který zveřejnila, s lištou zjištění —
-mezi nimi schválně není. PR kontrolu nemá, dokud o ni někdo nepožádá, takže ji
-otevře **Zeptat se AI**. Terminál, editor jednoho souboru, vložený code-server
-a prohlížeč v aplikaci se otevírají na vyžádání. Záložky náhledu nasazení se
-přidají samy, jakmile se na PR najde URL náhledu. Rozložení záložek se pamatuje
-pro každý PR zvlášť.
+PR se otevře jako pracovní plocha se záložkami, ne jako jedna stránka. Ve
+výchozím stavu je jich pět, v tomhle pořadí: **Přehled**, **Diff**, **Správa
+zdrojového kódu**, **Chat** a **Akce** (kontroly CI seskupené podle workflow).
+**Kontrola** — nejdřív průběh pipeline kontroly, potom artefakt, který
+zveřejnila, s lištou zjištění — mezi nimi schválně není. PR kontrolu nemá, dokud
+o ni někdo nepožádá, takže ji otevře **Zeptat se AI**. Terminál, editor jednoho
+souboru, vložený code-server a prohlížeč v aplikaci se otevírají na vyžádání.
+Záložky náhledu nasazení se přidají samy, jakmile se na PR najde URL náhledu.
+Rozložení záložek se pamatuje pro každý PR zvlášť.
 
 Záložka Přehled nese metadata PR (autor, větev, štítky, přiřazení, reakce,
 commity, stav kontrol) a řádek akcí: obnovení, **Kontrola**, **Sloučit**,
 otevření v IDE a rozbalovací nabídka ⋯.
+
+### Otevři PR ze zásobníku prostoru
+
+Sekce **Obecné → Pull requesty** prostoru seskupuje propojené PR a PR spárované
+podle větve, a to podle repozitáře. Když je základní větev jednoho PR head větví
+předchozího PR, objeví se v rozbalovacím zásobníku. Hlavička určuje spodní PR,
+cílovou větev a počet; číslované řádky jdou od spodního PR (1) k vrcholu. Čísla
+popisují pořadí závislostí, ne připravenost ke sloučení.
+
+Každý řádek ukazuje název, číslo PR a stav. Najeď na řádek nebo ho zaměř a
+přečteš si celý název a názvy větví; kliknutím nebo stiskem Enter otevřeš
+pracovní plochu PR. Zaměř hlavičku zásobníku a stiskem Enter nebo mezerníku ji
+sbalíš nebo rozbalíš. Nesouvisející PR zůstávají zvlášť a neúplné nebo
+nejednoznačné vazby mezi větvemi se jako seřazený zásobník nezobrazují.
+
+Na záložce **Správa zdrojového kódu** otevře **Skládané pull requesty (N)**
+výběr publikovaných částí zásobníku, od spodní části nahoru. Každá položka
+ukazuje číslo PR, název části a pozici; přepnutá část je označená. Vyber položku
+a otevře se pracovní plocha jejího PR. **Publikovat sadu** se objeví, jen když
+doběhlo vyhledávání PR a aspoň jedna část zatím žádný PR nemá. Platí to i pro
+nabídku větve. PR vytvořené mimo Control Center se taky počítají jako
+publikované. Částečně publikované zásobníky nabízejí obě akce; práce v jedné
+větvi si nechává samostatné akce pro vytvoření a zobrazení PR.
 
 ## Přečti diff
 
@@ -32,9 +55,9 @@ Otevři záložku **Diff**. Uvidíš celý diff PR najednou a strom souborů, kt
 mezi nimi přecházíš.
 
 - Tlačítko nastavení v liště diffu přepíná **Rozdělený** (vedle sebe)
-  a **Jednotný** a zapíná **Zalamovat řádky** a **Ligatury písma kódu**.
-- Hlavičky hunků `@@` nahrazují prvky **Show N lines** / **Show end of file**.
-  Kliknutí doplní okolní kontext.
+  a **Jednotný** a přepíná **Zalamovat řádky** a **Ligatury písma kódu**.
+- Místo hlaviček hunků `@@` se nabízejí prvky **Show N lines** / **Show end of
+  file**, které po kliknutí doplní okolní kontext.
 - `j` / `k` přechází mezi soubory, `c` sbalí nebo rozbalí aktivní soubor, `t`
   vrátí postranní panel na strom souborů a `⌘F` hledá v celém diffu (`Enter` /
   `Shift+Enter` prochází shody).
@@ -48,8 +71,8 @@ zkopíruje surový zdroj, ne vykreslené značky diffu.
 
 ## Nech řádkové komentáře
 
-1. Klepni na okraj řádku kódu. Otevře se editor ukotvený k tomu řádku. Tlačítko
-   `+` v hlavičce souboru je komentář k celému souboru
+1. Klepnutím na okraj řádku kódu otevřeš editor ukotvený k tomu řádku, nebo
+   použij tlačítko `+` v hlavičce souboru pro komentář k celému souboru
 2. Napiš zpětnou vazbu v Markdownu
 3. Odešli
 
@@ -129,7 +152,8 @@ model kohort a os je ve
 ## Zkontroluj externí PR
 
 Control Center si bere i PR, které lidé otevřeli mimo aplikaci. Postup kontroly
-nahoře je stejný. Externí PR pozná služba, která pull requesty obchází.
+nahoře je stejný. Externí PR odhaluje služba, která pull requesty pravidelně
+dotazuje.
 
 ## Související návody
 

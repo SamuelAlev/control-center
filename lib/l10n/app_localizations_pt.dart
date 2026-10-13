@@ -12551,6 +12551,49 @@ class AppLocalizationsPt extends AppLocalizations {
       'Identidade, políticas e convenções compartilhadas por todos neste espaço de trabalho.';
 
   @override
+  String get settingsAgentAttributionTitle =>
+      'Atribuição de autoria dos commits';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Escolha se os commits do agente devem creditar o Control Center. Os administradores do espaço de trabalho podem substituir essa escolha para todos no espaço.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Crédito ao agente';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Creditar o Control Center nos commits do agente';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Quando ativado, o Control Center é o autor dos commits e você é incluído como coautor. Quando desativado, os commits usam sua identidade Git sem crédito ao agente.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Este espaço de trabalho substitui sua escolha pessoal. Sua preferência fica salva, mas não se aplica aqui.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Carregando configurações de atribuição de autoria…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Escolha se os commits do agente devem creditar o Control Center. A escolha do espaço de trabalho prevalece sobre a preferência pessoal de cada membro.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Usar a preferência de cada membro';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Sempre creditar o Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Nunca creditar o Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Modelos de notas e vozes salvas para as reuniões deste espaço de trabalho.';
 
@@ -14054,6 +14097,20 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Ticket';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Todas as pull requests deste espaço foram mescladas. Arquivar este espaço?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Não, manter este espaço';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Você não receberá essa pergunta novamente para este espaço.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'Todas as pull requests mescladas';
 
   @override
   String get archiveSpace => 'Arquivar espaço';

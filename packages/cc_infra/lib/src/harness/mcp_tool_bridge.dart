@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_harness/tools.dart';
 
 /// Media types a tool result's image piece may declare.
@@ -27,10 +28,9 @@ const int kMaxBridgedImageBase64Chars = 5 * 1024 * 1024;
 
 /// Adapts a CC [McpTool] into a [HarnessTool] for the built-in agent loop.
 ///
-/// Injects omitted `workspace_id` / `agent_id` / `conversation_id` from
-/// [HarnessToolContext] and hides those params from the model schema
-/// ([hiddenScopeParams]); MCP schema for external clients stays full;
-/// [_withScope] still reads the original schema for injection.
+/// Applies the same trusted scope contract as the external MCP dispatcher.
+/// Context-injected parameters can be hidden from the model schema through
+/// [hiddenScopeParams]; [_withScope] uses the original schema.
 class McpToolBridge extends HarnessTool {
   /// Creates an [McpToolBridge] wrapping [mcpTool].
   ///
@@ -104,8 +104,24 @@ class McpToolBridge extends HarnessTool {
     Map<String, dynamic> args,
     HarnessToolContext context,
   ) async {
-    final scoped = _withScope(args, context);
-    final result = await mcpTool.call(scoped);
+    final scope = McpCallScope(
+      workspaceId: context.workspaceId,
+      agentId: context.agentId,
+      conversationId: context.conversationId,
+      spaceId: context.spaceId,
+    );
+    final missingScope = scope.firstMissing(mcpTool.requiredScopeKeys);
+    if (missingScope != null) {
+      return HarnessToolResult(
+        content: '$name requires a session $missingScope.',
+        isError: true,
+      );
+    }
+    final scoped = _withScope(args, scope);
+    final result = await mcpTool.call(
+      scoped,
+      abandoned: context.cancel?.whenCancelled,
+    );
     final text = result.content
         .where((c) => c.text.isNotEmpty)
         .map((c) => c.text)
@@ -158,56 +174,24 @@ class McpToolBridge extends HarnessTool {
 
   Map<String, dynamic> _withScope(
     Map<String, dynamic> args,
-    HarnessToolContext context,
+    McpCallScope scope,
   ) {
+    final scoped = scope.apply(
+      args,
+      mcpTool.inputSchema,
+      force: mcpTool.forcedScopeKeys,
+    );
     final props = mcpTool.inputSchema['properties'];
-    if (props is! Map<String, dynamic>) {
-      return args;
-    }
-    final scoped = Map<String, dynamic>.from(args);
-    final wsId = context.workspaceId;
-    // workspace_id is the isolation boundary: FORCE it to the run's workspace,
-    // overriding any value the model supplied. A harness agent must never be
-    // able to name a different workspace than the one it runs in (a
-    // model-supplied foreign id would otherwise be an isolation escape).
-    if (wsId != null && wsId.isNotEmpty && props.containsKey('workspace_id')) {
-      scoped['workspace_id'] = wsId;
-    }
-    final agentId = context.agentId;
-    if (agentId != null &&
-        agentId.isNotEmpty &&
-        props.containsKey('agent_id') &&
-        (scoped['agent_id'] == null || scoped['agent_id'] == '')) {
-      scoped['agent_id'] = agentId;
-    }
-    // Delegation identities name the caller, never an arbitrary target.
-    // Overwrite model-supplied values so a harness run cannot borrow another
-    // agent's autonomy or budget envelope.
-    if (agentId != null && agentId.isNotEmpty) {
+    final agentId = scope.agentId;
+    // Delegation identities always name the caller, not an arbitrary target.
+    if (props is Map<String, dynamic> &&
+        agentId != null &&
+        agentId.isNotEmpty) {
       for (final callerId in const ['from_agent_id', 'delegated_by_agent_id']) {
         if (props.containsKey(callerId)) {
           scoped[callerId] = agentId;
         }
       }
-    }
-    final convId = context.conversationId;
-    if (convId != null &&
-        convId.isNotEmpty &&
-        props.containsKey('conversation_id') &&
-        (scoped['conversation_id'] == null ||
-            scoped['conversation_id'] == '')) {
-      scoped['conversation_id'] = convId;
-    }
-    // space_id comes from the run's SPACE, never from its conversation id. A
-    // conversation owns its own uuid, so filling a space-scoped argument from
-    // it names no space: worktree-scoped tools failed their ownership check
-    // on every call.
-    final spaceId = context.spaceId;
-    if (spaceId != null &&
-        spaceId.isNotEmpty &&
-        props.containsKey('space_id') &&
-        (scoped['space_id'] == null || scoped['space_id'] == '')) {
-      scoped['space_id'] = spaceId;
     }
     return scoped;
   }

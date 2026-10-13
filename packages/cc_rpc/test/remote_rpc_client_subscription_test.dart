@@ -305,6 +305,100 @@ void main() {
     });
 
     test(
+      'event seed and repeated deltas survive an acknowledgment race',
+      () async {
+        final channel = _FakeChannel();
+        final client = RemoteRpcClient(channel)..start();
+        addTearDown(client.close);
+        var answer = '';
+        final sub = client
+            .subscribeEvents('transcript.events', const {})
+            .listen((event) {
+              if (event['seed'] case final String seed) {
+                answer = seed;
+              }
+              if (event['delta'] case final String delta) {
+                answer += delta;
+              }
+            });
+        await _flush();
+        for (final data in [
+          {'seed': 'Ready'},
+          {'delta': '!'},
+          {'delta': '!'},
+        ]) {
+          channel.deliver({
+            'jsonrpc': '2.0',
+            'method': RpcMethods.subSnapshot,
+            'params': {'subscriptionId': 'events', 'full': false, 'data': data},
+          });
+        }
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'id': channel.lastRequestId(RpcMethods.subscribe),
+          'result': {'subscriptionId': 'events'},
+        });
+        await _flush();
+        expect(answer, 'Ready!!');
+        await sub.cancel();
+      },
+    );
+
+    test(
+      'late event listeners get an independent seed, not the last delta',
+      () async {
+        final channel = _FakeChannel();
+        final client = RemoteRpcClient(channel)..start();
+        addTearDown(client.close);
+        final first = client
+            .subscribeEvents('transcript.events', const {})
+            .listen((_) {});
+        await _flush();
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'id': channel.lastRequestId(RpcMethods.subscribe),
+          'result': {'subscriptionId': 'first'},
+        });
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'method': RpcMethods.subSnapshot,
+          'params': {
+            'subscriptionId': 'first',
+            'full': false,
+            'data': {'delta': 'trailing text'},
+          },
+        });
+        await _flush();
+        final values = <Map<String, dynamic>>[];
+        final second = client
+            .subscribeEvents('transcript.events', const {})
+            .listen(values.add);
+        await _flush();
+        expect(values, isEmpty);
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'id': channel.lastRequestId(RpcMethods.subscribe),
+          'result': {'subscriptionId': 'second'},
+        });
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'method': RpcMethods.subSnapshot,
+          'params': {
+            'subscriptionId': 'second',
+            'full': false,
+            'data': {'seed': 'complete answer including trailing text'},
+          },
+        });
+        await _flush();
+        expect(values, [
+          {'seed': 'complete answer including trailing text'},
+        ]);
+        await first.cancel();
+        await second.cancel();
+      },
+    );
+
+    test(
       'an error response to a cancelled subscribe sends no unsubscribe',
       () async {
         final channel = _FakeChannel();
@@ -518,6 +612,72 @@ void main() {
         await _flush();
       },
     );
+
+    test('a timed-out queued mutation is never sent later', () async {
+      final barrier = Completer<void>();
+      final channel = _FakeChannel()..sendBarrier = barrier.future;
+      final client = RemoteRpcClient(channel)..start();
+      addTearDown(() async {
+        if (!barrier.isCompleted) {
+          barrier.complete();
+        }
+        await client.close();
+        await channel.close();
+      });
+      final first = client.call('tickets.list', const {});
+      await _flush();
+      await expectLater(
+        client.call('prefs.set', const {
+          'key': 'space_folders.ws-1',
+          'value': '[]',
+        }, timeout: Duration.zero),
+        throwsA(isA<TimeoutException>()),
+      );
+      barrier.complete();
+      channel.deliver({
+        'jsonrpc': '2.0',
+        'id': channel.lastRequestId(RpcMethods.repoCall),
+        'result': {'data': <String, dynamic>{}},
+      });
+      await first;
+      await _flush();
+      expect(
+        channel.sent.map((frame) => (frame['params'] as Map)['op']),
+        ['tickets.list'],
+      );
+    });
+
+    test('a cancelled queued subscription never reaches the server', () async {
+      final barrier = Completer<void>();
+      final channel = _FakeChannel()..sendBarrier = barrier.future;
+      final client = RemoteRpcClient(channel)..start();
+      addTearDown(() async {
+        if (!barrier.isCompleted) {
+          barrier.complete();
+        }
+        await client.close();
+        await channel.close();
+      });
+      final first = client.call('tickets.list', const {});
+      await _flush();
+      final sub = client
+          .subscribe('tickets.watchForWorkspace', const {})
+          .listen((_) {});
+      await _flush();
+      await sub.cancel();
+      barrier.complete();
+      channel.deliver({
+        'jsonrpc': '2.0',
+        'id': channel.lastRequestId(RpcMethods.repoCall),
+        'result': {'data': <String, dynamic>{}},
+      });
+      await first;
+      await _flush();
+      expect(
+        channel.sent.map((frame) => frame['method']),
+        [RpcMethods.repoCall],
+      );
+    });
 
     test(
       'a request that times out throws TimeoutException and clears pending',

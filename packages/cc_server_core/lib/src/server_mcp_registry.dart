@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
+import 'package:cc_domain/core/domain/ports/media_render_port.dart';
 import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
@@ -61,6 +62,7 @@ McpToolRegistry buildServerMcpRegistry({
   // is a tool the catalogue does not contain — the run says so and guesses.
   // Same instance the harness tool and `messaging.updateMessage` share.
   required AgentQuestionPort agentQuestions,
+  required MediaRenderPort mediaRenderer,
   // Per-conversation todo lists — the [TodoWriteTool]'s persistence backend.
   required TodoRepository todoRepository,
   // Pipeline structured-output contract: [SubmitOutputTool] resolves the
@@ -151,6 +153,7 @@ McpToolRegistry buildServerMcpRegistry({
   );
 
   final registry = McpToolRegistry([
+    RenderMediaTool(renderer: mediaRenderer),
     // Newsfeed (per-user; RSS fetched + persisted server-side; agents ride
     // the server owner's feeds).
     ListFeedsTool(repository: newsfeedRepository, userId: newsfeedOwnerUserId),

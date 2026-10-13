@@ -513,6 +513,77 @@ void main() {
     });
 
     test(
+      'event subscriptions reseed after failover without losing early deltas',
+      () async {
+        final first = scriptedConnection();
+        final second = scriptedConnection();
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: resolver([first.connection, second.connection]),
+        );
+        addTearDown(
+          () =>
+              sup.close().timeout(const Duration(seconds: 1), onTimeout: () {}),
+        );
+        await sup.start();
+        final resilient = ResilientRpcClient(sup);
+        addTearDown(resilient.close);
+        var rendered = '';
+        final sub = resilient
+            .subscribeEvents('messaging.watchSpaceTurns', const {
+              'spaceId': 'space',
+            })
+            .listen((event) {
+              if (event['seed'] case final String seed) {
+                rendered = seed;
+              }
+              if (event['delta'] case final String delta) {
+                rendered += delta;
+              }
+            });
+        addTearDown(sub.cancel);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+
+        for (final (connection, subscriptionId, seed) in [
+          (first, 'events-1', 'Before reconnect'),
+          (second, 'events-2', 'After reconnect'),
+        ]) {
+          if (connection == second) {
+            await first.server.close();
+            await first.sub.cancel();
+            await Future<void>.delayed(const Duration(milliseconds: 200));
+          }
+          // The initial seed and deltas may precede the subscribe response.
+          for (final (revision, data) in [
+            (1, {'seed': seed}),
+            (2, {'delta': '!'}),
+            (3, {'delta': '!'}),
+          ]) {
+            await connection.server.send({
+              'jsonrpc': '2.0',
+              'method': RpcMethods.subSnapshot,
+              'params': {
+                'subscriptionId': subscriptionId,
+                'rev': revision,
+                'full': false,
+                'data': data,
+              },
+            });
+          }
+          await connection.server.send({
+            'jsonrpc': '2.0',
+            'id': connection.subIdFor(RpcMethods.subscribe),
+            'result': {'subscriptionId': subscriptionId},
+          });
+          await Future<void>.delayed(const Duration(milliseconds: 30));
+          expect(rendered, '$seed!!');
+        }
+      },
+    );
+
+    test(
       'a rejected subscribe on a live session is not re-issued (no storm)',
       () async {
         final c = scriptedConnection();

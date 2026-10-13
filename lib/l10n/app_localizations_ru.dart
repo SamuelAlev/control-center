@@ -12653,6 +12653,47 @@ class AppLocalizationsRu extends AppLocalizations {
       'Идентичность, политика и соглашения, общие для всех в этом рабочем пространстве.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Указание авторства коммитов';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Выберите, указывать ли Control Center в коммитах агента. Администраторы рабочего пространства могут переопределить этот выбор для всех его участников.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Указание агента в авторах';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Указывать Control Center в коммитах агента';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Когда включено, автором коммитов указывается Control Center, а вы — соавтором. Когда выключено, коммиты используют вашу Git-идентичность без упоминания агента.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Настройка рабочего пространства имеет приоритет над вашим выбором. Ваше предпочтение сохранено, но здесь не действует.';
+
+  @override
+  String get settingsAgentAttributionLoading => 'Загрузка настроек авторства…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Выберите, указывать ли Control Center в коммитах агента. Настройка рабочего пространства имеет приоритет над личным предпочтением каждого участника.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Использовать предпочтение каждого участника';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Всегда указывать Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Никогда не указывать Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Шаблоны заметок и сохранённые голоса для встреч в этом рабочем пространстве.';
 
@@ -14163,6 +14204,20 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Тикет';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Все запросы на слияние в этом пространстве объединены. Архивировать пространство?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Нет, сохранить пространство';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Вас больше не спросят об этом пространстве.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'Все запросы на слияние объединены';
 
   @override
   String get archiveSpace => 'Архивировать пространство';

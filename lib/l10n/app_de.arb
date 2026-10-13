@@ -6783,6 +6783,17 @@
   "settingsAboutDescription": "Build-Identität und Updates.",
   "settingsDiagnosticsDescription": "Isolation, Indizierung, Synchronisierung, Logging und Absturzberichte dieser Installation.",
   "settingsWorkspaceGeneralDescription": "Identität, Richtlinien und Konventionen, die alle in diesem Arbeitsbereich teilen.",
+  "settingsAgentAttributionTitle": "Commit-Zuordnung",
+  "settingsAgentAttributionDescription": "Lege fest, ob Agenten-Commits Control Center als Urheber nennen. Administratoren des Arbeitsbereichs können diese Auswahl für alle Mitglieder überschreiben.",
+  "settingsAgentCoauthorSection": "Agenten als Urheber nennen",
+  "settingsAgentCoauthorTitle": "Control Center bei Agenten-Commits nennen",
+  "settingsAgentCoauthorDescription": "Wenn aktiviert, ist Control Center der Autor der Commits und du wirst als Mitautor genannt. Wenn deaktiviert, verwenden die Commits deine Git-Identität ohne Nennung des Agenten.",
+  "settingsAgentCoauthorWorkspaceOverride": "Dieser Arbeitsbereich überschreibt deine persönliche Auswahl. Deine Einstellung bleibt gespeichert, gilt hier aber nicht.",
+  "settingsAgentAttributionLoading": "Einstellungen zur Commit-Zuordnung werden geladen…",
+  "settingsWorkspaceAgentCoauthorDescription": "Lege fest, ob Agenten-Commits Control Center als Urheber nennen. Die Auswahl des Arbeitsbereichs hat Vorrang vor der persönlichen Einstellung jedes Mitglieds.",
+  "settingsWorkspaceAgentCoauthorInherit": "Einstellung jedes Mitglieds verwenden",
+  "settingsWorkspaceAgentCoauthorAlways": "Control Center immer nennen",
+  "settingsWorkspaceAgentCoauthorNever": "Control Center nie nennen",
   "settingsWorkspaceMeetingsDescription": "Notizvorlagen und gespeicherte Stimmen für Meetings in diesem Arbeitsbereich.",
   "settingsWorkspacePolicyLabel": "Arbeitsbereichs-Richtlinien",
   "settingsWorkspacePolicyDescription": "Gilt für jedes Mitglied und jeden Agenten in diesem Arbeitsbereich.",
@@ -7478,6 +7489,10 @@
   "@reviewKindTicket": {
     "description": "Review finding kind: a ticket spawned from the review"
   },
+  "spaceAllPrsMerged": "Alle Pull Requests in diesem Bereich wurden gemergt. Diesen Bereich archivieren?",
+  "spaceKeepAfterMerge": "Nein, diesen Bereich behalten",
+  "spaceKeepAfterMergeHint": "Für diesen Bereich wirst du nicht erneut gefragt.",
+  "spaceAllPrsMergedLabel": "Alle Pull Requests gemergt",
   "archiveSpace": "Bereich archivieren",
   "@archiveSpace": {
     "description": "Archive a space (soft hide, restorable) — row menu, header button and tooltip"

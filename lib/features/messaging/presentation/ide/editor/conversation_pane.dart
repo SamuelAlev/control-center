@@ -436,8 +436,10 @@ class SpaceProvisioningBanner extends ConsumerWidget {
               CcButton(
                 variant: CcButtonVariant.secondary,
                 size: CcButtonSize.sm,
-                onPressed: () =>
-                    ref.read(retrySpaceProvisioningProvider)(spaceId),
+                onPressed: () => ref.read(retrySpaceProvisioningProvider)(
+                  ref.requireWorkspaceId(),
+                  spaceId,
+                ),
                 child: Text(l10n.retry),
               ),
           ],
@@ -515,6 +517,7 @@ class SpaceProvisioningBanner extends ConsumerWidget {
     AppLocalizations l10n,
   ) async {
     final cancel = ref.read(cancelSpaceProvisioningProvider);
+    final workspaceId = ref.requireWorkspaceId();
     final confirmed = await showCcConfirmDialog(
       context: context,
       title: l10n.stopWorkspacePrep,
@@ -524,7 +527,7 @@ class SpaceProvisioningBanner extends ConsumerWidget {
       danger: true,
     );
     if (confirmed) {
-      await cancel(spaceId);
+      await cancel(workspaceId, spaceId);
     }
   }
 }

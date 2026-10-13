@@ -12636,6 +12636,47 @@ class AppLocalizationsCs extends AppLocalizations {
       'Identita, politika a konvence sdílené všemi v tomto pracovním prostoru.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Připisování autorství commitů';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Zvolte, zda mají commity agentů uvádět Control Center jako autora. Správci pracovního prostoru mohou tuto volbu přepsat pro všechny členy.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Uvedení agenta jako autora';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Uvádět Control Center u commitů agentů';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Při zapnutí je autorem commitů Control Center a vaše jméno je uvedeno jako spoluautor. Při vypnutí se commity vytvářejí pod vaší identitou Git bez uvedení agenta.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Nastavení tohoto pracovního prostoru má přednost před vaší osobní volbou. Vaše preference zůstává uložená, ale tady se neuplatní.';
+
+  @override
+  String get settingsAgentAttributionLoading => 'Načítání nastavení autorství…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Zvolte, zda mají commity agentů uvádět Control Center jako autora. Volba pracovního prostoru má přednost před osobní preferencí každého člena.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Použít preferenci každého člena';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Vždy uvádět Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Nikdy neuvádět Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Šablony poznámek a uložené hlasy pro schůzky v tomto pracovním prostoru.';
 
@@ -14141,6 +14182,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Ticket';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Všechny požadavky na začlenění v tomto prostoru byly sloučeny. Chcete tento prostor archivovat?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Ne, ponechat tento prostor';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Na tento prostor se vás už znovu ptát nebudeme.';
+
+  @override
+  String get spaceAllPrsMergedLabel =>
+      'Všechny požadavky na začlenění sloučeny';
 
   @override
   String get archiveSpace => 'Archivovat prostor';

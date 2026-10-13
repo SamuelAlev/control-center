@@ -2,7 +2,7 @@
 title: Vòng đời điều phối agent
 description: Điều gì diễn ra giữa lúc một tin nhắn đến và lúc một log lượt chạy khép lại — việc lắp ghép prompt, worktree, danh tính, điều gì giới hạn một lượt chạy và cách ghi lại kết quả của nó một cách trung thực.
 slug: vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Một lần điều phối là gì
@@ -52,7 +52,7 @@ Copy-on-write là cách hiện thực **duy nhất** ở bất cứ đâu `rift`
 
 Hai danh tính được xác định cho mỗi lượt chạy, trước khi bất kỳ tiến trình nào khởi chạy.
 
-**Quyền tác giả Git.** Các commit do agent tạo được ghi tác giả _là chính agent_ — `<Name> (agent) <agentId@agents.control-center.local>` trong cả `GIT_AUTHOR_*` và `GIT_COMMITTER_*` — không bao giờ mạo danh con người. Phần local là UUID của agent, không phải slug tên của nó. Người yêu cầu được ghi công bằng một trailer `Co-Authored-By:`, được mang trong môi trường và hướng dẫn trong prompt hệ thống. Một danh tính do bên gọi đặt rõ ràng luôn thắng cả hai.
+**Quyền tác giả Git.** Theo mặc định, các commit của agent dùng `Control Center <hi@usectrl.dev>` (tài khoản GitHub `@usectrl`) trong cả `GIT_AUTHOR_*` và `GIT_COMMITTER_*`, còn người yêu cầu được ghi nhận trong trailer `Co-Authored-By:`. Tắt ghi công cho agent tại **Cài đặt → Bạn → Ghi công trong commit** để chỉ dùng danh tính Git của bạn. Quản trị viên không gian làm việc có thể buộc bật hoặc tắt việc ghi công tại **Cài đặt → Không gian làm việc → Chung**; thiết lập đó được ưu tiên và vô hiệu hóa công tắc cá nhân mà không thay đổi tùy chọn đã lưu. Thay đổi có hiệu lực từ lần chạy tiếp theo. Dòng ghi công riêng của Claude Code trong commit và PR luôn bị tắt. Các giá trị danh tính Git do bên gọi đặt rõ ràng vẫn được ưu tiên; thông tin xác thực của dịch vụ lưu trữ Git không bị ảnh hưởng.
 
 **Danh tính forge.** Thông tin xác thực GitHub của lượt chạy luôn chỉ là của broker — một token cài đặt App giới hạn theo repo, hoặc phương án dự phòng PAT từ môi trường — không bao giờ là token đã lưu của chính thành viên yêu cầu. `actingUserId` giới hạn phương án dự phòng PAT để một thành viên không phải chủ máy chủ không thừa hưởng phạm vi của máy chủ; nó không phủ một token cá nhân lên môi trường của agent.
 

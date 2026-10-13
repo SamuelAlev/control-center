@@ -10,6 +10,7 @@ REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 source "$REPO_ROOT/scripts/lib/common.sh"
 source "$REPO_ROOT/scripts/lib/artifact_names.sh"
+source "$REPO_ROOT/scripts/lib/media.sh"
 
 VERSION="${1:-${VERSION:?VERSION is required}}"
 RUNNER_TEMP="${RUNNER_TEMP:-$(mktemp -d)}"
@@ -56,6 +57,7 @@ rm -rf "$APP/Contents/Resources/cc_server"
 mkdir -p "$APP/Contents/Resources/cc_server"
 cp -R "$CC_SERVER_BUNDLE/." "$APP/Contents/Resources/cc_server/"
 stage_natives "$NATIVES" "$APP/Contents/Resources/cc_server/Frameworks" dylib
+cc_media_stage "$NATIVES" "$APP/Contents/Resources/cc_server/bin/media" macos
 
 # 1c. Verify both native sets before signing. Every native is required (there is
 # no degraded mode), so a bundle that is missing one either crashes the desktop's
@@ -65,6 +67,7 @@ stage_natives "$NATIVES" "$APP/Contents/Resources/cc_server/Frameworks" dylib
 # test/tooling/native_matrix_test.dart.
 bash scripts/release/verify_natives.sh "$APP/Contents/Frameworks" macos desktop
 bash scripts/release/verify_natives.sh "$APP/Contents/Resources/cc_server/Frameworks" macos server
+cc_media_verify "$APP/Contents/Resources/cc_server/bin/media" macos
 
 # 1b. Legal notices, INSIDE the bundle so they travel with a copied .app.
 #
@@ -73,6 +76,8 @@ bash scripts/release/verify_natives.sh "$APP/Contents/Resources/cc_server/Framew
 install -m644 LICENSE "$APP/Contents/Resources/LICENSE"
 bash scripts/release/gen_third_party_licenses.sh desktop \
   "$APP/Contents/Resources/THIRD-PARTY-LICENSES.txt"
+bash scripts/release/gen_third_party_licenses.sh server \
+  "$APP/Contents/Resources/cc_server/THIRD-PARTY-LICENSES.txt"
 
 # 2. Sign — Developer ID + hardened runtime, inside-out.
 #
@@ -180,6 +185,12 @@ done
 for f in "$APP/Contents/Resources/cc_server/Frameworks/"*.dylib \
          "$APP/Contents/Resources/cc_server/lib/"*.dylib; do
   echo "  sign cc_server/$(basename "$f")"; sign "$f"
+done
+for f in "$APP/Contents/Resources/cc_server/bin/media/ffmpeg" \
+         "$APP/Contents/Resources/cc_server/bin/media/ffprobe" \
+         "$APP/Contents/Resources/cc_server/bin/media/cc_pdf_render" \
+         "$APP/Contents/Resources/cc_server/bin/media/libpdfium.dylib"; do
+  echo "  sign cc_server/bin/media/$(basename "$f")"; sign "$f"
 done
 # The Dart AOT executable maps its embedded snapshot as executable memory, so
 # under the hardened runtime it MUST carry the allow-unsigned-executable-memory

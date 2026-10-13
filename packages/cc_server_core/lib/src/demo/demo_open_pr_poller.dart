@@ -21,7 +21,8 @@ class _OfflineOpenPrFetchPort implements OpenPrFetchPort {
   Future<OpenPrFetchResult> fetchGroups(
     List<Repo> repos, {
     String? workspaceId,
-  }) async => (groups: const <OpenPrGroup>[], resolvedRepoIds: const <String>{});
+  }) async =>
+      (groups: const <OpenPrGroup>[], resolvedRepoIds: const <String>{});
 
   @override
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
@@ -33,6 +34,13 @@ class _OfflineOpenPrFetchPort implements OpenPrFetchPort {
   Future<bool?> wasMerged(
     Repo repo,
     int prNumber, {
+    String? workspaceId,
+  }) async => null;
+
+  @override
+  Future<List<PullRequest>?> fetchBranchHistory(
+    Repo repo,
+    String branch, {
     String? workspaceId,
   }) async => null;
 

@@ -186,6 +186,7 @@ import 'package:cc_server_core/src/catalog/model_control_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
 import 'package:cc_server_core/src/catalog/space_stack_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_port_ops.dart';
+import 'package:cc_server_core/src/catalog/terminal_watch_queries.dart';
 import 'package:cc_server_core/src/catalog/worktree_branch_ops.dart';
 import 'package:cc_server_core/src/collab/checker_listener.dart';
 import 'package:cc_server_core/src/collab/takeover_service.dart';
@@ -1260,13 +1261,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     await fileCatalog?.claim(ctx.workspaceId!, ctx.userId, files);
   }
 
-  // Open PR(s) from this conversation — matched by head branch, off the
-  // open-PR poller's snapshot. One space worktree can carry a stack of
-  // branches; every recorded layer matches, not only the one checked out.
-  // Branch is the join (`review_spaces` runs the other way via
-  // `pr.ensureSpace`). The worktrees are re-read per call, so a checkout
-  // since the last answer is picked up.
-  Future<List<Map<String, dynamic>>> spaceBranchPrMatches(
+  // Every PR for this space's worktree and recorded stack branches. Exhaustive
+  // head-ref history is cached per workspace/repo/branch and reconciled with
+  // poller transitions; errors must leave `complete` false, never look merged.
+  Future<Map<String, dynamic>> spaceBranchPrMatches(
     OpenPrPollingService poller,
     String workspaceId,
     String spaceId,
@@ -1276,16 +1274,21 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       spaceId,
     );
     if (worktrees.isEmpty) {
-      return [];
+      return {'matches': <Map<String, dynamic>>[], 'complete': true};
     }
     final linked = await workspaceRepository
         .watchReposForWorkspace(workspaceId)
         .first;
     final reposById = {for (final r in linked) r.id: r};
     final matches = <Map<String, dynamic>>[];
+    var complete = true;
     for (final worktree in worktrees) {
       final repo = reposById[worktree.repoId];
-      if (repo == null || !repo.hasForgeRemote) {
+      if (repo == null) {
+        complete = false;
+        continue;
+      }
+      if (!repo.hasForgeRemote) {
         continue;
       }
       final heads = pullRequestHeadBranches(
@@ -1299,23 +1302,23 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               )).map((entry) => entry.branch),
       );
       for (final branch in heads) {
-        final pr = await poller.openPrForHeadBranch(
+        final found = await poller.prsForHeadBranch(
           workspaceId: workspaceId,
-          repoFullName: repo.fullName,
+          repo: repo,
           branch: branch,
         );
-        if (pr == null) {
-          continue;
+        complete = complete && found.complete;
+        for (final pr in found.prs) {
+          matches.add({
+            'repo_id': repo.id,
+            'repo_full_name': repo.fullName,
+            'branch': branch,
+            'pull_request': pr,
+          });
         }
-        matches.add({
-          'repo_id': repo.id,
-          'repo_full_name': repo.fullName,
-          'branch': branch,
-          'pull_request': pr,
-        });
       }
     }
-    return matches;
+    return {'matches': matches, 'complete': complete};
   }
 
   Future<void> assertConversationOwned(
@@ -10954,13 +10957,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
           await assertSpaceOwned(ctx.workspaceId!, spaceId);
-          return {
-            'matches': await spaceBranchPrMatches(
-              openPrPoller,
-              ctx.workspaceId!,
-              spaceId,
-            ),
-          };
+          return spaceBranchPrMatches(
+            openPrPoller,
+            ctx.workspaceId!,
+            spaceId,
+          );
         },
       ),
     // The SERVER's authenticated GitHub user (global — not workspace data). The
@@ -14492,6 +14493,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (streamRegistry != null)
       WatchQuery(
         name: 'messaging.watchSpaceTurns',
+        isEventStream: true,
         handler: (ctx) async* {
           final spaceId = ctx.args['space_id'] as String?;
           if (spaceId == null) {
@@ -14514,6 +14516,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (streamRegistry != null)
       WatchQuery(
         name: 'agent_run_log.watchRunTranscript',
+        isEventStream: true,
         handler: (ctx) async* {
           final runId = ctx.args['run_id'] as String?;
           if (runId == null) {
@@ -15535,22 +15538,22 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         await assertSpaceOwned(ctx.workspaceId!, spaceId);
         final poller = openPrPoller;
         if (poller == null) {
-          yield {'matches': <Map<String, dynamic>>[]};
+          yield {'matches': <Map<String, dynamic>>[], 'complete': false};
           return;
         }
         String? last;
         await for (final _ in poller.watchSnapshotChanges(ctx.workspaceId!)) {
-          final matches = await spaceBranchPrMatches(
+          final result = await spaceBranchPrMatches(
             poller,
             ctx.workspaceId!,
             spaceId,
           );
-          final encoded = jsonEncode(matches);
+          final encoded = jsonEncode(result);
           if (encoded == last) {
             continue;
           }
           last = encoded;
-          yield {'matches': matches};
+          yield result;
         }
       },
     ),
@@ -15874,43 +15877,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             );
       },
     ),
-    // Streams a session's raw PTY output, base64-framed per emission, to the
-    // thin client. Present only when the host wired a [TerminalSessionPort]
-    // (guard promotes `terminals` non-null); a headless server leaves it absent
-    // alongside the `terminal.*` ops. The port validates that `session_id`
-    // belongs to the bound workspace before yielding any bytes (the isolation
-    // boundary) — a foreign/missing session surfaces a `sub/error` immediately.
-    if (terminals != null) ...[
-      WatchQuery(
-        name: 'terminal.output',
-        handler: (ctx) {
-          final sessionId = ctx.args['session_id'] as String?;
-          if (sessionId == null) {
-            throw const NotFoundException('Missing session_id');
-          }
-          return terminals
-              .output(workspaceId: ctx.workspaceId!, sessionId: sessionId)
-              .map((bytes) => {'chunk': base64Encode(bytes)});
-        },
-      ),
-      // The session's foreground-process title (`{title}`; '' = shell at its
-      // prompt) — the server polls the PTY's foreground process group so the
-      // client tab can say "pnpm dev serve" while it runs, ghostty-style, even
-      // when the shell never emits an OSC 0/2 title. Current title replays on
-      // subscribe; same workspace-ownership validation as `terminal.output`.
-      WatchQuery(
-        name: 'terminal.titles',
-        handler: (ctx) {
-          final sessionId = ctx.args['session_id'] as String?;
-          if (sessionId == null) {
-            throw const NotFoundException('Missing session_id');
-          }
-          return terminals
-              .titles(workspaceId: ctx.workspaceId!, sessionId: sessionId)
-              .map((title) => {'title': title});
-        },
-      ),
-    ],
+    if (terminals != null) ...buildTerminalWatchQueries(terminals),
     // Status, display size and who holds control, pushed on every change. The
     // FRAMES do not come through here — video over a JSON-RPC subscription
     // would put base64 in the same lane as every other message. They ride the

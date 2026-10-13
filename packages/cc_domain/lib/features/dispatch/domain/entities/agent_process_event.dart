@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/value_objects/llm_call_purpose.dart';
+import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
@@ -214,6 +215,7 @@ class ToolResultEvent extends AgentProcessEvent {
     this.isError = false,
     this.isPartial = false,
     this.images = const [],
+    this.attachments = const [],
     super.timestamp,
   }) : content = outputs;
 
@@ -243,6 +245,9 @@ class ToolResultEvent extends AgentProcessEvent {
   /// base64, so it stays cheap to fan out over the event bus and the relay.
   final List<ToolImageRef> images;
 
+  /// Original read media, externalized before publishing the final result.
+  final List<MessageAttachment> attachments;
+
   @override
   Map<String, dynamic>? get metadata => {
     'toolCallId': toolCallId,
@@ -251,6 +256,10 @@ class ToolResultEvent extends AgentProcessEvent {
     'isError': isError,
     if (isPartial) 'partial': true,
     if (images.isNotEmpty) 'images': [for (final i in images) i.toJson()],
+    if (attachments.isNotEmpty)
+      'attachments': [
+        for (final attachment in attachments) attachment.toJson(),
+      ],
   };
 }
 

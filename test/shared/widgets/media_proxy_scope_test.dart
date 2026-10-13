@@ -40,6 +40,34 @@ void main() {
         expect(uri.queryParameters['s'], isNotEmpty);
       }
     });
+    test('blob originals use the same signed ref with attachment disposition', () {
+      final c = config();
+      final hash = 'a' * 64;
+      final inline = Uri.parse(c.blobUrl(
+        workspaceId: 'workspace',
+        ref: 'blob:sha256:$hash',
+      ));
+      final downloaded = Uri.parse(c.blobUrl(
+        workspaceId: 'workspace',
+        ref: 'blob:sha256:$hash',
+        downloadName: 'drawing.svg',
+      ));
+      expect(downloaded.path, inline.path);
+      expect(downloaded.queryParameters['s'], inline.queryParameters['s']);
+      expect(downloaded.queryParameters['download'], '1');
+      expect(downloaded.queryParameters['name'], 'drawing.svg');
+      expect(RemoteControlCrypto.verifyProxyTarget(
+        'blob:workspace:$hash',
+        psk,
+        downloaded.queryParameters['s']!,
+      ), isTrue);
+      expect(c.blobUrl(
+        workspaceId: 'workspace',
+        ref: '/tmp/drawing.svg',
+        downloadName: 'drawing.svg',
+      ), isEmpty);
+    });
+
   });
 
   group('MediaProxyConfig.resolve', () {

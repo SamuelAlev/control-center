@@ -1,0 +1,17 @@
+[package]
+name = "cc_svg_render"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "MIT"
+description = "Application-owned SVG to PNG media preview helper"
+
+[dependencies]
+resvg = "=0.48.1"
+roxmltree = "=0.21.1"
+imagesize = { version = "=0.15.0", default-features = false, features = ["png", "jpeg"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

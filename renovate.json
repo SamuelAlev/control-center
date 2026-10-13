@@ -326,6 +326,33 @@
       "extractVersionTemplate": "^v(?<version>.*)$"
     },
     {
+      "description": "Managed FFmpeg version in pinned publisher binaries",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "FFMPEG_MEDIA_VERSION=(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)"
+      ],
+      "depNameTemplate": "FFmpeg/FFmpeg",
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^n(?<version>\\d+\\.\\d+(?:\\.\\d+)?)$"
+    },
+    {
+      "description": "PDFium binary release build (PDFIUM_MEDIA_VERSION)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "PDFIUM_MEDIA_VERSION=(?<currentValue>\\d+)"
+      ],
+      "depNameTemplate": "bblanchon/pdfium-binaries",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^chromium/(?<version>\\d+)$",
+      "versioningTemplate": "regex:^(?<major>\\d+)$"
+    },
+    {
       "description": "appimagetool release pin (APPIMAGETOOL_URL)",
       "customType": "regex",
       "managerFilePatterns": [
@@ -537,6 +564,17 @@
         "sherpa-onnx-sys"
       ],
       "groupName": "sherpa-onnx"
+    },
+    {
+      "description": "Media binary updates require matching publisher builds, checksums and provenance",
+      "matchPackageNames": [
+        "FFmpeg/FFmpeg",
+        "bblanchon/pdfium-binaries"
+      ],
+      "automerge": false,
+      "prBodyNotes": [
+        "Renovate updates only the upstream version in `scripts/lib/native_pins.env`. Before merging FFmpeg changes, select matching dated Riedl and retained BtbN releases; refresh `FFMPEG_MEDIA_MAC_BUILD`, `FFMPEG_MEDIA_BTBN_RELEASE`, `FFMPEG_MEDIA_BTBN_BUILD`, every `FFMPEG_MEDIA_SHA256_*`, the recipe/source refs, `FFMPEG_MEDIA_SOURCE_SHA256`, and the actual embedded zlib version metadata (`ZLIB_MEDIA_VERSION`, `ZLIB_MEDIA_BTBN_VERSION`). zlib is statically included by each publisher and changes only with the selected FFmpeg prebuilts; it has no independent Renovate updates. For PDFium, refresh all four `PDFIUM_MEDIA_SHA256_*` from the exact `chromium/<build>` assets. Run codec, architecture, dependency and isolated-PATH rendering checks, and review the corresponding-source and license notices. Never merge a version bump with stale artifact pins or replace dated assets with mutable latest URLs."
+      ]
     },
     {
       "description": "appimagetool numeric tags only",

@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:cc_domain/cc_domain.dart' show WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 
 /// Message metadata key marking the rendered question as answered.
@@ -43,12 +45,14 @@ class AgentQuestionService implements AgentQuestionPort {
   /// waiting, answered or not.
   AgentQuestionService(
     this._messaging, {
+    required this._conversations,
     this._timeout = const Duration(hours: 1),
     this._onAsked,
     this._onClosed,
   });
 
   final MessagingRepository _messaging;
+  final ConversationRepository _conversations;
   final Duration _timeout;
   final void Function(AgentQuestionRequest request, String messageId)? _onAsked;
   final void Function(String messageId)? _onClosed;
@@ -61,9 +65,23 @@ class AgentQuestionService implements AgentQuestionPort {
     AgentQuestionRequest request, {
     Future<void>? abandoned,
   }) async {
-    if (request.spaceId.isEmpty) {
-      // Without a conversation there is nowhere to render the form.
+    if (request.spaceId.isEmpty || request.conversationId.isEmpty) {
+      // Without a destination there is nowhere to render the form.
       return null;
+    }
+    final conversation = await _conversations.getById(
+      workspaceId: request.workspaceId,
+      conversationId: request.conversationId,
+    );
+    if (conversation == null) {
+      throw const WorkspaceMismatchException(
+        'Conversation not found in this workspace.',
+      );
+    }
+    if (conversation.spaceId != request.spaceId) {
+      throw const WorkspaceMismatchException(
+        'Conversation does not belong to this space.',
+      );
     }
 
     final waitsForever = _timeout == Duration.zero;
@@ -86,6 +104,7 @@ class AgentQuestionService implements AgentQuestionPort {
     final messageId = await _messaging.sendMessage(
       workspaceId: request.workspaceId,
       spaceId: request.spaceId,
+      conversationId: request.conversationId,
       content: request.question,
       senderId: request.askedByAgentId ?? 'agent',
       senderType: 'agent',

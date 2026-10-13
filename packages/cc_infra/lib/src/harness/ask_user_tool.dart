@@ -11,11 +11,12 @@ import 'package:cc_harness/tools.dart';
 /// Listed as an interaction tool so dispatch does not wrap it in a second
 /// approval dialog.
 class AskUserTool extends HarnessTool {
-  /// Creates an [AskUserTool] that renders into [_spaceId] of [_workspaceId].
+  /// Creates an [AskUserTool] for the run's workspace and conversation.
   AskUserTool({
     required this._port,
     required this._workspaceId,
     required this._spaceId,
+    required this._conversationId,
     this._askedByAgentId,
     this._askedByName,
     this._maxOptions = 8,
@@ -24,6 +25,7 @@ class AskUserTool extends HarnessTool {
   final AgentQuestionPort _port;
   final String _workspaceId;
   final String _spaceId;
+  final String _conversationId;
   final String? _askedByAgentId;
   final String? _askedByName;
   final int _maxOptions;
@@ -112,6 +114,7 @@ class AskUserTool extends HarnessTool {
       AgentQuestionRequest(
         workspaceId: _workspaceId,
         spaceId: _spaceId,
+        conversationId: _conversationId,
         question: parsed.question,
         context: parsed.context,
         options: parsed.options,

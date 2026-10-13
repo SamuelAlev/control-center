@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/events/task_lifecycle_events.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
@@ -141,6 +143,8 @@ String _result({
 });
 
 class _NoopBroker implements CredentialBrokerPort {
+  final revoked = <String>[];
+
   @override
   Future<ScopedCredentials> mint({
     required String conversationId,
@@ -152,7 +156,7 @@ class _NoopBroker implements CredentialBrokerPort {
   }) async => const ScopedCredentials(handle: 'h', environment: {});
 
   @override
-  Future<void> revoke(String handle) async {}
+  Future<void> revoke(String handle) async => revoked.add(handle);
 }
 
 class _UnusedAgentRepo implements AgentRepository {
@@ -236,18 +240,34 @@ void main() {
     String? claudeConfigDir,
     String agentDirHostPath = '/work/tree',
     DateTime? runStartedAt,
+    bool creditAgent = true,
+    bool hasGitIdentity = true,
+    Object? attributionFailure,
+    _NoopBroker? broker,
+    DomainEventBus? eventBus,
+    Map<String, String> adapterEnv = const {},
+    Map<String, String> callerEnv = const {},
     ClaudeMcpDiscoveryCachePolicy discoveryCache =
         ClaudeMcpDiscoveryCachePolicy.disabled,
   }) => DispatchSession(
     deps: SandboxDispatchDeps(
       sandbox: sandbox,
-      broker: _NoopBroker(),
+      broker: broker ?? _NoopBroker(),
       agentRepo: _UnusedAgentRepo(),
       runLogRepo: null,
-      eventBus: null,
+      eventBus: eventBus,
       backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
       claudeSessionStore: store,
       claudeMcpDiscoveryCache: discoveryCache,
+      resolveAgentAttribution: (_, {workspaceId}) async {
+        if (attributionFailure != null) {
+          throw attributionFailure;
+        }
+        return creditAgent;
+      },
+      resolveGitIdentity: (_, {workspaceId}) async => hasGitIdentity
+          ? (name: 'Requesting User', email: 'requester@example.test')
+          : null,
     ),
     onResolveHandle:
         ({
@@ -269,7 +289,8 @@ void main() {
     effortLevel: effortLevel,
     agentDirHostPath: agentDirHostPath,
     modelId: null,
-    callerEnv: const {},
+    callerEnv: callerEnv,
+    adapterEnvOverride: adapterEnv,
     agentId: null,
     workspaceId: 'ws-1',
     conversationId: conversationId,
@@ -319,6 +340,99 @@ void main() {
       expect(sandbox.argv, isNot(contains('--effort')));
     });
   });
+
+  test(
+    'changing attribution forks a native session and removes old credit',
+    () async {
+      final store = InMemoryClaudeNativeSessionStore();
+      final enabled = _ScriptedClaude();
+      await runAnswering(
+        enabled,
+        buildSession(enabled, store: store, promptParts: partsOf('first')),
+      );
+      final disabled = _ScriptedClaude();
+      await runAnswering(
+        disabled,
+        buildSession(
+          disabled,
+          store: store,
+          promptParts: partsOf('second'),
+          creditAgent: false,
+        ),
+        sessionId: 'sess-B',
+      );
+      expect(disabled.argv, isNot(contains('--resume')));
+      expect(enabled.env?['GIT_AUTHOR_NAME'], 'Control Center');
+      expect(enabled.env?['GIT_AUTHOR_EMAIL'], 'hi@usectrl.dev');
+      expect(disabled.env?['GIT_AUTHOR_NAME'], 'Requesting User');
+      expect(disabled.env?['GIT_COMMITTER_EMAIL'], 'requester@example.test');
+      expect(disabled.env?[DispatchSession.coAuthorTrailerEnvKey], isEmpty);
+    },
+  );
+
+  test(
+    'adapter environment cannot restore disabled agent attribution',
+    () async {
+      final sandbox = _ScriptedClaude();
+      await runAnswering(
+        sandbox,
+        buildSession(
+          sandbox,
+          store: InMemoryClaudeNativeSessionStore(),
+          creditAgent: false,
+          adapterEnv: const {
+            'GIT_AUTHOR_NAME': 'Claude',
+            'GIT_AUTHOR_EMAIL': 'claude@example.test',
+            'GIT_COMMITTER_NAME': 'Claude',
+            'GIT_COMMITTER_EMAIL': 'claude@example.test',
+            'CC_GIT_COAUTHOR_TRAILER':
+                'Co-Authored-By: Claude <claude@example.test>',
+          },
+          callerEnv: const {
+            'CC_GIT_COAUTHOR_TRAILER':
+                'Co-Authored-By: Old Agent <old@example.test>',
+          },
+        ),
+      );
+      expect(sandbox.env?['GIT_AUTHOR_NAME'], 'Requesting User');
+      expect(sandbox.env?['GIT_AUTHOR_EMAIL'], 'requester@example.test');
+      expect(sandbox.env?['GIT_COMMITTER_NAME'], 'Requesting User');
+      expect(sandbox.env?['GIT_COMMITTER_EMAIL'], 'requester@example.test');
+      expect(sandbox.env?['CC_GIT_COAUTHOR_TRAILER'], isEmpty);
+    },
+  );
+
+  for (final missingIdentity in [false, true]) {
+    test('attribution failure releases credentials and fails the task '
+        '(missing identity: $missingIdentity)', () async {
+      final sandbox = _ScriptedClaude();
+      final broker = _NoopBroker();
+      final bus = DomainEventBus();
+      final lifecycle = <TaskLifecycleEvent>[];
+      final subscription = bus.on<TaskLifecycleEvent>().listen(lifecycle.add);
+      addTearDown(subscription.cancel);
+      addTearDown(bus.dispose);
+      final session = buildSession(
+        sandbox,
+        store: InMemoryClaudeNativeSessionStore(),
+        creditAgent: false,
+        hasGitIdentity: !missingIdentity,
+        attributionFailure: missingIdentity
+            ? null
+            : StateError('Settings unavailable'),
+        broker: broker,
+        eventBus: bus,
+      );
+      final events = session.controller.stream.toList();
+      await session.run();
+      await events;
+      await settle();
+      expect(sandbox.argv, isEmpty);
+      expect(broker.revoked, ['h']);
+      expect(lifecycle.whereType<TaskFailed>(), hasLength(1));
+      expect(lifecycle.whereType<TaskCompleted>(), isEmpty);
+    });
+  }
 
   group('native session lineage', () {
     test(

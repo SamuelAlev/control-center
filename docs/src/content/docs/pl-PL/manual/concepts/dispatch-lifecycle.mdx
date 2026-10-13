@@ -2,7 +2,7 @@
 title: Cykl życia wysyłania agentów
 description: Co dzieje się między nadejściem wiadomości a zamknięciem dziennika uruchomienia — składanie promptu, drzewa robocze, tożsamość, co ogranicza uruchomienie i jak jego wynik jest zapisywany rzetelnie.
 slug: pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Czym jest wysłanie
@@ -52,7 +52,7 @@ Kopiowanie przy zapisie to **jedyna** implementacja wszędzie tam, gdzie dostarc
 
 Przed startem jakiegokolwiek procesu dla każdego uruchomienia ustalane są dwie tożsamości.
 
-**Autorstwo w Gitcie.** Commity tworzone przez agenta mają autora _podanego jako agent_ — `<Name> (agent) <agentId@agents.control-center.local>` zarówno w `GIT_AUTHOR_*`, jak i `GIT_COMMITTER_*` — nigdy nie podszywając się pod człowieka. Część lokalna to UUID agenta, a nie slug jego nazwy. Osoba zlecająca pracę jest uwzględniana w stopce `Co-Authored-By:`, przekazywanej w środowisku i wskazanej w promptcie systemowym. Jawnie ustawiona przez wywołującego tożsamość zawsze wygrywa z obiema.
+**Autorstwo w Gitcie.** Domyślnie commity agenta mają `Control Center <hi@usectrl.dev>` (konto GitHub `@usectrl`) zarówno w `GIT_AUTHOR_*`, jak i `GIT_COMMITTER_*`, a osoba zlecająca pracę jest uwzględniana w stopce `Co-Authored-By:`. Wyłącz przypisywanie autorstwa agentowi w **Ustawienia → Ty → Przypisanie autorstwa commitów**, aby używać wyłącznie swojej tożsamości Git. Administrator obszaru roboczego może wymusić lub wyłączyć to przypisywanie w **Ustawienia → Obszar roboczy → Ogólne**; to ustawienie ma pierwszeństwo i blokuje osobisty przełącznik bez zmiany zapisanej preferencji. Zmiany obowiązują od następnego uruchomienia. Własne podpisy Claude Code w commitach i PR-ach są zawsze wyłączone. Jawnie ustawione przez wywołującego wartości tożsamości Git nadal mają pierwszeństwo; dane uwierzytelniające do platformy nie ulegają zmianie.
 
 **Tożsamość na hoście kodu.** Dane uwierzytelniające GitHub dla uruchomienia pochodzą wyłącznie od brokera — token instalacji App o zakresie repozytorium albo jego zapasowy PAT ze środowiska — nigdy z własnego, zapisanego tokenu zlecającego członka. `actingUserId` ogranicza zapasowy PAT, żeby członek, który nie jest właścicielem serwera, nie dziedziczył jego zasięgu; nie nakłada osobistego tokenu na środowisko agenta.
 

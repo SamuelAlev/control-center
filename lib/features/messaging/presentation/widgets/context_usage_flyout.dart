@@ -80,10 +80,11 @@ class ContextStackedBar extends StatelessWidget {
 /// Never blocks on the summary RPC: the client-known conversation row renders
 /// immediately and the persistent categories slot in when the server answers.
 class ContextUsageFlyout extends ConsumerWidget {
-  /// Creates a [ContextUsageFlyout] for the [spaceId] / [agentId] pair.
+  /// Creates a [ContextUsageFlyout] for the conversation and agent.
   const ContextUsageFlyout({
     super.key,
     required this.spaceId,
+    required this.conversationId,
     required this.agentId,
     required this.controller,
     this.agentName,
@@ -91,6 +92,9 @@ class ContextUsageFlyout extends ConsumerWidget {
 
   /// The space whose context to break down.
   final String spaceId;
+
+  /// The selected conversation whose context to break down.
+  final String conversationId;
 
   /// The agent whose context window this is.
   final String agentId;
@@ -109,7 +113,11 @@ class ContextUsageFlyout extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final breakdown = ref.watch(
-      contextBreakdownProvider((spaceId: spaceId, agentId: agentId)),
+      contextBreakdownProvider((
+        spaceId: spaceId,
+        conversationId: conversationId,
+        agentId: agentId,
+      )),
     );
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
 
@@ -231,6 +239,7 @@ class ContextUsageFlyout extends ConsumerWidget {
                           context,
                           workspaceId: workspaceId,
                           spaceId: spaceId,
+                          conversationId: conversationId,
                           agentId: agentId,
                           agentName: agentName,
                         );

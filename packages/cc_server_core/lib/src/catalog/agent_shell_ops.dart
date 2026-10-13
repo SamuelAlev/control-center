@@ -39,6 +39,7 @@ List<RepoOp> buildAgentShellOps({
             for (final p in found)
               {
                 'pid': p.pid,
+                'output_id': p.outputId,
                 'agent_id': p.agentId,
                 'run_id': ?p.runId,
                 'command': p.command,
@@ -46,6 +47,27 @@ List<RepoOp> buildAgentShellOps({
                 'origin': p.origin.name,
               },
           ],
+        };
+      },
+    ),
+    RepoOp(
+      name: 'process.agentShellOutput',
+      kind: RepoOpKind.read,
+      requiredArgs: ['space_id', 'output_id'],
+      requiredCapability: SessionCapability.fullClient,
+      repoAccess: RepoGrantLevel.read,
+      repoAccessVia: reposExposedBySpace,
+      audited: false,
+      handler: (ctx) async {
+        final snapshot = await shells.readOutput(
+          workspaceId: ctx.workspaceId!,
+          spaceId: ctx.args['space_id'] as String,
+          outputId: ctx.args['output_id'] as String,
+        );
+        return {
+          'output': snapshot.output,
+          'state': snapshot.state.name,
+          'truncated': snapshot.truncated,
         };
       },
     ),

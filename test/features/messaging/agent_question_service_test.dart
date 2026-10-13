@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_infra/src/messaging/agent_question_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,7 +48,7 @@ class _FakeMessagingRepo implements MessagingRepository {
       Message(
         id: mid,
         spaceId: spaceId,
-        conversationId: conversationId ?? spaceId,
+        conversationId: conversationId!,
         senderId: senderId,
         senderType: senderType == 'user' ? SenderType.user : SenderType.agent,
         content: content,
@@ -100,6 +102,30 @@ class _FakeMessagingRepo implements MessagingRepository {
   }) async => throw UnimplementedError();
 }
 
+class _FakeConversations implements ConversationRepository {
+  @override
+  Future<Conversation?> getById({
+    required String workspaceId,
+    required String conversationId,
+  }) async {
+    if (workspaceId != _workspaceId || !conversationId.startsWith('conv-')) {
+      return null;
+    }
+    final spaceId = 'chan-${conversationId.substring('conv-'.length)}';
+    return Conversation(
+      id: conversationId,
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      title: '',
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 Future<Message> _awaitPosted(
   _FakeMessagingRepo repo,
   AgentQuestionService service,
@@ -119,12 +145,16 @@ void main() {
       'posts a user_question form and resolves with the submitted answer',
       () async {
         final repo = _FakeMessagingRepo();
-        final service = AgentQuestionService(repo);
+        final service = AgentQuestionService(
+          repo,
+          conversations: _FakeConversations(),
+        );
 
         final future = service.ask(
           const AgentQuestionRequest(
             workspaceId: _workspaceId,
             spaceId: 'chan-1',
+            conversationId: 'conv-1',
             question: 'Pick one',
             context: 'because',
             options: [
@@ -141,6 +171,7 @@ void main() {
         expect(msg.messageType, MessageType.userQuestion);
         expect(msg.spaceId, 'chan-1');
         expect(msg.senderId, 'agent-9');
+        expect(msg.conversationId, 'conv-1');
         expect(msg.senderType, SenderType.agent);
         expect(msg.metadata!['question'], 'Pick one');
         expect(msg.metadata!['allowFreeText'], true);
@@ -167,11 +198,15 @@ void main() {
 
     test('returns null without posting when conversationId is empty', () async {
       final repo = _FakeMessagingRepo();
-      final service = AgentQuestionService(repo);
+      final service = AgentQuestionService(
+        repo,
+        conversations: _FakeConversations(),
+      );
       final answer = await service.ask(
         const AgentQuestionRequest(
           workspaceId: _workspaceId,
           spaceId: '',
+          conversationId: '',
           question: 'orphan question',
         ),
       );
@@ -183,12 +218,14 @@ void main() {
       final repo = _FakeMessagingRepo();
       final service = AgentQuestionService(
         repo,
+        conversations: _FakeConversations(),
         timeout: const Duration(milliseconds: 30),
       );
       final answer = await service.ask(
         const AgentQuestionRequest(
           workspaceId: _workspaceId,
           spaceId: 'chan-2',
+          conversationId: 'conv-2',
           question: 'unanswered',
           options: [AgentQuestionOption(label: 'X')],
         ),
@@ -200,6 +237,7 @@ void main() {
       final repo = _FakeMessagingRepo();
       final service = AgentQuestionService(
         repo,
+        conversations: _FakeConversations(),
         timeout: const Duration(milliseconds: 30),
       );
       final before = DateTime.now().toUtc();
@@ -207,6 +245,7 @@ void main() {
         const AgentQuestionRequest(
           workspaceId: _workspaceId,
           spaceId: 'chan-3',
+          conversationId: 'conv-3',
           question: 'unanswered',
           options: [AgentQuestionOption(label: 'X')],
         ),
@@ -230,12 +269,17 @@ void main() {
 
     test('an indefinite wait carries no deadline', () async {
       final repo = _FakeMessagingRepo();
-      final service = AgentQuestionService(repo, timeout: Duration.zero);
+      final service = AgentQuestionService(
+        repo,
+        conversations: _FakeConversations(),
+        timeout: Duration.zero,
+      );
       unawaited(
         service.ask(
           const AgentQuestionRequest(
             workspaceId: _workspaceId,
             spaceId: 'chan-4',
+            conversationId: 'conv-4',
             question: 'whenever',
             allowFreeText: true,
           ),
@@ -253,7 +297,10 @@ void main() {
 
     test('submitAnswer for an unknown message id is a safe no-op', () async {
       final repo = _FakeMessagingRepo();
-      final service = AgentQuestionService(repo);
+      final service = AgentQuestionService(
+        repo,
+        conversations: _FakeConversations(),
+      );
       final ghost = Message(
         id: 'nope',
         spaceId: 'c',

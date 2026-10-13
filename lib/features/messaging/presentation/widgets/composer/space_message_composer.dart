@@ -8,8 +8,8 @@ import 'package:control_center/features/workspaces/providers/workspace_scope.dar
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/composer/composer.dart';
+import 'package:control_center/shared/widgets/composer/composer_draft.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
-import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_source.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,7 +26,7 @@ class SpaceMessageComposer extends ConsumerStatefulWidget {
     super.key,
     required this.spaceId,
     required this.conversationId,
-    required this.controller,
+    required this.draft,
     required this.sources,
     required this.onSubmit,
     required this.hint,
@@ -46,8 +46,8 @@ class SpaceMessageComposer extends ConsumerStatefulWidget {
   /// Conversation whose composer this is.
   final String conversationId;
 
-  /// The field. Owned by the host so typing presence survives this widget.
-  final ComposerTextController controller;
+  /// Session-owned text, mentions and attachments for this conversation.
+  final ComposerDraft draft;
 
   /// Mention sources forwarded to the field.
   final List<MentionSource> sources;
@@ -93,10 +93,6 @@ class SpaceMessageComposer extends ConsumerStatefulWidget {
 class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
   late final FocusNode _focus;
 
-  /// Text that was in the field before this edit session started. Restored
-  /// when the session ends. Null while no edit is open.
-  String? _draftBeforeEdit;
-
   EditingConversation get _key =>
       (spaceId: widget.spaceId, conversationId: widget.conversationId);
 
@@ -106,12 +102,11 @@ class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
     _focus = FocusNode();
     final pending = ref.read(editingMessageProvider(_key));
     if (pending != null) {
-      _draftBeforeEdit = '';
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
           return;
         }
-        _show(pending.message.content);
+        _focus.requestFocus();
       });
     }
   }
@@ -124,25 +119,6 @@ class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
 
   void _onEditChanged(EditingMessage? previous, EditingMessage? next) {
     if (next != null) {
-      // Only the first message of a session parks the draft. Switching to
-      // another message must not park the half-written edit over it.
-      if (previous == null) {
-        _draftBeforeEdit = widget.controller.text;
-      }
-      _show(next.message.content);
-      return;
-    }
-    if (previous == null) {
-      return;
-    }
-    final draft = _draftBeforeEdit ?? '';
-    _draftBeforeEdit = null;
-    _show(draft, focus: false);
-  }
-
-  void _show(String text, {bool focus = true}) {
-    widget.controller.replaceAll(text);
-    if (focus) {
       _focus.requestFocus();
     }
   }
@@ -205,12 +181,13 @@ class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
       spaceAttachmentUploadServiceProvider(workspaceId),
     );
     return Composer(
+      key: ObjectKey(widget.draft),
       attachedTop: widget.attachedTop,
       attachmentScope:
           '$workspaceId/${widget.spaceId}/${widget.conversationId}',
       attachmentUpload: uploadService.upload,
       attachmentDiscard: uploadService.discard,
-      controller: widget.controller,
+      draft: widget.draft,
       focusNode: _focus,
       sources: widget.sources,
       hint: widget.hint,

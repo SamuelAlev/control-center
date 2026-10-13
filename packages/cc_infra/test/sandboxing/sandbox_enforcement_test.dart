@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
+import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:test/test.dart';
@@ -145,6 +146,141 @@ void main() {
     // checks remain for macOS Seatbelt's pathname-pattern support.
     skip: _skipReason(),
   );
+
+  group('network enforcement (real process)', () {
+    late SandboxManager manager;
+    late HttpServer target;
+    late HttpServer gateway;
+    late List<String> requests;
+
+    setUp(() async {
+      manager = SandboxManager();
+      requests = [];
+      target = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      gateway = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      target.listen((request) async {
+        requests.add(request.uri.path);
+        request.response.write('allowed destination');
+        await request.response.close();
+      });
+      gateway.listen((request) async {
+        request.response.write('agent gateway');
+        await request.response.close();
+      });
+    });
+
+    tearDown(() async {
+      await manager.reset();
+      await target.close(force: true);
+      await gateway.close(force: true);
+    });
+
+    Future<ProcessResult> curl(
+      String url, {
+      bool direct = false,
+      bool socks = false,
+      bool networkOff = false,
+    }) async {
+      final wrap = await manager.wrap(
+        config: SandboxConfig(
+          sessionId: 'network-enforcement',
+          network: NetworkConfig(
+            allowAll: false,
+            allowedDomains: networkOff ? const [] : const ['127.0.0.1'],
+            loopbackPorts: [gateway.port],
+          ),
+          filesystem: const FilesystemConfig(),
+        ),
+        argv: [
+          '/bin/sh',
+          '-c',
+          if (direct)
+            'unset HTTP_PROXY HTTPS_PROXY ALL_PROXY FTP_PROXY '
+                'http_proxy https_proxy all_proxy ftp_proxy; '
+                'exec /usr/bin/curl -fsS --max-time 5 --noproxy "*" "\$1"'
+          else if (socks)
+            'exec /usr/bin/curl -fsS --max-time 5 --noproxy "" '
+                '--proxy "socks5h://\${ALL_PROXY#*://}" "\$1"'
+          else
+            'exec /usr/bin/curl -fsS --max-time 5 --noproxy "" "\$1"',
+          'network-probe',
+          url,
+        ],
+      );
+      return Process.run(
+        wrap.executable,
+        wrap.argv,
+        environment: wrap.environment,
+      );
+    }
+
+    test('HTTP and SOCKS allow only admitted destinations', () async {
+      for (final socks in [false, true]) {
+        final path = socks ? '/socks' : '/http';
+        final allowed = await curl(
+          'http://127.0.0.1:${target.port}$path',
+          socks: socks,
+        );
+        expect(allowed.exitCode, 0, reason: '${allowed.stderr}');
+        expect(allowed.stdout, 'allowed destination');
+
+        // Same reachable server, but its hostname is outside the allowlist.
+        final denied = await curl(
+          'http://localhost:${target.port}/denied',
+          socks: socks,
+        );
+        expect(denied.exitCode, isNot(0), reason: '${denied.stderr}');
+      }
+      expect(requests, ['/http', '/socks']);
+    });
+
+    test('clearing proxies cannot bypass IPv4 or IPv6 confinement', () async {
+      final ipv6 = await HttpServer.bind(InternetAddress.loopbackIPv6, 0);
+      addTearDown(() => ipv6.close(force: true));
+      ipv6.listen((request) async {
+        requests.add('/ipv6-bypass');
+        await request.response.close();
+      });
+      for (final url in [
+        'http://127.0.0.1:${target.port}/ipv4-bypass',
+        'http://[::1]:${ipv6.port}/ipv6-bypass',
+      ]) {
+        final result = await curl(url, direct: true);
+        expect(result.exitCode, isNot(0), reason: '$url: ${result.stderr}');
+      }
+      expect(requests, isEmpty);
+
+      // The MCP/approval endpoint remains usable with the same profile.
+      final result = await curl(
+        'http://127.0.0.1:${gateway.port}/',
+        direct: true,
+      );
+      expect(result.exitCode, 0, reason: '${result.stderr}');
+      expect(result.stdout, 'agent gateway');
+    });
+
+    test(
+      'network-off denies proxy and direct access but retains gateway',
+      () async {
+        for (final direct in [false, true]) {
+          final result = await curl(
+            'http://127.0.0.1:${target.port}/network-off',
+            direct: direct,
+            networkOff: true,
+          );
+          expect(result.exitCode, isNot(0), reason: '${result.stderr}');
+        }
+        expect(requests, isEmpty);
+        final result = await curl(
+          'http://127.0.0.1:${gateway.port}/',
+          direct: true,
+          networkOff: true,
+        );
+        expect(result.exitCode, 0, reason: '${result.stderr}');
+        expect(result.stdout, 'agent gateway');
+      },
+    );
+  }, skip: !Platform.isMacOS ? 'requires macOS Seatbelt' : false);
 }
 
 String? _skipReason() => Platform.isMacOS

@@ -34,6 +34,9 @@ class AttachmentUploadController
 
   @override
   Map<String, ComposerAttachment> build() {
+    if (config.retainOnUnmount) {
+      ref.keepAlive();
+    }
     ref.onDispose(() {
       _closed = true;
       for (final fileId in _readyFileIds) {
@@ -150,16 +153,23 @@ class AttachmentUploadController
 /// provider-family identity or move files into a different destination.
 class AttachmentUploadConfiguration {
   /// Captures callbacks that remain usable after the widget is disposed.
-  AttachmentUploadConfiguration({required this.upload, required this.discard});
+  AttachmentUploadConfiguration({
+    required this.upload,
+    required this.discard,
+    this.retainOnUnmount = false,
+  });
 
   /// Transfers a local attachment to the server.
   UploadComposerAttachment upload;
 
   /// Releases an uploaded file that the user did not send.
   DiscardComposerAttachment discard;
+
+  /// A session-owned draft keeps transfers alive while its input is absent.
+  final bool retainOnUnmount;
 }
 
-/// Async draft state is Riverpod-owned and disposed with its composer/scope.
+/// Async draft state; retained drafts outlive their mounted composer.
 final attachmentUploadControllerProvider = NotifierProvider.autoDispose
     .family<
       AttachmentUploadController,

@@ -1,4 +1,5 @@
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/entities/agent_shell_output.dart';
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_domain/core/domain/ports/agent_shell_process_port.dart';
 import 'package:cc_rpc/cc_rpc.dart';
@@ -52,6 +53,24 @@ class RpcAgentShellProcessPort implements AgentShellProcessPort {
     return data['killed'] == true;
   }
 
+  @override
+  Future<AgentShellOutput> readOutput({
+    required String workspaceId,
+    required String spaceId,
+    required String outputId,
+  }) async {
+    final data = await _client.call('process.agentShellOutput', {
+      'workspace_id': workspaceId,
+      'space_id': spaceId,
+      'output_id': outputId,
+    });
+    return AgentShellOutput(
+      output: data['output'] as String,
+      state: AgentShellOutputState.values.byName(data['state'] as String),
+      truncated: data['truncated'] == true,
+    );
+  }
+
   static AgentShellProcess? _fromWire(
     Map<String, dynamic> w,
     String workspaceId,
@@ -59,11 +78,13 @@ class RpcAgentShellProcessPort implements AgentShellProcessPort {
   ) {
     final pid = (w['pid'] as num?)?.toInt() ?? 0;
     final started = DateTime.tryParse(w['started_at'] as String? ?? '');
-    if (pid <= 0 || started == null) {
+    final outputId = w['output_id'] as String?;
+    if (pid <= 0 || started == null || outputId == null || outputId.isEmpty) {
       return null;
     }
     return AgentShellProcess(
       pid: pid,
+      outputId: outputId,
       workspaceId: workspaceId,
       spaceId: spaceId,
       agentId: w['agent_id'] as String? ?? '',

@@ -1,12 +1,15 @@
 import 'dart:convert';
 
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/keybindings/keybinding_dispatcher.dart';
+import 'package:control_center/core/keybindings/keybinding_providers.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/quick_open/quick_open_dialog.dart';
 import 'package:control_center/features/messaging/providers/recent_files_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -65,10 +68,22 @@ void main() {
   Future<void> open(
     WidgetTester tester, {
     TextDirection direction = TextDirection.ltr,
+    bool fromKeyboard = false,
+    bool fromEditable = false,
+    bool keepCommandPressed = false,
   }) async {
+    final dispatcher = KeybindingDispatcher()..setRoute('/spaces/s1');
+    addTearDown(dispatcher.dispose);
+
+    Future<void> showPicker(BuildContext context) async {
+      result = await showQuickOpen(context, workspaceId: 'ws', spaceId: 's1');
+      closed = true;
+    }
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          keybindingDispatcherProvider.overrideWithValue(dispatcher),
           rpcClientProvider.overrideWithValue(host.client()),
           appPreferencesProvider.overrideWithValue(prefs),
         ],
@@ -83,23 +98,38 @@ void main() {
           ),
           home: Scaffold(
             body: Builder(
-              builder: (context) => GestureDetector(
-                onTap: () async {
-                  result = await showQuickOpen(
-                    context,
-                    workspaceId: 'ws',
-                    spaceId: 's1',
-                  );
-                  closed = true;
-                },
-                child: const Text('go'),
+              builder: (context) => ScopedShortcuts(
+                scope: '/spaces',
+                bindings: {'msg.ide-quick-open': () => showPicker(context)},
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () => showPicker(context),
+                      child: const Text('go'),
+                    ),
+                    if (fromEditable)
+                      const CcTextField(
+                        autofocus: true,
+                        initialValue: 'Leave source unchanged',
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
     );
-    await tester.tap(find.text('go'));
+    if (fromKeyboard) {
+      await tester.pumpAndSettle();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyP);
+      if (!keepCommandPressed) {
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      }
+    } else {
+      await tester.tap(find.text('go'));
+    }
     await tester.pumpAndSettle();
   }
 
@@ -147,6 +177,56 @@ void main() {
     expect(result?.file, (repoId: 'r1', path: 'lib/main.dart'));
     expect(result?.toSide, isFalse);
   });
+
+  testWidgets('Cmd+V pastes after Cmd+P while Command stays held', (
+    tester,
+  ) async {
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async => switch (call.method) {
+        'Clipboard.getData' => <String, dynamic>{'text': 'main.dart'},
+        'Clipboard.hasStrings' => <String, dynamic>{'value': true},
+        _ => null,
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    await open(
+      tester,
+      fromKeyboard: true,
+      fromEditable: true,
+      keepCommandPressed: true,
+    );
+    addTearDown(() async {
+      if (HardwareKeyboard.instance.isMetaPressed) {
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      }
+    });
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyV);
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<CcTextField>(
+            find.descendant(
+              of: find.byType(QuickOpenPanel),
+              matching: find.byType(CcTextField),
+            ),
+          )
+          .controller!
+          .text,
+      'main.dart',
+    );
+    expect(queries, ['main.dart']);
+    expect(find.text('README.md'), findsNothing);
+    expect(find.text('Leave source unchanged'), findsOneWidget);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 
   testWidgets('a query ranks matching recents first, then new hits', (
     tester,

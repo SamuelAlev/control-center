@@ -26,6 +26,7 @@ import 'package:control_center/features/pr_review/presentation/screens/pull_requ
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_list_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/about_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/adapters_settings_screen.dart';
+import 'package:control_center/features/settings/presentation/screens/agent_attribution_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/agent_permissions_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/agents_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/appearance_settings_screen.dart';
@@ -453,6 +454,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: settingsNotificationsRoute(workspaceIdParam),
             pageBuilder: (context, state) =>
                 buildPage(state, _absorb(const NotificationsSettingsScreen())),
+          ),
+          GoRoute(
+            path: settingsAgentAttributionRoute(workspaceIdParam),
+            pageBuilder: (context, state) => buildPage(
+              state,
+              _absorb(const AgentAttributionSettingsScreen()),
+            ),
           ),
           GoRoute(
             path: settingsKeybindingsRoute(workspaceIdParam),

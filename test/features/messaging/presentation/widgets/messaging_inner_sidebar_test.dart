@@ -116,7 +116,10 @@ List<Override> _commonOverrides({
     spaceStatusProvider(c.id).overrideWithValue(SpaceStatus.idle),
     spaceUnreadProvider(c.id).overrideWithValue(unreadSpaceIds.contains(c.id)),
     spacePrsProvider(c.id).overrideWithValue(pullRequests[c.id] ?? const []),
-    spaceBranchPullRequestsProvider(c.id).overrideWith((ref) => Stream.value(const [])),
+    spacePrsResolvedProvider(c.id).overrideWithValue(true),
+    spaceBranchPullRequestsProvider(c.id).overrideWith(
+      (ref) => Stream.value((complete: true, matches: const [])),
+    ),
     spaceParticipantsProvider(c.id).overrideWith(
       (ref) => Stream.value(participants[c.id] ?? const <SpaceParticipant>[]),
     ),

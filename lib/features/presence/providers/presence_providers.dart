@@ -250,6 +250,20 @@ class MyPresenceNotifier extends Notifier<MyPresenceState> {
     }
   }
 
+  /// Clears a departing composer's typing state after widget teardown.
+  ///
+  /// A newer keystroke owns a new timer and must not be cleared by the old view.
+  void clearTypingAfterUnmount(String spaceId) {
+    final timer = _typingClearTimer;
+    scheduleMicrotask(() {
+      if (ref.mounted &&
+          identical(_typingClearTimer, timer) &&
+          state.typingSpaceId == spaceId) {
+        setTyping(null);
+      }
+    });
+  }
+
   /// Sets (or clears) the space this client is spotlighting/presenting.
   void setSpotlight(String? spaceId) {
     if (state.spotlightSpaceId == spaceId) {

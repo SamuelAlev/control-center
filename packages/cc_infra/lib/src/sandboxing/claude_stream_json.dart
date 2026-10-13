@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_infra/src/dispatch/render_media_image_refs.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 
 /// A completed tool invocation surfaced from a `tool_use` content block.
@@ -23,7 +25,9 @@ class ClaudeToolResult {
   const ClaudeToolResult({
     required this.id,
     required this.outputs,
+    this.images = const [],
     this.isError = false,
+    this.isAsync = false,
   });
 
   /// The `tool_use_id` this result answers.
@@ -32,8 +36,14 @@ class ClaudeToolResult {
   /// Flattened result text.
   final String outputs;
 
+  /// Durable image references from render_media, never inline base64.
+  final List<ToolImageRef> images;
+
   /// Whether the tool reported a failure.
   final bool isError;
+
+  /// The tool returned a background-launch acknowledgement, not its outcome.
+  final bool isAsync;
 }
 
 /// Work a subagent (the `Agent` / `Task` tool) did inside a `claude -p` run.
@@ -41,8 +51,8 @@ class ClaudeToolResult {
 /// `claude` reports a subagent on the same stdout as its parent, tagging each
 /// line with `parent_tool_use_id`: the id of the spawn call it is working for.
 /// The subagent's turns arrive as whole `assistant` / `user` messages (no
-/// partial deltas), and its final answer only as the result of that spawn call
-/// on the parent's lane.
+/// partial deltas). Foreground answers arrive as spawn-call results; background
+/// completion arrives through task lifecycle messages.
 sealed class ClaudeSubagentEvent {
   const ClaudeSubagentEvent(this.spawnToolUseId);
 
@@ -64,6 +74,34 @@ class ClaudeSubagentStarted extends ClaudeSubagentEvent {
 
   /// Which subagent definition runs it (`general-purpose`, `Explore`, …).
   final String? subagentType;
+}
+
+/// Terminal outcomes reported by Claude's task lifecycle.
+enum ClaudeSubagentStatus {
+  /// The child finished successfully.
+  completed,
+
+  /// The child failed.
+  failed,
+
+  /// The child was stopped before finishing.
+  stopped,
+}
+
+/// A background subagent ended independently of its spawn tool call.
+class ClaudeSubagentFinished extends ClaudeSubagentEvent {
+  /// Creates a [ClaudeSubagentFinished].
+  const ClaudeSubagentFinished(
+    super.spawnToolUseId, {
+    required this.status,
+    this.summary,
+  });
+
+  /// The task's terminal outcome.
+  final ClaudeSubagentStatus status;
+
+  /// The completion summary or failure reason, when supplied.
+  final String? summary;
 }
 
 /// A whole text block the subagent wrote.
@@ -1251,6 +1289,11 @@ class ClaudeStreamJsonParser {
   /// tool_use ids reported through `onToolCall` and not yet answered. See
   /// [_handleToolResults] for why an unknown id must not be paired.
   final Set<String> _openToolIds = {};
+  final Map<String, String> _openToolNames = {};
+
+  /// Task ids outlive spawn calls; resumed tasks may have a new spawn/run pair.
+  final Map<String, ({String spawnId, String? runId})> _subagentTasks = {};
+  final Set<String> _subagentSpawnIds = {};
 
   /// Prompt size of the main-thread call in flight, so its `message_delta`
   /// (which carries output only) can report the whole call.
@@ -1271,24 +1314,11 @@ class ClaudeStreamJsonParser {
       }
       return;
     }
-    if (parent is String && parent.isNotEmpty) {
-      _handleSubagentLine(parent, type, obj['message']);
+    if (type == 'system' && _handleSubagentTask(obj)) {
       return;
     }
-    if (type == 'system' && obj['subtype'] == 'task_started') {
-      final spawnId = obj['tool_use_id'];
-      final subagentType = obj['subagent_type'];
-      // Background shells report `task_started` too; only a subagent names
-      // the definition it runs.
-      if (spawnId is String && spawnId.isNotEmpty && subagentType is String) {
-        _callbacks.onSubagent?.call(
-          ClaudeSubagentStarted(
-            spawnId,
-            description: obj['description'] as String?,
-            subagentType: subagentType,
-          ),
-        );
-      }
+    if (parent is String && parent.isNotEmpty) {
+      _handleSubagentLine(parent, type, obj);
       return;
     }
     if (type == 'system' && obj['subtype'] == 'init') {
@@ -1347,21 +1377,91 @@ class ClaudeStreamJsonParser {
     if (type == 'user') {
       final message = obj['message'];
       if (message is Map<String, dynamic>) {
-        _handleToolResults(message['content']);
+        _handleToolResults(
+          message['content'],
+          isAsync: _isAsyncResult(obj['tool_use_result']),
+        );
       }
       return;
     }
     // `assistant` (the non-streamed replay of blocks we already reconstructed
     // from deltas) is not needed for live transcription; the `system`
-    // subtypes that ARE needed (init, task_started, compact_boundary,
+    // subtypes that ARE needed (init, task lifecycle, compact_boundary,
     // conversation_reset, api_retry) are handled above.
+  }
+
+  bool _handleSubagentTask(Map<String, dynamic> obj) {
+    final subtype = obj['subtype'];
+    if (subtype == 'task_started') {
+      final spawnId = obj['tool_use_id'];
+      final subagentType = obj['subagent_type'];
+      // Bash tasks share this lane but must never open an agent row.
+      if (spawnId is String &&
+          spawnId.isNotEmpty &&
+          (subagentType is String || obj['task_type'] == 'local_agent')) {
+        _subagentSpawnIds.add(spawnId);
+        final taskId = obj['task_id'];
+        if (taskId is String && taskId.isNotEmpty) {
+          _subagentTasks[taskId] = (
+            spawnId: spawnId,
+            runId: obj['run_id'] as String?,
+          );
+        }
+        _callbacks.onSubagent?.call(
+          ClaudeSubagentStarted(
+            spawnId,
+            description: obj['description'] as String?,
+            subagentType: subagentType is String ? subagentType : null,
+          ),
+        );
+      }
+      return true;
+    }
+    if (subtype != 'task_notification' && subtype != 'task_updated') {
+      return false;
+    }
+    final task = _subagentTasks[obj['task_id']];
+    final runId = obj['run_id'];
+    if (task != null &&
+        task.runId != null &&
+        runId is String &&
+        runId != task.runId) {
+      return true;
+    }
+    final spawnId = obj['tool_use_id'] ?? task?.spawnId;
+    if (spawnId is! String || !_subagentSpawnIds.contains(spawnId)) {
+      return true;
+    }
+    final patch = obj['patch'];
+    final data = subtype == 'task_updated' && patch is Map ? patch : obj;
+    final status = switch (data['status']) {
+      'completed' => ClaudeSubagentStatus.completed,
+      'failed' => ClaudeSubagentStatus.failed,
+      'stopped' || 'killed' => ClaudeSubagentStatus.stopped,
+      _ => null,
+    };
+    if (status != null) {
+      _callbacks.onSubagent?.call(
+        ClaudeSubagentFinished(
+          spawnId,
+          status: status,
+          summary: (data['summary'] ?? data['error']) as String?,
+        ),
+      );
+    }
+    return true;
   }
 
   /// Routes one subagent line: its `assistant` blocks become text, thinking
   /// and tool calls, its `user` tool results close them. The `user` text that
   /// opens a subagent is the parent's prompt, already on the spawn call.
-  void _handleSubagentLine(String spawnId, Object? type, Object? message) {
+  void _handleSubagentLine(
+    String spawnId,
+    Object? type,
+    Map<String, dynamic> obj,
+  ) {
     final onSubagent = _callbacks.onSubagent;
+    final message = obj['message'];
     if (onSubagent == null || message is! Map<String, dynamic>) {
       return;
     }
@@ -1369,6 +1469,7 @@ class ClaudeStreamJsonParser {
     if (content is! List) {
       return;
     }
+    _subagentSpawnIds.add(spawnId);
     for (final block in content) {
       if (block is! Map<String, dynamic>) {
         continue;
@@ -1385,6 +1486,10 @@ class ClaudeStreamJsonParser {
             onSubagent(ClaudeSubagentThinking(spawnId, text));
           }
         case ('assistant', 'tool_use'):
+          final toolId = block['id'];
+          if (toolId is String) {
+            _openToolNames[toolId] = block['name'] as String? ?? '';
+          }
           onSubagent(
             ClaudeSubagentToolCall(
               spawnId,
@@ -1396,13 +1501,17 @@ class ClaudeStreamJsonParser {
             ),
           );
         case ('user', 'tool_result'):
+          final toolId = block['tool_use_id'] as String? ?? '';
+          final toolName = _openToolNames.remove(toolId);
           onSubagent(
             ClaudeSubagentToolResult(
               spawnId,
               ClaudeToolResult(
                 id: block['tool_use_id'] as String? ?? '',
                 outputs: _flattenResult(block['content']),
+                images: renderMediaImageRefs(toolName, block['content']),
                 isError: block['is_error'] == true,
+                isAsync: _isAsyncResult(obj['tool_use_result']),
               ),
             ),
           );
@@ -1452,7 +1561,7 @@ class ClaudeStreamJsonParser {
     }
   }
 
-  void _handleToolResults(Object? content) {
+  void _handleToolResults(Object? content, {bool isAsync = false}) {
     if (content is! List) {
       return;
     }
@@ -1467,15 +1576,22 @@ class ClaudeStreamJsonParser {
       if (!_openToolIds.remove(id)) {
         continue;
       }
+      final toolName = _openToolNames.remove(id);
       _callbacks.onToolResult?.call(
         ClaudeToolResult(
           id: id,
           outputs: _flattenResult(block['content']),
           isError: block['is_error'] == true,
+          images: renderMediaImageRefs(toolName, block['content']),
+          isAsync: isAsync,
         ),
       );
     }
   }
+
+  static bool _isAsyncResult(Object? result) =>
+      result is Map &&
+      (result['status'] == 'async_launched' || result['isAsync'] == true);
 
   /// Flattens a `tool_result` body: plain string, or the block list some tools
   /// (and MCP servers) return. Non-text blocks are named rather than dropped,
@@ -1588,6 +1704,7 @@ class ClaudeStreamJsonParser {
     final id = block.id ?? '';
     if (id.isNotEmpty) {
       _openToolIds.add(id);
+      _openToolNames[id] = block.name ?? '';
     }
     _callbacks.onToolCall?.call(
       ClaudeToolUse(id: id, name: block.name ?? '', input: input),

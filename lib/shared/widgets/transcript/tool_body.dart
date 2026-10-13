@@ -12,6 +12,7 @@ import 'package:control_center/shared/widgets/transcript/util/read_output_parser
 import 'package:control_center/shared/widgets/transcript/widgets/code_preview.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/file_change_body.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/grep_result_body.dart';
+import 'package:control_center/shared/widgets/transcript/widgets/read_media_body.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/tool_image_strip.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -141,23 +142,16 @@ bool _isEditTool(String name) => switch (name) {
   return (adds: adds, dels: dels);
 }
 
-/// Whether [seg]'s body is a file change or search result worth showing
-/// without a click, so the transcript row opens expanded (see
-/// `TranscriptSegmentRow`).
-///
-/// Edits, writes and grep hits are the segments whose *body is the point* —
-/// "Edit foo.dart" / "Grep bar" tells you nothing on its own, the diff / the
-/// matches are the information. Every other tool (reads, bash, MCP calls)
-/// stays collapsed: its header already carries the summary and its body is
-/// bulk. Requires the inputs the body needs to be present, so a
-/// still-streaming call doesn't open onto nothing.
+/// Whether the tool's result should be visible without opening its row.
+/// Reads, file changes, search hits and returned media open by default.
+/// The row keeps an explicit user collapse across streaming updates.
 bool toolBodyOpensByDefault(ToolSegment seg) {
   // A screenshot IS the point, by the same rule as a diff or a match list:
   // "Browser: screenshot" tells you nothing, the picture is the information.
   // Checked before the tool-kind switch because the producer is a tool the
   // switch does not know (`browser_use`, `computer_use`, `mobile_use`,
   // `ios_use`), which would otherwise fall to the default and stay collapsed.
-  if (seg.images.isNotEmpty) {
+  if (seg.images.isNotEmpty || seg.attachments.isNotEmpty) {
     return true;
   }
   final name = normalizeToolName(seg.toolName);
@@ -165,6 +159,8 @@ bool toolBodyOpensByDefault(ToolSegment seg) {
     return _extractEdits(seg.inputs).isNotEmpty;
   }
   switch (name) {
+    case 'read':
+      return true;
     case 'write':
     case 'create_file':
       final inputs = seg.inputs;
@@ -181,9 +177,10 @@ bool toolBodyOpensByDefault(ToolSegment seg) {
 }
 
 final _ansi = RegExp(r'\x1B\[[0-9;]*[A-Za-z]');
+final _mediaMarker = RegExp(r'\[(?:image|video|audio|document)\]');
 
 /// Renders the expanded body of a tool cell, dispatching on the tool kind:
-/// Read → syntax-highlighted code; Edit → inline diff; Write → highlighted new
+/// Read → media/document preview or highlighted code; Edit → inline diff; Write → highlighted new
 /// file; Grep/Search → match list grouped by file; Bash → terminal; everything
 /// else → pretty-printed JSON input/output.
 Widget buildToolBody(
@@ -198,6 +195,7 @@ Widget buildToolBody(
     seg: seg,
     codeFont: codeFont,
     tokens: tokens,
+    workspaceId: workspaceId,
   );
   // Images are ORTHOGONAL to the tool kind: `browser_use` returns a screenshot
   // alongside its text, and so could any future tool. Compose them after the
@@ -225,6 +223,7 @@ Widget _buildToolBodyContent(
   required ToolSegment seg,
   required String codeFont,
   required DesignSystemTokens tokens,
+  String? workspaceId,
 }) {
   final name = normalizeToolName(seg.toolName);
   final inputs = seg.inputs;
@@ -233,7 +232,22 @@ Widget _buildToolBodyContent(
 
   switch (name) {
     case 'read':
-      final parsed = parseReadOutput(seg.outputs);
+      final hasMedia = seg.attachments.isNotEmpty || seg.images.isNotEmpty;
+      final output = hasMedia
+          ? seg.outputs.replaceAll(_mediaMarker, '').trim()
+          : seg.outputs;
+      if (!seg.isError && seg.attachments.isNotEmpty) {
+        return ReadMediaBody(
+          attachments: seg.attachments,
+          workspaceId: workspaceId,
+          hasRenderedPreview: seg.images.isNotEmpty,
+          extractedText: parseReadOutput(output).content,
+        );
+      }
+      if (hasMedia && output.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      final parsed = parseReadOutput(output);
       if (parsed.content.isEmpty) {
         return _jsonBody(context, seg, codeFont, tokens);
       }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:cc_data/cc_data.dart';
+import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update_codec.dart';
@@ -18,7 +19,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Finalized transcripts are immutable, so a hit is correct forever; the cap
 /// only bounds memory. List watch emissions ship messages WITHOUT their
 /// `segments` payload (`segments_elided`), so this cache — seeded by the live
-/// relay on turn finish and backfilled by [messageTranscriptProvider] — is
+/// relay on turn finish and backfilled by [messageDetailProvider] — is
 /// where agent-turn bubbles get their transcript from. A miss refetches that
 /// one message; the cache does not have to hold every turn the process has
 /// ever rendered. Tool outputs dominate the bytes, so the bound is both a
@@ -122,7 +123,7 @@ final transcriptCacheProvider = Provider<TranscriptLruCache>((ref) {
   return TranscriptLruCache();
 });
 
-/// The finalized transcript of one agent-turn message.
+/// The authoritative message behind a lite or unfinished cached turn.
 ///
 /// The RPC snapshot holds full transcripts across navigation and restarts.
 /// The live-turn memo may render immediately too; the read still revalidates
@@ -132,17 +133,18 @@ final transcriptCacheProvider = Provider<TranscriptLruCache>((ref) {
 /// of the feed's cache extent and back in (or measured by idle extent
 /// precalculation, then built for real) reuses the open read instead of
 /// tearing the subscription down and dialing the server again.
-final messageTranscriptProvider = StreamProvider.autoDispose
-    .family<List<TranscriptSegment>, String>((ref, messageId) {
+final messageDetailProvider = StreamProvider.autoDispose
+    .family<Message?, String>((ref, messageId) {
       ref.cacheFor(kTranscriptReadHold);
       final cache = ref.watch(transcriptCacheProvider);
       final repository = RpcMessagingRepository(ref.watch(rpcClientProvider));
       return repository
           .watchMessageById(ref.requireWorkspaceId(), messageId)
           .map((message) {
-            final segments = message?.transcript ?? const <TranscriptSegment>[];
-            cache.put(messageId, segments);
-            return segments;
+            if (message == null || message.isStreamingComplete) {
+              cache.put(messageId, message?.transcript ?? const []);
+            }
+            return message;
           })
           .handleError((Object error, StackTrace stack) {
             // A denied/deleted transcript must not return from the live-turn
@@ -152,7 +154,7 @@ final messageTranscriptProvider = StreamProvider.autoDispose
           });
     });
 
-/// How long [messageTranscriptProvider] outlives its last listener.
+/// How long [messageDetailProvider] outlives its last listener.
 const kTranscriptReadHold = Duration(seconds: 30);
 
 /// Live turn relay fold for one space.

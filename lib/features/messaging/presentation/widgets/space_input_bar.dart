@@ -5,13 +5,14 @@ import 'package:control_center/features/messaging/presentation/widgets/composer/
 import 'package:control_center/features/messaging/presentation/widgets/mode_dropdown.dart';
 import 'package:control_center/features/messaging/presentation/widgets/mode_enforcement_badge.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/messaging/providers/space_composer_draft_provider.dart';
 import 'package:control_center/features/messaging/providers/space_composer_submit.dart';
 import 'package:control_center/features/messaging/providers/steering_queue_providers.dart';
 import 'package:control_center/features/presence/providers/presence_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
+import 'package:control_center/shared/widgets/composer/composer_draft.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -47,29 +48,31 @@ class SpaceInputBar extends ConsumerStatefulWidget {
 }
 
 class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
-  // A ComposerTextController, not a plain one: it is what paints the
-  // `@[file:…]` references in the draft as pills.
-  late final ComposerTextController _controller;
-  // Captured once (not re-read via `ref` in dispose): `ref.read`/`ref.watch`
-  // are unsafe once this widget's own element is unmounting, but calling a
-  // plain method on an already-resolved notifier instance is not — it never
-  // touches this widget's `ref`/`BuildContext`.
+  ComposerDraft? _draft;
+  // Resolve the notifier while mounted; teardown never reads the widget ref.
   late final MyPresenceNotifier _presence;
 
   @override
   void initState() {
     super.initState();
     _presence = ref.read(myPresenceProvider.notifier);
-    _controller = ComposerTextController()..addListener(_onDraftChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant SpaceInputBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.spaceId != widget.spaceId ||
+        oldWidget.conversationId != widget.conversationId) {
+      _presence.clearTypingAfterUnmount(oldWidget.spaceId);
+    }
   }
 
   @override
   void dispose() {
     // Leaving the composer (space switch/unmount) clears any "typing"
     // presence for this space rather than waiting out the 5s timer.
-    _presence.setTyping(null);
-    _controller.removeListener(_onDraftChanged);
-    _controller.dispose();
+    _presence.clearTypingAfterUnmount(widget.spaceId);
+    _draft?.controller.removeListener(_onDraftChanged);
     super.dispose();
   }
 
@@ -78,7 +81,7 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
   /// `Composer`), which fires this same listener and clears it again — no
   /// separate "clear on send" wiring needed.
   void _onDraftChanged() {
-    final hasText = _controller.text.trim().isNotEmpty;
+    final hasText = _draft!.controller.text.trim().isNotEmpty;
     _presence.setTyping(hasText ? widget.spaceId : null);
   }
 
@@ -88,6 +91,18 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
     final conversationId = widget.conversationId;
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
     final l10n = AppLocalizations.of(context);
+    final draft = ref.watch(
+      spaceComposerDraftProvider((
+        workspaceId: ref.requireWorkspaceId(),
+        spaceId: spaceId,
+        conversationId: conversationId,
+      )),
+    );
+    if (!identical(_draft, draft)) {
+      _draft?.controller.removeListener(_onDraftChanged);
+      _draft = draft;
+      draft.controller.addListener(_onDraftChanged);
+    }
     final sources = buildMessagingMentionSources(
       ref,
       workspaceId,
@@ -139,10 +154,11 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
     );
 
     return SpaceMessageComposer(
+      key: ObjectKey(draft),
       spaceId: spaceId,
       conversationId: conversationId,
       attachedTop: steeringAttached,
-      controller: _controller,
+      draft: draft,
       sources: sources,
       // While agents work, a submit becomes a queued steering card, not a
       // turn — the hint says what Enter will do.

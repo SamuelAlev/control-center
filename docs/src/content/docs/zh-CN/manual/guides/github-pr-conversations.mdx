@@ -2,7 +2,7 @@
 title: 从 GitHub PR 与 Control Center 对话
 description: 直接在 PR 对话中向服务器的 GitHub App 机器人请求审查或提问，无需 webhook 或公开 URL。
 slug: zh-CN/手册/操作指南/github-pr-对话
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 本指南介绍如何在不离开 GitHub 的情况下使用 Control Center：在 PR 页面上请求一次
@@ -23,17 +23,16 @@ AI 审查，在评论中向机器人提问，并在它的审查线程中把对�
 
 ## 找到机器人的名称
 
-机器人的登录名是 `<appslug>[bot]`，其中 `appslug` 是你注册该应用时给它起的
-名称。
+提及 `@usectrl`，这是 Control Center 专用的 GitHub 账号。它是默认触发方式；服务器上已配置的 GitHub App 仍会处理请求并发布回复。你不需要 `usectrl` 账号的凭证。
+
+App 自身的登录名 `<appslug>[bot]` 及其短形式 `@appslug` 也能使用。如需查找这个可选别名：
 
 1. 前往 **设置 → 服务器 → 单点登录**，向下滚动到 **提供商应用** 卡片
 2. 展开 **GitHub** 区块并点击 **测试**
 3. 填充完成后复制 **机器人登录名**。如果它仍显示空白提示，那么登录名始终是
    `<appslug>[bot]`——输入它，或者使用短名 `@appslug`
 
-GitHub 的 `@` 自动补全不提供应用账户，所以登录名必须手动输入——这也是设置卡片
-让它一键即可复制的原因。`[bot]` 后缀是可选的：`@myapp` 和 `@myapp[bot]` 都能
-呼叫到机器人。
+GitHub 的 `@` 自动补全不显示 App 账号，因此 App 别名需要手动输入或复制。专用用户 `@usectrl` 是默认调用方式；`@myapp` 和 `@myapp[bot]` 仍作为 App 别名被接受。
 
 :::note[选择一个有辨识度的应用名称]
 短名是按文本匹配的。如果某个 GitHub 人类用户恰好与你的应用共用同一个 slug，
@@ -47,7 +46,7 @@ GitHub 的 `@` 自动补全不提供应用账户，所以登录名必须手动�
 - **给 PR 加上 `ai-review` 标签**。这是 GitHub 最接近把机器人指派为审查者的做法
   ——应用账户无法占据原生的「已请求的审查者」位置。没有评论可供回应，因此
   GitHub 上不会发布任何内容；审查直接在 Control Center 中启动
-- **在 PR 对话中评论 `@myapp review`**（或者只写 `@myapp`）。机器人会以 👀
+- **在 PR 对话中评论 `@usectrl review`**（或者只写 `@usectrl`）。机器人会以 👀
   回应，然后在审查启动后回复（或告知已有一个正在运行）
 
 审查者在 PR 的审查空间中工作；按照[使用 AI 审查](/zh-CN/手册/操作指南/ai-审查/)
@@ -62,7 +61,7 @@ GitHub 的 `@` 自动补全不提供应用账户，所以登录名必须手动�
 在 PR 对话中评论：
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 发生的事情依次如下：
@@ -81,7 +80,7 @@ GitHub 的 `@` 自动补全不提供应用账户，所以登录名必须手动�
 线程中发布的回答。无需 @提及；线程**本身**就是寻址方式：
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

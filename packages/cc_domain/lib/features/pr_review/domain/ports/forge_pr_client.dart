@@ -19,6 +19,14 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 
+/// Optional exhaustive head-ref history for forges that support a bounded
+/// branch-scoped query. A failed/truncated read throws; it must never look
+/// like an empty history to callers checking whether every PR was merged.
+abstract interface class ForgeBranchPrHistoryClient {
+  /// All PRs ever created from [branch] in this client repository.
+  Future<List<PullRequest>> listPullRequestsForBranch(String branch);
+}
+
 /// How a review verdict is expressed, independent of any forge's spelling.
 ///
 /// GitHub sends `APPROVE`/`REQUEST_CHANGES`/`COMMENT`, GitLab approves through

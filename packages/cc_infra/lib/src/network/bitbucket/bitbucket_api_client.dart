@@ -121,6 +121,67 @@ class BitbucketApiClient {
     );
   }
 
+  /// Exhaustive branch-scoped PR history across all Bitbucket states. The
+  /// collection defaults to OPEN; four state queries are required to include
+  /// merged, declined and superseded PRs. Follow opaque next-page cursors
+  /// exactly, never treating a truncated page as a complete branch.
+  Future<List<BitbucketPullRequest>> listPullRequestsForBranch(
+    String workspace,
+    String repo,
+    String branch, {
+    CancelToken? cancelToken,
+  }) async {
+    _requireCoordinate(workspace, repo);
+    final path = '/repositories/$workspace/$repo/pullrequests';
+    final predicate = 'source.branch.name=${bbqlLiteral(branch)}';
+    final prs = <BitbucketPullRequest>[];
+    for (final state in const ['OPEN', 'MERGED', 'DECLINED', 'SUPERSEDED']) {
+      var params = <String, String>{
+        'state': state,
+        'q': predicate,
+        'pagelen': '$pullRequestPageLen',
+        'fields': _rosterFields,
+      };
+      final cursors = <String>{};
+      for (var page = 0; page < 100; page++) {
+        final response = await _httpClient.get(
+          path,
+          query: params,
+          cancelToken: cancelToken,
+        );
+        final body = asJsonMap(_decoded(response));
+        for (final pr in decodeJsonList(
+          body?['values'],
+          BitbucketPullRequest.fromJson,
+        )) {
+          if (pr.sourceBranch.isEmpty || pr.id <= 0) {
+            throw const FormatException(
+              'Bitbucket returned a PR without an identity/head ref',
+            );
+          }
+          if (pr.sourceBranch == branch) {
+            prs.add(pr);
+          }
+        }
+        final next = body?['next'] as String?;
+        if (next == null || next.isEmpty) {
+          break;
+        }
+        final uri = Uri.tryParse(next);
+        if (uri == null ||
+            uri.queryParameters.isEmpty ||
+            !cursors.add(next) ||
+            page == 99) {
+          throw const FormatException(
+            'Bitbucket branch PR history is incomplete',
+          );
+        }
+        params = {...uri.queryParameters};
+      }
+    }
+    return prs;
+  }
+
   /// Quotes and escapes [value] as a BBQL string literal, including the
   /// surrounding double quotes.
   ///

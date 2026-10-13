@@ -2,7 +2,7 @@
 title: Aus einem GitHub-PR mit Control Center sprechen
 description: Bitte den Bot der GitHub App deines Servers aus der PR-Unterhaltung selbst um ein Review oder eine Frage, ohne Webhook und ohne öffentliche URL.
 slug: de-DE/handbuch/anleitungen/github-pr-unterhaltungen
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Diese Anleitung zeigt, wie du mit Control Center arbeitest, ohne GitHub zu
@@ -28,8 +28,9 @@ Bereitstellung.
 
 ## Den Namen deines Bots finden
 
-Der Login des Bots lautet `<appslug>[bot]`, wobei `appslug` der Name ist, den
-du der App bei der Registrierung gegeben hast.
+Erwähne `@usectrl`, das eigene GitHub-Konto von Control Center. Dies ist der Standardauslöser; die konfigurierte GitHub App deines Servers bearbeitet die Anfrage weiterhin und veröffentlicht die Antworten. Zugangsdaten für das Konto `usectrl` brauchst du nicht.
+
+Auch der eigene App-Login `<appslug>[bot]` und die Kurzform `@appslug` funktionieren. So findest du diesen optionalen Alias:
 
 1. Geh zu **Einstellungen → Server → Single sign-on** und scrolle zur Karte
    **Anbieter-Apps**
@@ -37,10 +38,7 @@ du der App bei der Registrierung gegeben hast.
 3. Kopiere **Bot-Login**, sobald er erscheint. Zeigt er noch den leeren Hinweis,
    ist der Login immer `<appslug>[bot]` — tippe das, oder die Kurzform `@appslug`
 
-GitHub bietet App-Konten in der `@`-Autovervollständigung nicht an, den Login
-musst du also tippen. Deshalb macht die Karte in den Einstellungen das Kopieren
-zu einem Klick. Das Suffix `[bot]` ist optional: `@myapp` und `@myapp[bot]`
-sprechen beide den Bot an.
+GitHub bietet App-Konten in der `@`-Autovervollständigung nicht an; App-Aliasse musst du daher eintippen oder kopieren. Standardmäßig rufst du den Bot über den eigenen Nutzer `@usectrl` auf; `@myapp` und `@myapp[bot]` bleiben gültige App-Aliasse.
 
 :::note[Wähle einen unverwechselbaren App-Namen]
 Die Kurzform wird als Text abgeglichen. Teilt sich ein menschlicher
@@ -59,7 +57,7 @@ auch die Schaltfläche **Ask AI** startet:
   Platz eines angeforderten Reviewers nicht belegen. Es gibt keinen Kommentar,
   auf den zu reagieren wäre, also wird auf GitHub nichts gepostet; das Review
   startet in Control Center
-- **Kommentiere `@myapp review`** (oder nur `@myapp`) in der PR-Unterhaltung.
+- **Kommentiere `@usectrl review`** (oder nur `@usectrl`) in der PR-Unterhaltung.
   Der Bot reagiert mit 👀 und antwortet, sobald das Review gestartet ist (oder
   dass bereits eines läuft)
 
@@ -79,7 +77,7 @@ lassen, etwa nach einem Push, erwähnst du den Bot.
 Kommentiere in der PR-Unterhaltung:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Was dann passiert, der Reihe nach:
@@ -102,7 +100,7 @@ Thread gepostet hat. Eine Erwähnung brauchst du nicht; der Thread **ist** die
 Adressierung:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

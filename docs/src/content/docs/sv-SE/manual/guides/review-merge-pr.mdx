@@ -2,7 +2,7 @@
 title: Granska och slå ihop en PR
 description: Öppna en PR-arbetsyta, läs diffen, lämna kommentarer inline, skicka in en granskning och slå ihop.
 slug: sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Den här guiden visar hur du granskar och slår ihop en pull request.
@@ -25,6 +25,30 @@ när en förhandsvisnings-URL upptäcks på PR:en. Din fliklayout sparas per PR.
 Fliken Översikt innehåller PR:ens metadata (författare, gren, etiketter,
 tilldelade, reaktioner, commits, kontrollstatus) och åtgärdsraden: uppdatera,
 **Granskning**, **Slå samman**, öppna i IDE och en överflödesmeny ⋯.
+
+### Öppna en PR från en ytas stack
+
+Ytans **Allmänt → Pull requests**-sektion grupperar länkade och grenmatchade
+PR:er per arkiv. När en PR:s basgren är den föregående PR:ens huvudgren visas de
+i en ihopfällbar stack. Dess rubrik anger den nedersta PR:en, målgrenen och
+antalet; numrerade rader går från den nedersta PR:en (1) mot toppen. Numren
+beskriver beroendeordning, inte beredskap för sammanslagning.
+
+Varje rad visar titeln, PR-numret och statusen. Håll muspekaren över eller
+fokusera en rad för att läsa hela titeln och grennamnen; klicka eller tryck på
+Enter för att öppna PR-arbetsytan. Fokusera en stackrubrik och tryck på Enter
+eller mellanslag för att fälla ihop eller expandera den. Orelaterade PR:er förblir
+åtskilda, och ofullständiga eller tvetydiga grenlänkar visas inte som en ordnad
+stack.
+
+I **Källkontroll** öppnar **Staplade pull requests (N)** en väljare över stackens
+publicerade delar, nederst först. Varje post visar PR-numret, delens etikett och
+position; den utcheckade delen är markerad. Välj en post för att öppna dess
+PR-arbetsyta. **Publicera stacken** visas bara när PR-upptäckten har slutförts och
+minst en del saknar PR. Det gäller även grenmenyn. PR:er som skapats utanför
+Control Center räknas också som publicerade. Delvis publicerade stackar erbjuder
+båda åtgärderna; arbete på en enda gren behåller de enskilda åtgärderna för att
+skapa/visa PR.
 
 ## Läs diffen
 

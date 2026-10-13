@@ -21,11 +21,19 @@ extension _NavigationMethods on _SpaceMessageFeedState {
       conversationColumnWidth,
       math.max(160.0, crossAxisExtent - 32),
     );
-    return estimateMessageRowExtent(
+    var extent = estimateMessageRowExtent(
       item.message,
       collapseHeader: item.collapseHeader,
       columnWidth: columnWidth,
     );
+    for (final steering in item.steeringMessages) {
+      extent += estimateMessageRowExtent(
+        steering,
+        collapseHeader: false,
+        columnWidth: columnWidth,
+      );
+    }
+    return extent;
   }
 
   /// The reverse [SuperListView] index of [messageId] in the current window, or
@@ -34,15 +42,16 @@ extension _NavigationMethods on _SpaceMessageFeedState {
   int? _superIndexOf(String messageId) {
     for (var i = 0; i < _items.length; i++) {
       final it = _items[i];
-      if (it is MessageItem && it.message.id == messageId) {
+      if (it is MessageItem &&
+          (it.message.id == messageId ||
+              it.steeringMessages.any((m) => m.id == messageId))) {
         return _items.length - 1 - i;
       }
     }
     return null;
   }
 
-  GlobalKey _ensureRowKey(String id) =>
-      _rowKeys.putIfAbsent(id, GlobalKey.new);
+  GlobalKey _ensureRowKey(String id) => _rowKeys.putIfAbsent(id, GlobalKey.new);
 
   /// Runs a programmatic scroll action with a reentrancy guard so the scroll
   /// listener's intent/edge logic ignores self-induced position changes.
@@ -94,8 +103,11 @@ extension _NavigationMethods on _SpaceMessageFeedState {
     required bool animate,
     bool withPeek = true,
   }) async {
+    final index = _superIndexOf(messageId);
+    final item = index == null ? null : _items[_items.length - 1 - index];
+    final rowId = item is MessageItem ? item.message.id : messageId;
     _follow.mode = FeedFollowMode.anchored;
-    _follow.anchorMessageId = messageId;
+    _follow.anchorMessageId = rowId;
 
     double alignment = 0.0;
     if (withPeek && _scrollController.hasClients) {
@@ -106,7 +118,7 @@ extension _NavigationMethods on _SpaceMessageFeedState {
     }
 
     await _runProgrammatic(() async {
-      if (_rowKeys[messageId]?.currentContext == null &&
+      if (_rowKeys[rowId]?.currentContext == null &&
           _listController.isAttached &&
           _scrollController.hasClients) {
         final index = _superIndexOf(messageId);
@@ -123,7 +135,7 @@ extension _NavigationMethods on _SpaceMessageFeedState {
       if (!mounted) {
         return;
       }
-      final ctx = _rowKeys[messageId]?.currentContext;
+      final ctx = _rowKeys[rowId]?.currentContext;
       if (ctx == null || !ctx.mounted) {
         return;
       }

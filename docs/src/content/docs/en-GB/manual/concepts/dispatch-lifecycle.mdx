@@ -2,7 +2,7 @@
 title: Agent dispatch lifecycle
 description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
 slug: en-GB/manual/concepts/dispatch-lifecycle
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## What a dispatch is
@@ -52,7 +52,7 @@ Copy-on-write is the **only** implementation wherever `rift` ships, backed by th
 
 Two identities are resolved per run, before any process launches.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Git authorship.** By default, agent commits use `Control Center <hi@usectrl.dev>` (the GitHub account `@usectrl`) in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*`, with the requesting person credited by a `Co-Authored-By:` trailer. Turn off agent attribution in **Settings → You → Commit attribution** to use only your Git identity. A workspace administrator can force attribution on or off in **Settings → Workspace → General**; that override takes precedence and disables the personal toggle without changing your saved preference. Changes apply to the next run. Claude Code's own commit and PR bylines are always disabled. Explicit caller-set Git identity values still take precedence; forge credentials are unaffected.
 
 **Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
 

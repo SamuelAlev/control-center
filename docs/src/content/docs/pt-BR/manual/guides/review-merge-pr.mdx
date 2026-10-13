@@ -2,7 +2,7 @@
 title: Revisar e fazer merge de uma PR
 description: Abra o ambiente de trabalho de uma PR, leia o diff, deixe comentários em linha, envie uma revisão e faça o merge.
 slug: pt-BR/manual/guias/revisar-e-fazer-merge-de-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Este guia mostra como revisar e fazer merge de uma pull request.
@@ -26,6 +26,32 @@ O layout das suas abas é lembrado por PR.
 A aba Visão geral traz os metadados da PR (autor, branch, etiquetas,
 responsáveis, reações, commits, status das verificações) e a linha de ações:
 atualizar, **Revisão**, **Merge**, abrir no IDE e um menu de overflow ⋯.
+
+### Abrir uma PR a partir da pilha de um espaço
+
+A seção **Geral → Pull requests** do espaço agrupa por repositório as PRs
+vinculadas e correspondidas por branch. Quando o branch base de uma PR é o
+branch head da PR anterior, elas aparecem em uma pilha recolhível. O cabeçalho
+dela identifica a PR de baixo, o branch de destino e a contagem; as linhas
+numeradas vão da PR de baixo (1) em direção ao topo. Os números descrevem a
+ordem de dependência, não a prontidão para merge.
+
+Cada linha mostra o título, o número da PR e o estado. Passe o cursor sobre uma
+linha ou foque-a para ler o título completo e os nomes dos branches; clique ou
+pressione Enter para abrir o ambiente de trabalho da PR. Foque o cabeçalho de
+uma pilha e pressione Enter ou Espaço para recolhê-la ou expandi-la. PRs não
+relacionadas permanecem separadas, e vínculos de branch incompletos ou ambíguos
+não são apresentados como uma pilha ordenada.
+
+Em **Controle de versão**, **Pull requests empilhadas (N)** abre um seletor das
+partes publicadas da pilha, de baixo para cima. Cada entrada mostra o número da
+PR, o rótulo da parte e a posição; a parte em checkout aparece marcada. Selecione
+uma entrada para abrir o ambiente de trabalho da PR correspondente. **Publicar a
+pilha** só aparece quando a descoberta de PRs terminou e ao menos uma parte não
+tem PR. Isso também vale para o menu de branch. PRs criadas fora do Control
+Center também contam como publicadas. Pilhas parcialmente publicadas oferecem as
+duas ações; trabalhos de branch único mantêm as ações individuais de criar/ver
+PR.
 
 ## Ler o diff
 

@@ -12131,6 +12131,43 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsWorkspaceGeneralDescription => '此工作区中所有人共享的身份、策略与约定。';
 
   @override
+  String get settingsAgentAttributionTitle => '提交署名';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      '选择是否在智能体提交中为 Control Center 署名。工作区管理员可以为工作区中的所有人覆盖此选择。';
+
+  @override
+  String get settingsAgentCoauthorSection => '智能体署名';
+
+  @override
+  String get settingsAgentCoauthorTitle => '在智能体提交中为 Control Center 署名';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      '开启后，提交以 Control Center 为作者，并将你列为共同作者。关闭后，提交使用你的 Git 身份，不为智能体署名。';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      '此工作区的设置覆盖了你的个人选择。你的偏好会保留，但在此处不生效。';
+
+  @override
+  String get settingsAgentAttributionLoading => '正在加载署名设置…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      '选择是否在智能体提交中为 Control Center 署名。工作区的选择会覆盖每位成员的个人偏好。';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit => '使用每位成员的偏好';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways => '始终为 Control Center 署名';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever => '从不为 Control Center 署名';
+
+  @override
   String get settingsWorkspaceMeetingsDescription => '此工作区会议的笔记模板与已保存的声音。';
 
   @override
@@ -13532,6 +13569,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reviewKindTicket => '工单';
+
+  @override
+  String get spaceAllPrsMerged => '此空间中的所有拉取请求均已合并。要归档此空间吗？';
+
+  @override
+  String get spaceKeepAfterMerge => '不，保留此空间';
+
+  @override
+  String get spaceKeepAfterMergeHint => '今后不会再就此空间询问你。';
+
+  @override
+  String get spaceAllPrsMergedLabel => '所有拉取请求均已合并';
 
   @override
   String get archiveSpace => '归档空间';
@@ -27551,6 +27600,43 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsWorkspaceGeneralDescription => '此工作區中所有人共用的身分、政策與慣例。';
 
   @override
+  String get settingsAgentAttributionTitle => '提交署名';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      '選擇是否在代理提交中為 Control Center 署名。工作區管理員可以替工作區內所有人覆寫此選擇。';
+
+  @override
+  String get settingsAgentCoauthorSection => '代理署名';
+
+  @override
+  String get settingsAgentCoauthorTitle => '在代理提交中為 Control Center 署名';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      '開啟後，提交將以 Control Center 為作者，並將你列為共同作者。關閉後，提交會使用你的 Git 身分，不為代理署名。';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      '此工作區的設定會覆寫你的個人選擇。你的偏好仍會儲存，但在這裡不生效。';
+
+  @override
+  String get settingsAgentAttributionLoading => '正在載入署名設定…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      '選擇是否在代理提交中為 Control Center 署名。工作區的選擇會覆寫每位成員的個人偏好。';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit => '使用每位成員的偏好';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways => '一律為 Control Center 署名';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever => '絕不為 Control Center 署名';
+
+  @override
   String get settingsWorkspaceMeetingsDescription => '此工作區會議的筆記範本與已儲存的聲音。';
 
   @override
@@ -28954,6 +29040,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get reviewKindTicket => '工單';
+
+  @override
+  String get spaceAllPrsMerged => '此空間中的所有 pull request 都已合併。要封存此空間嗎？';
+
+  @override
+  String get spaceKeepAfterMerge => '否，保留此空間';
+
+  @override
+  String get spaceKeepAfterMergeHint => '之後不會再針對此空間詢問你。';
+
+  @override
+  String get spaceAllPrsMergedLabel => '所有 pull request 皆已合併';
 
   @override
   String get archiveSpace => '封存空間';

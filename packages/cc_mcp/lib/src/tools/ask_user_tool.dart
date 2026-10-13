@@ -37,15 +37,24 @@ class AskUserTool extends McpTool {
       'concrete {label, description?} options when you can; set '
       'allow_free_text when the list may not cover the answer; set '
       'multi_select when several options may apply. '
-      'workspace_id, space_id and agent_id are filled from the session; a '
-      'value you pass for them is ignored.';
+      'workspace_id, space_id, conversation_id and agent_id are filled '
+      'from the session; values you pass for them are ignored.';
 
-  /// The question renders in the space the human is watching, and the message
-  /// is sent as the agent that asked. A model-supplied id would put the form
-  /// somewhere else, or attribute it to someone else, and the call would wait
-  /// out its timeout with nobody looking at it.
+  /// The question renders in the run's conversation and is sent as the
+  /// asking agent. A model-supplied destination would strand the form.
   @override
-  Set<String> get forcedScopeKeys => const {'space_id', 'agent_id'};
+  Set<String> get forcedScopeKeys => const {
+    'space_id',
+    'conversation_id',
+    'agent_id',
+  };
+
+  @override
+  Set<String> get requiredScopeKeys => const {
+    'workspace_id',
+    'space_id',
+    'conversation_id',
+  };
 
   @override
   Map<String, dynamic> get inputSchema => {
@@ -59,6 +68,11 @@ class AskUserTool extends McpTool {
         'type': 'string',
         'description':
             'The space the form renders in. Filled from the session.',
+      },
+      'conversation_id': {
+        'type': 'string',
+        'description':
+            'The conversation the form renders in. Filled from the session.',
       },
       'agent_id': {
         'type': 'string',
@@ -130,6 +144,13 @@ class AskUserTool extends McpTool {
       return spaceErr;
     }
 
+    final (conversationId, conversationErr) = McpTool.requireString(
+      arguments,
+      'conversation_id',
+    );
+    if (conversationErr != null) {
+      return conversationErr;
+    }
     final parsed = AskUserArguments.parse(arguments, maxOptions: maxOptions);
     final error = parsed.error;
     if (error != null) {
@@ -142,6 +163,7 @@ class AskUserTool extends McpTool {
         workspaceId: workspaceId!,
         spaceId: spaceId!,
         question: parsed.question,
+        conversationId: conversationId!,
         context: parsed.context,
         options: parsed.options,
         allowFreeText: parsed.allowFreeText,

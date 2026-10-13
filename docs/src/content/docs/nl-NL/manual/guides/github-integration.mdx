@@ -2,7 +2,7 @@
 title: GitHub-integratie instellen
 description: Meld je aan bij GitHub zodat het PR-oppervlak, reporegistratie en agentruns werken.
 slug: nl-NL/handleiding/gidsen/github-integratie
-sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
+sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
 ---
 
 Deze gids behandelt de GitHub-specifieke delen van de installatie. GitHub is een
@@ -104,10 +104,7 @@ knop om te vernieuwen. De statussen vernieuwen vanzelf elke twee minuten.
   remote pushen** raadpleegt en hem daarna doorstuurt met een schrijftoken dat
   de agent nooit in handen heeft. Zie
   [Sandboxbeleid configureren](/nl-NL/handleiding/gidsen/sandboxbeleid/)
-- Commits die een agent maakt, zijn **als de agent** geschreven — de weergavenaam
-  plus ` (agent)`, op een synthetisch adres dat aan de id van de agent is
-  gekoppeld — nooit als een mens. De persoon die erom vroeg, wordt vermeld met
-  een `Co-Authored-By`-trailer
+- Standaard worden commits van agents toegeschreven aan **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`), terwijl de aanvrager in een `Co-Authored-By`-trailer wordt vermeld. Via **Instellingen → Jij → Toeschrijving van commits** kun je de agentvermelding uitschakelen en alleen je Git-identiteit gebruiken. Een werkruimte-instelling onder **Instellingen → Werkruimte → Algemeen** gaat voor en vergrendelt die persoonlijke knop. De eigen auteursvermelding van Claude Code is altijd uitgeschakeld
 - Met een geconfigureerde GitHub App geeft de broker per start fijnmazige, tot de
   repo beperkte installatietokens van ongeveer een uur uit, in plaats van een
   breed token weg te geven. De installatie wordt bepaald aan de hand van de

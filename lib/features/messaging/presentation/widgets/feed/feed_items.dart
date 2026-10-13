@@ -9,13 +9,20 @@ sealed class FeedItem {
 /// A feed row that renders one [Message].
 class MessageItem extends FeedItem {
   /// Creates a message row, optionally collapsing a consecutive sender header.
-  const MessageItem(this.message, {this.collapseHeader = false});
+  const MessageItem(
+    this.message, {
+    this.collapseHeader = false,
+    this.steeringMessages = const [],
+  });
 
   /// The message to render.
   final Message message;
 
   /// Whether to hide the avatar/name because the previous row is the same sender.
   final bool collapseHeader;
+
+  /// Injected user messages rendered inside this run, in injection order.
+  final List<Message> steeringMessages;
 }
 
 /// A feed row that separates messages from different local calendar days.
@@ -56,6 +63,7 @@ List<FeedItem> buildFeedItems(
   DateTime? readFrontier,
 }) {
   final out = <FeedItem>[];
+  final steeringByRun = _steeringByRun(messages);
   DateTime? lastDay;
   Message? prevSender;
   bool dividerInserted = false;
@@ -66,11 +74,11 @@ List<FeedItem> buildFeedItems(
   final unreadCount = messages.where(isUnread).length;
 
   for (final display in messages) {
-    // A queued steering card renders in the strip below the trail, not here —
-    // it has not reached the agent yet. The moment the server flips it to
-    // `injected` (or converts it to text at run end) the row re-renders as a
-    // trail message in this same feed.
-    if (display.isSteeringQueued) {
+    // Queued cards stay in the composer. Injected cards whose run is in this
+    // window belong inside its transcript, not after the whole agent turn.
+    // Keep an orphaned card visible until pagination brings its run into view.
+    if (display.isSteeringQueued ||
+        (steeringByRun[display.steerRunId]?.contains(display) ?? false)) {
       continue;
     }
     final day = DateTime(
@@ -100,8 +108,43 @@ List<FeedItem> buildFeedItems(
         !prevSender.isSystem &&
         display.createdAt.difference(prevSender.createdAt).inMinutes.abs() < 5;
 
-    out.add(MessageItem(display, collapseHeader: collapse));
+    out.add(
+      MessageItem(
+        display,
+        collapseHeader: collapse,
+        steeringMessages: steeringByRun[display.id] ?? const [],
+      ),
+    );
     prevSender = display;
   }
   return out;
+}
+
+Map<String, List<Message>> _steeringByRun(List<Message> messages) {
+  if (!messages.any((m) => m.isSteeringInjected && m.steerRunId != null)) {
+    return const {};
+  }
+  final byId = {for (final message in messages) message.id: message};
+  final grouped = <String, List<Message>>{};
+  for (final message in messages) {
+    if (!message.isSteeringInjected) {
+      continue;
+    }
+    final run = byId[message.steerRunId];
+    if (run == null ||
+        run.messageType != MessageType.agentTurn ||
+        run.spaceId != message.spaceId ||
+        run.conversationId != message.conversationId) {
+      continue;
+    }
+    (grouped[run.id] ??= []).add(message);
+  }
+  for (final entries in grouped.values) {
+    entries.sort((a, b) {
+      final order = (a.steerInjectedAt ?? a.createdAt.millisecondsSinceEpoch)
+          .compareTo(b.steerInjectedAt ?? b.createdAt.millisecondsSinceEpoch);
+      return order != 0 ? order : a.id.compareTo(b.id);
+    });
+  }
+  return grouped;
 }

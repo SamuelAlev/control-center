@@ -2,7 +2,7 @@
 title: Falar com o Control Center a partir de uma PR do GitHub
 description: Peça ao bot da GitHub App do servidor uma revisão ou faça uma pergunta a partir da própria conversa da PR, sem webhook nem URL público.
 slug: pt-PT/manual/guias/conversas-pr-github
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Este guia mostra-lhe como trabalhar com o Control Center sem sair do GitHub:
@@ -27,8 +27,9 @@ um portátil atrás de NAT comporta-se exatamente como uma implementação públ
 
 ## Descobrir o nome do seu bot
 
-O login do bot é `<appslug>[bot]`, em que `appslug` é o nome que deu à aplicação
-quando a registou.
+Mencione `@usectrl`, a conta GitHub dedicada do Control Center. Este é o acionador predefinido; a GitHub App configurada no seu servidor continua a tratar o pedido e a publicar as respostas. Não precisa das credenciais da conta `usectrl`.
+
+O login da própria App, `<appslug>[bot]`, e a forma curta `@appslug` também funcionam. Para consultar esse alias opcional:
 
 1. Vá a **Definições → Servidor → Início de sessão único** e desloque-se até ao
    cartão **Aplicações do fornecedor**
@@ -37,10 +38,7 @@ quando a registou.
    campo vazio, o login é sempre `<appslug>[bot]` — escreva-o, ou então a forma
    curta `@appslug`
 
-O GitHub não oferece contas de aplicação no seu preenchimento automático de `@`,
-pelo que o login tem de ser escrito — é por isso que o cartão de definições o
-torna copiável com um clique. O sufixo `[bot]` é opcional: tanto `@myapp` como
-`@myapp[bot]` endereçam o bot.
+O GitHub não apresenta contas de App no preenchimento automático de `@`, pelo que os aliases da App têm de ser escritos ou copiados. O utilizador dedicado `@usectrl` é a forma predefinida de invocação; `@myapp` e `@myapp[bot]` continuam a ser aliases aceites da App.
 
 :::note[Escolha um nome de aplicação distinto]
 A forma curta é comparada como texto. Se um utilizador humano do GitHub partilhar
@@ -57,7 +55,7 @@ botão **Ask AI** inicia:
   oferece de atribuir o bot como revisor — as contas de aplicação não podem
   ocupar o lugar nativo de revisor solicitado. Não há comentário a que reagir,
   pelo que nada é publicado no GitHub; a revisão começa no Control Center
-- **Comente `@myapp review`** (ou apenas `@myapp`) na conversa da PR. O bot reage
+- **Comente `@usectrl review`** (ou apenas `@usectrl`) na conversa da PR. O bot reage
   com 👀 e depois responde quando a revisão tiver começado (ou que uma já está a
   correr)
 
@@ -76,7 +74,7 @@ um push, por exemplo — mencione o bot.
 Comente na conversa da PR:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 O que acontece, por ordem:
@@ -98,7 +96,7 @@ comentário de diff que tenha deixado, ou uma resposta que tenha publicado nessa
 thread. Não é necessária nenhuma menção; a thread **é** o endereçamento:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

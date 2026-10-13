@@ -19,6 +19,7 @@ import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart'
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/core/domain/services/activity_logger.dart';
 import 'package:cc_domain/core/domain/services/memory_access_policy.dart';
+import 'package:cc_domain/core/domain/services/resolve_agent_attribution.dart';
 import 'package:cc_domain/core/domain/services/user_mention_parser.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
@@ -737,6 +738,7 @@ Future<CcServer> runCcServer({
   late final AgentAwaitingInputPublisher agentAwaitingInput;
   final agentQuestions = AgentQuestionService(
     messagingRepository,
+    conversations: conversationRepository,
     timeout: const Duration(minutes: 30),
     onAsked: (request, messageId) =>
         agentAwaitingInput.questionAsked(request, messageId),
@@ -1550,6 +1552,12 @@ Future<CcServer> runCcServer({
     repository: notificationFeedRepository,
   )..start();
 
+  late final SandboxedAgentDispatchAdapter agentDispatch;
+  final mediaRenderer = MediaRenderService(
+    blobStore: blobStore,
+    appSupportRoot: config.dataDir,
+    resolveScope: (request) => agentDispatch.mediaReadScopeFor(request),
+  );
   final mcpRegistry = buildServerMcpRegistry(
     globalDb: globalDb,
     workspaceDbs: workspaceDbs,
@@ -1559,6 +1567,7 @@ Future<CcServer> runCcServer({
     messagingRepository: messagingRepository,
     agentQuestions: agentQuestions,
     todoRepository: todoRepository,
+    mediaRenderer: mediaRenderer,
     // Pipeline structured-output contract (submit_output writes outputJson).
     agentRunLogRepository: agentRunLogRepository,
     schemaValidator: const JsonSchemaValidator(),
@@ -2321,7 +2330,7 @@ Future<CcServer> runCcServer({
     return [for (final r in repos) r.path];
   }
 
-  final agentDispatch = SandboxedAgentDispatchAdapter(
+  agentDispatch = SandboxedAgentDispatchAdapter(
     // Injecting the LOOP (not a fake dispatch port, and not just a scripted
     // provider) is what makes a public demo safe: the dispatch path builds its
     // REAL tool surface, so a scripted model emitting a `bash` call would
@@ -2368,6 +2377,7 @@ Future<CcServer> runCcServer({
     // reference the `/blob` route resolves, not megabytes of base64 in a
     // message row.
     blobStore: blobStore,
+    mediaRenderer: mediaRenderer,
     // Diagnostics, navigation and rename. The real payoff is that `write` and
     // `edit` come back carrying the compiler's opinion, so an agent finds out
     // it broke the build at the moment it broke it.
@@ -2472,6 +2482,13 @@ Future<CcServer> runCcServer({
       userId: userId,
       workspaceId: workspaceId,
     ),
+    resolveAgentAttribution: (userId, {workspaceId}) =>
+        resolveStoredAgentAttribution(
+          preferences: userPreferencesRepository,
+          workspaceSettings: workspaceSettingsRepository,
+          userId: userId == null || userId.isEmpty ? ownerUserId : userId,
+          workspaceId: workspaceId,
+        ),
     // Resolves the run worktree's origin coordinates so the broker mints a
     // repo-scoped GitHub App installation token for exactly that repo. Agent
     // runs never carry a member's personal GitHub token: agent work is
@@ -5579,6 +5596,7 @@ Future<CcServer> runCcServer({
     eventBus: eventBus,
     contextInspection: ContextInspectionService(
       agentRepository: agentRepository,
+      conversationRepository: conversationRepository,
       messagingRepository: messagingRepository,
       modeResolver: conversationModeResolver,
       filesystem: workspaceFilesystem,

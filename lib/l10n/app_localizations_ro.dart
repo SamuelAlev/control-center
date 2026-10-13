@@ -12622,6 +12622,49 @@ class AppLocalizationsRo extends AppLocalizations {
       'Identitate, politică și convenții partajate de toți din acest spațiu de lucru.';
 
   @override
+  String get settingsAgentAttributionTitle =>
+      'Atribuirea autorului commiturilor';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Alege dacă Control Center este creditat pentru commiturile agentului. Administratorii spațiului de lucru pot suprascrie această alegere pentru toți membrii.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Creditarea agentului';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Creditează Control Center pentru commiturile agentului';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Când opțiunea este activă, Control Center este autorul commiturilor, iar tu ești inclus ca coautor. Când este dezactivată, commiturile folosesc identitatea ta Git fără creditarea agentului.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Setarea acestui spațiu de lucru îți suprascrie alegerea personală. Preferința ta rămâne salvată, dar nu se aplică aici.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Se încarcă setările de atribuire a autorului…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Alege dacă Control Center este creditat pentru commiturile agentului. Alegerea spațiului de lucru suprascrie preferința personală a fiecărui membru.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Folosește preferința fiecărui membru';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Creditează întotdeauna Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Nu credita niciodată Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Șabloane de note și voci salvate pentru întâlnirile din acest spațiu de lucru.';
 
@@ -14133,6 +14176,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Tichet';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Toate cererile de integrare din acest spațiu au fost îmbinate. Arhivezi acest spațiu?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Nu, păstrează acest spațiu';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Nu vei mai fi întrebat despre acest spațiu.';
+
+  @override
+  String get spaceAllPrsMergedLabel =>
+      'Toate cererile de integrare au fost îmbinate';
 
   @override
   String get archiveSpace => 'Arhivează spațiul';

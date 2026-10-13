@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart';
@@ -88,6 +90,19 @@ class _FakePrInlineCommentsController extends PrInlineCommentsController {
 
 PrInlineCommentsController _createController(PrRef pr) {
   return _FakePrInlineCommentsController(pr);
+}
+
+class _ReplyController extends _FakePrInlineCommentsController {
+  _ReplyController(super.pr);
+
+  Future<void> Function()? action;
+  String? posted;
+
+  @override
+  Future<void> replyTo(PrInlineThread thread, String body) async {
+    posted = body;
+    await action?.call();
+  }
 }
 
 PrInlineThread _thread({
@@ -897,6 +912,110 @@ void main() {
       final textField = tester.widget<CcTextField>(find.byType(CcTextField));
       expect(textField.autofocus, isTrue);
     });
+  });
+
+  group('PrInlineThreadBlock reply drafts', () {
+    testWidgets(
+      'remount and target changes retain only the matching thread draft',
+      (tester) async {
+        const otherPr = (
+          workspaceId: 'ws-2',
+          repoFullName: 'owner/repo',
+          number: 1,
+        );
+        final first = _ReplyController(_prRef);
+        final elsewhere = _ReplyController(otherPr);
+        final target = ValueNotifier(0);
+        addTearDown(target.dispose);
+        await tester.pumpWidget(
+          _wrap(
+            ValueListenableBuilder<int>(
+              valueListenable: target,
+              builder: (_, index, _) => index < 0
+                  ? const SizedBox.shrink()
+                  : PrInlineThreadBlock(
+                      key: const ValueKey('reused-thread'),
+                      thread: _thread(id: index == 1 ? 't2' : 't1'),
+                      controller: index == 2 ? elsewhere : first,
+                    ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.tap(find.text('Reply…'));
+        await tester.pump();
+        await tester.enterText(find.byType(CcTextField), 'thread one reply');
+        target.value = -1;
+        await tester.pump();
+        target.value = 0;
+        await tester.pump();
+        expect(
+          tester.widget<CcTextField>(find.byType(CcTextField)).controller?.text,
+          'thread one reply',
+        );
+        for (final index in [1, 2]) {
+          target.value = index;
+          await tester.pump();
+          expect(find.byType(CcTextField), findsNothing);
+          await tester.tap(find.text('Reply…'));
+          await tester.pump();
+          expect(
+            tester
+                .widget<CcTextField>(find.byType(CcTextField))
+                .controller
+                ?.text,
+            isEmpty,
+          );
+        }
+        target.value = 0;
+        await tester.pump();
+        expect(
+          tester.widget<CcTextField>(find.byType(CcTextField)).controller?.text,
+          'thread one reply',
+        );
+      },
+    );
+
+    testWidgets(
+      'failed reply survives; success does not erase edits while sending',
+      (tester) async {
+        final controller = _ReplyController(_prRef);
+        final pending = Completer<void>();
+        controller.action = () => pending.future;
+        await tester.pumpWidget(
+          _wrap(
+            CcToastScope(
+              child: PrInlineThreadBlock(
+                thread: _thread(),
+                controller: controller,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.tap(find.text('Reply…'));
+        await tester.pump();
+        await tester.enterText(find.byType(CcTextField), 'first reply');
+        await tester.tap(find.byIcon(AppIcons.arrowUp));
+        await tester.pump();
+        final draft = tester
+            .widget<CcTextField>(find.byType(CcTextField))
+            .controller!;
+        draft.text = 'edited while sending';
+        pending.complete();
+        await tester.pump();
+        expect(controller.posted, 'first reply');
+        expect(draft.text, 'edited while sending');
+        controller.action = () async => throw StateError('offline');
+        await tester.tap(find.byIcon(AppIcons.arrowUp));
+        await tester.pump();
+        expect(draft.text, 'edited while sending');
+        controller.action = null;
+        await tester.tap(find.byIcon(AppIcons.arrowUp));
+        await tester.pump();
+        expect(draft.text, isEmpty);
+      },
+    );
   });
 
   group('PrInlineThreadBlock - container styling', () {

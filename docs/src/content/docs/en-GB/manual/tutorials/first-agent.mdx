@@ -2,7 +2,7 @@
 title: Dispatch your first agent
 description: Create an agent, give it a space and a task and watch the run stream back.
 slug: en-GB/manual/tutorials/first-agent
-sourceHash: cde69fcbd216df5c5a40435136f5fdc681864068
+sourceHash: 4d54c7233d4a0de6607ac5475b5ab294ce8007cd
 ---
 
 ## What you will build
@@ -76,7 +76,7 @@ What constrains the run: its own copy-on-write worktree, the credentials brokere
 
 **Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
 
-The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+The agent's changes are committed on the conversation's branch, in its worktree. By default, commits are authored by `Control Center <hi@usectrl.dev>` (`@usectrl`), with you credited in a `Co-Authored-By:` trailer. You can turn agent attribution off in **Settings → You → Commit attribution**, unless a workspace administrator has overridden the choice in **Settings → Workspace → General**.
 
 ## Getting a pull request
 

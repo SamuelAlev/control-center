@@ -2,7 +2,7 @@
 title: Einen PR prüfen und mergen
 description: Öffne die PR-Arbeitsfläche, lies den Diff, schreibe Inline-Kommentare, schick ein Review ab und merge.
 slug: de-DE/handbuch/anleitungen/pr-pruefen-und-mergen
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Diese Anleitung zeigt, wie du einen Pull Request prüfst und mergst.
@@ -26,6 +26,34 @@ wird je PR gemerkt.
 Der Tab **Übersicht** trägt die Metadaten des PR (Autor, Branch, Labels,
 Zugewiesene, Reaktionen, Commits, Check-Status) und die Aktionszeile:
 Aktualisieren, **Review**, **Merge**, in der IDE öffnen und ein Menü ⋯.
+
+### Einen PR aus dem Stapel eines Bereichs öffnen
+
+Der Abschnitt **Allgemein → Pull Requests** des Bereichs gruppiert verknüpfte
+und über den Branch zugeordnete PRs nach Repository. Ist der Basis-Branch eines
+PR der Head-Branch des vorherigen PR, erscheinen beide in einem einklappbaren
+Stapel. Dessen Kopfzeile nennt den untersten PR, den Ziel-Branch und die Anzahl;
+nummerierte Zeilen laufen vom untersten PR (1) zur Spitze. Die Nummern
+beschreiben die Reihenfolge der Abhängigkeiten, nicht die Merge-Bereitschaft.
+
+Jede Zeile zeigt den Titel, die PR-Nummer und den Status. Fahre mit der Maus
+über eine Zeile oder fokussiere sie, um den vollständigen Titel und die
+Branchnamen zu lesen; klicke sie an oder drücke Enter, um die PR-Arbeitsfläche
+zu öffnen. Fokussiere eine Stapel-Kopfzeile und drücke Enter oder Leertaste, um
+sie ein- oder auszuklappen. Nicht zusammenhängende PRs bleiben getrennt, und
+unvollständige oder mehrdeutige Branch-Verknüpfungen werden nicht als geordneter
+Stapel dargestellt.
+
+In **Versionsverwaltung** öffnet **Gestapelte Pull Requests (N)** eine Auswahl
+der veröffentlichten Teile des Stapels, von unten nach oben. Jeder Eintrag zeigt
+die PR-Nummer, die Bezeichnung des Teils und die Position; der ausgecheckte Teil
+ist markiert. Wähle einen Eintrag, um seine PR-Arbeitsfläche zu öffnen. **Stapel
+veröffentlichen** erscheint nur, wenn die PR-Erkennung abgeschlossen ist und
+mindestens ein Teil keinen PR hat. Das gilt auch für das Branch-Menü. PRs, die
+außerhalb von Control Center erstellt wurden, gelten ebenfalls als
+veröffentlicht. Teilweise veröffentlichte Stapel bieten beide Aktionen an; bei
+Arbeit mit einem einzelnen Branch bleiben die einzelnen Aktionen zum Erstellen
+und Anzeigen eines PR erhalten.
 
 ## Den Diff lesen
 

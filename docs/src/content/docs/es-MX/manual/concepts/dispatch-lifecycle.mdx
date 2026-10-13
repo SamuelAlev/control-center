@@ -2,7 +2,7 @@
 title: "Ciclo de vida del despacho de un agente"
 description: "Qué ocurre entre la llegada de un mensaje y el cierre de un registro de ejecución: el montaje del prompt, los worktrees, la identidad, qué delimita una ejecución y cómo se registra su resultado con honestidad."
 slug: es-MX/manual/conceptos/ciclo-de-vida-del-despacho
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Qué es un despacho
@@ -52,7 +52,7 @@ El copy-on-write es la **única** implementación allí donde se distribuye `rif
 
 Se resuelven dos identidades por ejecución, antes de que se lance ningún proceso.
 
-**Autoría de Git.** Los commits que hace un agente se firman _como el agente_ (`<Name> (agent) <agentId@agents.control-center.local>` tanto en `GIT_AUTHOR_*` como en `GIT_COMMITTER_*`), nunca suplantando a una persona. La parte local es el UUID del agente, no el slug de su nombre. La persona solicitante recibe crédito mediante un trailer `Co-Authored-By:`, que se transporta en el entorno y se indica en el prompt de sistema. Una identidad explícita definida por el llamador siempre prevalece sobre ambas.
+**Autoría de Git.** Por defecto, los commits del agente usan `Control Center <hi@usectrl.dev>` (la cuenta de GitHub `@usectrl`) en `GIT_AUTHOR_*` y `GIT_COMMITTER_*`, y la persona que hizo la solicitud figura en el trailer `Co-Authored-By:`. Desactiva la atribución al agente en **Ajustes → Tú → Atribución de commits** para usar solo tu identidad de Git. Un administrador puede imponer o desactivar la atribución en **Ajustes → Espacio de trabajo → General**; esta opción tiene prioridad y deshabilita el interruptor personal sin cambiar tu preferencia guardada. Los cambios se aplican desde la siguiente ejecución. Las firmas propias de Claude Code en commits y PR siempre están desactivadas. Los valores de identidad de Git definidos explícitamente por quien llama siguen teniendo prioridad; las credenciales del proveedor Git no cambian.
 
 **Identidad ante el host de código.** La credencial de GitHub de la ejecución es siempre la del bróker (un token de instalación de la App con alcance de repositorio, o su alternativa PAT del entorno), nunca el token propio almacenado de la persona solicitante. `actingUserId` delimita la alternativa PAT para que una persona que no sea la propietaria del servidor no herede su alcance; no superpone un token personal al entorno del agente.
 

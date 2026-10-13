@@ -35,6 +35,11 @@ transport. Pure Dart — no Flutter.
   Already-running Dart handlers cannot be forcibly interrupted: their replies
   are discarded and they retain their concurrency slot until completion or
   the existing deadline. Mutations are never cancelled by navigation.
+- Watch queries default to replaceable full snapshots: a burst may coalesce and
+  equal snapshots may be suppressed. Seed-and-delta streams must declare
+  `WatchQuery.isEventStream: true`; every event is delivered in order with
+  `full: false`, including repeated equal deltas. Clients consume these through
+  `RemoteRpcClient.subscribeEvents`, not snapshot subscriptions.
 
 ## Extending
 

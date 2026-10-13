@@ -30,6 +30,7 @@ Future<void> handleContextCommand({
   required BuildContext context,
   required String args,
   required String spaceId,
+  required String conversationId,
   required String workspaceId,
 }) async {
   final l10n = AppLocalizations.of(context);
@@ -81,6 +82,7 @@ Future<void> handleContextCommand({
         context,
         workspaceId: workspaceId,
         spaceId: spaceId,
+        conversationId: conversationId,
         agentId: agentId,
         // Past one agent the tab has to say WHOSE window it is: the command
         // now picks for the operator, and two identically-labelled tabs would

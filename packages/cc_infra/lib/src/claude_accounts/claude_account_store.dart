@@ -289,14 +289,6 @@ class ClaudeAccountStore {
         '$accountId: $e',
       );
     }
-    try {
-      _suppressCliAttribution(dir);
-    } catch (e) {
-      CcInfraLog.warning(
-        'claude accounts: could not suppress CLI attribution for '
-        '$accountId: $e',
-      );
-    }
   }
 
   /// Marks [workingDirectory] trusted in this config dir's `.claude.json`.
@@ -352,39 +344,6 @@ class ClaudeAccountStore {
       return;
     }
     source.copySync(target.path);
-  }
-
-  /// Seeds `attribution: {commits: false, pullRequests: false}` into this
-  /// config dir's `settings.json`.
-  ///
-  /// `CLAUDE_CONFIG_DIR` makes this dir's `settings.json` the CLI's user-scope
-  /// settings file — the operator's `~/.claude/settings.json` never reaches a
-  /// pooled run, so the CLI's built-in commit/PR attribution fires on stock
-  /// defaults (`Co-Authored-By: Claude …` trailers). Control Center performs
-  /// its own attribution (git identity env + co-author trailer), so the CLI's
-  /// is suppressed here rather than mirrored from home. The `attribution`
-  /// block is used, not the deprecated `includeCoAuthoredBy` key.
-  ///
-  /// An `attribution` key already present in the file wins — an operator who
-  /// customized attribution in an account dir has said their piece, and a
-  /// `settings.json` that is not a JSON object is the CLI's to repair, not
-  /// ours to overwrite.
-  void _suppressCliAttribution(String configDir) {
-    const block = {'commits': false, 'pullRequests': false};
-    final file = File(p.join(configDir, 'settings.json'));
-    if (!file.existsSync()) {
-      file.writeAsStringSync(jsonEncode({'attribution': block}), flush: true);
-      return;
-    }
-    final decoded = jsonDecode(file.readAsStringSync());
-    if (decoded is! Map<String, dynamic>) {
-      return;
-    }
-    if (decoded.containsKey('attribution')) {
-      return;
-    }
-    decoded['attribution'] = block;
-    file.writeAsStringSync(jsonEncode(decoded), flush: true);
   }
 
   /// Renames [accountId].

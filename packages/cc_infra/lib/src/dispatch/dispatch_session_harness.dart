@@ -698,7 +698,7 @@ extension _DispatchSessionHarness on DispatchSession {
                 outputs: result.content,
                 toolName: toolName,
                 isError: result.isError,
-                images: await _externalizeToolImages(result.images),
+                images: await _toolImageRefs(toolName, result),
               ),
             );
           case LoopUsage():
@@ -1006,6 +1006,17 @@ extension _DispatchSessionHarness on DispatchSession {
       }
     }
     return blocks;
+  }
+
+  Future<List<ToolImageRef>> _toolImageRefs(
+    String toolName,
+    HarnessToolResult result,
+  ) async {
+    final refs = renderMediaImageRefs(toolName, result.content);
+    if (refs.isNotEmpty) {
+      return refs;
+    }
+    return _externalizeToolImages(result.images);
   }
 
   Future<List<ToolImageRef>> _externalizeToolImages(

@@ -75,10 +75,10 @@ class RemoteTerminalRepository {
     );
   }
 
-  /// The session's live PTY output, decoded from the base64-framed snapshots
-  /// (`{chunk: <base64>}`) the server pushes per PTY emission.
+  /// Live PTY bytes (`{chunk: <base64>}`), never replaceable snapshots.
+  /// Each listener starts live; replaying a previous chunk corrupts the screen.
   Stream<List<int>> output(String sessionId) => _client
-      .subscribe('terminal.output', {'session_id': sessionId})
+      .subscribeEvents('terminal.output', {'session_id': sessionId})
       .map((data) {
         final chunk = data['chunk'] as String?;
         return chunk == null ? const <int>[] : base64Decode(chunk);

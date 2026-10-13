@@ -2,7 +2,7 @@
 title: Bir GitHub PR'dan Control Center ile konuşma
 description: Sunucunuzun GitHub App botundan, webhook ya da genel URL olmadan, doğrudan PR konuşmasından bir inceleme veya yanıt isteyin.
 slug: tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Bu kılavuz, GitHub'dan ayrılmadan Control Center ile nasıl çalışacağınızı
@@ -28,8 +28,9 @@ tamamen aynı davranır.
 
 ## Botunuzun adını bulun
 
-Botun giriş adı `<appslug>[bot]` biçimindedir; burada `appslug`, uygulamayı
-kaydederken verdiğiniz addır.
+Control Center'ın özel GitHub hesabı `@usectrl` adresini anın. Varsayılan tetikleyici budur; sunucunuzda yapılandırılmış GitHub App isteği işlemeye ve yanıtları yayımlamaya devam eder. `usectrl` hesabının kimlik bilgilerine ihtiyacınız yoktur.
+
+App'in kendi giriş adı `<appslug>[bot]` ve kısa `@appslug` biçimi de çalışır. İsteğe bağlı bu diğer adı bulmak için:
 
 1. **Ayarlar → Sunucu → Tek oturum açma** bölümüne gidin ve
    **Sağlayıcı uygulamaları** kartına kaydırın
@@ -38,10 +39,7 @@ kaydederken verdiğiniz addır.
    adı her zaman `<appslug>[bot]` biçimindedir — bunu yazın, ya da kısa
    `@appslug` biçimini kullanın
 
-GitHub, `@` otomatik tamamlamasında uygulama hesaplarını sunmaz; dolayısıyla
-giriş adının elle yazılması gerekir — ayarlar kartının kopyalamayı tek
-tıklamaya indirmesinin nedeni budur. `[bot]` soneki isteğe bağlıdır: `@myapp`
-ve `@myapp[bot]` ikisi de bota seslenir.
+GitHub, `@` otomatik tamamlamasında App hesaplarını göstermez; bu yüzden App takma adlarının yazılması veya kopyalanması gerekir. Özel `@usectrl` kullanıcısı varsayılan çağrı yoludur; `@myapp` ve `@myapp[bot]` App takma adları olarak kabul edilmeye devam eder.
 
 :::note[Kendine özgü bir uygulama adı seçin]
 Kısa biçim metin olarak eşleştirilir. Bir insan GitHub kullanıcısı uygulamanızın
@@ -58,7 +56,7 @@ Tam `@myapp[bot]` biçimi ise her zaman nettir.
   atamaya sunduğu en yakın şeydir — uygulama hesapları, yerel olarak istenen
   inceleyici yerini dolduramaz. Tepki verilecek bir yorum yoktur, dolayısıyla
   GitHub'da hiçbir şey yayımlanmaz; inceleme Control Center'da başlar
-- PR konuşmasına **`@myapp review` yazın** (ya da yalnızca `@myapp`). Bot 👀
+- PR konuşmasına **`@usectrl review` yazın** (ya da yalnızca `@usectrl`). Bot 👀
   ile tepki verir, ardından inceleme başladığında (ya da zaten bir incelemenin
   çalıştığını) yanıtlar
 
@@ -77,7 +75,7 @@ kaldırılıp yeniden eklendiğinde yeniden kurulmaz. Bir incelemeyi yeniden
 PR konuşmasına yorum yapın:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Sırasıyla olanlar:
@@ -99,7 +97,7 @@ bıraktığı bir diff yorumu ya da o konuda gönderdiği bir yanıt. Anmaya ger
 yoktur; **hitap** konunun kendisidir:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

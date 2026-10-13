@@ -193,41 +193,34 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
 
   StreamSubscription<AgentRunCompleted>? _runSub;
 
-  CacheDao _cache(String workspaceId) =>
-      _workspaceDbs.of(workspaceId).cacheDao;
+  CacheDao _cache(String workspaceId) => _workspaceDbs.of(workspaceId).cacheDao;
 
-  /// The logins a comment may @mention to address the bot: the full GitHub
-  /// App bot login (`<slug>[bot]`) and — because that is punishing to type and
-  /// absent from GitHub's @ autocomplete — the bare slug. GitHub fixes the
-  /// bot's real login; accepting the short form is OUR matcher's decision,
-  /// made wherever the comment text is matched (polling, not GitHub's
-  /// mention-resolution).
-  ///
-  /// The collision this invites is stated rather than smoothed: a HUMAN whose
-  /// login equals the app's slug would be addressed by the same short form.
-  /// Slug and user logins are visible to whoever registered the app, so the
-  /// operator picks a distinctive slug or lives with the ambiguity.
-  static List<String> acceptedMentionLogins(String botLogin) =>
-      mention.acceptedMentionLogins(botLogin);
+  /// The dedicated account is the default PR-conversation mention. The
+  /// installed App's full bot login and bare slug remain compatible aliases;
+  /// neither changes the identity used to post replies or guard bot loops.
+  static List<String> acceptedMentionLogins(String botLogin) => botLogin.isEmpty
+      ? const []
+      : [
+          mention.githubPrConversationMentionLogin,
+          ...mention.acceptedMentionLogins(botLogin),
+        ];
 
-  /// Whether [body] @mentions the bot ([botLogin] or its bare slug).
-  ///
-  /// Case-insensitive (GitHub logins are) and boundary-aware: the lookahead
-  /// rejects a longer login continuing at the same spot — including an
-  /// opening `[`, so the bare slug does not match inside another bracketed
-  /// account like `@app[bots]` — while allowing any other punctuation:
-  /// `@app[bot]:`, `@app[bot]x`-rejects, `@app!` matches. `\b` cannot
-  /// express this because the bracketed `[bot]` suffix ends in a non-word
-  /// character.
+  /// Whether [body] addresses the PR conversation bridge.
   static bool mentionsBot(String body, String botLogin) =>
-      mention.bodyMentions(body, botLogin);
+      acceptedMentionLogins(
+        botLogin,
+      ).any((login) => mention.mentionPattern(login).hasMatch(body));
 
-  /// Strips the first @mention of the bot from [body].
-  ///
-  /// The full login is tried first so `@app[bot] question` strips to
-  /// `question`, not `[bot] question`.
-  static String stripMention(String body, String botLogin) =>
-      mention.stripMention(body, botLogin);
+  /// Strips the first recognized invocation mention from [body].
+  static String stripMention(String body, String botLogin) {
+    for (final login in acceptedMentionLogins(botLogin)) {
+      final pattern = mention.mentionPattern(login);
+      if (pattern.hasMatch(body)) {
+        return body.replaceFirst(pattern, '').trim();
+      }
+    }
+    return body.trim();
+  }
 
   /// Classifies an invocation by its mention-stripped text: a bare mention
   /// (or `review`, ignoring trailing punctuation) asks for the review
@@ -417,16 +410,17 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       final status = result['status'] as String? ?? 'started';
       body = status == 'already_running'
           ? 'A review of this pull request is already running — its findings '
-              'will appear in the review space in Control Center.'
+                'will appear in the review space in Control Center.'
           : 'Review started. The findings will appear in this pull request\'s '
-              'review space in Control Center, where they can be published '
-              'back here.';
+                'review space in Control Center, where they can be published '
+                'back here.';
     } on Object catch (e) {
       _onWarning?.call(
         'github_pr_conversation: review failed to start for '
         '$owner/$repo#$prNumber: $e',
       );
-      body = 'I could not start the review ($e). The operator can see the '
+      body =
+          'I could not start the review ($e). The operator can see the '
           'failure in the server log.';
     }
     if (comment != null) {
@@ -471,7 +465,8 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         repo: repo,
         prNumber: prNumber,
         comment: comment,
-        body: 'I could not prepare this pull request\'s workspace, so I '
+        body:
+            'I could not prepare this pull request\'s workspace, so I '
             'cannot answer here yet.',
       );
       return;
@@ -482,7 +477,8 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         repo: repo,
         prNumber: prNumber,
         comment: comment,
-        body: 'I could not prepare this pull request\'s workspace, so I '
+        body:
+            'I could not prepare this pull request\'s workspace, so I '
             'cannot answer here yet.',
       );
       return;
@@ -495,7 +491,8 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         repo: repo,
         prNumber: prNumber,
         comment: comment,
-        body: 'This workspace has no agent available to answer. Ask the '
+        body:
+            'This workspace has no agent available to answer. Ask the '
             'operator to check the workspace\'s agents.',
       );
       return;
@@ -539,7 +536,8 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         repo: repo,
         prNumber: prNumber,
         comment: comment,
-        body: 'I could not start an agent on that. The question is in the '
+        body:
+            'I could not start an agent on that. The question is in the '
             'review space; the operator can retry it there.',
       );
       return;
@@ -554,7 +552,8 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         repo: repo,
         prNumber: prNumber,
         comment: comment,
-        body: 'I could not start an agent on that. The question is in the '
+        body:
+            'I could not start an agent on that. The question is in the '
             'review space; the operator can retry it there.',
       );
       return;
@@ -635,20 +634,16 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         runId.isEmpty) {
       return;
     }
-    final raw = await _cache(workspaceId).read(
+    final raw = await _cache(
       workspaceId,
-      pendingReplyCacheKind,
-      runId,
-    );
+    ).read(workspaceId, pendingReplyCacheKind, runId);
     if (raw == null) {
       return;
     }
     // Consume first: whatever happens below, this run's reply fires once.
-    await _cache(workspaceId).deleteEntry(
+    await _cache(
       workspaceId,
-      pendingReplyCacheKind,
-      runId,
-    );
+    ).deleteEntry(workspaceId, pendingReplyCacheKind, runId);
     _PendingReply pending;
     try {
       final decoded = jsonDecode(raw);

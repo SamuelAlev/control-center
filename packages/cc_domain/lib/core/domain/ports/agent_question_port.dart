@@ -42,6 +42,7 @@ class AgentQuestionRequest {
   const AgentQuestionRequest({
     required this.workspaceId,
     required this.spaceId,
+    required this.conversationId,
     required this.question,
     this.context,
     this.options = const [],
@@ -56,9 +57,11 @@ class AgentQuestionRequest {
   /// written into, so a foreign space id resolves to nothing.
   final String workspaceId;
 
-  /// The space the question belongs to — the UI renders the form inline in
-  /// its standing conversation.
+  /// The space containing the conversation.
   final String spaceId;
+
+  /// The conversation where the question and answer belong.
+  final String conversationId;
 
   /// The question text.
   final String question;

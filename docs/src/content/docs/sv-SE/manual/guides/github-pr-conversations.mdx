@@ -2,7 +2,7 @@
 title: Prata med Control Center från en GitHub-PR
 description: Be serverns GitHub App-bot om en granskning eller ställ en fråga direkt från PR-samtalet – utan webhook eller offentlig URL.
 slug: sv-SE/handbok/how-to-guider/github-pr-samtal
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Den här guiden visar hur du arbetar med Control Center utan att lämna GitHub:
@@ -27,8 +27,9 @@ offentlig driftsättning.
 
 ## Hitta botens namn
 
-Botens inloggning är `<appslug>[bot]`, där `appslug` är namnet du gav appen när
-du registrerade den.
+Nämn `@usectrl`, Control Centers särskilda GitHub-konto. Det är standardutlösaren; serverns konfigurerade GitHub App hanterar fortfarande begäran och publicerar svar. Du behöver inga inloggningsuppgifter till kontot `usectrl`.
+
+Appens egen inloggning, `<appslug>[bot]`, och kortformen `@appslug` fungerar också. Så hittar du detta valfria alias:
 
 1. Gå till **Inställningar → Server → Enkel inloggning** och rulla ned till
    kortet **Leverantörsappar**
@@ -37,10 +38,7 @@ du registrerade den.
    tomma hjälptexten är inloggningen alltid `<appslug>[bot]` – skriv det, eller
    den korta formen `@appslug`
 
-GitHub erbjuder inte appkonton i sin `@`-autokomplettering, så inloggningen
-måste skrivas – det är därför inställningskortet gör den till ett klick att
-kopiera. Suffixet `[bot]` är valfritt: både `@myapp` och `@myapp[bot]` adresserar
-boten.
+GitHub visar inte appkonton i sin autokomplettering för `@`, så appalias måste skrivas eller kopieras. Den särskilda användaren `@usectrl` är standardanropet; både `@myapp` och `@myapp[bot]` godtas fortfarande som appalias.
 
 :::note[Välj ett särpräglat appnamn]
 Den korta formen matchas som text. Om en mänsklig GitHub-användare råkar ha
@@ -57,7 +55,7 @@ Två sätt, som båda startar samma medföljande `pr_review`-pipeline som knappe
   kommer att tilldela boten som granskare – appkonton kan inte hålla den
   inbyggda platsen för begärda granskare. Det finns ingen kommentar att reagera
   på, så inget publiceras på GitHub; granskningen startar i Control Center
-- **Kommentera `@myapp review`** (eller bara `@myapp`) i PR-samtalet. Boten
+- **Kommentera `@usectrl review`** (eller bara `@usectrl`) i PR-samtalet. Boten
   reagerar med 👀 och svarar sedan när granskningen har startat (eller att en
   redan körs)
 
@@ -75,7 +73,7 @@ efter en push, till exempel – nämn boten.
 Kommentera i PR-samtalet:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Vad som händer, i ordning:
@@ -97,7 +95,7 @@ lämnade, eller ett svar den publicerade i den tråden. Ingen nämning behövs;
 tråden **är** adresseringen:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

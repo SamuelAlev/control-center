@@ -2,7 +2,7 @@
 title: Nastavte integraci GitHub
 description: Přihlas se na GitHub, aby fungovala plocha PR, registrace repozitářů a běhy agentů.
 slug: cs-CZ/prirucka/navody/integrace-github
-sourceHash: cec288869a5e81d76bb04bcb64649e845edee65a
+sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
 ---
 
 Tenhle návod bere ty části nastavení, které patří ke GitHubu. GitHub je jeden
@@ -100,9 +100,7 @@ a tlačítkem **Obnovit**. Stavy se samy obnoví každé dvě minuty.
   čtení. Push jde přes Control Center, které se zeptá pravidla **Odeslat na
   remote** a pak ho předá se zapisovacím tokenem, který agent nikdy nedrží. Viz
   [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/)
-- Commity, které agent udělá, jsou autorované **jako agent**: zobrazované jméno
-  plus ` (agent)`, na syntetické adrese klíčované id agenta, nikdy jako člověk.
-  Člověk, který o to požádal, je uvedený v trailerech `Co-Authored-By`
+- Ve výchozím nastavení je autorem commitů agenta **Control Center** (`hi@usectrl.dev`, účet GitHub `@usectrl`), zatímco žadatel je uveden v traileru `Co-Authored-By`. V **Nastavení → Vy → Připisování autorství commitů** můžeš připisování agentovi vypnout a použít jen svou identitu Gitu. Přednost má nastavení pracovního prostoru v **Nastavení → Pracovní prostor → Obecné**, které osobní přepínač uzamkne. Vlastní atribuce Claude Code je vždy vypnutá
 - Když je nakonfigurovaná GitHub App, broker při každém spuštění vystaví úzce
   vymezené instalační tokeny vázané na repozitář, platné zhruba hodinu, místo
   aby předal široký token. Instalace se určí podle **vlastníka** repozitáře

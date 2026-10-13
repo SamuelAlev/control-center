@@ -230,6 +230,10 @@ abstract class McpTool {
   /// the model cannot redirect the call.
   Set<String> get forcedScopeKeys => const {};
 
+  /// Identity fields that must exist in the trusted run context before this
+  /// tool can execute. Model-supplied arguments cannot fill missing context.
+  Set<String> get requiredScopeKeys => const {};
+
   /// The unified-guardrail effect classes this tool can produce (PRD 24 §1).
   /// Every MCP tool DECLARES its worst-case classes; a ratchet test holds the
   /// line. Default is empty (a pure read/query tool); mutating tools (PR

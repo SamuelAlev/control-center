@@ -12571,6 +12571,48 @@ class AppLocalizationsIt extends AppLocalizations {
       'Identità, criteri e convenzioni condivisi da tutti in questo spazio di lavoro.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Attribuzione dei commit';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Scegli se attribuire a Control Center i commit degli agenti. Gli amministratori dello spazio di lavoro possono sostituire questa scelta per tutti i membri.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Attribuzione all\'agente';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Attribuisci a Control Center i commit degli agenti';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Se attiva, i commit hanno Control Center come autore e te come coautore. Se disattiva, usano la tua identità Git senza attribuzione all\'agente.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'L\'impostazione di questo spazio di lavoro prevale sulla tua scelta personale. La tua preferenza resta salvata, ma qui non si applica.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Caricamento delle impostazioni di attribuzione…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Scegli se attribuire a Control Center i commit degli agenti. La scelta dello spazio di lavoro prevale sulla preferenza personale di ciascun membro.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Usa la preferenza di ciascun membro';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Attribuisci sempre a Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Non attribuire mai a Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Modelli di note e voci salvate per le riunioni di questo spazio di lavoro.';
 
@@ -14074,6 +14116,20 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Ticket';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Tutte le pull request in questo spazio sono state unite. Archiviare lo spazio?';
+
+  @override
+  String get spaceKeepAfterMerge => 'No, mantieni questo spazio';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Non ti verrà chiesto di nuovo per questo spazio.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'Tutte le pull request unite';
 
   @override
   String get archiveSpace => 'Archivia spazio';

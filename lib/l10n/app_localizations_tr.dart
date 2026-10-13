@@ -12487,6 +12487,47 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu çalışma alanındaki herkesin paylaştığı kimlik, ilke ve kurallar.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Commit atfı';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Ajan commit\'lerinde Control Center\'a atıf yapılıp yapılmayacağını seçin. Çalışma alanı yöneticileri bu seçimi çalışma alanındaki herkes için geçersiz kılabilir.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Ajana atıf';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Ajan commit\'lerinde Control Center\'a atıf yap';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Etkinleştirildiğinde commit\'lerin yazarı Control Center olur ve siz ortak yazar olarak eklenirsiniz. Devre dışı bırakıldığında commit\'ler ajan atfı olmadan Git kimliğinizi kullanır.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Bu çalışma alanının ayarı kişisel seçiminizin yerine geçer. Tercihiniz kaydedilir ancak burada uygulanmaz.';
+
+  @override
+  String get settingsAgentAttributionLoading => 'Atıf ayarları yükleniyor…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Ajan commit\'lerinde Control Center\'a atıf yapılıp yapılmayacağını seçin. Çalışma alanının ayarı her üyenin kişisel tercihinin yerine geçer.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Her üyenin tercihini kullan';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Control Center\'a her zaman atıf yap';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Control Center\'a hiçbir zaman atıf yapma';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Bu çalışma alanındaki toplantılar için not şablonları ve kayıtlı sesler.';
 
@@ -13986,6 +14027,20 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Bilet';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Bu çalışma alanındaki tüm çekme istekleri birleştirildi. Çalışma alanı arşivlensin mi?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Hayır, bu çalışma alanını koru';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Bu çalışma alanı için tekrar sorulmayacak.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'Tüm çekme istekleri birleştirildi';
 
   @override
   String get archiveSpace => 'Çalışma alanını arşivle';

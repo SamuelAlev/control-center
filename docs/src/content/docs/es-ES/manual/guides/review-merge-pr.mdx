@@ -2,7 +2,7 @@
 title: Revisar y fusionar una PR
 description: Abre el banco de trabajo de una PR, lee el diff, deja comentarios en línea, envía una revisión y fusiona.
 slug: es-ES/manual/guias/revisar-y-fusionar-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Esta guía explica cómo revisar y fusionar una pull request.
@@ -28,6 +28,32 @@ La pestaña **Resumen** contiene los metadatos de la PR (autor, rama, etiquetas,
 asignados, reacciones, commits, estado de las comprobaciones) y la fila de
 acciones: actualizar, **Revisar**, **Merge**, abrir en el IDE y un menú de
 desbordamiento ⋯.
+
+### Abrir una PR desde la pila de un espacio
+
+La sección **General → Pull requests** del espacio agrupa por repositorio las PRs
+vinculadas y las que coinciden por rama. Cuando la rama base de una PR es la rama
+de origen de la PR anterior, aparecen en una pila que se puede contraer. Su
+encabezado identifica la PR de abajo, la rama de destino y el recuento; las filas
+numeradas van de la PR inferior (1) hacia la punta. Los números describen el orden
+de dependencia, no si está lista para fusionar.
+
+Cada fila muestra el título, el número de PR y el estado. Pasa el cursor por una
+fila o enfócala para leer el título completo y los nombres de las ramas; haz clic
+o pulsa Enter para abrir el banco de trabajo de la PR. Enfoca el encabezado de
+una pila y pulsa Enter o Espacio para contraerla o expandirla. Las PRs no
+relacionadas se mantienen aparte, y los vínculos de rama incompletos o ambiguos
+no se presentan como una pila ordenada.
+
+En **Control de código fuente**, **Pull requests apiladas (N)** abre un selector
+con las partes publicadas de la pila, de abajo arriba. Cada entrada muestra el
+número de PR, la etiqueta de la parte y su posición; la parte en la que se ha
+hecho checkout aparece marcada. Selecciona una entrada para abrir su banco de
+trabajo de PR. **Publicar la pila** solo aparece cuando ha terminado el
+descubrimiento de PRs y al menos una parte no tiene PR. Esto también se aplica al
+menú de ramas. Las PRs creadas fuera de Control Center también cuentan como
+publicadas. Las pilas publicadas parcialmente ofrecen ambas acciones; el trabajo
+de una sola rama conserva las acciones individuales de crear o ver la PR.
 
 ## Leer el diff
 

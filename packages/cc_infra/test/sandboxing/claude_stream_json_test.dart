@@ -317,6 +317,58 @@ void main() {
       expect(results.single.outputs, 'line one\n[image]line two');
     });
 
+    test(
+      'should preserve all four render_media refs without storing image data',
+      () {
+        final results = <ClaudeToolResult>[];
+        final p = build(onToolResult: results.add);
+        openTool(p, 'tu_media', name: 'mcp__control-center__render_media');
+        final metadata = jsonEncode({
+          'source': 'video',
+          'images': [
+            for (var i = 0; i < 4; i++)
+              {
+                'ref': 'blob:sha256:$i',
+                'mediaType': 'image/jpeg',
+                'width': 300,
+                'height': 200,
+              },
+          ],
+        });
+        p.process(
+          userResult([
+            {
+              'type': 'tool_result',
+              'tool_use_id': 'tu_media',
+              'content': [
+                {'type': 'text', 'text': metadata},
+                for (var i = 0; i < 4; i++)
+                  {'type': 'image', 'data': 'secret-base64-$i'},
+              ],
+            },
+          ]),
+        );
+        expect(results.single.images.map((image) => image.ref), [
+          for (var i = 0; i < 4; i++) 'blob:sha256:$i',
+        ]);
+        expect(results.single.outputs, isNot(contains('secret-base64')));
+
+        openTool(p, 'tu_other', name: 'mcp__other__search');
+        p.process(
+          userResult([
+            {
+              'type': 'tool_result',
+              'tool_use_id': 'tu_other',
+              'content': [
+                {'type': 'text', 'text': metadata},
+              ],
+            },
+          ]),
+        );
+        expect(results.last.images, isEmpty);
+      },
+    );
+
     test('an unpaired id is dropped rather than closing another call', () {
       // A subagent's inner tool: its `tool_use` block never reaches this
       // stream, so pairing it would close the parent `Task` row instead.
@@ -867,6 +919,48 @@ void main() {
         ]),
       );
       expect(h.results.single.id, spawn);
+    });
+
+    test('should preserve render_media refs in a child transcript', () {
+      final h = harness();
+      h.parser
+        ..process(
+          sub('assistant', [
+            {
+              'type': 'tool_use',
+              'id': 'child-media',
+              'name': 'mcp__control-center__render_media',
+              'input': {},
+            },
+          ]),
+        )
+        ..process(
+          sub('user', [
+            {
+              'type': 'tool_result',
+              'tool_use_id': 'child-media',
+              'content': [
+                {
+                  'type': 'text',
+                  'text': jsonEncode({
+                    'source': 'pdf',
+                    'images': [
+                      {'ref': 'blob:sha256:one', 'mediaType': 'image/png'},
+                      {'ref': 'blob:sha256:two', 'mediaType': 'image/png'},
+                    ],
+                  }),
+                },
+                {'type': 'image', 'data': 'not-a-transcript-field'},
+              ],
+            },
+          ]),
+        );
+      final result = (h.events.last as ClaudeSubagentToolResult).result;
+      expect(result.images.map((image) => image.ref), [
+        'blob:sha256:one',
+        'blob:sha256:two',
+      ]);
+      expect(result.outputs, isNot(contains('not-a-transcript-field')));
     });
 
     test('partial deltas tagged to a subagent never reach the parent', () {

@@ -27,6 +27,7 @@ class TerminalsSection extends ConsumerWidget {
     required this.workspaceId,
     required this.onFocusTerminal,
     required this.onKillTerminal,
+    required this.onOpenAgentShell,
   });
 
   /// The active conversation.
@@ -40,6 +41,9 @@ class TerminalsSection extends ConsumerWidget {
 
   /// Ends the terminal identified by its session id, closing its tab.
   final ValueChanged<String> onKillTerminal;
+
+  /// Opens the command's captured output without affecting its process.
+  final ValueChanged<AgentShellProcess> onOpenAgentShell;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -67,11 +71,10 @@ class TerminalsSection extends ConsumerWidget {
                   ),
                 for (final c in commands)
                   _AgentCommandRow(
-                    // Keyed by pid so a row's "stopping" state stays with its
-                    // command when the one above it exits.
-                    key: ValueKey(c.pid),
+                    key: ValueKey((workspaceId, spaceId, c.outputId)),
                     process: c,
                     shellsKey: key,
+                    onOpen: () => onOpenAgentShell(c),
                   ),
               ],
             ),
@@ -170,10 +173,12 @@ class _AgentCommandRow extends ConsumerStatefulWidget {
     super.key,
     required this.process,
     required this.shellsKey,
+    required this.onOpen,
   });
 
   final AgentShellProcess process;
   final AgentShellsKey shellsKey;
+  final VoidCallback onOpen;
 
   @override
   ConsumerState<_AgentCommandRow> createState() => _AgentCommandRowState();
@@ -212,11 +217,13 @@ class _AgentCommandRowState extends ConsumerState<_AgentCommandRow> {
     final firstLine = p.command.split('\n').first;
     final elapsed = _compactElapsed(context, p.startedAt);
     final status = _stopping ? l10n.agentCommandStopping : elapsed;
-    return Semantics(
-      label: l10n.agentCommandSemantics(firstLine, elapsed),
-      container: true,
-      child: _HoverBuilder(
-        builder: (hovered) => _RowShell(
+    return CcTappable(
+      onPressed: widget.onOpen,
+      semanticLabel:
+          '${l10n.viewLogs}: ${l10n.agentCommandSemantics(firstLine, elapsed)}',
+      builder: (context, states) {
+        final hovered = states.contains(WidgetState.hovered);
+        return _RowShell(
           hovered: hovered,
           child: Row(
             children: [
@@ -262,8 +269,8 @@ class _AgentCommandRowState extends ConsumerState<_AgentCommandRow> {
               ],
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -278,28 +285,6 @@ String _compactElapsed(BuildContext context, DateTime startedAt) {
     ).sidebarAgeSeconds(seconds < 0 ? 0 : seconds);
   }
   return formatCompactAge(context, startedAt);
-}
-
-/// Hover state for a row that is not itself a button: the agent command row
-/// has nothing to open, only the stop.
-class _HoverBuilder extends StatefulWidget {
-  const _HoverBuilder({required this.builder});
-
-  final Widget Function(bool hovered) builder;
-
-  @override
-  State<_HoverBuilder> createState() => _HoverBuilderState();
-}
-
-class _HoverBuilderState extends State<_HoverBuilder> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) => MouseRegion(
-    onEnter: (_) => setState(() => _hovered = true),
-    onExit: (_) => setState(() => _hovered = false),
-    child: widget.builder(_hovered),
-  );
 }
 
 /// A row's trailing action: the glyph alone, named by its tooltip. The

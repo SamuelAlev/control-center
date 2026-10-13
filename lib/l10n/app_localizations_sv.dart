@@ -12499,6 +12499,48 @@ class AppLocalizationsSv extends AppLocalizations {
       'Identitet, policy och konventioner som delas av alla i den här arbetsytan.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Tillskrivning av commits';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Välj om Control Center ska krediteras i agentcommits. Administratörer för arbetsytan kan åsidosätta valet för alla i en arbetsyta.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Agentkreditering';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Kreditera Control Center i agentcommits';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'När detta är aktiverat är Control Center författare till commits och du anges som medförfattare. När det är avstängt använder commits din Git-identitet utan att kreditera agenten.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Den här arbetsytans inställning åsidosätter ditt personliga val. Din inställning sparas men gäller inte här.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'Läser in inställningar för tillskrivning…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Välj om Control Center ska krediteras i agentcommits. Arbetsytans val åsidosätter varje medlems personliga inställning.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Använd varje medlems inställning';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Kreditera alltid Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Kreditera aldrig Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Anteckningsmallar och sparade röster för möten i den här arbetsytan.';
 
@@ -13995,6 +14037,20 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Ärende';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Alla pull-förfrågningar i den här ytan har slagits samman. Vill du arkivera ytan?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Nej, behåll den här ytan';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Du får inte frågan igen för den här ytan.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'Alla pull-förfrågningar sammanslagna';
 
   @override
   String get archiveSpace => 'Arkivera yta';

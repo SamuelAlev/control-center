@@ -2,7 +2,7 @@
 title: Ajan gönderim yaşam döngüsü
 description: Bir mesajın gelmesiyle bir çalıştırma günlüğünün kapanması arasında olanlar — istem birleştirme, çalışma ağaçları, kimlik, bir çalıştırmayı neyin sınırladığı ve sonucunun dürüstçe nasıl kaydedildiği.
 slug: tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Gönderim nedir
@@ -52,7 +52,7 @@ Herhangi bir şey çalışmadan önce konuşma kendi çalışma kökünü alır;
 
 Her çalıştırmada, herhangi bir süreç başlatılmadan önce iki kimlik çözülür.
 
-**Git yazarlığı.** Bir ajanın yaptığı commit'ler _ajan olarak_ yazılır — hem `GIT_AUTHOR_*` hem de `GIT_COMMITTER_*` içinde `<Name> (agent) <agentId@agents.control-center.local>` — ve asla bir insan taklit edilmez. Yerel kısım ajanın UUID'sidir, ad slug'ı değil. İsteği yapan insan, ortamda taşınan ve sistem isteminde belirtilen bir `Co-Authored-By:` satırıyla anılır. Çağıranın açıkça belirlediği bir kimlik her ikisini de her zaman yener.
+**Git yazarlığı.** Varsayılan olarak ajanın commit'leri hem `GIT_AUTHOR_*` hem de `GIT_COMMITTER_*` için `Control Center <hi@usectrl.dev>` (GitHub hesabı `@usectrl`) kullanır; isteği yapan kişi `Co-Authored-By:` satırında anılır. Yalnızca kendi Git kimliğinizi kullanmak için **Ayarlar → Siz → Commit atfı** bölümünde ajana atfı kapatın. Çalışma alanı yöneticisi **Ayarlar → Çalışma alanı → Genel** bölümünden atfı zorunlu kılabilir veya kapatabilir; bu ayar önceliklidir ve kayıtlı tercihinizi değiştirmeden kişisel anahtarı devre dışı bırakır. Değişiklikler sonraki çalıştırmada geçerli olur. Claude Code'un kendi commit ve PR imzaları her zaman kapalıdır. Çağıranın açıkça belirlediği Git kimliği değerleri yine önceliklidir; kod barındırma hizmetinin kimlik bilgileri etkilenmez.
 
 **Forge kimliği.** Çalıştırmanın GitHub kimlik bilgisi her zaman yalnızca aracının olur — depo kapsamlı bir App kurulum belirteci ya da bunun ortam PAT yedeği — ve asla isteği yapan üyenin kendi sakladığı belirteç olmaz. `actingUserId` PAT yedeğini sınırlar; böylece sunucu sahibi olmayan bir üye sunucunun erişim alanını devralmaz. Ajan ortamına kişisel bir belirteç katmanlanmaz.
 

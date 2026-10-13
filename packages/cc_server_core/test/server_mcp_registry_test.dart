@@ -1,5 +1,6 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_domain/core/domain/ports/media_render_port.dart';
 import 'package:cc_domain/core/domain/services/memory_access_policy.dart';
 import 'package:cc_domain/features/memory/domain/services/fact_extraction.dart';
 import 'package:cc_domain/features/memory/domain/services/memory_consolidation_service.dart';
@@ -89,6 +90,7 @@ void main() {
       ticketRepository: DaoTicketRepository(dbs, global.workspaceRouteDao),
       messagingRepository: DaoMessagingRepository(dbs),
       agentQuestions: _SilentQuestions(),
+      mediaRenderer: _NoopRenderer(),
       todoRepository: DaoTodoRepository(dbs),
       agentRunLogRepository: DaoAgentRunLogRepository(dbs),
       memoryFactRepository: memoryFactRepository,
@@ -138,6 +140,7 @@ void main() {
       names,
       containsAll(<String>[
         'list_workspaces',
+        'render_media',
         'list_agents',
         'list_spaces',
         'get_messages',
@@ -185,6 +188,12 @@ void main() {
       reason: 'BM25 catalogue must mirror tools/list exactly',
     );
   });
+}
+
+class _NoopRenderer implements MediaRenderPort {
+  @override
+  Future<MediaRenderResult> render(MediaRenderRequest request) =>
+      throw UnimplementedError('Registry listing must not render media.');
 }
 
 class _SilentQuestions implements AgentQuestionPort {

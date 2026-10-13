@@ -2,7 +2,7 @@
 title: Mluvte s Control Center z GitHub PR
 description: Požádej bota GitHub App svého serveru o kontrolu, nebo mu polož otázku, přímo z konverzace PR. Bez webhooku a bez veřejné URL.
 slug: cs-CZ/prirucka/navody/konverzace-v-github-pr
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Tenhle návod ukazuje, jak pracovat s Control Center a neopustit GitHub:
@@ -27,8 +27,9 @@ nasazení.
 
 ## Najdi jméno bota
 
-Login bota je `<appslug>[bot]`, kde `appslug` je jméno, které jsi aplikaci
-dal při registraci.
+Zmiň `@usectrl`, vyhrazený účet Control Center na GitHubu. To je výchozí způsob spuštění; požadavek však dál zpracuje nakonfigurovaná GitHub App tvého serveru a ona také odpovídá. Přihlašovací údaje k účtu `usectrl` nepotřebuješ.
+
+Funguje také vlastní login aplikace `<appslug>[bot]` i jeho krátký tvar `@appslug`. Volitelný alias zjistíš takto:
 
 1. Jdi do **Nastavení → Server → Jednotné přihlášení** a sjeď na kartu
    **Aplikace poskytovatelů**
@@ -36,9 +37,7 @@ dal při registraci.
 3. Až se vyplní, zkopíruj **Přihlášení bota**. Když pořád ukazuje prázdnou
    nápovědu, login je vždy `<appslug>[bot]`. Napiš ten, nebo krátké `@appslug`
 
-GitHub účty aplikací ve svém doplňování `@` nenabízí, takže login se musí
-napsat. Proto ho karta v nastavení zkopíruje jedním kliknutím. Přípona
-`[bot]` je volitelná: `@myapp` i `@myapp[bot]` bota osloví.
+GitHub účty aplikací v doplňování `@` nenabízí, proto musíš alias aplikace napsat nebo zkopírovat. Výchozím způsobem oslovení je vyhrazený uživatel `@usectrl`; `@myapp` i `@myapp[bot]` zůstávají přijímanými aliasy aplikace.
 
 :::note[Vyber výrazné jméno aplikace]
 Krátký tvar se porovnává jako text. Když má nějaký člověk na GitHubu stejný
@@ -55,7 +54,7 @@ spouští tlačítko **Zeptat se AI**:
   přiřazení bota jako recenzenta. Účty aplikací nemůžou obsadit nativní slot
   požadovaného recenzenta. Není tu komentář, na který by šlo reagovat, takže
   se na GitHub nic nepošle. Kontrola se spustí v Control Center
-- **Napiš do konverzace PR `@myapp review`** (nebo jen `@myapp`). Bot
+- **Napiš do konverzace PR `@usectrl review`** (nebo jen `@usectrl`). Bot
   zareaguje 👀 a odpoví, až se kontrola spustí, nebo že už jedna běží
 
 Recenzenti pracují v prostoru kontroly daného PR. Zjištění čteš a zveřejňuješ
@@ -72,7 +71,7 @@ spustíš zmínkou bota.
 Napiš do konverzace PR:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Co se stane, po pořádku:
@@ -94,7 +93,7 @@ u diffu, který tam nechal, nebo odpověď, kterou do toho vlákna poslal. Zmín
 není potřeba. Vlákno **je** to oslovení:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

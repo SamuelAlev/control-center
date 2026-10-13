@@ -2,7 +2,7 @@
 title: 從 GitHub PR 與 Control Center 對話
 description: 直接在 PR 對話中向伺服器的 GitHub App 機器人要求審查或提問，不需要 webhook 或公開 URL。
 slug: zh-TW/手冊/操作指南/github-pr-對話
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 本指南說明如何在不必離開 GitHub 的情況下與 Control Center 協作：直接從 PR
@@ -23,16 +23,16 @@ sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
 
 ## 找出機器人的名稱
 
-機器人的登入名稱是 `<appslug>[bot]`，其中 `appslug` 是你註冊該 App 時所取的名稱。
+提及 `@usectrl`，這是 Control Center 專用的 GitHub 帳號。這是預設觸發方式；伺服器上設定的 GitHub App 仍會處理請求並發布回覆。你不需要 `usectrl` 帳號的憑證。
+
+App 本身的登入名稱 `<appslug>[bot]` 與簡短形式 `@appslug` 也能使用。如需查找這個可選別名：
 
 1. 前往 **設定 → 伺服器 → 單一登入**，並捲動到 **供應商應用程式** 卡片
 2. 開啟 **GitHub** 區塊，然後按一下 **測試**
 3. 在 **機器人登入名稱** 填入後複製它。如果它仍顯示空白提示，登入名稱一律是
    `<appslug>[bot]` — 請直接輸入該值，或輸入簡短的 `@appslug`
 
-GitHub 不會在它的 `@` 自動補全中提供 App 帳號，因此登入名稱必須手動輸入 —
-這正是設定卡片讓它只要按一下就能複製的原因。`[bot]` 後綴是選用的：`@myapp`
-與 `@myapp[bot]` 都能指向機器人。
+GitHub 的 `@` 自動補全不會顯示 App 帳號，因此必須手動輸入或複製 App 別名。專用使用者 `@usectrl` 是預設的呼叫方式；`@myapp` 和 `@myapp[bot]` 仍可作為 App 別名使用。
 
 :::note[挑一個獨特的 App 名稱]
 短格式是以文字比對的。如果某個人類 GitHub 使用者的名稱恰好與你的 App slug
@@ -47,7 +47,7 @@ GitHub 不會在它的 `@` 自動補全中提供 App 帳號，因此登入名稱
 - **為 PR 加上 `ai-review` 標籤。這是 GitHub 所能提供、最接近把機器人指派為
   審查者的做法 — App 帳號無法佔用原生的要求審查者欄位。這裡沒有可供回應的
   留言，因此 GitHub 上不會發佈任何內容；審查會在 Control Center 中啟動
-- **在 PR 對話中留言 `@myapp review`**（或只寫 `@myapp`）。機器人會以 👀 回應，
+- **在 PR 對話中留言 `@usectrl review`**（或只寫 `@usectrl`）。機器人會以 👀 回應，
   接著在審查開始時回覆（或告知已經有一個正在執行）
 
 審查者會在該 PR 的審查空間中工作；閱讀與發佈發現的方式與
@@ -63,7 +63,7 @@ GitHub 不會在它的 `@` 自動補全中提供 App 帳號，因此登入名稱
 在 PR 對話中留言：
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 接下來會依序發生的事：
@@ -82,7 +82,7 @@ GitHub 不會在它的 `@` 自動補全中提供 App 帳號，因此登入名稱
 中張貼的答案。不需要提及；討論串**本身**就是定址方式：
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

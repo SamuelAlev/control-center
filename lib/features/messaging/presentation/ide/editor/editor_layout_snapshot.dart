@@ -9,6 +9,7 @@ import 'package:control_center/shared/editor/host/editor_layout_codec.dart';
 /// round-trips — both are dropped on encode. Restored terminal/browser tabs
 /// come back blank (their live state is never persisted).
 const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
+  persistFocus: true,
   restorableKinds: {
     MessagingTabKinds.chat,
     MessagingTabKinds.terminal,
@@ -30,8 +31,8 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
     // own "no longer available" state, which is one closeable tab; silently
     // dropping it would lose that context on every restart instead.
     MessagingTabKinds.agentActivity,
-    // A context breakdown is re-derivable from the (space, agent) pair — the
-    // explorer re-inspects on restore, so a reopened tab comes back fresh.
+    // A context breakdown belongs to a specific conversation and agent;
+    // restore re-inspects exactly that conversation or drops incomplete tabs.
     MessagingTabKinds.contextExplorer,
   },
   // An attachment preview is anchored to an in-memory registry entry that a
@@ -41,6 +42,8 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
   dropOnEncode: {
     MessagingTabKinds.fileDiff,
     MessagingTabKinds.review,
+    // Output ids identify live process caches, not durable documents.
+    MessagingTabKinds.agentShellOutput,
     MessagingTabKinds.attachment,
   },
   // An ENCLOSED terminal boots a VM on first attach, so a restored one gets
@@ -60,7 +63,12 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
     MessagingTabKinds.plan: ['planKind', 'planId'],
     MessagingTabKinds.artifact: ['workspaceId', 'workProductId'],
     MessagingTabKinds.agentActivity: ['workspaceId', 'spaceId', 'runId'],
-    MessagingTabKinds.contextExplorer: ['workspaceId', 'spaceId', 'agentId'],
+    MessagingTabKinds.contextExplorer: [
+      'workspaceId',
+      'spaceId',
+      'conversationId',
+      'agentId',
+    ],
   },
   iconFor: MessagingTabKinds.iconFor,
 );
@@ -78,4 +86,3 @@ Map<String, Object?> _deferResourceStart(
         (kind == MessagingTabKinds.terminal && args['backend'] == 'microvm'))
     ? {...args, EditorLayoutCodec.deferStartArg: true}
     : args;
-

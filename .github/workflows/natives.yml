@@ -17,10 +17,15 @@ on:
       - "scripts/lib/native_pins.env"
       - "scripts/lib/common.sh"
       - "scripts/lib/natives.sh"
+      - "scripts/lib/media.sh"
       - "scripts/natives/**"
       - "scripts/release/windows_natives.sh"
       - "scripts/release/verify_natives.sh"
       - "packages/cc_natives/native/**"
+      - "packages/cc_ui/fonts/Manrope-Variable.ttf"
+      - "packages/cc_ui/fonts/FiraCode-VF.ttf"
+      - "third_party/licenses/manrope-font-LICENSE.txt"
+      - "third_party/licenses/firacode-font-LICENSE.txt"
       - ".github/workflows/natives.yml"
       - ".github/actions/natives-cache/**"
   pull_request:
@@ -28,10 +33,15 @@ on:
       - "scripts/lib/native_pins.env"
       - "scripts/lib/common.sh"
       - "scripts/lib/natives.sh"
+      - "scripts/lib/media.sh"
       - "scripts/natives/**"
       - "scripts/release/windows_natives.sh"
       - "scripts/release/verify_natives.sh"
       - "packages/cc_natives/native/**"
+      - "packages/cc_ui/fonts/Manrope-Variable.ttf"
+      - "packages/cc_ui/fonts/FiraCode-VF.ttf"
+      - "third_party/licenses/manrope-font-LICENSE.txt"
+      - "third_party/licenses/firacode-font-LICENSE.txt"
       - ".github/workflows/natives.yml"
       - ".github/actions/natives-cache/**"
   workflow_dispatch:
@@ -48,7 +58,7 @@ jobs:
     # required checks keyed on them) stay exactly as they were.
     name: natives (${{ matrix.label || matrix.os }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
+    timeout-minutes: 90
     permissions:
       contents: read
     strategy:
@@ -84,6 +94,8 @@ jobs:
             *.archive.ubuntu.com:80
             *.blob.core.windows.net:443
             *.dl.sourceforge.net:443
+            ffmpeg.org:443
+            ffmpeg.martin-riedl.de:443
             *.microsoft.com:443
             api.github.com:443
             archive.ubuntu.com:443
@@ -96,6 +108,7 @@ jobs:
             objects.githubusercontent.com:443
             pub.dev:443
             pypi.org:443
+            raw.githubusercontent.com:443
             release-assets.githubusercontent.com:443
             security.ubuntu.com:443
             security.ubuntu.com:80
@@ -161,3 +174,6 @@ jobs:
           [ "$OS" = "windows" ] && arch_args=(--arch "$ARCH")
           bash scripts/release/verify_natives.sh "${arch_args[@]}" build/natives "$OS" desktop
           bash scripts/release/verify_natives.sh "${arch_args[@]}" build/natives "$OS" server
+          source scripts/lib/common.sh
+          source scripts/lib/media.sh
+          cc_media_verify build/natives/media "$OS" "$ARCH"

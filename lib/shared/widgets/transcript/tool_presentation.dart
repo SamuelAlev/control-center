@@ -84,6 +84,15 @@ ToolPresentation resolveToolPresentation(ToolSegment seg) {
     return null;
   }
 
+  if (name == 'render_media') {
+    return ToolPresentation(
+      icon: AppIcons.eye,
+      verb: 'Render',
+      category: ToolCategory.explore,
+      subtitle: shortenPath(filePath()),
+    );
+  }
+
   switch (name) {
     case 'read':
       return ToolPresentation(
@@ -120,9 +129,7 @@ ToolPresentation resolveToolPresentation(ToolSegment seg) {
         icon: AppIcons.terminal,
         verb: bashDescription ?? 'Bash',
         category: ToolCategory.run,
-        subtitle: bashDescription != null
-            ? 'Bash'
-            : _firstLine(str('command')),
+        subtitle: bashDescription != null ? 'Bash' : _firstLine(str('command')),
       );
     case 'eval':
       final evalDescription = _firstLine(str('description'));

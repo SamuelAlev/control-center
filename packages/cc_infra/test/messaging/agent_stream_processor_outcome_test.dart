@@ -118,6 +118,30 @@ void main() {
         expect(repo.lastMetadata?['outcome'], 'interrupted');
       },
     );
+
+    test('a terminal error fails a turn that already emitted prose', () async {
+      await emit(TextEvent(content: 'Waiting for your answer.'));
+      await emit(ErrorEvent(content: 'Agent silent for 15 min — terminating'));
+      await emit(DoneEvent());
+      await finish();
+
+      expect(repo.lastMetadata?['outcome'], 'failed');
+      expect(repo.lastMetadata?['error'], isTrue);
+      expect(repo.lastContent, 'Waiting for your answer.');
+      expect(dispatchService.completedRuns, isEmpty);
+      expect(dispatchService.failedRuns, hasLength(1));
+    });
+
+    test('an answer after a recovered error still completes', () async {
+      await emit(ErrorEvent(content: 'Transient provider failure'));
+      await emit(TextEvent(content: 'Retried successfully.'));
+      await emit(DoneEvent());
+      await finish();
+
+      expect(repo.lastMetadata?['outcome'], 'completed');
+      expect(repo.lastContent, 'Retried successfully.');
+      expect(dispatchService.failedRuns, isEmpty);
+    });
   });
 
   group('context reading', () {
@@ -165,6 +189,7 @@ void main() {
 
 class FakeMessagingRepository implements MessagingRepository {
   Map<String, dynamic>? lastMetadata;
+  String? lastContent;
 
   /// Workspace the transcript write was scoped to.
   String? lastWorkspaceId;
@@ -179,6 +204,7 @@ class FakeMessagingRepository implements MessagingRepository {
     String? idempotencyKey,
   }) async {
     lastWorkspaceId = workspaceId;
+    lastContent = content;
     lastMetadata = metadata;
   }
 

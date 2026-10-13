@@ -2,7 +2,7 @@
 title: Livscykel för agentdispatch
 description: Vad som händer mellan att ett meddelande kommer in och att en körningslogg stängs — promptsammansättning, worktrees, identitet, vad som begränsar en körning och hur utfallet registreras ärligt.
 slug: sv-SE/handbok/koncept/livscykel-agentdispatch
-sourceHash: dc1dba4492aa78c2223df9219c4d4496dc436c7f
+sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
 ---
 
 ## Vad en dispatch är
@@ -52,7 +52,7 @@ Copy-on-write är den **enda** implementationen överallt där `rift` levereras,
 
 Två identiteter fastställs per körning, innan någon process startas.
 
-**Git-författarskap.** Commits som en agent gör är författade _som agenten_ — `<Name> (agent) <agentId@agents.control-center.local>` i både `GIT_AUTHOR_*` och `GIT_COMMITTER_*` — aldrig genom att utge sig för att vara en människa. Den lokala delen är agentens UUID, inte dess namnslug. Den människa som begärde körningen krediteras med en `Co-Authored-By:`-trailer, som finns med i miljön och instrueras om i systemprompten. En uttrycklig identitet satt av anroparen vinner alltid över båda.
+**Git-författarskap.** Som standard använder agentens commits `Control Center <hi@usectrl.dev>` (GitHub-kontot `@usectrl`) i både `GIT_AUTHOR_*` och `GIT_COMMITTER_*`, medan personen som begärde körningen krediteras med en `Co-Authored-By:`-rad. Stäng av agenttillskrivning under **Inställningar → Du → Tillskrivning av commits** för att enbart använda din Git-identitet. En administratör kan tvinga tillskrivningen på eller av under **Inställningar → Arbetsyta → Allmänt**; den inställningen har företräde och inaktiverar den personliga reglaget utan att ändra det sparade valet. Ändringar gäller från nästa körning. Claude Codes egna namnunderskrifter i commits och PR:er är alltid avstängda. Git-identitetsvärden som anroparen uttryckligen anger har fortfarande företräde; inloggningsuppgifterna för kodplattformen påverkas inte.
 
 **Forge-identitet.** Körningens GitHub-uppgifter är alltid bara brokerns — en appinstallationstoken begränsad till repot, eller dess PAT-reservväg via miljön — aldrig den begärande medlemmens egen sparade token. `actingUserId` begränsar PAT-reservvägen så att en medlem som inte äger servern inte ärver serverns räckvidd; den lägger inte en personlig token ovanpå agentmiljön.
 

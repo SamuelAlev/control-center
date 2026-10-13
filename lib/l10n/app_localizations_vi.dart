@@ -12470,6 +12470,47 @@ class AppLocalizationsVi extends AppLocalizations {
       'Danh tính, chính sách và quy ước dùng chung cho mọi người trong không gian làm việc này.';
 
   @override
+  String get settingsAgentAttributionTitle => 'Ghi công trong commit';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'Chọn có ghi công Control Center trong commit của agent hay không. Quản trị viên không gian làm việc có thể thay đổi lựa chọn này cho mọi người trong không gian làm việc.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'Ghi công agent';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'Ghi công Control Center trong commit của agent';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'Khi bật, Control Center là tác giả commit và bạn là đồng tác giả. Khi tắt, commit dùng danh tính Git của bạn mà không ghi công agent.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'Thiết lập của không gian làm việc này thay thế lựa chọn cá nhân của bạn. Tùy chọn của bạn vẫn được lưu nhưng không áp dụng tại đây.';
+
+  @override
+  String get settingsAgentAttributionLoading => 'Đang tải thiết lập ghi công…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'Chọn có ghi công Control Center trong commit của agent hay không. Lựa chọn của không gian làm việc thay thế tùy chọn cá nhân của từng thành viên.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit =>
+      'Dùng tùy chọn của từng thành viên';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'Luôn ghi công Control Center';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'Không bao giờ ghi công Control Center';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'Mẫu ghi chú và giọng đã lưu cho các cuộc họp trong không gian làm việc này.';
 
@@ -13960,6 +14001,20 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'Phiếu';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'Tất cả yêu cầu kéo trong không gian này đã được hợp nhất. Lưu trữ không gian này?';
+
+  @override
+  String get spaceKeepAfterMerge => 'Không, giữ không gian này';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'Bạn sẽ không được hỏi lại về không gian này.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'Đã hợp nhất tất cả yêu cầu kéo';
 
   @override
   String get archiveSpace => 'Lưu trữ không gian';

@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:collection/collection.dart';
 
 /// Terminal status of a [ToolSegment].
@@ -123,6 +124,7 @@ sealed class TranscriptSegment {
               if (raw is Map)
                 ?ToolImageRef.fromJson(raw.cast<String, dynamic>()),
           ],
+          attachments: MessageAttachment.attachmentsFromMetadata(json),
         );
       case 'text':
         return TextSegment(
@@ -249,6 +251,7 @@ class ToolSegment extends TranscriptSegment {
     super.durationMs,
     this.prunedAt,
     this.images = const [],
+    this.attachments = const [],
   });
 
   /// Name of the tool (e.g. `Read`, `Edit`, `mcp__cc__create_ticket`).
@@ -286,6 +289,9 @@ class ToolSegment extends TranscriptSegment {
   /// when non-empty and costs an existing transcript nothing.
   final List<ToolImageRef> images;
 
+  /// Original media files read by the tool, stored in the workspace blob store.
+  final List<MessageAttachment> attachments;
+
   /// Whether this tool's output has been pruned/elided.
   bool get isPruned => prunedAt != null;
 
@@ -301,6 +307,7 @@ class ToolSegment extends TranscriptSegment {
     int? durationMs,
     DateTime? prunedAt,
     List<ToolImageRef>? images,
+    List<MessageAttachment>? attachments,
   }) => ToolSegment(
     toolName: toolName ?? this.toolName,
     toolCallId: toolCallId,
@@ -311,6 +318,7 @@ class ToolSegment extends TranscriptSegment {
     durationMs: durationMs ?? this.durationMs,
     prunedAt: prunedAt ?? this.prunedAt,
     images: images ?? this.images,
+    attachments: attachments ?? this.attachments,
   );
 
   @override
@@ -324,8 +332,11 @@ class ToolSegment extends TranscriptSegment {
     'status': _statusToString(status),
     if (durationMs != null) 'durationMs': durationMs,
     if (prunedAt != null) 'prunedAt': prunedAt!.millisecondsSinceEpoch,
-    if (images.isNotEmpty)
-      'images': [for (final i in images) i.toJson()],
+    if (images.isNotEmpty) 'images': [for (final i in images) i.toJson()],
+    if (attachments.isNotEmpty)
+      'attachments': [
+        for (final attachment in attachments) attachment.toJson(),
+      ],
   };
 
   @override
@@ -340,7 +351,8 @@ class ToolSegment extends TranscriptSegment {
           startedAt == other.startedAt &&
           durationMs == other.durationMs &&
           prunedAt == other.prunedAt &&
-          const DeepCollectionEquality().equals(images, other.images);
+          const DeepCollectionEquality().equals(images, other.images) &&
+          const DeepCollectionEquality().equals(attachments, other.attachments);
 
   @override
   int get hashCode => Object.hash(
@@ -353,6 +365,7 @@ class ToolSegment extends TranscriptSegment {
     durationMs,
     prunedAt,
     const DeepCollectionEquality().hash(images),
+    const DeepCollectionEquality().hash(attachments),
   );
 }
 

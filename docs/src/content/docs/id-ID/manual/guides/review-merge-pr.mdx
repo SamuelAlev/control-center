@@ -2,7 +2,7 @@
 title: Meninjau dan menggabungkan PR
 description: Buka workbench PR, baca diff, tinggalkan komentar sebaris, kirim tinjauan, dan gabungkan.
 slug: id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr
-sourceHash: 07dde8791c9226af8ed48090beedf40ba30250cd
+sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
 ---
 
 Panduan ini menunjukkan cara meninjau dan menggabungkan pull request.
@@ -25,6 +25,32 @@ saat URL pratinjau terdeteksi pada PR. Tata letak tab Anda diingat per PR.
 Tab Ikhtisar memuat metadata PR (penulis, branch, label, penerima tugas, reaksi,
 commit, status pemeriksaan) dan baris tindakannya: segarkan, **Tinjau**,
 **Gabungkan**, buka di IDE, dan menu tambahan ⋯.
+
+### Buka PR dari tumpukan sebuah space
+
+Bagian **Umum → Pull requests** milik space mengelompokkan PR yang tertaut dan
+yang cocok berdasarkan branch menurut repositori. Saat base branch sebuah PR
+adalah head branch PR sebelumnya, keduanya tampil dalam tumpukan yang dapat
+diciutkan. Headernya menandai PR paling bawah, branch target, dan jumlahnya;
+baris bernomor berjalan dari PR paling bawah (1) menuju puncak tumpukan.
+Nomor-nomor itu menggambarkan urutan dependensi, bukan kesiapan penggabungan.
+
+Setiap baris menampilkan judul, nomor PR, dan statusnya. Arahkan kursor atau
+fokuskan sebuah baris untuk membaca judul lengkap dan nama branch-nya; klik atau
+tekan Enter untuk membuka workbench PR. Fokuskan header tumpukan lalu tekan
+Enter atau Spasi untuk menciutkan atau memperluasnya. PR yang tidak berkaitan
+tetap terpisah, dan tautan branch yang tidak lengkap atau ambigu tidak disajikan
+sebagai tumpukan yang berurutan.
+
+Di **Kontrol sumber**, **Pull request bertumpuk (N)** membuka pemilih bagian
+tumpukan yang sudah diterbitkan, mulai dari yang paling bawah. Setiap entri
+menampilkan nomor PR, label bagian, dan posisinya; bagian yang sedang
+di-checkout ditandai. Pilih sebuah entri untuk membuka workbench PR-nya.
+**Terbitkan tumpukan** hanya muncul setelah penemuan PR selesai dan setidaknya
+satu bagian belum punya PR. Hal ini juga berlaku pada menu branch. PR yang
+dibuat di luar Control Center juga dihitung sebagai sudah diterbitkan. Tumpukan
+yang terbit sebagian menawarkan kedua tindakan; pekerjaan satu branch tetap
+memakai tindakan buat/lihat PR masing-masing.
 
 ## Baca diff
 

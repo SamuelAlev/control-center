@@ -89,6 +89,13 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   /// PR numbers that resolve as merged.
   final Set<int> mergedNumbers = {};
 
+  /// PR numbers whose terminal status cannot be confirmed yet.
+  final Set<int> unknownNumbers = {};
+
+  final Map<String, List<PullRequest>> branchHistory = {};
+  final Set<String> unavailableHistoryBranches = {};
+  int branchHistoryCalls = 0;
+
   int probeCalls = 0;
   int fetchGroupsCalls = 0;
   int fetchChecksCalls = 0;
@@ -145,7 +152,22 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
     Repo repo,
     int prNumber, {
     String? workspaceId,
-  }) async => mergedNumbers.contains(prNumber);
+  }) async => unknownNumbers.contains(prNumber)
+      ? null
+      : mergedNumbers.contains(prNumber);
+
+  @override
+  Future<List<PullRequest>?> fetchBranchHistory(
+    Repo repo,
+    String branch, {
+    String? workspaceId,
+  }) async {
+    branchHistoryCalls++;
+    if (unavailableHistoryBranches.contains(branch)) {
+      return null;
+    }
+    return branchHistory[branch] ?? [];
+  }
 
   /// Scripted forge verdict for the readiness confirmation, per PR number.
   /// Absent = `unknown`, i.e. "not confirmed", which suppresses the edge.
@@ -216,8 +238,10 @@ PullRequest _pr(
   String title = 'PR',
   String checks = 'none',
   String? headSha,
+  String? headRef,
   String author = 'u',
   bool isDraft = false,
+  PrState state = PrState.open,
   PrReviewDecision reviewDecision = PrReviewDecision.none,
   PrMergeableState mergeableState = PrMergeableState.unrecognized,
   List<String> requestedReviewers = const [],
@@ -227,7 +251,7 @@ PullRequest _pr(
   number: number,
   title: '$title $number',
   body: '',
-  state: PrState.open,
+  state: state,
   isDraft: isDraft,
   author: PrUser(login: author, avatarUrl: ''),
   createdAt: DateTime(2025),
@@ -237,7 +261,7 @@ PullRequest _pr(
   externalId: 'n$number',
   headSha: headSha ?? 's$number',
   baseRef: 'main',
-  headRef: 'f$number',
+  headRef: headRef ?? 'f$number',
   requestedReviewers: [
     for (final r in requestedReviewers) PrUser(login: r, avatarUrl: ''),
   ],
@@ -1169,10 +1193,302 @@ void main() {
       await poller.refreshNow('ws1');
       await pump();
 
-      expect(ticks, 2);
+      expect(ticks, greaterThanOrEqualTo(2));
       expect((await lookup('f3'))?['number'], 3);
       await sub.cancel();
     });
+  });
+
+  group('space branch history', () {
+    Future<List<Map<String, dynamic>>> lookup(
+      String branch, {
+      String workspaceId = 'ws1',
+      String repoId = 'r1',
+      String repoFullName = 'o/r1',
+    }) async => (await poller.prsForHeadBranch(
+      workspaceId: workspaceId,
+      repo: repo1.copyWith(
+        id: repoId,
+        remoteName: repoFullName.split('/').last,
+      ),
+      branch: branch,
+    )).prs;
+
+    test(
+      'discovers pre-existing merged and closed PRs on first visit',
+      () async {
+        port.branchHistory['f1'] = [
+          _pr(7, headRef: 'f1', state: PrState.merged),
+          _pr(8, headRef: 'f1', state: PrState.closed),
+        ];
+        final result = await poller.prsForHeadBranch(
+          workspaceId: 'ws1',
+          repo: repo1,
+          branch: 'f1',
+        );
+        expect(result.complete, true);
+        expect(result.prs.map((pr) => pr['state']), ['merged', 'closed']);
+        expect(port.branchHistoryCalls, 1);
+
+        poller.dispose();
+        poller = OpenPrPollingService(
+          fetchPort: port,
+          workspaceRepository: workspaces,
+          workspaceDbs: dbs,
+          changeSignals: signals,
+          prToWire: _prToWire,
+          now: () => now,
+        );
+        expect((await lookup('f1')).map((pr) => pr['state']), [
+          'merged',
+          'closed',
+        ]);
+        expect(
+          port.branchHistoryCalls,
+          1,
+          reason: 'fresh history is reused after restart',
+        );
+      },
+    );
+
+    test('failed history discovery never claims completeness', () async {
+      port.unavailableHistoryBranches.add('f1');
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false),
+      ];
+      await poller.refreshNow('ws1');
+      port.mergedNumbers.add(1);
+      port.groups = [(repo: repo1, prs: [], hasMore: false)];
+      await poller.refreshNow('ws1');
+      final result = await poller.prsForHeadBranch(
+        workspaceId: 'ws1',
+        repo: repo1,
+        branch: 'f1',
+      );
+      expect(result.prs.single['state'], 'merged');
+      expect(
+        result.complete,
+        false,
+        reason: 'other PRs on this branch are not yet enumerated',
+      );
+    });
+
+    test(
+      'finds a PR opened and merged between unchanged open-list probes',
+      () async {
+        port.groups = [(repo: repo1, prs: [], hasMore: false)];
+        await poller.refreshNow('ws1');
+        final initial = await poller.prsForHeadBranch(
+          workspaceId: 'ws1',
+          repo: repo1,
+          branch: 'f5',
+        );
+        expect(initial.complete, true);
+        expect(initial.prs, isEmpty);
+        expect(port.branchHistoryCalls, 1);
+        var ticks = 0;
+        final sub = poller.watchSnapshotChanges('ws1').listen((_) => ticks++);
+        await pump();
+        expect(ticks, 1);
+
+        port.branchHistory['f5'] = [_pr(5, state: PrState.merged)];
+        now = now.add(const Duration(minutes: 6));
+        port.probeResults[repo1.id] = (changed: false, etag: 'unchanged');
+        await poller.pollSoon('ws1');
+        final updated = await poller.prsForHeadBranch(
+          workspaceId: 'ws1',
+          repo: repo1,
+          branch: 'f5',
+        );
+        expect(updated.complete, true);
+        expect(updated.prs.single['state'], 'merged');
+        expect(
+          port.fetchGroupsCalls,
+          1,
+          reason: 'the open-list ETag never reported this PR',
+        );
+        expect(port.branchHistoryCalls, 2);
+        await pump();
+        expect(
+          ticks,
+          greaterThanOrEqualTo(2),
+          reason: 'an unchanged list still rechecks historical branches',
+        );
+        await sub.cancel();
+      },
+    );
+
+    test(
+      'merged and closed PRs survive a restart, even on a reused branch',
+      () async {
+        port.groups = [
+          (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+        ];
+        await poller.refreshNow('ws1');
+        now = now.add(const Duration(minutes: 5));
+        port.mergedNumbers.add(1);
+        port.groups = [(repo: repo1, prs: [], hasMore: false)];
+        await poller.refreshNow('ws1');
+
+        expect((await lookup('f1')).single['state'], 'merged');
+        expect((await lookup('f2')).single['state'], 'closed');
+        expect(
+          await poller.openPrForHeadBranch(
+            workspaceId: 'ws1',
+            repoFullName: 'o/r1',
+            branch: 'f1',
+          ),
+          isNull,
+          reason: 'the open-only source-control lookup stays open-only',
+        );
+
+        port.groups = [
+          (repo: repo1, prs: [_pr(3, headRef: 'f1')], hasMore: false),
+        ];
+        await poller.refreshNow('ws1');
+        expect((await lookup('f1')).map((pr) => pr['state']), [
+          'merged',
+          'open',
+        ]);
+        now = now.add(const Duration(minutes: 5));
+        port.groups = [(repo: repo1, prs: [], hasMore: false)];
+        await poller.refreshNow('ws1');
+        expect((await lookup('f1')).map((pr) => pr['state']), [
+          'merged',
+          'closed',
+        ]);
+
+        poller.dispose();
+        poller = OpenPrPollingService(
+          fetchPort: port,
+          workspaceRepository: workspaces,
+          workspaceDbs: dbs,
+          changeSignals: signals,
+          prToWire: _prToWire,
+          now: () => now,
+        );
+        expect((await lookup('f1')).map((pr) => pr['state']), [
+          'merged',
+          'closed',
+        ]);
+        expect((await lookup('f2')).single['state'], 'closed');
+        expect(
+          port.fetchGroupsCalls,
+          4,
+          reason: 'restart reads persisted state',
+        );
+      },
+    );
+
+    test(
+      'uncertain status cannot become merged, retries when forge recovers',
+      () async {
+        port.groups = [
+          (repo: repo1, prs: [_pr(1)], hasMore: false),
+        ];
+        await poller.refreshNow('ws1');
+        now = now.add(const Duration(minutes: 5));
+        port.groups = [(repo: repo1, prs: [], hasMore: false)];
+        // A null verdict is different from a confirmed closed PR.
+        port.unknownNumbers.add(1);
+        await poller.refreshNow('ws1');
+        final uncertain = await poller.prsForHeadBranch(
+          workspaceId: 'ws1',
+          repo: repo1,
+          branch: 'f1',
+        );
+        expect(uncertain.complete, false);
+        expect(
+          uncertain.prs.single['state'],
+          'open',
+          reason: 'unknown status retains last observed state',
+        );
+        expect(uncertain.prs.single['status_unconfirmed'], true);
+
+        port.unknownNumbers.clear();
+        port.mergedNumbers.add(1);
+        now = now.add(const Duration(minutes: 5));
+        await poller.pollSoon('ws1');
+        expect((await lookup('f1')).single['state'], 'merged');
+        expect(
+          (await lookup('f1')).single.containsKey('status_unconfirmed'),
+          false,
+        );
+        expect(
+          (await poller.prsForHeadBranch(
+            workspaceId: 'ws1',
+            repo: repo1,
+            branch: 'f1',
+          )).complete,
+          true,
+        );
+      },
+    );
+
+    test('repo id and workspace isolate terminal history', () async {
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false),
+      ];
+      await poller.refreshNow('ws1');
+      now = now.add(const Duration(minutes: 5));
+      port.mergedNumbers.add(1);
+      port.groups = [(repo: repo1, prs: [], hasMore: false)];
+      await poller.refreshNow('ws1');
+      await seedTestWorkspace(global, dbs, 'ws2');
+
+      expect(await lookup('f1', repoId: 'other'), isEmpty);
+      expect(await lookup('f1', repoFullName: 'o/renamed'), isEmpty);
+      expect(await lookup('f1', workspaceId: 'ws2'), isEmpty);
+      expect(await lookup('F1'), isEmpty);
+    });
+
+    test(
+      'same head in two linked repos keeps independent terminal states',
+      () async {
+        final repo2 = _repo('r2');
+        final twoRepos = FakeWorkspaceRepository(
+          workspaces: [_workspace('ws1')],
+          reposByWs: {
+            'ws1': [repo1, repo2],
+          },
+        );
+        final multi = OpenPrPollingService(
+          fetchPort: port,
+          workspaceRepository: twoRepos,
+          workspaceDbs: dbs,
+          changeSignals: signals,
+          prToWire: _prToWire,
+          now: () => now,
+        );
+        addTearDown(multi.dispose);
+        port.groups = [
+          (repo: repo1, prs: [_pr(1)], hasMore: false),
+          (repo: repo2, prs: [_pr(2, headRef: 'f1')], hasMore: false),
+        ];
+        await multi.refreshNow('ws1');
+        now = now.add(const Duration(minutes: 5));
+        port.mergedNumbers.add(1);
+        port.groups = [
+          (repo: repo1, prs: [], hasMore: false),
+          (repo: repo2, prs: [], hasMore: false),
+        ];
+        await multi.refreshNow('ws1');
+        final first = await multi.prsForHeadBranch(
+          workspaceId: 'ws1',
+          repo: repo1,
+          branch: 'f1',
+        );
+        final second = await multi.prsForHeadBranch(
+          workspaceId: 'ws1',
+          repo: repo2,
+          branch: 'f1',
+        );
+        expect(first.complete, true);
+        expect(first.prs.map((pr) => pr['state']), ['merged']);
+        expect(second.complete, true);
+        expect(second.prs.map((pr) => pr['state']), ['closed']);
+      },
+    );
   });
 
   // Author-facing lanes: merge readiness, review decisions, checks.

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
@@ -90,15 +91,42 @@ class PrInlineThreadBlock extends ConsumerStatefulWidget {
 }
 
 class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
-  final _replyCtrl = TextEditingController();
+  late TextEditingController _replyCtrl;
   final _replyFocus = FocusNode();
   bool _replying = false;
   bool _sending = false;
   String? _editingEntryId;
 
+  TextDraftKey get _replyKey => (
+    workspaceId: widget.controller.pr.workspaceId,
+    surface: 'pr-thread-reply',
+    destination: (
+      widget.controller.pr.repoFullName,
+      widget.controller.pr.number,
+      widget.thread.id,
+    ),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _replyCtrl = ref.read(textDraftControllerProvider(_replyKey));
+    _replying = _replyCtrl.text.isNotEmpty;
+  }
+
+  @override
+  void didUpdateWidget(PrInlineThreadBlock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller.pr != widget.controller.pr ||
+        oldWidget.thread.id != widget.thread.id) {
+      _replyCtrl = ref.read(textDraftControllerProvider(_replyKey));
+      _replying = _replyCtrl.text.isNotEmpty;
+      _sending = false;
+    }
+  }
+
   @override
   void dispose() {
-    _replyCtrl.dispose();
     _replyFocus.dispose();
     super.dispose();
   }
@@ -112,23 +140,29 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
   /// lands: clearing optimistically and then failing destroys something a
   /// person wrote with nothing left to retry from.
   Future<void> _sendReply() async {
-    final text = _replyCtrl.text.trim();
+    final draftCtrl = _replyCtrl;
+    final originalText = draftCtrl.text;
+    final text = originalText.trim();
     if (text.isEmpty || _sending) {
       return;
     }
+    final controller = widget.controller;
+    final thread = widget.thread;
     setState(() => _sending = true);
     try {
-      await widget.controller.replyTo(widget.thread, text);
-      if (!mounted) {
+      await controller.replyTo(thread, text);
+      if (draftCtrl.text == originalText) {
+        draftCtrl.clear();
+      }
+      if (!mounted || !identical(_replyCtrl, draftCtrl)) {
         return;
       }
-      _replyCtrl.clear();
       setState(() {
-        _replying = false;
+        _replying = draftCtrl.text.isNotEmpty;
         _sending = false;
       });
     } catch (e) {
-      if (!mounted) {
+      if (!mounted || !identical(_replyCtrl, draftCtrl)) {
         return;
       }
       setState(() => _sending = false);
@@ -406,9 +440,11 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
               CcTappable(
                 onPressed: () {
                   setState(() => _replying = true);
-                  WidgetsBinding.instance.addPostFrameCallback(
-                    (_) => _replyFocus.requestFocus(),
-                  );
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && _replying) {
+                      _replyFocus.requestFocus();
+                    }
+                  });
                 },
                 semanticLabel: AppLocalizations.of(context).replyEllipsis,
                 builder: (context, states) => ExcludeSemantics(

@@ -2,7 +2,7 @@
 title: Met Control Center praten vanuit een GitHub-PR
 description: Vraag de bot van de GitHub App van je server om een review of stel een vraag vanuit het PR-gesprek zelf, zonder webhook of openbare URL.
 slug: nl-NL/handleiding/gidsen/github-pr-gesprekken
-sourceHash: bf20a3ca7d0820c07ffb5f3ee04f35a83e2ee3cd
+sourceHash: 8132b3ee3993b6f0b1dc219eec313ff60fcadf8a
 ---
 
 Deze gids laat zien hoe je met Control Center werkt zonder GitHub te verlaten:
@@ -27,8 +27,9 @@ laptop achter NAT gedraagt zich precies als een openbare deployment.
 
 ## De naam van je bot vinden
 
-De login van de bot is `<appslug>[bot]`, waarbij `appslug` de naam is die je de
-app bij de registratie hebt gegeven.
+Vermeld `@usectrl`, het eigen GitHub-account van Control Center. Dit is de standaardtrigger; de geconfigureerde GitHub App van je server verwerkt het verzoek nog steeds en plaatst de antwoorden. Je hebt geen inloggegevens voor het account `usectrl` nodig.
+
+De eigen login van de App, `<appslug>[bot]`, en de korte vorm `@appslug` werken ook. Zo vind je deze optionele alias:
 
 1. Ga naar **Instellingen → Server → Single sign-on** en scroll naar de kaart
    **Provider-apps**
@@ -36,10 +37,7 @@ app bij de registratie hebt gegeven.
 3. Kopieer **Bot-login** zodra die verschijnt. Staat er nog de lege hint, dan is
    de login altijd `<appslug>[bot]` — typ die, of de korte vorm `@appslug`
 
-GitHub biedt appaccounts niet aan in zijn `@`-autocomplete, dus de login moet je
-typen — daarom maakt de kaart in de instellingen het kopiëren één klik. Het
-achtervoegsel `[bot]` is optioneel: `@myapp` en `@myapp[bot]` spreken beide de
-bot aan.
+GitHub toont App-accounts niet in de automatische aanvulling voor `@`, dus App-aliassen moet je typen of kopiëren. De eigen gebruiker `@usectrl` is de standaardaanroep; zowel `@myapp` als `@myapp[bot]` blijven geldige App-aliassen.
 
 :::note[Kies een onderscheidende appnaam]
 De korte vorm wordt op tekst vergeleken. Deelt een menselijke GitHub-gebruiker
@@ -56,7 +54,7 @@ de knop **Ask AI**:
   van de bot als reviewer toewijzen — appaccounts kunnen de native plek van een
   aangevraagde reviewer niet bezetten. Er is geen opmerking om op te reageren,
   dus er wordt niets op GitHub geplaatst; de review start in Control Center
-- **Plaats `@myapp review`** (of alleen `@myapp`) als opmerking in het
+- **Plaats `@usectrl review`** (of alleen `@usectrl`) als opmerking in het
   PR-gesprek. De bot reageert met 👀 en antwoordt vervolgens wanneer de review is
   gestart (of dat er al een loopt)
 
@@ -75,7 +73,7 @@ nog eens laten lopen — na een push, bijvoorbeeld — vermeld dan de bot.
 Plaats een opmerking in het PR-gesprek:
 
 ```text
-@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+@usectrl why does the flaky test in runner_test.dart fail on CI but not locally?
 ```
 
 Wat er gebeurt, in volgorde:
@@ -97,7 +95,7 @@ diff-opmerking die hij achterliet, of een antwoord dat hij in die thread
 plaatste. Een vermelding is niet nodig; de thread **is** de adressering:
 
 ```text
-> @myapp the retry loop looks O(n²) to me
+> @usectrl the retry loop looks O(n²) to me
 
 what would the complexity be with the bounded queue instead?
 ```

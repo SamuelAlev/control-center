@@ -230,12 +230,14 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
         );
       }
 
+      String? outputId;
       final unregister = _shellRegistry.register(
         pid: process.pid,
         workspaceId: workspaceId,
         spaceId: spaceId,
         agentId: agentId,
         command: command,
+        onRegistered: (id) => outputId = id,
       );
       unawaited(process.exitCode.then((_) => unregister()));
 
@@ -249,8 +251,18 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
       final spill = _openSpillFile(cwd);
       final outSink = _BoundedOutput(_maxOutputChars, spill: spill?.sink);
       final errSink = _BoundedOutput(_maxOutputChars);
-      final outSub = process.stdout.transform(decoder).listen(outSink.add);
-      final errSub = process.stderr.transform(decoder).listen(errSink.add);
+      final outSub = process.stdout.transform(decoder).listen((chunk) {
+        outSink.add(chunk);
+        if (outputId case final id?) {
+          _shellRegistry.append(id, chunk);
+        }
+      });
+      final errSub = process.stderr.transform(decoder).listen((chunk) {
+        errSink.add(chunk);
+        if (outputId case final id?) {
+          _shellRegistry.append(id, chunk);
+        }
+      });
 
       // Kill the process as soon as the run is cancelled (the user stopped the
       // agent) — otherwise a long command would keep running until its own

@@ -24,10 +24,7 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
   /// the repo's owner is suspended, a failed probe is remapped to
   /// [kGitHubInstallationSuspendedCode] so the poller parks immediately with
   /// the resume-or-token notice instead of treating it as a generic 404.
-  GitHubOpenPrFetchAdapter(
-    this._clientForOwner, {
-    this._app,
-  });
+  GitHubOpenPrFetchAdapter(this._clientForOwner, {this._app});
 
   final GitHubApiClient Function(String workspaceId, String owner)
   _clientForOwner;
@@ -68,10 +65,7 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
       ).pr.probeOpenPullRequests(repo.remoteOwner, repo.remoteName, etag: etag);
       return (changed: probe.changed, etag: probe.etag);
     } on Object {
-      if (await _ownerSuspended(
-        repo.remoteOwner,
-        workspaceId: workspaceId,
-      )) {
+      if (await _ownerSuspended(repo.remoteOwner, workspaceId: workspaceId)) {
         throw NetworkException(
           'GitHub App installation for ${repo.remoteOwner} is suspended',
           code: kGitHubInstallationSuspendedCode,
@@ -225,6 +219,46 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
       }
       return gh.mergedAt != null;
     } on Object {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<PullRequest>?> fetchBranchHistory(
+    Repo repo,
+    String branch, {
+    String? workspaceId,
+  }) async {
+    final prs = <PullRequest>[];
+    try {
+      for (var page = 1; page <= 100; page++) {
+        final batch = await _client(repo, workspaceId: workspaceId).pr
+            .listBranchPullRequestsPage(
+              repo.remoteOwner,
+              repo.remoteName,
+              branch,
+              page: page,
+            );
+        for (final gh in batch.items) {
+          if (gh.headRef.isEmpty || gh.number <= 0) {
+            throw FormatException(
+              'GitHub returned a PR without an identity/head ref for '
+              '${repo.fullName}',
+            );
+          }
+          if (gh.headRef == branch) {
+            prs.add(pullRequestFromGitHub(gh, repoFullName: repo.fullName));
+          }
+        }
+        if (!batch.hasMore) {
+          return prs;
+        }
+      }
+      throw StateError('GitHub branch PR history exceeded 100 pages');
+    } on Object catch (e) {
+      CcHostLog.warning(
+        'open_pr_poll: branch history failed for ${repo.fullName}: $e',
+      );
       return null;
     }
   }

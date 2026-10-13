@@ -1174,6 +1174,59 @@ void main() {
     });
   });
 
+  group('GitHubGraphQLClient searchBotConversationCandidates', () {
+    test(
+      'searches @usectrl and both App aliases without changing App identity',
+      () async {
+        final b = build(
+          (r) => _json(r, {
+            'data': {
+              'mentioned': {
+                'nodes': [
+                  {
+                    'number': 7,
+                    'title': 'Default mention',
+                    'updatedAt': '2026-01-02T03:04:05Z',
+                    'repository': {'nameWithOwner': 'acme/app'},
+                  },
+                ],
+              },
+              'botMentioned': {'nodes': <Object>[]},
+              'shortMentioned': {'nodes': <Object>[]},
+              'labeled': {'nodes': <Object>[]},
+            },
+          }),
+        );
+        final result = await b.client.searchBotConversationCandidates(
+          botLogin: 'cc-test[bot]',
+          label: 'ai-review',
+          since: DateTime.utc(2026, 1, 2, 3, 4, 5),
+        );
+
+        final body = _bodyOf(b.fake.requests.single);
+        final query = body['query'] as String;
+        final variables = (body['variables'] as Map).cast<String, Object?>();
+        expect(query, contains('botMentioned: search(query: \$bm'));
+        expect(query, contains('shortMentioned: search(query: \$sm'));
+        expect(
+          variables['mn'],
+          'is:pr mentions:"usectrl" updated:>2026-01-02T03:04:05',
+        );
+        expect(
+          variables['bm'],
+          'is:pr mentions:"cc-test[bot]" updated:>2026-01-02T03:04:05',
+        );
+        expect(
+          variables['sm'],
+          'is:pr in:comments "@cc-test" updated:>2026-01-02T03:04:05',
+        );
+        expect(variables['lb'], 'is:pr is:open label:"ai-review"');
+        expect(result.mentioned.single.key, 'acme/app#7');
+        expect(result.botMentioned, isEmpty);
+      },
+    );
+  });
+
   group('GitHubGraphQLClient searchViewerPullRequestActivity', () {
     HttpResponse emptyLanes(HttpRequest request) => _json(request, {
       'data': {

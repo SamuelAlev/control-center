@@ -146,7 +146,13 @@ class MediaProxyConfig {
   /// the response is content-addressed and immutable, so it is cached by hash
   /// and resized client-side — a `w` here would fork the cache per display size
   /// for bytes that never change.
-  String blobUrl({required String workspaceId, required String ref}) {
+  /// [downloadName] asks the server for a safe attachment-disposition response
+  /// while keeping the same authenticated blob target.
+  String blobUrl({
+    required String workspaceId,
+    required String ref,
+    String? downloadName,
+  }) {
     const prefix = 'blob:sha256:';
     if (!ref.startsWith(prefix)) {
       return '';
@@ -163,6 +169,8 @@ class MediaProxyConfig {
         'h': hash,
         'd': deviceId,
         's': RemoteControlCrypto.signProxyTarget(target, psk),
+        if (downloadName != null) 'download': '1',
+        'name': ?downloadName,
       },
     ).toString();
   }
@@ -571,9 +579,14 @@ class MediaProxyScope extends InheritedWidget {
     BuildContext context, {
     required String workspaceId,
     required String ref,
+    String? downloadName,
   }) {
     final scope = context.getInheritedWidgetOfExactType<MediaProxyScope>();
-    final url = scope?.config.blobUrl(workspaceId: workspaceId, ref: ref);
+    final url = scope?.config.blobUrl(
+      workspaceId: workspaceId,
+      ref: ref,
+      downloadName: downloadName,
+    );
     return (url == null || url.isEmpty) ? null : url;
   }
 

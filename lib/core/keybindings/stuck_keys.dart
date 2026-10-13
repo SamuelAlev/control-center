@@ -1,18 +1,21 @@
 import 'package:flutter/services.dart';
 
-/// Releases every key [HardwareKeyboard] still believes is pressed by synthesizing a
-/// [KeyUpEvent] for it.
-/// The macOS engine frequently loses a KeyUp (a key held across window focus loss, or a
-/// non-modifier key released while ⌘ is held —
-/// https://github.com/flutter/flutter/issues/136419).
-/// The stale entry then corrupts every subsequent stroke ("j" reads as "⌘J") and makes text
-/// fields see ghost repeats, so callers reset the pressed state at recovery points: window
-/// deactivation, a text field gaining focus, or the framework flagging an inconsistent key
-void releaseStuckKeys() {
+/// Releases pressed keys by synthesizing [KeyUpEvent]s without detaching
+/// [HardwareKeyboard] handlers.
+///
+/// macOS can lose key-ups across window focus loss or for a non-modifier
+/// released while ⌘ is held: https://github.com/flutter/flutter/issues/136419.
+/// In-app focus changes preserve modifiers because they can still be held
+/// for the next shortcut. Window deactivation and inconsistent-key recovery
+/// leave [preserveModifiers] false to reset all pressed keys.
+void releaseStuckKeys({bool preserveModifiers = false}) {
   final keyboard = HardwareKeyboard.instance;
   // `physicalKeysPressed` returns a fresh copy, so releasing while iterating
   // is safe.
   for (final physicalKey in keyboard.physicalKeysPressed) {
+    if (preserveModifiers && _modifierKeys.contains(physicalKey)) {
+      continue;
+    }
     final logicalKey = keyboard.lookUpLayout(physicalKey);
     if (logicalKey == null) {
       continue;
@@ -27,3 +30,14 @@ void releaseStuckKeys() {
     );
   }
 }
+
+const _modifierKeys = <PhysicalKeyboardKey>[
+  PhysicalKeyboardKey.metaLeft,
+  PhysicalKeyboardKey.metaRight,
+  PhysicalKeyboardKey.controlLeft,
+  PhysicalKeyboardKey.controlRight,
+  PhysicalKeyboardKey.shiftLeft,
+  PhysicalKeyboardKey.shiftRight,
+  PhysicalKeyboardKey.altLeft,
+  PhysicalKeyboardKey.altRight,
+];

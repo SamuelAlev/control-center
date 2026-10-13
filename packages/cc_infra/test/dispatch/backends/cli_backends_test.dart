@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/sandboxing/domain/command_policy/command_policy.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
@@ -66,17 +68,27 @@ void main() {
         },
       );
 
-      test('passes the policy hooks as --settings', () {
-        final args = ClaudeCliBackend.buildClaudeArgs(settingsJson: '{"a":1}');
-        final i = args.indexOf('--settings');
-        expect(args[i + 1], '{"a":1}');
-      });
-
-      test('omits --settings without hooks', () {
-        expect(
-          ClaudeCliBackend.buildClaudeArgs(),
-          isNot(contains('--settings')),
+      test('disables Claude attribution without losing action hooks', () {
+        final hooks = {
+          'PreToolUse': [
+            {
+              'matcher': 'Bash',
+              'hooks': [
+                {'type': 'http', 'url': 'http://127.0.0.1/hook'},
+              ],
+            },
+          ],
+        };
+        final args = ClaudeCliBackend.buildClaudeArgs(
+          settingsJson: jsonEncode({
+            'hooks': hooks,
+            'attribution': {'commit': 'Claude', 'pr': 'Claude'},
+          }),
         );
+        final settings =
+            jsonDecode(args[args.indexOf('--settings') + 1]) as Map;
+        expect(settings['hooks'], hooks);
+        expect(settings['attribution'], {'commit': '', 'pr': ''});
       });
 
       test('adds --model when modelId provided', () {

@@ -12443,6 +12443,47 @@ class AppLocalizationsFa extends AppLocalizations {
       'هویت، سیاست و قراردادهای مشترک همه در این فضای کاری.';
 
   @override
+  String get settingsAgentAttributionTitle => 'انتساب کامیت‌ها';
+
+  @override
+  String get settingsAgentAttributionDescription =>
+      'انتخاب کنید آیا در کامیت‌های عامل به Control Center اعتبار داده شود یا نه. مدیران فضای کاری می‌توانند این انتخاب را برای همهٔ اعضا بازنویسی کنند.';
+
+  @override
+  String get settingsAgentCoauthorSection => 'انتساب به عامل';
+
+  @override
+  String get settingsAgentCoauthorTitle =>
+      'اعتبار دادن به Control Center در کامیت‌های عامل';
+
+  @override
+  String get settingsAgentCoauthorDescription =>
+      'با فعال‌بودن این گزینه، نویسندهٔ کامیت‌ها Control Center است و شما هم به‌عنوان هم‌نویسنده ذکر می‌شوید. با غیرفعال‌بودن آن، کامیت‌ها از هویت Git شما استفاده می‌کنند و اعتباری به عامل داده نمی‌شود.';
+
+  @override
+  String get settingsAgentCoauthorWorkspaceOverride =>
+      'تنظیمات این فضای کاری بر انتخاب شخصی شما اولویت دارد. ترجیح شما ذخیره می‌شود، اما اینجا اعمال نمی‌شود.';
+
+  @override
+  String get settingsAgentAttributionLoading =>
+      'در حال بارگذاری تنظیمات انتساب…';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorDescription =>
+      'انتخاب کنید آیا در کامیت‌های عامل به Control Center اعتبار داده شود یا نه. انتخاب فضای کاری بر ترجیح شخصی هر عضو اولویت دارد.';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorInherit => 'استفاده از ترجیح هر عضو';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorAlways =>
+      'همیشه به Control Center اعتبار داده شود';
+
+  @override
+  String get settingsWorkspaceAgentCoauthorNever =>
+      'هرگز به Control Center اعتبار داده نشود';
+
+  @override
   String get settingsWorkspaceMeetingsDescription =>
       'الگوهای یادداشت و صداهای ذخیره‌شده برای جلسات این فضای کاری.';
 
@@ -13932,6 +13973,20 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get reviewKindTicket => 'تیکت';
+
+  @override
+  String get spaceAllPrsMerged =>
+      'همهٔ درخواست‌های ادغام این فضا ادغام شده‌اند. این فضا بایگانی شود؟';
+
+  @override
+  String get spaceKeepAfterMerge => 'نه، این فضا را نگه دار';
+
+  @override
+  String get spaceKeepAfterMergeHint =>
+      'دیگر دربارهٔ این فضا از شما پرسیده نمی‌شود.';
+
+  @override
+  String get spaceAllPrsMergedLabel => 'همهٔ درخواست‌های ادغام ادغام شدند';
 
   @override
   String get archiveSpace => 'بایگانی فضا';

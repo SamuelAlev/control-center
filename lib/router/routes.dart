@@ -242,6 +242,10 @@ String settingsAppearanceRoute(String workspaceId) =>
 String settingsNotificationsRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/you/notifications';
 
+/// Settings → You → Commit attribution (workspace policy takes precedence).
+String settingsAgentAttributionRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/you/attribution';
+
 /// Settings → You → Keybindings (a read-only reference over the const registry).
 String settingsKeybindingsRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/you/keybindings';

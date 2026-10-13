@@ -10,6 +10,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:control_center/shared/widgets/attachments/local_media.dart';
+import 'package:control_center/shared/widgets/attachments/web_pdf_preview.dart';
 import 'package:control_center/shared/widgets/composer/attachments/attachment_media.dart';
 import 'package:control_center/shared/widgets/composer/attachments/attachment_registry.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
@@ -531,13 +532,7 @@ class _MediaPreviewState extends State<_MediaPreview> {
   }
 }
 
-/// PDF, rendered by the platform's own webview.
-///
-/// No PDF dependency is added for this: WKWebView and WebView2 both render a
-/// PDF handed a `file://` URL, with the page navigation and text selection
-/// their users already know. Linux has no webview backend and web cannot reach
-/// a local file, so both degrade to the "open it in your own reader" card
-/// rather than to an empty frame.
+/// PDF, rendered by the platform webview or the browser's document viewer.
 class _PdfPreview extends StatelessWidget {
   const _PdfPreview({
     required this.source,
@@ -562,6 +557,9 @@ class _PdfPreview extends StatelessWidget {
     // The host's own URL when the document has been sent; a local file only
     // while it is still a draft.
     final target = path != null ? Uri.file(path).toString() : source.url;
+    if (target != null && kIsWeb) {
+      return webPdfPreview(url: target, title: attachment.label)!;
+    }
     if (target == null || !_webviewSupported) {
       return _UnsupportedPreview(
         tokens: tokens,

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart' show RepoOpKind;
 import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/mode_resolver.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
@@ -11,8 +12,10 @@ import 'package:cc_domain/features/dispatch/domain/context/context_inspection.da
 import 'package:cc_domain/features/dispatch/domain/usecases/build_conversation_context_use_case.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
+import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_host/cc_host.dart' show RepoOpContext;
@@ -25,11 +28,13 @@ void main() {
   late Directory tmp;
   late _FakeAgents agents;
   late _FakeSpaces spaces;
+  late _FakeConversations conversations;
   late _FakeFilesystem filesystem;
   late McpToolRegistry mcpRegistry;
 
   const workspaceId = 'ws-1';
   const spaceId = 'space-1';
+  const conversationId = 'conversation-1';
   const agentId = 'agent-1';
 
   Agent buildAgent({
@@ -56,6 +61,7 @@ void main() {
     int? Function(String qualifiedModel)? modelWindowOf,
   }) => ContextInspectionService(
     agentRepository: agents,
+    conversationRepository: conversations,
     messagingRepository: spaces,
     modeResolver: _FakeModeResolver(),
     filesystem: filesystem,
@@ -69,6 +75,8 @@ void main() {
     tmp = await Directory.systemTemp.createTemp('context_inspection_test');
     agents = _FakeAgents()..seed(buildAgent());
     spaces = _FakeSpaces()..seed(workspaceId, spaceId);
+    conversations = _FakeConversations()
+      ..seed(workspaceId, spaceId, conversationId);
     filesystem = _FakeFilesystem(tmp.path);
     mcpRegistry = McpToolRegistry([_FakeMcpTool('recall_facts')]);
 
@@ -98,6 +106,7 @@ void main() {
       final inspection = await buildService().inspect(
         workspaceId: workspaceId,
         spaceId: spaceId,
+        conversationId: conversationId,
         agentId: agentId,
         includeContent: true,
       );
@@ -189,9 +198,15 @@ void main() {
       agents.seed(
         buildAgent(contextSize: 100000, modelId: 'anthropic/claude-x'),
       );
-      final inspection = await buildService(
-        modelWindowOf: (q) => q == 'anthropic/claude-x' ? 200000 : null,
-      ).inspect(workspaceId: workspaceId, spaceId: spaceId, agentId: agentId);
+      final inspection =
+          await buildService(
+            modelWindowOf: (q) => q == 'anthropic/claude-x' ? 200000 : null,
+          ).inspect(
+            workspaceId: workspaceId,
+            spaceId: spaceId,
+            conversationId: conversationId,
+            agentId: agentId,
+          );
       expect(inspection.runner, ContextRunner.harness);
       expect(inspection.windowTokens, 100000);
     });
@@ -200,17 +215,25 @@ void main() {
       agents.seed(
         buildAgent(contextSize: 1000000, modelId: 'anthropic/claude-x'),
       );
-      final inspection = await buildService(
-        modelWindowOf: (_) => 200000,
-      ).inspect(workspaceId: workspaceId, spaceId: spaceId, agentId: agentId);
+      final inspection = await buildService(modelWindowOf: (_) => 200000)
+          .inspect(
+            workspaceId: workspaceId,
+            spaceId: spaceId,
+            conversationId: conversationId,
+            agentId: agentId,
+          );
       expect(inspection.windowTokens, 200000);
     });
 
     test('the setting is tokens, never re-read as characters', () async {
       agents.seed(buildAgent(contextSize: 1000000, modelId: 'local/big'));
-      final inspection = await buildService(
-        modelWindowOf: (_) => 2000000,
-      ).inspect(workspaceId: workspaceId, spaceId: spaceId, agentId: agentId);
+      final inspection = await buildService(modelWindowOf: (_) => 2000000)
+          .inspect(
+            workspaceId: workspaceId,
+            spaceId: spaceId,
+            conversationId: conversationId,
+            agentId: agentId,
+          );
       // 1,000,000 / 3.8 was the 263k this used to report.
       expect(inspection.windowTokens, 1000000);
     });
@@ -220,6 +243,7 @@ void main() {
       final inspection = await buildService().inspect(
         workspaceId: workspaceId,
         spaceId: spaceId,
+        conversationId: conversationId,
         agentId: agentId,
       );
       expect(inspection.windowTokens, 128000);
@@ -243,6 +267,7 @@ void main() {
       final inspection = await buildService().inspect(
         workspaceId: workspaceId,
         spaceId: spaceId,
+        conversationId: conversationId,
         agentId: agentId,
       );
       expect(inspection.runner, ContextRunner.claudeCode);
@@ -260,16 +285,22 @@ void main() {
       final inspection = await buildService().inspect(
         workspaceId: workspaceId,
         spaceId: spaceId,
+        conversationId: conversationId,
         agentId: agentId,
       );
       expect(inspection.windowTokens, 1000000);
 
       agents.seed(
-        buildAgent(contextSize: null, adapterId: 'claude-code', modelId: 'opus'),
+        buildAgent(
+          contextSize: null,
+          adapterId: 'claude-code',
+          modelId: 'opus',
+        ),
       );
       final standard = await buildService().inspect(
         workspaceId: workspaceId,
         spaceId: spaceId,
+        conversationId: conversationId,
         agentId: agentId,
       );
       expect(standard.windowTokens, 200000);
@@ -278,14 +309,16 @@ void main() {
     test(
       'only what the run receives is listed, plus the runner remainder',
       () async {
-        final inspection = await buildService(
-          history: _FakeHistory(spaces, '## Conversation History\n\nhi'),
-        ).inspect(
-          workspaceId: workspaceId,
-          spaceId: spaceId,
-          agentId: agentId,
-          includeContent: true,
-        );
+        final inspection =
+            await buildService(
+              history: _FakeHistory(spaces, '## Conversation History\n\nhi'),
+            ).inspect(
+              workspaceId: workspaceId,
+              spaceId: spaceId,
+              conversationId: conversationId,
+              agentId: agentId,
+              includeContent: true,
+            );
         final kinds = [for (final s in inspection.segments) s.kind];
         // None of the harness surface reaches `claude -p`.
         expect(kinds, isNot(contains(ContextSegmentKind.toolDefinitions)));
@@ -309,6 +342,78 @@ void main() {
         expect(runner.parts.single.content, contains('Claude Code'));
       },
     );
+
+    test(
+      'RPC inspection shows only the selected Claude Code history',
+      () async {
+        const secondId = 'conversation-2';
+        conversations.seed(workspaceId, spaceId, secondId);
+        spaces.seedMessage(
+          workspaceId,
+          Message(
+            id: 'message-1',
+            spaceId: spaceId,
+            conversationId: conversationId,
+            senderId: 'user-1',
+            senderType: SenderType.user,
+            content: 'apricot plans from the first conversation',
+            messageType: MessageType.text,
+            createdAt: DateTime(2026),
+          ),
+        );
+        spaces.seedMessage(
+          workspaceId,
+          Message(
+            id: 'message-2',
+            spaceId: spaceId,
+            conversationId: secondId,
+            senderId: 'user-1',
+            senderType: SenderType.user,
+            content: 'cobalt plans from the second conversation',
+            messageType: MessageType.text,
+            createdAt: DateTime(2026),
+          ),
+        );
+        final op = buildContextOps(
+          inspection: buildService(
+            history: BuildConversationContextUseCase(
+              messagingRepository: spaces,
+            ),
+          ),
+        ).single;
+
+        Future<String> historyFor(String selectedId) async {
+          final data = await op.handler(
+            RepoOpContext(
+              args: {
+                'space_id': spaceId,
+                'conversation_id': selectedId,
+                'agent_id': agentId,
+                'include_content': true,
+              },
+              workspaceId: workspaceId,
+              deviceId: 'device-1',
+              userId: 'user-1',
+            ),
+          );
+          final inspection = ContextInspection.fromJson(
+            (data['inspection'] as Map).cast<String, dynamic>(),
+          );
+          return inspection
+              .segmentFor(ContextSegmentKind.conversation)!
+              .parts
+              .single
+              .content!;
+        }
+
+        final first = await historyFor(conversationId);
+        final second = await historyFor(secondId);
+        expect(first, contains('apricot plans'));
+        expect(first, isNot(contains('cobalt plans')));
+        expect(second, contains('cobalt plans'));
+        expect(second, isNot(contains('apricot plans')));
+      },
+    );
   });
 
   test('the runner survives the wire round-trip', () async {
@@ -316,6 +421,7 @@ void main() {
     final inspection = await buildService().inspect(
       workspaceId: workspaceId,
       spaceId: spaceId,
+      conversationId: conversationId,
       agentId: agentId,
     );
     final back = ContextInspection.fromJson(inspection.toJson());
@@ -330,6 +436,7 @@ void main() {
     final inspection = await buildService().inspect(
       workspaceId: workspaceId,
       spaceId: spaceId,
+      conversationId: conversationId,
       agentId: agentId,
     );
     expect(inspection.hasContent, isFalse);
@@ -348,6 +455,7 @@ void main() {
       buildService().inspect(
         workspaceId: 'ws-OTHER',
         spaceId: spaceId,
+        conversationId: conversationId,
         agentId: agentId,
       ),
       throwsArgumentError,
@@ -359,10 +467,44 @@ void main() {
       buildService().inspect(
         workspaceId: workspaceId,
         spaceId: 'no-such-space',
+        conversationId: conversationId,
         agentId: agentId,
       ),
       throwsArgumentError,
     );
+  });
+
+  test('foreign-space, foreign-workspace and unknown conversations are refused'
+      ' before resource inspection', () async {
+    spaces.seed(workspaceId, 'space-2');
+    conversations
+      ..seed(workspaceId, 'space-2', 'other-space-conversation')
+      ..seed('ws-OTHER', spaceId, 'other-workspace-conversation');
+    final op = buildContextOps(inspection: buildService()).single;
+
+    for (final id in [
+      'other-space-conversation',
+      'other-workspace-conversation',
+      'no-such-conversation',
+    ]) {
+      await expectLater(
+        op.handler(
+          RepoOpContext(
+            args: {
+              'space_id': spaceId,
+              'conversation_id': id,
+              'agent_id': agentId,
+            },
+            workspaceId: workspaceId,
+            deviceId: 'device-1',
+            userId: 'user-1',
+          ),
+        ),
+        throwsArgumentError,
+        reason: id,
+      );
+    }
+    expect(filesystem.skillSyncs, isEmpty);
   });
 
   test('a provisioned overlay wins over the agent dir fallback', () async {
@@ -377,6 +519,7 @@ void main() {
     final inspection = await buildService().inspect(
       workspaceId: workspaceId,
       spaceId: spaceId,
+      conversationId: conversationId,
       agentId: agentId,
       includeContent: true,
     );
@@ -396,11 +539,18 @@ void main() {
       final op = ops.single;
       expect(op.name, 'context.inspect');
       expect(op.kind, RepoOpKind.read);
-      expect(op.requiredArgs, containsAll(['space_id', 'agent_id']));
+      expect(
+        op.requiredArgs,
+        containsAll(['space_id', 'conversation_id', 'agent_id']),
+      );
 
       final data = await op.handler(
         const RepoOpContext(
-          args: {'space_id': spaceId, 'agent_id': agentId},
+          args: {
+            'space_id': spaceId,
+            'conversation_id': conversationId,
+            'agent_id': agentId,
+          },
           workspaceId: workspaceId,
           deviceId: 'device-1',
           userId: 'user-1',
@@ -420,6 +570,7 @@ void main() {
         const RepoOpContext(
           args: {
             'space_id': spaceId,
+            'conversation_id': conversationId,
             'agent_id': agentId,
             'include_content': true,
           },
@@ -443,6 +594,7 @@ void main() {
     final inspection = await buildService().inspect(
       workspaceId: workspaceId,
       spaceId: spaceId,
+      conversationId: conversationId,
       agentId: agentId,
       includeContent: true,
     );
@@ -470,8 +622,51 @@ class _FakeAgents implements AgentRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _FakeConversations implements ConversationRepository {
+  final Map<String, Conversation> _byId = {};
+
+  void seed(String workspaceId, String spaceId, String conversationId) {
+    _byId['$workspaceId/$conversationId'] = Conversation(
+      id: conversationId,
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      title: 'Conversation',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+  }
+
+  @override
+  Future<Conversation?> getById({
+    required String workspaceId,
+    required String conversationId,
+  }) async => _byId['$workspaceId/$conversationId'];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class _FakeSpaces implements MessagingRepository {
   final Set<String> _spaces = {};
+  final Map<String, List<Message>> _messages = {};
+
+  void seedMessage(String workspaceId, Message message) {
+    _messages
+        .putIfAbsent(
+          '$workspaceId/${message.spaceId}/${message.conversationId}',
+          () => [],
+        )
+        .add(message);
+  }
+
+  @override
+  Future<List<Message>> getMessages(
+    String workspaceId,
+    String spaceId, {
+    String? conversationId,
+  }) async =>
+      _messages['$workspaceId/$spaceId/${conversationId ?? 'conversation-1'}'] ??
+      const [];
 
   void seed(String workspaceId, String spaceId) =>
       _spaces.add('$workspaceId/$spaceId');

@@ -8,6 +8,7 @@ import 'package:control_center/features/messaging/presentation/widgets/bubbles/a
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/focusable_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/live_transcript_controller.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/steering_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_flow.dart';
 import 'package:control_center/features/messaging/providers/live_turn_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -17,6 +18,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/format_utils.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,6 +38,7 @@ class AgentTurn extends ConsumerStatefulWidget {
     required this.message,
     required this.codeFont,
     this.collapseHeader = false,
+    this.steeringMessages = const [],
     this.onStartThread,
   });
 
@@ -48,6 +51,9 @@ class AgentTurn extends ConsumerStatefulWidget {
   /// When true, the name header is omitted and top padding tightens — used for
   /// consecutive same-sender turns so the name is not repeated (openchamber).
   final bool collapseHeader;
+
+  /// User messages injected into this run, ordered by injection time.
+  final List<Message> steeringMessages;
 
   /// Hover-rail "start thread" affordance (opens a conversation anchored to
   /// this message). Null hides the action.
@@ -93,6 +99,9 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
   @override
   void didUpdateWidget(covariant AgentTurn old) {
     super.didUpdateWidget(old);
+    if (!listEquals(old.steeringMessages, widget.steeringMessages)) {
+      _structureSlot = null;
+    }
     if (old.message.id != widget.message.id) {
       _live.dispose();
       _structureSlot = null;
@@ -100,6 +109,19 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
         ref.read(activeStreamRegistryProvider),
         widget.message.id,
       );
+    } else if (!old.message.isStreamingComplete &&
+        widget.message.isStreamingComplete) {
+      // Refresh unfinished detail after this build, not while the parent feed
+      // is updating rows: invalidation schedules the enclosing ProviderScope.
+      final messageId = widget.message.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted ||
+            widget.message.id != messageId ||
+            !widget.message.isStreamingComplete) {
+          return;
+        }
+        ref.invalidate(messageDetailProvider(messageId));
+      });
     }
   }
 
@@ -110,17 +132,15 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
   }
 
   Map<String, dynamic>? get _erroredMeta =>
-      widget.message.metadata?['error'] == true
-      ? widget.message.metadata
-      : null;
+      _shown.metadata?['error'] == true ? _shown.metadata : null;
   bool get _failed => _erroredMeta != null && !_retried;
-  bool get _retried => widget.message.metadata?['retried'] == true;
+  bool get _retried => _shown.metadata?['retried'] == true;
   String? get _errorFamily => _erroredMeta?['errorFamily'] as String?;
 
   /// The turn ended cleanly but unfinished: the loop hit its turn ceiling.
   /// Not an error (no retry affordance), but not a completion either — the
   /// feedback bar makes no sense on a cut-short turn, so it is hidden too.
-  bool get _turnLimited => widget.message.turnOutcome == TurnOutcome.maxTurns;
+  bool get _turnLimited => _shown.turnOutcome == TurnOutcome.maxTurns;
 
   /// Accessibility label for the whole turn, capped so a long answer doesn't
   /// force the semantics tree to re-diff a multi-KB string per update. While
@@ -129,7 +149,7 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
     if (_live.isLive) {
       return agentName;
     }
-    final content = widget.message.content;
+    final content = _shown.content;
     final capped = content.length > 200
         ? '${content.substring(0, 200)}…'
         : content;
@@ -160,14 +180,30 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
     _slotMessage = liveProjection ? null : message;
     return _structureSlot = ValueListenableBuilder<int>(
       valueListenable: _live.structure,
-      builder: (context, _, _) =>
-          _TurnBody(message: _shown, live: _live, codeFont: _shownFont),
+      builder: (context, _, _) => _TurnBody(
+        message: _shown,
+        live: _live,
+        codeFont: _shownFont,
+        steeringMessages: widget.steeringMessages,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final message = _shown = widget.message;
+    final listed = widget.message;
+    final needsDetail =
+        (!_live.isLive || listed.isStreamingComplete) &&
+        (listed.metadata?['segments_elided'] == true ||
+            (listed.content.isEmpty && !listed.isStreamingComplete));
+    final persisted = needsDetail
+        ? ref.watch(messageDetailProvider(listed.id)).asData?.value
+        : null;
+    final message = _shown =
+        persisted != null &&
+            (!listed.isStreamingComplete || persisted.isStreamingComplete)
+        ? persisted
+        : listed;
     _shownFont = widget.codeFont;
     final tokens = resolveTokens(context);
     // Only the name is painted. Watching the whole agent future rebuilt the
@@ -178,6 +214,7 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
             message.senderId,
           ).select((async) => async.asData?.value?.name),
         ) ??
+        message.metadata?['agentName'] as String? ??
         message.senderId.substring(0, 4);
 
     // The in-reply-to caption attributes a wake/consult/delegation turn to the
@@ -297,15 +334,17 @@ class _TurnBody extends ConsumerWidget {
     required this.message,
     required this.live,
     required this.codeFont,
+    required this.steeringMessages,
   });
 
   final Message message;
   final LiveTranscriptController live;
   final String codeFont;
+  final List<Message> steeringMessages;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLive = live.isLive;
+    final isLive = live.isLive && !message.isStreamingComplete;
     // Segment source order: live registry → persisted metadata (one-shot /
     // pre-lite rows) → cached/read-through transcript for lite list rows.
     // While a cold read is in flight, `message.content` remains the answer.
@@ -317,10 +356,12 @@ class _TurnBody extends ConsumerWidget {
       if (segments.isEmpty) {
         final cached = ref.watch(transcriptCacheProvider).get(message.id);
         if (message.metadata?['segments_elided'] == true) {
-          final snapshot = ref.watch(messageTranscriptProvider(message.id));
+          final snapshot = ref.watch(messageDetailProvider(message.id));
           segments = snapshot.hasError
               ? const []
-              : snapshot.value ?? cached ?? const [];
+              : snapshot.hasValue
+              ? snapshot.value?.transcript ?? const []
+              : cached ?? const [];
         } else if (cached != null) {
           segments = cached;
         }
@@ -337,6 +378,7 @@ class _TurnBody extends ConsumerWidget {
             isLive: isLive,
             live: isLive ? live : null,
             codeFont: codeFont,
+            steeringMessages: steeringMessages,
           ),
         ],
       );
@@ -347,6 +389,12 @@ class _TurnBody extends ConsumerWidget {
         children: [
           const SizedBox(height: AppSpacing.sm),
           TurnProse(content: message.content, codeFont: codeFont),
+          for (final steering in steeringMessages)
+            SteeringBubble(
+              key: ValueKey(steering.id),
+              message: steering,
+              codeFont: codeFont,
+            ),
         ],
       );
     }
@@ -359,11 +407,20 @@ class _TurnBody extends ConsumerWidget {
           // output yet": with an empty segment list its live tail is the
           // shimmered status line, which resolves to "Thinking…" and stops
           // animating under reduced motion.
-          TranscriptFlow(segments: const [], isLive: true, codeFont: codeFont),
+          TranscriptFlow(
+            segments: const [],
+            isLive: true,
+            codeFont: codeFont,
+            steeringMessages: steeringMessages,
+          ),
         ],
       );
     }
-    return const SizedBox.shrink();
+    return TranscriptFlow(
+      segments: const [],
+      codeFont: codeFont,
+      steeringMessages: steeringMessages,
+    );
   }
 
   /// Whether this turn has been dispatched but has produced nothing yet.

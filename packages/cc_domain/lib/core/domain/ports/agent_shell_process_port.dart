@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/entities/agent_shell_output.dart';
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 
 /// Lists and stops the shell commands agents left running in a space.
@@ -10,6 +11,13 @@ abstract interface class AgentShellProcessPort {
   Future<List<AgentShellProcess>> list({
     required String workspaceId,
     required String spaceId,
+  });
+
+  /// Reads the bounded live or recently completed output of a command in scope.
+  Future<AgentShellOutput> readOutput({
+    required String workspaceId,
+    required String spaceId,
+    required String outputId,
   });
 
   /// Stops the command whose top shell is [pid] and everything under it.

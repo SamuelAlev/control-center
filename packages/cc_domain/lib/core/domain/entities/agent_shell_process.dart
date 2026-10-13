@@ -18,6 +18,7 @@ class AgentShellProcess {
   /// Creates an [AgentShellProcess].
   AgentShellProcess({
     required this.pid,
+    required this.outputId,
     required this.workspaceId,
     required this.spaceId,
     required this.agentId,
@@ -32,10 +33,16 @@ class AgentShellProcess {
     if (workspaceId.isEmpty || spaceId.isEmpty) {
       throw ArgumentError('AgentShellProcess needs a workspace and a space');
     }
+    if (outputId.isEmpty) {
+      throw ArgumentError.value(outputId, 'outputId', 'must not be empty');
+    }
   }
 
   /// OS process id of the command's top shell.
   final int pid;
+
+  /// Opaque server-issued identity for this command's captured output.
+  final String outputId;
 
   /// Workspace the launching run belongs to.
   final String workspaceId;
@@ -63,6 +70,7 @@ class AgentShellProcess {
       identical(this, other) ||
       other is AgentShellProcess &&
           pid == other.pid &&
+          outputId == other.outputId &&
           workspaceId == other.workspaceId &&
           spaceId == other.spaceId &&
           agentId == other.agentId &&
@@ -74,6 +82,7 @@ class AgentShellProcess {
   @override
   int get hashCode => Object.hash(
     pid,
+    outputId,
     workspaceId,
     spaceId,
     agentId,

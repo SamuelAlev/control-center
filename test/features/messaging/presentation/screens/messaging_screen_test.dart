@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient;
@@ -22,7 +23,10 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
+import 'package:control_center/shared/editor/editor_workspace.dart';
+import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -97,6 +101,7 @@ void _seedTerminalLayout(Map<String, String?> cacheStore, String spaceId) {
       args: {'termSessionId': 'term-$spaceId'},
     ),
   );
+  tabs.selectedIndex = 0;
   cacheStore['$editorLayoutCacheKind/$spaceId'] = messagingLayoutCodec.encode(
     EditorLayoutController.single(controller: tabs),
   );
@@ -507,8 +512,7 @@ void main() {
       reason: 'the focused file tab is recorded as recently opened',
     );
     await tester.pump(const Duration(seconds: 2));
-    // The persisted layout carries structure, not selection: the recent
-    // record above is what proves the new tab took focus.
+    // The selected file and its split placement survive a layout restore.
     var layout = messagingLayoutCodec.decode(lastLayout!)!;
     expect(layout.root, isA<EditorLeafNode>());
     expect(
@@ -976,7 +980,7 @@ void main() {
 
   // Same scenario over a REAL router: `?tab=` writes, page rebuilds and
   // back-navigation all run through go_router exactly as in the app.
-  testWidgets('terminal session survives real-router navigation away + back', (
+  testWidgets('space reopening restores focus and keeps terminal sessions', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1400, 900);
@@ -1009,8 +1013,25 @@ void main() {
     };
     _seedTerminalLayout(cacheStore, 'ch-1');
 
+    final routeUpdates = <Map<Object?, Object?>>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.navigation,
+      (call) async {
+        if (call.method == 'routeInformationUpdated') {
+          routeUpdates.add(call.arguments as Map<Object?, Object?>);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.navigation,
+        null,
+      ),
+    );
+
     final router = GoRouter(
-      initialLocation: '/workspaces/ws-1/spaces/ch-1?tab=terminal',
+      initialLocation: '/workspaces/ws-1/spaces/ch-1?tab=chat',
       routes: [
         GoRoute(
           path: '/workspaces/:wid/spaces/:cid',
@@ -1030,53 +1051,148 @@ void main() {
     );
     addTearDown(router.dispose);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          activeWorkspaceIdProvider.overrideWith(
-            () => _TestActiveWorkspaceNotifier(_kWorkspaceId),
-          ),
-          rpcClientProvider.overrideWithValue(host.client()),
-          selectedSpaceIdProvider.overrideWith(
-            () => _TestSelectedSpaceNotifier('ch-1'),
-          ),
-          spacesProvider.overrideWith((ref) => Stream.value([_testSpaceA])),
-          workspaceSpacesProvider(
-            _kWorkspaceId,
-          ).overrideWith((ref) => Stream.value([_testSpaceA])),
-          agentsProvider.overrideWith((ref) => Stream.value(const [])),
-          spaceParticipantsProvider(
-            'ch-1',
-          ).overrideWith((ref) => Stream.value(const [])),
-          workspacesProvider.overrideWith((ref) => Stream.value(const [])),
-          spaceFeedWindowedProvider((
-            spaceId: 'ch-1',
-            conversationId: 'ch-1',
-          )).overrideWith(
-            (ref) => Stream.value((messages: const [], hasMore: false)),
-          ),
-          spaceReadRepositoryProvider.overrideWith(
-            (ref) => _FakeSpaceReadRepository(),
-          ),
-          spaceMessagesProvider(
-            'ch-1',
-          ).overrideWith((ref) => Stream.value(const [])),
-          // The pane resolves the space's standing conversation before it
-          // renders — a conversation owns its own uuid, so this cannot be
-          // assumed. Pinned to the id the feed overrides already use.
-          standingConversationIdProvider(
-            'ch-1',
-          ).overrideWith((ref) async => 'ch-1'),
-        ],
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
+    Future<void> settle() async {
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    String? focusedTab() => activeEditorTabKey(
+      tester.widget<EditorWorkspace>(find.byType(EditorWorkspace)).layout,
+    );
+
+    void expectRestoredUrl(String spaceId, String tabKey) {
+      final uri = router.routeInformationProvider.value.uri;
+      expect(uri.path, '/workspaces/ws-1/spaces/$spaceId');
+      expect(uri.queryParameters['tab'], tabKey);
+      expect(Uri.parse(routeUpdates.last['uri']! as String), uri);
+      expect(routeUpdates.last['replace'], isTrue);
+    }
+
+    Widget app() => ProviderScope(
+      overrides: [
+        activeWorkspaceIdProvider.overrideWith(
+          () => _TestActiveWorkspaceNotifier(_kWorkspaceId),
         ),
+        rpcClientProvider.overrideWithValue(host.client()),
+        selectedSpaceIdProvider.overrideWith(
+          () => _TestSelectedSpaceNotifier('ch-1'),
+        ),
+        spacesProvider.overrideWith(
+          (ref) => Stream.value([_testSpaceA, _testSpaceB]),
+        ),
+        workspaceSpacesProvider(
+          _kWorkspaceId,
+        ).overrideWith((ref) => Stream.value([_testSpaceA, _testSpaceB])),
+        agentsProvider.overrideWith((ref) => Stream.value(const [])),
+        spaceParticipantsProvider(
+          'ch-1',
+        ).overrideWith((ref) => Stream.value(const [])),
+        spaceConversationsProvider(
+          'ch-1',
+        ).overrideWith((ref) => Stream.value(const [])),
+        workspacesProvider.overrideWith((ref) => Stream.value(const [])),
+        spaceFeedWindowedProvider((
+          spaceId: 'ch-1',
+          conversationId: 'ch-1',
+        )).overrideWith(
+          (ref) => Stream.value((messages: const [], hasMore: false)),
+        ),
+        spaceFeedWindowedProvider((
+          spaceId: 'ch-2',
+          conversationId: 'conv-2',
+        )).overrideWith(
+          (ref) => Stream.value((messages: const [], hasMore: false)),
+        ),
+        spaceParticipantsProvider(
+          'ch-2',
+        ).overrideWith((ref) => Stream.value(const [])),
+        standingConversationIdProvider(
+          'ch-2',
+        ).overrideWith((ref) async => 'ch-2'),
+        spaceConversationsProvider('ch-2').overrideWith(
+          (ref) => Stream.value([
+            for (final id in ['ch-2', 'conv-2'])
+              Conversation(
+                id: id,
+                workspaceId: _kWorkspaceId,
+                spaceId: 'ch-2',
+                title: id == 'ch-2' ? 'Standing chat' : 'Second conversation',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+              ),
+          ]),
+        ),
+        spaceReadRepositoryProvider.overrideWith(
+          (ref) => _FakeSpaceReadRepository(),
+        ),
+        spaceMessagesProvider(
+          'ch-1',
+        ).overrideWith((ref) => Stream.value(const [])),
+        // The pane resolves the space's standing conversation before it
+        // renders — a conversation owns its own uuid, so this cannot be
+        // assumed. Pinned to the id the feed overrides already use.
+        standingConversationIdProvider(
+          'ch-1',
+        ).overrideWith((ref) async => 'ch-1'),
+      ],
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
       ),
     );
-    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(app());
+    await settle();
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(EditorWorkspace),
+            matching: find.text('Terminal'),
+          )
+          .hitTestable()
+          .first,
+    );
+    await settle();
+    expect(focusedTab(), 'terminal');
     expect(spawnCount, 1, reason: 'the focused terminal boots its shell');
+
+    // Clicking the already-open space must not reset its latest tab.
+    router.go('/workspaces/ws-1/spaces/ch-1');
+    await settle();
+    expect(focusedTab(), 'terminal');
+    expectRestoredUrl('ch-1', 'terminal');
+
+    // An explicit conversation link wins over the space's saved selection.
+    router.go('/workspaces/ws-1/spaces/ch-2?tab=chat:conv-2');
+    await settle();
+    expect(focusedTab(), 'chat:conv-2');
+    expect(
+      Uri.parse(routeUpdates.last['uri']! as String).queryParameters['tab'],
+      'chat:conv-2',
+    );
+
+    // Bare space links restore independently, including when the outgoing
+    // route had an explicit tab and the incoming route has none.
+    router.go('/workspaces/ws-1/spaces/ch-1?source=sidebar');
+    await settle();
+    expect(focusedTab(), 'terminal');
+    expectRestoredUrl('ch-1', 'terminal');
+    expect(
+      router.routeInformationProvider.value.uri.queryParameters['source'],
+      'sidebar',
+    );
+    router.go('/workspaces/ws-1/spaces/ch-2');
+    await settle();
+    expect(focusedTab(), 'chat:conv-2');
+    expectRestoredUrl('ch-2', 'chat:conv-2');
+
+    // A stale link leaves the restored selection intact.
+    router.go('/workspaces/ws-1/spaces/ch-2?tab=terminal:gone');
+    await settle();
+    expect(focusedTab(), 'chat:conv-2');
+    expectRestoredUrl('ch-2', 'chat:conv-2');
 
     // To the newsfeed and back, through the real router.
     router.go('/workspaces/ws-1/newsfeed');
@@ -1088,8 +1204,10 @@ void main() {
       reason: 'navigating away must not kill the server PTY',
     );
 
-    router.go('/workspaces/ws-1/spaces/ch-1?tab=terminal');
-    await tester.pumpAndSettle();
+    router.go('/workspaces/ws-1/spaces/ch-1');
+    await settle();
+    expect(focusedTab(), 'terminal');
+    expectRestoredUrl('ch-1', 'terminal');
 
     expect(
       killCount,
@@ -1103,6 +1221,18 @@ void main() {
           'the restored terminal tab must re-claim its kept session, not '
           'spawn a fresh shell',
     );
+
+    // A fresh provider scope has no in-process layout memo: focus must also
+    // survive the server-cache path used after restarting the client.
+    await tester.pumpWidget(const SizedBox());
+    await settle();
+    router.go('/workspaces/ws-1/spaces/ch-1');
+    await tester.pumpWidget(app());
+    await settle();
+    expect(focusedTab(), 'terminal');
+    expectRestoredUrl('ch-1', 'terminal');
+    await tester.pumpWidget(const SizedBox());
+    await settle();
   });
 
   // Regression: the shell's custom tab name (OSC/foreground title) used to
