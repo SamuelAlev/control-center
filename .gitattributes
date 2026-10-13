@@ -11,6 +11,7 @@
 *.sh    text eol=lf
 *.bash  text eol=lf
 *.env   text eol=lf
+Cargo.lock text eol=lf
 
 # Tree-sitter extraction queries are read at runtime and hashed into the code
 # indexer's fingerprint and their bytes are pinned against the compiled-in
