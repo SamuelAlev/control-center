@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
-import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
@@ -17,10 +16,9 @@ String? _hostClaudeHome() => Platform.environment['HOME'];
 /// sidecar `accounts.json` (dir IS the account — one place to delete).
 ///
 /// Never performs login: operator runs `claude auth login` with
-/// `CLAUDE_CONFIG_DIR` set, or pastes the token `claude setup-token` printed
-/// (see [setLongLivedToken]). Does not mint Claude Code tokens from another
-/// app, and never copies the operator's own `~/.claude` login: two copies of
-/// one rotating refresh token sign each other out.
+/// `CLAUDE_CONFIG_DIR` set. Does not mint Claude Code tokens from another app,
+/// and never copies the operator's own `~/.claude` login: two copies of one
+/// rotating refresh token sign each other out.
 class ClaudeAccountStore {
   /// Creates a store rooted at [dataDir].
   ///
@@ -171,13 +169,9 @@ class ClaudeAccountStore {
         await syncCredentialFromKeychain(a.id);
         final expiry = credentialExpiry(a.id);
         final dir = configDirFor(a.id);
-        final tokenSavedAt = claudeLongLivedTokenSavedAt(dir);
         final probed = (await _withStatus(a)).copyWith(
           credentialExpiresAt: expiry,
           clearCredentialExpiresAt: expiry == null,
-          usesLongLivedToken: readClaudeLongLivedToken(dir) != null,
-          longLivedTokenSavedAt: tokenSavedAt,
-          clearLongLivedTokenSavedAt: tokenSavedAt == null,
         );
         // `claude auth status` reads the credential's SHAPE, not whether the
         // provider still honours it, so it keeps saying "logged in" about a
@@ -546,22 +540,10 @@ class ClaudeAccountStore {
   /// the file, and an in-sandbox refresh writes the file directly. So the flag
   /// clears itself the moment the account could work again, and no operator
   /// ever has to find a "clear this" button.
-  ///
-  /// An account on a long-lived token is judged by the TOKEN file instead: it
-  /// is the credential runs use, and pasting a new one is its re-login.
   bool _authFailurePending(ClaudeAccount account, String dir) {
     final failedAt = account.authFailedAt;
     if (failedAt == null) {
       return false;
-    }
-    if (readClaudeLongLivedToken(dir) != null) {
-      try {
-        return !claudeLongLivedTokenFile(
-          dir,
-        ).statSync().modified.isAfter(failedAt);
-      } on Object {
-        return true;
-      }
     }
     try {
       final file = File(p.join(dir, '.credentials.json'));
@@ -580,13 +562,7 @@ class ClaudeAccountStore {
   /// When the credential in [accountId]'s directory stops being accepted, or
   /// null if none / no expiry. Reads envelope `expiresAt` (`claude auth status`
   /// only reports shape). Does not refresh — CLI renews on run; report only.
-  ///
-  /// Null for an account on a long-lived token: the file credential beside it
-  /// is no longer what runs use, so its expiry says nothing about the account.
   DateTime? credentialExpiry(String accountId) {
-    if (readClaudeLongLivedToken(configDirFor(accountId)) != null) {
-      return null;
-    }
     try {
       final file = File(p.join(configDirFor(accountId), '.credentials.json'));
       if (!file.existsSync()) {
@@ -868,13 +844,9 @@ class ClaudeAccountStore {
   /// unsuffixed `~/.claude` item instead (what a keychain-seeded account used
   /// to do) put one rotating refresh token in two places, and whichever
   /// refreshed first signed the other out — the operator's own Claude Code,
-  /// every morning. An account on a long-lived token skips the mirror
-  /// entirely: that token is its credential, and it never refreshes.
+  /// every morning.
   Future<bool> syncCredentialFromKeychain(String accountId) async {
     final dir = configDirFor(accountId);
-    if (readClaudeLongLivedToken(dir) != null) {
-      return true;
-    }
     final file = File(p.join(dir, '.credentials.json'));
     if (!Platform.isMacOS) {
       return file.existsSync();
@@ -938,15 +910,14 @@ class ClaudeAccountStore {
     }
   }
 
-  /// Runs `claude auth status --json` against [account]'s directory, with the
-  /// account's long-lived token exported exactly as a run would see it.
+  /// Runs `claude auth status --json` against [account]'s directory.
   Future<ClaudeAccount> _withStatus(ClaudeAccount account) async {
     try {
-      final result = await _runProcess(claudeExecutable, const [
-        'auth',
-        'status',
-        '--json',
-      ], environment: runEnvironmentFor(account.id)).timeout(statusTimeout);
+      final result = await _runProcess(
+        claudeExecutable,
+        const ['auth', 'status', '--json'],
+        environment: {'CLAUDE_CONFIG_DIR': configDirFor(account.id)},
+      ).timeout(statusTimeout);
       final stdout = (result.stdout as String?)?.trim() ?? '';
       if (stdout.isEmpty) {
         return account.copyWith(
@@ -996,72 +967,6 @@ class ClaudeAccountStore {
     environment: {'CLAUDE_CONFIG_DIR': configDirFor(accountId)},
   );
 
-  /// The argv a terminal runs to mint a long-lived token for this account.
-  ///
-  /// Interactive like [loginCommand] — it opens a browser — but it writes no
-  /// credential: it prints a token, and the operator pastes that into
-  /// [setLongLivedToken]. Scoped to the account directory anyway, so nothing
-  /// it does lands in the operator's own `~/.claude`.
-  ({List<String> argv, Map<String, String> environment}) setupTokenCommand(
-    String accountId,
-  ) => (
-    argv: [claudeExecutable, 'setup-token'],
-    environment: {'CLAUDE_CONFIG_DIR': configDirFor(accountId)},
-  );
-
-  /// The environment a `claude` process needs to run as [accountId]: its
-  /// config dir and, when it has one, its long-lived token.
-  Map<String, String> runEnvironmentFor(String accountId) {
-    final dir = configDirFor(accountId);
-    final token = readClaudeLongLivedToken(dir);
-    return {'CLAUDE_CONFIG_DIR': dir, claudeLongLivedTokenEnvKey: ?token};
-  }
-
-  /// Stores [token] (from `claude setup-token`) as [accountId]'s credential.
-  ///
-  /// From then on runs authenticate with it instead of the interactive login,
-  /// so the keychain mirror stops and the account stops depending on a
-  /// rotating refresh token. Pasting a fresh token is also how an account that
-  /// 401'd on an expired one is repaired, so a recorded auth failure clears.
-  ///
-  /// Throws [ArgumentError] for an unknown account or a value that is not a
-  /// setup token.
-  Future<void> setLongLivedToken(String accountId, String token) async {
-    final trimmed = token.trim();
-    if (!isWellFormedClaudeLongLivedToken(trimmed)) {
-      throw ArgumentError.value(
-        '(redacted)',
-        'token',
-        'not a `claude setup-token` token (expected sk-ant-oat01-…)',
-      );
-    }
-    final accounts = await list();
-    if (!accounts.any((a) => a.id == accountId)) {
-      throw ArgumentError.value(accountId, 'accountId', 'unknown account');
-    }
-    final dir = configDirFor(accountId);
-    Directory(dir).createSync(recursive: true);
-    await _chmod700(dir);
-    writeClaudeLongLivedToken(dir, trimmed, at: now());
-    await _chmod600(claudeLongLivedTokenFile(dir).path);
-    _usageCache.remove(dir);
-    await _writeRegistry([
-      for (final a in accounts)
-        if (a.id == accountId) a.copyWith(clearAuthFailure: true) else a,
-    ]);
-  }
-
-  /// Drops [accountId]'s long-lived token; runs fall back to whatever
-  /// interactive login its directory holds.
-  Future<void> clearLongLivedToken(String accountId) async {
-    if (!(await list()).any((a) => a.id == accountId)) {
-      return;
-    }
-    final dir = configDirFor(accountId);
-    deleteClaudeLongLivedToken(dir);
-    _usageCache.remove(dir);
-  }
-
   /// Retires the account an older build seeded from the operator's own
   /// `~/.claude` keychain login.
   ///
@@ -1071,7 +976,7 @@ class ClaudeAccountStore {
   /// in again — and the next sign-in was copied straight back in, so it
   /// happened again the next day. The copy is deleted (the operator's original
   /// is untouched in the keychain) and the account is left signed out until it
-  /// gets its own login or a long-lived token.
+  /// gets its own login.
   ///
   /// Idempotent: the marker is dropped from the registry once handled.
   /// Returns the ids it retired. Never throws.

@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "ファイル内検索",
   "ideNoContentMatches": "一致なし",
   "ideSourceControlCreatePr": "プルリクエストを作成",
-  "ideSourceControlViewPr": "プルリクエスト #{number} を表示",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "変更なし",
   "noReposInConversation": "この会話にリポジトリはありません",
   "ideSourceControlNoSpace": "会話を開くと変更を確認できます",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "サインイン",
   "claudeAccountSignInAgain": "再サインイン",
   "claudeAccountSignInHint": "サーバーのターミナルでこれを実行してください。ブラウザが開いてログインが完了し、資格情報がこのアカウントのディレクトリに書き込まれます。",
-  "claudeAccountLongLivedToken": "長期トークン",
-  "claudeAccountUseLongLivedToken": "長期トークンを使う",
-  "claudeAccountReplaceLongLivedToken": "長期トークンを置き換える",
-  "claudeAccountRemoveLongLivedToken": "長期トークンを削除",
-  "claudeAccountLongLivedTokenHint": "通常のサインインは更新が必要で、一晩で期限切れになることがあります。長期トークンは約 1 年間サインインしたままです。ターミナルでこのコマンドを実行し、ブラウザーで完了してから、表示されたトークンを貼り付けてください。",
-  "claudeAccountLongLivedTokenInvalid": "これは claude setup-token のトークンではありません。トークンは sk-ant-oat01- で始まります。",
   "claudeAccountSignedOut": "サインアウト済み",
   "claudeAccountExpired": "サインイン期限切れ",
   "claudeAccountExpiredDetail": "サインインは{when}に期限切れになりました。このアカウントを使用するには、再サインインしてください。",

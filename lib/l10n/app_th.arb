@@ -5259,15 +5259,6 @@
   "ideSearchInFiles": "ค้นหาในไฟล์",
   "ideNoContentMatches": "ไม่พบรายการ",
   "ideSourceControlCreatePr": "สร้าง pull request",
-  "ideSourceControlViewPr": "ดู pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "ไม่มีการเปลี่ยนแปลง",
   "noReposInConversation": "ไม่มีรีโพสิทอรีในการสนทนานี้",
   "ideSourceControlNoSpace": "เปิดการสนทนาเพื่อดูการเปลี่ยนแปลง",
@@ -8385,12 +8376,6 @@
   "claudeAccountSignIn": "ลงชื่อเข้าใช้",
   "claudeAccountSignInAgain": "ลงชื่อเข้าใช้อีกครั้ง",
   "claudeAccountSignInHint": "รันสิ่งนี้ในเทอร์มินัลบนเซิร์ฟเวอร์ จะเปิดเบราว์เซอร์เพื่อลงชื่อเข้าใช้ให้เสร็จ และเขียนข้อมูลรับรองลงไดเรกทอรีของบัญชีนี้",
-  "claudeAccountLongLivedToken": "โทเค็นระยะยาว",
-  "claudeAccountUseLongLivedToken": "ใช้โทเค็นระยะยาว",
-  "claudeAccountReplaceLongLivedToken": "แทนที่โทเค็นระยะยาว",
-  "claudeAccountRemoveLongLivedToken": "นำโทเค็นระยะยาวออก",
-  "claudeAccountLongLivedTokenHint": "การลงชื่อเข้าใช้ปกติต้องต่ออายุและอาจหมดอายุภายในคืนเดียว โทเค็นระยะยาวจะคงการลงชื่อเข้าใช้ไว้ประมาณหนึ่งปี เรียกใช้คำสั่งนี้ในเทอร์มินัล ทำให้เสร็จในเบราว์เซอร์ แล้ววางโทเค็นที่แสดงออกมา",
-  "claudeAccountLongLivedTokenInvalid": "นี่ไม่ใช่โทเค็นจาก claude setup-token โทเค็นจะขึ้นต้นด้วย sk-ant-oat01-",
   "claudeAccountSignedOut": "ลงชื่อออกแล้ว",
   "claudeAccountExpired": "การลงชื่อเข้าใช้หมดอายุ",
   "claudeAccountExpiredDetail": "การลงชื่อเข้าใช้หมดอายุเมื่อ {when} ลงชื่อเข้าใช้อีกครั้งเพื่อใช้บัญชีนี้",

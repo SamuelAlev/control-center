@@ -8832,11 +8832,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Cipta pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Lihat pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Tiada perubahan';
 
   @override
@@ -13773,27 +13768,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Jalankan ini dalam terminal pada pelayan. Ia membuka penyemak imbas untuk menyelesaikan log masuk, dan menulis kelayakan ke dalam direktori akaun ini.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Token jangka panjang';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'Guna token jangka panjang';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => 'Ganti token jangka panjang';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken =>
-      'Alih keluar token jangka panjang';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'Log masuk biasa perlu diperbaharui dan boleh tamat tempoh semalaman. Token jangka panjang kekal log masuk selama kira-kira setahun. Jalankan ini dalam terminal, selesaikan dalam pelayar, kemudian tampal token yang dicetaknya.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Itu bukan token daripada claude setup-token. Ia bermula dengan sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Telah log keluar';

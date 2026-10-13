@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -14,9 +15,15 @@ import 'package:test/test.dart';
 
 class _Rules implements ActionPolicyRepository {
   final List<ActionPolicyRule> list = [];
+  bool fail = false;
 
   @override
-  Future<List<ActionPolicyRule>> rules(String workspaceId) async => list;
+  Future<List<ActionPolicyRule>> rules(String workspaceId) async {
+    if (fail) {
+      throw StateError('Policy store unavailable');
+    }
+    return list;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -25,11 +32,14 @@ class _Rules implements ActionPolicyRepository {
 class _Confirm implements ConfirmationPort {
   bool answer = true;
   final List<ConfirmationRequest> asked = [];
+  Completer<bool>? pending;
+  Completer<void>? requested;
 
   @override
   Future<bool> requestApproval(ConfirmationRequest request) async {
     asked.add(request);
-    return answer;
+    requested?.complete();
+    return pending?.future ?? answer;
   }
 
   @override
@@ -123,6 +133,7 @@ void main() {
   late HttpClient client;
   late List<GuardAudit> audits;
   var linked = <String>{};
+  String? hookReply;
 
   setUp(() async {
     rules = _Rules();
@@ -130,6 +141,7 @@ void main() {
     broker = _Broker();
     linked = {};
     audits = [];
+    hookReply = null;
     upstream = _Upstream(
       await HttpServer.bind(InternetAddress.loopbackIPv4, 0),
     );
@@ -145,7 +157,15 @@ void main() {
       repoAllowed: (ws, owner, name) async => linked.contains('$owner/$name'),
       githubBase: Uri.parse('http://127.0.0.1:${upstream.server.port}'),
     );
-    host.listen(gateway.handle);
+    host.listen((request) async {
+      if (hookReply case final reply?) {
+        await request.drain<void>();
+        request.response.write(reply);
+        await request.response.close();
+        return;
+      }
+      await gateway.handle(request);
+    });
     lease = (await gateway.open(
       const AgentRunGrant(
         workspaceId: 'w1',
@@ -188,6 +208,7 @@ void main() {
     String path, {
     List<int>? body,
     String? secret,
+    String? encoding,
   }) async {
     final request = await client.openUrl(
       method,
@@ -195,6 +216,9 @@ void main() {
     );
     final token = secret ?? lease.secret;
     request.headers.set(AgentRunLease.tokenHeader, token);
+    if (encoding != null) {
+      request.headers.set(HttpHeaders.contentEncodingHeader, encoding);
+    }
     if (body != null) {
       request.add(body);
     }
@@ -207,43 +231,6 @@ void main() {
   const advertPath =
       '/agent/git/github.com/acme/widgets.git/info/refs'
       '?service=git-receive-pack';
-
-  group('lease', () {
-    test('routes pushes through the gateway, appended to existing config', () {
-      final env = lease.environment(const {'GIT_CONFIG_COUNT': '2'});
-      expect(env['GIT_CONFIG_COUNT'], '6');
-      expect(env[AgentRunLease.tokenEnvKey], lease.secret);
-      final pairs = {
-        for (var i = 2; i < 6; i++)
-          '${env['GIT_CONFIG_KEY_$i']}=${env['GIT_CONFIG_VALUE_$i']}',
-      };
-      final base = 'http://127.0.0.1:${host.port}/agent/git/';
-      expect(
-        pairs,
-        containsAll([
-          'url.${base}github.com/.pushInsteadOf=https://github.com/',
-          'url.${base}github.com/.pushInsteadOf=git@github.com:',
-          'http.$base.extraHeader=X-CC-Agent-Run: ${lease.secret}',
-        ]),
-      );
-    });
-
-    test('registers an HTTP PreToolUse hook on Bash', () {
-      final settings = jsonDecode(lease.claudeHookSettings()) as Map;
-      final entry =
-          ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
-      expect(entry['matcher'], 'Bash');
-      final hook = (entry['hooks'] as List).single as Map;
-      expect(hook['type'], 'http');
-      expect(hook['url'], endsWith('/agent/hooks/pre-tool-use'));
-      expect(hook['headers'], {'X-CC-Agent-Run': r'$CC_AGENT_RUN_TOKEN'});
-      expect(hook['allowedEnvVars'], ['CC_AGENT_RUN_TOKEN']);
-      expect(
-        hook['timeout'],
-        greaterThan(AgentRunGateway.hookDecisionDeadline.inSeconds),
-      );
-    });
-  });
 
   group('push proxy', () {
     test('an unknown secret is refused', () async {
@@ -300,6 +287,58 @@ void main() {
         expect(broker.scopes, isEmpty, reason: 'no token for a refused push');
       },
     );
+
+    test(
+      'compressed updates still require approval before forwarding',
+      () async {
+        confirm.answer = false;
+        final r = await send(
+          'POST',
+          pushPath,
+          body: gzip.encode(_push(['refs/heads/main'])),
+          encoding: 'gzip',
+        );
+        expect(r.body, contains('ng refs/heads/main'));
+        expect(confirm.asked.single.spaceId, 's1');
+        expect(upstream.seen, isEmpty);
+        expect(broker.scopes, isEmpty);
+      },
+    );
+
+    test('approved compressed updates preserve the inspected bytes', () async {
+      final body = _push(['refs/heads/feature']);
+      final r = await send(
+        'POST',
+        pushPath,
+        body: gzip.encode(body),
+        encoding: 'gzip',
+      );
+      expect(r.body, 'upstream-ok');
+      expect(confirm.asked.single.spaceId, 's1');
+      expect(upstream.seen.single.body, body);
+    });
+
+    test('uninspectable updates never become unchecked probes', () async {
+      for (final body in [
+        utf8.encode('invalid'),
+        utf8.encode('0001'),
+        _push(['refs/heads/main']).sublist(0, 30),
+        utf8.encode('0000unexpected-pack'),
+      ]) {
+        final r = await send('POST', pushPath, body: body);
+        expect(r.status, HttpStatus.badRequest);
+      }
+      expect(upstream.seen, isEmpty);
+      expect(broker.scopes, isEmpty);
+      expect(confirm.asked, isEmpty);
+    });
+
+    test('a flush-only probe remains effect-free', () async {
+      final r = await send('POST', pushPath, body: utf8.encode('0000'));
+      expect(r.body, 'upstream-ok');
+      expect(upstream.seen.single.body, utf8.encode('0000'));
+      expect(confirm.asked, isEmpty);
+    });
 
     test('a branch rule applies to the refs actually pushed', () async {
       rule(
@@ -393,68 +432,147 @@ void main() {
     });
   });
 
-  group('Claude Code hook', () {
-    Future<Map<String, dynamic>?> hook(
+  group('Claude Code command hook', () {
+    Future<({int exitCode, String out, String err})> hook(
       String tool,
       String command, {
       String? description = 'Run the command',
+      String? secret,
+      bool available = true,
     }) async {
-      final r = await send(
-        'POST',
-        '/agent/hooks/pre-tool-use',
-        body: utf8.encode(
-          jsonEncode({
-            'tool_name': tool,
-            'tool_input': {'command': command, 'description': ?description},
-          }),
-        ),
+      final settings =
+          jsonDecode(AgentRunLease.claudeHookSettings(available ? lease : null))
+              as Map;
+      final entry =
+          ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
+      final handler = (entry['hooks'] as List).single as Map;
+      final process = await Process.start(
+        'sh',
+        ['-c', handler['command'] as String],
+        environment: {AgentRunLease.tokenEnvKey: secret ?? lease.secret},
       );
-      expect(r.status, 200);
-      if (r.body.isEmpty) {
-        return null;
-      }
-      return (jsonDecode(r.body) as Map<String, dynamic>)['hookSpecificOutput']
-          as Map<String, dynamic>;
+      final out = process.stdout.transform(utf8.decoder).join();
+      final err = process.stderr.transform(utf8.decoder).join();
+      process.stdin.write(
+        jsonEncode({
+          'tool_name': tool,
+          'tool_input': {'command': command, 'description': ?description},
+        }),
+      );
+      await process.stdin.close();
+      return (exitCode: await process.exitCode, out: await out, err: await err);
     }
 
-    test('a denied rule denies the Bash call, with the reason', () async {
+    test('a denied rule blocks Bash, with the reason', () async {
       rule(ActionClass.prCreate, ActionDecision.deny);
-      final out = await hook('Bash', 'git add -A && gh pr create --fill');
-      expect(out!['permissionDecision'], 'deny');
-      expect(
-        out['permissionDecisionReason'],
-        contains('Control Center policy'),
-      );
+      final result = await hook('Bash', 'git add -A && gh pr create --fill');
+      expect(result.exitCode, 2);
+      expect(result.err, contains('Control Center policy'));
+      expect(confirm.asked, isEmpty);
     });
 
-    test('"ask first" asks the operator', () async {
-      // prCreate prompts by default.
-      final out = await hook('Bash', 'gh pr create');
-      expect(confirm.asked, hasLength(1));
-      expect(out!['permissionDecision'], 'allow');
+    test('approval holds the hook until the operator answers', () async {
+      confirm.pending = Completer<bool>();
+      confirm.requested = Completer<void>();
+      var completed = false;
+      final pending = hook('Bash', 'gh pr create').then((result) {
+        completed = true;
+        return result;
+      });
+      await confirm.requested!.future;
+      expect(completed, isFalse);
+      expect(confirm.asked.single.spaceId, 's1');
+      confirm.pending!.complete(true);
+      expect((await pending).exitCode, 0);
     });
 
-    test('an ordinary command is allowed without asking', () async {
-      final out = await hook('Bash', 'ls -la');
-      expect(out!['permissionDecision'], 'allow');
+    const compoundPush =
+        r'cd repos/web-app && U="https://x-access-token:${GH_TOKEN}@github.com:443/acme/widgets.git"; '
+        r'ARGS=(); for b in feature/a feature/b; do ARGS+=("--force-with-lease=refs/heads/$b:$(git rev-parse origin/$b)"); '
+        r'done; git push "${ARGS[@]}" "$U" feature/a:refs/heads/feature/a 2>&1 | cat';
+    for (final command in [
+      compoundPush,
+      'GH_TOKEN=token gh pr create --fill',
+      'command gh pr review 12 --approve',
+      'cd repo; rm obsolete.dart',
+    ]) {
+      test('declining a classified action blocks $command', () async {
+        confirm.answer = false;
+        final result = await hook('Bash', command);
+        expect(result.exitCode, 2);
+        expect(confirm.asked.single.spaceId, 's1');
+        expect(audits.single.decision, ActionDecision.deny);
+      });
+    }
+
+    test('an ordinary command passes without asking', () async {
+      final result = await hook('Bash', 'ls -la');
+      expect(result.exitCode, 0);
       expect(confirm.asked, isEmpty);
     });
 
     test('a Bash call without a description is denied unasked', () async {
       for (final description in [null, '  ']) {
-        final out = await hook(
+        final result = await hook(
           'Bash',
           'gh pr create',
           description: description,
         );
-        expect(out!['permissionDecision'], 'deny');
-        expect(out['permissionDecisionReason'], contains('description'));
+        expect(result.exitCode, 2);
+        expect(result.err, contains('description'));
       }
       expect(confirm.asked, isEmpty);
     });
 
-    test('another tool gets no decision', () async {
-      expect(await hook('Read', 'whatever'), isNull);
+    test('invalid hook input never authorizes a command', () async {
+      final result = await hook('Read', 'whatever');
+      expect(result.exitCode, 2);
+      expect(confirm.asked, isEmpty);
     });
-  });
+
+    test('an expired run cannot fail open through HTTP 401', () async {
+      await gateway.close(lease);
+      final result = await hook('Bash', 'gh pr create');
+      expect(result.exitCode, 2);
+      expect(confirm.asked, isEmpty);
+    });
+
+    test(
+      'policy lookup failure blocks instead of allowing on HTTP 500',
+      () async {
+        rules.fail = true;
+        final result = await hook('Bash', 'gh pr review --approve');
+        expect(result.exitCode, 2);
+        expect(confirm.asked, isEmpty);
+      },
+    );
+
+    for (final reply in ['', '{"unexpected":"response"}']) {
+      test(
+        '${reply.isEmpty ? 'empty' : 'invalid'} HTTP 200 response still blocks',
+        () async {
+          hookReply = reply;
+          final result = await hook('Bash', 'git push');
+          expect(result.exitCode, 2);
+          expect(confirm.asked, isEmpty);
+        },
+      );
+    }
+
+    test('a missing lease installs a blocking hook', () async {
+      final result = await hook('Bash', 'git push', available: false);
+      expect(result.exitCode, 2);
+      expect(confirm.asked, isEmpty);
+    });
+
+    test(
+      'an unreachable gateway blocks instead of skipping approval',
+      () async {
+        await host.close(force: true);
+        final result = await hook('Bash', 'git push');
+        expect(result.exitCode, 2);
+        expect(confirm.asked, isEmpty);
+      },
+    );
+  }, skip: Platform.isWindows ? 'Requires the POSIX hook shell and curl.' : false);
 }

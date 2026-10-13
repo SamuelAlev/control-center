@@ -165,147 +165,155 @@ extension _DispatchSessionHarness on DispatchSession {
     final port = deps.confirmationPort;
     final guard = deps.actionGuard;
     final profile = profileFor(effectiveMode);
-    final ToolApprovalCallback? approval = port == null
-        ? null
-        : (tool, args) async {
-            if (DispatchSession._harnessInteractionTools.contains(tool.name)) {
-              return const ToolGateDecision.allow();
-            }
-            if (profile.pinnedVerbs.contains(tool.name)) {
-              return const ToolGateDecision.allow();
-            }
-            String? autonomy;
-            final resolveAutonomy = deps.autonomyResolver;
-            final autonomyWorkspaceId = workspaceId;
-            if (resolveAutonomy != null &&
-                spaceId != null &&
-                agentId != null &&
-                autonomyWorkspaceId != null &&
-                autonomyWorkspaceId.isNotEmpty) {
-              autonomy = await resolveAutonomy(
-                autonomyWorkspaceId,
-                spaceId!,
-                agentId!,
-              );
-            }
-            if (autonomy == 'proposeOnly') {
-              addEvent(
-                DebugEvent(
-                  content:
-                      '[harness] "${tool.name}" denied: autonomy in this '
-                      'space is propose-only.',
-                ),
-              );
-              return const ToolGateDecision.deny(
-                reason: 'this space\'s autonomy is set to propose-only',
-                remediation:
-                    'Propose the action in a message instead and let '
-                    'the operator run it.',
-              );
-            }
+    Future<ToolGateDecision> approval(
+      HarnessTool tool,
+      Map<String, dynamic> args,
+    ) async {
+      if (DispatchSession._harnessInteractionTools.contains(tool.name)) {
+        return const ToolGateDecision.allow();
+      }
+      String? autonomy;
+      final resolveAutonomy = deps.autonomyResolver;
+      final autonomyWorkspaceId = workspaceId;
+      if (resolveAutonomy != null &&
+          spaceId != null &&
+          agentId != null &&
+          autonomyWorkspaceId != null &&
+          autonomyWorkspaceId.isNotEmpty) {
+        autonomy = await resolveAutonomy(
+          autonomyWorkspaceId,
+          spaceId!,
+          agentId!,
+        );
+      }
 
-            if (guard != null && tool.actionClasses.isNotEmpty) {
-              final resolution = await guard.resolve(
-                workspaceId: wsId,
-                classes: tool.actionClasses,
-                spaceId: spaceId,
-                agentId: agentId,
-                mode: effectiveMode,
-                request: const ActionRequestExtractor().extract(
-                  args,
-                  classes: tool.actionClasses,
-                ),
-              );
-              void auditOutcome(ActionDecision applied, {bool asked = false}) {
-                guard.recordOutcome(
-                  workspaceId: wsId,
-                  resolution: resolution,
-                  applied: applied,
-                  classes: tool.actionClasses,
-                  agentId: agentId,
-                  spaceId: spaceId,
-                  actionSummary: tool.name,
-                  prompted: asked,
-                  onBehalfOfUserId: requestedByUserId,
-                  runId: runLogId,
-                );
-              }
+      if (guard != null && tool.actionClasses.isNotEmpty) {
+        final resolution = await guard.resolve(
+          workspaceId: wsId,
+          classes: tool.actionClasses,
+          spaceId: spaceId,
+          agentId: agentId,
+          mode: effectiveMode,
+          request: const ActionRequestExtractor().extract(
+            args,
+            classes: tool.actionClasses,
+          ),
+        );
+        void auditOutcome(ActionDecision applied, {bool asked = false}) {
+          guard.recordOutcome(
+            workspaceId: wsId,
+            resolution: resolution,
+            applied: applied,
+            classes: tool.actionClasses,
+            agentId: agentId,
+            spaceId: spaceId,
+            actionSummary: tool.name,
+            prompted: asked,
+            onBehalfOfUserId: requestedByUserId,
+            runId: runLogId,
+          );
+        }
 
-              if (resolution.decision == ActionDecision.deny) {
-                auditOutcome(ActionDecision.deny);
-                addEvent(
-                  DebugEvent(
-                    content:
-                        '[harness] "${tool.name}" denied by action '
-                        'policy: ${resolution.driving.reason}',
-                  ),
-                );
-                return ToolGateDecision.deny(
-                  reason: resolution.driving.reason,
-                  remediation: DispatchSession._remediationFor(profile),
-                );
-              }
-              final outcome = const AutonomyComposition().compose(
-                decision: resolution.decision,
-                autonomy: AutonomyLevel.tryFromWire(autonomy),
+        if (resolution.decision == ActionDecision.deny) {
+          auditOutcome(ActionDecision.deny);
+          addEvent(
+            DebugEvent(
+              content:
+                  '[harness] "${tool.name}" denied by action '
+                  'policy: ${resolution.driving.reason}',
+            ),
+          );
+          return ToolGateDecision.deny(
+            reason: resolution.driving.reason,
+            remediation: DispatchSession._remediationFor(profile),
+          );
+        }
+        final outcome = const AutonomyComposition().compose(
+          decision: resolution.decision,
+          autonomy: AutonomyLevel.tryFromWire(autonomy),
+          isGated: !profile.pinnedVerbs.contains(tool.name),
+        );
+        if (outcome == AutonomyOutcome.allow) {
+          auditOutcome(ActionDecision.allow);
+          return const ToolGateDecision.allow();
+        }
+        if (outcome == AutonomyOutcome.deny) {
+          auditOutcome(ActionDecision.deny);
+          return ToolGateDecision.deny(
+            reason: autonomy == 'proposeOnly'
+                ? 'this space\'s autonomy is set to propose-only'
+                : resolution.driving.reason,
+            remediation: DispatchSession._remediationFor(profile),
+          );
+        }
+        if (port == null) {
+          auditOutcome(ActionDecision.deny);
+          return const ToolGateDecision.deny(
+            reason: 'approval is required but no approver is connected',
+          );
+        }
+        final approved = await port.requestApproval(
+          ConfirmationRequest(
+            spaceId: spaceId ?? '',
+            workspaceId: workspaceId,
+            title: 'Approve ${tool.name}',
+            detail:
+                '${resolution.driving.reason}'
+                '${DispatchSession._approvalArgsSummary(args)}',
+            kind: tool.approvalTier == ToolApprovalTier.exec
+                ? ConfirmationKind.command
+                : ConfirmationKind.fileWrite,
+          ),
+        );
+        auditOutcome(
+          approved ? ActionDecision.allow : ActionDecision.deny,
+          asked: true,
+        );
+        return approved
+            ? const ToolGateDecision.allow()
+            : const ToolGateDecision.deny(
+                reason: 'the operator declined this action',
               );
-              if (outcome == AutonomyOutcome.allow) {
-                auditOutcome(ActionDecision.allow);
-                return const ToolGateDecision.allow();
-              }
-              if (outcome == AutonomyOutcome.deny) {
-                auditOutcome(ActionDecision.deny);
-                return ToolGateDecision.deny(
-                  reason: resolution.driving.reason,
-                  remediation: DispatchSession._remediationFor(profile),
-                );
-              }
-              final approved = await port.requestApproval(
-                ConfirmationRequest(
-                  spaceId: spaceId ?? '',
-                  workspaceId: workspaceId,
-                  title: 'Approve ${tool.name}',
-                  detail:
-                      '${resolution.driving.reason}'
-                      '${DispatchSession._approvalArgsSummary(args)}',
-                  kind: tool.approvalTier == ToolApprovalTier.exec
-                      ? ConfirmationKind.command
-                      : ConfirmationKind.fileWrite,
-                ),
-              );
-              auditOutcome(
-                approved ? ActionDecision.allow : ActionDecision.deny,
-                asked: true,
-              );
-              return approved
-                  ? const ToolGateDecision.allow()
-                  : const ToolGateDecision.deny(
-                      reason: 'the operator declined this action',
-                    );
-            }
+      }
 
-            if (autonomy == 'actFreely') {
-              return const ToolGateDecision.allow();
-            }
-            final approved = await port.requestApproval(
-              ConfirmationRequest(
-                spaceId: spaceId ?? '',
-                workspaceId: workspaceId,
-                title: 'Approve ${tool.name}',
-                detail:
-                    'An agent wants to run the "${tool.name}" tool.'
-                    '${DispatchSession._approvalArgsSummary(args)}',
-                kind: tool.approvalTier == ToolApprovalTier.exec
-                    ? ConfirmationKind.command
-                    : ConfirmationKind.fileWrite,
-              ),
+      if (profile.pinnedVerbs.contains(tool.name)) {
+        return const ToolGateDecision.allow();
+      }
+      if (autonomy == 'proposeOnly') {
+        return const ToolGateDecision.deny(
+          reason: 'this space\'s autonomy is set to propose-only',
+          remediation:
+              'Propose the action in a message instead and let '
+              'the operator run it.',
+        );
+      }
+      if (autonomy == 'actFreely') {
+        return const ToolGateDecision.allow();
+      }
+      if (port == null) {
+        return const ToolGateDecision.deny(
+          reason: 'approval is required but no approver is connected',
+        );
+      }
+      final approved = await port.requestApproval(
+        ConfirmationRequest(
+          spaceId: spaceId ?? '',
+          workspaceId: workspaceId,
+          title: 'Approve ${tool.name}',
+          detail:
+              'An agent wants to run the "${tool.name}" tool.'
+              '${DispatchSession._approvalArgsSummary(args)}',
+          kind: tool.approvalTier == ToolApprovalTier.exec
+              ? ConfirmationKind.command
+              : ConfirmationKind.fileWrite,
+        ),
+      );
+      return approved
+          ? const ToolGateDecision.allow()
+          : const ToolGateDecision.deny(
+              reason: 'the operator declined this action',
             );
-            return approved
-                ? const ToolGateDecision.allow()
-                : const ToolGateDecision.deny(
-                    reason: 'the operator declined this action',
-                  );
-          };
+    }
 
     final harnessToolEnv = <String, String>{
       ..._gitIdentityEnv,

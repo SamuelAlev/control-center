@@ -28,6 +28,11 @@ void main() {
   String runRoot() => p.join(dataDir.path, 'rigs', 'run');
   String ccrigRoot() => p.join(socketRoot.path, 'ccrig');
 
+  // Another server's pid. Never this process's own: the sweep reads a marker
+  // carrying our pid as a dead predecessor, so a fixed literal failed whenever
+  // the runner happened to hand the test process that number.
+  final siblingPid = pid == 4321 ? 4322 : 4321;
+
   setUp(() async {
     temp = await Directory.systemTemp.createTemp('cc-rig-backend-');
     dataDir = Directory(p.join(temp.path, 'data'))..createSync(recursive: true);
@@ -161,9 +166,13 @@ void main() {
       final dir = candidate(
         runRoot(),
         'rig-sibling',
-        owner: owner(rigId: 'rig-sibling', qemuPid: 555, serverPid: 4321),
+        owner: owner(
+          rigId: 'rig-sibling',
+          qemuPid: 555,
+          serverPid: siblingPid,
+        ),
       );
-      probe.alive[4321] = '/opt/cc/cc_server --data-dir /shared';
+      probe.alive[siblingPid] = '/opt/cc/cc_server --data-dir /shared';
       probe.alive[555] = 'qemu-system-aarch64 -name ccrig-rig-sibling';
 
       expect(await backend.sweepOrphanedRuntimes(), 0);
@@ -182,9 +191,9 @@ void main() {
       final dir = candidate(
         runRoot(),
         'rig-recycled',
-        owner: owner(rigId: 'rig-recycled', serverPid: 4321),
+        owner: owner(rigId: 'rig-recycled', serverPid: siblingPid),
       );
-      probe.alive[4321] = '/usr/bin/vim notes.md';
+      probe.alive[siblingPid] = '/usr/bin/vim notes.md';
 
       expect(await backend.sweepOrphanedRuntimes(), 1);
       expect(dir.existsSync(), isFalse);
@@ -325,9 +334,9 @@ void main() {
       final sibling = candidate(
         ccrigRoot(),
         'rig-sibling-sock',
-        owner: owner(rigId: 'rig-sibling-sock', serverPid: 4321),
+        owner: owner(rigId: 'rig-sibling-sock', serverPid: siblingPid),
       );
-      probe.alive[4321] = '/opt/cc/cc_server --data-dir /shared';
+      probe.alive[siblingPid] = '/opt/cc/cc_server --data-dir /shared';
 
       expect(await backend.sweepOrphanedRuntimes(), 1);
       expect(mine.existsSync(), isFalse);

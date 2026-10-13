@@ -6,6 +6,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/live_transcript_controller.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/question_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/steering_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -31,7 +32,7 @@ class TranscriptFlow extends StatefulWidget {
     required this.codeFont,
     this.isLive = false,
     this.live,
-    this.steeringMessages = const [],
+    this.inlineMessages = const [],
   });
 
   /// The full transcript in chronological order (text segments included).
@@ -50,8 +51,8 @@ class TranscriptFlow extends StatefulWidget {
   /// (non-live) transcripts.
   final LiveTranscriptController? live;
 
-  /// User messages in injection order, interleaved at their recorded time.
-  final List<Message> steeringMessages;
+  /// Steering and resolved questions in chronological transcript order.
+  final List<Message> inlineMessages;
 
   @override
   State<TranscriptFlow> createState() => _TranscriptFlowState();
@@ -90,29 +91,33 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
 
     final children = <Widget>[];
     TranscriptSegment? prev;
-    final steering = widget.steeringMessages;
-    var nextSteering = 0;
-    void insertSteering(Message message) {
+    final inlineMessages = widget.inlineMessages;
+    var nextInline = 0;
+    void insertMessage(Message message) {
       if (children.isNotEmpty) {
         children.add(const SizedBox(height: AppSpacing.md));
       }
       children.add(
-        SteeringBubble(
-          key: ValueKey(message.id),
-          message: message,
-          codeFont: widget.codeFont,
-        ),
+        message.isUserQuestion
+            ? QuestionBubble(key: ValueKey(message.id), message: message)
+            : SteeringBubble(
+                key: ValueKey(message.id),
+                message: message,
+                codeFont: widget.codeFont,
+              ),
       );
       prev = null;
     }
 
     for (var i = 0; i < segments.length; i++) {
       final seg = segments[i];
-      while (nextSteering < steering.length &&
-          (steering[nextSteering].steerInjectedAt ??
-                  steering[nextSteering].createdAt.millisecondsSinceEpoch) <=
+      while (nextInline < inlineMessages.length &&
+          (inlineMessages[nextInline].steerInjectedAt ??
+                  inlineMessages[nextInline]
+                      .createdAt
+                      .millisecondsSinceEpoch) <=
               seg.startedAt.millisecondsSinceEpoch) {
-        insertSteering(steering[nextSteering++]);
+        insertMessage(inlineMessages[nextInline++]);
       }
       final rendered = _row(i, seg);
       if (rendered == null) {
@@ -128,8 +133,8 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
       children.add(rendered);
       prev = seg;
     }
-    while (nextSteering < steering.length) {
-      insertSteering(steering[nextSteering++]);
+    while (nextInline < inlineMessages.length) {
+      insertMessage(inlineMessages[nextInline++]);
     }
 
     if (widget.isLive && _showTail(segments)) {

@@ -14,7 +14,7 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/scm_branch_menu.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/scm_pull_conflict_dialog.dart';
-import 'package:control_center/features/messaging/presentation/ide/panels/scm_stack_pull_requests.dart';
+import 'package:control_center/features/messaging/presentation/ide/panels/scm_pull_requests_section.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
@@ -26,7 +26,6 @@ import 'package:control_center/features/messaging/providers/worktree_file_ops_pr
 import 'package:control_center/features/pr_review/providers/ide_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
-import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -36,13 +35,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Source Control panel: VS Code's source-control view for the conversation — one
-/// collapsible section per repo, each with a commit message + split button and the repo's
-/// changes split into Staged changes (the git index) and
-/// The panel is scoped to the repos the space actually CLONED ([spaceWorktreesProvider]): a
-/// workspace can link a dozen repos while a space checks out one, and a repo with no
-/// worktree here has no working tree to diff, stage or commit — listing it would offer
-/// actions that cannot run.
+/// Source Control panel: the space's pull requests, followed by a collapsible
+/// section per repo with a commit message and staged/unstaged changes.
+///
+/// Repository controls are scoped to [spaceWorktreesProvider]: repos without a
+/// worktree have nothing to diff, stage or commit. Linked and branch-matched
+/// pull requests remain available independently of local checkouts.
 class SourceControlPanel extends ConsumerStatefulWidget {
   /// Creates a [SourceControlPanel].
   const SourceControlPanel({
@@ -119,15 +117,39 @@ class _SourceControlPanelState extends ConsumerState<SourceControlPanel> {
       );
     }
 
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.only(top: AppSpacing.xs),
+          sliver: SliverToBoxAdapter(
+            child: ScmPullRequestsSection(
+              workspaceId: widget.workspaceId,
+              spaceId: spaceId,
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+          sliver: _buildRepositorySliver(context, spaceId),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRepositorySliver(BuildContext context, String spaceId) {
+    final l10n = AppLocalizations.of(context);
     // While the space is still checking repos out there are no worktrees yet;
     // saying "no repositories" then would be a lie about a tree still being
     // created. Report the provisioning step instead.
     final status = ref.watch(spaceProvisioningStatusProvider(spaceId));
     if (status == SpaceProvisioningStatus.provisioning) {
-      return _Preparing(
-        label: provisioningStepLabel(
-          l10n,
-          ref.watch(spaceProvisioningStepProvider(spaceId)),
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: _Preparing(
+          label: provisioningStepLabel(
+            l10n,
+            ref.watch(spaceProvisioningStepProvider(spaceId)),
+          ),
         ),
       );
     }
@@ -142,7 +164,10 @@ class _SourceControlPanelState extends ConsumerState<SourceControlPanel> {
     final repos = reposAsync.value;
     final worktrees = worktreesAsync.value;
     if (repos == null || worktrees == null) {
-      return const Center(child: CcSpinner());
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: CcSpinner()),
+      );
     }
 
     // The workspace's repo order is the one the operator arranged, so the
@@ -153,15 +178,17 @@ class _SourceControlPanelState extends ConsumerState<SourceControlPanel> {
         if (branchByRepo.containsKey(repo.id)) repo,
     ];
     if (cloned.isEmpty) {
-      return CcEmptyState(
-        icon: AppIcons.gitBranch,
-        size: CcEmptyStateSize.sm,
-        message: l10n.noReposInConversation,
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: CcEmptyState(
+          icon: AppIcons.gitBranch,
+          size: CcEmptyStateSize.sm,
+          message: l10n.noReposInConversation,
+        ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+    return SliverList.builder(
       itemCount: cloned.length,
       itemBuilder: (context, i) => _RepoSection(
         // Keep collapse and focused-row state with the repo on re-order; the
@@ -202,7 +229,7 @@ class _Preparing extends StatelessWidget {
 }
 
 /// One repo's source-control section: header (name + branch), commit
-/// box, the staged/unstaged groups and the pull-request footer.
+/// box and staged/unstaged groups.
 class _RepoSection extends ConsumerStatefulWidget {
   const _RepoSection({
     super.key,
@@ -564,20 +591,6 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     );
   }
 
-  bool _canProposePullRequest(RepoChanges changes, int total, bool hasPr) {
-    return scmCanOpenPullRequest(
-      hasForgeRemote: widget.repo.hasForgeRemote,
-      hasExistingPr: hasPr,
-      dirtyFiles: total,
-      statusKnown: changes.statusKnown,
-      hasUpstream: changes.hasUpstream,
-      ahead: changes.ahead,
-      aheadOfBase: changes.aheadOfBase,
-      aheadOfBaseKnown: changes.aheadOfBaseKnown,
-      branch: widget.branch,
-    );
-  }
-
   Future<void> _runPublish() async {
     final l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
@@ -796,30 +809,6 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     );
   }
 
-  Future<void> _publishStack() async {
-    setState(() => _busy = true);
-    final l10n = AppLocalizations.of(context);
-    final result = await publishStack(
-      ref.read(rpcClientProvider),
-      workspaceId: widget.workspaceId,
-      spaceId: widget.spaceId,
-      repoId: widget.repo.id,
-    );
-    ref.invalidate(spaceStackProvider(widget.spaceId));
-    if (!mounted) {
-      return;
-    }
-    setState(() => _busy = false);
-    CcToastScope.maybeOf(context)?.show(
-      result.ok
-          ? l10n.stackPublished
-          : result.dirty
-          ? l10n.stackSwitchDirty
-          : l10n.stackPublishFailed,
-      variant: result.ok ? CcToastVariant.success : CcToastVariant.danger,
-    );
-  }
-
   Future<void> _checkout(WorktreeCheckoutRequest request) async {
     final l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
@@ -872,19 +861,6 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     toast?.show(
       l10n.scmSwitchedToBranch(res.branch),
       variant: CcToastVariant.success,
-    );
-  }
-
-  Future<void> _createPullRequest(BuildContext context) async {
-    await ref.read(activeRepoIdProvider.notifier).setActive(widget.repo.id);
-    if (!context.mounted) {
-      return;
-    }
-    // Carry the conversation through: its isolated worktree holds the branch the
-    // user means to open the PR from and that branch is local-only until it is
-    // published, so the compose screen cannot rediscover it from GitHub.
-    context.go(
-      pullRequestsComposeRoute(widget.workspaceId, spaceId: widget.spaceId),
     );
   }
 
@@ -966,40 +942,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
               const <SpaceStackLayer>[])
         if (layer.repoId == widget.repo.id) layer,
     ];
-    final hasStack = stackLayers.length >= 2;
-    final stackPrNumbers = <String, int>{
-      if (hasStack)
-        for (final pr in ref.watch(spacePullRequestsProvider(widget.spaceId)))
-          if (pr.repoFullName == widget.repo.fullName) pr.headRef: pr.number,
-      for (final layer in stackLayers)
-        if (layer.prNumber != null) layer.branch: layer.prNumber!,
-    };
-    // Recorded numbers also cover a just-published stack before its PR
-    // snapshots arrive. Otherwise wait for a complete branch lookup before
-    // treating an absent PR as an unpublished part.
-    final canPublishStack =
-        hasStack &&
-        stackLayers.any((layer) => !stackPrNumbers.containsKey(layer.branch)) &&
-        ref
-                .watch(spaceBranchPullRequestsProvider(widget.spaceId))
-                .value
-                ?.complete ==
-            true;
-
     _syncPolling(active: !_collapsed && TickerMode.valuesOf(context).enabled);
-
-    // The open PR for the branch checked out now, not whichever branch the
-    // worktree was on when the join last ran. Offering "create" for a branch
-    // that already has one sends the operator to a compose screen the forge
-    // will refuse.
-    final existingPr = ref.watch(
-      spaceBranchPullRequestForRepoProvider((
-        spaceId: widget.spaceId,
-        repoId: widget.repo.id,
-        repoFullName: widget.repo.fullName,
-        branch: widget.branch,
-      )),
-    );
 
     // Untracked files have no HEAD version to restore, so they are not part of
     // a "discard all" — with nothing else dirty the action has no work to do.
@@ -1032,7 +975,6 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
                 onCheckout: _checkout,
                 onStartNextPart: _startNextPart,
                 onCheckoutLayer: _checkoutLayer,
-                onPublishStack: canPublishStack ? _publishStack : null,
               ),
               if (syncLabel != null) ...[
                 const SizedBox(width: 4),
@@ -1146,88 +1088,6 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
                     ],
                   ),
               ],
-              // A clean, published branch can still be a pull request: the
-              // commits are ahead of the default branch, not of this branch's
-              // own upstream.
-              if (canPublishStack)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.sm,
-                    AppSpacing.xs,
-                    AppSpacing.sm,
-                    0,
-                  ),
-                  child: CcButton(
-                    onPressed: _busy
-                        ? null
-                        : () {
-                            unawaited(_publishStack());
-                          },
-                    icon: AppIcons.gitPullRequestCreate,
-                    size: CcButtonSize.sm,
-                    variant: CcButtonVariant.line,
-                    fullWidth: true,
-                    child: Text(l10n.stackPublish),
-                  ),
-                ),
-              if (hasStack)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.sm,
-                    AppSpacing.xs,
-                    AppSpacing.sm,
-                    AppSpacing.sm,
-                  ),
-                  child: ScmStackPullRequests(
-                    layers: stackLayers,
-                    prNumbers: stackPrNumbers,
-                    onOpen: (number) => context.go(
-                      pullRequestDetailRoute(
-                        widget.workspaceId,
-                        widget.repo.fullName,
-                        number,
-                      ),
-                    ),
-                  ),
-                )
-              else if (_canProposePullRequest(
-                changes,
-                total,
-                existingPr != null,
-              ))
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.sm,
-                    AppSpacing.xs,
-                    AppSpacing.sm,
-                    AppSpacing.sm,
-                  ),
-                  child: existingPr == null
-                      ? CcButton(
-                          onPressed: () => _createPullRequest(context),
-                          icon: AppIcons.gitPullRequestCreate,
-                          size: CcButtonSize.sm,
-                          variant: CcButtonVariant.line,
-                          fullWidth: true,
-                          child: Text(l10n.ideSourceControlCreatePr),
-                        )
-                      : CcButton(
-                          onPressed: () => context.go(
-                            pullRequestDetailRoute(
-                              widget.workspaceId,
-                              widget.repo.fullName,
-                              existingPr.number,
-                            ),
-                          ),
-                          icon: AppIcons.gitPullRequest,
-                          size: CcButtonSize.sm,
-                          variant: CcButtonVariant.line,
-                          fullWidth: true,
-                          child: Text(
-                            l10n.ideSourceControlViewPr(existingPr.number),
-                          ),
-                        ),
-                ),
             ],
           ],
         ),

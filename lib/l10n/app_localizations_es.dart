@@ -8876,11 +8876,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Crear petición de extracción';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Ver la pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Sin cambios';
 
   @override
@@ -13839,29 +13834,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Ejecuta esto en una terminal del servidor. Se abre un navegador para completar el inicio de sesión y la credencial se guarda en la carpeta de esta cuenta.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Token de larga duración';
-
-  @override
-  String get claudeAccountUseLongLivedToken =>
-      'Usar un token de larga duración';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken =>
-      'Reemplazar el token de larga duración';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken =>
-      'Quitar el token de larga duración';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'Un inicio de sesión normal debe renovarse y puede caducar de un día para otro. Un token de larga duración mantiene la sesión durante aproximadamente un año. Ejecuta esto en una terminal, termina en el navegador y pega el token que muestra.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Eso no es un token de claude setup-token. Empieza por sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Sesión cerrada';

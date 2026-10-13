@@ -6,7 +6,6 @@ import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.d
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
 import 'package:cc_harness/cancellation.dart';
-import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:cc_infra/src/evaluation/controlled_claude_evaluation_backend.dart';
 import 'package:cc_infra/src/evaluation/controlled_claude_mcp_bridge.dart';
 import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
@@ -128,11 +127,11 @@ void main() {
         final account = await Directory(
           p.join(directory.path, 'account'),
         ).create();
-        const accountToken = 'sk-ant-oat01-cc-evaluation-only-1234567890';
-        writeClaudeLongLivedToken(
-          account.path,
-          accountToken,
-          at: DateTime.utc(2026),
+        const accountToken = 'cc-evaluation-only-access-token';
+        await File(p.join(account.path, '.credentials.json')).writeAsString(
+          jsonEncode({
+            'claudeAiOauth': {'accessToken': accountToken},
+          }),
         );
         final executable = File(p.join(directory.path, 'claude'));
         await executable.writeAsString('''#!/usr/bin/python3
@@ -155,7 +154,9 @@ assert '--bare' not in args
 assert '--dangerously-skip-permissions' not in args
 assert 'ANTHROPIC_API_KEY' not in os.environ
 assert 'OPENAI_API_KEY' not in os.environ
-assert os.environ['CLAUDE_CODE_OAUTH_TOKEN'] == '$accountToken'
+assert 'CLAUDE_CODE_OAUTH_TOKEN' not in os.environ
+credential = pathlib.Path(os.environ['CLAUDE_CONFIG_DIR']) / '.credentials.json'
+assert json.loads(credential.read_text())['claudeAiOauth']['accessToken'] == '$accountToken'
 assert 'HOME' in os.environ and os.environ['HOME'] != os.environ['CLAUDE_CONFIG_DIR']
 assert json.loads(sys.stdin.readline())['type'] == 'user'
 config = json.loads(pathlib.Path(args[args.index('--mcp-config')+1]).read_text())
@@ -182,7 +183,7 @@ print(json.dumps({'type':'system','subtype':'init','model':'claude-sonnet-4-5',
 rpc('tools/call',{'name':'read','arguments':{'path':'notice.txt',
  'call_description':'Read fixture'}})
 guest = rpc('tools/call',{'name':'bash','arguments':{
- 'command':'/usr/bin/printenv CLAUDE_CODE_OAUTH_TOKEN || printf not-present',
+ 'command':'cat "${account.path}/.credentials.json" 2>/dev/null || printf not-present',
  'description':'Check guest environment'}})
 assert 'not-present' in json.dumps(guest) and '$accountToken' not in json.dumps(guest), json.dumps(guest)
 print(json.dumps({'type':'result','subtype':'success','total_cost_usd':0.004,

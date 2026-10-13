@@ -22,7 +22,6 @@ class ScmBranchMenu extends StatefulWidget {
     this.layers = const [],
     this.onStartNextPart,
     this.onCheckoutLayer,
-    this.onPublishStack,
   });
 
   /// Branch stored for this worktree. Empty means a detached HEAD.
@@ -45,9 +44,6 @@ class ScmBranchMenu extends StatefulWidget {
 
   /// Checks out a recorded layer.
   final Future<void> Function(SpaceStackLayer layer)? onCheckoutLayer;
-
-  /// Publishes the stack once it has two layers.
-  final Future<void> Function()? onPublishStack;
 
   @override
   State<ScmBranchMenu> createState() => _ScmBranchMenuState();
@@ -249,17 +245,6 @@ class _ScmBranchMenuState extends State<ScmBranchMenu> {
             icon: AppIcons.gitBranch,
             onSelected: () {
               unawaited(_startNextPart());
-            },
-          ),
-        if (widget.onPublishStack != null && widget.layers.length >= 2)
-          CcMenuItem(
-            label: l10n.stackPublish,
-            icon: AppIcons.gitPullRequestCreate,
-            onSelected: () {
-              final publish = widget.onPublishStack;
-              if (publish != null) {
-                unawaited(publish());
-              }
             },
           ),
         CcMenuItem(

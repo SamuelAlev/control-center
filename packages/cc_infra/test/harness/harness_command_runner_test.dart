@@ -171,6 +171,125 @@ void main() {
     );
   });
 
+  group('effectful shell commands stop before the first side effect', () {
+    final effects = <ActionClass, String>{
+      ActionClass.gitPush:
+          'git push https://example.invalid/repo.git HEAD:main',
+      ActionClass.prCreate: 'gh pr create --fill',
+      ActionClass.prPublish: 'gh pr review --approve',
+      ActionClass.fileDelete: 'rm victim',
+    };
+
+    for (final entry in effects.entries) {
+      test(
+        '${entry.key.wire}: refused and unanswered prompts never run',
+        () async {
+          for (final answer in <bool?>[false, null]) {
+            final marker = File('${cwd.path}/started');
+            final victim = File('${cwd.path}/victim')
+              ..writeAsStringSync('keep');
+            final approver = answer == null ? null : _Approver(approve: answer);
+            final audits = <GuardAudit>[];
+            final guard = ActionGuardService(
+              repository: _Rules([]),
+              confirmationPort: approver,
+              onAudit: audits.add,
+            );
+
+            final res =
+                await runner(
+                  actionGuard: guard,
+                  confirmationPort: approver,
+                ).run(
+                  'printf started > started; ${entry.value}',
+                  workdir: cwd.path,
+                );
+
+            expect(res.denied, isTrue);
+            expect(
+              marker.existsSync(),
+              isFalse,
+              reason: '${entry.key.wire} began before approval',
+            );
+            expect(victim.readAsStringSync(), 'keep');
+            expect(audits, hasLength(1));
+            expect(audits.single.decision, ActionDecision.deny);
+            expect(audits.single.actionClasses, contains(entry.key.wire));
+            expect(audits.single.prompted, answer != null);
+            if (approver != null) {
+              expect(approver.requests, hasLength(1));
+            }
+          }
+        },
+      );
+
+      test('${entry.key.wire}: explicit deny never runs the prefix', () async {
+        final marker = File('${cwd.path}/started');
+        final victim = File('${cwd.path}/victim')..writeAsStringSync('keep');
+        final now = DateTime.now();
+        final audits = <GuardAudit>[];
+        final approver = _Approver(approve: true);
+        final guard = ActionGuardService(
+          repository: _Rules([
+            ActionPolicyRule(
+              id: 'deny-effect',
+              workspaceId: 'ws',
+              scopeType: ActionScopeType.space,
+              scopeId: 'space-1',
+              actionClass: entry.key,
+              decision: ActionDecision.deny,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ]),
+          confirmationPort: approver,
+          onAudit: audits.add,
+        );
+
+        final res = await runner(
+          actionGuard: guard,
+          confirmationPort: approver,
+        ).run('printf started > started; ${entry.value}', workdir: cwd.path);
+
+        expect(res.denied, isTrue);
+        expect(marker.existsSync(), isFalse);
+        expect(victim.readAsStringSync(), 'keep');
+        expect(approver.requests, isEmpty);
+        expect(audits.single.ruleId, 'deny-effect');
+        expect(audits.single.decision, ActionDecision.deny);
+      });
+    }
+
+    test(
+      'approved deletion resumes the real command after confirmation',
+      () async {
+        final marker = File('${cwd.path}/started');
+        final victim = File('${cwd.path}/victim')..writeAsStringSync('remove');
+        final approver = _Approver(approve: true);
+        final audits = <GuardAudit>[];
+        final guard = ActionGuardService(
+          repository: _Rules([]),
+          confirmationPort: approver,
+          onAudit: audits.add,
+        );
+
+        final res = await runner(
+          actionGuard: guard,
+          confirmationPort: approver,
+        ).run('printf started > started; rm victim', workdir: cwd.path);
+
+        expect(res.denied, isFalse);
+        expect(res.exitCode, 0);
+        expect(marker.readAsStringSync(), 'started');
+        expect(victim.existsSync(), isFalse);
+        expect(approver.requests, hasLength(1));
+        expect(audits.single.decision, ActionDecision.allow);
+        expect(audits.single.prompted, isTrue);
+        expect(audits.single.actionClasses, contains('fileDelete'));
+      },
+    );
+  });
+
   group('SandboxedHarnessCommandRunner — env + output', () {
     test('base env is exposed to the child', () async {
       final res = await runner(
@@ -408,8 +527,13 @@ void main() {
 class _Approver implements ConfirmationPort {
   _Approver({required this.approve});
   final bool approve;
+  final requests = <ConfirmationRequest>[];
+
   @override
-  Future<bool> requestApproval(ConfirmationRequest request) async => approve;
+  Future<bool> requestApproval(ConfirmationRequest request) async {
+    requests.add(request);
+    return approve;
+  }
 }
 
 /// Records the [SandboxConfig] the runner would have wrapped, then spawns the

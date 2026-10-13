@@ -13,7 +13,11 @@ import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_card.dart';
+import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_summary.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/question_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/steering_bubble.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_flow.dart';
 import 'package:control_center/features/messaging/presentation/widgets/message_feed.dart';
 import 'package:control_center/features/messaging/providers/live_turn_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -26,7 +30,7 @@ import '../../../../helpers/test_wrap.dart';
 
 void main() {
   testWidgets(
-    'live tool bursts and steered replies render without reopening the space',
+    'live tools, answered questions and steering render without reopening',
     (tester) async {
       tester.view.physicalSize = const Size(1100, 900);
       tester.view.devicePixelRatio = 1;
@@ -106,6 +110,26 @@ void main() {
         createdAt: start,
         metadata: {'streamComplete': complete, 'segments_elided': true},
       );
+      Message question({required bool answered}) => Message(
+        id: 'question',
+        spaceId: 'space',
+        conversationId: 'conversation',
+        senderId: 'agent-1',
+        senderType: SenderType.agent,
+        content: 'Which configuration should I check?',
+        messageType: MessageType.userQuestion,
+        createdAt: start.add(const Duration(milliseconds: 1500)),
+        metadata: {
+          'answered': answered,
+          'options': [
+            {'label': 'Staging'},
+          ],
+          if (answered)
+            'answer': {
+              'selected': ['Staging'],
+            },
+        },
+      );
       Message steering(String state) => Message(
         id: 'steering',
         spaceId: 'space',
@@ -181,10 +205,43 @@ void main() {
         ),
         findsWidgets,
       );
-      window.add((messages: [run(), steering('queued')], hasMore: false));
+      window.add((
+        messages: [run(), question(answered: false)],
+        hasMore: false,
+      ));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(AskUserCard), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.byType(QuestionBubble),
+          matching: find.byType(TranscriptFlow),
+        ),
+        findsNothing,
+      );
+      window.add((messages: [run(), question(answered: true)], hasMore: false));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(AskUserCard), findsNothing);
+      expect(find.byType(AskUserSummary), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.byType(QuestionBubble),
+          matching: find.byType(TranscriptFlow),
+        ),
+        findsOneWidget,
+      );
+
+      window.add((
+        messages: [run(), question(answered: true), steering('queued')],
+        hasMore: false,
+      ));
       await tester.pump();
       expect(find.byType(SteeringBubble), findsNothing);
-      window.add((messages: [run(), steering('injected')], hasMore: false));
+      window.add((
+        messages: [run(), question(answered: true), steering('injected')],
+        hasMore: false,
+      ));
       await tester.pump();
       await tester.pump();
       expect(find.byType(SteeringBubble), findsOneWidget);
@@ -235,17 +292,31 @@ void main() {
         lessThan(tester.getTopLeft(answer.first).dy),
       );
       expect(find.byType(SteeringBubble), findsOneWidget);
+      expect(find.byType(AskUserSummary), findsOneWidget);
+      expect(
+        tester.getBottomLeft(find.byType(AskUserSummary)).dy,
+        lessThan(tester.getTopLeft(find.byType(SteeringBubble)).dy),
+      );
 
       completed = registry.snapshot('run')!;
       registry.apply('run', const TurnFinished(2, TurnOutcome.completed));
       await registry.unregister('run');
       window.add((
-        messages: [run(complete: true), steering('injected')],
+        messages: [
+          run(complete: true),
+          question(answered: true),
+          steering('injected'),
+        ],
         hasMore: false,
       ));
       await tester.pumpAndSettle();
       expect(answer, findsWidgets);
       expect(find.byType(SteeringBubble), findsOneWidget);
+      expect(find.byType(AskUserSummary), findsOneWidget);
+      expect(
+        tester.getBottomLeft(find.byType(AskUserSummary)).dy,
+        lessThan(tester.getTopLeft(answer.first).dy),
+      );
       expect(
         tester.getTopLeft(find.byType(SteeringBubble)).dy,
         lessThan(tester.getTopLeft(answer.first).dy),

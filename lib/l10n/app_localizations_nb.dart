@@ -8815,11 +8815,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Opprett pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Vis pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Ingen endringer';
 
   @override
@@ -13758,26 +13753,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Kjør dette i en terminal på serveren. Det åpner en nettleser for å fullføre innloggingen, og skriver påloggingsinformasjonen inn i denne kontoens mappe.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Langvarig token';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'Bruk et langvarig token';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => 'Erstatt langvarig token';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => 'Fjern langvarig token';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'En vanlig pålogging må fornyes og kan utløpe over natten. Et langvarig token holder deg pålogget i omtrent et år. Kjør dette i en terminal, fullfør i nettleseren, og lim deretter inn tokenet den skriver ut.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Det er ikke et token fra claude setup-token. Det begynner med sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Logget ut';

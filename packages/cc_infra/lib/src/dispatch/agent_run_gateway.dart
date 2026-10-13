@@ -77,12 +77,12 @@ class AgentRunLease {
 
   String get _gitBase => '$base/agent/git/';
 
-  /// `git -c` pairs that route every GitHub PUSH through the gateway.
+  /// `git -c` pairs that route conventional GitHub PUSH URLs through the gateway.
   ///
-  /// `pushInsteadOf` rewrites push URLs only — fetches still go straight to
-  /// GitHub on the run's read token — and covers the HTTPS and SSH spellings
-  /// of an origin. The secret rides an `extraHeader` scoped to the gateway, so
-  /// it never appears in a remote URL or in git's output.
+  /// `pushInsteadOf` rewrites push URLs only; it is routing, not authorization.
+  /// Credential-bearing URLs and overridden Git configuration can bypass it,
+  /// so shell preflight also checks pushes. The secret rides an `extraHeader`
+  /// scoped to the gateway, never a remote URL.
   List<(String, String)> get gitConfig => [
     for (final origin in const [
       'https://github.com/',
@@ -107,44 +107,55 @@ class AgentRunLease {
     return out;
   }
 
-  /// `claude --settings` JSON registering the PreToolUse hook that asks the
-  /// action policy about every `Bash` call.
+  /// Claude's command hook blocks with exit 2 unless the gateway explicitly
+  /// allows the call. HTTP hooks fail open on transport errors; curl has its
+  /// own deadline inside the hook timeout so those errors instead deny.
   ///
-  /// It is an HTTP hook, so there is no script to ship or shell to depend on.
-  /// HTTP hooks fail OPEN (a timeout or error lets the call proceed), which is
-  /// why the gateway answers well inside [AgentRunGateway.hookTimeout] and
-  /// why pushes are not left to this hook at all.
-  String claudeHookSettings() => jsonEncode({
-    'hooks': {
-      'PreToolUse': [
-        {
-          'matcher': 'Bash',
-          'hooks': [
-            {
-              'type': 'http',
-              'url': '$base/agent/hooks/pre-tool-use',
-              'headers': {tokenHeader: '\$$tokenEnvKey'},
-              'allowedEnvVars': [tokenEnvKey],
-              'timeout': AgentRunGateway.hookTimeout.inSeconds,
-            },
-          ],
-        },
-      ],
-    },
-  });
+  /// A missing lease installs a blocking hook, never an unguarded Bash tool.
+  static String claudeHookSettings(AgentRunLease? lease) {
+    final command = lease == null
+        ? "printf '%s\\n' 'Control Center permission gateway is unavailable.' >&2; exit 2"
+        : '''
+if verdict=\$(curl --disable --silent --show-error --fail --noproxy '*' \\
+  --connect-timeout 5 --max-time ${AgentRunGateway.hookTransportDeadline.inSeconds} \\
+  --header "$tokenHeader: \$$tokenEnvKey" \\
+  --header 'Content-Type: application/json' --data-binary @- \\
+  '${lease.base}/agent/hooks/pre-tool-use'); then
+  if [ "\$verdict" = allow ]; then exit 0; fi
+  printf '%s\\n' "\$verdict" >&2
+else
+  printf '%s\\n' 'Control Center permission check failed; command blocked.' >&2
+fi
+exit 2
+''';
+    return jsonEncode({
+      'disableAllHooks': false,
+      'hooks': {
+        'PreToolUse': [
+          {
+            'matcher': 'Bash',
+            'hooks': [
+              {
+                'type': 'command',
+                'command': command,
+                'timeout': AgentRunGateway.hookTimeout.inSeconds,
+              },
+            ],
+          },
+        ],
+      },
+    });
+  }
 }
 
 /// The host side of the action policy for code running inside an agent's
 /// sandbox: a push proxy and a Claude Code hook endpoint, served on the same
 /// loopback listener agents already dial for MCP.
 ///
-/// **Pushes (hard).** An agent's environment carries a read-only forge token,
-/// and its git config rewrites GitHub push URLs to `/agent/git/…` here. The
-/// gateway reads the ref updates off the front of the push, asks the action
-/// policy ("Push to a remote", with the refs, so branch rules apply), and only
-/// then forwards the push to GitHub on a write token it mints and keeps. The
-/// agent never holds a credential that can push, so the rule cannot be
-/// stepped around with a raw API call.
+/// **Push proxy.** Conventional push URLs route here. The gateway reads the
+/// ref updates, asks policy with the actual refs, then forwards using a
+/// server-held write credential. A GitHub App read token cannot push directly;
+/// an unnarrowable fallback PAT can, so shell preflight must gate pushes too.
 ///
 /// **Shell commands (soft).** Claude Code runs its own `Bash` tool; the
 /// PreToolUse hook posts each command here, the [ShellActionClassifier] names
@@ -175,9 +186,13 @@ class AgentRunGateway {
   /// waits on a human.
   static const Duration hookTimeout = Duration(hours: 1);
 
-  /// When the gateway stops waiting for that human and denies. Well inside
-  /// [hookTimeout]: an HTTP hook that times out lets the call PROCEED.
+  /// When the gateway stops waiting for a human and denies. This expires
+  /// before curl's deadline, which itself expires before Claude's hook timeout.
   static const Duration hookDecisionDeadline = Duration(minutes: 55);
+
+  /// The hook's HTTP client must exit with a blocking result before Claude
+  /// times out the command hook (a timeout is not an authorization decision).
+  static const Duration hookTransportDeadline = Duration(minutes: 56);
 
   /// Cap on the ref-update preamble read before a push is decided. The
   /// commands are a few hundred bytes; anything this large is not a push.
@@ -202,7 +217,7 @@ class AgentRunGateway {
   static final Random _random = Random.secure();
 
   /// Registers a run and returns its lease, or null when the gateway is not
-  /// reachable (the run then simply has no push path, which fails closed).
+  /// reachable. Claude must then install the blocking hook for a missing lease.
   Future<AgentRunLease?> open(AgentRunGrant grant) async {
     final base = await _loopbackBase();
     if (base == null) {
@@ -280,9 +295,11 @@ class AgentRunGateway {
         decoded['tool_name'] != 'Bash' ||
         command is! String ||
         command.trim().isEmpty) {
-      // Not ours to judge: an empty 2xx is "no decision".
-      request.response.statusCode = HttpStatus.ok;
-      return request.response.close();
+      return _hookDecision(
+        request,
+        allowed: false,
+        reason: 'Control Center: invalid Bash permission request.',
+      );
     }
 
     // The transcript labels a Bash row with its `description`; Claude Code
@@ -330,22 +347,13 @@ class AgentRunGateway {
     );
   }
 
-  /// Answers a PreToolUse hook; [reason] is sent only on a deny.
+  /// Only the exact `allow` response lets the command hook exit successfully.
   Future<void> _hookDecision(
     HttpRequest request, {
     required bool allowed,
     required String reason,
   }) async {
-    final output = <String, dynamic>{
-      'hookEventName': 'PreToolUse',
-      'permissionDecision': allowed ? 'allow' : 'deny',
-      if (!allowed) 'permissionDecisionReason': reason,
-    };
-    request.response
-      ..statusCode = HttpStatus.ok
-      ..headers.contentType = ContentType.json
-      ..write(jsonEncode({'hookSpecificOutput': output}));
-    await request.response.close();
+    return _plain(request, HttpStatus.ok, allowed ? 'allow' : reason);
   }
 
   // ---------------------------------------------------------------------------
@@ -439,20 +447,40 @@ class AgentRunGateway {
     }
 
     // The push: read the ref updates, decide, then forward or reject.
-    final iterator = StreamIterator<List<int>>(request);
+    final encoding = request.headers.value(HttpHeaders.contentEncodingHeader);
+    if (encoding != null && encoding != 'identity' && encoding != 'gzip') {
+      return _plain(
+        request,
+        HttpStatus.unsupportedMediaType,
+        'Control Center cannot inspect this push encoding.',
+      );
+    }
+    final compressed = encoding == 'gzip';
+    final iterator = StreamIterator<List<int>>(
+      compressed ? gzip.decoder.bind(request) : request,
+    );
     final preamble = BytesBuilder(copy: false);
-    final gzip =
-        request.headers.value(HttpHeaders.contentEncodingHeader) == 'gzip';
     _PushCommands? commands;
-    while (commands == null &&
-        preamble.length < _maxPreambleBytes &&
-        await iterator.moveNext()) {
-      preamble.add(iterator.current);
-      if (!gzip) {
+    try {
+      while (commands == null &&
+          preamble.length < _maxPreambleBytes &&
+          await iterator.moveNext()) {
+        preamble.add(iterator.current);
         commands = _PushCommands.parse(preamble.toBytes());
       }
+      if (commands == null ||
+          (commands.refs.isEmpty &&
+              (preamble.length != 4 || await iterator.moveNext()))) {
+        throw const FormatException('Uninspectable push preamble.');
+      }
+    } on FormatException {
+      await iterator.cancel();
+      return _plain(
+        request,
+        HttpStatus.badRequest,
+        'Control Center could not inspect the pushed refs; push blocked.',
+      );
     }
-    commands ??= const _PushCommands([], {});
 
     if (commands.refs.isNotEmpty) {
       final refs = [for (final r in commands.refs) _shortRef(r)];
@@ -482,8 +510,8 @@ class AgentRunGateway {
         );
       }
     }
-    // A push with no ref updates is git's "probe" request before a large
-    // pack: there is nothing in it to decide about.
+    // Only a complete, flush-only request is a ref-free probe. Compressed,
+    // malformed or incomplete updates must never become an unchecked probe.
 
     final token = await _writeToken(grant, secret, owner, name);
     if (token == null) {
@@ -501,6 +529,7 @@ class AgentRunGateway {
       rest,
       token,
       body: _replay(preamble.takeBytes(), iterator),
+      decodedBody: compressed,
     );
   }
 
@@ -563,6 +592,7 @@ class AgentRunGateway {
     String rest,
     String token, {
     Stream<List<int>>? body,
+    bool decodedBody = false,
   }) async {
     final upstream = _githubBase.replace(
       path: '/$owner/$repoSegment/$rest',
@@ -579,6 +609,9 @@ class AgentRunGateway {
         HttpHeaders.userAgentHeader,
         'git-protocol',
       ]) {
+        if (decodedBody && header == HttpHeaders.contentEncodingHeader) {
+          continue;
+        }
         final value = request.headers.value(header);
         if (value != null) {
           out.headers.set(header, value);
@@ -735,13 +768,13 @@ class _PushCommands {
         ascii.decode(bytes.sublist(offset, offset + 4), allowInvalid: true),
         radix: 16,
       );
-      if (length == null) {
-        return const _PushCommands([], {});
+      if (length == null || (length > 0 && length < 4)) {
+        throw const FormatException('Invalid push packet length.');
       }
       if (length == 0) {
         return _PushCommands(refs, caps);
       }
-      if (length < 4 || offset + length > bytes.length) {
+      if (offset + length > bytes.length) {
         return null;
       }
       var line = utf8.decode(

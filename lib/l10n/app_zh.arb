@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "在文件中搜索",
   "ideNoContentMatches": "无匹配项",
   "ideSourceControlCreatePr": "创建 pull request",
-  "ideSourceControlViewPr": "查看 pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "无更改",
   "noReposInConversation": "此对话中没有仓库",
   "ideSourceControlNoSpace": "打开对话以查看其更改",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "登录",
   "claudeAccountSignInAgain": "重新登录",
   "claudeAccountSignInHint": "在服务器上的终端中运行此命令。它会打开浏览器完成登录，并将凭据写入此账户的目录。",
-  "claudeAccountLongLivedToken": "长期令牌",
-  "claudeAccountUseLongLivedToken": "使用长期令牌",
-  "claudeAccountReplaceLongLivedToken": "替换长期令牌",
-  "claudeAccountRemoveLongLivedToken": "移除长期令牌",
-  "claudeAccountLongLivedTokenHint": "普通登录需要续期，可能一夜之间就过期。长期令牌可保持登录约一年。请在终端中运行此命令，在浏览器中完成登录，然后粘贴它输出的令牌。",
-  "claudeAccountLongLivedTokenInvalid": "这不是 claude setup-token 生成的令牌。令牌以 sk-ant-oat01- 开头。",
   "claudeAccountSignedOut": "已退出登录",
   "claudeAccountExpired": "登录已过期",
   "claudeAccountExpiredDetail": "登录已于 {when} 过期。请重新登录以使用此账户。",

@@ -47,7 +47,6 @@ import 'package:cc_harness/slash_command.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
-import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:cc_infra/src/context/snapcompact_compactor.dart';
 import 'package:cc_infra/src/detection/acp_models_service.dart';
 import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
@@ -395,8 +394,8 @@ class DispatchSession implements SteeringSessionView {
 
   /// This run's registration with the agent run gateway: the push proxy and
   /// the Claude Code hook endpoint that put the action policy between the
-  /// agent's shell and the forge. Null when no gateway is wired or reachable —
-  /// the run then has no push path at all, which fails closed.
+  /// agent's shell and the forge. Null when no gateway is wired or reachable;
+  /// Claude then installs a blocking Bash hook instead of skipping policy.
   AgentRunLease? _gatewayLease;
 
   /// Whether the run's sandbox gets a network, resolved from the "network
@@ -1187,9 +1186,9 @@ class DispatchSession implements SteeringSessionView {
         }
       }
 
-      // READ scope: the agent's own environment can read the repo and work
-      // with pull requests, never push. A push goes through the gateway,
-      // which asks the "Push to a remote" rule first.
+      // GitHub App READ scope cannot push; fallback PATs cannot be narrowed.
+      // Shell preflight always checks push policy, and gateway-routed pushes
+      // independently authorize the actual refs using a server-held token.
       final scoped = await deps.broker.mint(
         conversationId: conversationId ?? 'unknown',
         scope: ForgeTokenScope.read,
@@ -1716,13 +1715,8 @@ class DispatchSession implements SteeringSessionView {
       // the config dir — an `adapterEnvOverride` naming a different one would
       // point the CLI somewhere the sandbox never made writable, which fails
       // as a mid-run token refresh error rather than as a visible mistake.
-      if (claudeConfigDir != null && claudeConfigDir!.isNotEmpty) ...{
+      if (claudeConfigDir != null && claudeConfigDir!.isNotEmpty)
         'CLAUDE_CONFIG_DIR': claudeConfigDir!,
-        // The account's long-lived token, when it has one, is its credential
-        // for the same reason: the operator picked the account, so a token
-        // configured elsewhere must not sign the run in as someone else.
-        claudeLongLivedTokenEnvKey: ?readClaudeLongLivedToken(claudeConfigDir!),
-      },
     };
     // …and it survives the re-assertion below, because the broker's scoped env
     // carries forge credentials, never a runner config dir.
@@ -1734,9 +1728,8 @@ class DispatchSession implements SteeringSessionView {
     // still wins for security-critical keys"). Now it does.
     merged.addAll(scopedEnv);
     merged.addAll(_gitIdentityEnv);
-    // The gateway's git config goes on top of everything: an adapter's own
-    // `GIT_CONFIG_*` entries are appended to, never replaced, and nothing a
-    // caller sets can unroute a push from the policy.
+    // Append gateway routing after adapter config. Shell preflight remains
+    // necessary: explicit URLs or command-local Git config can avoid rewrites.
     final lease = _gatewayLease;
     if (lease != null) {
       merged.addAll(lease.environment(merged));

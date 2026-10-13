@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -223,6 +224,88 @@ void main() {
       expect(find.text('High'), findsOneWidget);
       expect(find.text('1'), findsNothing);
     });
+
+    for (final direction in TextDirection.values) {
+      for (final sample in [
+        (width: 320.0, labels: const ['Low', 'Medium', 'High']),
+        (
+          width: 1000.0,
+          labels: const ['Low', 'Medium', 'High', 'Extra High', 'Max'],
+        ),
+      ]) {
+        testWidgets(
+          'centres labels on painted stops at ${sample.width}px in $direction',
+          (tester) async {
+            await tester.binding.setSurfaceSize(Size(sample.width + 32, 200));
+            addTearDown(() => tester.binding.setSurfaceSize(null));
+            var value = 1.0;
+            await tester.pumpWidget(
+              ccTestApp(
+                Center(
+                  child: SizedBox(
+                    width: sample.width,
+                    child: StatefulBuilder(
+                      builder: (context, setState) => CcSlider(
+                        value: value,
+                        max: sample.labels.length - 1.0,
+                        stepLabels: sample.labels,
+                        showValue: false,
+                        onChanged: (next) => setState(() => value = next),
+                      ),
+                    ),
+                  ),
+                ),
+                textDirection: direction,
+              ),
+            );
+
+            final track = find.byKey(CcSlider.trackKey);
+            final paintedTrack = tester.renderObject<RenderCustomPaint>(
+              find.descendant(of: track, matching: find.byType(CustomPaint)),
+            );
+            final canvas = TestRecordingCanvas();
+            paintedTrack.painter!.paint(canvas, paintedTrack.size);
+            // Read the actual painted dots and thumb, not a second copy of
+            // the slider's positioning formula.
+            final stopXs = <double>{
+              for (final call in canvas.invocations)
+                if (call.invocation.memberName == #drawCircle)
+                  (call.invocation.positionalArguments.first as Offset).dx,
+            }.toList()..sort();
+            expect(stopXs, hasLength(sample.labels.length));
+            final trackY = tester.getCenter(track).dy;
+
+            for (var i = 0; i < sample.labels.length; i++) {
+              final label = sample.labels[i];
+              final paragraph = tester.renderObject<RenderParagraph>(
+                find.text(label),
+              );
+              final textBox = paragraph
+                  .getBoxesForSelection(
+                    TextSelection(baseOffset: 0, extentOffset: label.length),
+                  )
+                  .single;
+              final labelCentre = paragraph.localToGlobal(
+                textBox.toRect().center,
+              );
+              final stopX =
+                  stopXs[direction == TextDirection.rtl
+                      ? stopXs.length - 1 - i
+                      : i];
+              expect(
+                labelCentre.dx,
+                closeTo(paintedTrack.localToGlobal(Offset(stopX, 0)).dx, 0.01),
+                reason: '$label must be centred under its dot',
+              );
+
+              await tester.tapAt(Offset(labelCentre.dx, trackY));
+              await tester.pump();
+              expect(value, i.toDouble());
+            }
+          },
+        );
+      }
+    }
 
     testWidgets('named steps commit by stop, not by percent', (tester) async {
       double? received;

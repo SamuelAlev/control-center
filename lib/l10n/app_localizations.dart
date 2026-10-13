@@ -15135,12 +15135,6 @@ abstract class AppLocalizations {
   /// **'Create pull request'**
   String get ideSourceControlCreatePr;
 
-  /// Source control action shown in place of "Create pull request" once the conversation's worktree branch already has an open pull request
-  ///
-  /// In en, this message translates to:
-  /// **'View pull request #{number}'**
-  String ideSourceControlViewPr(int number);
-
   /// No description provided for @ideSourceControlNoChanges.
   ///
   /// In en, this message translates to:
@@ -23407,42 +23401,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Run this in a terminal on the server. It opens a browser to finish the login, and writes the credential into this account\'s directory.'**
   String get claudeAccountSignInHint;
-
-  /// No description provided for @claudeAccountLongLivedToken.
-  ///
-  /// In en, this message translates to:
-  /// **'Long-lived token'**
-  String get claudeAccountLongLivedToken;
-
-  /// No description provided for @claudeAccountUseLongLivedToken.
-  ///
-  /// In en, this message translates to:
-  /// **'Use a long-lived token'**
-  String get claudeAccountUseLongLivedToken;
-
-  /// No description provided for @claudeAccountReplaceLongLivedToken.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace long-lived token'**
-  String get claudeAccountReplaceLongLivedToken;
-
-  /// No description provided for @claudeAccountRemoveLongLivedToken.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove long-lived token'**
-  String get claudeAccountRemoveLongLivedToken;
-
-  /// No description provided for @claudeAccountLongLivedTokenHint.
-  ///
-  /// In en, this message translates to:
-  /// **'A regular sign-in has to be renewed and can expire overnight. A long-lived token stays signed in for about a year. Run this in a terminal, finish in the browser, then paste the token it prints.'**
-  String get claudeAccountLongLivedTokenHint;
-
-  /// No description provided for @claudeAccountLongLivedTokenInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'That isn\'t a token from claude setup-token. It starts with sk-ant-oat01-.'**
-  String get claudeAccountLongLivedTokenInvalid;
 
   /// No description provided for @claudeAccountSignedOut.
   ///

@@ -8539,11 +8539,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ideSourceControlCreatePr => '创建 pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return '查看 pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => '无更改';
 
   @override
@@ -13309,26 +13304,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       '在服务器上的终端中运行此命令。它会打开浏览器完成登录，并将凭据写入此账户的目录。';
-
-  @override
-  String get claudeAccountLongLivedToken => '长期令牌';
-
-  @override
-  String get claudeAccountUseLongLivedToken => '使用长期令牌';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => '替换长期令牌';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => '移除长期令牌';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      '普通登录需要续期，可能一夜之间就过期。长期令牌可保持登录约一年。请在终端中运行此命令，在浏览器中完成登录，然后粘贴它输出的令牌。';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      '这不是 claude setup-token 生成的令牌。令牌以 sk-ant-oat01- 开头。';
 
   @override
   String get claudeAccountSignedOut => '已退出登录';
@@ -24006,11 +23981,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get ideSourceControlCreatePr => '建立 pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return '檢視 pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => '沒有變更';
 
   @override
@@ -28780,26 +28750,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get claudeAccountSignInHint =>
       '請在伺服器上的終端機執行此命令。它會開啟瀏覽器完成登入，並將憑證寫入此帳戶的目錄。';
-
-  @override
-  String get claudeAccountLongLivedToken => '長期權杖';
-
-  @override
-  String get claudeAccountUseLongLivedToken => '使用長期權杖';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => '取代長期權杖';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => '移除長期權杖';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      '一般登入需要續期，可能一夜之間就過期。長期權杖可維持登入約一年。請在終端機中執行此指令，在瀏覽器中完成登入，然後貼上它輸出的權杖。';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      '這不是 claude setup-token 產生的權杖。權杖以 sk-ant-oat01- 開頭。';
 
   @override
   String get claudeAccountSignedOut => '已登出';

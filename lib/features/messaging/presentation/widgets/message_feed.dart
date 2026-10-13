@@ -122,12 +122,10 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
 
   bool _didInitialLanding = false;
   bool _cursorSnapshotTaken = false;
-  String? _lastNewestId;
 
-  /// Creation time of [_lastNewestId], so reaching the live edge can advance the
-  /// divider cutoff to "everything currently here" without re-deriving it from
-  /// the window.
-  DateTime? _lastNewestAt;
+  /// Newest rendered message, including completion state: an agent turn keeps
+  /// its id and creation time when its final answer arrives.
+  Message? _lastNewest;
   int _lastItemCount = 0;
 
   /// Snapshot of the last window emission, rendered while the pane is hidden
@@ -216,7 +214,7 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
   /// Whether a live agent turn is streaming below the fold — drives the
   /// jump-to-latest "streaming" indicator.
   bool get _isLiveBelow {
-    final newestId = _lastNewestId;
+    final newestId = _lastNewest?.id;
     if (newestId == null) {
       return false;
     }
@@ -244,15 +242,18 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
       // no animation. Done here rather than off a window emission because a
       // short nap may not produce one (the provider is still warm) and the
       // reader must land at the bottom either way. Landing there is reading
-      // it, so the cursor catches up too (a no-op when nothing is newer than
-      // the last stamp).
+      // it, so acknowledge again even if the newest message kept its id: its
+      // completion notification may have arrived while this pane was hidden.
       _pendingRevealReconcile = true;
+      _lastStampedNewestId = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
+        if (mounted && _wasVisible) {
           _landOnLiveEdge();
           _stampCursor();
         }
       });
+    } else if (!isVisible && _wasVisible) {
+      _cursorDebounce?.cancel();
     }
     _wasVisible = isVisible;
 
@@ -321,7 +322,7 @@ class _KeptFeedRow {
   const _KeptFeedRow({
     required this.message,
     required this.collapseHeader,
-    required this.steeringMessages,
+    required this.inlineMessages,
     required this.highlighted,
     required this.onOpenThread,
     required this.onStartThread,
@@ -330,7 +331,7 @@ class _KeptFeedRow {
 
   final Message message;
   final bool collapseHeader;
-  final List<Message> steeringMessages;
+  final List<Message> inlineMessages;
   final bool highlighted;
   final void Function(String threadId)? onOpenThread;
   final void Function(Message message)? onStartThread;

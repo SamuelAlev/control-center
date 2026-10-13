@@ -8783,11 +8783,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get ideSourceControlCreatePr => 'pull request بنائیں';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'pull request ⁨#$number⁩ دیکھیں';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'کوئی تبدیلی نہیں';
 
   @override
@@ -13703,26 +13698,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'سرور پر ٹرمینل میں یہ چلائیں۔ لاگ اِن مکمل کرنے کے لیے براؤزر کھلتا ہے، اور کریڈینشل اس اکاؤنٹ کی ڈائریکٹری میں لکھتا ہے۔';
-
-  @override
-  String get claudeAccountLongLivedToken => 'طویل مدتی ٹوکن';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'طویل مدتی ٹوکن استعمال کریں';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => 'طویل مدتی ٹوکن تبدیل کریں';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => 'طویل مدتی ٹوکن ہٹائیں';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'عام سائن ان کی تجدید کرنی پڑتی ہے اور یہ راتوں رات ختم ہو سکتا ہے۔ طویل مدتی ٹوکن تقریباً ایک سال تک سائن ان رہتا ہے۔ یہ کمانڈ ٹرمینل میں چلائیں، براؤزر میں مکمل کریں، پھر اس کا پرنٹ کیا ہوا ٹوکن پیسٹ کریں۔';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'یہ claude setup-token کا ٹوکن نہیں ہے۔ یہ sk-ant-oat01- سے شروع ہوتا ہے۔';
 
   @override
   String get claudeAccountSignedOut => 'سائن آؤٹ';

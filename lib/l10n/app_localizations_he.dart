@@ -8806,11 +8806,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get ideSourceControlCreatePr => 'יצירת בקשת משיכה';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'הצגת בקשת משיכה ⁨#$number⁩';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'אין שינויים';
 
   @override
@@ -13756,26 +13751,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'הריצו את זה בטרמינל על השרת. זה פותח דפדפן להשלמת הכניסה, וכותב את פרטי הגישה לתיקייה של החשבון הזה.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'אסימון לטווח ארוך';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'שימוש באסימון לטווח ארוך';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => 'החלפת האסימון לטווח ארוך';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => 'הסרת האסימון לטווח ארוך';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'כניסה רגילה צריכה להתחדש ועלולה לפוג בן לילה. אסימון לטווח ארוך נשאר מחובר כשנה. הריצו את הפקודה במסוף, השלימו בדפדפן והדביקו את האסימון שהיא מדפיסה.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'זה לא אסימון מ-claude setup-token. הוא מתחיל ב-sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'מנותק';

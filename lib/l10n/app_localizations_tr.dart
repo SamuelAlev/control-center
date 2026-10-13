@@ -8812,11 +8812,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Pull request oluştur';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Pull request #$number görüntüle';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Değişiklik yok';
 
   @override
@@ -13752,28 +13747,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Bunu sunucudaki bir terminalde çalıştırın. Oturumu tamamlamak için bir tarayıcı açar ve kimlik bilgisini bu hesabın dizinine yazar.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Uzun ömürlü belirteç';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'Uzun ömürlü belirteç kullan';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken =>
-      'Uzun ömürlü belirteci değiştir';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken =>
-      'Uzun ömürlü belirteci kaldır';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'Normal oturum açmanın yenilenmesi gerekir ve bir gecede sona erebilir. Uzun ömürlü belirteç yaklaşık bir yıl oturumu açık tutar. Bunu bir terminalde çalıştırın, tarayıcıda tamamlayın ve ardından yazdırdığı belirteci yapıştırın.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Bu, claude setup-token\'dan alınmış bir belirteç değil. Belirteç sk-ant-oat01- ile başlar.';
 
   @override
   String get claudeAccountSignedOut => 'Oturum kapatıldı';

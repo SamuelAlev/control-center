@@ -353,7 +353,6 @@ void main() {
             label: 'Default account',
             isDefault: true,
             loggedIn: true,
-            usesLongLivedToken: true,
           ),
         ),
         ClaudeAccountView(

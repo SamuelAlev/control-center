@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
@@ -26,6 +28,9 @@ void main() {
   late FakeAgentDispatchService dispatchService;
   late AgentStreamProcessor processor;
   late StreamController<AgentProcessEvent> events;
+  late DomainEventBus eventBus;
+  late List<MessageReceived> notifications;
+  late StreamSubscription<MessageReceived> notificationSub;
 
   const messageId = 'msg-1';
 
@@ -33,10 +38,14 @@ void main() {
     repo = FakeMessagingRepository();
     registry = ActiveStreamRegistry();
     dispatchService = FakeAgentDispatchService();
+    eventBus = DomainEventBus();
+    notifications = [];
+    notificationSub = eventBus.on<MessageReceived>().listen(notifications.add);
     processor = AgentStreamProcessor(
       agentDispatchService: dispatchService,
       repo: repo,
       streamRegistry: registry,
+      eventBus: eventBus,
     );
     events = StreamController<AgentProcessEvent>();
     registry.register(messageId, spaceId: 'chan-1');
@@ -63,6 +72,8 @@ void main() {
 
   tearDown(() async {
     await events.close();
+    await notificationSub.cancel();
+    eventBus.dispose();
   });
 
   /// Pushes [event] and lets the processor's listener drain it.
@@ -141,6 +152,98 @@ void main() {
       expect(repo.lastMetadata?['outcome'], 'completed');
       expect(repo.lastContent, 'Retried successfully.');
       expect(dispatchService.failedRuns, isEmpty);
+    });
+  });
+
+  group('completion notification', () {
+    test(
+      'previews the conclusion without dropping the earlier transcript',
+      () async {
+        await emit(TextEvent(content: 'I will inspect the sidebar.'));
+        await emit(ToolCallEvent(toolName: 'read', toolCallId: 'read-1'));
+        await emit(ToolResultEvent(toolCallId: 'read-1', outputs: 'sidebar'));
+        await emit(TextEvent(content: 'The spacing needs a change.'));
+        await emit(ThinkingEvent(content: 'Compare the layout options.'));
+        await emit(TextEvent(content: 'Updated the sidebar. '));
+        await emit(TextEvent(content: 'The layout checks passed.'));
+        expect(notifications, isEmpty);
+        final notification = eventBus.on<MessageReceived>().first;
+        await emit(DoneEvent());
+        await finish();
+
+        expect(
+          (await notification).contentPreview,
+          'Updated the sidebar. The layout checks passed.',
+        );
+        expect(
+          repo.lastContent,
+          'I will inspect the sidebar.\n\n'
+          'The spacing needs a change.\n\n'
+          'Updated the sidebar. The layout checks passed.',
+        );
+      },
+    );
+
+    test('skips trailing tools, reasoning and blank text', () async {
+      await emit(TextEvent(content: 'Inspecting the change.'));
+      await emit(ThinkingEvent(content: 'Check the result.'));
+      await emit(TextEvent(content: ' \nThe change is complete.\n '));
+      await emit(ToolCallEvent(toolName: 'todo_write', toolCallId: 'todo-1'));
+      await emit(ToolResultEvent(toolCallId: 'todo-1', outputs: 'saved'));
+      await emit(ThinkingEvent(content: 'No further changes needed.'));
+      await emit(TextEvent(content: ' \n '));
+      final notification = eventBus.on<MessageReceived>().first;
+      await emit(DoneEvent());
+      await finish();
+
+      expect((await notification).contentPreview, 'The change is complete.');
+    });
+
+    test(
+      'applies the preview limit to the conclusion, not the opening',
+      () async {
+        final conclusion = 'Completed. ${'Verified result. ' * 12}'.trim();
+        await emit(TextEvent(content: 'Starting the investigation.'));
+        await emit(ThinkingEvent(content: 'Evaluate the results.'));
+        await emit(TextEvent(content: conclusion));
+        final notification = eventBus.on<MessageReceived>().first;
+        await emit(DoneEvent());
+        await finish();
+
+        expect(
+          (await notification).contentPreview,
+          '${conclusion.substring(0, 120)}…',
+        );
+      },
+    );
+
+    test('keeps the failure reason when there is no visible answer', () async {
+      await emit(ThinkingEvent(content: 'Attempt the request.'));
+      await emit(ErrorEvent(content: 'Provider request failed.'));
+      final notification = eventBus.on<MessageReceived>().first;
+      await emit(DoneEvent());
+      await finish();
+
+      expect((await notification).contentPreview, 'Provider request failed.');
+    });
+
+    test('keeps stream errors when there is no visible answer', () async {
+      final notification = eventBus.on<MessageReceived>().first;
+      events.addError(StateError('Connection closed.'));
+      await finish();
+
+      expect(
+        (await notification).contentPreview,
+        'Bad state: Connection closed.',
+      );
+    });
+
+    test('does not expose a reasoning-only turn', () async {
+      await emit(ThinkingEvent(content: 'No visible answer was produced.'));
+      await emit(DoneEvent());
+      await finish();
+
+      expect(notifications, isEmpty);
     });
   });
 

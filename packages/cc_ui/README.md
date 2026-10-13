@@ -27,6 +27,8 @@ Pass `presentation: CcDialogPresentation.immediate` to `showCcDialog` for keyboa
 
 `CcToastScope` starts each toast's dwell time when `show` enqueues it; hovering pauses the countdown. A timeout or returned dismisser used before the first rendered frame removes the queued toast without playing its entrance, so delayed rendering cannot resurrect a dismissed notification. Visible toasts remain dismissible through their close control while hovered.
 
+For `CcSlider.stepLabels`, each name is centred beneath its stop, including both endpoints. The track is inset to the label-cell centres; labels and pointer positions mirror together in RTL.
+
 ## Adding a component
 
 1. Build `lib/src/components/cc_<name>.dart` on `flutter/widgets.dart`, using `context.designSystem` or shared `CcCardTokens`/`CcInputTokens` resolvers.

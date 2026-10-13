@@ -12,7 +12,7 @@ class MessageItem extends FeedItem {
   const MessageItem(
     this.message, {
     this.collapseHeader = false,
-    this.steeringMessages = const [],
+    this.inlineMessages = const [],
   });
 
   /// The message to render.
@@ -21,8 +21,8 @@ class MessageItem extends FeedItem {
   /// Whether to hide the avatar/name because the previous row is the same sender.
   final bool collapseHeader;
 
-  /// Injected user messages rendered inside this run, in injection order.
-  final List<Message> steeringMessages;
+  /// Steering and resolved questions rendered chronologically inside this run.
+  final List<Message> inlineMessages;
 }
 
 /// A feed row that separates messages from different local calendar days.
@@ -63,7 +63,13 @@ List<FeedItem> buildFeedItems(
   DateTime? readFrontier,
 }) {
   final out = <FeedItem>[];
-  final steeringByRun = _steeringByRun(messages);
+  final inlineByRun = _inlineMessagesByRun(messages);
+  final inlineIds = inlineByRun.isEmpty
+      ? const <String>{}
+      : {
+          for (final entries in inlineByRun.values)
+            for (final message in entries) message.id,
+        };
   DateTime? lastDay;
   Message? prevSender;
   bool dividerInserted = false;
@@ -74,11 +80,9 @@ List<FeedItem> buildFeedItems(
   final unreadCount = messages.where(isUnread).length;
 
   for (final display in messages) {
-    // Queued cards stay in the composer. Injected cards whose run is in this
-    // window belong inside its transcript, not after the whole agent turn.
-    // Keep an orphaned card visible until pagination brings its run into view.
-    if (display.isSteeringQueued ||
-        (steeringByRun[display.steerRunId]?.contains(display) ?? false)) {
+    // Pending questions stay standalone; queued steering stays in the composer.
+    // Resolved interactions belong inside their loaded turn, not below it.
+    if (display.isSteeringQueued || inlineIds.contains(display.id)) {
       continue;
     }
     final day = DateTime(
@@ -112,7 +116,7 @@ List<FeedItem> buildFeedItems(
       MessageItem(
         display,
         collapseHeader: collapse,
-        steeringMessages: steeringByRun[display.id] ?? const [],
+        inlineMessages: inlineByRun[display.id] ?? const [],
       ),
     );
     prevSender = display;
@@ -120,19 +124,43 @@ List<FeedItem> buildFeedItems(
   return out;
 }
 
-Map<String, List<Message>> _steeringByRun(List<Message> messages) {
-  if (!messages.any((m) => m.isSteeringInjected && m.steerRunId != null)) {
+Map<String, List<Message>> _inlineMessagesByRun(List<Message> messages) {
+  if (!messages.any(
+    (m) =>
+        (m.isSteeringInjected && m.steerRunId != null) ||
+        (m.isUserQuestion && m.isQuestionAnswered),
+  )) {
     return const {};
   }
-  final byId = {for (final message in messages) message.id: message};
+  final byId = {
+    for (final message in messages)
+      if (message.isAgentTurn) message.id: message,
+  };
+  final latestRun = <(String, String, String), Message>{};
   final grouped = <String, List<Message>>{};
   for (final message in messages) {
-    if (!message.isSteeringInjected) {
+    if (message.isAgentTurn) {
+      latestRun[(message.spaceId, message.conversationId, message.senderId)] =
+          message;
       continue;
     }
-    final run = byId[message.steerRunId];
+    // Questions carry their asking agent and creation time, not a run ID.
+    // The ascending feed identifies that agent's preceding turn without
+    // crossing a space/conversation or hiding an unloaded turn's question.
+    final Message? run;
+    if (message.isSteeringInjected) {
+      run = byId[message.steerRunId];
+    } else if (message.isUserQuestion && message.isQuestionAnswered) {
+      run =
+          latestRun[(
+            message.spaceId,
+            message.conversationId,
+            message.senderId,
+          )];
+    } else {
+      continue;
+    }
     if (run == null ||
-        run.messageType != MessageType.agentTurn ||
         run.spaceId != message.spaceId ||
         run.conversationId != message.conversationId) {
       continue;

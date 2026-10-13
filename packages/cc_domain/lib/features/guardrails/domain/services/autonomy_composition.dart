@@ -15,9 +15,9 @@ enum AutonomyOutcome {
 
 /// Composes the policy decision with the space autonomy dial.
 ///
-/// Hard `deny` survives every level including `actFreely`. `proposeOnly`:
-/// refuse gated actions. `actWithApproval`/unset: `prompt` asks or denies.
-/// `actFreely`: allow non-deny (including `prompt`) without asking.
+/// An action-policy `deny` or `prompt` is authoritative at every autonomy
+/// level: `actFreely` may only spare an independent approval when policy
+/// already allows the action. `proposeOnly` refuses otherwise gated actions.
 class AutonomyComposition {
   /// Creates an [AutonomyComposition].
   const AutonomyComposition();
@@ -32,24 +32,17 @@ class AutonomyComposition {
     AutonomyLevel? autonomy,
     bool isGated = true,
   }) {
-    // A hard deny is the floor. It is checked FIRST and returns immediately,
-    // so no autonomy level — present or future — can be written in a way that
-    // reaches past it.
+    // Policy is the floor: a space's autonomy cannot silently authorize an
+    // action the operator configured to require confirmation.
     if (decision == ActionDecision.deny) {
       return AutonomyOutcome.deny;
     }
-    if (!isGated) {
-      return AutonomyOutcome.allow;
+    if (autonomy == AutonomyLevel.proposeOnly && isGated) {
+      return AutonomyOutcome.deny;
     }
-    final level = autonomy ?? AutonomyLevel.actWithApproval;
-    return switch (level) {
-      AutonomyLevel.proposeOnly => AutonomyOutcome.deny,
-      AutonomyLevel.actFreely => AutonomyOutcome.allow,
-      AutonomyLevel.actWithApproval => switch (decision) {
-        ActionDecision.allow => AutonomyOutcome.allow,
-        ActionDecision.prompt => AutonomyOutcome.prompt,
-        ActionDecision.deny => AutonomyOutcome.deny,
-      },
-    };
+    if (decision == ActionDecision.prompt) {
+      return AutonomyOutcome.prompt;
+    }
+    return AutonomyOutcome.allow;
   }
 }

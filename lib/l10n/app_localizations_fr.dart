@@ -8887,11 +8887,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Créer une demande de tirage';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Voir la pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Aucune modification';
 
   @override
@@ -13867,28 +13862,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Exécutez ceci dans un terminal sur le serveur. Un navigateur s\'ouvre pour terminer la connexion, et l\'identifiant est écrit dans le dossier de ce compte.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Jeton longue durée';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'Utiliser un jeton longue durée';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken =>
-      'Remplacer le jeton longue durée';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken =>
-      'Supprimer le jeton longue durée';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'Une connexion classique doit être renouvelée et peut expirer du jour au lendemain. Un jeton longue durée reste connecté environ un an. Exécutez cette commande dans un terminal, terminez dans le navigateur, puis collez le jeton affiché.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Ce n\'est pas un jeton issu de claude setup-token. Il commence par sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Déconnecté';

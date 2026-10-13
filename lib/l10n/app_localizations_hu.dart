@@ -8853,11 +8853,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Pull request létrehozása';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return '#$number pull request megtekintése';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Nincsenek módosítások';
 
   @override
@@ -13807,29 +13802,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Futtassa ezt egy terminálban a szerveren. Böngészőt nyit a bejelentkezés befejezéséhez, és a hitelesítő adatot ebbe a fiók könyvtárába írja.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Hosszú élettartamú token';
-
-  @override
-  String get claudeAccountUseLongLivedToken =>
-      'Hosszú élettartamú token használata';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken =>
-      'Hosszú élettartamú token cseréje';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken =>
-      'Hosszú élettartamú token eltávolítása';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'A normál bejelentkezést meg kell újítani, és egyik napról a másikra lejárhat. A hosszú élettartamú token nagyjából egy évig bejelentkezve marad. Futtasd ezt egy terminálban, fejezd be a böngészőben, majd illeszd be a kiírt tokent.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Ez nem a claude setup-token által adott token. A token így kezdődik: sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Kijelentkezve';

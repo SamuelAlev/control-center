@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "חיפוש בקבצים",
   "ideNoContentMatches": "אין התאמות",
   "ideSourceControlCreatePr": "יצירת בקשת משיכה",
-  "ideSourceControlViewPr": "הצגת בקשת משיכה ⁨#{number}⁩",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "אין שינויים",
   "noReposInConversation": "אין מאגרים בשיחה הזו",
   "ideSourceControlNoSpace": "פתחו שיחה כדי לראות את השינויים שלה",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "כניסה",
   "claudeAccountSignInAgain": "כניסה מחדש",
   "claudeAccountSignInHint": "הריצו את זה בטרמינל על השרת. זה פותח דפדפן להשלמת הכניסה, וכותב את פרטי הגישה לתיקייה של החשבון הזה.",
-  "claudeAccountLongLivedToken": "אסימון לטווח ארוך",
-  "claudeAccountUseLongLivedToken": "שימוש באסימון לטווח ארוך",
-  "claudeAccountReplaceLongLivedToken": "החלפת האסימון לטווח ארוך",
-  "claudeAccountRemoveLongLivedToken": "הסרת האסימון לטווח ארוך",
-  "claudeAccountLongLivedTokenHint": "כניסה רגילה צריכה להתחדש ועלולה לפוג בן לילה. אסימון לטווח ארוך נשאר מחובר כשנה. הריצו את הפקודה במסוף, השלימו בדפדפן והדביקו את האסימון שהיא מדפיסה.",
-  "claudeAccountLongLivedTokenInvalid": "זה לא אסימון מ-claude setup-token. הוא מתחיל ב-sk-ant-oat01-.",
   "claudeAccountSignedOut": "מנותק",
   "claudeAccountExpired": "פג תוקף הכניסה",
   "claudeAccountExpiredDetail": "תוקף הכניסה פג ב-{when}. היכנסו מחדש כדי להשתמש בחשבון הזה.",

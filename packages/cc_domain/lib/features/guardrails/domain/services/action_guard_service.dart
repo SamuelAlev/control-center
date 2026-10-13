@@ -146,12 +146,11 @@ class ActionGuardService {
   Future<List<ActionPolicyRule>> _managedRules() async =>
       _managed?.call() ?? Future.value(const []);
 
-  /// Resolves an action to its policy decision WITHOUT surfacing any
-  /// confirmation (pure read of the store + [PolicyResolver]). A chokepoint that
-  /// layers its own approval flow — e.g. the harness autonomy dial, where
-  /// `actFreely` must pre-approve a `prompt` yet a hard `deny` rule must still
-  /// block — resolves first with this, then decides whether to call [check] or
-  /// its own port. Returns an all-allow resolution for an effect-free action.
+  /// Resolves an action to its policy decision WITHOUT surfacing confirmation
+  /// (pure read of the store + [PolicyResolver]). A chokepoint layering its own
+  /// approval flow (e.g. the harness autonomy dial) must still honor a resolved
+  /// `prompt` or `deny` and record the applied result with [recordOutcome].
+  /// Returns an all-allow resolution for an effect-free action.
   Future<ActionResolution> resolve({
     required String workspaceId,
     required Set<ActionClass> classes,
@@ -298,8 +297,8 @@ class ActionGuardService {
         // is unanswerable from a deny-only trail.
         audit(ActionDecision.allow);
         return GuardVerdict.allow(source: res.driving.source);
-      case ActionDecision.prompt when res.driving.rule?.enforcement ==
-          EnforcementLevel.advisory:
+      case ActionDecision.prompt
+          when res.driving.rule?.enforcement == EnforcementLevel.advisory:
         // ADVISORY: allow, but record that the rule matched. This is how a
         // strict rule gets adopted — roll it out advisory, read the audit
         // trail to see what it WOULD have blocked, then promote it.
@@ -439,7 +438,9 @@ class ActionGuardService {
     final constraint = ActionConstraint(
       refs: generalizedRefs,
       paths: generalizedPaths,
-      hosts: request.hosts.isEmpty ? null : (request.hosts.toSet().toList()..sort()),
+      hosts: request.hosts.isEmpty
+          ? null
+          : (request.hosts.toSet().toList()..sort()),
       commands: request.command == null ? null : [request.command!],
     );
     return constraint.isUnconstrained ? null : constraint;

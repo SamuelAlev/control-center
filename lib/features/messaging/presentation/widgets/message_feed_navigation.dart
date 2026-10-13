@@ -26,7 +26,7 @@ extension _NavigationMethods on _SpaceMessageFeedState {
       collapseHeader: item.collapseHeader,
       columnWidth: columnWidth,
     );
-    for (final steering in item.steeringMessages) {
+    for (final steering in item.inlineMessages) {
       extent += estimateMessageRowExtent(
         steering,
         collapseHeader: false,
@@ -44,7 +44,7 @@ extension _NavigationMethods on _SpaceMessageFeedState {
       final it = _items[i];
       if (it is MessageItem &&
           (it.message.id == messageId ||
-              it.steeringMessages.any((m) => m.id == messageId))) {
+              it.inlineMessages.any((m) => m.id == messageId))) {
         return _items.length - 1 - i;
       }
     }

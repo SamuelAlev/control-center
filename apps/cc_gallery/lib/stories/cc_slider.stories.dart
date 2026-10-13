@@ -176,9 +176,9 @@ class _SliderShowcaseState extends State<_SliderShowcase> {
           CcSlider(
             value: _named,
             min: 0,
-            max: 2,
-            divisions: 2,
-            stepLabels: const ['Low', 'Medium', 'High'],
+            max: 4,
+            divisions: 4,
+            stepLabels: const ['Low', 'Medium', 'High', 'Extra High', 'Max'],
             showValue: false,
             semanticLabel: 'Effort',
             onChanged: (v) => setState(() => _named = v),

@@ -10,33 +10,28 @@ import 'package:control_center/features/messaging/presentation/ide/editor/messag
 import 'package:control_center/features/messaging/presentation/ide/panels/agent_run_target.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/agents_section.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/goals_section.dart';
-import 'package:control_center/features/messaging/presentation/ide/panels/pull_requests_section.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/rigs_sections.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/terminals_section.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/plan_studio/providers/plan_studio_providers.dart';
 import 'package:control_center/features/plan_studio/providers/space_plan_execution_provider.dart';
-import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/features/todos/providers/todo_providers.dart';
-import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/router/routes.dart';
-import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/collapsible_sidebar_section.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The "General" IDE-sidebar panel: a session dashboard showing the active
-/// conversation's PULL REQUESTS (linked and branch-matched), TODOS,
-/// AGENTS (live run tree), TERMINALS and MACHINES (browser / computer rigs).
+/// conversation's TODOS, AGENTS (live run tree), TERMINALS and
+/// MACHINES (browser / computer rigs).
 class GeneralPanel extends ConsumerWidget {
   /// Creates a [GeneralPanel].
   const GeneralPanel({
     super.key,
     required this.workspaceId,
+    required this.focusedTabKey,
     required this.onOpenAgentRun,
     required this.onOpenAgentShell,
     required this.onFocusTerminal,
@@ -48,6 +43,9 @@ class GeneralPanel extends ConsumerWidget {
 
   /// The active workspace.
   final String workspaceId;
+
+  /// The focused tab in the live editor layout, not the route's last tab.
+  final String? focusedTabKey;
 
   /// Opens (or focuses) the tapped agent run — see [AgentRunTarget].
   final ValueChanged<AgentRunTarget> onOpenAgentRun;
@@ -83,7 +81,12 @@ class GeneralPanel extends ConsumerWidget {
         message: l10n.selectConversation,
       );
     }
-    final conversationId = focusedConversationId(context, ref, spaceId);
+    final tabKey = focusedTabKey;
+    final conversationId = tabKey == MessagingTabKinds.chatSpaceTabKey(spaceId)
+        ? ref.watch(standingConversationIdProvider(spaceId)).asData?.value
+        : tabKey == null
+        ? null
+        : MessagingTabKinds.conversationIdFromChatTabKey(tabKey);
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       children: [
@@ -94,8 +97,6 @@ class GeneralPanel extends ConsumerWidget {
             conversationId: conversationId,
             workspaceId: workspaceId,
           ),
-        // Linked review PRs and PRs opened from the space's branches.
-        _PullRequestsSection(spaceId: spaceId),
         // An approved plan shows up as this conversation's GOAL (inside TODOS),
         // not as a surface of its own.
         _TodosSection(
@@ -139,55 +140,8 @@ class GeneralPanel extends ConsumerWidget {
   }
 }
 
-/// The focused conversation in this space: the `?tab=chat:<id>` query when a
-/// chat tab is selected, otherwise the space's standing conversation.
-///
-/// Todos and goals are keyed by conversation, so the General pane has to
-/// follow the same identity the conversations sidebar uses. Layout restore
-/// does not rebuild this host on every tab press, so reading the URL (not
-/// the in-memory layout) is what makes switching conversations actually
-/// swap the list.
-String? focusedConversationId(
-  BuildContext context,
-  WidgetRef ref,
-  String spaceId,
-) {
-  final tabKey = GoRouter.maybeOf(
-    context,
-  )?.state.uri.queryParameters[editorTabQueryParam];
-  final standingId = ref.watch(standingConversationIdProvider(spaceId)).value;
-  if (tabKey == null || tabKey == MessagingTabKinds.chatSpaceTabKey(spaceId)) {
-    return standingId;
-  }
-  return MessagingTabKinds.conversationIdFromChatTabKey(tabKey) ?? standingId;
-}
-
 /// The messaging IDE sidebar's collapsible section shell now lives in
 /// [CollapsibleSidebarSection] (shared with the PR-detail Overview sidebar).
-
-// PULL REQUESTS
-
-/// The pull requests this conversation is about, from either direction.
-/// Linked review PRs and worktree/stack branch PRs share the sidebar inventory.
-class _PullRequestsSection extends ConsumerWidget {
-  const _PullRequestsSection({required this.spaceId});
-
-  final String spaceId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final prs = ref.watch(spacePullRequestsProvider(spaceId));
-    final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    return PullRequestsSection(
-      pullRequests: prs,
-      onOpen: workspaceId == null
-          ? null
-          : (pr) => context.push(
-              pullRequestDetailRoute(workspaceId, pr.repoFullName, pr.number),
-            ),
-    );
-  }
-}
 
 // TODOS
 

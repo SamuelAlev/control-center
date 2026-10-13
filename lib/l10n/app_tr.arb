@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "Dosyalarda ara",
   "ideNoContentMatches": "Eşleşme yok",
   "ideSourceControlCreatePr": "Pull request oluştur",
-  "ideSourceControlViewPr": "Pull request #{number} görüntüle",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "Değişiklik yok",
   "noReposInConversation": "Bu konuşmada depo yok",
   "ideSourceControlNoSpace": "Değişikliklerini görmek için bir konuşma açın",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "Oturum aç",
   "claudeAccountSignInAgain": "Yeniden oturum aç",
   "claudeAccountSignInHint": "Bunu sunucudaki bir terminalde çalıştırın. Oturumu tamamlamak için bir tarayıcı açar ve kimlik bilgisini bu hesabın dizinine yazar.",
-  "claudeAccountLongLivedToken": "Uzun ömürlü belirteç",
-  "claudeAccountUseLongLivedToken": "Uzun ömürlü belirteç kullan",
-  "claudeAccountReplaceLongLivedToken": "Uzun ömürlü belirteci değiştir",
-  "claudeAccountRemoveLongLivedToken": "Uzun ömürlü belirteci kaldır",
-  "claudeAccountLongLivedTokenHint": "Normal oturum açmanın yenilenmesi gerekir ve bir gecede sona erebilir. Uzun ömürlü belirteç yaklaşık bir yıl oturumu açık tutar. Bunu bir terminalde çalıştırın, tarayıcıda tamamlayın ve ardından yazdırdığı belirteci yapıştırın.",
-  "claudeAccountLongLivedTokenInvalid": "Bu, claude setup-token'dan alınmış bir belirteç değil. Belirteç sk-ant-oat01- ile başlar.",
   "claudeAccountSignedOut": "Oturum kapatıldı",
   "claudeAccountExpired": "Oturum süresi doldu",
   "claudeAccountExpiredDetail": "Oturum {when} tarihinde doldu. Bu hesabı kullanmak için yeniden oturum açın.",

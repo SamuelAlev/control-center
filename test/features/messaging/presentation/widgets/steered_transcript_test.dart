@@ -49,7 +49,7 @@ void main() {
       earlier,
     ], suppressOldestSeparator: true).whereType<MessageItem>().toList();
     expect(items.map((i) => i.message.id), ['run']);
-    expect(items.single.steeringMessages.map((m) => m.id), [
+    expect(items.single.inlineMessages.map((m) => m.id), [
       earlier.id,
       later.id,
     ]);
@@ -61,7 +61,7 @@ void main() {
       message,
     ], suppressOldestSeparator: true).whereType<MessageItem>().toList();
     expect(items.single.message, message);
-    expect(items.single.steeringMessages, isEmpty);
+    expect(items.single.inlineMessages, isEmpty);
   });
 
   test('a foreign conversation cannot absorb the steering message', () {
@@ -81,7 +81,7 @@ void main() {
       message,
     ], suppressOldestSeparator: true).whereType<MessageItem>().toList();
     expect(items.map((i) => i.message.id), [foreign.id, message.id]);
-    expect(items.first.steeringMessages, isEmpty);
+    expect(items.first.inlineMessages, isEmpty);
   });
 
   for (final direction in TextDirection.values) {
@@ -95,7 +95,7 @@ void main() {
             SingleChildScrollView(
               child: TranscriptFlow(
                 codeFont: 'monospace',
-                steeringMessages: [first, second],
+                inlineMessages: [first, second],
                 segments: [
                   TextSegment(
                     text: 'Checking the changed files.',

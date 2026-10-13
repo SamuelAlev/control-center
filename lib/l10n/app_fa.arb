@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "جستجو در فایل‌ها",
   "ideNoContentMatches": "موردی نیست",
   "ideSourceControlCreatePr": "ایجاد pull request",
-  "ideSourceControlViewPr": "نمایش pull request ⁨#{number}⁩",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "بدون تغییر",
   "noReposInConversation": "مخزنی در این گفتگو نیست",
   "ideSourceControlNoSpace": "گفتگویی باز کنید تا تغییراتش را ببینید",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "ورود",
   "claudeAccountSignInAgain": "ورود دوباره",
   "claudeAccountSignInHint": "این را در ترمینال روی سرور اجرا کنید. مرورگر را برای اتمام ورود باز می‌کند و اعتبارنامه را در پوشهٔ این حساب می‌نویسد.",
-  "claudeAccountLongLivedToken": "توکن بلندمدت",
-  "claudeAccountUseLongLivedToken": "استفاده از توکن بلندمدت",
-  "claudeAccountReplaceLongLivedToken": "جایگزینی توکن بلندمدت",
-  "claudeAccountRemoveLongLivedToken": "حذف توکن بلندمدت",
-  "claudeAccountLongLivedTokenHint": "ورود معمولی باید تمدید شود و ممکن است یک‌شبه منقضی شود. توکن بلندمدت حدود یک سال معتبر می‌ماند. این دستور را در ترمینال اجرا کنید، مراحل را در مرورگر تمام کنید و سپس توکنی را که چاپ می‌کند جای‌گذاری کنید.",
-  "claudeAccountLongLivedTokenInvalid": "این توکنِ claude setup-token نیست. با sk-ant-oat01- شروع می‌شود.",
   "claudeAccountSignedOut": "خارج‌شده",
   "claudeAccountExpired": "ورود منقضی شد",
   "claudeAccountExpiredDetail": "ورود در {when} منقضی شد. برای استفاده از این حساب دوباره وارد شوید.",

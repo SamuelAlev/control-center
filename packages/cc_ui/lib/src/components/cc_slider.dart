@@ -355,9 +355,19 @@ class _CcSliderState extends State<CcSlider> {
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final width = constraints.maxWidth.isFinite
+                      final availableWidth = constraints.maxWidth.isFinite
                           ? constraints.maxWidth
                           : 160.0;
+                      final labels = widget.stepLabels;
+                      // Named stops share the label cells' centres, including
+                      // the endpoints. Keep the thumb inside those cells.
+                      final trackInset = labels == null
+                          ? 0.0
+                          : ((availableWidth / labels.length -
+                                        CcSlider._thumbSize) /
+                                    2)
+                                .clamp(0.0, double.infinity);
+                      final width = availableWidth - trackInset * 2;
                       final track = MouseRegion(
                         onEnter: _enabled
                             ? (e) => _aimAt(
@@ -425,14 +435,18 @@ class _CcSliderState extends State<CcSlider> {
                           ),
                         ),
                       );
-                      final labels = widget.stepLabels;
                       if (labels == null) {
                         return track;
                       }
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          track,
+                          Padding(
+                            padding: EdgeInsetsDirectional.symmetric(
+                              horizontal: trackInset,
+                            ),
+                            child: track,
+                          ),
                           _CcSliderStepLabels(
                             labels: labels,
                             selectedIndex: _stepIndex(_clamped, labels.length),
@@ -534,7 +548,6 @@ class _CcSliderStepLabels extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final last = labels.length - 1;
     return ExcludeSemantics(
       child: Padding(
         key: CcSlider.stepLabelsKey,
@@ -547,11 +560,7 @@ class _CcSliderStepLabels extends StatelessWidget {
                   labels[i],
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  textAlign: i == 0
-                      ? TextAlign.start
-                      : i == last
-                      ? TextAlign.end
-                      : TextAlign.center,
+                  textAlign: TextAlign.center,
                   style: CcFonts.ui(
                     textStyle: CcTypography.caption.copyWith(
                       fontWeight: i == selectedIndex

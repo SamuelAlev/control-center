@@ -7,7 +7,6 @@ import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_po
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/value_objects/agent_config_hash.dart';
 import 'package:cc_harness/cancellation.dart';
-import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/evaluation/controlled_claude_mcp_bridge.dart';
 import 'package:cc_infra/src/sandboxing/claude_stream_json.dart';
@@ -472,9 +471,6 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
     required void Function() stopAttempt,
     required void Function(Map<String, dynamic>) onInitEvent,
   }) async {
-    final accountToken = localApiEndpointForTesting == null
-        ? readClaudeLongLivedToken(configDir)
-        : null;
     final process = await Process.start(
       executable,
       args,
@@ -483,7 +479,6 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
         'PATH': _pathFor(executable),
         'HOME': home,
         'CLAUDE_CONFIG_DIR': configDir,
-        claudeLongLivedTokenEnvKey: ?accountToken,
         'MCP_DISCOVERY_CACHE': '0',
         if (localApiEndpointForTesting != null)
           'ANTHROPIC_BASE_URL': localApiEndpointForTesting!.toString(),

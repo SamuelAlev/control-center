@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_infra/src/claude_accounts/claude_account_store.dart';
-import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -990,127 +989,28 @@ void main() {
     });
   });
 
-  group('long-lived token', () {
-    const token = 'sk-ant-oat01-abcdefghijklmnopqrstuvwxyz012345';
+  test('obsolete token files do not hide an expired login', () async {
+    final account = await store.create(label: 'Work');
+    final dir = store.configDirFor(account.id);
+    File(p.join(dir, '.cc-long-lived-token.json')).writeAsStringSync(
+      jsonEncode({
+        'token': 'sk-ant-oat01-abcdefghijklmnopqrstuvwxyz012345',
+        'saved_at': DateTime.utc(2026).toIso8601String(),
+      }),
+    );
+    File(p.join(dir, '.credentials.json')).writeAsStringSync(
+      jsonEncode({
+        'claudeAiOauth': {'accessToken': 'expired', 'expiresAt': 1},
+      }),
+    );
+    proc.results['auth status'] = ProcessResult(0, 0, _statusJson(), '');
 
-    test('refuses a value that is not a setup token', () async {
-      final a = await store.create(label: 'Work');
-      for (final bad in [
-        '',
-        'sk-ant-api03-abcdefghijklmnopqrstuvwxyz',
-        'sk-ant-oat01-short',
-        'sk-ant-oat01-abcdefghijklmnopqrstuvwxyz\nEVIL=1',
-        'Your OAuth token: $token',
-      ]) {
-        await expectLater(
-          store.setLongLivedToken(a.id, bad),
-          throwsArgumentError,
-          reason: bad,
-        );
-      }
-      expect(readClaudeLongLivedToken(store.configDirFor(a.id)), isNull);
-    });
-
-    test('refuses an unknown account', () async {
-      await expectLater(
-        store.setLongLivedToken('nope', token),
-        throwsArgumentError,
-      );
-    });
-
-    test('is stored in the account directory, owner-only', () async {
-      final a = await store.create(label: 'Work');
-      await store.setLongLivedToken(a.id, '  $token\n');
-      final dir = store.configDirFor(a.id);
-      expect(readClaudeLongLivedToken(dir), token);
-      if (!Platform.isWindows) {
-        final mode = claudeLongLivedTokenFile(dir).statSync().mode & 0x1ff;
-        expect(mode, 0x180, reason: '0600');
-      }
-    });
-
-    test('reaches auth status and the run environment', () async {
-      final a = await store.create(label: 'Work');
-      await store.setLongLivedToken(a.id, token);
-      expect(store.runEnvironmentFor(a.id), {
-        'CLAUDE_CONFIG_DIR': store.configDirFor(a.id),
-        claudeLongLivedTokenEnvKey: token,
-      });
-      proc.results['auth status'] = ProcessResult(0, 0, _statusJson(), '');
-      final listed = (await store.listWithStatus()).single;
-      expect(listed.usesLongLivedToken, isTrue);
-      expect(listed.longLivedTokenSavedAt, isNotNull);
-      final status = proc.calls.lastWhere(
-        (c) => c.args.join(' ').startsWith('auth status'),
-      );
-      expect(status.env?[claudeLongLivedTokenEnvKey], token);
-    });
-
-    test('the token never reaches the wire shape', () async {
-      final a = await store.create(label: 'Work');
-      await store.setLongLivedToken(a.id, token);
-      proc.results['auth status'] = ProcessResult(0, 0, _statusJson(), '');
-      final listed = (await store.listWithStatus()).single;
-      expect(jsonEncode(listed.toJson()), isNot(contains(token)));
-    });
-
-    test('skips the keychain mirror and counts as signed in', () async {
-      final a = await store.create(label: 'Work');
-      await store.setLongLivedToken(a.id, token);
-      proc.calls.clear();
-      expect(await store.syncCredentialFromKeychain(a.id), isTrue);
-      expect(
-        proc.calls.where((c) => c.exe == 'security'),
-        isEmpty,
-        reason: 'nothing to mirror: the token is the credential',
-      );
-      final avail = await store.availability();
-      expect(avail[a.id]?.signedIn, isTrue);
-    });
-
-    test('a stale interactive credential beside it is not an expiry', () async {
-      // Runs use the token, so nothing refreshes the old file any more; its
-      // lapsed `expiresAt` must not mark the account expired.
-      final a = await store.create(label: 'Work');
-      File(
-        p.join(store.configDirFor(a.id), '.credentials.json'),
-      ).writeAsStringSync(
-        jsonEncode({
-          'claudeAiOauth': {'accessToken': 'old', 'expiresAt': 1},
-        }),
-      );
-      await store.setLongLivedToken(a.id, token);
-      expect(store.credentialExpiry(a.id), isNull);
-      expect(store.credentialBeyondRepair(a.id, DateTime.now()), isFalse);
-    });
-
-    test('pasting a new token clears a recorded auth failure', () async {
-      final a = await store.create(label: 'Work');
-      await store.setLongLivedToken(a.id, token);
-      await store.markAuthFailed(a.id, reason: 'token expired');
-      expect((await store.availability())[a.id]?.signedIn, isFalse);
-      await store.setLongLivedToken(a.id, token);
-      expect((await store.list()).single.authFailedAt, isNull);
-      expect((await store.availability())[a.id]?.signedIn, isTrue);
-    });
-
-    test('clearing it drops back to the directory\'s own login', () async {
-      final a = await store.create(label: 'Work');
-      await store.setLongLivedToken(a.id, token);
-      await store.clearLongLivedToken(a.id);
-      expect(readClaudeLongLivedToken(store.configDirFor(a.id)), isNull);
-      expect(
-        store.runEnvironmentFor(a.id).containsKey(claudeLongLivedTokenEnvKey),
-        isFalse,
-      );
-    });
-
-    test('setupTokenCommand is scoped to the account directory', () async {
-      final a = await store.create(label: 'Work');
-      final cmd = store.setupTokenCommand(a.id);
-      expect(cmd.argv, ['claude', 'setup-token']);
-      expect(cmd.environment['CLAUDE_CONFIG_DIR'], store.configDirFor(a.id));
-    });
+    expect(
+      store.credentialExpiry(account.id),
+      DateTime.fromMillisecondsSinceEpoch(1),
+    );
+    expect(store.credentialBeyondRepair(account.id, DateTime.now()), isTrue);
+    expect((await store.listWithStatus()).single.loggedIn, isFalse);
   });
 
   group('prepareForRun — the interactive gates a dispatch cannot answer', () {

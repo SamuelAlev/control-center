@@ -8850,11 +8850,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Pull request maken';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Pull request #$number bekijken';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Geen wijzigingen';
 
   @override
@@ -13797,27 +13792,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Voer dit uit in een terminal op de server. Er wordt een browser geopend om het aanmelden te voltooien en de referentie wordt in de map van dit account geschreven.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Langlevend token';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'Een langlevend token gebruiken';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => 'Langlevend token vervangen';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken =>
-      'Langlevend token verwijderen';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'Een gewone aanmelding moet worden vernieuwd en kan van de ene op de andere dag verlopen. Een langlevend token blijft ongeveer een jaar aangemeld. Voer dit uit in een terminal, rond af in de browser en plak daarna het token dat wordt getoond.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Dat is geen token van claude setup-token. Het begint met sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Afgemeld';

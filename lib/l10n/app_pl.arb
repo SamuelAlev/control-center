@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "Szukaj w plikach",
   "ideNoContentMatches": "Brak wyników",
   "ideSourceControlCreatePr": "Utwórz pull request",
-  "ideSourceControlViewPr": "Zobacz pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "Brak zmian",
   "noReposInConversation": "Brak repozytoriów w tej rozmowie",
   "ideSourceControlNoSpace": "Otwórz rozmowę, aby zobaczyć jej zmiany",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "Zaloguj się",
   "claudeAccountSignInAgain": "Zaloguj się ponownie",
   "claudeAccountSignInHint": "Uruchom to w terminalu na serwerze. Otwiera przeglądarkę, aby dokończyć logowanie, i zapisuje dane uwierzytelniające w katalogu tego konta.",
-  "claudeAccountLongLivedToken": "Token długoterminowy",
-  "claudeAccountUseLongLivedToken": "Użyj tokenu długoterminowego",
-  "claudeAccountReplaceLongLivedToken": "Zastąp token długoterminowy",
-  "claudeAccountRemoveLongLivedToken": "Usuń token długoterminowy",
-  "claudeAccountLongLivedTokenHint": "Zwykłe logowanie trzeba odnawiać i może wygasnąć w ciągu nocy. Token długoterminowy pozostaje zalogowany przez około rok. Uruchom to polecenie w terminalu, dokończ w przeglądarce, a następnie wklej wyświetlony token.",
-  "claudeAccountLongLivedTokenInvalid": "To nie jest token z claude setup-token. Zaczyna się od sk-ant-oat01-.",
   "claudeAccountSignedOut": "Wylogowano",
   "claudeAccountExpired": "Logowanie wygasło",
   "claudeAccountExpiredDetail": "Logowanie wygasło {when}. Zaloguj się ponownie, aby używać tego konta.",

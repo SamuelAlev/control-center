@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "Keresés a fájlokban",
   "ideNoContentMatches": "Nincs találat",
   "ideSourceControlCreatePr": "Pull request létrehozása",
-  "ideSourceControlViewPr": "#{number} pull request megtekintése",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "Nincsenek módosítások",
   "noReposInConversation": "Nincsenek tárolók ebben a beszélgetésben",
   "ideSourceControlNoSpace": "Nyisson beszélgetést a módosításainak megtekintéséhez",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "Bejelentkezés",
   "claudeAccountSignInAgain": "Bejelentkezés újra",
   "claudeAccountSignInHint": "Futtassa ezt egy terminálban a szerveren. Böngészőt nyit a bejelentkezés befejezéséhez, és a hitelesítő adatot ebbe a fiók könyvtárába írja.",
-  "claudeAccountLongLivedToken": "Hosszú élettartamú token",
-  "claudeAccountUseLongLivedToken": "Hosszú élettartamú token használata",
-  "claudeAccountReplaceLongLivedToken": "Hosszú élettartamú token cseréje",
-  "claudeAccountRemoveLongLivedToken": "Hosszú élettartamú token eltávolítása",
-  "claudeAccountLongLivedTokenHint": "A normál bejelentkezést meg kell újítani, és egyik napról a másikra lejárhat. A hosszú élettartamú token nagyjából egy évig bejelentkezve marad. Futtasd ezt egy terminálban, fejezd be a böngészőben, majd illeszd be a kiírt tokent.",
-  "claudeAccountLongLivedTokenInvalid": "Ez nem a claude setup-token által adott token. A token így kezdődik: sk-ant-oat01-.",
   "claudeAccountSignedOut": "Kijelentkezve",
   "claudeAccountExpired": "A bejelentkezés lejárt",
   "claudeAccountExpiredDetail": "A bejelentkezés {when} időpontban járt le. Jelentkezzen be újra a fiók használatához.",

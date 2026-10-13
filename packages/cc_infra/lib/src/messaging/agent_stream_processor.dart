@@ -744,9 +744,24 @@ class AgentStreamProcessor {
       return;
     }
 
-    final preview = content.length > 120
-        ? '${content.substring(0, 120)}…'
-        : content;
+    // Stored content includes every progress update. Completion previews use
+    // the last visible answer, not the opening narration; both terminal paths
+    // have already closed the folder's text buffers before reaching here.
+    var previewContent = content;
+    final segments = ctx.folder.segments;
+    for (var i = segments.length - 1; i >= 0; i--) {
+      final segment = segments[i];
+      if (segment is TextSegment) {
+        final text = segment.text.trim();
+        if (text.isNotEmpty) {
+          previewContent = text;
+          break;
+        }
+      }
+    }
+    final preview = previewContent.length > 120
+        ? '${previewContent.substring(0, 120)}…'
+        : previewContent;
     // Never ping about a message with nothing to say: a content-less turn used
     // to surface as a notification row with the agent's name and a blank body.
     // The run's own completion event still fires, so nothing is lost.

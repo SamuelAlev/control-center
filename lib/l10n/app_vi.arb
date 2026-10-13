@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "Tìm trong tệp",
   "ideNoContentMatches": "Không có kết quả khớp",
   "ideSourceControlCreatePr": "Create pull request",
-  "ideSourceControlViewPr": "Xem pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "Không có thay đổi",
   "noReposInConversation": "Không có kho lưu trữ trong cuộc trò chuyện này",
   "ideSourceControlNoSpace": "Mở một cuộc trò chuyện để xem thay đổi của nó",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "Đăng nhập",
   "claudeAccountSignInAgain": "Đăng nhập lại",
   "claudeAccountSignInHint": "Chạy lệnh này trong terminal trên máy chủ. Nó mở trình duyệt để hoàn tất đăng nhập và ghi thông tin xác thực vào thư mục của tài khoản này.",
-  "claudeAccountLongLivedToken": "Mã thông báo dài hạn",
-  "claudeAccountUseLongLivedToken": "Dùng mã thông báo dài hạn",
-  "claudeAccountReplaceLongLivedToken": "Thay mã thông báo dài hạn",
-  "claudeAccountRemoveLongLivedToken": "Xóa mã thông báo dài hạn",
-  "claudeAccountLongLivedTokenHint": "Đăng nhập thông thường phải được gia hạn và có thể hết hạn chỉ sau một đêm. Mã thông báo dài hạn giữ đăng nhập trong khoảng một năm. Chạy lệnh này trong terminal, hoàn tất trên trình duyệt, rồi dán mã thông báo mà lệnh in ra.",
-  "claudeAccountLongLivedTokenInvalid": "Đây không phải mã thông báo từ claude setup-token. Mã bắt đầu bằng sk-ant-oat01-.",
   "claudeAccountSignedOut": "Đã đăng xuất",
   "claudeAccountExpired": "Đăng nhập đã hết hạn",
   "claudeAccountExpiredDetail": "Đăng nhập hết hạn lúc {when}. Đăng nhập lại để dùng tài khoản này.",

@@ -8737,11 +8737,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get ideSourceControlCreatePr => 'สร้าง pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'ดู pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'ไม่มีการเปลี่ยนแปลง';
 
   @override
@@ -13631,26 +13626,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'รันสิ่งนี้ในเทอร์มินัลบนเซิร์ฟเวอร์ จะเปิดเบราว์เซอร์เพื่อลงชื่อเข้าใช้ให้เสร็จ และเขียนข้อมูลรับรองลงไดเรกทอรีของบัญชีนี้';
-
-  @override
-  String get claudeAccountLongLivedToken => 'โทเค็นระยะยาว';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'ใช้โทเค็นระยะยาว';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => 'แทนที่โทเค็นระยะยาว';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => 'นำโทเค็นระยะยาวออก';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'การลงชื่อเข้าใช้ปกติต้องต่ออายุและอาจหมดอายุภายในคืนเดียว โทเค็นระยะยาวจะคงการลงชื่อเข้าใช้ไว้ประมาณหนึ่งปี เรียกใช้คำสั่งนี้ในเทอร์มินัล ทำให้เสร็จในเบราว์เซอร์ แล้ววางโทเค็นที่แสดงออกมา';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'นี่ไม่ใช่โทเค็นจาก claude setup-token โทเค็นจะขึ้นต้นด้วย sk-ant-oat01-';
 
   @override
   String get claudeAccountSignedOut => 'ลงชื่อออกแล้ว';

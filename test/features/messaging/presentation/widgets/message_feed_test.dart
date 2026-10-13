@@ -43,22 +43,16 @@ Widget _routedApp(Widget child) => MaterialApp.router(
   ),
 );
 
-/// A no-host [SpaceReadRepository] fake. The real provider is RPC-flipped and
-/// would open an in-process host from a widget test; what matters here is only
-/// that stamping the cursor is reachable without one, and which conversation
-/// each stamp named.
+/// A no-host read-cursor sink for scroll and rendering tests. Persisted
+/// notification transitions are covered by message_feed_notification_test.
 class _FakeSpaceReadRepository implements SpaceReadRepository {
-  final List<({String spaceId, String? conversationId})> stamps = [];
-
   @override
   Future<void> markSpaceRead(
     String workspaceId,
     String spaceId,
     String userId, {
     String? conversationId,
-  }) async {
-    stamps.add((spaceId: spaceId, conversationId: conversationId));
-  }
+  }) async {}
 
   @override
   Stream<DateTime?> watchUserLastReadAt(
@@ -626,64 +620,6 @@ void main() {
     // Offset 0 in a reverse list IS the newest end.
     expect(_feedPosition(tester).pixels, 0);
     expect(find.text('Message 59', findRichText: true), findsOneWidget);
-
-    await tester.pumpWidget(const SizedBox());
-    await tester.pumpAndSettle(const Duration(seconds: 5));
-  });
-
-  testWidgets('opening a conversation stamps the cursor with its id', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(400, 600);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
-    // Distinct ids: a conversation id is never a space id, and the stamp has
-    // to carry both for the host to clear that conversation's notifications.
-    final messages = [
-      for (final m in _tallSpace(count: 3))
-        m.copyWith(spaceId: 'space-1', conversationId: 'conv-1'),
-    ];
-    final reads = _FakeSpaceReadRepository();
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          activeWorkspaceIdOverride(),
-          spaceFeedWindowedProvider((
-            spaceId: 'space-1',
-            conversationId: 'conv-1',
-          )).overrideWith(
-            (ref) => Stream.value((messages: messages, hasMore: false)),
-          ),
-          spaceTurnRelayProvider('space-1').overrideWith((ref) {}),
-          codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-          spaceUserLastReadAtProvider(
-            'space-1',
-          ).overrideWith((ref) => Stream.value(null)),
-          spaceReadRepositoryProvider.overrideWithValue(reads),
-          agentDetailProvider('agent-1').overrideWith((ref) async => null),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: _wrap(
-            const SpaceMessageFeed(
-              spaceId: 'space-1',
-              conversationId: 'conv-1',
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle(const Duration(seconds: 5));
-    // The stamp is debounced; settling does not wait on a timer.
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(reads.stamps, [(spaceId: 'space-1', conversationId: 'conv-1')]);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle(const Duration(seconds: 5));

@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "Поиск в файлах",
   "ideNoContentMatches": "Нет совпадений",
   "ideSourceControlCreatePr": "Создать pull request",
-  "ideSourceControlViewPr": "Открыть pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "Нет изменений",
   "noReposInConversation": "В этом разговоре нет репозиториев",
   "ideSourceControlNoSpace": "Откройте разговор, чтобы увидеть его изменения",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "Войти",
   "claudeAccountSignInAgain": "Войти снова",
   "claudeAccountSignInHint": "Выполните это в терминале на сервере. Откроется браузер для завершения входа, а учётные данные запишутся в каталог этой учётной записи.",
-  "claudeAccountLongLivedToken": "Долгосрочный токен",
-  "claudeAccountUseLongLivedToken": "Использовать долгосрочный токен",
-  "claudeAccountReplaceLongLivedToken": "Заменить долгосрочный токен",
-  "claudeAccountRemoveLongLivedToken": "Удалить долгосрочный токен",
-  "claudeAccountLongLivedTokenHint": "Обычный вход нужно продлевать, и он может истечь за ночь. Долгосрочный токен остаётся действительным около года. Выполните эту команду в терминале, завершите вход в браузере, затем вставьте выведенный токен.",
-  "claudeAccountLongLivedTokenInvalid": "Это не токен от claude setup-token. Он начинается с sk-ant-oat01-.",
   "claudeAccountSignedOut": "Выход выполнен",
   "claudeAccountExpired": "Срок входа истёк",
   "claudeAccountExpiredDetail": "Срок входа истёк {when}. Войдите снова, чтобы использовать эту учётную запись.",

@@ -8947,11 +8947,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Utwórz pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Zobacz pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Brak zmian';
 
   @override
@@ -13958,27 +13953,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Uruchom to w terminalu na serwerze. Otwiera przeglądarkę, aby dokończyć logowanie, i zapisuje dane uwierzytelniające w katalogu tego konta.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Token długoterminowy';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'Użyj tokenu długoterminowego';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken =>
-      'Zastąp token długoterminowy';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => 'Usuń token długoterminowy';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'Zwykłe logowanie trzeba odnawiać i może wygasnąć w ciągu nocy. Token długoterminowy pozostaje zalogowany przez około rok. Uruchom to polecenie w terminalu, dokończ w przeglądarce, a następnie wklej wyświetlony token.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'To nie jest token z claude setup-token. Zaczyna się od sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Wylogowano';

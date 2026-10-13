@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "فائلوں میں تلاش",
   "ideNoContentMatches": "کوئی میل نہیں",
   "ideSourceControlCreatePr": "pull request بنائیں",
-  "ideSourceControlViewPr": "pull request ⁨#{number}⁩ دیکھیں",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "کوئی تبدیلی نہیں",
   "noReposInConversation": "اس گفتگو میں کوئی ریپوزٹری نہیں",
   "ideSourceControlNoSpace": "اس کی تبدیلیاں دیکھنے کے لیے گفتگو کھولیں",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "سائن اِن",
   "claudeAccountSignInAgain": "دوبارہ سائن اِن",
   "claudeAccountSignInHint": "سرور پر ٹرمینل میں یہ چلائیں۔ لاگ اِن مکمل کرنے کے لیے براؤزر کھلتا ہے، اور کریڈینشل اس اکاؤنٹ کی ڈائریکٹری میں لکھتا ہے۔",
-  "claudeAccountLongLivedToken": "طویل مدتی ٹوکن",
-  "claudeAccountUseLongLivedToken": "طویل مدتی ٹوکن استعمال کریں",
-  "claudeAccountReplaceLongLivedToken": "طویل مدتی ٹوکن تبدیل کریں",
-  "claudeAccountRemoveLongLivedToken": "طویل مدتی ٹوکن ہٹائیں",
-  "claudeAccountLongLivedTokenHint": "عام سائن ان کی تجدید کرنی پڑتی ہے اور یہ راتوں رات ختم ہو سکتا ہے۔ طویل مدتی ٹوکن تقریباً ایک سال تک سائن ان رہتا ہے۔ یہ کمانڈ ٹرمینل میں چلائیں، براؤزر میں مکمل کریں، پھر اس کا پرنٹ کیا ہوا ٹوکن پیسٹ کریں۔",
-  "claudeAccountLongLivedTokenInvalid": "یہ claude setup-token کا ٹوکن نہیں ہے۔ یہ sk-ant-oat01- سے شروع ہوتا ہے۔",
   "claudeAccountSignedOut": "سائن آؤٹ",
   "claudeAccountExpired": "سائن اِن ختم",
   "claudeAccountExpiredDetail": "سائن اِن {when} پر ختم ہوا۔ اس اکاؤنٹ کے لیے دوبارہ سائن اِن کریں۔",

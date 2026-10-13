@@ -254,9 +254,9 @@ class SandboxPolicyResolver {
   /// [homeDir] is the real user home (for secrets/mandatory-deny expansion).
   /// [runDir] is the CC-managed writable run directory for the session.
   ///
-  /// GitHub is on the allowlist whenever the network is: what an agent may DO
-  /// there (push, open a PR) is the action policy's call, and the token in its
-  /// environment cannot push — pushes go through the agent run gateway.
+  /// GitHub is on the allowlist whenever the network is. Shell preflight and
+  /// the push gateway enforce action policy; only a narrowed GitHub App token
+  /// also prevents direct pushes by credential scope. Fallback PATs do not.
   SandboxPolicySpec resolve({
     required SandboxSpec spec,
     String? homeDir,

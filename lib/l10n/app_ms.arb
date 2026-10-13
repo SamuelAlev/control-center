@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "Cari dalam fail",
   "ideNoContentMatches": "Tiada padanan",
   "ideSourceControlCreatePr": "Cipta pull request",
-  "ideSourceControlViewPr": "Lihat pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "Tiada perubahan",
   "noReposInConversation": "Tiada repositori dalam perbualan ini",
   "ideSourceControlNoSpace": "Buka perbualan untuk melihat perubahannya",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "Log masuk",
   "claudeAccountSignInAgain": "Log masuk semula",
   "claudeAccountSignInHint": "Jalankan ini dalam terminal pada pelayan. Ia membuka penyemak imbas untuk menyelesaikan log masuk, dan menulis kelayakan ke dalam direktori akaun ini.",
-  "claudeAccountLongLivedToken": "Token jangka panjang",
-  "claudeAccountUseLongLivedToken": "Guna token jangka panjang",
-  "claudeAccountReplaceLongLivedToken": "Ganti token jangka panjang",
-  "claudeAccountRemoveLongLivedToken": "Alih keluar token jangka panjang",
-  "claudeAccountLongLivedTokenHint": "Log masuk biasa perlu diperbaharui dan boleh tamat tempoh semalaman. Token jangka panjang kekal log masuk selama kira-kira setahun. Jalankan ini dalam terminal, selesaikan dalam pelayar, kemudian tampal token yang dicetaknya.",
-  "claudeAccountLongLivedTokenInvalid": "Itu bukan token daripada claude setup-token. Ia bermula dengan sk-ant-oat01-.",
   "claudeAccountSignedOut": "Telah log keluar",
   "claudeAccountExpired": "Log masuk luput",
   "claudeAccountExpiredDetail": "Log masuk luput pada {when}. Log masuk semula untuk menggunakan akaun ini.",

@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "在檔案中搜尋",
   "ideNoContentMatches": "沒有符合項目",
   "ideSourceControlCreatePr": "建立 pull request",
-  "ideSourceControlViewPr": "檢視 pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "沒有變更",
   "noReposInConversation": "此對話中沒有儲存庫",
   "ideSourceControlNoSpace": "開啟對話以查看其變更",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "登入",
   "claudeAccountSignInAgain": "再次登入",
   "claudeAccountSignInHint": "請在伺服器上的終端機執行此命令。它會開啟瀏覽器完成登入，並將憑證寫入此帳戶的目錄。",
-  "claudeAccountLongLivedToken": "長期權杖",
-  "claudeAccountUseLongLivedToken": "使用長期權杖",
-  "claudeAccountReplaceLongLivedToken": "取代長期權杖",
-  "claudeAccountRemoveLongLivedToken": "移除長期權杖",
-  "claudeAccountLongLivedTokenHint": "一般登入需要續期，可能一夜之間就過期。長期權杖可維持登入約一年。請在終端機中執行此指令，在瀏覽器中完成登入，然後貼上它輸出的權杖。",
-  "claudeAccountLongLivedTokenInvalid": "這不是 claude setup-token 產生的權杖。權杖以 sk-ant-oat01- 開頭。",
   "claudeAccountSignedOut": "已登出",
   "claudeAccountExpired": "登入已過期",
   "claudeAccountExpiredDetail": "登入已於 {when} 過期。請再次登入以使用此帳戶。",

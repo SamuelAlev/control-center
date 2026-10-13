@@ -11,8 +11,7 @@ import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 ///
 /// Only [id] and [label] are CC's. [email], [orgName], [subscriptionType],
 /// [loggedIn] are read back from `claude auth status --json` against this
-/// directory — never written by us (the operator runs `claude auth login`, or
-/// pastes the token `claude setup-token` prints).
+/// directory — never written by us (the operator runs `claude auth login`).
 class ClaudeAccount {
   /// Creates a [ClaudeAccount].
   const ClaudeAccount({
@@ -28,8 +27,6 @@ class ClaudeAccount {
     this.authFailedAt,
     this.authFailedReason,
     this.credentialExpiresAt,
-    this.usesLongLivedToken = false,
-    this.longLivedTokenSavedAt,
   });
 
   /// Reads the RPC wire shape.
@@ -49,10 +46,6 @@ class ClaudeAccount {
     authFailedReason: json['auth_failed_reason'] as String?,
     credentialExpiresAt: DateTime.tryParse(
       json['credential_expires_at'] as String? ?? '',
-    ),
-    usesLongLivedToken: json['uses_long_lived_token'] as bool? ?? false,
-    longLivedTokenSavedAt: DateTime.tryParse(
-      json['long_lived_token_saved_at'] as String? ?? '',
     ),
   );
 
@@ -136,20 +129,6 @@ class ClaudeAccount {
   /// reported, never repaired: the fix is `claude auth login`.
   final DateTime? credentialExpiresAt;
 
-  /// Whether runs on this account authenticate with a long-lived token from
-  /// `claude setup-token` rather than the interactive login's credential.
-  ///
-  /// The interactive credential carries a rotating refresh token, so any two
-  /// copies of it (the keychain item and the file a sandboxed run reads) race,
-  /// and the loser is signed out. A setup token never refreshes, so an account
-  /// on one stays signed in until the token itself lapses, about a year later.
-  /// Read from the account directory on every list, never stored here.
-  final bool usesLongLivedToken;
-
-  /// When the long-lived token was saved. The CLI does not report a setup
-  /// token's expiry, so this is the date the operator can reason from.
-  final DateTime? longLivedTokenSavedAt;
-
   /// Whether the account is cooling off at [now] (defaults to the wall clock).
   bool isRateLimited([DateTime? now]) {
     final until = rateLimitedUntil;
@@ -194,9 +173,6 @@ class ClaudeAccount {
     bool clearAuthFailure = false,
     DateTime? credentialExpiresAt,
     bool clearCredentialExpiresAt = false,
-    bool? usesLongLivedToken,
-    DateTime? longLivedTokenSavedAt,
-    bool clearLongLivedTokenSavedAt = false,
   }) => ClaudeAccount(
     id: id,
     label: label ?? this.label,
@@ -216,10 +192,6 @@ class ClaudeAccount {
     credentialExpiresAt: clearCredentialExpiresAt
         ? null
         : (credentialExpiresAt ?? this.credentialExpiresAt),
-    usesLongLivedToken: usesLongLivedToken ?? this.usesLongLivedToken,
-    longLivedTokenSavedAt: clearLongLivedTokenSavedAt
-        ? null
-        : (longLivedTokenSavedAt ?? this.longLivedTokenSavedAt),
   );
 
   /// What the on-disk registry stores: only the fields Control Center owns.
@@ -265,11 +237,6 @@ class ClaudeAccount {
     // `logged_in` would.
     if (credentialExpiresAt != null)
       'credential_expires_at': credentialExpiresAt!.toIso8601String(),
-    // Whether a token is present, never the token: the client only ever sees
-    // identity and quota.
-    if (usesLongLivedToken) 'uses_long_lived_token': true,
-    if (longLivedTokenSavedAt != null)
-      'long_lived_token_saved_at': longLivedTokenSavedAt!.toIso8601String(),
   };
 
   @override
@@ -288,9 +255,7 @@ class ClaudeAccount {
           rateLimitedUntil == other.rateLimitedUntil &&
           authFailedAt == other.authFailedAt &&
           authFailedReason == other.authFailedReason &&
-          credentialExpiresAt == other.credentialExpiresAt &&
-          usesLongLivedToken == other.usesLongLivedToken &&
-          longLivedTokenSavedAt == other.longLivedTokenSavedAt;
+          credentialExpiresAt == other.credentialExpiresAt;
 
   @override
   int get hashCode => Object.hash(
@@ -306,8 +271,6 @@ class ClaudeAccount {
     authFailedAt,
     authFailedReason,
     credentialExpiresAt,
-    usesLongLivedToken,
-    longLivedTokenSavedAt,
   );
 }
 

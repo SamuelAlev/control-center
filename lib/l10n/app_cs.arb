@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "Hledat v souborech",
   "ideNoContentMatches": "Žádné shody",
   "ideSourceControlCreatePr": "Vytvořit pull request",
-  "ideSourceControlViewPr": "Zobrazit pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "Žádné změny",
   "noReposInConversation": "V této konverzaci nejsou žádné repozitáře",
   "ideSourceControlNoSpace": "Otevřete konverzaci a uvidíte její změny",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "Přihlásit se",
   "claudeAccountSignInAgain": "Přihlásit se znovu",
   "claudeAccountSignInHint": "Spusťte toto v terminálu na serveru. Otevře prohlížeč k dokončení přihlášení a zapíše přihlašovací údaje do adresáře tohoto účtu.",
-  "claudeAccountLongLivedToken": "Dlouhodobý token",
-  "claudeAccountUseLongLivedToken": "Použít dlouhodobý token",
-  "claudeAccountReplaceLongLivedToken": "Nahradit dlouhodobý token",
-  "claudeAccountRemoveLongLivedToken": "Odebrat dlouhodobý token",
-  "claudeAccountLongLivedTokenHint": "Běžné přihlášení je nutné obnovovat a může přes noc vypršet. Dlouhodobý token zůstane přihlášený zhruba rok. Spusťte tento příkaz v terminálu, dokončete přihlášení v prohlížeči a vložte token, který vypíše.",
-  "claudeAccountLongLivedTokenInvalid": "Toto není token z claude setup-token. Začíná na sk-ant-oat01-.",
   "claudeAccountSignedOut": "Odhlášeno",
   "claudeAccountExpired": "Přihlášení vypršelo",
   "claudeAccountExpiredDetail": "Přihlášení vypršelo v {when}. Přihlaste se znovu a tento účet použijte.",

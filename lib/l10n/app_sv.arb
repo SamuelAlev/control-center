@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "Sök i filer",
   "ideNoContentMatches": "Inga träffar",
   "ideSourceControlCreatePr": "Skapa pull request",
-  "ideSourceControlViewPr": "Visa pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "Inga ändringar",
   "noReposInConversation": "Inga arkiv i det här samtalet",
   "ideSourceControlNoSpace": "Öppna ett samtal för att se dess ändringar",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "Logga in",
   "claudeAccountSignInAgain": "Logga in igen",
   "claudeAccountSignInHint": "Kör det här i en terminal på servern. Det öppnar en webbläsare för att slutföra inloggningen och skriver inloggningsuppgifterna till det här kontots katalog.",
-  "claudeAccountLongLivedToken": "Långlivad token",
-  "claudeAccountUseLongLivedToken": "Använd en långlivad token",
-  "claudeAccountReplaceLongLivedToken": "Ersätt långlivad token",
-  "claudeAccountRemoveLongLivedToken": "Ta bort långlivad token",
-  "claudeAccountLongLivedTokenHint": "En vanlig inloggning måste förnyas och kan gå ut över natten. En långlivad token håller dig inloggad i ungefär ett år. Kör detta i en terminal, slutför i webbläsaren och klistra sedan in den token som skrivs ut.",
-  "claudeAccountLongLivedTokenInvalid": "Det är ingen token från claude setup-token. Den börjar med sk-ant-oat01-.",
   "claudeAccountSignedOut": "Utloggad",
   "claudeAccountExpired": "Inloggningen har gått ut",
   "claudeAccountExpiredDetail": "Inloggningen gick ut {when}. Logga in igen för att använda det här kontot.",

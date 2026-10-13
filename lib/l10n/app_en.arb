@@ -7898,15 +7898,6 @@
   "ideSearchInFiles": "Search in files",
   "ideNoContentMatches": "No matches",
   "ideSourceControlCreatePr": "Create pull request",
-  "ideSourceControlViewPr": "View pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "No changes",
   "noReposInConversation": "No repositories in this conversation",
   "@noReposInConversation": {
@@ -12361,12 +12352,6 @@
   "claudeAccountSignIn": "Sign in",
   "claudeAccountSignInAgain": "Sign in again",
   "claudeAccountSignInHint": "Run this in a terminal on the server. It opens a browser to finish the login, and writes the credential into this account's directory.",
-  "claudeAccountLongLivedToken": "Long-lived token",
-  "claudeAccountUseLongLivedToken": "Use a long-lived token",
-  "claudeAccountReplaceLongLivedToken": "Replace long-lived token",
-  "claudeAccountRemoveLongLivedToken": "Remove long-lived token",
-  "claudeAccountLongLivedTokenHint": "A regular sign-in has to be renewed and can expire overnight. A long-lived token stays signed in for about a year. Run this in a terminal, finish in the browser, then paste the token it prints.",
-  "claudeAccountLongLivedTokenInvalid": "That isn't a token from claude setup-token. It starts with sk-ant-oat01-.",
   "claudeAccountSignedOut": "Signed out",
   "claudeAccountExpired": "Sign-in expired",
   "claudeAccountExpiredDetail": "The sign-in expired at {when}. Sign in again to use this account.",

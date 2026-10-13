@@ -55,13 +55,12 @@ extension _BuildMethods on _SpaceMessageFeedState {
             _cursorSnapshotTaken &&
             !_didInitialLanding) {
           _didInitialLanding = true;
-          _lastNewestId = messages.last.id;
-          _lastNewestAt = messages.last.createdAt;
+          _lastNewest = messages.last;
           // Opening the conversation lands on its newest message, which reads
           // it: the stamp clears its notifications from the bell. The divider
           // keeps the snapshot taken above, so it still marks what was new.
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
+            if (mounted && _wasVisible) {
               _landOnLiveEdge();
               _stampCursor();
             }
@@ -223,14 +222,14 @@ extension _BuildMethods on _SpaceMessageFeedState {
       rowKey = _ensureRowKey(m.message.id);
       final highlighted =
           m.message.id == _highlightedMessageId ||
-          m.steeringMessages.any((s) => s.id == _highlightedMessageId);
+          m.inlineMessages.any((s) => s.id == _highlightedMessageId);
       final openThread = widget.onOpenThread;
       final startThread = widget.onStartThread;
       final kept = _keptRows[m.message.id];
       if (kept != null &&
           kept.message == m.message &&
           kept.collapseHeader == m.collapseHeader &&
-          listEquals(kept.steeringMessages, m.steeringMessages) &&
+          listEquals(kept.inlineMessages, m.inlineMessages) &&
           kept.highlighted == highlighted &&
           (kept.onOpenThread == null) == (openThread == null) &&
           (kept.onStartThread == null) == (startThread == null)) {
@@ -239,7 +238,7 @@ extension _BuildMethods on _SpaceMessageFeedState {
         final bubble = SpaceMessageBubble(
           message: m.message,
           collapseHeader: m.collapseHeader,
-          steeringMessages: m.steeringMessages,
+          inlineMessages: m.inlineMessages,
           onStartThread: startThread == null
               ? null
               : () => widget.onStartThread!(m.message),
@@ -251,7 +250,7 @@ extension _BuildMethods on _SpaceMessageFeedState {
         _keptRows[m.message.id] = _KeptFeedRow(
           message: m.message,
           collapseHeader: m.collapseHeader,
-          steeringMessages: m.steeringMessages,
+          inlineMessages: m.inlineMessages,
           highlighted: highlighted,
           onOpenThread: openThread,
           onStartThread: startThread,

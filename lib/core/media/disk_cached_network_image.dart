@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:control_center/core/media/media_disk_cache.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:http/http.dart' as http;
 
 /// The process-wide media disk cache, or null before [installMediaDiskCache].
 ///
@@ -51,11 +52,9 @@ class DiskCachedNetworkImage extends ImageProvider<DiskCachedNetworkImage> {
     ImageDecoderCallback decode,
   ) {
     final cache = _installed;
-    if (cache == null) {
-      return NetworkImage(
-        key.url,
-        scale: key.scale,
-      ).loadImage(NetworkImage(key.url, scale: key.scale), decode);
+    if (kIsWeb || cache == null) {
+      final provider = NetworkImage(key.url, scale: key.scale);
+      return provider.loadImage(provider, decode);
     }
     return MultiFrameImageStreamCompleter(
       codec: _load(cache, key, decode),
@@ -73,49 +72,35 @@ class DiskCachedNetworkImage extends ImageProvider<DiskCachedNetworkImage> {
     DiskCachedNetworkImage key,
     ImageDecoderCallback decode,
   ) async {
-    Uint8List? bytes;
     try {
-      bytes = await cache.get(key.url);
-    } on Object {
-      bytes = null;
-    }
-    if (bytes == null || bytes.isEmpty) {
-      // Fall back to the platform loader rather than failing: a cache that
-      // cannot answer must never be the reason an image does not render.
-      return _decodeViaNetwork(key, decode);
-    }
-    return decode(await ui.ImmutableBuffer.fromUint8List(bytes));
-  }
-
-  Future<ui.Codec> _decodeViaNetwork(
-    DiskCachedNetworkImage key,
-    ImageDecoderCallback decode,
-  ) {
-    final completer = Completer<ui.Codec>();
-    final provider = NetworkImage(key.url, scale: key.scale);
-    final stream = provider.loadImage(provider, (
-      buffer, {
-      getTargetSize,
-    }) async {
-      final codec = await decode(buffer, getTargetSize: getTargetSize);
-      if (!completer.isCompleted) {
-        completer.complete(codec);
+      Uint8List? bytes;
+      try {
+        bytes = await cache.get(key.url);
+      } on Object {
+        bytes = null;
       }
-      return codec;
-    });
-    // `loadImage` returns a completer, not the codec — surface its error so a
-    // failed network load rejects instead of hanging forever.
-    stream.addListener(
-      ImageStreamListener(
-        (_, _) {},
-        onError: (error, stack) {
-          if (!completer.isCompleted) {
-            completer.completeError(error, stack);
-          }
-        },
-      ),
-    );
-    return completer.future;
+      if (bytes == null || bytes.isEmpty) {
+        // Fetch bytes, not NetworkImage's codec: this completer must be the
+        // codec's only owner, including when the disk cache cannot answer.
+        final uri = Uri.base.resolve(key.url);
+        final response = await http.get(uri);
+        if (response.statusCode != 200) {
+          throw NetworkImageLoadException(
+            statusCode: response.statusCode,
+            uri: uri,
+          );
+        }
+        bytes = response.bodyBytes;
+        if (bytes.isEmpty) {
+          throw Exception('NetworkImage is an empty file: $uri');
+        }
+      }
+      return await decode(await ui.ImmutableBuffer.fromUint8List(bytes));
+    } on Object {
+      // Match NetworkImage's failure cleanup, using this provider's cache key.
+      scheduleMicrotask(() => PaintingBinding.instance.imageCache.evict(key));
+      rethrow;
+    }
   }
 
   @override

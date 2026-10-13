@@ -27,7 +27,6 @@ import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/claude_accounts/claude_account_store.dart';
-import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:cc_infra/src/detection/acp_models_service.dart';
 import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
 import 'package:cc_infra/src/evaluation/controlled_skill_evaluation.dart';
@@ -142,11 +141,7 @@ SkillEvaluationService buildSkillEvaluationService({
     }
     // Dispatch may borrow caller environment; this evaluator intentionally
     // cannot. Require a credential belonging to this managed account.
-    final accountEnvironment = claudeAccounts.runEnvironmentFor(
-      active.accountId,
-    );
-    if (accountEnvironment[claudeLongLivedTokenEnvKey] == null &&
-        !await File(p.join(active.configDir, '.credentials.json')).exists()) {
+    if (!await File(p.join(active.configDir, '.credentials.json')).exists()) {
       throw const AuthException(
         'Sign in to the default Claude Code account in Settings → Adapters',
       );

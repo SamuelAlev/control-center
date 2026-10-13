@@ -15,6 +15,7 @@ class PullRequestsSection extends StatelessWidget {
     super.key,
     required this.pullRequests,
     this.onOpen,
+    this.trailing,
   });
 
   /// Deduplicated linked and branch-matched PR snapshots for the active space.
@@ -23,9 +24,12 @@ class PullRequestsSection extends StatelessWidget {
   /// Opens the selected PR in the workspace's review surface.
   final ValueChanged<PullRequest>? onOpen;
 
+  /// Creation actions, also keeping the section visible before its first PR.
+  final Widget? trailing;
+
   @override
   Widget build(BuildContext context) {
-    if (pullRequests.isEmpty) {
+    if (pullRequests.isEmpty && trailing == null) {
       return const SizedBox.shrink();
     }
     final tokens = context.designSystem ?? DesignSystemTokens.light();
@@ -33,7 +37,8 @@ class PullRequestsSection extends StatelessWidget {
     return CollapsibleSidebarSection(
       icon: AppIcons.gitPullRequest,
       label: AppLocalizations.of(context).pullRequests,
-      count: '${pullRequests.length}',
+      count: pullRequests.isEmpty ? null : '${pullRequests.length}',
+      trailing: trailing,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

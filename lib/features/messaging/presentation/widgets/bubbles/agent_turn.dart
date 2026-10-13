@@ -8,7 +8,6 @@ import 'package:control_center/features/messaging/presentation/widgets/bubbles/a
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/focusable_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/live_transcript_controller.dart';
-import 'package:control_center/features/messaging/presentation/widgets/bubbles/steering_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_flow.dart';
 import 'package:control_center/features/messaging/providers/live_turn_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -38,7 +37,7 @@ class AgentTurn extends ConsumerStatefulWidget {
     required this.message,
     required this.codeFont,
     this.collapseHeader = false,
-    this.steeringMessages = const [],
+    this.inlineMessages = const [],
     this.onStartThread,
   });
 
@@ -52,8 +51,8 @@ class AgentTurn extends ConsumerStatefulWidget {
   /// consecutive same-sender turns so the name is not repeated (openchamber).
   final bool collapseHeader;
 
-  /// User messages injected into this run, ordered by injection time.
-  final List<Message> steeringMessages;
+  /// Steering and resolved questions belonging to this run, in time order.
+  final List<Message> inlineMessages;
 
   /// Hover-rail "start thread" affordance (opens a conversation anchored to
   /// this message). Null hides the action.
@@ -99,7 +98,7 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
   @override
   void didUpdateWidget(covariant AgentTurn old) {
     super.didUpdateWidget(old);
-    if (!listEquals(old.steeringMessages, widget.steeringMessages)) {
+    if (!listEquals(old.inlineMessages, widget.inlineMessages)) {
       _structureSlot = null;
     }
     if (old.message.id != widget.message.id) {
@@ -184,7 +183,7 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
         message: _shown,
         live: _live,
         codeFont: _shownFont,
-        steeringMessages: widget.steeringMessages,
+        inlineMessages: widget.inlineMessages,
       ),
     );
   }
@@ -334,13 +333,13 @@ class _TurnBody extends ConsumerWidget {
     required this.message,
     required this.live,
     required this.codeFont,
-    required this.steeringMessages,
+    required this.inlineMessages,
   });
 
   final Message message;
   final LiveTranscriptController live;
   final String codeFont;
-  final List<Message> steeringMessages;
+  final List<Message> inlineMessages;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -378,7 +377,7 @@ class _TurnBody extends ConsumerWidget {
             isLive: isLive,
             live: isLive ? live : null,
             codeFont: codeFont,
-            steeringMessages: steeringMessages,
+            inlineMessages: inlineMessages,
           ),
         ],
       );
@@ -389,12 +388,11 @@ class _TurnBody extends ConsumerWidget {
         children: [
           const SizedBox(height: AppSpacing.sm),
           TurnProse(content: message.content, codeFont: codeFont),
-          for (final steering in steeringMessages)
-            SteeringBubble(
-              key: ValueKey(steering.id),
-              message: steering,
-              codeFont: codeFont,
-            ),
+          TranscriptFlow(
+            segments: const [],
+            codeFont: codeFont,
+            inlineMessages: inlineMessages,
+          ),
         ],
       );
     }
@@ -411,7 +409,7 @@ class _TurnBody extends ConsumerWidget {
             segments: const [],
             isLive: true,
             codeFont: codeFont,
-            steeringMessages: steeringMessages,
+            inlineMessages: inlineMessages,
           ),
         ],
       );
@@ -419,7 +417,7 @@ class _TurnBody extends ConsumerWidget {
     return TranscriptFlow(
       segments: const [],
       codeFont: codeFont,
-      steeringMessages: steeringMessages,
+      inlineMessages: inlineMessages,
     );
   }
 

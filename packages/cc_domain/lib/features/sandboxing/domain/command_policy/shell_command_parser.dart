@@ -6,211 +6,237 @@
 /// (Phase 2.4) and the Claude hook (Phase 4).
 library;
 
-/// Splits a shell command string into individual sub-commands.
+final _loopHeader = RegExp(r'^(for|select)\s');
+final _controlPrefix = RegExp(
+  r'^(?:(?:then|do|else|if|elif|while|until|!)\s+|\{\s*)+',
+);
+
+/// Splits conventional shell command lines at unquoted control operators,
+/// including line breaks, and exposes commands inside subshells and shell -c.
 ///
-/// Handles: pipes (`|`), logical operators (`&&`, `||`), semicolons (`;`),
-/// and subshells (`()`). Respects single/double-quote state. Then expands
-/// nested shell invocations (`bash -c 'git push'`).
+/// This is a best-effort command policy parser, not an interpreter for shell
+/// scripts. It does not evaluate substitutions, aliases, functions or files.
 List<String> parseShellCommand(String command) {
   final commands = <String>[];
   final current = StringBuffer();
   var inSingleQuote = false;
   var inDoubleQuote = false;
+  var escaped = false;
   var parenDepth = 0;
 
-  final runes = command.runes.toList();
-  for (var i = 0; i < runes.length; i++) {
-    final c = runes[i];
-    final char = String.fromCharCode(c);
+  void flush() {
+    final text = current.toString().trim();
+    if (text.isNotEmpty) {
+      commands.add(text);
+    }
+    current.clear();
+  }
 
-    // Handle quotes.
+  for (var i = 0; i < command.length; i++) {
+    final char = command[i];
+    if (escaped) {
+      current.write(char);
+      escaped = false;
+      continue;
+    }
+    if (char == '\\' && !inSingleQuote) {
+      if (i + 1 < command.length && command[i + 1] == '\n') {
+        i++;
+        continue;
+      }
+      current.write(char);
+      escaped = true;
+      continue;
+    }
     if (char == "'" && !inDoubleQuote) {
       inSingleQuote = !inSingleQuote;
-      current.write(char);
-      continue;
-    }
-    if (char == '"' && !inSingleQuote) {
+    } else if (char == '"' && !inSingleQuote) {
       inDoubleQuote = !inDoubleQuote;
-      current.write(char);
-      continue;
-    }
-
-    // Skip splitting inside quotes.
-    if (inSingleQuote || inDoubleQuote) {
-      current.write(char);
-      continue;
-    }
-
-    // Handle parentheses (subshells).
-    if (char == '(') {
-      parenDepth++;
-      current.write(char);
-      continue;
-    }
-    if (char == ')') {
-      parenDepth--;
-      current.write(char);
-      continue;
-    }
-
-    // Skip splitting inside subshells.
-    if (parenDepth > 0) {
-      current.write(char);
-      continue;
-    }
-
-    // Handle shell operators.
-    switch (char) {
-      case '|':
-        if (i + 1 < runes.length && runes[i + 1] == ('|'.codeUnitAt(0))) {
-          // ||
-          final s = current.toString().trim();
-          if (s.isNotEmpty) {
-            commands.add(s);
-          }
-          current.clear();
-          i++; // Skip second |
-        } else {
-          // Just a pipe.
-          final s = current.toString().trim();
-          if (s.isNotEmpty) {
-            commands.add(s);
-          }
-          current.clear();
+    } else if (!inSingleQuote && !inDoubleQuote) {
+      if (char == '(') {
+        parenDepth++;
+      }
+      if (char == ')' && parenDepth > 0) {
+        parenDepth--;
+      }
+      if (parenDepth == 0 &&
+          (char == ';' ||
+              char == '\n' ||
+              char == '|' ||
+              (char == '&' &&
+                  (i == 0 ||
+                      (command[i - 1] != '>' && command[i - 1] != '<')) &&
+                  (i + 1 == command.length || command[i + 1] != '>')))) {
+        flush();
+        if (i + 1 < command.length &&
+            ((char == '|' && command[i + 1] == '|') ||
+                (char == '&' && command[i + 1] == '&'))) {
+          i++;
         }
-      case '&':
-        if (i + 1 < runes.length && runes[i + 1] == ('&'.codeUnitAt(0))) {
-          // &&
-          final s = current.toString().trim();
-          if (s.isNotEmpty) {
-            commands.add(s);
-          }
-          current.clear();
-          i++; // Skip second &
-        } else {
-          // Background operator — keep in current command.
-          current.write(char);
-        }
-      case ';':
-        final s = current.toString().trim();
-        if (s.isNotEmpty) {
-          commands.add(s);
-        }
-        current.clear();
-      default:
-        current.write(char);
+        continue;
+      }
     }
+    current.write(char);
   }
+  flush();
 
-  // Add remaining command.
-  final s = current.toString().trim();
-  if (s.isNotEmpty) {
-    commands.add(s);
-  }
-
-  // Handle nested shell invocations like "bash -c 'git push'".
   final expanded = <String>[];
-  for (final cmd in commands) {
-    expanded.addAll(expandShellInvocation(cmd));
+  for (final part in commands) {
+    var text = part;
+    // Headers (`for name in ...`) are shell data, not executable commands.
+    if (_loopHeader.hasMatch(text)) {
+      continue;
+    }
+    text = text.replaceFirst(_controlPrefix, '').trim();
+    if (text.isEmpty || text == 'done' || text == 'fi' || text == '}') {
+      continue;
+    }
+    // A whole parenthesized group is a subshell. Reparse its interior rather
+    // than treating the opening parenthesis as an executable name.
+    if (text.startsWith('(') && text.endsWith(')')) {
+      expanded.addAll(parseShellCommand(text.substring(1, text.length - 1)));
+    } else {
+      expanded.addAll(expandShellInvocation(text));
+    }
   }
-
   return expanded;
 }
 
-/// Detects patterns like `bash -c 'cmd'` or `sh -lc 'cmd'` and extracts the
-/// inner command for checking. Recognizes all 6 shells. Returns both the
-/// outer command and the inner commands (we check both for safety).
+/// Extracts the command string from a conventional shell `-c` invocation.
+/// Returns the outer command too, for policy rules on the shell itself.
 List<String> expandShellInvocation(String command) {
   command = command.trim();
   if (command.isEmpty) {
     return [];
   }
-
-  final tokens = tokenizeCommand(command);
-  if (tokens.length < 3) {
+  final tokens = normalizeCommandTokens(command);
+  if (tokens.length < 3 ||
+      !const {'sh', 'bash', 'zsh', 'ksh', 'dash', 'fish'}.contains(tokens[0])) {
     return [command];
   }
-
-  // Check for shell -c pattern.
-  final shell = basename(tokens[0]);
-  final isShell = const {
-    'sh',
-    'bash',
-    'zsh',
-    'ksh',
-    'dash',
-    'fish',
-  }.contains(shell);
-
-  if (!isShell) {
-    return [command];
-  }
-
-  // Look for -c flag (could be combined with other flags like -lc, -ic, etc.).
   for (var i = 1; i < tokens.length - 1; i++) {
     final flag = tokens[i];
-    // Check for -c, -lc, -ic, -ilc, etc. (any flag containing 'c').
-    if (flag.startsWith('-') && flag.contains('c')) {
-      // Next token is the command string.
-      final innerCmd = tokens[i + 1];
-      // Recursively parse the inner command.
-      final innerCommands = parseShellCommand(innerCmd);
-      // Return both the outer command and inner commands (we check both).
-      final result = <String>[command];
-      result.addAll(innerCommands);
-      return result;
+    if (flag.startsWith('-') &&
+        !flag.startsWith('--') &&
+        flag.substring(1).contains('c')) {
+      return [command, ...parseShellCommand(tokens[i + 1])];
     }
   }
-
   return [command];
 }
 
-/// Splits a command string into tokens, respecting quotes.
+/// Tokenizes words while removing shell quoting. Escaped spaces and quotes
+/// remain within their word, rather than becoming control operators.
 List<String> tokenizeCommand(String command) {
   final tokens = <String>[];
   final current = StringBuffer();
   var inSingleQuote = false;
   var inDoubleQuote = false;
+  var escaped = false;
+  var started = false;
+
+  void flush() {
+    if (started) {
+      tokens.add(current.toString());
+    }
+    current.clear();
+    started = false;
+  }
 
   for (final c in command.runes) {
     final char = String.fromCharCode(c);
-    switch (char) {
-      case "'" when !inDoubleQuote:
-        inSingleQuote = !inSingleQuote;
-      case '"' when !inSingleQuote:
-        inDoubleQuote = !inDoubleQuote;
-      case ' ' || '\t' when !inSingleQuote && !inDoubleQuote:
-        if (current.isNotEmpty) {
-          tokens.add(current.toString());
-          current.clear();
-        }
-      default:
-        current.write(char);
+    if (escaped) {
+      current.write(char);
+      escaped = false;
+      continue;
+    }
+    if (char == '\\' && !inSingleQuote) {
+      escaped = true;
+      started = true;
+      continue;
+    }
+    if (char == "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote;
+      started = true;
+      continue;
+    }
+    if (char == '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote;
+      started = true;
+      continue;
+    }
+    if ((char == ' ' || char == '\t' || char == '\n') &&
+        !inSingleQuote &&
+        !inDoubleQuote) {
+      flush();
+    } else {
+      current.write(char);
+      started = true;
     }
   }
-
-  if (current.isNotEmpty) {
-    tokens.add(current.toString());
+  if (escaped) {
+    current.write('\\');
   }
-
+  flush();
   return tokens;
 }
 
-/// Normalizes a command for matching: strips leading path from the
-/// executable token (e.g. `/usr/bin/git` → `git`).
+final _assignment = RegExp(r'^[a-zA-Z_][a-zA-Z_0-9]*=');
+
+/// Normalizes the executable name and conventional assignment/env/command
+/// prefixes, without mistaking their argument values for an executable.
 List<String> normalizeCommandTokens(String command) {
-  command = command.trim();
-  if (command.isEmpty) {
+  final tokens = tokenizeCommand(command.trim());
+  var index = 0;
+  while (index < tokens.length) {
+    if (_assignment.hasMatch(tokens[index])) {
+      index++;
+      continue;
+    }
+    final wrapper = basename(tokens[index]);
+    if (wrapper == 'command') {
+      index++;
+      while (index < tokens.length &&
+          (tokens[index] == '-p' || tokens[index] == '--')) {
+        index++;
+      }
+      // `command -v` and `-V` only look up a command; they do not run it.
+      if (index < tokens.length &&
+          (tokens[index] == '-v' || tokens[index] == '-V')) {
+        return ['command', ...tokens.skip(index)];
+      }
+      continue;
+    }
+    if (wrapper == 'env') {
+      index++;
+      while (index < tokens.length) {
+        final token = tokens[index];
+        if (_assignment.hasMatch(token) ||
+            const {
+              '-i',
+              '--ignore-environment',
+              '-0',
+              '--null',
+              '--',
+            }.contains(token)) {
+          index++;
+        } else if (const {'-u', '--unset', '-C', '--chdir'}.contains(token)) {
+          index += 2;
+        } else if (token.startsWith('--unset=') ||
+            token.startsWith('--chdir=')) {
+          index++;
+        } else {
+          break;
+        }
+      }
+      continue;
+    }
+    break;
+  }
+  if (index >= tokens.length) {
     return [];
   }
-
-  final tokens = tokenizeCommand(command);
-  if (tokens.isEmpty) {
-    return [];
-  }
-
-  tokens[0] = basename(tokens[0]);
-  return tokens;
+  return [basename(tokens[index]), ...tokens.skip(index + 1)];
 }
 
 /// Applies command-prefix semantics to normalized token slices.

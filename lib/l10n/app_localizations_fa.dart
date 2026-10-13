@@ -8781,11 +8781,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get ideSourceControlCreatePr => 'ایجاد pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'نمایش pull request ⁨#$number⁩';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'بدون تغییر';
 
   @override
@@ -13704,26 +13699,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'این را در ترمینال روی سرور اجرا کنید. مرورگر را برای اتمام ورود باز می‌کند و اعتبارنامه را در پوشهٔ این حساب می‌نویسد.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'توکن بلندمدت';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'استفاده از توکن بلندمدت';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => 'جایگزینی توکن بلندمدت';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => 'حذف توکن بلندمدت';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'ورود معمولی باید تمدید شود و ممکن است یک‌شبه منقضی شود. توکن بلندمدت حدود یک سال معتبر می‌ماند. این دستور را در ترمینال اجرا کنید، مراحل را در مرورگر تمام کنید و سپس توکنی را که چاپ می‌کند جای‌گذاری کنید.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'این توکنِ claude setup-token نیست. با sk-ant-oat01- شروع می‌شود.';
 
   @override
   String get claudeAccountSignedOut => 'خارج‌شده';

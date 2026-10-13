@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "البحث في الملفات",
   "ideNoContentMatches": "لا توجد نتائج مطابقة",
   "ideSourceControlCreatePr": "إنشاء طلب سحب",
-  "ideSourceControlViewPr": "عرض طلب السحب ⁨#{number}⁩",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "لا توجد تغييرات",
   "noReposInConversation": "لا توجد مستودعات في هذه المحادثة",
   "ideSourceControlNoSpace": "افتح محادثة لعرض تغييراتها",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "تسجيل الدخول",
   "claudeAccountSignInAgain": "تسجيل الدخول مجددًا",
   "claudeAccountSignInHint": "شغّل هذا في طرفية على الخادم. سيفتح متصفحًا لإكمال تسجيل الدخول، ويكتب بيانات الاعتماد في دليل هذا الحساب.",
-  "claudeAccountLongLivedToken": "رمز طويل الأمد",
-  "claudeAccountUseLongLivedToken": "استخدام رمز طويل الأمد",
-  "claudeAccountReplaceLongLivedToken": "استبدال الرمز طويل الأمد",
-  "claudeAccountRemoveLongLivedToken": "إزالة الرمز طويل الأمد",
-  "claudeAccountLongLivedTokenHint": "يجب تجديد تسجيل الدخول العادي وقد تنتهي صلاحيته بين ليلة وضحاها. يبقى الرمز طويل الأمد صالحًا لمدة عام تقريبًا. شغّل هذا الأمر في الطرفية، وأكمل الخطوات في المتصفح، ثم الصق الرمز الذي يطبعه.",
-  "claudeAccountLongLivedTokenInvalid": "هذا ليس رمزًا من claude setup-token. يبدأ الرمز بـ sk-ant-oat01-.",
   "claudeAccountSignedOut": "مُسجَّل الخروج",
   "claudeAccountExpired": "انتهت صلاحية تسجيل الدخول",
   "claudeAccountExpiredDetail": "انتهت صلاحية تسجيل الدخول في {when}. سجّل الدخول مجددًا لاستخدام هذا الحساب.",

@@ -12,6 +12,7 @@ import 'package:control_center/features/messaging/presentation/ide/panels/source
 import 'package:control_center/features/messaging/providers/ide_sidebar_prefs_provider.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
+import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -45,7 +46,7 @@ class IdeSidebar extends ConsumerStatefulWidget {
   /// cell writes back here and an external write moves the rail.
   final ValueNotifier<IdeSidebarView> tabNotifier;
 
-  /// The focused editor leaf supplies the file revealed by Explore.
+  /// The focused editor leaf supplies General's conversation and Explore's file.
   final EditorLayoutController layout;
 
   /// The workspace whose linked repos the panels are scoped to.
@@ -180,15 +181,19 @@ class _IdeSidebarState extends ConsumerState<IdeSidebar> {
           IdeSidebarViewStrip(selected: _view, onChanged: _select),
           Expanded(
             child: switch (_view) {
-              IdeSidebarView.general => GeneralPanel(
-                workspaceId: widget.workspaceId,
-                onOpenAgentRun: widget.onOpenAgentRun,
-                onOpenAgentShell: widget.onOpenAgentShell,
-                onFocusTerminal: widget.onFocusTerminal,
-                onKillTerminal: widget.onKillTerminal,
-                onFocusRig: widget.onFocusRig,
-                onFocusBrowserTab: widget.onFocusBrowserTab,
-                onCloseBrowserTab: widget.onCloseBrowserTab,
+              IdeSidebarView.general => ListenableBuilder(
+                listenable: widget.layout,
+                builder: (context, _) => GeneralPanel(
+                  workspaceId: widget.workspaceId,
+                  focusedTabKey: activeEditorTabKey(widget.layout),
+                  onOpenAgentRun: widget.onOpenAgentRun,
+                  onOpenAgentShell: widget.onOpenAgentShell,
+                  onFocusTerminal: widget.onFocusTerminal,
+                  onKillTerminal: widget.onKillTerminal,
+                  onFocusRig: widget.onFocusRig,
+                  onFocusBrowserTab: widget.onFocusBrowserTab,
+                  onCloseBrowserTab: widget.onCloseBrowserTab,
+                ),
               ),
               IdeSidebarView.explorer => _buildExplorer(),
               IdeSidebarView.sourceControl => SourceControlPanel(

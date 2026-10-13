@@ -34,10 +34,31 @@ void main() {
       expect(parseShellCommand('echo "a | b"'), ['echo "a | b"']);
     });
 
-    test('subshell parentheses are not split', () {
+    test('subshell exposes its commands without crossing pipe boundaries', () {
       expect(parseShellCommand('(cd /tmp && ls) | grep x'), [
-        '(cd /tmp && ls)',
+        'cd /tmp',
+        'ls',
         'grep x',
+      ]);
+    });
+
+    test('splits line breaks and recognizes control statement bodies', () {
+      expect(parseShellCommand('if true\nthen gh pr create\nfi'), [
+        'true',
+        'gh pr create',
+      ]);
+      expect(
+        parseShellCommand('for ref in main; do git push origin main; done'),
+        ['git push origin main'],
+      );
+    });
+
+    test('preserves quoted and escaped operators as literal arguments', () {
+      expect(parseShellCommand(r'echo \; gh pr create'), [
+        r'echo \; gh pr create',
+      ]);
+      expect(parseShellCommand("echo 'x; gh pr create'"), [
+        "echo 'x; gh pr create'",
       ]);
     });
   });
@@ -57,6 +78,12 @@ void main() {
     test('zsh -lc extracts inner command (combined flags)', () {
       final result = expandShellInvocation("zsh -lc 'git push'");
       expect(result, contains('git push'));
+    });
+    test('shell -c behind conventional prefixes exposes its body', () {
+      expect(
+        expandShellInvocation("env X=1 command /bin/sh -c 'gh pr create'"),
+        contains('gh pr create'),
+      );
     });
 
     test('non-shell command returns as-is', () {
@@ -149,6 +176,16 @@ void main() {
 
     test('collapses extra spaces', () {
       expect(normalizeCommandTokens('git   push'), ['git', 'push']);
+    });
+    test('unwraps assignments and env/command prefixes', () {
+      expect(
+        normalizeCommandTokens(
+          'GH_TOKEN=x env -u OLD -- command /usr/bin/gh pr create',
+        ),
+        ['gh', 'pr', 'create'],
+      );
+      expect(normalizeCommandTokens('command -v gh'), ['command', '-v', 'gh']);
+      expect(normalizeCommandTokens('env GH_TOKEN=x'), isEmpty);
     });
   });
 

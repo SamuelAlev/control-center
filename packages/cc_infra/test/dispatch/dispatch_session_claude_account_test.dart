@@ -14,7 +14,6 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
-import 'package:cc_infra/src/claude_accounts/claude_long_lived_token.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
@@ -367,64 +366,25 @@ void main() {
     expect(sandbox.execArgs, hasLength(1));
   });
 
-  group('long-lived token', () {
-    const tokenA = 'sk-ant-oat01-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  test(
+    'an obsolete token file cannot authenticate a managed account',
+    () async {
+      File('${account.path}/.cc-long-lived-token.json').writeAsStringSync(
+        jsonEncode({
+          'token': 'sk-ant-oat01-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'saved_at': DateTime.utc(2026).toIso8601String(),
+        }),
+      );
 
-    ({String accountId, String configDir}) account(String id, {String? token}) {
-      final dir = Directory('${temp.path}/claude-accounts/$id')
-        ..createSync(recursive: true);
-      if (token == null) {
-        File('${dir.path}/.credentials.json').writeAsStringSync('{}');
-      } else {
-        writeClaudeLongLivedToken(dir.path, token, at: DateTime.now());
-      }
-      return (accountId: id, configDir: dir.path);
-    }
-
-    test('an account on a token exports it to the CLI', () async {
-      final a = account('work', token: tokenA);
       final run = await _dispatchClaude(
         cwd: temp.path,
-        claudeConfigDir: a.configDir,
+        claudeConfigDir: account.path,
       );
-      expect(run.sandbox.execEnvs.single?[claudeLongLivedTokenEnvKey], tokenA);
-    });
 
-    test('a token alone counts as signed in', () async {
-      // No `.credentials.json` at all: the token is the whole credential, and
-      // refusing the run as signed out would undo the point of it.
-      final a = account('work', token: tokenA);
-      final run = await _dispatchClaude(
-        cwd: temp.path,
-        claudeConfigDir: a.configDir,
-      );
-      expect(run.sandbox.execArgs, hasLength(1));
-      expect(run.log, isNot(contains('signed out')));
-    });
-
-    test('failing over to an account without one drops the token', () async {
-      // Otherwise the second attempt signs in as the account it is failing
-      // over FROM — the plan that just ran out.
-      final a = account('work', token: tokenA);
-      final b = account('personal');
-      final run = await _dispatchClaude(
-        cwd: temp.path,
-        claudeConfigDir: a.configDir,
-        accounts: [a, b],
-        stdoutPerAttempt: [
-          [_resultError('Claude AI usage limit reached|1787601441')],
-          [_textDelta('hello')],
-        ],
-      );
-      expect(run.sandbox.execEnvs, hasLength(2));
-      expect(run.sandbox.execEnvs[0]?[claudeLongLivedTokenEnvKey], tokenA);
-      expect(
-        run.sandbox.execEnvs[1]?.containsKey(claudeLongLivedTokenEnvKey),
-        isFalse,
-      );
-      expect(run.sandbox.execEnvs[1]?['CLAUDE_CONFIG_DIR'], b.configDir);
-    });
-  });
+      expect(run.sandbox.execArgs, isEmpty);
+      expect(run.log, contains('signed out'));
+    },
+  );
 
   group('failover across the pool', () {
     ({String accountId, String configDir}) account(String id) {

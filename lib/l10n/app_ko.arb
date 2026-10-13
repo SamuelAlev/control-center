@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "파일에서 검색",
   "ideNoContentMatches": "일치 항목 없음",
   "ideSourceControlCreatePr": "풀 리퀘스트 만들기",
-  "ideSourceControlViewPr": "풀 리퀘스트 #{number} 보기",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "변경 사항 없음",
   "noReposInConversation": "이 대화에 리포지토리가 없습니다",
   "ideSourceControlNoSpace": "대화를 열어 변경 사항을 확인하세요",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "로그인",
   "claudeAccountSignInAgain": "다시 로그인",
   "claudeAccountSignInHint": "서버의 터미널에서 실행하세요. 브라우저가 열려 로그인을 완료하고, 자격 증명을 이 계정의 디렉터리에 저장합니다.",
-  "claudeAccountLongLivedToken": "장기 토큰",
-  "claudeAccountUseLongLivedToken": "장기 토큰 사용",
-  "claudeAccountReplaceLongLivedToken": "장기 토큰 교체",
-  "claudeAccountRemoveLongLivedToken": "장기 토큰 제거",
-  "claudeAccountLongLivedTokenHint": "일반 로그인은 갱신이 필요하며 하룻밤 사이에 만료될 수 있습니다. 장기 토큰은 약 1년 동안 로그인 상태를 유지합니다. 터미널에서 이 명령을 실행하고 브라우저에서 완료한 다음 출력된 토큰을 붙여 넣으세요.",
-  "claudeAccountLongLivedTokenInvalid": "claude setup-token에서 받은 토큰이 아닙니다. 토큰은 sk-ant-oat01-로 시작합니다.",
   "claudeAccountSignedOut": "로그아웃됨",
   "claudeAccountExpired": "로그인이 만료됨",
   "claudeAccountExpiredDetail": "{when}에 로그인이 만료되었습니다. 이 계정을 사용하려면 다시 로그인해 주세요.",

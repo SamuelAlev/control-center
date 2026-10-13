@@ -8802,11 +8802,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Create pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Xem pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Không có thay đổi';
 
   @override
@@ -13730,26 +13725,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Chạy lệnh này trong terminal trên máy chủ. Nó mở trình duyệt để hoàn tất đăng nhập và ghi thông tin xác thực vào thư mục của tài khoản này.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Mã thông báo dài hạn';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'Dùng mã thông báo dài hạn';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => 'Thay mã thông báo dài hạn';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => 'Xóa mã thông báo dài hạn';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'Đăng nhập thông thường phải được gia hạn và có thể hết hạn chỉ sau một đêm. Mã thông báo dài hạn giữ đăng nhập trong khoảng một năm. Chạy lệnh này trong terminal, hoàn tất trên trình duyệt, rồi dán mã thông báo mà lệnh in ra.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Đây không phải mã thông báo từ claude setup-token. Mã bắt đầu bằng sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Đã đăng xuất';

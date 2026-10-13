@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "Пошук у файлах",
   "ideNoContentMatches": "Немає збігів",
   "ideSourceControlCreatePr": "Створити pull request",
-  "ideSourceControlViewPr": "Переглянути pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "Немає змін",
   "noReposInConversation": "У цій розмові немає репозиторіїв",
   "ideSourceControlNoSpace": "Відкрийте розмову, щоб побачити її зміни",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "Увійти",
   "claudeAccountSignInAgain": "Увійти знову",
   "claudeAccountSignInHint": "Виконайте це в терміналі на сервері. Відкриється браузер, щоб завершити вхід, а облікові дані запишуться в каталог цього облікового запису.",
-  "claudeAccountLongLivedToken": "Довготривалий токен",
-  "claudeAccountUseLongLivedToken": "Використати довготривалий токен",
-  "claudeAccountReplaceLongLivedToken": "Замінити довготривалий токен",
-  "claudeAccountRemoveLongLivedToken": "Вилучити довготривалий токен",
-  "claudeAccountLongLivedTokenHint": "Звичайний вхід потрібно поновлювати, і він може завершитися за ніч. Довготривалий токен залишається дійсним приблизно рік. Виконайте цю команду в терміналі, завершіть у браузері, а потім вставте виведений токен.",
-  "claudeAccountLongLivedTokenInvalid": "Це не токен від claude setup-token. Він починається з sk-ant-oat01-.",
   "claudeAccountSignedOut": "Вихід виконано",
   "claudeAccountExpired": "Сеанс входу закінчився",
   "claudeAccountExpiredDetail": "Сеанс входу закінчився {when}. Увійдіть знову, щоб користуватися цим обліковим записом.",

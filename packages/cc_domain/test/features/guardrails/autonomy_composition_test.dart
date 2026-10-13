@@ -3,26 +3,16 @@ import 'package:cc_domain/features/guardrails/domain/value_objects/action_decisi
 import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:test/test.dart';
 
-/// The documented safety floor, pinned.
-///
-/// This product's security claim rests on one sentence — a hard `deny`
-/// survives every autonomy level, including the most permissive one — so it
-/// gets a test whose name says exactly that, and which fails loudly if anyone
-/// ever "simplifies" the branch that guarantees it.
+/// The action policy's deny and ask-first decisions remain authoritative
+/// regardless of the space's autonomy setting.
 void main() {
   const composition = AutonomyComposition();
 
   group('THE SAFETY FLOOR: a hard deny survives every autonomy level', () {
     test('deny is refused at every level, including actFreely', () {
-      for (final level in [
-        null,
-        ...AutonomyLevel.values,
-      ]) {
+      for (final level in [null, ...AutonomyLevel.values]) {
         expect(
-          composition.compose(
-            decision: ActionDecision.deny,
-            autonomy: level,
-          ),
+          composition.compose(decision: ActionDecision.deny, autonomy: level),
           AutonomyOutcome.deny,
           reason:
               'a deny rule must survive autonomy '
@@ -45,15 +35,13 @@ void main() {
   });
 
   group('actFreely', () {
-    test('pre-approves a prompt WITHOUT asking anyone', () {
-      // Stated plainly rather than softened: this is a deliberate grant of
-      // autonomy, and the docs say so too.
+    test('cannot pre-approve an action-policy prompt', () {
       expect(
         composition.compose(
           decision: ActionDecision.prompt,
           autonomy: AutonomyLevel.actFreely,
         ),
-        AutonomyOutcome.allow,
+        AutonomyOutcome.prompt,
       );
     });
 

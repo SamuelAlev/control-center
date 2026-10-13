@@ -8632,11 +8632,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get ideSourceControlCreatePr => 'プルリクエストを作成';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'プルリクエスト #$number を表示';
-  }
-
-  @override
   String get ideSourceControlNoChanges => '変更なし';
 
   @override
@@ -13461,26 +13456,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'サーバーのターミナルでこれを実行してください。ブラウザが開いてログインが完了し、資格情報がこのアカウントのディレクトリに書き込まれます。';
-
-  @override
-  String get claudeAccountLongLivedToken => '長期トークン';
-
-  @override
-  String get claudeAccountUseLongLivedToken => '長期トークンを使う';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => '長期トークンを置き換える';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => '長期トークンを削除';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      '通常のサインインは更新が必要で、一晩で期限切れになることがあります。長期トークンは約 1 年間サインインしたままです。ターミナルでこのコマンドを実行し、ブラウザーで完了してから、表示されたトークンを貼り付けてください。';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'これは claude setup-token のトークンではありません。トークンは sk-ant-oat01- で始まります。';
 
   @override
   String get claudeAccountSignedOut => 'サインアウト済み';

@@ -123,7 +123,7 @@ extension _ClaudeCliMethods on DispatchSession {
     // under `--dangerously-skip-permissions` (a PreToolUse deny wins in every
     // permission mode), which is what lets "ask first" reach a runner whose
     // own prompt gate is off.
-    final hookSettings = _gatewayLease?.claudeHookSettings();
+    final hookSettings = AgentRunLease.claudeHookSettings(_gatewayLease);
     final permissionMode = _claudePermissionMode(mode);
     _claudeMcpExpected = mcpConfigPath != null;
 
@@ -1529,16 +1529,10 @@ extension _ClaudeAccountCredentials on DispatchSession {
         return true;
       }
     }
-    return File('$dir/.credentials.json').existsSync() ||
-        readClaudeLongLivedToken(dir) != null;
+    return File('$dir/.credentials.json').existsSync();
   }
 
   /// [base] re-pointed at ONE account of a multi-account run.
-  ///
-  /// The token has to move with the config dir. [_mergedEnv] exported the
-  /// FIRST account's token, and a failover attempt on an account without one
-  /// would otherwise sign in as the account it is failing over from — exactly
-  /// the plan that just ran out.
   Map<String, String> _envForClaudeAccount(
     Map<String, String> base,
     String configDir,
@@ -1546,18 +1540,6 @@ extension _ClaudeAccountCredentials on DispatchSession {
     if (configDir.isEmpty) {
       return base;
     }
-    final env = {...base, 'CLAUDE_CONFIG_DIR': configDir};
-    final token = readClaudeLongLivedToken(configDir);
-    final first = claudeConfigDir;
-    final inherited = first == null || first.isEmpty
-        ? null
-        : readClaudeLongLivedToken(first);
-    if (token != null) {
-      env[claudeLongLivedTokenEnvKey] = token;
-    } else if (inherited != null &&
-        env[claudeLongLivedTokenEnvKey] == inherited) {
-      env.remove(claudeLongLivedTokenEnvKey);
-    }
-    return env;
+    return {...base, 'CLAUDE_CONFIG_DIR': configDir};
   }
 }

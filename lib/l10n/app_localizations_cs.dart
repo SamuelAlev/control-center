@@ -8915,11 +8915,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Vytvořit pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Zobrazit pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Žádné změny';
 
   @override
@@ -13910,26 +13905,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Spusťte toto v terminálu na serveru. Otevře prohlížeč k dokončení přihlášení a zapíše přihlašovací údaje do adresáře tohoto účtu.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Dlouhodobý token';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'Použít dlouhodobý token';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => 'Nahradit dlouhodobý token';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => 'Odebrat dlouhodobý token';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'Běžné přihlášení je nutné obnovovat a může přes noc vypršet. Dlouhodobý token zůstane přihlášený zhruba rok. Spusťte tento příkaz v terminálu, dokončete přihlášení v prohlížeči a vložte token, který vypíše.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Toto není token z claude setup-token. Začíná na sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Odhlášeno';

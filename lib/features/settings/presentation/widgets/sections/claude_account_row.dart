@@ -5,7 +5,6 @@ import 'package:control_center/features/settings/presentation/widgets/sections/c
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -67,13 +66,6 @@ class ClaudeAccountRow extends ConsumerWidget {
                         variant: CcBadgeVariant.neutral,
                       ),
                     ],
-                    // The sign-in that does not lapse overnight. The hover
-                    // card dates it: a setup token lasts about a year, and
-                    // the CLI does not say exactly when it ends.
-                    if (account.usesLongLivedToken) ...[
-                      const SizedBox(width: 6),
-                      _tokenBadge(l10n, account.longLivedTokenSavedAt),
-                    ],
                     // CLI status reports credential presence, not freshness.
                     // Show expiry before a run discovers a failed refresh.
                     if (account.isCredentialExpired()) ...[
@@ -122,31 +114,12 @@ class ClaudeAccountRow extends ConsumerWidget {
             semanticLabel: account.label,
             items: [
               CcMenuItem(
-                label: account.usesLongLivedToken
-                    ? l10n.claudeAccountReplaceLongLivedToken
-                    : l10n.claudeAccountUseLongLivedToken,
-                icon: AppIcons.keyRound,
-                onSelected: () =>
-                    showClaudeLongLivedTokenDialog(context, ref, account),
-              ),
-              CcMenuItem(
                 label: account.loggedIn
                     ? l10n.claudeAccountSignInAgain
                     : l10n.claudeAccountSignIn,
                 icon: AppIcons.externalLink,
                 onSelected: () => showClaudeLoginCommand(context, ref, account),
               ),
-              if (account.usesLongLivedToken)
-                CcMenuItem(
-                  label: l10n.claudeAccountRemoveLongLivedToken,
-                  icon: AppIcons.x,
-                  onSelected: () async {
-                    await ref
-                        .read(claudeAccountsRepositoryProvider)
-                        .clearToken(account.id);
-                    ref.invalidate(claudeAccountsProvider);
-                  },
-                ),
               CcMenuItem(
                 label: l10n.claudeAccountMakeDefault,
                 icon: AppIcons.check,
@@ -175,16 +148,6 @@ class ClaudeAccountRow extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Widget _tokenBadge(AppLocalizations l10n, DateTime? savedAt) {
-    final badge = CcBadge(
-      label: l10n.claudeAccountLongLivedToken,
-      variant: CcBadgeVariant.neutral,
-    );
-    return savedAt == null
-        ? badge
-        : AppTimestamp(dateTime: savedAt, child: badge);
   }
 
   /// Identity plus remaining quota. A lapsed-but-renewable sign-in is a

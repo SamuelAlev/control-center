@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/entities/isolated_repo.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
@@ -5,6 +7,7 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_provisio
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/messaging/presentation/ide/panels/scm_pull_requests_section.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/source_control_panel.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
@@ -13,7 +16,7 @@ import 'package:control_center/features/messaging/providers/space_worktrees_prov
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/shared/widgets/source_control/scm_commit_box.dart';
-import 'package:flutter/services.dart';
+import 'package:control_center/shared/widgets/source_control/scm_view.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,6 +85,7 @@ Widget _app(Widget child, _CommitHost host) => ProviderScope(
       (ref, space) => SpaceProvisioningStatus.ready,
     ),
     spaceBranchPullRequestForRepoProvider.overrideWith((ref, key) => null),
+    spacePullRequestsProvider.overrideWith((ref, space) => const []),
     repoChangesGroupedProvider.overrideWith(
       (ref, args) async => (
         staged: [_staged],
@@ -143,6 +147,7 @@ Widget _stackApp({
   List<PullRequest> pullRequests = const [],
   PullRequest? currentPr,
   bool complete = true,
+  _CommitHost? host,
 }) => _app(
   ProviderScope(
     overrides: [
@@ -172,8 +177,18 @@ Widget _stackApp({
     ],
     child: _panel('workspace-a', 'space-a'),
   ),
-  _CommitHost()
-    ..onCall = (op, args) => {'ok': true, 'content': '', 'files': const []},
+  host ??
+      (_CommitHost()
+        ..onCall = (op, args) => {
+          'ok': true,
+          'content': '',
+          'files': const [],
+        }),
+);
+
+Finder _creationMenu() => find.descendant(
+  of: find.byType(ScmPullRequestsSection),
+  matching: find.byType(ScmIconAction),
 );
 
 void main() {
@@ -255,8 +270,41 @@ void main() {
     },
   );
 
-  group('stack pull request actions', () {
-    testWidgets('recorded PRs replace publishing and single-PR actions', (
+  testWidgets(
+    'linked PRs remain available while worktrees load and when none exist',
+    (tester) async {
+      final worktrees = Completer<List<IsolatedRepo>>();
+      final host = _CommitHost();
+      await tester.pumpWidget(
+        _app(
+          ProviderScope(
+            overrides: [
+              spaceWorktreesProvider.overrideWith(
+                (ref, args) => worktrees.future,
+              ),
+              spaceStackProvider.overrideWith((ref, space) async => const []),
+              spacePullRequestsProvider.overrideWith((ref, space) => [_pr(42)]),
+            ],
+            child: _panel('workspace-a', 'space-a'),
+          ),
+          host,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('#42'), findsOneWidget);
+      expect(find.byType(ScmCommitBox), findsNothing);
+
+      worktrees.complete(const []);
+      await tester.pumpAndSettle();
+
+      expect(find.text('#42'), findsOneWidget);
+      expect(find.byType(ScmCommitBox), findsNothing);
+    },
+  );
+
+  group('top-level pull request creation', () {
+    testWidgets('recorded PRs prevent publishing before snapshots arrive', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -268,20 +316,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Publish stack'), findsNothing);
-      expect(find.text('View pull request #11'), findsNothing);
-      await tester.tap(find.text('feature/space-a'));
-      await tester.pumpAndSettle();
-      expect(find.text('Publish stack'), findsNothing);
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Stacked pull requests (2)'));
-      await tester.pumpAndSettle();
-      expect(
-        tester.getTopLeft(find.text('#10 · Base')).dy,
-        lessThan(tester.getTopLeft(find.text('#11 · Next')).dy),
-      );
+      expect(_creationMenu(), findsNothing);
     });
 
     testWidgets('PRs created outside stack.publish count as published parts', (
@@ -299,31 +334,44 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Publish stack'), findsNothing);
-      expect(find.text('View pull request #11'), findsNothing);
-      await tester.tap(find.text('Stacked pull requests (2)'));
-      await tester.pumpAndSettle();
-      expect(find.text('#10 · Base'), findsOneWidget);
-      expect(find.text('#11 · Next'), findsOneWidget);
+      expect(find.text('#10'), findsOneWidget);
+      expect(find.text('#11'), findsOneWidget);
+      expect(_creationMenu(), findsNothing);
     });
 
-    testWidgets('a partial stack keeps publishing and opens its existing PRs', (
+    testWidgets('publishing a partial stack removes its creation action', (
       tester,
     ) async {
+      final layers = [_layer(0, prNumber: 10), _layer(1)];
+      final calls = <Map<String, dynamic>>[];
+      final host = _CommitHost()
+        ..onCall = (op, args) {
+          if (op == 'stack.publish') {
+            calls.add(args);
+            layers[1] = _layer(1, prNumber: 11);
+          }
+          return {'ok': true, 'content': '', 'files': const []};
+        };
       await tester.pumpWidget(
         _stackApp(
-          layers: [_layer(0, prNumber: 10), _layer(1)],
+          layers: layers,
+          pullRequests: [_pr(10, head: 'feature/base')],
           currentPr: _pr(10, head: 'feature/base'),
+          host: host,
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Publish stack'), findsOneWidget);
-      expect(find.text('View pull request #10'), findsNothing);
-      await tester.tap(find.text('Stacked pull requests (1)'));
+      expect(find.text('#10'), findsOneWidget);
+      await tester.tap(_creationMenu());
       await tester.pumpAndSettle();
-      expect(find.text('#10 · Base'), findsOneWidget);
-      expect(find.textContaining('Next'), findsNothing);
+      await tester.tap(find.text('Publish stack'));
+      await tester.pumpAndSettle();
+
+      expect(_creationMenu(), findsNothing);
+      expect(calls.single['workspace_id'], 'workspace-a');
+      expect(calls.single['space_id'], 'space-a');
+      expect(calls.single['repo_id'], 'alpha');
     });
 
     testWidgets(
@@ -340,12 +388,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Publish stack'), findsOneWidget);
-        expect(find.textContaining('Stacked pull requests'), findsNothing);
-        expect(find.text('Create pull request'), findsNothing);
-        await tester.tap(find.text('feature/space-a'));
+        await tester.tap(_creationMenu());
         await tester.pumpAndSettle();
-        expect(find.text('Publish stack'), findsNWidgets(2));
+        expect(find.text('Publish stack'), findsOneWidget);
+        expect(find.text('helix/alpha'), findsWidgets);
+        expect(find.text('Create pull request'), findsNothing);
       },
     );
 
@@ -357,19 +404,39 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Publish stack'), findsNothing);
-      expect(find.text('Create pull request'), findsNothing);
+      expect(_creationMenu(), findsNothing);
     });
 
-    testWidgets('a single branch retains its direct PR action', (tester) async {
+    testWidgets('an existing branch PR prevents duplicate creation', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        _stackApp(layers: [_layer(1, prNumber: 11)], currentPr: _pr(11)),
+        _stackApp(
+          layers: [_layer(1, prNumber: 11)],
+          currentPr: _pr(11),
+          pullRequests: [_pr(11)],
+        ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('View pull request #11'), findsOneWidget);
+      expect(find.text('#11'), findsOneWidget);
+      expect(_creationMenu(), findsNothing);
+    });
+
+    testWidgets('a single unpublished branch offers PR creation at the top', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_stackApp(layers: [_layer(1)]));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getTopLeft(_creationMenu()).dy,
+        lessThan(tester.getTopLeft(find.byType(ScmCommitBox)).dy),
+      );
+      await tester.tap(_creationMenu());
+      await tester.pumpAndSettle();
+      expect(find.text('Create pull request'), findsOneWidget);
       expect(find.text('Publish stack'), findsNothing);
-      expect(find.textContaining('Stacked pull requests'), findsNothing);
     });
   });
 }

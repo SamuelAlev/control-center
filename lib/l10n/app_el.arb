@@ -5003,15 +5003,6 @@
   "ideSearchInFiles": "Αναζήτηση σε αρχεία",
   "ideNoContentMatches": "Κανένα αποτέλεσμα",
   "ideSourceControlCreatePr": "Δημιουργία pull request",
-  "ideSourceControlViewPr": "Προβολή pull request #{number}",
-  "@ideSourceControlViewPr": {
-    "description": "Source control action shown in place of \"Create pull request\" once the conversation's worktree branch already has an open pull request",
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
   "ideSourceControlNoChanges": "Καμία αλλαγή",
   "noReposInConversation": "Δεν υπάρχουν αποθετήρια σε αυτή τη συνομιλία",
   "ideSourceControlNoSpace": "Ανοίξτε μια συνομιλία για να δείτε τις αλλαγές της",
@@ -7973,12 +7964,6 @@
   "claudeAccountSignIn": "Σύνδεση",
   "claudeAccountSignInAgain": "Σύνδεση ξανά",
   "claudeAccountSignInHint": "Τρέξτε αυτό σε τερματικό στον διακομιστή. Ανοίγει πρόγραμμα περιήγησης για ολοκλήρωση της σύνδεσης και γράφει το διαπιστευτήριο στον κατάλογο αυτού του λογαριασμού.",
-  "claudeAccountLongLivedToken": "Μακροχρόνιο διακριτικό",
-  "claudeAccountUseLongLivedToken": "Χρήση μακροχρόνιου διακριτικού",
-  "claudeAccountReplaceLongLivedToken": "Αντικατάσταση μακροχρόνιου διακριτικού",
-  "claudeAccountRemoveLongLivedToken": "Αφαίρεση μακροχρόνιου διακριτικού",
-  "claudeAccountLongLivedTokenHint": "Μια κανονική σύνδεση πρέπει να ανανεώνεται και μπορεί να λήξει μέσα σε μια νύχτα. Ένα μακροχρόνιο διακριτικό παραμένει συνδεδεμένο για περίπου έναν χρόνο. Εκτελέστε αυτή την εντολή σε τερματικό, ολοκληρώστε στο πρόγραμμα περιήγησης και επικολλήστε το διακριτικό που εμφανίζει.",
-  "claudeAccountLongLivedTokenInvalid": "Αυτό δεν είναι διακριτικό από το claude setup-token. Ξεκινά με sk-ant-oat01-.",
   "claudeAccountSignedOut": "Αποσυνδεδεμένος",
   "claudeAccountExpired": "Η σύνδεση έληξε",
   "claudeAccountExpiredDetail": "Η σύνδεση έληξε στις {when}. Συνδεθείτε ξανά για να χρησιμοποιήσετε αυτόν τον λογαριασμό.",

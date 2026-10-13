@@ -8907,11 +8907,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Creează pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Vezi pull request-ul #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Nicio modificare';
 
   @override
@@ -13900,29 +13895,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Rulează asta într-un terminal pe server. Deschide un browser ca să termini autentificarea și scrie datele de autentificare în directorul acestui cont.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Token de lungă durată';
-
-  @override
-  String get claudeAccountUseLongLivedToken =>
-      'Folosește un token de lungă durată';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken =>
-      'Înlocuiește tokenul de lungă durată';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken =>
-      'Elimină tokenul de lungă durată';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'O autentificare obișnuită trebuie reînnoită și poate expira peste noapte. Un token de lungă durată rămâne autentificat aproximativ un an. Rulează comanda într-un terminal, finalizează în browser, apoi lipește tokenul afișat.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Acesta nu este un token de la claude setup-token. Începe cu sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Deconectat';

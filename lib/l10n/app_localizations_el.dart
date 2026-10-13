@@ -8904,11 +8904,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Δημιουργία pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Προβολή pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Καμία αλλαγή';
 
   @override
@@ -13881,28 +13876,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Τρέξτε αυτό σε τερματικό στον διακομιστή. Ανοίγει πρόγραμμα περιήγησης για ολοκλήρωση της σύνδεσης και γράφει το διαπιστευτήριο στον κατάλογο αυτού του λογαριασμού.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Μακροχρόνιο διακριτικό';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'Χρήση μακροχρόνιου διακριτικού';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken =>
-      'Αντικατάσταση μακροχρόνιου διακριτικού';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken =>
-      'Αφαίρεση μακροχρόνιου διακριτικού';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'Μια κανονική σύνδεση πρέπει να ανανεώνεται και μπορεί να λήξει μέσα σε μια νύχτα. Ένα μακροχρόνιο διακριτικό παραμένει συνδεδεμένο για περίπου έναν χρόνο. Εκτελέστε αυτή την εντολή σε τερματικό, ολοκληρώστε στο πρόγραμμα περιήγησης και επικολλήστε το διακριτικό που εμφανίζει.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Αυτό δεν είναι διακριτικό από το claude setup-token. Ξεκινά με sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Αποσυνδεδεμένος';

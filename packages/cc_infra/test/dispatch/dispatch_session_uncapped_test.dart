@@ -35,6 +35,31 @@ class _Approver implements ConfirmationPort {
   Future<bool> requestApproval(ConfirmationRequest request) async => true;
 }
 
+class _RecordingApprover implements ConfirmationPort {
+  _RecordingApprover(this.answer);
+
+  final bool answer;
+  final requests = <ConfirmationRequest>[];
+
+  @override
+  Future<bool> requestApproval(ConfirmationRequest request) async {
+    requests.add(request);
+    return answer;
+  }
+}
+
+class _PolicyTool extends WriteTool {
+  _PolicyTool(this.effect);
+
+  final ActionClass effect;
+
+  @override
+  String get name => 'policy_effect';
+
+  @override
+  Set<ActionClass> get actionClasses => {effect};
+}
+
 class _Rules implements ActionPolicyRepository {
   _Rules(this.values);
 
@@ -178,6 +203,8 @@ class _RecordingLoop implements AgentLoop {
   String? spaceId,
   ActionGuardService? actionGuard,
   Future<String?> Function(String, String, String)? autonomyResolver,
+  ConfirmationPort? confirmationPort,
+  bool connectApprover = true,
   Future<void> Function(AgentLoopConfig)? onRun,
 }) {
   final tempDir = Directory.systemTemp.createTempSync('cc_uncapped_');
@@ -193,7 +220,9 @@ class _RecordingLoop implements AgentLoop {
     harnessCredentialStore: _KeylessStore(),
     harnessProviderFactory: const HarnessProviderFactory(),
     agentLoop: loop,
-    confirmationPort: onRun == null ? null : _Approver(),
+    confirmationPort: onRun == null || !connectApprover
+        ? null
+        : (confirmationPort ?? _Approver()),
     actionGuard: actionGuard,
     autonomyResolver: autonomyResolver,
   );
@@ -387,4 +416,94 @@ void main() {
     expect(audits.single.ruleId, 'space-write-deny');
     expect(audits.single.decision, ActionDecision.deny);
   });
+
+  for (final effect in [
+    ActionClass.prCreate,
+    ActionClass.prPublish,
+    ActionClass.fileDelete,
+    ActionClass.processSpawn,
+  ]) {
+    test(
+      'actFreely still asks for ${effect.wire} and audits the answer',
+      () async {
+        final now = DateTime.now();
+        final rule = ActionPolicyRule(
+          id: 'space-ask',
+          workspaceId: 'ws-1',
+          scopeType: ActionScopeType.space,
+          scopeId: 'space-1',
+          actionClass: effect,
+          decision: ActionDecision.prompt,
+          createdAt: now,
+          updatedAt: now,
+        );
+        for (final answer in [false, true]) {
+          final approver = _RecordingApprover(answer);
+          final audits = <GuardAudit>[];
+          final guard = ActionGuardService(
+            repository: _Rules([rule]),
+            onAudit: audits.add,
+          );
+          ToolGateDecision? gate;
+          final h = _buildSession(
+            prompt: 'perform the effect',
+            spaceId: 'space-1',
+            script: [const LoopDone(LoopDoneReason.completed)],
+            actionGuard: guard,
+            confirmationPort: approver,
+            autonomyResolver: (_, _, _) async => 'actFreely',
+            onRun: (config) async {
+              gate = await config.approvalCallback!(_PolicyTool(effect), {
+                'path': 'target.txt',
+              });
+            },
+          );
+
+          await _collect(h.session);
+          expect(approver.requests, hasLength(1));
+          expect(approver.requests.single.spaceId, 'space-1');
+          expect(gate?.allowed, answer);
+          expect(audits, hasLength(1));
+          expect(audits.single.ruleId, 'space-ask');
+          expect(
+            audits.single.decision,
+            answer ? ActionDecision.allow : ActionDecision.deny,
+          );
+          expect(audits.single.prompted, isTrue);
+        }
+      },
+    );
+  }
+
+  test(
+    'built-in PR prompt fails closed without an approver under actFreely',
+    () async {
+      final audits = <GuardAudit>[];
+      final guard = ActionGuardService(
+        repository: _Rules([]),
+        onAudit: audits.add,
+      );
+      ToolGateDecision? gate;
+      final h = _buildSession(
+        prompt: 'open a PR',
+        spaceId: 'space-1',
+        script: [const LoopDone(LoopDoneReason.completed)],
+        actionGuard: guard,
+        connectApprover: false,
+        autonomyResolver: (_, _, _) async => 'actFreely',
+        onRun: (config) async {
+          gate = await config.approvalCallback!(
+            _PolicyTool(ActionClass.prCreate),
+            {},
+          );
+        },
+      );
+
+      await _collect(h.session);
+      expect(gate?.allowed, isFalse);
+      expect(gate?.reason, contains('no approver'));
+      expect(audits.single.decision, ActionDecision.deny);
+      expect(audits.single.prompted, isFalse);
+    },
+  );
 }

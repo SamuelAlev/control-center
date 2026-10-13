@@ -8920,11 +8920,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Створити pull request';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Переглянути pull request #$number';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Немає змін';
 
   @override
@@ -13926,29 +13921,6 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Виконайте це в терміналі на сервері. Відкриється браузер, щоб завершити вхід, а облікові дані запишуться в каталог цього облікового запису.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Довготривалий токен';
-
-  @override
-  String get claudeAccountUseLongLivedToken =>
-      'Використати довготривалий токен';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken =>
-      'Замінити довготривалий токен';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken =>
-      'Вилучити довготривалий токен';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'Звичайний вхід потрібно поновлювати, і він може завершитися за ніч. Довготривалий токен залишається дійсним приблизно рік. Виконайте цю команду в терміналі, завершіть у браузері, а потім вставте виведений токен.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Це не токен від claude setup-token. Він починається з sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Вихід виконано';

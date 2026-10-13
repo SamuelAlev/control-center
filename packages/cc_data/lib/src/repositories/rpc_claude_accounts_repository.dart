@@ -8,8 +8,7 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// sees identity and quota. No credential crosses this boundary outbound — and
 /// the client cannot perform a login either: `loginCommand` returns the argv
 /// for a terminal to run `claude auth login` in, and the CLI writes its own
-/// credential on the host. The one inbound exception is [setToken], which
-/// carries a token the operator pasted from `claude setup-token`.
+/// credential on the host.
 class RpcClaudeAccountsRepository {
   /// Creates an [RpcClaudeAccountsRepository] over [_client].
   RpcClaudeAccountsRepository(this._client);
@@ -19,7 +18,11 @@ class RpcClaudeAccountsRepository {
   /// Every account with its live status and, when the host can report it, the
   /// plan usage behind the picker's headroom column.
   Future<List<ClaudeAccountView>> list() async {
-    final data = await _client.readOr('claude_accounts.list', const {}, const {});
+    final data = await _client.readOr(
+      'claude_accounts.list',
+      const {},
+      const {},
+    );
     final accounts = data['accounts'];
     if (accounts is! List) {
       return const [];
@@ -65,24 +68,6 @@ class RpcClaudeAccountsRepository {
       if (console) 'console': true,
     }),
   );
-
-  /// The argv + environment a terminal runs to mint a long-lived token for
-  /// [id] (`claude setup-token`). The CLI prints the token there; the operator
-  /// pastes it into [setToken].
-  Future<({List<String> argv, Map<String, String> environment})?>
-  setupTokenCommand(String id) async => _command(
-    await _client.call('claude_accounts.setupTokenCommand', {'id': id}),
-  );
-
-  /// Stores [token] as [id]'s credential on the host. The one place a
-  /// credential crosses this boundary, and only inbound: `list` reports that
-  /// an account has a token, never the token.
-  Future<void> setToken(String id, String token) =>
-      _client.call('claude_accounts.setToken', {'id': id, 'token': token});
-
-  /// Drops [id]'s long-lived token.
-  Future<void> clearToken(String id) =>
-      _client.call('claude_accounts.clearToken', {'id': id});
 
   static ({List<String> argv, Map<String, String> environment})? _command(
     Map<String, dynamic> data,

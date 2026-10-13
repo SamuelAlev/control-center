@@ -23,10 +23,24 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
     final afterReveal = _pendingRevealReconcile;
     _pendingRevealReconcile = false;
     final newest = msgs.last;
-    final prevId = _lastNewestId;
-    _lastNewestId = newest.id;
-    _lastNewestAt = newest.createdAt;
-    if (prevId == null || newest.id == prevId) {
+    final previous = _lastNewest;
+    _lastNewest = newest;
+    if (previous == null) {
+      return;
+    }
+    if (newest.id == previous.id) {
+      final completed =
+          newest.isAgentTurn &&
+          newest.isStreamingComplete &&
+          !previous.isStreamingComplete;
+      // Completion creates a notification, not a new message id. A cursor
+      // stamped while this turn was streaming cannot acknowledge it.
+      if (completed) {
+        _lastStampedNewestId = null;
+        if (_follow.mode == FeedFollowMode.following || _isAtLiveEdge) {
+          _stampCursor();
+        }
+      }
       return;
     }
     if (newest.isUser) {
@@ -163,14 +177,15 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
   /// Carries the conversation, so the host also marks its message
   /// notifications read.
   void _stampCursor() {
-    final newest = _lastNewestId;
+    final newest = _lastNewest?.id;
     if (newest == null || newest == _lastStampedNewestId) {
       return;
     }
     _lastStampedNewestId = newest;
     _cursorDebounce?.cancel();
     _cursorDebounce = Timer(const Duration(milliseconds: 600), () {
-      if (!mounted) {
+      if (!mounted || !_wasVisible || !_isAtLiveEdge) {
+        _lastStampedNewestId = null;
         return;
       }
       // Read the workspace from the provider, not `context`: this runs in a
@@ -219,7 +234,7 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
     if (_newWhileAway != 0) {
       _set(() => _newWhileAway = 0);
     }
-    final seen = _lastNewestAt;
+    final seen = _lastNewest?.createdAt;
     if (seen != null) {
       _advanceReadFrontier(seen);
     }

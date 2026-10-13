@@ -8632,11 +8632,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get ideSourceControlCreatePr => '풀 리퀘스트 만들기';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return '풀 리퀘스트 #$number 보기';
-  }
-
-  @override
   String get ideSourceControlNoChanges => '변경 사항 없음';
 
   @override
@@ -13454,26 +13449,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       '서버의 터미널에서 실행하세요. 브라우저가 열려 로그인을 완료하고, 자격 증명을 이 계정의 디렉터리에 저장합니다.';
-
-  @override
-  String get claudeAccountLongLivedToken => '장기 토큰';
-
-  @override
-  String get claudeAccountUseLongLivedToken => '장기 토큰 사용';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => '장기 토큰 교체';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => '장기 토큰 제거';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      '일반 로그인은 갱신이 필요하며 하룻밤 사이에 만료될 수 있습니다. 장기 토큰은 약 1년 동안 로그인 상태를 유지합니다. 터미널에서 이 명령을 실행하고 브라우저에서 완료한 다음 출력된 토큰을 붙여 넣으세요.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'claude setup-token에서 받은 토큰이 아닙니다. 토큰은 sk-ant-oat01-로 시작합니다.';
 
   @override
   String get claudeAccountSignedOut => '로그아웃됨';

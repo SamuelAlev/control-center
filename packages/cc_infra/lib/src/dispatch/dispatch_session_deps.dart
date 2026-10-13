@@ -291,10 +291,9 @@ class SandboxDispatchDeps {
   /// autonomy dial + fail-closed approval remain the residual net.
   final ActionGuardService? actionGuard;
 
-  /// Puts the action policy between an agent's shell and the forge: every
-  /// GitHub push is routed through it ("Push to a remote"), and Claude Code's
-  /// `Bash` calls are asked about through its PreToolUse hook. Null leaves a
-  /// run with a read-only forge token and no push path — fail closed.
+  /// Serves GitHub push approvals and Claude's shell action-policy hook.
+  /// Conventional push URLs route through it; shell preflight also gates
+  /// explicit URLs. Without a reachable gateway, Claude's Bash hook blocks.
   final AgentRunGateway? agentRunGateway;
 
   /// The MCP tool registry, exposing CC's orchestration tools to the built-in

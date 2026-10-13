@@ -8928,11 +8928,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ideSourceControlCreatePr => 'إنشاء طلب سحب';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'عرض طلب السحب ⁨#$number⁩';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'لا توجد تغييرات';
 
   @override
@@ -13956,26 +13951,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'شغّل هذا في طرفية على الخادم. سيفتح متصفحًا لإكمال تسجيل الدخول، ويكتب بيانات الاعتماد في دليل هذا الحساب.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'رمز طويل الأمد';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'استخدام رمز طويل الأمد';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => 'استبدال الرمز طويل الأمد';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => 'إزالة الرمز طويل الأمد';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'يجب تجديد تسجيل الدخول العادي وقد تنتهي صلاحيته بين ليلة وضحاها. يبقى الرمز طويل الأمد صالحًا لمدة عام تقريبًا. شغّل هذا الأمر في الطرفية، وأكمل الخطوات في المتصفح، ثم الصق الرمز الذي يطبعه.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'هذا ليس رمزًا من claude setup-token. يبدأ الرمز بـ sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'مُسجَّل الخروج';

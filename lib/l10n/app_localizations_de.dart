@@ -8880,11 +8880,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get ideSourceControlCreatePr => 'Pull Request erstellen';
 
   @override
-  String ideSourceControlViewPr(int number) {
-    return 'Pull Request #$number anzeigen';
-  }
-
-  @override
   String get ideSourceControlNoChanges => 'Keine Änderungen';
 
   @override
@@ -13841,26 +13836,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get claudeAccountSignInHint =>
       'Führen Sie dies in einem Terminal auf dem Server aus. Ein Browser öffnet sich, um die Anmeldung abzuschließen, und die Zugangsdaten werden in das Verzeichnis dieses Kontos geschrieben.';
-
-  @override
-  String get claudeAccountLongLivedToken => 'Langlebiges Token';
-
-  @override
-  String get claudeAccountUseLongLivedToken => 'Langlebiges Token verwenden';
-
-  @override
-  String get claudeAccountReplaceLongLivedToken => 'Langlebiges Token ersetzen';
-
-  @override
-  String get claudeAccountRemoveLongLivedToken => 'Langlebiges Token entfernen';
-
-  @override
-  String get claudeAccountLongLivedTokenHint =>
-      'Eine normale Anmeldung muss erneuert werden und kann über Nacht ablaufen. Ein langlebiges Token bleibt etwa ein Jahr angemeldet. Führe diesen Befehl in einem Terminal aus, schließe die Anmeldung im Browser ab und füge dann das ausgegebene Token ein.';
-
-  @override
-  String get claudeAccountLongLivedTokenInvalid =>
-      'Das ist kein Token von claude setup-token. Es beginnt mit sk-ant-oat01-.';
 
   @override
   String get claudeAccountSignedOut => 'Abgemeldet';

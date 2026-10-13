@@ -18,11 +18,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// A nested card would rival the Detected runners eyebrow, so this is a
 /// [SettingsGroup]: heading, sentence, roster. Each row is one
 /// `CLAUDE_CONFIG_DIR` on the server. Control Center creates and deletes those
-/// directories but never signs in: the sign-in actions hand back the exact
-/// `claude setup-token` / `claude auth login` command, scoped with the
-/// account's config dir, for the operator to run. That split is deliberate — minting Claude Code tokens from
-/// another app is what the harness's Anthropic provider stopped doing, and the
-/// CLI's own login is the supported way to reach a subscription.
+/// directories but never signs in: the sign-in action hands back the exact
+/// `claude auth login` command, scoped with the account's config dir, for the
+/// operator to run. The CLI's own login is the supported way to reach a
+/// subscription.
 class ClaudeAccountsSection extends ConsumerWidget {
   /// Creates a [ClaudeAccountsSection].
   const ClaudeAccountsSection({super.key});
@@ -118,9 +117,7 @@ class ClaudeAccountsSection extends ConsumerWidget {
     }
     // Straight into signing it in: an account directory with no credential in
     // it does nothing, so creating one and stopping there would leave a row
-    // that looks configured and refuses every run. The long-lived token is
-    // offered first because it is the sign-in that does not lapse overnight;
-    // the interactive login stays one menu item away.
-    await showClaudeLongLivedTokenDialog(context, ref, created);
+    // that looks configured and refuses every run.
+    await showClaudeLoginCommand(context, ref, created);
   }
 }

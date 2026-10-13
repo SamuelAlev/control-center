@@ -18,7 +18,6 @@ export 'src/chat/chat_link_code_store.dart';
 export 'src/chat/chat_provider_adapter.dart';
 export 'src/chat/chat_text.dart';
 export 'src/claude_accounts/claude_account_store.dart';
-export 'src/claude_accounts/claude_long_lived_token.dart';
 export 'src/claude_accounts/credential_cooldown_store.dart';
 export 'src/code_graph/code_extractor.dart';
 export 'src/code_graph/code_graph_watch_service.dart';
