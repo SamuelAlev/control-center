@@ -42,6 +42,10 @@
   "agentQuestionSkippedLabel": "Skipped",
   "agentQuestionFreeformHint": "Type your answer…",
   "agentApprovalRequired": "Approval required",
+  "copyCommand": "Copy command",
+  "@copyCommand": {
+    "description": "Button copying the entire verbatim shell script on an agent approval."
+  },
   "approveAndRemember": "Approve for 8 hours",
   "@deny": {
     "description": "Button denying a blocked agent action (inbox approval card)."

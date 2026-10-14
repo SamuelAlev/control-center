@@ -41,9 +41,10 @@ class CreateGoalTool extends McpTool {
   @override
   ApprovalPayload? buildConfirmationRequest(Map<String, dynamic> arguments) =>
       ApprovalPayload(
-        title: 'Create goal',
+        title: 'Agent would like to create a goal. Do you accept?',
         detail:
-            'About to create a goal: "${arguments['title'] ?? '(untitled)'}".',
+            'A new organizational goal titled '
+            '"${arguments['title'] ?? '(untitled)'}" will be created.',
       );
 
   @override

@@ -129,6 +129,7 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
                           ),
                         ),
                       ApprovalCard(
+                        key: ValueKey(front.id),
                         request: front,
                         busy: _responding.contains(front.id),
                         onApprove: () => _respond(front.id, approved: true),

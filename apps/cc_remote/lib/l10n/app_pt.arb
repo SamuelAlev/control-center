@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Pulada",
   "agentQuestionFreeformHint": "Digite sua resposta…",
   "agentApprovalRequired": "Aprovação necessária",
+  "copyCommand": "Copiar comando",
   "approveAndRemember": "Aprovar por 8 horas",
   "decline": "Recusar",
   "confirm": "Confirm",

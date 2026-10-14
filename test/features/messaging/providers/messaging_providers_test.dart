@@ -1061,6 +1061,41 @@ void main() {
       return container;
     }
 
+    test(
+      'space badge counts distinct unread conversations at the cursor boundary',
+      () {
+        final container = containerWith(
+          lastReadAt: cursor,
+          lastAgentByConversation: {
+            'c-new': after,
+            'c-other-new': after,
+            'c-at-cursor': cursor,
+            'c-old': before,
+          },
+        );
+        expect(
+          container.read(spaceUnreadConversationCountProvider(spaceId)),
+          2,
+        );
+      },
+    );
+
+    test(
+      'space badge stays quiet without a read cursor or conversation mail',
+      () {
+        final unopened = containerWith(
+          lastReadAt: null,
+          lastAgentByConversation: {'c-new': after},
+        );
+        final empty = containerWith(
+          lastReadAt: cursor,
+          lastAgentByConversation: const {},
+        );
+        expect(unopened.read(spaceUnreadConversationCountProvider(spaceId)), 0);
+        expect(empty.read(spaceUnreadConversationCountProvider(spaceId)), 0);
+      },
+    );
+
     test('is true only for conversations with agent mail after the cursor', () {
       final container = containerWith(
         lastReadAt: cursor,

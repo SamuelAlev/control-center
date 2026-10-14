@@ -57,6 +57,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get agentApprovalRequired => 'Cần phê duyệt';
 
   @override
+  String get copyCommand => 'Sao chép lệnh';
+
+  @override
   String get approveAndRemember => 'Phê duyệt trong 8 giờ';
 
   @override

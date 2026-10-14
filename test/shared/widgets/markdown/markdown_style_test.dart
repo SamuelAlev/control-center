@@ -427,6 +427,40 @@ void main() {
       expect(unlabeledHeight, lessThan(labeledHeight));
     });
 
+    testWidgets('approval source remains fully inspectable past size limits', (
+      tester,
+    ) async {
+      final code = [
+        for (var i = 0; i < 350; i++)
+          'echo "line $i ${List.filled(30, 'payload').join(' ')}"',
+        'rm -rf /tmp/approval-final-command',
+      ].join('\n');
+      await tester.pumpWidget(
+        _buildTestApp(
+          (context) => SingleChildScrollView(
+            child: buildSharedCodeBlock(
+              context,
+              code,
+              'bash',
+              showFullSource: true,
+            ),
+          ),
+        ),
+      );
+      final source = find.text(code, findRichText: true);
+      expect(source, findsOneWidget);
+      final vertical = find.byWidgetPredicate(
+        (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+      );
+      final position = tester.state<ScrollableState>(vertical).position;
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pump();
+      final viewport = tester.getRect(vertical);
+      final rect = tester.getRect(source);
+      expect(rect.bottom, lessThanOrEqualTo(viewport.bottom));
+      expect(rect.bottom, greaterThan(viewport.top));
+    });
+
     testWidgets('long blocks collapse behind a Show more / Show less toggle', (
       tester,
     ) async {

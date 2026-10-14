@@ -57,6 +57,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentApprovalRequired => '승인이 필요합니다';
 
   @override
+  String get copyCommand => '명령 복사';
+
+  @override
   String get approveAndRemember => '8시간 동안 승인';
 
   @override

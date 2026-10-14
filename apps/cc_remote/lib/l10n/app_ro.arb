@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Omisă",
   "agentQuestionFreeformHint": "Tastează răspunsul…",
   "agentApprovalRequired": "Este necesară aprobarea",
+  "copyCommand": "Copiază comanda",
   "approveAndRemember": "Aprobă pentru 8 ore",
   "decline": "Respinge",
   "confirm": "Confirmă",

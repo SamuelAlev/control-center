@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Đã bỏ qua",
   "agentQuestionFreeformHint": "Nhập câu trả lời của bạn…",
   "agentApprovalRequired": "Cần phê duyệt",
+  "copyCommand": "Sao chép lệnh",
   "approveAndRemember": "Phê duyệt trong 8 giờ",
   "decline": "Từ chối",
   "confirm": "Xác nhận",

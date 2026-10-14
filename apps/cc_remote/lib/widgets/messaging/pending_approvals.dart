@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/messaging/ask_user_card.dart';
+import 'package:cc_remote/widgets/phone_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,14 +74,31 @@ class _PendingApprovalsState extends ConsumerState<PendingApprovals> {
     if (pending.isEmpty) {
       return const SizedBox.shrink();
     }
+    // Show the oldest request first; leaving every request inline can bury the
+    // conversation and its composer beneath an unbounded stack of approvals.
+    final first = pending.reduce(
+      (a, b) => a.createdAt.compareTo(b.createdAt) <= 0 ? a : b,
+    );
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Column(
         children: [
-          for (final p in pending) ...[
-            _card(context, p),
-            const SizedBox(height: 8),
-          ],
+          _card(context, first),
+          if (pending.length > 1)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                l10n.tabWaitingCount(
+                  l10n.agentApprovalRequired,
+                  pending.length - 1,
+                ),
+                style: CcTypography.caption.copyWith(
+                  color: (context.designSystem ?? DesignSystemTokens.light())
+                      .textSecondary,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -88,33 +106,18 @@ class _PendingApprovalsState extends ConsumerState<PendingApprovals> {
 
   Widget _card(BuildContext context, ConfirmationRequestDto p) {
     final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
     final command = p.command;
     return AskUserCard(
+      key: ValueKey(p.id),
       question: p.title.isEmpty ? l10n.agentApprovalRequired : p.title,
       contextText: p.detail.isEmpty ? null : p.detail,
       caption: l10n.agentApprovalRequired,
       allowSkip: false,
       submitting: _responding.contains(p.id),
+      scrollableBody: true,
       extraBody: command == null || command.isEmpty
           ? null
-          : DecoratedBox(
-              decoration: BoxDecoration(
-                color: t.bgSecondary,
-                border: Border.all(color: t.borderSecondary),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Text(
-                  command,
-                  style: CcFonts.code(
-                    textStyle: CcTypography.bodySm.copyWith(
-                      color: t.textPrimary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          : PhoneApprovalCodeBlock(source: command),
       options: [
         AgentQuestionOption(label: l10n.deny, value: 'deny'),
         AgentQuestionOption(label: l10n.approve, value: 'approve'),

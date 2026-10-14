@@ -2467,13 +2467,13 @@ class DemoSeeder {
           spaceId: idsByName[kDemoAgentSpaceName]!,
           workspaceId: workspaceId,
           agentId: 'demo-agent-reviewer',
-          title: 'Ravi wants to push the #412 budget fix',
+          title:
+              'Ravi would like to push to feature/eval-budget-ledger. '
+              'Do you accept?',
           detail:
-              'Ravi’s blocked run $workspaceId:demo-run-push-approval '
-              'in Release gate · Shared run groups requested a push. '
-              'Working directory: /workspace/helix/evalkit. '
-              'Approve or deny this fictional request; neither decision '
-              'executes git or resumes an agent.',
+              'Ravi requested a push of the #412 budget fix from '
+              '/workspace/helix/evalkit. This is a fictional demo request: '
+              'neither answer executes Git or resumes an agent.',
           severity: ConfirmationSeverity.warning,
           command: 'git push origin feature/eval-budget-ledger',
         ),

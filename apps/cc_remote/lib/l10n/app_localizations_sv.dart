@@ -57,6 +57,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentApprovalRequired => 'Godkännande krävs';
 
   @override
+  String get copyCommand => 'Kopiera kommando';
+
+  @override
   String get approveAndRemember => 'Godkänn i 8 timmar';
 
   @override

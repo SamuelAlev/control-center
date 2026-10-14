@@ -57,6 +57,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get agentApprovalRequired => 'Потрібне підтвердження';
 
   @override
+  String get copyCommand => 'Копіювати команду';
+
+  @override
   String get approveAndRemember => 'Дозволити на 8 годин';
 
   @override

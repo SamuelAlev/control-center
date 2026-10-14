@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Pominięto",
   "agentQuestionFreeformHint": "Wpisz odpowiedź…",
   "agentApprovalRequired": "Wymagane zatwierdzenie",
+  "copyCommand": "Kopiuj polecenie",
   "approveAndRemember": "Zatwierdź na 8 godzin",
   "decline": "Odrzuć",
   "confirm": "Potwierdź",

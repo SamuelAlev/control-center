@@ -42,8 +42,11 @@ class CreateApprovalTool extends McpTool {
   @override
   ApprovalPayload? buildConfirmationRequest(Map<String, dynamic> arguments) =>
       ApprovalPayload(
-        title: 'Open approval',
-        detail: 'Requesting approval: "${arguments['title'] ?? '(untitled)'}".',
+        title: 'Agent would like to open a board approval. Do you accept?',
+        detail:
+            'A new board approval for '
+            '"${arguments['title'] ?? '(untitled)'}" will be created for '
+            'review; this does not itself approve the governed action.',
       );
 
   @override

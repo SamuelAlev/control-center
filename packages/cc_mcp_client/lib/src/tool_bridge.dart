@@ -89,14 +89,34 @@ class BridgedMcpTool extends McpTool {
   bool get requiresApproval => true;
 
   @override
-  ApprovalPayload? buildConfirmationRequest(Map<String, dynamic> arguments) =>
-      ApprovalPayload(
-        title: 'Run external tool ${remoteTool.name}',
-        detail:
-            'Server "$serverName" · ${remoteTool.name}\n'
-            '${_summariseArgs(arguments)}',
-        isDestructive: toolApproval(arguments).tier == CapabilityTier.exec,
-      );
+  ApprovalPayload? buildConfirmationRequest(Map<String, dynamic> arguments) {
+    final action = remoteTool.name
+        .replaceAll(RegExp(r'[^a-zA-Z0-9 _-]'), ' ')
+        .replaceAll(RegExp(r'[_-]+'), ' ')
+        .trim();
+    String? target;
+    for (final key in const ['url', 'path', 'file_path', 'branch']) {
+      final value = arguments[key];
+      if (value is String &&
+          value.isNotEmpty &&
+          value.length <= 160 &&
+          !RegExp(r'[\r\n\t`$;&|<>\\]').hasMatch(value)) {
+        target = value;
+        break;
+      }
+    }
+    return ApprovalPayload(
+      title: action.isEmpty
+          ? 'Agent would like to use an external tool. Do you accept?'
+          : 'Agent would like to use an external tool to $action. '
+                'Do you accept?',
+      detail:
+          'The external service "$serverName" would receive this request'
+          '${target == null ? '' : ' for $target'}. It may read or change data '
+          'outside Control Center; its effects cannot be verified here.',
+      isDestructive: toolApproval(arguments).tier == CapabilityTier.exec,
+    );
+  }
 
   @override
   Future<CallResult> run(Map<String, dynamic> arguments) async {
@@ -163,16 +183,6 @@ class BridgedMcpTool extends McpTool {
           '$maxChars chars]';
     }
     return out;
-  }
-
-  static String _summariseArgs(Map<String, dynamic> arguments) {
-    if (arguments.isEmpty) {
-      return 'No arguments.';
-    }
-    final encoded = jsonEncode(arguments);
-    return encoded.length <= 400
-        ? 'Arguments: $encoded'
-        : 'Arguments: ${encoded.substring(0, 400)}…';
   }
 
   /// The `mcp__<server>__<tool>` namespaced name a remote tool is exposed under.

@@ -18,6 +18,7 @@
   "agentQuestionSkippedLabel": "דולגה",
   "agentQuestionFreeformHint": "הקלידו את תשובתכם…",
   "agentApprovalRequired": "נדרש אישור",
+  "copyCommand": "העתקת הפקודה",
   "approveAndRemember": "אישור ל־8 שעות",
   "decline": "סירוב",
   "confirm": "אישור",

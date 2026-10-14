@@ -57,6 +57,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get agentApprovalRequired => 'ต้องอนุมัติ';
 
   @override
+  String get copyCommand => 'คัดลอกคำสั่ง';
+
+  @override
   String get approveAndRemember => 'อนุมัติ 8 ชั่วโมง';
 
   @override

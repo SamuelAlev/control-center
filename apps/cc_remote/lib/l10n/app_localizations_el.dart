@@ -57,6 +57,9 @@ class AppLocalizationsEl extends AppLocalizations {
   String get agentApprovalRequired => 'Απαιτείται έγκριση';
 
   @override
+  String get copyCommand => 'Αντιγραφή εντολής';
+
+  @override
   String get approveAndRemember => 'Έγκριση για 8 ώρες';
 
   @override

@@ -476,6 +476,7 @@ CcCodeBuilder sharedCodeBuilder({
         codeFontFamily: codeFontFamily,
         codeLigatures: codeLigatures,
         cache: cache,
+        showFullSource: false,
       ),
 );
 
@@ -491,6 +492,9 @@ final Map<(String?, bool), CcCodeBuilder> _sharedCodeBuilders = {};
 /// truncation notice; the copy button always copies the FULL text.
 /// Long-but-sane blocks (> [kSharedCodeBlockCollapseThreshold] lines) collapse to their
 /// first [kSharedCodeBlockCollapsedLines] lines behind a ghost "Show more"/"Show less"
+/// [showFullSource] keeps every line inspectable, even in oversized blocks.
+/// Approval surfaces use it so the decision never hides part of the command;
+/// oversized source still skips highlighting.
 Widget buildSharedCodeBlock(
   BuildContext context,
   String code,
@@ -498,6 +502,7 @@ Widget buildSharedCodeBlock(
   String? codeFontFamily,
   bool codeLigatures = true,
   bool cache = true,
+  bool showFullSource = false,
 }) {
   return _SharedCodeBlock(
     code: code,
@@ -505,6 +510,7 @@ Widget buildSharedCodeBlock(
     codeFontFamily: codeFontFamily,
     codeLigatures: codeLigatures,
     cache: cache,
+    showFullSource: showFullSource,
   );
 }
 
@@ -515,6 +521,7 @@ class _SharedCodeBlock extends StatefulWidget {
     required this.codeFontFamily,
     required this.codeLigatures,
     required this.cache,
+    required this.showFullSource,
   });
 
   final String code;
@@ -522,6 +529,7 @@ class _SharedCodeBlock extends StatefulWidget {
   final String? codeFontFamily;
   final bool codeLigatures;
   final bool cache;
+  final bool showFullSource;
 
   @override
   State<_SharedCodeBlock> createState() => _SharedCodeBlockState();
@@ -692,7 +700,7 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
     // every build of every code block, and splitting allocates one string per
     // line of the block only to keep a prefix of them.
     final lineCount = _countLines(code);
-    if (oversized) {
+    if (oversized && !widget.showFullSource) {
       if (lineCount > kSharedCodeBlockMaxLines) {
         truncatedLines = kSharedCodeBlockMaxLines;
         displayCode = code.substring(
@@ -700,7 +708,8 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
           _endOfLines(code, kSharedCodeBlockMaxLines),
         );
       }
-    } else if (lineCount > kSharedCodeBlockCollapseThreshold) {
+    } else if (!widget.showFullSource &&
+        lineCount > kSharedCodeBlockCollapseThreshold) {
       collapsedLines = lineCount - kSharedCodeBlockCollapsedLines;
       if (!_expanded) {
         displayCode = code.substring(

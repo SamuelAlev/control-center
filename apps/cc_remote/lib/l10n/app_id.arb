@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Dilewati",
   "agentQuestionFreeformHint": "Ketik jawaban Anda…",
   "agentApprovalRequired": "Persetujuan diperlukan",
+  "copyCommand": "Salin perintah",
   "approveAndRemember": "Setujui selama 8 jam",
   "decline": "Tolak",
   "confirm": "Konfirmasi",

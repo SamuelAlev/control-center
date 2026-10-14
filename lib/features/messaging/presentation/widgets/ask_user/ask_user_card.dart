@@ -313,101 +313,130 @@ class _AskUserCardState extends State<AskUserCard> {
     final l10n = AppLocalizations.of(context);
     final remaining = _remainingFraction;
 
-    return CallbackShortcuts(
-      bindings: _bindings,
-      child: Focus(
-        focusNode: _cardFocus,
-        autofocus: _interactive,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: t.bgPrimary,
-            border: Border.all(color: t.borderPrimary),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (remaining != null)
-                _CountdownBar(
-                  remaining: remaining,
-                  color: t.accent,
-                  semanticLabel: l10n.agentQuestionTimeLeft,
-                ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.lg,
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _caption(l10n),
-                      style: CcTypography.caption.copyWith(
-                        color: t.textTertiary,
-                      ),
+    return DefaultTextStyle(
+      style: CcFonts.ui(
+        textStyle: CcTypography.body.copyWith(
+          color: t.textPrimary,
+          decoration: TextDecoration.none,
+        ),
+      ),
+      child: CallbackShortcuts(
+        bindings: _bindings,
+        child: Focus(
+          focusNode: _cardFocus,
+          autofocus: _interactive,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: t.bgPrimary,
+              border: Border.all(color: t.borderPrimary),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (remaining != null)
+                  _CountdownBar(
+                    remaining: remaining,
+                    color: t.accent,
+                    semanticLabel: l10n.agentQuestionTimeLeft,
+                  ),
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.md,
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      widget.question,
-                      style: CcTypography.title.copyWith(color: t.textPrimary),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _caption(l10n),
+                          style: CcTypography.caption.copyWith(
+                            color: t.textTertiary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Flexible(
+                          child: CcScrollbar(
+                            thumbVisibility: true,
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsetsDirectional.only(
+                                end: AppSpacing.sm,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    widget.question,
+                                    style: CcTypography.title.copyWith(
+                                      color: t.textPrimary,
+                                    ),
+                                  ),
+                                  if ((widget.contextText ?? '')
+                                      .isNotEmpty) ...[
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      widget.contextText!,
+                                      style: CcTypography.body.copyWith(
+                                        color: t.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                  if (widget.extraBody != null) ...[
+                                    const SizedBox(height: AppSpacing.md),
+                                    widget.extraBody!,
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        ..._optionRows(),
+                        if (_freeTextAsOption)
+                          AskUserFreeTextRow(
+                            key: const ValueKey('ask-user-free-text'),
+                            index: widget.options.length + 1,
+                            controller: _freeText,
+                            focusNode: _textFocus,
+                            hintText: l10n.agentQuestionFreeformOptionHint,
+                            enabled: _interactive,
+                            hasText: _typed.isNotEmpty,
+                            showSubmitArrow: !widget.multiSelect,
+                            onChanged: (_) => _rebuild(),
+                            onSubmit: _submitFreeText,
+                          )
+                        else if (_freeTextStandalone) ...[
+                          CcTextField(
+                            key: const ValueKey('ask-user-free-text'),
+                            controller: _freeText,
+                            focusNode: _textFocus,
+                            enabled: _interactive,
+                            autofocus: _interactive,
+                            hintText: l10n.agentQuestionFreeformHint,
+                            textStyle: CcTypography.body.copyWith(
+                              color: t.textPrimary,
+                            ),
+                            onChanged: (_) => _rebuild(),
+                            onSubmitted: _interactive && _typed.isNotEmpty
+                                ? (_) => _submitContinue()
+                                : null,
+                          ),
+                        ],
+                        if (_showFooter) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          _footer(t, l10n),
+                        ],
+                      ],
                     ),
-                    if ((widget.contextText ?? '').isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        widget.contextText!,
-                        style: CcTypography.body.copyWith(
-                          color: t.textSecondary,
-                        ),
-                      ),
-                    ],
-                    if (widget.extraBody != null) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      widget.extraBody!,
-                    ],
-                    const SizedBox(height: AppSpacing.md),
-                    ..._optionRows(),
-                    if (_freeTextAsOption)
-                      AskUserFreeTextRow(
-                        key: const ValueKey('ask-user-free-text'),
-                        index: widget.options.length + 1,
-                        controller: _freeText,
-                        focusNode: _textFocus,
-                        hintText: l10n.agentQuestionFreeformOptionHint,
-                        enabled: _interactive,
-                        hasText: _typed.isNotEmpty,
-                        showSubmitArrow: !widget.multiSelect,
-                        onChanged: (_) => _rebuild(),
-                        onSubmit: _submitFreeText,
-                      )
-                    else if (_freeTextStandalone) ...[
-                      CcTextField(
-                        key: const ValueKey('ask-user-free-text'),
-                        controller: _freeText,
-                        focusNode: _textFocus,
-                        enabled: _interactive,
-                        autofocus: _interactive,
-                        hintText: l10n.agentQuestionFreeformHint,
-                        textStyle: CcTypography.body.copyWith(
-                          color: t.textPrimary,
-                        ),
-                        onChanged: (_) => _rebuild(),
-                        onSubmitted: _interactive && _typed.isNotEmpty
-                            ? (_) => _submitContinue()
-                            : null,
-                      ),
-                    ],
-                    if (_showFooter) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      _footer(t, l10n),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Hoppet over",
   "agentQuestionFreeformHint": "Skriv svaret ditt…",
   "agentApprovalRequired": "Godkjenning kreves",
+  "copyCommand": "Kopier kommando",
   "approveAndRemember": "Godkjenn i 8 timer",
   "decline": "Avslå",
   "confirm": "Bekreft",

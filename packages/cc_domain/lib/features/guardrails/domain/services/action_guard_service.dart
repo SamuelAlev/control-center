@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart'
     show EnforcementLevel;
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
+import 'package:cc_domain/features/guardrails/domain/services/action_approval_copy.dart';
 import 'package:cc_domain/features/guardrails/domain/services/policy_resolver.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_constraint.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
@@ -242,6 +245,7 @@ class ActionGuardService {
     String? agentId,
     Mode mode = Mode.chat,
     String actionSummary = '',
+    String? approvalRationale,
     bool operatorInitiated = false,
     String? onBehalfOfUserId,
     String? runId,
@@ -352,6 +356,9 @@ class ActionGuardService {
             workspaceId: workspaceId,
             agentId: agentId,
             request: request,
+            classes: classes,
+            command: command,
+            rationale: approvalRationale,
           ),
         );
         audit(
@@ -370,37 +377,61 @@ class ActionGuardService {
 
   ConfirmationRequest _buildRequest(
     ActionResolution res, {
+    required Set<ActionClass> classes,
+    String? command,
+    String? rationale,
     String? spaceId,
     String actionSummary = '',
     String? workspaceId,
     String? agentId,
     ActionRequest request = ActionRequest.empty,
   }) {
-    final classes = res.prompting
+    final prompting = res.prompting
         .map((r) => r.actionClass?.wire)
         .whereType<String>()
         .toList();
+    final script = command ?? request.command;
+    final rememberedRequest = ActionRequest(
+      classes: request.classes,
+      command: script,
+      paths: request.paths,
+      refs: request.refs,
+      hosts: request.hosts,
+      magnitude: request.magnitude,
+      cents: request.cents,
+    );
+    final copy = ActionApprovalCopy.describe(
+      classes: classes,
+      request: request,
+      command: script,
+      rationale: rationale,
+    );
     final drivingClass = res.driving.actionClass;
     return ConfirmationRequest(
       spaceId: spaceId ?? '',
       workspaceId: workspaceId,
-      title: actionSummary.isEmpty
-          ? 'Allow this action?'
-          : 'Allow: $actionSummary',
-      detail: classes.isEmpty
-          ? res.driving.reason
-          : '${res.driving.reason}\nEffects requiring approval: '
-                '${classes.join(", ")}.',
+      title: copy.title,
+      detail: copy.detail,
+      command: script,
       severity: _severityFor(drivingClass),
       kind: _kindFor(drivingClass),
       rememberChoice: RememberScope.workspace,
-      fingerprint: 'action:${classes.join("+")}:$actionSummary',
-      // What a "remember this" answer needs in order to materialize a real,
-      // NARROW rule: which effects prompted, whose agent it was, and the
-      // arguments the approved call actually carried.
-      actionClasses: classes,
+      // Identity stays tied to the attempted action, not to display wording.
+      // Distinct scripts or targets cannot share a remembered answer.
+      fingerprint: jsonEncode([
+        'action',
+        prompting,
+        actionSummary,
+        script,
+        request.refs,
+        request.paths,
+        request.hosts,
+        request.magnitude,
+        request.cents,
+      ]),
+      actionClasses: prompting,
       agentId: agentId,
-      constraintJson: _rememberConstraintFor(request)?.encode(),
+      constraintJson: _rememberConstraintFor(rememberedRequest)?.encode(),
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:cc_domain/cc_domain.dart' show ConfirmationRequestDto;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:flutter/widgets.dart';
 
 /// One queued request behind the answerable card: a card-shaped edge, drawn
@@ -64,137 +65,139 @@ class ApprovalCard extends StatelessWidget {
       _ => t.fgBrandPrimary,
     };
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: t.bgPrimary,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: t.borderPrimary),
-        // The design system's float. This used to be a hand-rolled shadow
-        // colored `bgOverlay` — the OPAQUE full-screen scrim token — which
-        // painted a hard black band under the card instead of a shadow.
-        boxShadow: CcElevation.floating,
+    return DefaultTextStyle(
+      style: CcFonts.ui(
+        textStyle: CcTypography.body.copyWith(
+          color: t.textPrimary,
+          decoration: TextDecoration.none,
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  _destructive ? AppIcons.shieldAlert : AppIcons.shield,
-                  size: 16,
-                  color: accent,
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: Text(
-                    request.title.isEmpty
-                        ? l10n.agentApprovalRequired
-                        : request.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: t.textPrimary,
-                      decoration: TextDecoration.none,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: t.bgPrimary,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: t.borderPrimary),
+          // The design system's float. This used to be a hand-rolled shadow
+          // colored `bgOverlay` — the OPAQUE full-screen scrim token — which
+          // painted a hard black band under the card instead of a shadow.
+          boxShadow: CcElevation.floating,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    _destructive ? AppIcons.shieldAlert : AppIcons.shield,
+                    size: 16,
+                    color: accent,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      l10n.agentApprovalRequired,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: t.textPrimary,
+                        decoration: TextDecoration.none,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            // The body scrolls, the header and the decision stay put: the deck
-            // replaced the overlay's outer scroll view, so a long explanation
-            // would otherwise push the buttons off the bottom of the card.
-            Flexible(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (request.detail.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        request.detail,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: t.textSecondary,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                    ],
-                    if (request.command != null &&
-                        request.command!.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: t.bgSecondary,
-                          borderRadius: BorderRadius.circular(AppRadii.sm),
-                          border: Border.all(color: t.borderSecondary),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                            vertical: AppSpacing.xs,
-                          ),
-                          child: Text(
-                            request.command!,
-                            style: CcFonts.code(
-                              textStyle: TextStyle(
-                                fontSize: 12,
-                                color: t.textPrimary,
-                                decoration: TextDecoration.none,
-                              ),
+                ],
+              ),
+              // Keep the decision visible while the full intent and script scroll.
+              Flexible(
+                child: CcScrollbar(
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsetsDirectional.only(
+                      end: AppSpacing.sm,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (request.title.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            request.title,
+                            style: CcTypography.body.copyWith(
+                              color: t.textPrimary,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.none,
                             ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                CcButton(
-                  variant: CcButtonVariant.secondary,
-                  size: CcButtonSize.sm,
-                  onPressed: busy ? null : onDeny,
-                  child: Text(l10n.deny),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                // Offered only when the server says this request is
-                // rememberable — never on a destructive one, where "stop
-                // asking me" is the wrong affordance in front of something
-                // irreversible.
-                if (request.isRememberable) ...[
-                  CcTooltip(
-                    message: l10n.approveAndRememberTooltip,
-                    child: CcButton(
-                      variant: CcButtonVariant.secondary,
-                      size: CcButtonSize.sm,
-                      onPressed: busy ? null : onApproveAndRemember,
-                      child: Text(l10n.approveAndRemember),
+                        ],
+                        if (request.detail.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            request.detail,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: t.textSecondary,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                        ],
+                        if (request.command != null &&
+                            request.command!.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          buildSharedCodeBlock(
+                            context,
+                            request.command!,
+                            'bash',
+                            showFullSource: true,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                ],
-                CcButton(
-                  variant: _destructive
-                      ? CcButtonVariant.destructive
-                      : CcButtonVariant.primary,
-                  size: CcButtonSize.sm,
-                  loading: busy,
-                  onPressed: busy ? null : onApprove,
-                  child: Text(l10n.approve),
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  CcButton(
+                    variant: CcButtonVariant.secondary,
+                    size: CcButtonSize.sm,
+                    onPressed: busy ? null : onDeny,
+                    child: Text(l10n.deny),
+                  ),
+                  // Offered only when the server says this request is
+                  // rememberable — never on a destructive one, where "stop
+                  // asking me" is the wrong affordance in front of something
+                  // irreversible.
+                  if (request.isRememberable) ...[
+                    CcTooltip(
+                      message: l10n.approveAndRememberTooltip,
+                      child: CcButton(
+                        variant: CcButtonVariant.secondary,
+                        size: CcButtonSize.sm,
+                        onPressed: busy ? null : onApproveAndRemember,
+                        child: Text(l10n.approveAndRemember),
+                      ),
+                    ),
+                  ],
+                  CcButton(
+                    variant: _destructive
+                        ? CcButtonVariant.destructive
+                        : CcButtonVariant.primary,
+                    size: CcButtonSize.sm,
+                    loading: busy,
+                    onPressed: busy ? null : onApprove,
+                    child: Text(l10n.approve),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

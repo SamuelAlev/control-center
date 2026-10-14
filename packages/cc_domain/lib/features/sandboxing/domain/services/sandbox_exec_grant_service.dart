@@ -166,7 +166,7 @@ class SandboxExecGrantService {
       path: root,
       spaceId: spaceId,
       principalId: principalId,
-      title: 'Blocked: ${_basename(deniedPath)}',
+      title: 'Allow agents to run programs from this workspace copy?',
       detail: _lazyDetail(deniedPath, root),
     );
     return granted ? root : null;
@@ -207,7 +207,6 @@ class SandboxExecGrantService {
         detail: detail,
         severity: ConfirmationSeverity.warning,
         kind: ConfirmationKind.capabilityEscalation,
-        command: path,
         fingerprint: 'sandbox-exec-grant:$path',
       ),
     );
@@ -266,11 +265,6 @@ class SandboxExecGrantService {
       }
     }
     return best;
-  }
-
-  static String _basename(String path) {
-    final i = path.lastIndexOf('/');
-    return i < 0 ? path : path.substring(i + 1);
   }
 
   static String _eagerDetail(String root, String? label) =>

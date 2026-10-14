@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Överhoppad",
   "agentQuestionFreeformHint": "Skriv ditt svar…",
   "agentApprovalRequired": "Godkännande krävs",
+  "copyCommand": "Kopiera kommando",
   "approveAndRemember": "Godkänn i 8 timmar",
   "decline": "Avböj",
   "confirm": "Bekräfta",

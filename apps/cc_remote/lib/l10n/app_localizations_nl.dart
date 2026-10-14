@@ -57,6 +57,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentApprovalRequired => 'Goedkeuring vereist';
 
   @override
+  String get copyCommand => 'Opdracht kopiëren';
+
+  @override
   String get approveAndRemember => '8 uur goedkeuren';
 
   @override

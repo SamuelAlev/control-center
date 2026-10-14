@@ -6,7 +6,7 @@ A separate binary running the real `cc_server` composition with seeded workspace
 # from the repo root; natives are required
 scripts/natives/build_natives.sh
 cd apps/cc_demo_server
-fvm dart build cli
+../../scripts/build_server.sh cc_demo_server
 ./build/cli/<arch>/bundle/bin/cc_demo_server --data-dir /tmp/demo --port 9030 \
   --allowed-origins https://demo.usectrl.dev
 ```

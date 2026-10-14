@@ -127,6 +127,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
 
     return CcSidebar(
       collapsed: collapsed,
+      width: ref.watch(sidebarWidthProvider),
       header: AppSidebarHeader(collapsed: collapsed),
       headerGap: AppSpacing.xs,
       // No gap above the footer: the spaces list is the last thing in the body
@@ -232,6 +233,7 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
     final l10n = AppLocalizations.of(context);
     return CcSidebar(
       collapsed: collapsed,
+      width: ref.watch(sidebarWidthProvider),
       depth: 1,
       header: AppSidebarHeader(collapsed: collapsed),
       headerGap: AppSpacing.xs,

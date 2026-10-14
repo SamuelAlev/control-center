@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Пропущено",
   "agentQuestionFreeformHint": "Введіть відповідь…",
   "agentApprovalRequired": "Потрібне підтвердження",
+  "copyCommand": "Копіювати команду",
   "approveAndRemember": "Дозволити на 8 годин",
   "decline": "Відхилити",
   "confirm": "Підтвердити",

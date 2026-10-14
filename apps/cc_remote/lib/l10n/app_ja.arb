@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "スキップ済み",
   "agentQuestionFreeformHint": "回答を入力…",
   "agentApprovalRequired": "承認が必要です",
+  "copyCommand": "コマンドをコピー",
   "approveAndRemember": "8時間承認する",
   "decline": "拒否",
   "confirm": "確認",

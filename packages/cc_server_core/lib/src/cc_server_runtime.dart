@@ -6684,18 +6684,59 @@ Future<CcServer> runCcServer({
     // declare it (`skills.uninstall`, `pr_lifecycle.delete`) were refused on
     // every call. Routed through the same fail-closed registry the guardrail
     // prompts use, so a headless server with nobody connected still denies.
-    confirm: (op, args) => confirmationPort.requestApproval(
-      ConfirmationRequest(
-        spaceId: (args['space_id'] as String?) ?? '',
-        workspaceId: args['workspace_id'] as String?,
-        title: 'Confirm: ${op.name}',
-        detail:
-            'This operation is destructive and cannot be undone from the '
-            'app.',
-        severity: ConfirmationSeverity.destructive,
-        kind: ConfirmationKind.capabilityEscalation,
-      ),
-    ),
+    confirm: (op, args) {
+      final target = switch (op.name) {
+        'skills.uninstall' => args['skill_slug'],
+        'pr_lifecycle.delete' => args['id'],
+        'chat.disconnect' => args['provider'],
+        'evals.deleteSuite' => args['suite_id'],
+        'fleet.revokeWorker' || 'fleet.removeWorker' => args['worker_id'],
+        _ => null,
+      };
+      final named = target is String && target.trim().isNotEmpty
+          ? ' "$target"'
+          : '';
+      final (intent, effect) = switch (op.name) {
+        'skills.uninstall' => (
+          'uninstall skill$named',
+          'The skill will no longer be available in this workspace.',
+        ),
+        'pr_lifecycle.delete' => (
+          'delete pull request record$named',
+          'This removes the saved pull request record from this workspace.',
+        ),
+        'chat.disconnect' => (
+          'disconnect chat provider$named',
+          'The provider connection and its stored credentials will be removed.',
+        ),
+        'evals.deleteSuite' => (
+          'delete evaluation suite$named',
+          'This removes the saved evaluation suite.',
+        ),
+        'fleet.revokeWorker' => (
+          'revoke worker$named',
+          'This revokes the worker’s authorization.',
+        ),
+        'fleet.removeWorker' => (
+          'remove worker$named',
+          'This removes the worker from the fleet.',
+        ),
+        _ => (
+          'perform a destructive operation',
+          'This operation changes or removes stored data.',
+        ),
+      };
+      return confirmationPort.requestApproval(
+        ConfirmationRequest(
+          spaceId: (args['space_id'] as String?) ?? '',
+          workspaceId: args['workspace_id'] as String?,
+          title: 'Would you like to $intent?',
+          detail: '$effect This cannot be undone from the app.',
+          severity: ConfirmationSeverity.destructive,
+          kind: ConfirmationKind.capabilityEscalation,
+        ),
+      );
+    },
     // The human lane's half of the tamper-evident audit spine: every
     // authorization verdict, refusals included (which `user_activity`, a
     // successes-only timeline, has never recorded).

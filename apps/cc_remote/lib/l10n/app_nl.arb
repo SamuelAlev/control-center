@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Overgeslagen",
   "agentQuestionFreeformHint": "Typ je antwoord…",
   "agentApprovalRequired": "Goedkeuring vereist",
+  "copyCommand": "Opdracht kopiëren",
   "approveAndRemember": "8 uur goedkeuren",
   "decline": "Weigeren",
   "confirm": "Confirm",

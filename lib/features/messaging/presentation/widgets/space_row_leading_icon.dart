@@ -1,9 +1,9 @@
 part of 'space_row_adornments.dart';
 
 /// The leading icon for a space row: a spinner while an agent is running,
-/// otherwise the aggregate PR-status badge (with a count of open PRs) when the
-/// space is linked to a PR or one of its worktree branches has a PR.
-/// With neither, it shows [absent], or a pencil glyph when [absent] is null.
+/// otherwise the aggregate PR-status glyph. Its numeric badge counts unread
+/// conversations, never pull requests. With neither, it shows [absent], or a
+/// pencil glyph when [absent] is null.
 /// Association state hydrates from cache; a PR opened outside the app arrives
 /// with the branch match. The row renders immediately and never blocks on
 /// either.
@@ -15,6 +15,7 @@ class SpaceLeadingIcon extends ConsumerWidget {
     required this.running,
     required this.selected,
     this.absent,
+    this.unreadConversationCount = 0,
   });
 
   /// The space whose PRs the badge aggregates.
@@ -22,6 +23,9 @@ class SpaceLeadingIcon extends ConsumerWidget {
 
   /// Whether an agent is currently running in the space.
   final bool running;
+
+  /// Distinct conversations with unseen agent messages.
+  final int unreadConversationCount;
 
   /// On the selected row's solid brand fill the default accent spinner and
   /// the accent count adornment would vanish into the fill, so both switch to
@@ -35,60 +39,48 @@ class SpaceLeadingIcon extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    Widget mark;
     if (running) {
-      return CcSpinner(size: 18, color: selected ? t.accentOn : null);
-    }
-    final (:status, :openCount) = ref.watch(_spacePrBadgeProvider(spaceId));
-    if (status == null) {
-      // No resolved PR status yet — a fresh or still-loading space.
-      return absent ?? const Icon(AppIcons.pencil, size: 18);
-    }
-    final badge = PrStatusBadge(
-      status: status,
-      color: selected ? t.accentOn : null,
-    );
-    if (openCount < 1) {
+      mark = CcSpinner(size: 18, color: selected ? t.accentOn : null);
+    } else {
+      final status = ref.watch(_spacePrBadgeProvider(spaceId));
+      mark = status == null
+          ? absent ?? const Icon(AppIcons.pencil, size: 18)
+          : PrStatusBadge(status: status, color: selected ? t.accentOn : null);
       if (status == PrSidebarStatus.merged) {
         final label = AppLocalizations.of(context).spaceAllPrsMergedLabel;
-        return CcTooltip(
+        mark = CcTooltip(
           message: label,
-          child: Semantics(label: label, child: badge),
+          child: Semantics(label: label, child: mark),
         );
       }
-      return badge;
     }
-    // The badge already conveys the (aggregate) state; the count tells the user
-    // how many PRs are open across the space's repo(s).
-    return _PrCountAdornment(
-      count: openCount,
+    if (unreadConversationCount == 0) {
+      return mark;
+    }
+    return _UnreadConversationAdornment(
+      count: unreadConversationCount,
       selected: selected,
-      child: badge,
+      child: mark,
     );
   }
 }
 
-/// What a space row's PR badge shows: the aggregate status (null for none)
-/// and how many of the PRs are open.
-///
-/// A record, compared by value: the linked-PR list is rebuilt on every
+/// The aggregate PR status (null for none), without a numeric PR inventory.
+/// Compared by value: the linked-PR list is rebuilt on every
 /// association or PR refresh, and the branch matches on every poller sweep,
 /// yet the badge rarely changes — so the row repaints only when it does.
 final _spacePrBadgeProvider = Provider.autoDispose
-    .family<({PrSidebarStatus? status, int openCount}), String>((ref, spaceId) {
+    .family<PrSidebarStatus?, String>((ref, spaceId) {
       final prs = ref.watch(spacePullRequestsProvider(spaceId));
       final allMerged = ref.watch(spaceAllPrsMergedProvider(spaceId));
       final status = PrSidebarStatus.aggregate(prs);
-      return (
-        status: status == PrSidebarStatus.merged && !allMerged ? null : status,
-        openCount: prs.where((pr) => pr.isOpen).length,
-      );
+      return status == PrSidebarStatus.merged && !allMerged ? null : status;
     });
 
-/// Overlays a small numeric badge on the top-right of [child] — the count of a
-/// space's open PRs. A number (not colour) is the differentiator, per
-/// DESIGN.md's never-status-by-colour-alone rule.
-class _PrCountAdornment extends StatelessWidget {
-  const _PrCountAdornment({
+/// Overlays the unread-conversation count on a space's status glyph.
+class _UnreadConversationAdornment extends StatelessWidget {
+  const _UnreadConversationAdornment({
     required this.count,
     required this.selected,
     required this.child,
@@ -105,6 +97,11 @@ class _PrCountAdornment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
+    final label = '${l10n.filterUnread}: ${l10n.conversationCount(count)}';
+    final number = NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toString(),
+    ).format(count);
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -112,22 +109,29 @@ class _PrCountAdornment extends StatelessWidget {
         PositionedDirectional(
           top: -6,
           end: -8,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            constraints: const BoxConstraints(minWidth: 14),
-            decoration: BoxDecoration(
-              color: selected ? t.accentOn : t.accent,
-              borderRadius: BorderRadius.circular(7),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              count > 9 ? '9+' : '$count',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 9,
-                height: 1,
-                fontWeight: FontWeight.w600,
-                color: selected ? t.bgBrandSolid : t.accentOn,
+          child: CcTooltip(
+            message: label,
+            child: Semantics(
+              label: label,
+              excludeSemantics: true,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                constraints: const BoxConstraints(minWidth: 14),
+                decoration: BoxDecoration(
+                  color: selected ? t.accentOn : t.accent,
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  number,
+                  textAlign: TextAlign.center,
+                  style: CcFonts.code(textStyle: CcTypography.monoNum).copyWith(
+                    fontSize: 9,
+                    height: 1,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? t.bgBrandSolid : t.accentOn,
+                  ),
+                ),
               ),
             ),
           ),

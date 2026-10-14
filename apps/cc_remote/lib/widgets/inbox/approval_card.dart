@@ -4,6 +4,7 @@ import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/format.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_remote/widgets/phone_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,6 +61,7 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
 
     return CcCard(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -69,61 +71,62 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
                 size: 16,
                 color: destructive ? t.textErrorPrimary : t.textWarningPrimary,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  request.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: t.textPrimary,
-                  ),
-                ),
-              ),
-              if (since != null)
+              if (since != null) ...[
+                const SizedBox(width: 8),
                 Text(
                   AppLocalizations.of(
                     context,
                   ).waitingAgo(shortAgo(context, since)),
                   style: TextStyle(fontSize: 11, color: t.textTertiary),
                 ),
+              ],
             ],
           ),
-          if (request.detail.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              request.detail,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: t.textSecondary,
-              ),
+          const SizedBox(height: 8),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: (MediaQuery.sizeOf(context).height * 0.36)
+                  .clamp(0.0, 320.0)
+                  .toDouble(),
             ),
-          ],
-          if ((request.command ?? '').isNotEmpty) ...[
-            const SizedBox(height: 10),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: t.bgTertiary,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Text(
-                  request.command!,
-                  style: CcFonts.code(
-                    textStyle: TextStyle(
-                      fontSize: 12,
-                      height: 1.45,
-                      color: t.textPrimary,
+            child: CcScrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      request.title.isEmpty
+                          ? AppLocalizations.of(context).agentApprovalRequired
+                          : request.title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: t.textPrimary,
+                      ),
                     ),
-                  ),
+                    if (request.detail.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        request.detail,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: t.textSecondary,
+                        ),
+                      ),
+                    ],
+                    if ((request.command ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      PhoneApprovalCodeBlock(source: request.command!),
+                    ],
+                  ],
                 ),
               ),
             ),
-          ],
+          ),
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(

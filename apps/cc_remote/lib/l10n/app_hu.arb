@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Kihagyva",
   "agentQuestionFreeformHint": "Írja be a válaszát…",
   "agentApprovalRequired": "Jóváhagyás szükséges",
+  "copyCommand": "Parancs másolása",
   "approveAndRemember": "Jóváhagyás 8 órára",
   "decline": "Elutasítás",
   "confirm": "Megerősítés",

@@ -3,6 +3,7 @@ import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/media_proxy.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -49,6 +50,60 @@ class PhoneMarkdown extends ConsumerWidget {
       onTaskCheckboxChanged: onTaskCheckboxChanged,
       imageBuilder: (url, alt, title) =>
           _PhoneMarkdownImage(url: url, alt: alt, endpoint: endpoint),
+    );
+  }
+}
+
+/// Approval commands reuse phone markdown's code-block styling, but render
+/// verbatim source: a script may contain fence delimiters or trailing newlines.
+/// Copy bypasses selection filters so every source byte stays intact.
+class PhoneApprovalCodeBlock extends StatelessWidget {
+  const PhoneApprovalCodeBlock({super.key, required this.source});
+
+  final String source;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final style = phoneMarkdownStyle(t, 13);
+    return Container(
+      width: double.infinity,
+      decoration: style.codeblockDecoration,
+      padding: style.codeblockPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Text('bash', style: style.code?.copyWith(color: t.textTertiary)),
+              const Spacer(),
+              CcButton(
+                variant: CcButtonVariant.ghost,
+                onPressed: () => Clipboard.setData(ClipboardData(text: source)),
+                child: Text(AppLocalizations.of(context).copyCommand),
+              ),
+            ],
+          ),
+          // RTL carve-out: shell source keeps its own LTR direction, independent
+          // of the language of the approval card and Copy control around it.
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: CcScrollbar(
+              thumbVisibility: true,
+              scrollbarOrientation: ScrollbarOrientation.bottom,
+              child: SingleChildScrollView(
+                primary: true,
+                scrollDirection: Axis.horizontal,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(source, style: style.code, softWrap: false),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

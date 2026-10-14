@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Omitida",
   "agentQuestionFreeformHint": "Escribe tu respuesta…",
   "agentApprovalRequired": "Se requiere aprobación",
+  "copyCommand": "Copiar comando",
   "approveAndRemember": "Aprobar durante 8 horas",
   "decline": "Rechazar",
   "confirm": "Confirm",

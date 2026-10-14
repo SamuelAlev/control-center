@@ -17,6 +17,7 @@
   "agentQuestionSkippedLabel": "تم التخطي",
   "agentQuestionFreeformHint": "اكتب إجابتك…",
   "agentApprovalRequired": "يلزم الموافقة",
+  "copyCommand": "نسخ الأمر",
   "approveAndRemember": "الموافقة لمدة 8 ساعات",
   "decline": "رفض",
   "confirm": "تأكيد",

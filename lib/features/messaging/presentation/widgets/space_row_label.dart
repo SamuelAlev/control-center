@@ -102,10 +102,16 @@ class SpaceRowLabel extends StatelessWidget {
         Row(
           children: [
             Flexible(
-              child: CcScrambleText(
-                label,
-                scrambling: labelScrambling,
-                style: _labelStyle,
+              child: CcTooltip(
+                message: label,
+                showDelay: const Duration(milliseconds: 700),
+                placement: CcTooltipPlacement.end,
+                maxWidth: 480,
+                child: CcScrambleText(
+                  label,
+                  scrambling: labelScrambling,
+                  style: _labelStyle,
+                ),
               ),
             ),
             if (showCount) ...[

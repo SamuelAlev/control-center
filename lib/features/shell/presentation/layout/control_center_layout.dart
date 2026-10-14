@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/keybindings/keybinding_providers.dart';
 import 'package:control_center/core/update/desktop_update_controller.dart';
 import 'package:control_center/features/chat_bridges/providers/chat_bridge_space_auto_open.dart';
@@ -41,6 +44,11 @@ class ControlCenterLayout extends ConsumerStatefulWidget {
 }
 
 class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
+  // Reparent the live panes between the rail Row and expanded splitter without
+  // losing settings return navigation, disclosure state or editor contents.
+  final _sidebarKey = GlobalKey();
+  final _contentKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -135,17 +143,7 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
                       onGoForward: historyNotifier.goForward,
                     ),
                   ),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        // Primary navigation.
-                        const RepaintBoundary(child: AppSidebar()),
-                        if (showSpacesSubSidebar)
-                          const RepaintBoundary(child: SpacesSubSidebar()),
-                        Expanded(child: RepaintBoundary(child: widget.child)),
-                      ],
-                    ),
-                  ),
+                  Expanded(child: _buildPanes(showSpacesSubSidebar)),
                 ],
               ),
               // Floating recording HUD — persists across navigation while a
@@ -180,6 +178,59 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPanes(bool showSpacesSubSidebar) {
+    final sidebar = RepaintBoundary(
+      key: _sidebarKey,
+      child: const AppSidebar(),
+    );
+    final content = RepaintBoundary(key: _contentKey, child: widget.child);
+    if (ref.watch(sidebarCollapsedProvider)) {
+      return Row(
+        children: [
+          sidebar,
+          if (showSpacesSubSidebar)
+            const RepaintBoundary(child: SpacesSubSidebar()),
+          Expanded(child: content),
+        ],
+      );
+    }
+    final width = ref.watch(sidebarWidthProvider);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = constraints.maxWidth;
+        // Desktop windows start at 1024px. A narrower web viewport must not
+        // overflow just because both expanded panes have desktop minima.
+        if (available < kMinSidebarWidth + 320) {
+          return Row(
+            children: [
+              SizedBox(width: math.min(width, available / 2), child: sidebar),
+              Expanded(child: content),
+            ],
+          );
+        }
+        return CcResizable(
+          axis: Axis.horizontal,
+          dividerColor: context.ds.borderPrimary,
+          onResize: (extents) =>
+              ref.read(sidebarWidthProvider.notifier).setWidth(extents.first),
+          regions: [
+            CcResizableRegion(
+              initialExtent: width,
+              minExtent: kMinSidebarWidth,
+              maxExtent: kMaxSidebarWidth,
+              builder: (_) => sidebar,
+            ),
+            CcResizableRegion(
+              initialExtent: available - width,
+              minExtent: 320,
+              builder: (_) => content,
+            ),
+          ],
+        );
+      },
     );
   }
 }

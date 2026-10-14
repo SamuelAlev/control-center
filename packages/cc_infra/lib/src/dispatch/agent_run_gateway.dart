@@ -331,6 +331,7 @@ class AgentRunGateway {
           agentId: grant.agentId,
           mode: grant.mode,
           actionSummary: 'bash: $command',
+          approvalRationale: description,
           onBehalfOfUserId: grant.actingUserId,
           runId: grant.runId,
           request: ActionRequest(classes: classes, command: command),

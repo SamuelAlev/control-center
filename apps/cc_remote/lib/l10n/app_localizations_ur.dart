@@ -57,6 +57,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get agentApprovalRequired => 'منظوری درکار ہے';
 
   @override
+  String get copyCommand => 'کمانڈ کاپی کریں';
+
+  @override
   String get approveAndRemember => '۸ گھنٹے کے لیے منظور کریں';
 
   @override

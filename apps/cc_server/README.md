@@ -8,11 +8,13 @@ Headless pure-Dart server with the `cc_persistence` Drift/SQLite database and re
 # from the repo root; stage all required runtime natives first
 scripts/natives/build_natives.sh
 cd apps/cc_server
-fvm dart build cli
+../../scripts/build_server.sh
 ./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
 ```
 
-Use `fvm dart build cli` rather than `dart compile`: the build hooks bundle `libsqlite3` and staged FFI libraries under `<bundle>/lib/`. The server refuses to boot without required natives; rift is exempt only on Windows, which uses `git worktree`. See [cc_natives](../../packages/cc_natives/README.md) for staging, overrides and compile-only exceptions. On-device embedding, diarization and selected speech models download into `<data-dir>/models` at boot; speech recording operations require a restart after download. Code-server is also downloaded at runtime.
+Use `scripts/build_server.sh` rather than raw `dart build cli` or `dart compile`. It runs the CLI build with the repo-pinned SDK, then stages and verifies the complete managed media directory under `<bundle>/bin/media/`; the Dart build hooks bundle `libsqlite3` and staged FFI libraries under `<bundle>/lib/`. The resulting bundle works with any `--data-dir`, without `CC_MEDIA_TOOLS_DIR`. Raw `dart build cli` alone does not bundle the media executables, fonts or licenses. On Windows ARM64, run `scripts/build_server.sh cc_server arm64` from Git Bash.
+
+The server refuses to boot without required natives; rift is exempt only on Windows, which uses `git worktree`. See [cc_natives](../../packages/cc_natives/README.md) for staging, overrides and compile-only exceptions. On-device embedding, diarization and selected speech models download into `<data-dir>/models` at boot; speech recording operations require a restart after download. Code-server is also downloaded at runtime.
 
 CLI flags override environment variables, which override defaults:
 

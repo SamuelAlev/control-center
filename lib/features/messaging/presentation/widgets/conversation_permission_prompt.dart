@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:cc_domain/cc_domain.dart' show ConfirmationRequestDto;
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
@@ -6,21 +7,29 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_card.dart';
 import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// In-conversation permission prompt: pending agent-action approvals for
-/// [spaceId], rendered as [AskUserCard]s above the composer.
+/// [spaceId], rendered as a FIFO [AskUserCard] above the composer.
 ///
 /// The global overlay hides the same requests while this widget's space is
 /// mounted, so a person looking at the chat is not also staring at a floating
 /// deck in the corner.
 class ConversationPermissionPrompt extends ConsumerStatefulWidget {
   /// Creates a [ConversationPermissionPrompt].
-  const ConversationPermissionPrompt({super.key, required this.spaceId});
+  const ConversationPermissionPrompt({
+    super.key,
+    required this.spaceId,
+    this.maxHeight,
+  });
 
   /// The space whose blocked actions this prompt answers.
   final String spaceId;
+
+  /// Height budget from the conversation pane, not the whole app window.
+  final double? maxHeight;
 
   @override
   ConsumerState<ConversationPermissionPrompt> createState() =>
@@ -78,26 +87,42 @@ class _ConversationPermissionPromptState
     if (mine.isEmpty) {
       return const SizedBox.shrink();
     }
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.sm,
-        AppSpacing.lg,
-        AppSpacing.sm,
+    final request = mine.first;
+    final l10n = AppLocalizations.of(context);
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: math.min(
+          520,
+          widget.maxHeight ?? MediaQuery.sizeOf(context).height * 0.6,
+        ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < mine.length; i++) ...[
-            if (i > 0) const SizedBox(height: AppSpacing.sm),
-            _PermissionCard(
-              request: mine[i],
-              submitting: _responding.contains(mine[i].id),
-              onSubmit: (answer) => _onAnswer(mine[i], answer),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (mine.length > 1) ...[
+              Text(
+                l10n.agentApprovalsMoreWaiting(mine.length - 1),
+                style: CcTypography.caption.copyWith(color: t.textSecondary),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+            ],
+            Flexible(
+              child: _PermissionCard(
+                key: ValueKey(request.id),
+                request: request,
+                submitting: _responding.contains(request.id),
+                onSubmit: (answer) => _onAnswer(request, answer),
+              ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -105,6 +130,7 @@ class _ConversationPermissionPromptState
 
 class _PermissionCard extends StatelessWidget {
   const _PermissionCard({
+    super.key,
     required this.request,
     required this.submitting,
     required this.onSubmit,
@@ -117,13 +143,17 @@ class _PermissionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
     final command = request.command;
+    final explanation = [
+      if (request.detail.isNotEmpty) request.detail,
+      if (request.isRememberable)
+        '${l10n.approveAndRemember}: ${l10n.approveAndRememberTooltip}',
+    ].join('\n\n');
     return AskUserCard(
       question: request.title.isEmpty
           ? l10n.agentApprovalRequired
           : request.title,
-      contextText: request.detail.isEmpty ? null : request.detail,
+      contextText: explanation.isEmpty ? null : explanation,
       caption: l10n.agentApprovalRequired,
       allowSkip: false,
       allowFreeText: false,
@@ -131,25 +161,11 @@ class _PermissionCard extends StatelessWidget {
       submitting: submitting,
       extraBody: command == null || command.isEmpty
           ? null
-          : DecoratedBox(
-              decoration: BoxDecoration(
-                color: t.bgSecondary,
-                border: Border.all(color: t.borderSecondary),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xs,
-                ),
-                child: Text(
-                  command,
-                  style: CcFonts.code(
-                    textStyle: CcTypography.bodySm.copyWith(
-                      color: t.textPrimary,
-                    ),
-                  ),
-                ),
-              ),
+          : buildSharedCodeBlock(
+              context,
+              command,
+              'bash',
+              showFullSource: true,
             ),
       options: [
         AgentQuestionOption(label: l10n.deny, value: 'deny'),
@@ -158,7 +174,6 @@ class _PermissionCard extends StatelessWidget {
           AgentQuestionOption(
             label: l10n.approveAndRemember,
             value: 'remember',
-            description: l10n.approveAndRememberTooltip,
           ),
       ],
       onSubmit: submitting ? null : onSubmit,

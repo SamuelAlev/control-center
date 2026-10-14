@@ -142,6 +142,9 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
         SpaceLeadingIcon(
           spaceId: space.id,
           running: running,
+          unreadConversationCount: muted
+              ? 0
+              : ref.watch(spaceUnreadConversationCountProvider(space.id)),
           // Quiet selection paints no brand fill, so the status-colored PR
           // glyph stays. Recolouring is only for the solid selected row.
           selected: selected && !quietSelection,

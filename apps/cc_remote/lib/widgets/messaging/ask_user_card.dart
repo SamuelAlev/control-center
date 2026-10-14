@@ -22,6 +22,7 @@ class AskUserCard extends StatefulWidget {
     this.allowSkip = true,
     this.caption,
     this.extraBody,
+    this.scrollableBody = false,
     this.answered,
     this.submitting = false,
     this.onSubmit,
@@ -50,6 +51,9 @@ class AskUserCard extends StatefulWidget {
 
   /// Extra content between the question and the options (a command block).
   final Widget? extraBody;
+
+  /// Bound long approval explanations and commands without moving the answers.
+  final bool scrollableBody;
 
   /// When non-null the card is a read-only result.
   final AgentQuestionAnswer? answered;
@@ -167,22 +171,25 @@ class _AskUserCardState extends State<AskUserCard> {
               _caption(l10n, answered),
               style: CcTypography.caption.copyWith(color: t.textTertiary),
             ),
-            const SizedBox(height: 8),
-            Text(
-              widget.question,
-              style: CcTypography.title.copyWith(color: t.textPrimary),
-            ),
-            if ((widget.contextText ?? '').isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                widget.contextText!,
-                style: CcTypography.body.copyWith(color: t.textSecondary),
-              ),
-            ],
-            if (widget.extraBody != null) ...[
-              const SizedBox(height: 12),
-              widget.extraBody!,
-            ],
+            if (widget.scrollableBody)
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: (MediaQuery.sizeOf(context).height * 0.36)
+                      .clamp(0.0, 320.0)
+                      .toDouble(),
+                ),
+                child: CcScrollbar(
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsetsDirectional.only(
+                      end: AppSpacing.sm,
+                    ),
+                    child: _body(t),
+                  ),
+                ),
+              )
+            else
+              _body(t),
             const SizedBox(height: 12),
             for (var i = 0; i < widget.options.length; i++)
               _option(t, i, widget.options[i]),
@@ -237,6 +244,31 @@ class _AskUserCardState extends State<AskUserCard> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _body(DesignSystemTokens t) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 8),
+        Text(
+          widget.question,
+          style: CcTypography.title.copyWith(color: t.textPrimary),
+        ),
+        if ((widget.contextText ?? '').isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            widget.contextText!,
+            style: CcTypography.body.copyWith(color: t.textSecondary),
+          ),
+        ],
+        if (widget.extraBody != null) ...[
+          const SizedBox(height: 12),
+          widget.extraBody!,
+        ],
+      ],
     );
   }
 

@@ -35,10 +35,13 @@ class CreateTicketTool extends McpTool {
 
   @override
   ApprovalPayload? buildConfirmationRequest(Map<String, dynamic> arguments) {
+    final title = arguments['title'];
     return ApprovalPayload(
-      title: 'Create ticket',
-      detail:
-          'About to create a ticket: "${arguments['title'] ?? '(untitled)'}".',
+      title: 'Agent would like to create a ticket. Do you accept?',
+      detail: title is String && title.trim().isNotEmpty
+          ? 'A new ticket titled "$title" will be created on the configured '
+                'ticket provider.'
+          : 'A new ticket will be created on the configured ticket provider.',
     );
   }
 
@@ -236,9 +239,26 @@ class UpdateTicketTool extends McpTool {
 
   @override
   ApprovalPayload? buildConfirmationRequest(Map<String, dynamic> arguments) {
+    final id = arguments['ticket_id'];
+    final fields =
+        const {
+              'status': 'status',
+              'title': 'title',
+              'description': 'description',
+              'priority': 'priority',
+              'labels': 'labels',
+              'add_labels': 'labels to add',
+              'remove_labels': 'labels to remove',
+            }.entries
+            .where((field) => arguments.containsKey(field.key))
+            .map((field) => field.value)
+            .toList();
     return ApprovalPayload(
-      title: 'Update ticket',
-      detail: 'About to update ticket ${arguments['ticket_id'] ?? 'unknown'}.',
+      title: 'Agent would like to update a ticket. Do you accept?',
+      detail:
+          'Ticket ${id is String && id.isNotEmpty ? id : '(unspecified)'} '
+          'will be updated${fields.isEmpty ? '' : ' (${fields.join(', ')})'} '
+          'on the configured ticket provider.',
     );
   }
 

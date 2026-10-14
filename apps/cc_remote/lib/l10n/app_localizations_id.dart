@@ -57,6 +57,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get agentApprovalRequired => 'Persetujuan diperlukan';
 
   @override
+  String get copyCommand => 'Salin perintah';
+
+  @override
   String get approveAndRemember => 'Setujui selama 8 jam';
 
   @override

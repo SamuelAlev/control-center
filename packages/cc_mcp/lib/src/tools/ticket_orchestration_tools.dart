@@ -18,13 +18,20 @@ class AssignTicketTool extends McpTool {
   bool get requiresApproval => true;
 
   @override
-  ApprovalPayload? buildConfirmationRequest(Map<String, dynamic> arguments) =>
-      ApprovalPayload(
-        title: 'Assign ticket',
-        detail:
-            'Assign ticket ${arguments['ticket_id']} to '
-            '${arguments['agent_id'] ?? arguments['team_id'] ?? 'nobody'}.',
-      );
+  ApprovalPayload? buildConfirmationRequest(Map<String, dynamic> arguments) {
+    final assignees = [
+      if (arguments['agent_id'] is String) 'agent ${arguments['agent_id']}',
+      if (arguments['team_id'] is String) 'team ${arguments['team_id']}',
+    ];
+    return ApprovalPayload(
+      title: 'Agent would like to assign a ticket. Do you accept?',
+      detail: assignees.isEmpty
+          ? 'The assignment for ticket '
+                '${arguments['ticket_id'] ?? '(unspecified)'} will be cleared.'
+          : 'Ticket ${arguments['ticket_id'] ?? '(unspecified)'} will be '
+                'assigned to ${assignees.join(' and ')}.',
+    );
+  }
 
   @override
   String get name => 'assign_ticket';
@@ -87,10 +94,10 @@ class ReassignTicketTool extends McpTool {
   @override
   ApprovalPayload? buildConfirmationRequest(Map<String, dynamic> arguments) =>
       ApprovalPayload(
-        title: 'Reassign ticket',
+        title: 'Agent would like to reassign a ticket. Do you accept?',
         detail:
-            'Reassign ticket ${arguments['ticket_id']} to '
-            '${arguments['agent_id']}.',
+            'Ticket ${arguments['ticket_id'] ?? '(unspecified)'} will be '
+            'reassigned to agent ${arguments['agent_id'] ?? '(unspecified)'}.',
       );
 
   @override
@@ -355,8 +362,10 @@ class CloseTicketTool extends McpTool {
   @override
   ApprovalPayload? buildConfirmationRequest(Map<String, dynamic> arguments) =>
       ApprovalPayload(
-        title: 'Close ticket',
-        detail: 'Mark ticket ${arguments['ticket_id']} as done.',
+        title: 'Agent would like to close a ticket. Do you accept?',
+        detail:
+            'Ticket ${arguments['ticket_id'] ?? '(unspecified)'} will be '
+            'marked done on the configured ticket provider.',
       );
 
   @override

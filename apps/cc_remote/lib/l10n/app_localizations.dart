@@ -252,6 +252,12 @@ abstract class AppLocalizations {
   /// **'Approval required'**
   String get agentApprovalRequired;
 
+  /// Button copying the entire verbatim shell script on an agent approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy command'**
+  String get copyCommand;
+
   /// No description provided for @approveAndRemember.
   ///
   /// In en, this message translates to:

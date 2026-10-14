@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Ignorée",
   "agentQuestionFreeformHint": "Saisissez votre réponse…",
   "agentApprovalRequired": "Approbation requise",
+  "copyCommand": "Copier la commande",
   "approveAndRemember": "Approuver pendant 8 heures",
   "decline": "Refuser",
   "confirm": "Confirm",

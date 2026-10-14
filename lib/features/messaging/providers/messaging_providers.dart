@@ -683,6 +683,28 @@ final conversationUnreadProvider = Provider.autoDispose
       return lastAgentAt != null && lastAgentAt.isAfter(lastReadAt);
     });
 
+/// Number of distinct conversations with agent mail after the space's read
+/// cursor. Uses the workspace activity breakdown, not message or PR counts.
+/// Never-opened spaces follow the existing unread policy and stay quiet.
+final spaceUnreadConversationCountProvider = Provider.autoDispose
+    .family<int, String>((ref, spaceId) {
+      final lastReadAt = ref.watch(spaceUserLastReadAtProvider(spaceId)).value;
+      if (lastReadAt == null) {
+        return 0;
+      }
+      final activity = _spaceActivityOf(ref, spaceId);
+      if (activity == null) {
+        return 0;
+      }
+      var count = 0;
+      for (final at in activity.lastAgentMessageAtByConversation.values) {
+        if (at.isAfter(lastReadAt)) {
+          count++;
+        }
+      }
+      return count;
+    });
+
 /// Initial number of messages shown in a space feed window.
 const int kSpaceFeedInitialWindow = 60;
 

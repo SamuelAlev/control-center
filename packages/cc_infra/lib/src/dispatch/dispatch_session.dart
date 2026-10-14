@@ -27,8 +27,10 @@ import 'package:cc_domain/features/dispatch/domain/modes/mode_capability_profile
 import 'package:cc_domain/features/dispatch/domain/prompts/capability_preamble.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
     show AgentPromptParts, DeliveredPromptContext;
+import 'package:cc_domain/features/guardrails/domain/services/action_approval_copy.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_request_extractor.dart';
 import 'package:cc_domain/features/guardrails/domain/services/autonomy_composition.dart';
+import 'package:cc_domain/features/guardrails/domain/services/shell_action_classifier.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mode_tool_policy.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
@@ -740,20 +742,6 @@ class DispatchSession implements SteeringSessionView {
     // question would be denied the act of asking.
     'ask_user',
   };
-
-  /// A short, human-readable summary of the salient tool arguments (URL, path,
-  /// command) so an approval prompt shows *what* is being approved, not just the
-  /// tool name. Returns an empty string when there is nothing worth showing.
-  static String _approvalArgsSummary(Map<String, dynamic> args) {
-    for (final key in const ['url', 'command', 'path', 'query', 'file']) {
-      final value = args[key];
-      if (value is String && value.trim().isNotEmpty) {
-        final v = value.length > 200 ? '${value.substring(0, 200)}…' : value;
-        return '\n$key: $v';
-      }
-    }
-    return '';
-  }
 
   /// Per-run Git author/committer identity and optional requester co-author.
   /// Attribution enabled: Control Center authors; disabled: the requester does.
@@ -1822,12 +1810,19 @@ class DispatchSession implements SteeringSessionView {
           _completeRun();
           return false;
         }
+        final copy = ActionApprovalCopy.describe(
+          classes: {
+            ActionClass.processSpawn,
+            ...const ShellActionClassifier().classify(command),
+          },
+          command: command,
+        );
         final approved = await port.requestApproval(
           ConfirmationRequest(
             spaceId: spaceId ?? '',
             workspaceId: workspaceId,
-            title: 'Approve command',
-            detail: 'An agent is about to run:',
+            title: copy.title,
+            detail: copy.detail,
             command: command,
             severity: ConfirmationSeverity.warning,
             kind: ConfirmationKind.command,

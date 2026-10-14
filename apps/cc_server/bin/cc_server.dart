@@ -5,7 +5,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_server_core/cc_server_core.dart';
 
 /// Entrypoint for the Control Center headless server (pure Dart, no Flutter).
-/// Build with `dart build cli`; bundle ships `libsqlite3`.
+/// Build with `scripts/build_server.sh` to include FFI libraries and media tools.
 ///
 /// Subcommands: `pair` (device + PSK, optional QR); `calendar connect
 /// `--workspace <id>`` (Google device-code flow); `update` (stage/apply

@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Atlandı",
   "agentQuestionFreeformHint": "Yanıtınızı yazın…",
   "agentApprovalRequired": "Onay gerekli",
+  "copyCommand": "Komutu kopyala",
   "approveAndRemember": "8 saatliğine onayla",
   "decline": "Reddet",
   "confirm": "Onayla",

@@ -283,6 +283,10 @@ void main() {
 
         expect(confirm.asked, hasLength(1));
         expect(confirm.asked.single.spaceId, 's1');
+        expect(confirm.asked.single.title, contains('push to main'));
+        expect(confirm.asked.single.title, isNot(contains('gitPush')));
+        expect(confirm.asked.single.detail, isNot(contains('Policy:')));
+        expect(confirm.asked.single.command, isNull);
         expect(r.status, 200);
         expect(r.body, contains('ng refs/heads/main'));
         expect(r.body, contains('Control Center policy'));
@@ -515,6 +519,24 @@ void main() {
       expect((await pending).exitCode, 0);
     });
 
+    test(
+      'Bash rationale is attributed without replacing the full command',
+      () async {
+        const command = 'gh pr create --fill';
+        final result = await hook(
+          'Bash',
+          command,
+          description: 'Open a review request for the current changes',
+        );
+        expect(result.exitCode, 0);
+        expect(
+          confirm.asked.single.detail,
+          contains('Open a review request for the current changes'),
+        );
+        expect(confirm.asked.single.command, command);
+      },
+    );
+
     const compoundPush =
         r'cd repos/web-app && U="https://x-access-token:${GH_TOKEN}@github.com:443/acme/widgets.git"; '
         r'ARGS=(); for b in feature/a feature/b; do ARGS+=("--force-with-lease=refs/heads/$b:$(git rev-parse origin/$b)"); '
@@ -530,6 +552,15 @@ void main() {
         final result = await hook('Bash', command);
         expect(result.exitCode, 2);
         expect(confirm.asked.single.spaceId, 's1');
+        expect(confirm.asked.single.command, command);
+        expect(confirm.asked.single.title, isNot(contains('bash:')));
+        expect(confirm.asked.single.detail, isNot(contains('Policy:')));
+        if (command == 'cd repo; rm obsolete.dart') {
+          expect(
+            confirm.asked.single.title,
+            contains('may delete obsolete.dart'),
+          );
+        }
         expect(audits.single.decision, ActionDecision.deny);
       });
     }

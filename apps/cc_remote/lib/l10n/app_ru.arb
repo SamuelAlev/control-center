@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Пропущено",
   "agentQuestionFreeformHint": "Введите ответ…",
   "agentApprovalRequired": "Требуется подтверждение",
+  "copyCommand": "Скопировать команду",
   "approveAndRemember": "Разрешить на 8 часов",
   "decline": "Отклонить",
   "confirm": "Подтвердить",

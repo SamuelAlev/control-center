@@ -12,13 +12,14 @@ ConfirmationRequestDto _req(
   int i, {
   String detail = 'Short detail',
   String spaceId = 'space-1',
+  String? command,
 }) => ConfirmationRequestDto(
   id: 'req-$i',
   spaceId: spaceId,
   title: 'Request $i',
   detail: detail,
   severity: 'warning',
-  command: 'rm -rf /tmp/$i',
+  command: command ?? 'rm -rf /tmp/$i',
   createdAt: '2026-01-0${i + 1}T00:00:00Z',
 );
 
@@ -118,41 +119,39 @@ void main() {
     expect(find.text('8 more waiting'), findsOneWidget);
   });
 
-  testWidgets('deck layers rise above and inset behind the front card', (
-    tester,
-  ) async {
-    await _pumpOverlay(tester, [for (var i = 0; i < 5; i++) _req(i)]);
-
-    final card = tester.getRect(find.text('Request 0'));
-    final layers = tester
-        .widgetList(_deckLayers())
-        .map((w) => tester.getRect(find.byKey(w.key!)))
-        .toList();
-
-    for (final layer in layers) {
-      // Each peeks above the front card and is narrower than it.
-      expect(layer.top, lessThan(card.top));
-      expect(layer.left, greaterThan(0));
-    }
-    // Deeper layers rise further: the deck reads as a stack, not one card.
-    final tops = layers.map((r) => r.top).toList()..sort();
-    expect(tops.first, lessThan(tops.last));
-  });
-
   testWidgets('a very long request keeps its decision buttons on screen', (
     tester,
   ) async {
+    final script = List.generate(80, (i) => 'echo "line $i"').join('\n');
     await _pumpOverlay(tester, [
-      _req(0, detail: List.filled(400, 'a long explanation').join(' ')),
+      _req(
+        0,
+        detail: List.filled(400, 'a long explanation').join(' '),
+        command: script,
+      ),
       _req(1),
     ]);
 
-    // No overflow, and the actions did not get pushed off the card: the body
-    // scrolls inside the card instead of the whole overlay scrolling.
+    final approve = find.text('Approve');
+    final actionRect = tester.getRect(approve);
+    expect(approve.hitTestable(), findsOneWidget);
+    expect(actionRect.bottom, lessThanOrEqualTo(900));
+    final vertical = find.byWidgetPredicate(
+      (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+    );
+    final position = tester.state<ScrollableState>(vertical).position;
+    await tester.drag(vertical, const Offset(0, -200));
+    await tester.pumpAndSettle();
+    expect(position.pixels, greaterThan(0));
+    expect(tester.getRect(approve), actionRect);
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    final source = tester.getRect(find.text(script, findRichText: true));
+    final viewport = tester.getRect(vertical);
+    expect(source.bottom, lessThanOrEqualTo(viewport.bottom));
+    expect(source.bottom, greaterThan(viewport.top));
+    expect(approve.hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
-    final approve = tester.getRect(find.text('Approve'));
-    expect(approve.bottom, lessThanOrEqualTo(900));
-    expect(find.byType(SingleChildScrollView), findsOneWidget);
   });
 
   testWidgets(

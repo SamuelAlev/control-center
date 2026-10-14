@@ -188,16 +188,17 @@ extension _DispatchSessionHarness on DispatchSession {
       }
 
       if (guard != null && tool.actionClasses.isNotEmpty) {
+        final actionRequest = const ActionRequestExtractor().extract(
+          args,
+          classes: tool.actionClasses,
+        );
         final resolution = await guard.resolve(
           workspaceId: wsId,
           classes: tool.actionClasses,
           spaceId: spaceId,
           agentId: agentId,
           mode: effectiveMode,
-          request: const ActionRequestExtractor().extract(
-            args,
-            classes: tool.actionClasses,
-          ),
+          request: actionRequest,
         );
         void auditOutcome(ActionDecision applied, {bool asked = false}) {
           guard.recordOutcome(
@@ -252,14 +253,17 @@ extension _DispatchSessionHarness on DispatchSession {
             reason: 'approval is required but no approver is connected',
           );
         }
+        final copy = ActionApprovalCopy.describe(
+          classes: tool.actionClasses,
+          request: actionRequest,
+        );
         final approved = await port.requestApproval(
           ConfirmationRequest(
             spaceId: spaceId ?? '',
             workspaceId: workspaceId,
-            title: 'Approve ${tool.name}',
-            detail:
-                '${resolution.driving.reason}'
-                '${DispatchSession._approvalArgsSummary(args)}',
+            title: copy.title,
+            detail: copy.detail,
+            command: actionRequest.command,
             kind: tool.approvalTier == ToolApprovalTier.exec
                 ? ConfirmationKind.command
                 : ConfirmationKind.fileWrite,
@@ -295,14 +299,21 @@ extension _DispatchSessionHarness on DispatchSession {
           reason: 'approval is required but no approver is connected',
         );
       }
+      final actionRequest = const ActionRequestExtractor().extract(
+        args,
+        classes: tool.actionClasses,
+      );
+      final copy = ActionApprovalCopy.describe(
+        classes: tool.actionClasses,
+        request: actionRequest,
+      );
       final approved = await port.requestApproval(
         ConfirmationRequest(
           spaceId: spaceId ?? '',
           workspaceId: workspaceId,
-          title: 'Approve ${tool.name}',
-          detail:
-              'An agent wants to run the "${tool.name}" tool.'
-              '${DispatchSession._approvalArgsSummary(args)}',
+          title: copy.title,
+          detail: copy.detail,
+          command: actionRequest.command,
           kind: tool.approvalTier == ToolApprovalTier.exec
               ? ConfirmationKind.command
               : ConfirmationKind.fileWrite,

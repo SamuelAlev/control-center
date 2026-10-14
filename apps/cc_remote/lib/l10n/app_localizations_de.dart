@@ -57,6 +57,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentApprovalRequired => 'Freigabe erforderlich';
 
   @override
+  String get copyCommand => 'Befehl kopieren';
+
+  @override
   String get approveAndRemember => '8 Stunden lang zulassen';
 
   @override

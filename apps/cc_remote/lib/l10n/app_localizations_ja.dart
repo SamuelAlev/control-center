@@ -57,6 +57,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get agentApprovalRequired => '承認が必要です';
 
   @override
+  String get copyCommand => 'コマンドをコピー';
+
+  @override
   String get approveAndRemember => '8時間承認する';
 
   @override

@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "已跳过",
   "agentQuestionFreeformHint": "输入你的回答…",
   "agentApprovalRequired": "需要批准",
+  "copyCommand": "复制命令",
   "approveAndRemember": "批准 8 小时",
   "decline": "拒绝",
   "confirm": "确认",

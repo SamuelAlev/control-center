@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Übersprungen",
   "agentQuestionFreeformHint": "Gib deine Antwort ein…",
   "agentApprovalRequired": "Freigabe erforderlich",
+  "copyCommand": "Befehl kopieren",
   "approveAndRemember": "8 Stunden lang zulassen",
   "decline": "Ablehnen",
   "confirm": "Confirm",

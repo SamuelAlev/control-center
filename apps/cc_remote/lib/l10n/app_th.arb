@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "ข้ามแล้ว",
   "agentQuestionFreeformHint": "พิมพ์คำตอบของคุณ…",
   "agentApprovalRequired": "ต้องอนุมัติ",
+  "copyCommand": "คัดลอกคำสั่ง",
   "approveAndRemember": "อนุมัติ 8 ชั่วโมง",
   "decline": "ปฏิเสธ",
   "confirm": "ยืนยัน",

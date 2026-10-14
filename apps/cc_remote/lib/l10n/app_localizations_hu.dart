@@ -57,6 +57,9 @@ class AppLocalizationsHu extends AppLocalizations {
   String get agentApprovalRequired => 'Jóváhagyás szükséges';
 
   @override
+  String get copyCommand => 'Parancs másolása';
+
+  @override
   String get approveAndRemember => 'Jóváhagyás 8 órára';
 
   @override

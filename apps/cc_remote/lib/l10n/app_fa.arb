@@ -17,6 +17,7 @@
   "agentQuestionSkippedLabel": "رد شد",
   "agentQuestionFreeformHint": "پاسختان را بنویسید…",
   "agentApprovalRequired": "تأیید لازم است",
+  "copyCommand": "رونوشت فرمان",
   "approveAndRemember": "تأیید برای ۸ ساعت",
   "decline": "نپذیرفتن",
   "confirm": "تأیید",

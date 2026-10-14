@@ -57,6 +57,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get agentApprovalRequired => 'Onay gerekli';
 
   @override
+  String get copyCommand => 'Komutu kopyala';
+
+  @override
   String get approveAndRemember => '8 saatliğine onayla';
 
   @override

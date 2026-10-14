@@ -16,7 +16,7 @@ const double kSpaceSidebarPad = 10;
 /// Status-mark column. The title starts one gap to its end.
 const double kSpaceSidebarMarkSlot = 16;
 
-/// Gap after the status mark, wide enough to clear the open-PR count.
+/// Gap after the status mark, wide enough to clear the unread count.
 const double kSpaceSidebarMarkGap = 16;
 
 /// Nested-conversation status column: a dot or spinner, no hanging PR count.

@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Přeskočeno",
   "agentQuestionFreeformHint": "Napište odpověď…",
   "agentApprovalRequired": "Je potřeba schválení",
+  "copyCommand": "Kopírovat příkaz",
   "approveAndRemember": "Schválit na 8 hodin",
   "decline": "Odmítnout",
   "confirm": "Potvrdit",

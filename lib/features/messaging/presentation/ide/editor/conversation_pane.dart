@@ -127,67 +127,72 @@ class ConversationPane extends ConsumerWidget {
       ),
     );
 
-    return VisibleConversationRegistrar(
-      spaceId: spaceId,
-      child: Column(
-        children: [
-          SpaceHeader(
-            space: space,
-            conversation: conversation,
-            onManage: () => _handleManage(context, ref),
-            onArchive: () => unawaited(_handleArchiveSpace(context, ref)),
-          ),
-          // Thread parent link: when this pane shows a thread, a compact row
-          // points back at the anchor message's conversation.
-          _ThreadParentLink(spaceId: spaceId, conversationId: convId),
-          const CcDivider(),
-          // Someone else is spotlighting this space (PRD 16 §5).
-          SpotlightBanner(spaceId: spaceId),
-          // A take-over of this space's worktree is active (PRD 16 §8).
-          TakeoverBanner(spaceId: spaceId),
-          Expanded(
-            child: SpaceMessageFeed(
-              key: ValueKey('feed-$convId'),
-              spaceId: spaceId,
-              conversationId: convId,
-              onStartThread: (message) => _startThread(context, ref, message),
-              // A thread opens exactly the way the switcher opens any
-              // conversation — it IS one.
-              onOpenThread: onSelectConversation,
+    return LayoutBuilder(
+      builder: (context, constraints) => VisibleConversationRegistrar(
+        spaceId: spaceId,
+        child: Column(
+          children: [
+            SpaceHeader(
+              space: space,
+              conversation: conversation,
+              onManage: () => _handleManage(context, ref),
+              onArchive: () => unawaited(_handleArchiveSpace(context, ref)),
             ),
-          ),
-          const CcDivider(),
-          // The provisioning banner, the typing line and the composer share ONE
-          // centered-column wrapper so they can never drift apart: each status
-          // line's text now starts on the composer's own left border instead of
-          // hugging the pane edge (~65px further left on a wide pane).
-          Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: conversationColumnWidth,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SpaceProvisioningBanner(spaceId: spaceId),
-                  _TypingIndicator(spaceId: spaceId),
-                  // Queued steering cards: mid-run nudges the user typed while
-                  // an agent works, waiting to be injected. Between the trail
-                  // and the composer, where "what I asked for that hasn't
-                  // landed yet" is read at a glance — and drawn onto the
-                  // composer's top edge, so it owns its own insets rather than
-                  // being padded from here. Renders nothing when the
-                  // conversation's queue is empty.
-                  SteeringQueueList(spaceId: spaceId, conversationId: convId),
-                  ConversationPermissionPrompt(spaceId: spaceId),
-                  SpaceInputBar(spaceId: spaceId, conversationId: convId),
-                ],
+            // Thread parent link: when this pane shows a thread, a compact row
+            // points back at the anchor message's conversation.
+            _ThreadParentLink(spaceId: spaceId, conversationId: convId),
+            const CcDivider(),
+            // Someone else is spotlighting this space (PRD 16 §5).
+            SpotlightBanner(spaceId: spaceId),
+            // A take-over of this space's worktree is active (PRD 16 §8).
+            TakeoverBanner(spaceId: spaceId),
+            Expanded(
+              child: SpaceMessageFeed(
+                key: ValueKey('feed-$convId'),
+                spaceId: spaceId,
+                conversationId: convId,
+                onStartThread: (message) => _startThread(context, ref, message),
+                // A thread opens exactly the way the switcher opens any
+                // conversation — it IS one.
+                onOpenThread: onSelectConversation,
               ),
             ),
-          ),
-        ],
+            const CcDivider(),
+            // The provisioning banner, the typing line and the composer share ONE
+            // centered-column wrapper so they can never drift apart: each status
+            // line's text now starts on the composer's own left border instead of
+            // hugging the pane edge (~65px further left on a wide pane).
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: conversationColumnWidth,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SpaceProvisioningBanner(spaceId: spaceId),
+                    _TypingIndicator(spaceId: spaceId),
+                    // Queued steering cards: mid-run nudges the user typed while
+                    // an agent works, waiting to be injected. Between the trail
+                    // and the composer, where "what I asked for that hasn't
+                    // landed yet" is read at a glance — and drawn onto the
+                    // composer's top edge, so it owns its own insets rather than
+                    // being padded from here. Renders nothing when the
+                    // conversation's queue is empty.
+                    SteeringQueueList(spaceId: spaceId, conversationId: convId),
+                    ConversationPermissionPrompt(
+                      spaceId: spaceId,
+                      maxHeight: constraints.maxHeight * 0.6,
+                    ),
+                    SpaceInputBar(spaceId: spaceId, conversationId: convId),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

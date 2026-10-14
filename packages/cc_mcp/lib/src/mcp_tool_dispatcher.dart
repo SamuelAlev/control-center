@@ -518,8 +518,12 @@ class McpToolDispatcher implements RpcDispatcher {
         }
         final spaceId = arguments['space_id'];
         final wsId = arguments['workspace_id'];
-        final detail = approval.reason != null
-            ? '${payload.detail}\n\n${approval.reason}'
+        final reason = approval.reason;
+        final detail =
+            reason != null &&
+                reason.trim().isNotEmpty &&
+                !reason.startsWith('Policy:')
+            ? '${payload.detail}\n\n$reason'
             : payload.detail;
         final approved = await confirmationPort!.requestApproval(
           ConfirmationRequest(

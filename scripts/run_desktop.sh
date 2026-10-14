@@ -9,6 +9,7 @@ set -euo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 source "$REPO_ROOT/scripts/lib/common.sh"
+source "$REPO_ROOT/scripts/lib/media.sh"
 
 MODE="${MODE:-debug}"
 case "$MODE" in
@@ -30,6 +31,9 @@ if [ "${REBUILD_SERVER:-0}" = "1" ]; then
   rm -rf "apps/cc_server/build/cli/$(cc_cli_dir "$OS")/bundle"
 fi
 CC_SERVER_BUNDLE="$(ensure_cc_server_bundle "$OS")"
+# Raw Dart CLI output omits subprocess tools. Complete even a cached bundle
+# before embedding it, so local desktop builds match release media packaging.
+cc_media_stage "$NATIVES" "$CC_SERVER_BUNDLE/bin/media" "$OS"
 
 # 2. Build the desktop app (unless reusing an existing build).
 if [ "${SKIP_APP_BUILD:-0}" != "1" ]; then

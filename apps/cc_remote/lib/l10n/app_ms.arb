@@ -18,6 +18,7 @@
   "agentQuestionSkippedLabel": "Dilangkau",
   "agentQuestionFreeformHint": "Taip jawapan anda…",
   "agentApprovalRequired": "Kelulusan diperlukan",
+  "copyCommand": "Salin perintah",
   "approveAndRemember": "Luluskan selama 8 jam",
   "decline": "Menolak",
   "confirm": "Sahkan",

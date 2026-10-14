@@ -57,6 +57,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get agentApprovalRequired => 'Требуется подтверждение';
 
   @override
+  String get copyCommand => 'Скопировать команду';
+
+  @override
   String get approveAndRemember => 'Разрешить на 8 часов';
 
   @override

@@ -57,6 +57,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get agentApprovalRequired => 'تأیید لازم است';
 
   @override
+  String get copyCommand => 'رونوشت فرمان';
+
+  @override
   String get approveAndRemember => 'تأیید برای ۸ ساعت';
 
   @override

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_domain/features/guardrails/domain/services/action_approval_copy.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/services/shell_action_classifier.dart';
 import 'package:cc_domain/features/sandboxing/domain/command_policy/command_policy.dart';
@@ -171,12 +172,19 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
             'Command requires approval but no approver is connected: $command',
           );
         }
+        final copy = ActionApprovalCopy.describe(
+          classes: {
+            ActionClass.processSpawn,
+            ...const ShellActionClassifier().classify(command),
+          },
+          command: command,
+        );
         final approved = await port.requestApproval(
           ConfirmationRequest(
             spaceId: spaceId ?? '',
             workspaceId: workspaceId,
-            title: 'Approve command',
-            detail: 'An agent is about to run:',
+            title: copy.title,
+            detail: copy.detail,
             command: command,
           ),
         );

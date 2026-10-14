@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "건너뜀",
   "agentQuestionFreeformHint": "답변을 입력하세요…",
   "agentApprovalRequired": "승인이 필요합니다",
+  "copyCommand": "명령 복사",
   "approveAndRemember": "8시간 동안 승인",
   "decline": "거절",
   "confirm": "확인",

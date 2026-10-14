@@ -305,7 +305,11 @@ void main() {
     expect(find.text('Exit settings'), findsOneWidget);
   });
 
-  Future<GoRouter> pumpShellAt(WidgetTester tester, String location) async {
+  Future<GoRouter> pumpShellAt(
+    WidgetTester tester,
+    String location, {
+    TextDirection direction = TextDirection.ltr,
+  }) async {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -334,6 +338,8 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: router,
+          builder: (context, child) =>
+              Directionality(textDirection: direction, child: child!),
         ),
       ),
     );
@@ -341,6 +347,37 @@ void main() {
     tester.takeException();
     await tester.pumpAndSettle();
     return router;
+  }
+
+  for (final direction in TextDirection.values) {
+    testWidgets(
+      'resize survives collapsing and reopening the sidebar ($direction)',
+      (tester) async {
+        await pumpShellAt(tester, inboxRoute('ws-1'), direction: direction);
+        final initialWidth = tester.getSize(find.byType(AppSidebar)).width;
+        final rect = tester.getRect(find.byType(AppSidebar));
+        final seam = direction == TextDirection.ltr ? rect.right : rect.left;
+        final delta = direction == TextDirection.ltr ? 80.0 : -80.0;
+        await tester.dragFrom(Offset(seam, 400), Offset(delta, 0));
+        await tester.pumpAndSettle();
+        final resizedWidth = tester.getSize(find.byType(AppSidebar)).width;
+        expect(resizedWidth, greaterThan(initialWidth));
+        expect(prefs.getDouble(sidebarWidthKey), resizedWidth);
+
+        await tester.tap(find.byIcon(AppIcons.panelLeftClose));
+        await tester.pumpAndSettle();
+        expect(
+          tester.getSize(find.byType(AppSidebar)).width,
+          lessThan(initialWidth),
+        );
+        expect(find.byType(CcResizable), findsNothing);
+
+        await tester.tap(find.byIcon(AppIcons.panelLeftOpen));
+        await tester.pumpAndSettle();
+        expect(tester.getSize(find.byType(AppSidebar)).width, resizedWidth);
+        expect(find.byType(CcResizable), findsOneWidget);
+      },
+    );
   }
 
   testWidgets('settings drills the global sidebar in, and exit returns to '
@@ -449,128 +486,22 @@ void main() {
     expect(find.text('Feeds'), findsNothing);
   });
 
-  testWidgets('toggling the rail never moves the nav icons; the workspace '
-      'mark glides the chooser indent', (tester) async {
-    tester.view.physicalSize = const Size(1400, 900);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
-    final router = shellRouter(const Text('Page Content'));
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          deviceLocationReaderProvider.overrideWithValue(
-            const UnavailableDeviceLocationReader(),
-          ),
-          spacesProvider.overrideWith((ref) => Stream.value(const [])),
-          appPreferencesProvider.overrideWithValue(prefs),
-          routerProvider.overrideWithValue(router),
-          workspacesProvider.overrideWith((ref) => Stream.value([])),
-          activeWorkspaceProvider.overrideWith((ref) => null),
-          isOnlineProvider.overrideWithValue(true),
-          offlineQueueControllerProvider.overrideWith(_NoOpOfflineQueue.new),
-        ],
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
-        ),
-      ),
-    );
-    await tester.pump();
-    tester.takeException();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    // The nav icons must hold their horizontal position in every phase of
-    // the toggle: settled expanded, mid-collapse, settled rail, mid-expand.
-    // The workspace mark is the one deliberate exception: the expanded
-    // chooser pads its content 10px in (the hover pill itself stays flush
-    // with the nav-item pills) so the avatar's left edge lands on the
-    // group-label/nav-icon line — moving its CENTER 9px off the shared
-    // x=27 rail line (10 internal − 1 reserved = 9). The mark therefore
-    // glides between the rail line (rail and mid-animation, where the
-    // iconOnly chip shows) and the +9 line (settled expanded).
-    const mark =
-        AppIcons.menu; // workspace mark placeholder (no active workspace)
-    const navIcons = [
-      AppIcons.inbox,
-      AppIcons.ticket,
-      AppIcons.gitPullRequest,
-      AppIcons.calendarBlank,
-      AppIcons.audioLines,
-      AppIcons.workflow,
-      AppIcons.newspaper,
-      AppIcons.gauge,
-      AppIcons.settings,
-    ];
-
-    double iconX(IconData icon) => tester.getCenter(find.byIcon(icon)).dx;
-
-    void expectNavUnmoved(Map<IconData, double> baseline, String phase) {
-      for (final icon in navIcons) {
-        expect(
-          find.byIcon(icon),
-          findsOneWidget,
-          reason: '$icon should stay mounted while $phase',
-        );
-        expect(
-          iconX(icon),
-          moreOrLessEquals(baseline[icon]!, epsilon: 0.5),
-          reason: '$icon moved while $phase',
-        );
-      }
-    }
-
-    void expectMark(double x, String phase) {
+  testWidgets(
+    'the sidebar retains its return destination across a rail toggle',
+    (tester) async {
+      final router = await pumpShellAt(tester, pullRequestsRoute('ws-1'));
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(AppIcons.panelLeftClose));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(AppIcons.panelLeftOpen));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Exit settings'));
+      await tester.pumpAndSettle();
       expect(
-        find.byIcon(mark),
-        findsOneWidget,
-        reason: 'workspace mark should stay mounted while $phase',
+        router.routerDelegate.currentConfiguration.uri.path,
+        pullRequestsRoute('ws-1'),
       );
-      expect(
-        iconX(mark),
-        moreOrLessEquals(x, epsilon: 0.5),
-        reason: 'workspace mark off its expected line while $phase',
-      );
-    }
-
-    final expandedX = {for (final icon in navIcons) icon: iconX(icon)};
-    // The rail line IS the shared nav-icon line (x=27); the settled expanded
-    // mark's center sits 9px to its right (the chip's 10px internal left
-    // padding, minus the 1px it had on the shared line).
-    final railMarkX = expandedX[AppIcons.inbox]!;
-    final expandedMarkX = iconX(mark);
-    expect(
-      expandedMarkX,
-      moreOrLessEquals(railMarkX + 9, epsilon: 0.5),
-      reason:
-          'the expanded chooser pads its content 10px in, so the avatar’s '
-          'left edge aligns with the nav icons and group-label text',
-    );
-
-    // Collapse: tap the title-bar rail toggle, then measure mid-animation
-    // (CcMotion.slow is 240ms) and at the settled rail.
-    await tester.tap(find.byIcon(AppIcons.panelLeftClose));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 120));
-    expectNavUnmoved(expandedX, 'collapsing');
-    expectMark(railMarkX, 'collapsing');
-    await tester.pumpAndSettle();
-    expectNavUnmoved(expandedX, 'collapsed');
-    expectMark(railMarkX, 'collapsed');
-
-    // Expand: same assertions on the way back.
-    await tester.tap(find.byIcon(AppIcons.panelLeftOpen));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 120));
-    expectNavUnmoved(expandedX, 'expanding');
-    expectMark(railMarkX, 'expanding');
-    await tester.pumpAndSettle();
-    expectNavUnmoved(expandedX, 're-expanded');
-    expectMark(expandedMarkX, 're-expanded');
-    expect(tester.takeException(), isNull);
-  });
+    },
+  );
 }

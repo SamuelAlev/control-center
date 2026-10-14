@@ -16,6 +16,7 @@
   "agentQuestionSkippedLabel": "Παραλείφθηκε",
   "agentQuestionFreeformHint": "Πληκτρολογήστε την απάντησή σας…",
   "agentApprovalRequired": "Απαιτείται έγκριση",
+  "copyCommand": "Αντιγραφή εντολής",
   "approveAndRemember": "Έγκριση για 8 ώρες",
   "decline": "Άρνηση",
   "confirm": "Επιβεβαίωση",

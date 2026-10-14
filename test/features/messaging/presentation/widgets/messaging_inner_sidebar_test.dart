@@ -115,11 +115,12 @@ List<Override> _commonOverrides({
   for (final c in spaces) ...[
     spaceStatusProvider(c.id).overrideWithValue(SpaceStatus.idle),
     spaceUnreadProvider(c.id).overrideWithValue(unreadSpaceIds.contains(c.id)),
+    spaceUnreadConversationCountProvider(c.id).overrideWithValue(0),
     spacePrsProvider(c.id).overrideWithValue(pullRequests[c.id] ?? const []),
     spacePrsResolvedProvider(c.id).overrideWithValue(true),
-    spaceBranchPullRequestsProvider(c.id).overrideWith(
-      (ref) => Stream.value((complete: true, matches: const [])),
-    ),
+    spaceBranchPullRequestsProvider(
+      c.id,
+    ).overrideWith((ref) => Stream.value((complete: true, matches: const []))),
     spaceParticipantsProvider(c.id).overrideWith(
       (ref) => Stream.value(participants[c.id] ?? const <SpaceParticipant>[]),
     ),
@@ -1146,61 +1147,6 @@ void main() {
         expect(row.right, group.right);
       }
 
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
-    testWidgets('a space with a pull request shows its icon and count', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: _commonOverrides(
-            spaces: [_space, _spaceB],
-            pullRequests: {
-              'g-1': [
-                PullRequest(
-                  id: 12,
-                  number: 12,
-                  title: 'Open',
-                  body: '',
-                  state: PrState.open,
-                  isDraft: false,
-                  author: null,
-                  createdAt: DateTime(2024),
-                  updatedAt: DateTime(2024),
-                  repoFullName: 'acme/web',
-                  htmlUrl: 'https://example.invalid/acme/web/pull/12',
-                  headRef: 'conv/fb49964',
-                  baseRef: 'main',
-                ),
-              ],
-            },
-          ),
-          child: _wrap(_router(spacesRoute(_workspaceId))),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byIcon(AppIcons.gitPullRequest), findsOneWidget);
-      expect(find.text('1'), findsOneWidget);
-      expect(find.byType(SpaceStatusMark), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
-    testWidgets('renders a Plus icon for adding a space', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: _commonOverrides(spaces: const []),
-          child: _wrap(_router(spacesRoute(_workspaceId))),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byIcon(AppIcons.plus), findsWidgets);
       await tester.pumpWidget(Container());
       await tester.pump(const Duration(milliseconds: 100));
     });

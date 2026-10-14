@@ -57,6 +57,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get agentApprovalRequired => 'Kelulusan diperlukan';
 
   @override
+  String get copyCommand => 'Salin perintah';
+
+  @override
   String get approveAndRemember => 'Luluskan selama 8 jam';
 
   @override

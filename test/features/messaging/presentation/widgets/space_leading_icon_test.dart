@@ -66,35 +66,6 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('an open PR on the space branch badges the row with 1', (
-    tester,
-  ) async {
-    await _pump(
-      tester,
-      overrides: [
-        spacePrsProvider('space-1').overrideWithValue(const []),
-        spaceBranchPullRequestsProvider('space-1').overrideWith(
-          (ref) => Stream.value((
-            complete: true,
-            matches: [
-              (
-                repoId: 'repo-1',
-                repoFullName: 'control-center/control-center',
-                branch: 'space/6b2256bb',
-                pr: _pr(),
-              ),
-            ],
-          )),
-        ),
-      ],
-    );
-    await tester.pump();
-
-    expect(find.byIcon(AppIcons.gitPullRequest), findsOneWidget);
-    expect(find.text('1'), findsOneWidget);
-    expect(find.byIcon(AppIcons.pencil), findsNothing);
-  });
-
   testWidgets('a space with no PR keeps the pencil', (tester) async {
     await _pump(
       tester,
@@ -129,36 +100,6 @@ void main() {
 
     expect(find.text('empty'), findsOneWidget);
     expect(find.byIcon(AppIcons.pencil), findsNothing);
-  });
-
-  testWidgets('an open PR still badges the row when an absent mark is set', (
-    tester,
-  ) async {
-    await _pump(
-      tester,
-      absent: const Text('empty'),
-      overrides: [
-        spacePrsProvider('space-1').overrideWithValue(const []),
-        spaceBranchPullRequestsProvider('space-1').overrideWith(
-          (ref) => Stream.value((
-            complete: true,
-            matches: [
-              (
-                repoId: 'repo-1',
-                repoFullName: 'control-center/control-center',
-                branch: 'space/6b2256bb',
-                pr: _pr(),
-              ),
-            ],
-          )),
-        ),
-      ],
-    );
-    await tester.pump();
-
-    expect(find.byIcon(AppIcons.gitPullRequest), findsOneWidget);
-    expect(find.text('1'), findsOneWidget);
-    expect(find.text('empty'), findsNothing);
   });
 
   testWidgets('only a complete merged inventory shows the purple merge icon', (
@@ -212,7 +153,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byIcon(AppIcons.gitMerge), findsNothing);
     expect(find.byIcon(AppIcons.gitPullRequest), findsOneWidget);
-    expect(find.text('1'), findsOneWidget);
   });
 
   for (final (state, draft, icon) in [

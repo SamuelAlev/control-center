@@ -17,10 +17,12 @@ marker via `RiftClient.clearMarker` and re-initialize through
 scripts/natives/build_natives.sh
 # or targeted builds: build_rift.sh, build_watcher.sh, build_inference.sh,
 # build_saml.sh, build_rhttp.sh (each under scripts/natives/)
-cd apps/cc_server && fvm dart build cli
+scripts/build_server.sh
 ```
 
-The build scripts stage in `<repo>/build/natives/` and install dev copies in app support next to `global.db`. `hook/build.dart` bundles staged assets into a native CLI bundle. Release packaging places them under `Contents/Frameworks/` on macOS, `<bundle>/lib/` on Linux or beside the executable on Windows; Windows stages them with `scripts/release/windows_natives.sh`. For a different staging directory, put its path in repo-root `.cc_natives_prebuilt_dir`: the hooks runner does not forward the calling process's environment. An empty repo-root `.cc_natives_allow_missing` downgrades the missing-staged-assets build-hook error to a warning **only for compile-only workflows that never run the result**. No such escape applies to a running server.
+The native build scripts stage in `<repo>/build/natives/` and install dev copies in app support next to `global.db`. `scripts/build_server.sh` builds a complete local server bundle: `hook/build.dart` bundles staged FFI libraries into `lib/`, then the script stages and verifies the media executables, PDFium library, fonts and notices in `bin/media/`. Raw `dart build cli` only performs the FFI step. Pass `cc_demo_server` to build the demo instead. Release packaging places FFI libraries under `Contents/Frameworks/` on macOS, `<bundle>/lib/` on Linux or beside the executable on Windows; Windows stages them with `scripts/release/windows_natives.sh`.
+
+For a different staging directory, put its path in repo-root `.cc_natives_prebuilt_dir`: both the server build script and the hooks honor it, whereas the hooks runner does not forward the calling process's environment. An empty repo-root `.cc_natives_allow_missing` downgrades the missing-staged-assets build-hook error to a warning **only for raw Dart compile-only workflows that never run the result**. The complete server build still requires media, and no such escape applies to a running server.
 
 `lib/src/native_library.dart` owns candidate ordering (explicit environment override, app-support dev install, packaged release paths) and `tryOpenFirst` returns a probe result; callers must turn a missing required library into an error. `cc_natives` does not import `control_center`: hosts inject `NativeLog` and `NativeDirResolver` for logging and app-support/grammar paths.
 

@@ -18,7 +18,7 @@ import 'package:control_center/features/vscode_theme/providers/vscode_theme_prov
 /// Composition root only (names `core/` + feature providers). Do not sync:
 /// hardware/paths (`audio_input_device_id`, `selected_ide_id`, font paths —
 /// family/source only); pre-RPC reads (`privacy_error_reporting_enabled`,
-/// `app_log_level`); per-machine UI (`window_*`, `ui.sidebarCollapsed`,
+/// `app_log_level`); per-machine UI (`window_*`, `ui.sidebarCollapsed`, `ui.sidebarWidth`,
 /// `active_workspace_id`, server dial keys); workspace-shared policy
 /// (`workspace_settings`); account facts that must be true
 /// (`users.onboarding_finished_at`, not a preference — promotion would seed lies).

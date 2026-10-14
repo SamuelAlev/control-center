@@ -57,6 +57,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get agentApprovalRequired => '需要批准';
 
   @override
+  String get copyCommand => '复制命令';
+
+  @override
   String get approveAndRemember => '批准 8 小时';
 
   @override
@@ -930,6 +933,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get agentApprovalRequired => '需要核准';
+
+  @override
+  String get copyCommand => '複製命令';
 
   @override
   String get approveAndRemember => '核准 8 小時';

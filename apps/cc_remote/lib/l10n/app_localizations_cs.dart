@@ -57,6 +57,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentApprovalRequired => 'Je potřeba schválení';
 
   @override
+  String get copyCommand => 'Kopírovat příkaz';
+
+  @override
   String get approveAndRemember => 'Schválit na 8 hodin';
 
   @override
