@@ -12463,7 +12463,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Khi bật, Control Center là tác giả commit và bạn là đồng tác giả. Khi tắt, commit dùng danh tính Git của bạn mà không ghi công agent.';
+      'Bạn luôn là tác giả và người ghi commit. Khi bật, Control Center (@usectrl) được thêm làm đồng tác giả. Khi tắt, commit không ghi công agent.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "Виберіть, чи зазначати Control Center у комітах агента. Адміністратори робочого простору можуть змінити цей вибір для всіх його учасників.",
   "settingsAgentCoauthorSection": "Зазначення агента",
   "settingsAgentCoauthorTitle": "Зазначати Control Center у комітах агента",
-  "settingsAgentCoauthorDescription": "Якщо ввімкнено, автором комітів буде Control Center, а ви — співавтором. Якщо вимкнено, коміти використовуватимуть вашу Git-ідентичність без зазначення агента.",
+  "settingsAgentCoauthorDescription": "Автором і комітером комітів завжди є ви. Якщо ввімкнено, Control Center (@usectrl) додається як співавтор. Якщо вимкнено, коміти не містять згадок про агента.",
   "settingsAgentCoauthorWorkspaceOverride": "Налаштування цього робочого простору має перевагу над вашим вибором. Ваші вподобання збережено, але тут вони не діють.",
   "settingsAgentAttributionLoading": "Завантаження налаштувань авторства…",
   "settingsWorkspaceAgentCoauthorDescription": "Виберіть, чи зазначати Control Center у комітах агента. Налаштування робочого простору має перевагу над особистими вподобаннями кожного учасника.",

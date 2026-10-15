@@ -97,12 +97,13 @@ The statuses refresh on their own every two minutes.
   A push goes through Control Center, which asks the **Push to a remote** rule
   and then forwards it on a write token the agent never holds. See
   [Configure sandbox policies](/manual/guides/sandbox-policies/)
-- By default, agent commits are authored as **Control Center**
-  (`hi@usectrl.dev`, GitHub `@usectrl`), with the requester credited in a
-  `Co-Authored-By` trailer. **Settings → You → Commit attribution** can disable
-  agent credit and use only your Git identity. A workspace override in
-  **Settings → Workspace → General** takes precedence and locks that personal
-  toggle. Claude Code's own attribution is always disabled
+- Agent commits always use the requester's Git identity as both author and
+  committer. By default, a `Co-Authored-By: Control Center <hi@usectrl.dev>`
+  trailer credits GitHub `@usectrl` as a co-author. **Settings → You → Commit
+  attribution** can disable this co-author credit without changing your identity.
+  A workspace override in **Settings → Workspace → General** takes precedence
+  and locks that personal toggle. Claude Code's own attribution is always
+  disabled. Commit signing still needs its own valid configuration
 - With a GitHub App configured, the broker mints fine-grained, repo-scoped,
   roughly one-hour installation tokens per launch instead of handing over a
   broad token. The installation is resolved from the run's repo **owner**, so

@@ -2,7 +2,7 @@
 title: Thiết lập tích hợp GitHub
 description: Đăng nhập GitHub để bề mặt PR, việc đăng ký kho mã và các lượt chạy agent hoạt động.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 Hướng dẫn này đề cập đến những phần dành riêng cho GitHub trong quá trình thiết
@@ -102,7 +102,7 @@ cùng nút làm mới. Các trạng thái tự làm mới sau mỗi hai phút.
   lần push đi qua Control Center, nơi hỏi quy tắc **Push lên remote** rồi chuyển
   tiếp nó bằng một token ghi mà agent không bao giờ nắm giữ. Xem
   [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
-- Theo mặc định, các commit của agent ghi tác giả là **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`), còn người yêu cầu được ghi nhận trong trailer `Co-Authored-By`. Bạn có thể tắt ghi công cho agent và chỉ dùng danh tính Git của mình tại **Cài đặt → Bạn → Ghi công trong commit**. Thiết lập không gian làm việc tại **Cài đặt → Không gian làm việc → Chung** được ưu tiên và khóa công tắc cá nhân. Việc ghi công riêng của Claude Code luôn bị tắt
+- Các commit của agent luôn dùng danh tính Git của người yêu cầu làm cả tác giả lẫn người thực hiện commit. Theo mặc định, trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` ghi nhận GitHub `@usectrl` là đồng tác giả. Tại **Cài đặt → Bạn → Ghi công trong commit**, bạn có thể tắt việc ghi nhận đồng tác giả này mà không thay đổi danh tính của mình. Thiết lập không gian làm việc tại **Cài đặt → Không gian làm việc → Chung** được ưu tiên và khóa công tắc cá nhân. Việc ghi công riêng của Claude Code luôn bị tắt. Ký commit vẫn cần có cấu hình hợp lệ riêng
 - Khi đã cấu hình GitHub App, trình môi giới tạo ra các token cài đặt
   fine-grained, giới hạn theo kho mã và kéo dài khoảng một giờ, cho mỗi lần chạy
   thay vì đưa ra một token rộng. Bản cài đặt được phân giải từ **owner** kho mã

@@ -175,6 +175,8 @@ _dispatchClaude({
     agentRepo: _UnusedAgentRepo(),
     runLogRepo: null,
     eventBus: null,
+    resolveGitIdentity: (_, {workspaceId}) async =>
+        (name: 'Test User', email: 'test@example.test'),
     backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
     credentialGate: credentialGate,
     syncClaudeCredential: syncClaudeCredential,
@@ -331,6 +333,8 @@ void main() {
       agentRepo: _UnusedAgentRepo(),
       runLogRepo: null,
       eventBus: null,
+      resolveGitIdentity: (_, {workspaceId}) async =>
+          (name: 'Test User', email: 'test@example.test'),
       backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
     );
     final session = DispatchSession(

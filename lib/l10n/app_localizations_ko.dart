@@ -12239,7 +12239,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      '켜면 커밋 작성자는 Control Center가 되고 나는 공동 작성자로 포함됩니다. 끄면 에이전트 기여 표시 없이 내 Git 신원으로 커밋합니다.';
+      '커밋의 작성자와 커미터는 항상 본인입니다. 켜면 Control Center (@usectrl)가 공동 작성자로 추가됩니다. 끄면 커밋에 에이전트 기여 표시가 포함되지 않습니다.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

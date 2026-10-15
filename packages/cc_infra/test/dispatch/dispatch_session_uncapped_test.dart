@@ -216,6 +216,8 @@ class _RecordingLoop implements AgentLoop {
     agentRepo: _UnusedAgentRepo(),
     runLogRepo: _UnusedRunLogRepo(),
     eventBus: null,
+    resolveGitIdentity: (_, {workspaceId}) async =>
+        (name: 'Test User', email: 'test@example.test'),
     backendRegistry: BackendRegistry({'cc-harness': const HarnessBackend()}),
     harnessCredentialStore: _KeylessStore(),
     harnessProviderFactory: const HarnessProviderFactory(),

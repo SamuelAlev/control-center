@@ -123,6 +123,8 @@ SandboxedAgentDispatchAdapter _adapter({
     agentRepository: agentRepo ?? _FakeAgentRepo(),
     runLogRepository: null,
     eventBus: null,
+    resolveGitIdentity: (_, {workspaceId}) async =>
+        (name: 'Test User', email: 'test@example.test'),
   );
 }
 

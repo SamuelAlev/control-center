@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "选择是否在智能体提交中为 Control Center 署名。工作区管理员可以为工作区中的所有人覆盖此选择。",
   "settingsAgentCoauthorSection": "智能体署名",
   "settingsAgentCoauthorTitle": "在智能体提交中为 Control Center 署名",
-  "settingsAgentCoauthorDescription": "开启后，提交以 Control Center 为作者，并将你列为共同作者。关闭后，提交使用你的 Git 身份，不为智能体署名。",
+  "settingsAgentCoauthorDescription": "你始终是提交的作者和提交者。开启后，Control Center (@usectrl) 将作为共同作者加入。关闭后，提交不包含任何智能体署名。",
   "settingsAgentCoauthorWorkspaceOverride": "此工作区的设置覆盖了你的个人选择。你的偏好会保留，但在此处不生效。",
   "settingsAgentAttributionLoading": "正在加载署名设置…",
   "settingsWorkspaceAgentCoauthorDescription": "选择是否在智能体提交中为 Control Center 署名。工作区的选择会覆盖每位成员的个人偏好。",

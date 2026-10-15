@@ -243,6 +243,7 @@ void main() {
     bool creditAgent = true,
     bool hasGitIdentity = true,
     Object? attributionFailure,
+    Object? identityFailure,
     _NoopBroker? broker,
     DomainEventBus? eventBus,
     Map<String, String> adapterEnv = const {},
@@ -265,9 +266,14 @@ void main() {
         }
         return creditAgent;
       },
-      resolveGitIdentity: (_, {workspaceId}) async => hasGitIdentity
-          ? (name: 'Requesting User', email: 'requester@example.test')
-          : null,
+      resolveGitIdentity: (_, {workspaceId}) async {
+        if (identityFailure != null) {
+          throw identityFailure;
+        }
+        return hasGitIdentity
+            ? (name: 'Requesting User', email: 'requester@example.test')
+            : null;
+      },
     ),
     onResolveHandle:
         ({
@@ -341,6 +347,67 @@ void main() {
     });
   });
 
+  for (final creditAgent in [true, false]) {
+    test(
+      'commits belong to the requester with agent credit $creditAgent',
+      () async {
+        final sandbox = _ScriptedClaude();
+        await runAnswering(
+          sandbox,
+          buildSession(
+            sandbox,
+            store: InMemoryClaudeNativeSessionStore(),
+            creditAgent: creditAgent,
+            callerEnv: const {
+              'GIT_AUTHOR_NAME': 'Old Agent',
+              'GIT_AUTHOR_EMAIL': 'old@example.test',
+              'GIT_COMMITTER_NAME': 'Old Agent',
+              'GIT_COMMITTER_EMAIL': 'old@example.test',
+              'CC_GIT_COAUTHOR_TRAILER':
+                  'Co-Authored-By: Old Agent <old@example.test>',
+            },
+            adapterEnv: const {
+              'GIT_AUTHOR_NAME': 'Claude',
+              'GIT_COMMITTER_EMAIL': 'claude@example.test',
+            },
+          ),
+        );
+        Future<String> git(List<String> args) async {
+          final result = await Process.run(
+            'git',
+            args,
+            workingDirectory: temp.path,
+            environment: sandbox.env,
+          );
+          expect(result.exitCode, 0, reason: '${result.stderr}');
+          return '${result.stdout}'.trim();
+        }
+
+        await git(['init', '--quiet']);
+        final trailer = sandbox.env![DispatchSession.coAuthorTrailerEnvKey]!;
+        await git([
+          '-c',
+          'commit.gpgsign=false',
+          '-c',
+          'core.hooksPath=${temp.path}/no-hooks',
+          'commit',
+          '--allow-empty',
+          '--quiet',
+          '-m',
+          'Requester change',
+          if (trailer.isNotEmpty) ...['-m', trailer],
+        ]);
+        expect(
+          await git(['log', '-1', '--format=%an <%ae>%n%cn <%ce>%n%B']),
+          'Requesting User <requester@example.test>\n'
+          'Requesting User <requester@example.test>\n'
+          'Requester change'
+          '${creditAgent ? '\n\nCo-Authored-By: Control Center <hi@usectrl.dev>' : ''}',
+        );
+      },
+    );
+  }
+
   test(
     'changing attribution forks a native session and removes old credit',
     () async {
@@ -362,76 +429,44 @@ void main() {
         sessionId: 'sess-B',
       );
       expect(disabled.argv, isNot(contains('--resume')));
-      expect(enabled.env?['GIT_AUTHOR_NAME'], 'Control Center');
-      expect(enabled.env?['GIT_AUTHOR_EMAIL'], 'hi@usectrl.dev');
-      expect(disabled.env?['GIT_AUTHOR_NAME'], 'Requesting User');
-      expect(disabled.env?['GIT_COMMITTER_EMAIL'], 'requester@example.test');
-      expect(disabled.env?[DispatchSession.coAuthorTrailerEnvKey], isEmpty);
     },
   );
 
-  test(
-    'adapter environment cannot restore disabled agent attribution',
-    () async {
-      final sandbox = _ScriptedClaude();
-      await runAnswering(
-        sandbox,
-        buildSession(
+  for (final creditAgent in [true, false]) {
+    for (final failure in ['settings', 'missing identity', 'identity lookup']) {
+      test('$failure failure releases credentials and fails the task '
+          '(agent credit: $creditAgent)', () async {
+        final sandbox = _ScriptedClaude();
+        final broker = _NoopBroker();
+        final bus = DomainEventBus();
+        final lifecycle = <TaskLifecycleEvent>[];
+        final subscription = bus.on<TaskLifecycleEvent>().listen(lifecycle.add);
+        addTearDown(subscription.cancel);
+        addTearDown(bus.dispose);
+        final session = buildSession(
           sandbox,
           store: InMemoryClaudeNativeSessionStore(),
-          creditAgent: false,
-          adapterEnv: const {
-            'GIT_AUTHOR_NAME': 'Claude',
-            'GIT_AUTHOR_EMAIL': 'claude@example.test',
-            'GIT_COMMITTER_NAME': 'Claude',
-            'GIT_COMMITTER_EMAIL': 'claude@example.test',
-            'CC_GIT_COAUTHOR_TRAILER':
-                'Co-Authored-By: Claude <claude@example.test>',
-          },
-          callerEnv: const {
-            'CC_GIT_COAUTHOR_TRAILER':
-                'Co-Authored-By: Old Agent <old@example.test>',
-          },
-        ),
-      );
-      expect(sandbox.env?['GIT_AUTHOR_NAME'], 'Requesting User');
-      expect(sandbox.env?['GIT_AUTHOR_EMAIL'], 'requester@example.test');
-      expect(sandbox.env?['GIT_COMMITTER_NAME'], 'Requesting User');
-      expect(sandbox.env?['GIT_COMMITTER_EMAIL'], 'requester@example.test');
-      expect(sandbox.env?['CC_GIT_COAUTHOR_TRAILER'], isEmpty);
-    },
-  );
-
-  for (final missingIdentity in [false, true]) {
-    test('attribution failure releases credentials and fails the task '
-        '(missing identity: $missingIdentity)', () async {
-      final sandbox = _ScriptedClaude();
-      final broker = _NoopBroker();
-      final bus = DomainEventBus();
-      final lifecycle = <TaskLifecycleEvent>[];
-      final subscription = bus.on<TaskLifecycleEvent>().listen(lifecycle.add);
-      addTearDown(subscription.cancel);
-      addTearDown(bus.dispose);
-      final session = buildSession(
-        sandbox,
-        store: InMemoryClaudeNativeSessionStore(),
-        creditAgent: false,
-        hasGitIdentity: !missingIdentity,
-        attributionFailure: missingIdentity
-            ? null
-            : StateError('Settings unavailable'),
-        broker: broker,
-        eventBus: bus,
-      );
-      final events = session.controller.stream.toList();
-      await session.run();
-      await events;
-      await settle();
-      expect(sandbox.argv, isEmpty);
-      expect(broker.revoked, ['h']);
-      expect(lifecycle.whereType<TaskFailed>(), hasLength(1));
-      expect(lifecycle.whereType<TaskCompleted>(), isEmpty);
-    });
+          creditAgent: creditAgent,
+          hasGitIdentity: failure != 'missing identity',
+          attributionFailure: failure == 'settings'
+              ? StateError('Settings unavailable')
+              : null,
+          identityFailure: failure == 'identity lookup'
+              ? StateError('Identity unavailable')
+              : null,
+          broker: broker,
+          eventBus: bus,
+        );
+        final events = session.controller.stream.toList();
+        await session.run();
+        await events;
+        await settle();
+        expect(sandbox.argv, isEmpty);
+        expect(broker.revoked, ['h']);
+        expect(lifecycle.whereType<TaskFailed>(), hasLength(1));
+        expect(lifecycle.whereType<TaskCompleted>(), isEmpty);
+      });
+    }
   }
 
   group('native session lineage', () {

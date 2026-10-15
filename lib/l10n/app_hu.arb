@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "Válaszd ki, hogy az ügynökök commitjai feltüntessék-e a Control Centert. A munkaterület adminisztrátorai ezt a beállítást mindenkinél felülírhatják.",
   "settingsAgentCoauthorSection": "Ügynök feltüntetése",
   "settingsAgentCoauthorTitle": "A Control Center feltüntetése az ügynökök commitjainál",
-  "settingsAgentCoauthorDescription": "Bekapcsolva a commitok szerzője a Control Center, te pedig társszerzőként szerepelsz. Kikapcsolva a commitok a te Git-identitásodat használják, az ügynök feltüntetése nélkül.",
+  "settingsAgentCoauthorDescription": "Mindig te vagy a commitok szerzője és rögzítője. Bekapcsolva a Control Center (@usectrl) társszerzőként szerepel. Kikapcsolva a commitok nem tartalmaznak ügynökkreditet.",
   "settingsAgentCoauthorWorkspaceOverride": "A munkaterület beállítása felülírja a személyes választásodat. A beállításod megmarad, de itt nem érvényesül.",
   "settingsAgentAttributionLoading": "Hozzárendelési beállítások betöltése…",
   "settingsWorkspaceAgentCoauthorDescription": "Válaszd ki, hogy az ügynökök commitjai feltüntessék-e a Control Centert. A munkaterületi beállítás felülírja az egyes tagok személyes beállítását.",

@@ -6772,7 +6772,7 @@
   "settingsAgentAttributionDescription": "Escolha se os commits do agente devem creditar o Control Center. Os administradores do espaço de trabalho podem substituir essa escolha para todos no espaço.",
   "settingsAgentCoauthorSection": "Crédito ao agente",
   "settingsAgentCoauthorTitle": "Creditar o Control Center nos commits do agente",
-  "settingsAgentCoauthorDescription": "Quando ativado, o Control Center é o autor dos commits e você é incluído como coautor. Quando desativado, os commits usam sua identidade Git sem crédito ao agente.",
+  "settingsAgentCoauthorDescription": "Você sempre é o autor e o committer dos commits. Quando a opção está ativada, o Control Center (@usectrl) é adicionado como coautor. Quando desativada, os commits não incluem crédito ao agente.",
   "settingsAgentCoauthorWorkspaceOverride": "Este espaço de trabalho substitui sua escolha pessoal. Sua preferência fica salva, mas não se aplica aqui.",
   "settingsAgentAttributionLoading": "Carregando configurações de atribuição de autoria…",
   "settingsWorkspaceAgentCoauthorDescription": "Escolha se os commits do agente devem creditar o Control Center. A escolha do espaço de trabalho prevalece sobre a preferência pessoal de cada membro.",

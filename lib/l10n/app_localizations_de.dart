@@ -12552,10 +12552,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsAgentAttributionDescription =>
-      'Lege fest, ob Agenten-Commits Control Center als Urheber nennen. Administratoren des Arbeitsbereichs können diese Auswahl für alle Mitglieder überschreiben.';
+      'Lege fest, ob Agenten-Commits Control Center als Mitautor nennen. Administratoren des Arbeitsbereichs können diese Auswahl für alle Mitglieder überschreiben.';
 
   @override
-  String get settingsAgentCoauthorSection => 'Agenten als Urheber nennen';
+  String get settingsAgentCoauthorSection => 'Agenten als Mitautoren nennen';
 
   @override
   String get settingsAgentCoauthorTitle =>
@@ -12563,7 +12563,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Wenn aktiviert, ist Control Center der Autor der Commits und du wirst als Mitautor genannt. Wenn deaktiviert, verwenden die Commits deine Git-Identität ohne Nennung des Agenten.';
+      'Du bist immer Autor und Committer der Commits. Wenn aktiviert, wird Control Center (@usectrl) als Mitautor genannt. Wenn deaktiviert, enthalten Commits keine Nennung des Agenten.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>
@@ -12575,7 +12575,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsWorkspaceAgentCoauthorDescription =>
-      'Lege fest, ob Agenten-Commits Control Center als Urheber nennen. Die Auswahl des Arbeitsbereichs hat Vorrang vor der persönlichen Einstellung jedes Mitglieds.';
+      'Lege fest, ob Agenten-Commits Control Center als Mitautor nennen. Die Auswahl des Arbeitsbereichs hat Vorrang vor der persönlichen Einstellung jedes Mitglieds.';
 
   @override
   String get settingsWorkspaceAgentCoauthorInherit =>

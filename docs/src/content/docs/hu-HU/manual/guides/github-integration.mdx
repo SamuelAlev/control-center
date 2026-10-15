@@ -2,7 +2,7 @@
 title: GitHub-integráció beállítása
 description: Jelentkezzen be a GitHubra, hogy a PR-felület, a repóregisztráció és az ügynökfuttatások működjenek.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 Ez az útmutató a beállítás GitHub-specifikus részeit tárgyalja. A GitHub a három
@@ -111,8 +111,7 @@ kétpercenként.
   **Küldés távoli tárolóra** szabályt, majd egy olyan írási tokennel továbbítja,
   amely soha nincs az ügynök birtokában. Lásd a
   [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/) oldalt
-- Alapértelmezés szerint az ügynök commitjainak szerzője a **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`), a kérő személy pedig a `Co-Authored-By` trailerben kap elismerést. A **Beállítások → Ön → Commit-hozzárendelés** oldalon kikapcsolhatja az ügynök feltüntetését, hogy csak a saját Git-identitása szerepeljen. A **Beállítások → Munkaterület → Általános** oldalon megadott felülírás elsőbbséget élvez, és zárolja a személyes kapcsolót. A Claude Code saját szerzőségi jelölése mindig ki van kapcsolva
-  trailerrel tünteti fel a rendszer
+- Az ügynök commitjai mindig a kérő Git-identitását használják szerzőként és commitolóként is. Alapértelmezés szerint a `Co-Authored-By: Control Center <hi@usectrl.dev>` trailer a GitHub `@usectrl` fiókját társszerzőként tünteti fel. A **Beállítások → Ön → Commit-hozzárendelés** oldalon kikapcsolhatja ezt a társszerzői elismerést az identitása megváltoztatása nélkül. A **Beállítások → Munkaterület → Általános** oldalon megadott felülírás elsőbbséget élvez, és zárolja a személyes kapcsolót. A Claude Code saját szerzőségi jelölése mindig ki van kapcsolva. A commitok aláírásához továbbra is külön érvényes konfiguráció szükséges
 - Ha GitHub App van beállítva, a bróker indításonként szűk hatókörű, a repóra
   korlátozott, körülbelül egyórás telepítési tokent állít ki a széles token
   átadása helyett. A telepítést a futtatás repójának **tulajdonosa** alapján

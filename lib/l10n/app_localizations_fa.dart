@@ -12436,7 +12436,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'با فعال‌بودن این گزینه، نویسندهٔ کامیت‌ها Control Center است و شما هم به‌عنوان هم‌نویسنده ذکر می‌شوید. با غیرفعال‌بودن آن، کامیت‌ها از هویت Git شما استفاده می‌کنند و اعتباری به عامل داده نمی‌شود.';
+      'شما همیشه نویسنده و ثبت‌کنندهٔ کامیت‌ها هستید. با فعال‌بودن این گزینه، Control Center (@usectrl) به‌عنوان هم‌نویسنده اضافه می‌شود. با غیرفعال‌بودن آن، کامیت‌ها هیچ اشاره‌ای به عامل ندارند.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

@@ -2,7 +2,7 @@
 title: Despacha tu primer agente
 description: Crea un agente, dale un espacio y una tarea y observa cómo llega la ejecución en streaming.
 slug: es-ES/manual/tutoriales/primer-agente
-sourceHash: 4d54c7233d4a0de6607ac5475b5ab294ce8007cd
+sourceHash: 5ee1b9e96981547311a69749cfc2d01bf5001542
 ---
 
 ## Qué vas a construir
@@ -76,7 +76,7 @@ Lo que limita la ejecución: su propio worktree con copy-on-write, las credencia
 
 **Comprobación.** Una fila de ejecución, con su estado, su duración, sus horas de inicio y fin y el adaptador con el que se ejecutó.
 
-Los cambios del agente quedan confirmados en la rama de la conversación, en su worktree. Por defecto, los commits se atribuyen a `Control Center <hi@usectrl.dev>` (`@usectrl`), y tu nombre aparece en el trailer `Co-Authored-By:`. Puedes desactivar la atribución al agente en **Ajustes → Tú → Atribución de commits**, salvo que un administrador haya impuesto otra opción en **Ajustes → Espacio de trabajo → General**.
+Los cambios del agente quedan confirmados en la rama de la conversación, en su worktree. Siempre eres el autor y el committer, con tu identidad de Git del espacio de trabajo. Por defecto, el trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` acredita como coautora a la cuenta de GitHub `@usectrl`. Puedes desactivar esta coautoría en **Ajustes → Tú → Atribución de commits**, salvo que un administrador haya impuesto otra opción en **Ajustes → Espacio de trabajo → General**.
 
 ## Conseguir una pull request
 

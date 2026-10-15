@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "Alege dacă Control Center este creditat pentru commiturile agentului. Administratorii spațiului de lucru pot suprascrie această alegere pentru toți membrii.",
   "settingsAgentCoauthorSection": "Creditarea agentului",
   "settingsAgentCoauthorTitle": "Creditează Control Center pentru commiturile agentului",
-  "settingsAgentCoauthorDescription": "Când opțiunea este activă, Control Center este autorul commiturilor, iar tu ești inclus ca coautor. Când este dezactivată, commiturile folosesc identitatea ta Git fără creditarea agentului.",
+  "settingsAgentCoauthorDescription": "Tu ești întotdeauna autorul și persoana care înregistrează commiturile. Când opțiunea este activă, Control Center (@usectrl) este adăugat drept coautor. Când este dezactivată, commiturile nu includ nicio creditare a agentului.",
   "settingsAgentCoauthorWorkspaceOverride": "Setarea acestui spațiu de lucru îți suprascrie alegerea personală. Preferința ta rămâne salvată, dar nu se aplică aici.",
   "settingsAgentAttributionLoading": "Se încarcă setările de atribuire a autorului…",
   "settingsWorkspaceAgentCoauthorDescription": "Alege dacă Control Center este creditat pentru commiturile agentului. Alegerea spațiului de lucru suprascrie preferința personală a fiecărui membru.",

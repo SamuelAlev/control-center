@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "エージェントのコミットに Control Center のクレジットを付けるか選択します。ワークスペースの管理者は、全メンバーに対してこの設定を上書きできます。",
   "settingsAgentCoauthorSection": "エージェントへのクレジット",
   "settingsAgentCoauthorTitle": "エージェントのコミットに Control Center のクレジットを付ける",
-  "settingsAgentCoauthorDescription": "オンにすると、コミットの作成者は Control Center となり、自分は共同作成者として記載されます。オフにすると、エージェントのクレジットなしで自分の Git ID が使用されます。",
+  "settingsAgentCoauthorDescription": "コミットの作成者とコミッターは常にあなたです。オンにすると、Control Center (@usectrl) が共同作成者として追加されます。オフにすると、コミットにエージェントのクレジットは含まれません。",
   "settingsAgentCoauthorWorkspaceOverride": "このワークスペースの設定が個人の選択より優先されます。個人の設定は保存されますが、ここでは適用されません。",
   "settingsAgentAttributionLoading": "帰属設定を読み込み中…",
   "settingsWorkspaceAgentCoauthorDescription": "エージェントのコミットに Control Center のクレジットを付けるか選択します。ワークスペースの設定は各メンバーの個人設定より優先されます。",

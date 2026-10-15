@@ -2,7 +2,7 @@
 title: GitHub-Integration einrichten
 description: Melde dich bei GitHub an, damit PR-Oberfläche, Repo-Registrierung und Agentenläufe funktionieren.
 slug: de-DE/handbuch/anleitungen/github-integration
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 Diese Anleitung behandelt die GitHub-spezifischen Teile der Einrichtung. GitHub ist einer von drei
@@ -100,7 +100,7 @@ Klicke auf das Kennzeichen, um ein Fenster mit dem Zustand jedes Anbieters und d
   die Regel **Zu einem Remote pushen** fragt und ihn dann mit einem
   Schreib-Token weiterleitet, das der Agent nie besitzt. Siehe
   [Sandbox-Richtlinien konfigurieren](/de-DE/handbuch/anleitungen/sandbox-richtlinien/)
-- Standardmäßig ist **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`) Autor der Agenten-Commits; die anfragende Person steht im Trailer `Co-Authored-By`. Unter **Einstellungen → Du → Commit-Zuordnung** kannst du die Agentenzuordnung abschalten und ausschließlich deine Git-Identität verwenden. Die Vorgabe unter **Einstellungen → Arbeitsbereich → Allgemein** hat Vorrang und sperrt den persönlichen Schalter. Die eigene Zuordnung von Claude Code ist stets deaktiviert
+- Agenten-Commits verwenden immer die Git-Identität der anfragenden Person als Autor und Committer. Standardmäßig weist der Trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` das GitHub-Konto `@usectrl` als Mitautor aus. Unter **Einstellungen → Du → Commit-Zuordnung** kannst du diese Mitautorenschaft abschalten, ohne deine Identität zu ändern. Die Vorgabe unter **Einstellungen → Arbeitsbereich → Allgemein** hat Vorrang und sperrt den persönlichen Schalter. Die eigene Zuordnung von Claude Code ist stets deaktiviert. Die Commit-Signierung erfordert weiterhin eine eigene gültige Konfiguration
 - Ist eine GitHub App konfiguriert, stellt der Broker je Start eng gefasste, auf das Repo begrenzte
   Installationstokens mit etwa einer Stunde Gültigkeit aus, statt ein breites Token
   weiterzugeben. Die Installation ergibt sich aus dem **Besitzer** des Repos dieses Laufs, deshalb

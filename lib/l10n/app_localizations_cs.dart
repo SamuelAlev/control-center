@@ -12618,10 +12618,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsAgentAttributionDescription =>
-      'Zvolte, zda mají commity agentů uvádět Control Center jako autora. Správci pracovního prostoru mohou tuto volbu přepsat pro všechny členy.';
+      'Zvolte, zda mají commity agentů uvádět Control Center jako spoluautora. Správci pracovního prostoru mohou tuto volbu přepsat pro všechny členy.';
 
   @override
-  String get settingsAgentCoauthorSection => 'Uvedení agenta jako autora';
+  String get settingsAgentCoauthorSection => 'Uvedení agenta jako spoluautora';
 
   @override
   String get settingsAgentCoauthorTitle =>
@@ -12629,7 +12629,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Při zapnutí je autorem commitů Control Center a vaše jméno je uvedeno jako spoluautor. Při vypnutí se commity vytvářejí pod vaší identitou Git bez uvedení agenta.';
+      'Autorem i committerem commitů jste vždy vy. Při zapnutí je Control Center (@usectrl) uvedeno jako spoluautor. Při vypnutí commity neuvádějí žádného agenta.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>
@@ -12640,7 +12640,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsWorkspaceAgentCoauthorDescription =>
-      'Zvolte, zda mají commity agentů uvádět Control Center jako autora. Volba pracovního prostoru má přednost před osobní preferencí každého člena.';
+      'Zvolte, zda mají commity agentů uvádět Control Center jako spoluautora. Volba pracovního prostoru má přednost před osobní preferencí každého člena.';
 
   @override
   String get settingsWorkspaceAgentCoauthorInherit =>

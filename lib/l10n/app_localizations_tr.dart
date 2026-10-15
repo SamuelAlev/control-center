@@ -12480,7 +12480,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Etkinleştirildiğinde commit\'lerin yazarı Control Center olur ve siz ortak yazar olarak eklenirsiniz. Devre dışı bırakıldığında commit\'ler ajan atfı olmadan Git kimliğinizi kullanır.';
+      'Commit\'lerin yazarı ve commit\'i oluşturan kişi her zaman sizsiniz. Etkinleştirildiğinde Control Center (@usectrl) ortak yazar olarak eklenir. Devre dışı bırakıldığında commit\'lerde ajan atfı bulunmaz.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

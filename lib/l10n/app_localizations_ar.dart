@@ -12674,11 +12674,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorTitle =>
-      'نسب إيداعات الوكلاء إلى Control Center';
+      'ذكر Control Center كمؤلف مشارك في إيداعات الوكلاء';
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'عند التفعيل، يكون Control Center مؤلف الإيداعات ويُضاف اسمك كمؤلف مشارك. عند التعطيل، تستخدم الإيداعات هويتك في Git دون نسب الفضل إلى الوكيل.';
+      'أنت دائمًا مؤلف الإيداعات ومنفّذها. عند التفعيل، يُضاف Control Center (@usectrl) كمؤلف مشارك. عند التعطيل، لا تتضمن الإيداعات أي إشارة إلى الوكيل.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

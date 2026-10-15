@@ -2,7 +2,7 @@
 title: Nastavte integraci GitHub
 description: Přihlas se na GitHub, aby fungovala plocha PR, registrace repozitářů a běhy agentů.
 slug: cs-CZ/prirucka/navody/integrace-github
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 Tenhle návod bere ty části nastavení, které patří ke GitHubu. GitHub je jeden
@@ -100,7 +100,7 @@ a tlačítkem **Obnovit**. Stavy se samy obnoví každé dvě minuty.
   čtení. Push jde přes Control Center, které se zeptá pravidla **Odeslat na
   remote** a pak ho předá se zapisovacím tokenem, který agent nikdy nedrží. Viz
   [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/)
-- Ve výchozím nastavení je autorem commitů agenta **Control Center** (`hi@usectrl.dev`, účet GitHub `@usectrl`), zatímco žadatel je uveden v traileru `Co-Authored-By`. V **Nastavení → Vy → Připisování autorství commitů** můžeš připisování agentovi vypnout a použít jen svou identitu Gitu. Přednost má nastavení pracovního prostoru v **Nastavení → Pracovní prostor → Obecné**, které osobní přepínač uzamkne. Vlastní atribuce Claude Code je vždy vypnutá
+- Commity agenta vždy používají Git identitu žadatele jako autora i committera. Ve výchozím nastavení trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` připisuje spoluautorství účtu GitHub `@usectrl`. V **Nastavení → Vy → Připisování autorství commitů** můžeš toto spoluautorství vypnout, aniž by se změnila tvoje identita. Nastavení pracovního prostoru v **Nastavení → Pracovní prostor → Obecné** má přednost a zamkne osobní přepínač. Vlastní atribuce Claude Code je vždy vypnutá. Podepisování commitů stále vyžaduje vlastní platnou konfiguraci
 - Když je nakonfigurovaná GitHub App, broker při každém spuštění vystaví úzce
   vymezené instalační tokeny vázané na repozitář, platné zhruba hodinu, místo
   aby předal široký token. Instalace se určí podle **vlastníka** repozitáře

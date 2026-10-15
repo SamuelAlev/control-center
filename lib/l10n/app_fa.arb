@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "انتخاب کنید آیا در کامیت‌های عامل به Control Center اعتبار داده شود یا نه. مدیران فضای کاری می‌توانند این انتخاب را برای همهٔ اعضا بازنویسی کنند.",
   "settingsAgentCoauthorSection": "انتساب به عامل",
   "settingsAgentCoauthorTitle": "اعتبار دادن به Control Center در کامیت‌های عامل",
-  "settingsAgentCoauthorDescription": "با فعال‌بودن این گزینه، نویسندهٔ کامیت‌ها Control Center است و شما هم به‌عنوان هم‌نویسنده ذکر می‌شوید. با غیرفعال‌بودن آن، کامیت‌ها از هویت Git شما استفاده می‌کنند و اعتباری به عامل داده نمی‌شود.",
+  "settingsAgentCoauthorDescription": "شما همیشه نویسنده و ثبت‌کنندهٔ کامیت‌ها هستید. با فعال‌بودن این گزینه، Control Center (@usectrl) به‌عنوان هم‌نویسنده اضافه می‌شود. با غیرفعال‌بودن آن، کامیت‌ها هیچ اشاره‌ای به عامل ندارند.",
   "settingsAgentCoauthorWorkspaceOverride": "تنظیمات این فضای کاری بر انتخاب شخصی شما اولویت دارد. ترجیح شما ذخیره می‌شود، اما اینجا اعمال نمی‌شود.",
   "settingsAgentAttributionLoading": "در حال بارگذاری تنظیمات انتساب…",
   "settingsWorkspaceAgentCoauthorDescription": "انتخاب کنید آیا در کامیت‌های عامل به Control Center اعتبار داده شود یا نه. انتخاب فضای کاری بر ترجیح شخصی هر عضو اولویت دارد.",

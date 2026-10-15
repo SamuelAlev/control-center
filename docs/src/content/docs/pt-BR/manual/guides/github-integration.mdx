@@ -2,7 +2,7 @@
 title: Configurar a integração com o GitHub
 description: Entre no GitHub para que a superfície de PR, o registro de repos e as execuções de agentes funcionem.
 slug: pt-BR/manual/guias/integracao-github
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 Este guia cobre as partes da configuração específicas do GitHub. O GitHub é um
@@ -104,7 +104,7 @@ atualização. Os status se atualizam sozinhos a cada dois minutos.
   regra **Fazer push para um remoto** e depois o encaminha com um token de
   escrita que o agente nunca tem. Veja
   [Configurar políticas de sandbox](/pt-BR/manual/guias/politicas-de-sandbox/)
-- Por padrão, os commits do agente têm **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`) como autor, e a pessoa que fez a solicitação recebe crédito em um trailer `Co-Authored-By`. Em **Configurações → Você → Atribuição de autoria dos commits**, você pode desativar a atribuição ao agente e usar apenas sua identidade Git. Uma configuração do espaço de trabalho em **Configurações → Espaço de trabalho → Geral** prevalece e bloqueia essa opção pessoal. A atribuição própria do Claude Code fica sempre desativada
+- Os commits do agente sempre usam a identidade Git de quem fez a solicitação como autor e committer. Por padrão, o trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` credita a conta GitHub `@usectrl` como coautora. Em **Configurações → Você → Atribuição de autoria dos commits**, você pode desativar esse crédito de coautoria sem mudar sua identidade. Uma configuração do espaço de trabalho em **Configurações → Espaço de trabalho → Geral** prevalece e bloqueia essa opção pessoal. A atribuição própria do Claude Code está sempre desativada. A assinatura de commits ainda exige uma configuração válida à parte
 - Com um GitHub App configurado, o broker emite tokens de instalação granulares,
   com escopo de repo e cerca de uma hora de validade, a cada lançamento, em vez
   de entregar um token amplo. A instalação é resolvida a partir do

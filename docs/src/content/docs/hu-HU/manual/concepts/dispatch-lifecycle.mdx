@@ -2,7 +2,7 @@
 title: Az ügynökindítás életciklusa
 description: Mi történik egy üzenet megérkezésétől egy futtatási napló lezárásáig — a prompt összeállítása, a worktree-k, az identitás, mi korlátoz egy futtatást, és hogyan rögzítjük annak kimenetelét őszintén.
 slug: hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa
-sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
+sourceHash: 781e03487b61d53f4032d785370f70457df0156b
 ---
 
 ## Mi az indítás
@@ -52,7 +52,7 @@ A copy-on-write az **egyetlen** implementáció mindenhol, ahol a `rift` elérhe
 
 Futtatásonként két identitás oldódik fel, mielőtt bármilyen folyamat elindulna.
 
-**Git szerzőség.** Alapértelmezés szerint az ügynök commitjai a `Control Center <hi@usectrl.dev>` identitást (a GitHub `@usectrl` fiókját) használják a `GIT_AUTHOR_*` és a `GIT_COMMITTER_*` mezőben is, a kérést benyújtó személy pedig a `Co-Authored-By:` trailerben kap elismerést. Az ügynök feltüntetését a **Beállítások → Ön → Commit-hozzárendelés** oldalon kapcsolhatja ki, hogy csak a saját Git-identitása szerepeljen. A munkaterület adminisztrátora a **Beállítások → Munkaterület → Általános** oldalon kötelezővé teheti vagy letilthatja ezt; a felülírás elsőbbséget élvez és letiltja a személyes kapcsolót anélkül, hogy módosítaná a mentett preferenciát. A változások a következő futtatástól érvényesek. A Claude Code saját commit- és PR-szerzőségi sorai mindig le vannak tiltva. A hívó által kifejezetten megadott Git-identitásértékek továbbra is elsőbbséget élveznek; a forge hitelesítő adatai nem változnak.
+**Git szerzőség.** Az ügynök commitjai mindig a kérő személy munkaterületen meghatározott Git-identitását használják a `GIT_AUTHOR_*` és a `GIT_COMMITTER_*` mezőben is. A programból indított futtatások a szerver tulajdonosának identitását használják. Alapértelmezés szerint a `Co-Authored-By: Control Center <hi@usectrl.dev>` trailer a GitHub `@usectrl` fiókját társszerzőként tünteti fel. Az ügynök feltüntetését a **Beállítások → Ön → Commit-hozzárendelés** oldalon kapcsolhatja ki, ha el szeretné hagyni ezt a trailert. A munkaterület adminisztrátora a **Beállítások → Munkaterület → Általános** oldalon kötelezővé teheti vagy letilthatja a társszerzőséget; a felülírás elsőbbséget élvez, és letiltja a személyes kapcsolót anélkül, hogy módosítaná a mentett preferenciát. A változások a következő futtatástól érvényesek. A Claude Code saját commit- és PR-szerzőségi sorai mindig le vannak tiltva. A hívó és az adapter környezeti beállításai nem helyettesíthetik a meghatározott identitást; a hiányzó identitás vagy a feloldási hiba leállítja a futtatást. A forge hitelesítő adatai és a commitok aláírásának konfigurációja változatlanok; a helyes identitás önmagában nem garantál ellenőrzött aláírást.
 
 **Forge-identitás.** A futtatás GitHub-hitelesítő adata soha nem lehet más, mint a brókeré — egy repóra szűkített App-telepítési token vagy annak környezeti PAT-tartaléka —, soha nem a kérő tag saját tárolt tokenje. Az `actingUserId` korlátozza a PAT-tartalékot, így az a tag, aki nem a szerver tulajdonosa, nem örökli a szerver elérését; ugyanakkor nem is illeszt személyes tokent az ügynök környezetére.
 

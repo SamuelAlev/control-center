@@ -150,6 +150,8 @@ class _Fixture {
       agentRepo: _UnusedAgentRepo(),
       runLogRepo: null,
       eventBus: bus,
+      resolveGitIdentity: (_, {workspaceId}) async =>
+          (name: 'Test User', email: 'test@example.test'),
       backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
     ),
     onResolveHandle:

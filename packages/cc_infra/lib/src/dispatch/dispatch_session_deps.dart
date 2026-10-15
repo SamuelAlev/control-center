@@ -354,16 +354,16 @@ class SandboxDispatchDeps {
   final AgentLoop agentLoop;
 
   /// Resolves the requesting human's Git identity (null user → server owner).
-  /// Used as co-author when agent attribution is on, or author when it is off.
+  /// Used for both author and committer, regardless of agent attribution.
   final Future<({String name, String email})?> Function(
     String? userId, {
     String? workspaceId,
   })?
   resolveGitIdentity;
 
-  /// Whether this run credits Control Center. Workspace policy overrides the
-  /// user's preference; absent wiring defaults on. Resolution failures stop
-  /// dispatch rather than silently ignoring an opt-out.
+  /// Whether this run credits Control Center as a co-author. Workspace policy
+  /// overrides the user's preference; absent wiring defaults on. Resolution
+  /// failures stop dispatch rather than silently ignoring an opt-out.
   final Future<bool> Function(String? userId, {String? workspaceId})?
   resolveAgentAttribution;
 
@@ -377,6 +377,6 @@ class SandboxDispatchDeps {
   /// token: agent work is authored on the forge as the server's App identity,
   /// and only a write a human drives from the UI rides that human's own
   /// credential (the per-actor RPC lane in `cc_server_runtime`). The
-  /// requesting human is still credited on commits via the co-author trailer.
+  /// requesting human remains the Git author and committer.
   final GitRepoInspectorPort? repoInspector;
 }

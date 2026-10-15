@@ -2,7 +2,7 @@
 title: Agent dispatch lifecycle
 description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
 slug: en-GB/manual/concepts/dispatch-lifecycle
-sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
+sourceHash: 781e03487b61d53f4032d785370f70457df0156b
 ---
 
 ## What a dispatch is
@@ -52,7 +52,7 @@ Copy-on-write is the **only** implementation wherever `rift` ships, backed by th
 
 Two identities are resolved per run, before any process launches.
 
-**Git authorship.** By default, agent commits use `Control Center <hi@usectrl.dev>` (the GitHub account `@usectrl`) in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*`, with the requesting person credited by a `Co-Authored-By:` trailer. Turn off agent attribution in **Settings → You → Commit attribution** to use only your Git identity. A workspace administrator can force attribution on or off in **Settings → Workspace → General**; that override takes precedence and disables the personal toggle without changing your saved preference. Changes apply to the next run. Claude Code's own commit and PR bylines are always disabled. Explicit caller-set Git identity values still take precedence; forge credentials are unaffected.
+**Git authorship.** Agent commits always use the requesting person's workspace-resolved Git identity in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*`. Programmatic runs use the server owner's identity. By default, `Co-Authored-By: Control Center <hi@usectrl.dev>` credits the GitHub account `@usectrl` as a co-author. Turn off agent attribution in **Settings → You → Commit attribution** to omit that trailer. A workspace administrator can force co-author credit on or off in **Settings → Workspace → General**; that override takes precedence and disables the personal toggle without changing its saved preference. Changes take effect on the next run. Claude Code's own commit and PR bylines are always disabled. Caller and adapter environment settings cannot replace the resolved identity; a missing identity or a resolution failure stops the run. Forge credentials and commit signing configuration are unaffected; the correct identity alone does not guarantee a verified signature.
 
 **Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
 

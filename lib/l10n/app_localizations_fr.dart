@@ -12583,7 +12583,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Lorsque cette option est activée, Control Center est l\'auteur des commits et votre nom figure comme coauteur. Lorsqu\'elle est désactivée, les commits utilisent votre identité Git sans crédit pour l\'agent.';
+      'Vous êtes toujours l\'auteur et la personne qui enregistre les commits. Si l\'option est activée, Control Center (@usectrl) est ajouté comme coauteur. Sinon, les commits ne mentionnent pas l\'agent.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

@@ -2,7 +2,7 @@
 title: Sett opp GitHub-integrasjon
 description: Logg inn på GitHub slik at PR-flaten, repo-registreringen og agentkjøringer fungerer.
 slug: nb-NO/handbok/slik-gjor-du/github-integrasjon
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 Denne veiledningen dekker de GitHub-spesifikke delene av oppsettet. GitHub er én
@@ -101,7 +101,7 @@ Klikk på merket for å åpne et panel med tilstanden til hver leverandør og en
   kan lese. En push går gjennom Control Center, som spør regelen **Push til en
   remote** og deretter sender den videre med et skrivetoken agenten aldri har.
   Se [Konfigurer sandkassepolicyer](/nb-NO/handbok/slik-gjor-du/sandkassepolicyer/)
-- Som standard får agentens commits **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`) som forfatter, mens den som ba om kjøringen krediteres i en `Co-Authored-By`-trailer. Under **Innstillinger → Deg → Kreditering av commits** kan du slå av agentkreditering og bruke bare din Git-identitet. En overstyring for arbeidsområdet under **Innstillinger → Arbeidsområde → Generelt** har forrang og låser den personlige bryteren. Claude Codes egen kreditering er alltid deaktivert
+- Agentens commits bruker alltid Git-identiteten til den som ba om kjøringen, både som forfatter og committer. Som standard krediterer traileren `Co-Authored-By: Control Center <hi@usectrl.dev>` GitHub `@usectrl` som medforfatter. Under **Innstillinger → Deg → Kreditering av commits** kan du slå av denne medforfatterkrediteringen uten å endre identiteten din. En overstyring under **Innstillinger → Arbeidsområde → Generelt** har forrang og låser den personlige bryteren. Claude Codes egen kreditering er alltid deaktivert. Commit-signering krever fortsatt sin egen gyldige konfigurasjon
 - Med en GitHub App konfigurert utsteder brokeren finkornede, repobegrensede
   installasjonstokener med omtrent én times varighet per oppstart, i stedet for å
   overlate et bredt token. Installasjonen løses fra **eieren** av repoet i

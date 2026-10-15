@@ -168,6 +168,8 @@ void main() {
         agentRepo: _Agents(),
         runLogRepo: null,
         eventBus: null,
+        resolveGitIdentity: (_, {workspaceId}) async =>
+            (name: 'Test User', email: 'test@example.test'),
         backendRegistry: BackendRegistry({
           'cc-harness': const HarnessBackend(),
         }),

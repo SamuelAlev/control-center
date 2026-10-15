@@ -2,7 +2,7 @@
 title: Lebenszyklus der Agenten-Ausführung
 description: Was zwischen einer eintreffenden Nachricht und dem Schließen eines Laufprotokolls passiert, von Prompt-Aufbau und Worktrees über Identität bis zu den Grenzen eines Laufs und der ehrlichen Aufzeichnung seines Ergebnisses.
 slug: de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus
-sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
+sourceHash: 781e03487b61d53f4032d785370f70457df0156b
 ---
 
 ## Was eine Ausführung ist
@@ -52,7 +52,7 @@ Copy-on-Write ist überall, wo `rift` mitgeliefert wird, die **einzige** Umsetzu
 
 Pro Lauf werden zwei Identitäten aufgelöst, bevor irgendein Prozess startet.
 
-**Git-Autorenschaft.** Standardmäßig tragen Agenten-Commits in `GIT_AUTHOR_*` und `GIT_COMMITTER_*` `Control Center <hi@usectrl.dev>` (GitHub-Konto `@usectrl`); die anfragende Person wird im Trailer `Co-Authored-By:` genannt. Unter **Einstellungen → Du → Commit-Zuordnung** kannst du die Agentenzuordnung abschalten und ausschließlich deine Git-Identität verwenden. Ein Administrator kann die Zuordnung unter **Einstellungen → Arbeitsbereich → Allgemein** erzwingen oder abschalten. Diese Vorgabe hat Vorrang und sperrt den persönlichen Schalter, ohne deine gespeicherte Einstellung zu ändern. Änderungen gelten ab dem nächsten Lauf. Die eigenen Commit- und PR-Bylines von Claude Code sind stets deaktiviert. Explizit vom Aufrufer gesetzte Git-Identitätswerte haben weiterhin Vorrang; Forge-Zugangsdaten bleiben unberührt.
+**Git-Autorenschaft.** Agenten-Commits verwenden stets die im Arbeitsbereich ermittelte Git-Identität der anfragenden Person, sowohl in `GIT_AUTHOR_*` als auch in `GIT_COMMITTER_*`. Programmatisch gestartete Läufe verwenden die Identität des Serverbesitzers. Standardmäßig weist der Trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` das GitHub-Konto `@usectrl` als Mitautor aus. Unter **Einstellungen → Du → Commit-Zuordnung** kannst du diese Zuordnung abschalten und den Trailer weglassen. Ein Administrator kann die Mitautorenschaft unter **Einstellungen → Arbeitsbereich → Allgemein** erzwingen oder abschalten. Diese Vorgabe hat Vorrang und sperrt den persönlichen Schalter, ohne deine gespeicherte Einstellung zu ändern. Änderungen gelten ab dem nächsten Lauf. Die eigenen Commit- und PR-Bylines von Claude Code sind stets deaktiviert. Umgebungseinstellungen des Aufrufers und des Adapters können die ermittelte Identität nicht ersetzen; fehlt die Identität oder schlägt ihre Ermittlung fehl, wird der Lauf nicht gestartet. Forge-Zugangsdaten und die Konfiguration zur Commit-Signierung bleiben unberührt; die korrekte Identität allein garantiert keine verifizierte Signatur.
 
 **Forge-Identität.** Die GitHub-Zugangsdaten des Laufs sind immer nur die des Brokers: ein auf das Repo begrenztes App-Installationstoken oder ersatzweise das PAT aus der Umgebung, nie das gespeicherte Token des anfragenden Mitglieds. `actingUserId` begrenzt den PAT-Fallback, damit ein Mitglied, das nicht der Besitzer des Servers ist, nicht die Reichweite des Servers erbt. Es legt kein persönliches Token in die Umgebung des Agenten.
 

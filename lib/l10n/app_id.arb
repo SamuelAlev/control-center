@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "Pilih apakah commit agen mencantumkan Control Center. Admin ruang kerja dapat mengganti pilihan ini untuk semua orang di ruang kerja.",
   "settingsAgentCoauthorSection": "Atribusi agen",
   "settingsAgentCoauthorTitle": "Cantumkan Control Center pada commit agen",
-  "settingsAgentCoauthorDescription": "Jika diaktifkan, penulis commit adalah Control Center dan Anda dicantumkan sebagai penulis bersama. Jika dinonaktifkan, commit menggunakan identitas Git Anda tanpa mencantumkan agen.",
+  "settingsAgentCoauthorDescription": "Anda selalu menjadi penulis dan pelaku commit. Jika diaktifkan, Control Center (@usectrl) ditambahkan sebagai penulis bersama. Jika dinonaktifkan, commit tidak mencantumkan kredit agen.",
   "settingsAgentCoauthorWorkspaceOverride": "Pengaturan ruang kerja ini menggantikan pilihan pribadi Anda. Preferensi Anda tetap tersimpan, tetapi tidak berlaku di sini.",
   "settingsAgentAttributionLoading": "Memuat pengaturan atribusi…",
   "settingsWorkspaceAgentCoauthorDescription": "Pilih apakah commit agen mencantumkan Control Center. Pilihan ruang kerja menggantikan preferensi pribadi setiap anggota.",

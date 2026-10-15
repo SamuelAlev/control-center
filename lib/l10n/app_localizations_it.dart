@@ -12553,18 +12553,18 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsAgentAttributionDescription =>
-      'Scegli se attribuire a Control Center i commit degli agenti. Gli amministratori dello spazio di lavoro possono sostituire questa scelta per tutti i membri.';
+      'Scegli se indicare Control Center come coautore nei commit degli agenti. Gli amministratori dello spazio di lavoro possono sostituire questa scelta per tutti i membri.';
 
   @override
   String get settingsAgentCoauthorSection => 'Attribuzione all\'agente';
 
   @override
   String get settingsAgentCoauthorTitle =>
-      'Attribuisci a Control Center i commit degli agenti';
+      'Indica Control Center come coautore nei commit degli agenti';
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Se attiva, i commit hanno Control Center come autore e te come coautore. Se disattiva, usano la tua identità Git senza attribuzione all\'agente.';
+      'Sei sempre l\'autore e il committer dei commit. Se attivi l\'opzione, Control Center (@usectrl) viene aggiunto come coautore. Se la disattivi, i commit non riportano alcun credito all\'agente.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>
@@ -12576,7 +12576,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsWorkspaceAgentCoauthorDescription =>
-      'Scegli se attribuire a Control Center i commit degli agenti. La scelta dello spazio di lavoro prevale sulla preferenza personale di ciascun membro.';
+      'Scegli se indicare Control Center come coautore nei commit degli agenti. La scelta dello spazio di lavoro prevale sulla preferenza personale di ciascun membro.';
 
   @override
   String get settingsWorkspaceAgentCoauthorInherit =>

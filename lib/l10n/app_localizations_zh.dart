@@ -12123,7 +12123,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      '开启后，提交以 Control Center 为作者，并将你列为共同作者。关闭后，提交使用你的 Git 身份，不为智能体署名。';
+      '你始终是提交的作者和提交者。开启后，Control Center (@usectrl) 将作为共同作者加入。关闭后，提交不包含任何智能体署名。';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>
@@ -27550,7 +27550,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      '開啟後，提交將以 Control Center 為作者，並將你列為共同作者。關閉後，提交會使用你的 Git 身分，不為代理署名。';
+      '你始終是提交的作者與提交者。開啟後，Control Center (@usectrl) 會列為共同作者。關閉後，提交不包含任何代理署名。';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

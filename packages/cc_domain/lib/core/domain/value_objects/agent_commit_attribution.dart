@@ -3,7 +3,8 @@ const String agentCommitAttributionSettingKey = 'agent_commit_attribution';
 
 /// Commit policy shared by every adapter. Keep this shell-preflight safe.
 const String agentCommitAttributionInstruction =
-    'Use the supplied Git author and committer environment for commits. '
+    'Use the supplied requesting user Git identity as both author and committer '
+    'for every commit; do not override it with an agent identity. '
     'If CC_GIT_COAUTHOR_TRAILER is nonempty, append its exact value to the '
     'commit message. Otherwise do not add agent or AI co-author trailers. '
     'Do not add generated-by footers to commits or pull requests. '
@@ -14,7 +15,7 @@ enum AgentAttributionOverride {
   /// Leave the decision to each member; an unset user preference defaults on.
   inherit,
 
-  /// Credit Control Center regardless of the member's preference.
+  /// Credit Control Center as co-author regardless of the member's preference.
   enabled,
 
   /// Use only the requesting member's Git identity.

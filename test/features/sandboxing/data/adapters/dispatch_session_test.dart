@@ -264,6 +264,8 @@ SandboxDispatchDeps _makeDeps({
     agentRepo: agentRepo ?? FakeAgentRepository(),
     runLogRepo: runLogRepo,
     eventBus: eventBus,
+    resolveGitIdentity: (_, {workspaceId}) async =>
+        (name: 'Test User', email: 'test@example.test'),
     backendRegistry: buildBackendRegistry(),
   );
 }

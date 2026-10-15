@@ -107,6 +107,7 @@ class _MemRunLogRepo implements AgentRunLogRepository {
     final row = rows[id];
     return row != null && row.workspaceId == workspaceId ? row : null;
   }
+
   @override
   Future<bool> completeIfActive(
     AgentRunLog completed, {
@@ -150,13 +151,21 @@ class _MemRunLogRepo implements AgentRunLogRepository {
     if (row == null) {
       return false;
     }
-    final start = markRunning &&
+    final start =
+        markRunning &&
         row.completedAt == null &&
         row.status == RunStatus.pending;
-    final hasMetadata = pid != null || logPath != null ||
-        contextSnapshotJson != null || lastOutputAt != null ||
-        liveness != null || errorFamily != null || summary != null ||
-        modelId != null || effort != null || taskFamily != null;
+    final hasMetadata =
+        pid != null ||
+        logPath != null ||
+        contextSnapshotJson != null ||
+        lastOutputAt != null ||
+        liveness != null ||
+        errorFamily != null ||
+        summary != null ||
+        modelId != null ||
+        effort != null ||
+        taskFamily != null;
     if (!start && !hasMetadata) {
       return false;
     }
@@ -304,6 +313,8 @@ _Harness _buildSession({
     agentRepo: _UnusedAgentRepo(),
     runLogRepo: runLogs,
     eventBus: null,
+    resolveGitIdentity: (_, {workspaceId}) async =>
+        (name: 'Test User', email: 'test@example.test'),
     backendRegistry: BackendRegistry({'cc-harness': const HarnessBackend()}),
     harnessCredentialStore: _KeylessStore(),
     harnessProviderFactory: const HarnessProviderFactory(),

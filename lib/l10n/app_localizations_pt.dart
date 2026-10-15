@@ -12545,7 +12545,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Quando ativado, o Control Center é o autor dos commits e você é incluído como coautor. Quando desativado, os commits usam sua identidade Git sem crédito ao agente.';
+      'Você sempre é o autor e o committer dos commits. Quando a opção está ativada, o Control Center (@usectrl) é adicionado como coautor. Quando desativada, os commits não incluem crédito ao agente.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

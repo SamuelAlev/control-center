@@ -12500,7 +12500,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Apabila dihidupkan, Control Center ialah pengarang komit dan anda disertakan sebagai penulis bersama. Apabila dimatikan, komit menggunakan identiti Git anda tanpa kredit kepada ejen.';
+      'Anda sentiasa pengarang dan pencatat komit. Apabila dihidupkan, Control Center (@usectrl) ditambah sebagai penulis bersama. Apabila dimatikan, komit tidak mengandungi kredit ejen.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

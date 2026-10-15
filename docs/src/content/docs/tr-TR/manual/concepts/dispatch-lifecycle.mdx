@@ -2,7 +2,7 @@
 title: Ajan gönderim yaşam döngüsü
 description: Bir mesajın gelmesiyle bir çalıştırma günlüğünün kapanması arasında olanlar — istem birleştirme, çalışma ağaçları, kimlik, bir çalıştırmayı neyin sınırladığı ve sonucunun dürüstçe nasıl kaydedildiği.
 slug: tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu
-sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
+sourceHash: 781e03487b61d53f4032d785370f70457df0156b
 ---
 
 ## Gönderim nedir
@@ -52,7 +52,7 @@ Herhangi bir şey çalışmadan önce konuşma kendi çalışma kökünü alır;
 
 Her çalıştırmada, herhangi bir süreç başlatılmadan önce iki kimlik çözülür.
 
-**Git yazarlığı.** Varsayılan olarak ajanın commit'leri hem `GIT_AUTHOR_*` hem de `GIT_COMMITTER_*` için `Control Center <hi@usectrl.dev>` (GitHub hesabı `@usectrl`) kullanır; isteği yapan kişi `Co-Authored-By:` satırında anılır. Yalnızca kendi Git kimliğinizi kullanmak için **Ayarlar → Siz → Commit atfı** bölümünde ajana atfı kapatın. Çalışma alanı yöneticisi **Ayarlar → Çalışma alanı → Genel** bölümünden atfı zorunlu kılabilir veya kapatabilir; bu ayar önceliklidir ve kayıtlı tercihinizi değiştirmeden kişisel anahtarı devre dışı bırakır. Değişiklikler sonraki çalıştırmada geçerli olur. Claude Code'un kendi commit ve PR imzaları her zaman kapalıdır. Çağıranın açıkça belirlediği Git kimliği değerleri yine önceliklidir; kod barındırma hizmetinin kimlik bilgileri etkilenmez.
+**Git yazarlığı.** Ajanın commit'leri, isteği yapan kişinin çalışma alanında belirlenen Git kimliğini hem `GIT_AUTHOR_*` hem de `GIT_COMMITTER_*` için her zaman kullanır. Programatik çalıştırmalar sunucu sahibinin kimliğini kullanır. Varsayılan olarak `Co-Authored-By: Control Center <hi@usectrl.dev>`, GitHub hesabı `@usectrl`'ü ortak yazar olarak belirtir. Bu satırı çıkarmak için **Ayarlar → Siz → Commit atfı** bölümünden ajana atfı kapatın. Çalışma alanı yöneticisi **Ayarlar → Çalışma alanı → Genel** bölümünden ortak yazar atfını zorunlu kılabilir veya kapatabilir; bu ayar önceliklidir ve kayıtlı tercihi değiştirmeden kişisel anahtarı devre dışı bırakır. Değişiklikler bir sonraki çalıştırmada geçerli olur. Claude Code'un kendi commit ve PR yazar satırları her zaman devre dışıdır. Çağıranın ve adaptörün ortam ayarları belirlenen kimliğin yerine geçemez; kimlik eksikse veya belirlenirken hata oluşursa çalıştırma başlamaz. Forge kimlik bilgileri ve commit imzalama yapılandırması etkilenmez; doğru kimlik tek başına doğrulanmış bir imzayı garanti etmez.
 
 **Forge kimliği.** Çalıştırmanın GitHub kimlik bilgisi her zaman yalnızca aracının olur — depo kapsamlı bir App kurulum belirteci ya da bunun ortam PAT yedeği — ve asla isteği yapan üyenin kendi sakladığı belirteç olmaz. `actingUserId` PAT yedeğini sınırlar; böylece sunucu sahibi olmayan bir üye sunucunun erişim alanını devralmaz. Ajan ortamına kişisel bir belirteç katmanlanmaz.
 

@@ -2,7 +2,7 @@
 title: Levenscyclus van agent-dispatch
 description: Wat er gebeurt tussen het aankomen van een bericht en het sluiten van een run-log — promptopbouw, worktrees, identiteit, wat een run begrenst en hoe de uitkomst ervan eerlijk wordt vastgelegd.
 slug: nl-NL/handleiding/concepten/dispatch-levenscyclus
-sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
+sourceHash: 781e03487b61d53f4032d785370f70457df0156b
 ---
 
 ## Wat een dispatch is
@@ -52,7 +52,7 @@ Copy-on-write is de **enige** implementatie overal waar `rift` meelevert, onders
 
 Per run worden twee identiteiten bepaald, voordat er een proces start.
 
-**Git-auteurschap.** Standaard gebruiken commits van agents `Control Center <hi@usectrl.dev>` (het GitHub-account `@usectrl`) voor zowel `GIT_AUTHOR_*` als `GIT_COMMITTER_*`; de aanvrager wordt vermeld in een `Co-Authored-By:`-trailer. Schakel agentvermelding uit via **Instellingen → Jij → Toeschrijving van commits** om alleen je eigen Git-identiteit te gebruiken. Een werkruimtebeheerder kan de vermelding afdwingen of uitschakelen via **Instellingen → Werkruimte → Algemeen**; die instelling gaat voor en schakelt de persoonlijke knop uit zonder je opgeslagen voorkeur te wijzigen. Wijzigingen gelden vanaf de volgende run. De eigen commit- en PR-vermeldingen van Claude Code zijn altijd uitgeschakeld. Expliciet door de aanroeper ingestelde Git-identiteitswaarden blijven voorgaan; de credentials voor de forge veranderen niet.
+**Git-auteurschap.** Commits van agents gebruiken altijd de Git-identiteit die in de werkruimte is vastgesteld voor de aanvragende persoon, voor zowel `GIT_AUTHOR_*` als `GIT_COMMITTER_*`. Programmatische runs gebruiken de identiteit van de servereigenaar. Standaard vermeldt `Co-Authored-By: Control Center <hi@usectrl.dev>` het GitHub-account `@usectrl` als mede-auteur. Schakel agentvermelding uit via **Instellingen → Jij → Toeschrijving van commits** om die trailer weg te laten. Een werkruimtebeheerder kan de vermelding van een mede-auteur afdwingen of uitschakelen via **Instellingen → Werkruimte → Algemeen**; die instelling gaat voor en schakelt de persoonlijke knop uit zonder de opgeslagen voorkeur te wijzigen. Wijzigingen gelden vanaf de volgende run. De eigen commit- en PR-vermeldingen van Claude Code zijn altijd uitgeschakeld. Omgevingsinstellingen van de aanroeper en adapter kunnen de vastgestelde identiteit niet vervangen; als die ontbreekt of niet kan worden vastgesteld, wordt de run niet gestart. Forge-inloggegevens en de configuratie voor het ondertekenen van commits blijven ongewijzigd; alleen de juiste identiteit garandeert geen geverifieerde handtekening.
 
 **Codehost-identiteit.** De GitHub-inloggegevens van de run zijn altijd alleen die van de broker — een App-installatietoken met repo-scope, of de PAT-fallback uit de omgeving — nooit het eigen opgeslagen token van het aanvragende lid. `actingUserId` begrenst de PAT-fallback, zodat een lid dat niet de servereigenaar is niet het bereik van de server erft; het legt geen persoonlijk token over de agentomgeving heen.
 

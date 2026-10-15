@@ -2,7 +2,7 @@
 title: Configurează integrarea GitHub
 description: Autentifică-te pe GitHub pentru ca zona PR, înregistrarea repo-urilor și rulările agenților să funcționeze.
 slug: ro-RO/manual/ghiduri-practice/integrare-github
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 Acest ghid acoperă părțile specifice GitHub ale configurării. GitHub este unul
@@ -106,7 +106,7 @@ fiecare două minute.
   regula **Push către un remote** și apoi îl transmite cu un token de scriere pe
   care agentul nu îl deține niciodată. Vezi
   [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/)
-- În mod implicit, commit-urile agentului sunt atribuite lui **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`), iar persoana care a făcut solicitarea este creditată printr-un trailer `Co-Authored-By`. În **Setări → Tu → Atribuirea autorului commiturilor** poți dezactiva atribuirea agentului și folosi numai identitatea ta Git. O setare a spațiului de lucru din **Setări → Spațiu de lucru → General** are prioritate și blochează comutatorul personal. Atribuirea proprie a Claude Code este întotdeauna dezactivată
+- Commiturile agentului folosesc întotdeauna identitatea Git a solicitantului atât ca autor, cât și ca persoană care face commitul. În mod implicit, trailerul `Co-Authored-By: Control Center <hi@usectrl.dev>` creditează contul GitHub `@usectrl` drept coautor. Din **Setări → Tu → Atribuirea autorului commiturilor** poți dezactiva acest credit de coautor fără să-ți schimbi identitatea. O setare a spațiului de lucru din **Setări → Spațiu de lucru → General** are prioritate și blochează comutatorul personal. Atribuirea proprie a Claude Code este întotdeauna dezactivată. Semnarea commiturilor necesită în continuare propria configurație validă
 - Cu un GitHub App configurat, brokerul emite la fiecare lansare tokenuri de instalare
   fine-grained, limitate la repo și valabile aproximativ o oră, în loc să predea un
   token larg. Instalarea este rezolvată pornind de la **proprietarul** repo-ului

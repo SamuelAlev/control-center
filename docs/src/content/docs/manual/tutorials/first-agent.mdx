@@ -74,7 +74,7 @@ What constrains the run: its own copy-on-write worktree, the credentials brokere
 
 **Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
 
-The agent's changes are committed on the conversation's branch, in its worktree. By default, commits are authored by `Control Center <hi@usectrl.dev>` (`@usectrl`), with you credited in a `Co-Authored-By:` trailer. You can turn agent attribution off in **Settings → You → Commit attribution**, unless a workspace admin has overridden the choice in **Settings → Workspace → General**.
+The agent's changes are committed on the conversation's branch, in its worktree. You are always the author and committer, using your workspace Git identity. By default, `Co-Authored-By: Control Center <hi@usectrl.dev>` credits GitHub `@usectrl` as a co-author. You can turn that co-author credit off in **Settings → You → Commit attribution**, unless a workspace admin has overridden the choice in **Settings → Workspace → General**.
 
 ## Getting a pull request
 

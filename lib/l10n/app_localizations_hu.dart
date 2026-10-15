@@ -12530,7 +12530,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Bekapcsolva a commitok szerzője a Control Center, te pedig társszerzőként szerepelsz. Kikapcsolva a commitok a te Git-identitásodat használják, az ügynök feltüntetése nélkül.';
+      'Mindig te vagy a commitok szerzője és rögzítője. Bekapcsolva a Control Center (@usectrl) társszerzőként szerepel. Kikapcsolva a commitok nem tartalmaznak ügynökkreditet.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

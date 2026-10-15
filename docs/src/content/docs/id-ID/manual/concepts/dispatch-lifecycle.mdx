@@ -2,7 +2,7 @@
 title: Siklus hidup pengiriman agen
 description: Apa yang terjadi antara pesan yang masuk dan penutupan log run — perakitan prompt, worktree, identitas, apa yang membatasi sebuah run, dan bagaimana hasilnya dicatat secara jujur.
 slug: id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman
-sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
+sourceHash: 781e03487b61d53f4032d785370f70457df0156b
 ---
 
 ## Apa itu pengiriman
@@ -52,7 +52,7 @@ Copy-on-write adalah **satu-satunya** implementasi di mana pun `rift` disertakan
 
 Dua identitas diselesaikan per run, sebelum proses apa pun diluncurkan.
 
-**Kepengarangan Git.** Secara default, commit agen memakai `Control Center <hi@usectrl.dev>` (akun GitHub `@usectrl`) pada `GIT_AUTHOR_*` dan `GIT_COMMITTER_*`, sedangkan peminta dicantumkan lewat trailer `Co-Authored-By:`. Matikan atribusi agen di **Pengaturan → Anda → Atribusi commit** agar hanya identitas Git Anda yang digunakan. Admin ruang kerja dapat mewajibkan atau menonaktifkan atribusi di **Pengaturan → Ruang kerja → Umum**; pengaturan itu diutamakan dan menonaktifkan tombol pribadi tanpa mengubah preferensi yang tersimpan. Perubahan berlaku mulai run berikutnya. Baris atribusi commit dan PR bawaan Claude Code selalu dinonaktifkan. Nilai identitas Git yang ditetapkan pemanggil secara eksplisit tetap diutamakan; kredensial layanan Git tidak terpengaruh.
+**Kepengarangan Git.** Commit agen selalu memakai identitas Git peminta yang ditentukan di ruang kerja, baik pada `GIT_AUTHOR_*` maupun `GIT_COMMITTER_*`. Run yang dimulai secara terprogram memakai identitas pemilik server. Secara default, trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` mencantumkan akun GitHub `@usectrl` sebagai penulis bersama. Matikan atribusi agen di **Pengaturan → Anda → Atribusi commit** untuk menghilangkan trailer tersebut. Admin ruang kerja dapat mewajibkan atau menonaktifkan kredit penulis bersama di **Pengaturan → Ruang kerja → Umum**; pengaturan itu diutamakan dan menonaktifkan tombol pribadi tanpa mengubah preferensi yang tersimpan. Perubahan berlaku pada run berikutnya. Baris atribusi commit dan PR bawaan Claude Code selalu dinonaktifkan. Pengaturan lingkungan pemanggil dan adaptor tidak dapat mengganti identitas yang sudah ditentukan; identitas yang tidak ada atau kegagalan penentuan identitas menghentikan run. Kredensial forge dan konfigurasi penandatanganan commit tidak berubah; identitas yang benar saja tidak menjamin tanda tangan terverifikasi.
 
 **Identitas forge.** Kredensial GitHub dalam run selalu hanya milik broker — token instalasi App yang berskop repo, atau fallback PAT dari lingkungannya — tidak pernah token tersimpan milik anggota yang meminta. `actingUserId` membatasi fallback PAT agar anggota yang bukan pemilik server tidak mewarisi jangkauan server; ini tidak menimpakan token pribadi ke lingkungan agen.
 

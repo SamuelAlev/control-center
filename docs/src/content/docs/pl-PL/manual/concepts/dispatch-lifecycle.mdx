@@ -2,7 +2,7 @@
 title: Cykl życia wysyłania agentów
 description: Co dzieje się między nadejściem wiadomości a zamknięciem dziennika uruchomienia — składanie promptu, drzewa robocze, tożsamość, co ogranicza uruchomienie i jak jego wynik jest zapisywany rzetelnie.
 slug: pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania
-sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
+sourceHash: 781e03487b61d53f4032d785370f70457df0156b
 ---
 
 ## Czym jest wysłanie
@@ -52,7 +52,7 @@ Kopiowanie przy zapisie to **jedyna** implementacja wszędzie tam, gdzie dostarc
 
 Przed startem jakiegokolwiek procesu dla każdego uruchomienia ustalane są dwie tożsamości.
 
-**Autorstwo w Gitcie.** Domyślnie commity agenta mają `Control Center <hi@usectrl.dev>` (konto GitHub `@usectrl`) zarówno w `GIT_AUTHOR_*`, jak i `GIT_COMMITTER_*`, a osoba zlecająca pracę jest uwzględniana w stopce `Co-Authored-By:`. Wyłącz przypisywanie autorstwa agentowi w **Ustawienia → Ty → Przypisanie autorstwa commitów**, aby używać wyłącznie swojej tożsamości Git. Administrator obszaru roboczego może wymusić lub wyłączyć to przypisywanie w **Ustawienia → Obszar roboczy → Ogólne**; to ustawienie ma pierwszeństwo i blokuje osobisty przełącznik bez zmiany zapisanej preferencji. Zmiany obowiązują od następnego uruchomienia. Własne podpisy Claude Code w commitach i PR-ach są zawsze wyłączone. Jawnie ustawione przez wywołującego wartości tożsamości Git nadal mają pierwszeństwo; dane uwierzytelniające do platformy nie ulegają zmianie.
+**Autorstwo w Gitcie.** Commity agenta zawsze używają tożsamości Git osoby zlecającej pracę, ustalonej w obszarze roboczym, zarówno w `GIT_AUTHOR_*`, jak i `GIT_COMMITTER_*`. Uruchomienia programowe używają tożsamości właściciela serwera. Domyślnie stopka `Co-Authored-By: Control Center <hi@usectrl.dev>` wskazuje konto GitHub `@usectrl` jako współautora. Wyłącz przypisywanie autorstwa agentowi w **Ustawienia → Ty → Przypisanie autorstwa commitów**, aby pominąć tę stopkę. Administrator obszaru roboczego może wymusić lub wyłączyć wskazywanie współautora w **Ustawienia → Obszar roboczy → Ogólne**; to ustawienie ma pierwszeństwo i blokuje osobisty przełącznik bez zmiany zapisanej preferencji. Zmiany obowiązują od następnego uruchomienia. Własne podpisy commitów i PR tworzone przez Claude Code są zawsze wyłączone. Ustawienia środowiskowe wywołującego i adaptera nie mogą zastąpić ustalonej tożsamości; jej brak lub błąd podczas ustalania uniemożliwia uruchomienie. Dane uwierzytelniające hosta kodu i konfiguracja podpisywania commitów pozostają bez zmian; sama prawidłowa tożsamość nie gwarantuje zweryfikowanego podpisu.
 
 **Tożsamość na hoście kodu.** Dane uwierzytelniające GitHub dla uruchomienia pochodzą wyłącznie od brokera — token instalacji App o zakresie repozytorium albo jego zapasowy PAT ze środowiska — nigdy z własnego, zapisanego tokenu zlecającego członka. `actingUserId` ogranicza zapasowy PAT, żeby członek, który nie jest właścicielem serwera, nie dziedziczył jego zasięgu; nie nakłada osobistego tokenu na środowisko agenta.
 

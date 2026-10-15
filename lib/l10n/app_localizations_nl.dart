@@ -12523,7 +12523,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Wanneer dit is ingeschakeld, is Control Center de auteur van commits en word jij als mede-auteur vermeld. Wanneer dit is uitgeschakeld, gebruiken commits jouw Git-identiteit zonder vermelding van de agent.';
+      'Je bent altijd de auteur en committer van commits. Als dit is ingeschakeld, wordt Control Center (@usectrl) toegevoegd als mede-auteur. Als dit is uitgeschakeld, bevatten commits geen vermelding van de agent.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

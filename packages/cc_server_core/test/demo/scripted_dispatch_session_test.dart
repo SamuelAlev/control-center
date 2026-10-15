@@ -105,22 +105,25 @@ class _RecordingRunLogRepo implements AgentRunLogRepository {
     if (current == null || current.workspaceId != workspaceId) {
       return false;
     }
-    final start = markRunning &&
+    final start =
+        markRunning &&
         current.completedAt == null &&
         current.status == RunStatus.pending;
-    await upsert(current.copyWith(
-      pid: pid,
-      status: start ? RunStatus.running : null,
-      logPath: logPath,
-      contextSnapshotJson: contextSnapshotJson,
-      lastOutputAt: lastOutputAt,
-      liveness: liveness,
-      errorFamily: errorFamily,
-      summary: summary,
-      modelId: modelId,
-      effort: effort,
-      taskFamily: taskFamily,
-    ));
+    await upsert(
+      current.copyWith(
+        pid: pid,
+        status: start ? RunStatus.running : null,
+        logPath: logPath,
+        contextSnapshotJson: contextSnapshotJson,
+        lastOutputAt: lastOutputAt,
+        liveness: liveness,
+        errorFamily: errorFamily,
+        summary: summary,
+        modelId: modelId,
+        effort: effort,
+        taskFamily: taskFamily,
+      ),
+    );
     return true;
   }
 
@@ -173,6 +176,8 @@ void main() {
       agentRepo: _UnusedAgentRepo(),
       runLogRepo: runLogRepo,
       eventBus: null,
+      resolveGitIdentity: (_, {workspaceId}) async =>
+          (name: 'Test User', email: 'test@example.test'),
       // Harness-only: any other adapter resolves to null and fails loudly
       // rather than silently reaching for a CLI a demo host does not have.
       backendRegistry: BackendRegistry({'cc-harness': const HarnessBackend()}),

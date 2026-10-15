@@ -12497,7 +12497,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'כשהאפשרות מופעלת, Control Center הוא מחבר הקומיטים ואתם מופיעים כמחברים שותפים. כשהיא כבויה, הקומיטים נכתבים בזהות ה-Git שלכם ללא קרדיט לסוכן.';
+      'אתם תמיד המחברים ומבצעי הקומיטים. כשהאפשרות מופעלת, Control Center (@usectrl) מתווסף כמחבר שותף. כשהיא כבויה, הקומיטים אינם כוללים קרדיט לסוכן.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

@@ -7715,7 +7715,7 @@
   "settingsAgentAttributionDescription": "เลือกว่าคอมมิตของเอเจนต์จะให้เครดิต Control Center หรือไม่ ผู้ดูแลเวิร์กสเปซสามารถกำหนดค่าแทนทุกคนในเวิร์กสเปซได้",
   "settingsAgentCoauthorSection": "การให้เครดิตเอเจนต์",
   "settingsAgentCoauthorTitle": "ให้เครดิต Control Center ในคอมมิตของเอเจนต์",
-  "settingsAgentCoauthorDescription": "เมื่อเปิดใช้ คอมมิตจะมี Control Center เป็นผู้เขียนและมีคุณเป็นผู้ร่วมเขียน เมื่อปิดใช้ คอมมิตจะใช้ตัวตน Git ของคุณโดยไม่ให้เครดิตเอเจนต์",
+  "settingsAgentCoauthorDescription": "คุณเป็นทั้งผู้เขียนและผู้บันทึกคอมมิตเสมอ เมื่อเปิดใช้ ระบบจะเพิ่ม Control Center (@usectrl) เป็นผู้ร่วมเขียน เมื่อปิดใช้ คอมมิตจะไม่มีการให้เครดิตเอเจนต์",
   "settingsAgentCoauthorWorkspaceOverride": "เวิร์กสเปซนี้ใช้ค่าแทนการเลือกส่วนตัวของคุณ ค่าที่คุณเลือกยังถูกบันทึกไว้ แต่ไม่มีผลที่นี่",
   "settingsAgentAttributionLoading": "กำลังโหลดการตั้งค่าการระบุที่มา…",
   "settingsWorkspaceAgentCoauthorDescription": "เลือกว่าคอมมิตของเอเจนต์จะให้เครดิต Control Center หรือไม่ การตั้งค่าของเวิร์กสเปซมีผลแทนการตั้งค่าส่วนตัวของสมาชิกแต่ละคน",

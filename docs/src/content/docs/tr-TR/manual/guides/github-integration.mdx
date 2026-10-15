@@ -2,7 +2,7 @@
 title: GitHub entegrasyonunu kurma
 description: PR yüzeyi, depo kaydı ve ajan çalıştırmaları çalışsın diye GitHub'da oturum açın.
 slug: tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 Bu kılavuz, kurulumun GitHub'a özgü kısımlarını ele alır. GitHub, desteklenen üç
@@ -105,7 +105,7 @@ için çipe tıklayın. Durumlar her iki dakikada bir kendiliğinden yenilenir.
   ajanın asla elinde tutmadığı bir yazma token'ıyla ileten Control Center'dan
   geçer. Bkz.
   [Sandbox politikalarını yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/)
-- Varsayılan olarak ajanın commit'lerinde yazar **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`) olur; isteği yapan kişi `Co-Authored-By` satırında anılır. **Ayarlar → Siz → Commit atfı** bölümünden ajana atfı kapatıp yalnızca kendi Git kimliğinizi kullanabilirsiniz. **Ayarlar → Çalışma alanı → Genel** bölümündeki çalışma alanı ayarı önceliklidir ve kişisel anahtarı kilitler. Claude Code'un kendi atfı her zaman kapalıdır
+- Ajanın commit'leri hem yazar hem de committer olarak her zaman isteği yapan kişinin Git kimliğini kullanır. Varsayılan olarak `Co-Authored-By: Control Center <hi@usectrl.dev>` satırı, GitHub `@usectrl`'ü ortak yazar olarak belirtir. **Ayarlar → Siz → Commit atfı** bölümünden kimliğinizi değiştirmeden bu ortak yazar atfını kapatabilirsiniz. **Ayarlar → Çalışma alanı → Genel** bölümündeki çalışma alanı ayarı önceliklidir ve kişisel anahtarı kilitler. Claude Code'un kendi atfı her zaman kapalıdır. Commit imzalama için ayrıca geçerli bir yapılandırma gerekir
 - Bir GitHub App yapılandırıldığında broker, geniş bir token vermek yerine her
   başlatma için ince taneli, depo kapsamlı, kabaca bir saatlik kurulum token'ları
   üretir. Kurulum, çalıştırmanın deposunun **sahibinden** çözülür; böylece birkaç

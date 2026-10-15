@@ -2,7 +2,7 @@
 title: Configurer l’intégration GitHub
 description: Connectez-vous à GitHub pour que la surface des PR, l’enregistrement des dépôts et les exécutions d’agents fonctionnent.
 slug: fr-FR/manuel/guides/integration-github
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 Ce guide couvre les aspects de la configuration propres à GitHub. GitHub est l’un
@@ -113,7 +113,7 @@ toutes les deux minutes.
   interroge la règle **Pousser vers un dépôt distant** puis le transmet avec un
   jeton d’écriture que l’agent ne détient jamais. Voir
   [Configurer les politiques de bac à sable](/fr-FR/manuel/guides/politiques-de-bac-a-sable/)
-- Par défaut, les commits des agents sont attribués à **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`), tandis que la personne à l'origine de la demande est créditée par une ligne `Co-Authored-By`. Dans **Paramètres → Vous → Attribution des commits**, désactivez l'attribution à l'agent pour n'utiliser que votre identité Git. La règle de **Paramètres → Espace de travail → Général** prévaut et verrouille le bouton personnel. L'attribution propre à Claude Code est toujours désactivée
+- Les commits des agents utilisent toujours l'identité Git de la personne à l'origine de la demande comme auteur et comme committer. Par défaut, la ligne `Co-Authored-By: Control Center <hi@usectrl.dev>` crédite le compte GitHub `@usectrl` comme coauteur. Dans **Paramètres → Vous → Attribution des commits**, désactivez cette mention de coauteur sans modifier votre identité. La règle de **Paramètres → Espace de travail → Général** prévaut et verrouille le bouton personnel. L'attribution propre à Claude Code est toujours désactivée. La signature des commits nécessite toujours sa propre configuration valide
 - Avec une GitHub App configurée, le courtier génère à chaque lancement des jetons
   d’installation à granularité fine, limités au dépôt et d’une durée d’environ une
   heure, au lieu de transmettre un jeton large. L’installation est résolue à

@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "Chọn có ghi công Control Center trong commit của agent hay không. Quản trị viên không gian làm việc có thể thay đổi lựa chọn này cho mọi người trong không gian làm việc.",
   "settingsAgentCoauthorSection": "Ghi công agent",
   "settingsAgentCoauthorTitle": "Ghi công Control Center trong commit của agent",
-  "settingsAgentCoauthorDescription": "Khi bật, Control Center là tác giả commit và bạn là đồng tác giả. Khi tắt, commit dùng danh tính Git của bạn mà không ghi công agent.",
+  "settingsAgentCoauthorDescription": "Bạn luôn là tác giả và người ghi commit. Khi bật, Control Center (@usectrl) được thêm làm đồng tác giả. Khi tắt, commit không ghi công agent.",
   "settingsAgentCoauthorWorkspaceOverride": "Thiết lập của không gian làm việc này thay thế lựa chọn cá nhân của bạn. Tùy chọn của bạn vẫn được lưu nhưng không áp dụng tại đây.",
   "settingsAgentAttributionLoading": "Đang tải thiết lập ghi công…",
   "settingsWorkspaceAgentCoauthorDescription": "Chọn có ghi công Control Center trong commit của agent hay không. Lựa chọn của không gian làm việc thay thế tùy chọn cá nhân của từng thành viên.",

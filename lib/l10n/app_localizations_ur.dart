@@ -12437,7 +12437,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'فعال ہونے پر کمیٹس کا مصنف Control Center ہوگا اور آپ شریک مصنف ہوں گے۔ غیر فعال ہونے پر کمیٹس ایجنٹ کو کریڈٹ دیے بغیر آپ کی Git شناخت استعمال کریں گی۔';
+      'کمیٹس کے مصنف اور انہیں ثبت کرنے والے ہمیشہ آپ ہیں۔ فعال ہونے پر Control Center (@usectrl) کو شریک مصنف کے طور پر شامل کیا جاتا ہے۔ غیر فعال ہونے پر کمیٹس میں ایجنٹ کا کوئی کریڈٹ نہیں ہوتا۔';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

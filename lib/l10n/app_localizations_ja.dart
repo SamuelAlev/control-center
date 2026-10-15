@@ -12242,7 +12242,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'オンにすると、コミットの作成者は Control Center となり、自分は共同作成者として記載されます。オフにすると、エージェントのクレジットなしで自分の Git ID が使用されます。';
+      'コミットの作成者とコミッターは常にあなたです。オンにすると、Control Center (@usectrl) が共同作成者として追加されます。オフにすると、コミットにエージェントのクレジットは含まれません。';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

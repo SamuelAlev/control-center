@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "منتخب کریں کہ ایجنٹ کمیٹس میں Control Center کو کریڈٹ دیا جائے یا نہیں۔ ورک اسپیس ایڈمن اس انتخاب کو ورک اسپیس کے سبھی ارکان کے لیے بدل سکتے ہیں۔",
   "settingsAgentCoauthorSection": "ایجنٹ کو کریڈٹ",
   "settingsAgentCoauthorTitle": "ایجنٹ کمیٹس میں Control Center کو کریڈٹ دیں",
-  "settingsAgentCoauthorDescription": "فعال ہونے پر کمیٹس کا مصنف Control Center ہوگا اور آپ شریک مصنف ہوں گے۔ غیر فعال ہونے پر کمیٹس ایجنٹ کو کریڈٹ دیے بغیر آپ کی Git شناخت استعمال کریں گی۔",
+  "settingsAgentCoauthorDescription": "کمیٹس کے مصنف اور انہیں ثبت کرنے والے ہمیشہ آپ ہیں۔ فعال ہونے پر Control Center (@usectrl) کو شریک مصنف کے طور پر شامل کیا جاتا ہے۔ غیر فعال ہونے پر کمیٹس میں ایجنٹ کا کوئی کریڈٹ نہیں ہوتا۔",
   "settingsAgentCoauthorWorkspaceOverride": "اس ورک اسپیس کی ترتیب آپ کے ذاتی انتخاب پر فوقیت رکھتی ہے۔ آپ کی ترجیح محفوظ ہے مگر یہاں لاگو نہیں ہوتی۔",
   "settingsAgentAttributionLoading": "نسبت کی ترتیبات لوڈ ہو رہی ہیں…",
   "settingsWorkspaceAgentCoauthorDescription": "منتخب کریں کہ ایجنٹ کمیٹس میں Control Center کو کریڈٹ دیا جائے یا نہیں۔ ورک اسپیس کا انتخاب ہر رکن کی ذاتی ترجیح پر فوقیت رکھتا ہے۔",

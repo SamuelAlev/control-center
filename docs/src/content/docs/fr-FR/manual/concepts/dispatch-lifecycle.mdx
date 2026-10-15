@@ -2,7 +2,7 @@
 title: Cycle de vie du lancement d'un agent
 description: Ce qui se passe entre l'arrivée d'un message et la fermeture d'un journal d'exécution — assemblage du prompt, arbres de travail, identité, ce qui borne une exécution et comment son résultat est consigné honnêtement.
 slug: fr-FR/manuel/concepts/cycle-de-vie-du-lancement
-sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
+sourceHash: 781e03487b61d53f4032d785370f70457df0156b
 ---
 
 ## Ce qu'est un lancement
@@ -52,7 +52,7 @@ La copie sur écriture est la **seule** implémentation partout où `rift` est l
 
 Deux identités sont résolues par exécution, avant le lancement du moindre processus.
 
-**Paternité Git.** Par défaut, les commits des agents utilisent `Control Center <hi@usectrl.dev>` (le compte GitHub `@usectrl`) dans `GIT_AUTHOR_*` et `GIT_COMMITTER_*`, tandis que la personne à l'origine de la demande est créditée par une ligne `Co-Authored-By:`. Désactivez l'attribution à l'agent dans **Paramètres → Vous → Attribution des commits** pour n'utiliser que votre identité Git. Un administrateur peut imposer ou désactiver l'attribution dans **Paramètres → Espace de travail → Général** ; cette règle prévaut et désactive le bouton personnel sans modifier votre préférence enregistrée. Les changements s'appliquent à la prochaine exécution. Les propres mentions de Claude Code dans les commits et les PR sont toujours désactivées. Les valeurs d'identité Git explicitement définies par l'appelant restent prioritaires ; les identifiants d'accès à la forge ne changent pas.
+**Paternité Git.** Les commits des agents utilisent toujours l'identité Git de la personne à l'origine de la demande, telle qu'elle est définie dans l'espace de travail, dans `GIT_AUTHOR_*` comme dans `GIT_COMMITTER_*`. Les exécutions lancées par programmation utilisent l'identité du propriétaire du serveur. Par défaut, la ligne `Co-Authored-By: Control Center <hi@usectrl.dev>` crédite le compte GitHub `@usectrl` comme coauteur. Désactivez l'attribution à l'agent dans **Paramètres → Vous → Attribution des commits** pour omettre cette ligne. Un administrateur peut imposer ou désactiver cette mention de coauteur dans **Paramètres → Espace de travail → Général** ; cette règle prévaut et désactive le bouton personnel sans modifier la préférence enregistrée. Les changements s'appliquent à l'exécution suivante. Les mentions de paternité propres à Claude Code dans les commits et les PR restent désactivées. Les paramètres d'environnement de l'appelant et de l'adaptateur ne peuvent pas remplacer l'identité définie ; une identité absente ou une erreur lors de sa résolution empêche le lancement. Les identifiants de la forge et la configuration de signature des commits ne changent pas ; une identité correcte ne garantit pas à elle seule une signature vérifiée.
 
 **Identité de forge.** L'identifiant GitHub de l'exécution n'est jamais que celui du courtier — un jeton d'installation d'App limité au dépôt, ou son repli sur un PAT d'environnement — jamais le jeton personnel stocké du membre à l'origine de la demande. `actingUserId` borne le repli sur le PAT afin qu'un membre qui n'est pas le propriétaire du serveur n'hérite pas de la portée du serveur ; il ne superpose pas un jeton personnel sur l'environnement de l'agent.
 

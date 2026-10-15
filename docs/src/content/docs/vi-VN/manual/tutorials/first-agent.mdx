@@ -2,7 +2,7 @@
 title: Điều phối agent đầu tiên của bạn
 description: Tạo một agent, giao cho nó một space và một tác vụ rồi xem lượt chạy truyền về.
 slug: vi-VN/so-tay/huong-dan/agent-dau-tien
-sourceHash: 4d54c7233d4a0de6607ac5475b5ab294ce8007cd
+sourceHash: 5ee1b9e96981547311a69749cfc2d01bf5001542
 ---
 
 ## Bạn sẽ xây dựng gì
@@ -76,7 +76,7 @@ Những gì giới hạn lượt chạy: worktree copy-on-write riêng của nó
 
 **Điểm kiểm tra.** Một hàng lượt chạy, hiển thị trạng thái, thời lượng, thời điểm bắt đầu và kết thúc cùng bộ điều hợp mà nó đã chạy trên đó.
 
-Các thay đổi của agent được commit trên nhánh của cuộc hội thoại, trong worktree của nó. Theo mặc định, commit ghi tác giả là `Control Center <hi@usectrl.dev>` (`@usectrl`), còn bạn được ghi nhận trong trailer `Co-Authored-By:`. Bạn có thể tắt ghi công cho agent tại **Cài đặt → Bạn → Ghi công trong commit**, trừ khi quản trị viên không gian làm việc đã đặt quy tắc khác tại **Cài đặt → Không gian làm việc → Chung**.
+Các thay đổi của agent được commit trên nhánh của cuộc hội thoại, trong worktree của nó. Bạn luôn là tác giả và người thực hiện commit, dùng danh tính Git của mình trong không gian làm việc. Theo mặc định, `Co-Authored-By: Control Center <hi@usectrl.dev>` ghi nhận GitHub `@usectrl` là đồng tác giả. Bạn có thể tắt việc ghi nhận đồng tác giả này tại **Cài đặt → Bạn → Ghi công trong commit**, trừ khi quản trị viên không gian làm việc đã đặt quy tắc khác tại **Cài đặt → Không gian làm việc → Chung**.
 
 ## Nhận một pull request
 

@@ -12483,7 +12483,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Når dette er på, står Control Center som forfatter av commits, og du er oppført som medforfatter. Når det er av, bruker commits Git-identiteten din uten å kreditere agenten.';
+      'Du er alltid forfatter og committer for commits. Når dette er på, legges Control Center (@usectrl) til som medforfatter. Når det er av, inneholder commits ingen kreditering av agenten.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

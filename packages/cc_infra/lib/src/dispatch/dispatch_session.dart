@@ -257,13 +257,12 @@ class DispatchSession implements SteeringSessionView {
   /// Optional agent identifier for capability lookup.
   final String? agentId;
 
-  /// The agent's display name, used to stamp the per-run git author identity.
-  /// Null falls back to a repo lookup by [agentId], then to the id itself.
+  /// The agent's display name for lifecycle events and operator prompts.
   final String? agentName;
 
-  /// The human on whose behalf this run executes. Drives the commit co-author
-  /// trailer and per-user GitHub credential selection; null attributes the run
-  /// to the server owner.
+  /// The human on whose behalf this run executes. Resolves the Git author and
+  /// committer, attribution preference and forge credential scope; null uses
+  /// the server owner.
   final String? requestedByUserId;
 
   /// Optional workspace identifier.
@@ -743,19 +742,18 @@ class DispatchSession implements SteeringSessionView {
     'ask_user',
   };
 
-  /// Per-run Git author/committer identity and optional requester co-author.
-  /// Attribution enabled: Control Center authors; disabled: the requester does.
+  /// The requesting human's Git identity, independent of agent credit.
   Map<String, String> _gitIdentityEnv = const {};
 
-  /// The requester's co-author trailer, only when agent attribution is enabled.
+  /// Control Center's co-author trailer, only when attribution is enabled.
   String? _coAuthorTrailer;
 
   /// Env var carrying the co-author trailer to the spawned agent CLI, so any
   /// tooling in the run can stamp it onto commit messages.
   static const String coAuthorTrailerEnvKey = 'CC_GIT_COAUTHOR_TRAILER';
 
-  /// Resolves attribution before any transport starts. Caller-set identity keys
-  /// still win; forge credentials remain the broker's, never the member's PAT.
+  /// Resolves policy-owned identity before any transport starts.
+  /// Forge credentials remain the broker's, never the member's PAT.
   Future<void> _prepareRunIdentity() async {
     final creditAgent =
         await deps.resolveAgentAttribution?.call(
@@ -763,49 +761,22 @@ class DispatchSession implements SteeringSessionView {
           workspaceId: workspaceId,
         ) ??
         true;
-    ({String name, String email})? human;
-    // The requesting human is the co-author, or sole author after opting out.
-    final resolveIdentity = deps.resolveGitIdentity;
-    if (resolveIdentity != null) {
-      try {
-        human = await resolveIdentity(
-          requestedByUserId,
-          workspaceId: workspaceId,
-        );
-      } catch (e) {
-        if (!creditAgent) {
-          rethrow;
-        }
-        CcInfraLog.warning(
-          'DispatchSession: git co-author resolution failed: $e',
-        );
-      }
+    final human = await deps.resolveGitIdentity?.call(
+      requestedByUserId,
+      workspaceId: workspaceId,
+    );
+    if (human == null) {
+      throw StateError('The requester has no Git identity.');
     }
-
-    if (!creditAgent && human == null) {
-      throw StateError(
-        'Agent attribution is disabled, but the requester has no Git identity.',
-      );
-    }
-    final authorName = creditAgent ? 'Control Center' : human!.name;
-    final authorEmail = creditAgent ? 'hi@usectrl.dev' : human!.email;
     final env = <String, String>{
-      'GIT_AUTHOR_NAME': authorName,
-      'GIT_COMMITTER_NAME': authorName,
-      'GIT_AUTHOR_EMAIL': authorEmail,
-      'GIT_COMMITTER_EMAIL': authorEmail,
+      'GIT_AUTHOR_NAME': human.name,
+      'GIT_COMMITTER_NAME': human.name,
+      'GIT_AUTHOR_EMAIL': human.email,
+      'GIT_COMMITTER_EMAIL': human.email,
     };
-    _coAuthorTrailer = creditAgent && human != null
-        ? 'Co-Authored-By: ${human.name} <${human.email}>'
+    _coAuthorTrailer = creditAgent
+        ? 'Co-Authored-By: Control Center <hi@usectrl.dev>'
         : null;
-
-    // Explicit caller identity wins for every transport, including the harness.
-    for (final key in env.keys) {
-      final explicit = callerEnv[key];
-      if (explicit != null) {
-        env[key] = explicit;
-      }
-    }
     // This policy-owned key also masks stale caller and inherited trailers.
     env[coAuthorTrailerEnvKey] = _coAuthorTrailer ?? '';
     _gitIdentityEnv = env;
@@ -1193,7 +1164,7 @@ class DispatchSession implements SteeringSessionView {
 
       await _openGatewayLease(repoOwner: repoOwner, repoName: repoName);
 
-      // Resolve the per-run git identity + requester credentials before any
+      // Resolve the per-run Git identity and co-author policy before any
       // transport launches, so every merged env carries them. (After the
       // mint: callers may fail a stalled mint to abort the run early.)
       await _prepareRunIdentity();
@@ -1686,7 +1657,7 @@ class DispatchSession implements SteeringSessionView {
   /// Builds the merged environment for a dispatch. Adapter defaults cannot
   /// replace the resolved attribution policy or the broker's forge credentials.
   ///
-  /// [_prepareRunIdentity] already applies explicit caller Git identities.
+  /// Caller and adapter settings cannot replace the requesting human's identity.
   /// The run's GitHub credential is always the broker's, never the requesting
   /// member's token.
   Map<String, String> _mergedEnv({

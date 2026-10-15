@@ -327,8 +327,8 @@ extension _DispatchSessionHarness on DispatchSession {
     }
 
     final harnessToolEnv = <String, String>{
-      ..._gitIdentityEnv,
       ...scoped.environment,
+      ..._gitIdentityEnv,
     };
     // `bash` pushes through the gateway exactly like a CLI adapter's shell.
     final lease = _gatewayLease;

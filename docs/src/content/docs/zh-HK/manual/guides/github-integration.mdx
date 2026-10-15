@@ -2,7 +2,7 @@
 title: 設定 GitHub 整合
 description: 登入 GitHub，讓 PR 介面、程式庫註冊與代理執行得以運作。
 slug: zh-HK/手冊/操作指南/github-整合
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 本指南涵蓋設定中專屬於 GitHub 的部分。GitHub 是三種受支援的程式碼託管平台
@@ -92,7 +92,7 @@ PAT 時，這便是後備方案。
 - 在 GitHub worktree 中工作的代理一律取得唯讀的 GitHub 權杖。推送會經由 Control
   Center，它先詢問**推送到遠端**規則，再用代理從不持有的寫入權杖轉送推送。
   參見[設定沙箱政策](/zh-HK/手冊/操作指南/沙箱政策/)
-- 預設情況下，代理的提交以 **Control Center**（`hi@usectrl.dev`、GitHub `@usectrl`）署名，提出請求者則透過 `Co-Authored-By` 尾註記入貢獻。你可在 **設定 → 你 → 提交署名** 關閉代理署名，只使用自己的 Git 身分。**設定 → 工作區 → 通用** 的工作區設定優先，並會鎖定個人開關。Claude Code 自帶的署名一律停用
+- 代理的提交一律使用提出請求者的 Git 身分作為作者和提交者。預設情況下，`Co-Authored-By: Control Center <hi@usectrl.dev>` 尾註會將 GitHub `@usectrl` 記為共同作者。你可在 **設定 → 你 → 提交署名** 關閉這項共同作者署名，而不改變自己的身分。**設定 → 工作區 → 通用** 的工作區設定優先，並會鎖定個人開關。Claude Code 自帶的署名一律停用。提交簽署仍須另行妥善設定
 - 設定好 GitHub App 後，仲介會在每次啟動時簽發精細權限、限定至程式庫、
   有效期約一小時的安裝權杖，而不是交出一枚權限寬泛的權杖。安裝實例會依該次
   執行的程式庫**擁有者**來解析，因此一個安裝在多個帳戶上的應用程式，會正確

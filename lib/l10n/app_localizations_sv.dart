@@ -12492,7 +12492,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'När detta är aktiverat är Control Center författare till commits och du anges som medförfattare. När det är avstängt använder commits din Git-identitet utan att kreditera agenten.';
+      'Du är alltid författare och committer för commits. När detta är aktiverat läggs Control Center (@usectrl) till som medförfattare. När det är avstängt innehåller commits ingen kreditering av agenten.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

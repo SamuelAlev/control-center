@@ -12638,7 +12638,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Выберите, указывать ли Control Center в коммитах агента. Администраторы рабочего пространства могут переопределить этот выбор для всех его участников.';
 
   @override
-  String get settingsAgentCoauthorSection => 'Указание агента в авторах';
+  String get settingsAgentCoauthorSection => 'Указание агента как соавтора';
 
   @override
   String get settingsAgentCoauthorTitle =>
@@ -12646,7 +12646,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Когда включено, автором коммитов указывается Control Center, а вы — соавтором. Когда выключено, коммиты используют вашу Git-идентичность без упоминания агента.';
+      'Вы всегда остаетесь автором и коммитером коммитов. Если включено, Control Center (@usectrl) добавляется как соавтор. Если выключено, в коммитах нет упоминания агента.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

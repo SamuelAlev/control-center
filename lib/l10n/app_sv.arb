@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "Välj om Control Center ska krediteras i agentcommits. Administratörer för arbetsytan kan åsidosätta valet för alla i en arbetsyta.",
   "settingsAgentCoauthorSection": "Agentkreditering",
   "settingsAgentCoauthorTitle": "Kreditera Control Center i agentcommits",
-  "settingsAgentCoauthorDescription": "När detta är aktiverat är Control Center författare till commits och du anges som medförfattare. När det är avstängt använder commits din Git-identitet utan att kreditera agenten.",
+  "settingsAgentCoauthorDescription": "Du är alltid författare och committer för commits. När detta är aktiverat läggs Control Center (@usectrl) till som medförfattare. När det är avstängt innehåller commits ingen kreditering av agenten.",
   "settingsAgentCoauthorWorkspaceOverride": "Den här arbetsytans inställning åsidosätter ditt personliga val. Din inställning sparas men gäller inte här.",
   "settingsAgentAttributionLoading": "Läser in inställningar för tillskrivning…",
   "settingsWorkspaceAgentCoauthorDescription": "Välj om Control Center ska krediteras i agentcommits. Arbetsytans val åsidosätter varje medlems personliga inställning.",

@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "選擇是否在代理提交中為 Control Center 署名。工作區管理員可以替工作區內所有人覆寫此選擇。",
   "settingsAgentCoauthorSection": "代理署名",
   "settingsAgentCoauthorTitle": "在代理提交中為 Control Center 署名",
-  "settingsAgentCoauthorDescription": "開啟後，提交將以 Control Center 為作者，並將你列為共同作者。關閉後，提交會使用你的 Git 身分，不為代理署名。",
+  "settingsAgentCoauthorDescription": "你始終是提交的作者與提交者。開啟後，Control Center (@usectrl) 會列為共同作者。關閉後，提交不包含任何代理署名。",
   "settingsAgentCoauthorWorkspaceOverride": "此工作區的設定會覆寫你的個人選擇。你的偏好仍會儲存，但在這裡不生效。",
   "settingsAgentAttributionLoading": "正在載入署名設定…",
   "settingsWorkspaceAgentCoauthorDescription": "選擇是否在代理提交中為 Control Center 署名。工作區的選擇會覆寫每位成員的個人偏好。",

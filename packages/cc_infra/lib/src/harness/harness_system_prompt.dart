@@ -104,7 +104,7 @@ class HarnessSystemPromptBuilder {
     }
 
     buffer.write('\n\n$agentCommitAttributionInstruction');
-    // Include the exact requester trailer when Control Center is the author.
+    // Include the exact Control Center trailer when agent credit is enabled.
     if (coAuthorTrailer != null) {
       buffer.write(
         '\n\nWhen you create git commits, append this trailer line to the '

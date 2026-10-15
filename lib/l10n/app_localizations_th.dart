@@ -12373,7 +12373,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'เมื่อเปิดใช้ คอมมิตจะมี Control Center เป็นผู้เขียนและมีคุณเป็นผู้ร่วมเขียน เมื่อปิดใช้ คอมมิตจะใช้ตัวตน Git ของคุณโดยไม่ให้เครดิตเอเจนต์';
+      'คุณเป็นทั้งผู้เขียนและผู้บันทึกคอมมิตเสมอ เมื่อเปิดใช้ ระบบจะเพิ่ม Control Center (@usectrl) เป็นผู้ร่วมเขียน เมื่อปิดใช้ คอมมิตจะไม่มีการให้เครดิตเอเจนต์';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

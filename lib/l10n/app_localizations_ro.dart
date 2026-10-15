@@ -12616,7 +12616,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Când opțiunea este activă, Control Center este autorul commiturilor, iar tu ești inclus ca coautor. Când este dezactivată, commiturile folosesc identitatea ta Git fără creditarea agentului.';
+      'Tu ești întotdeauna autorul și persoana care înregistrează commiturile. Când opțiunea este activă, Control Center (@usectrl) este adăugat drept coautor. Când este dezactivată, commiturile nu includ nicio creditare a agentului.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

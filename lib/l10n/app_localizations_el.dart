@@ -12594,7 +12594,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Όταν είναι ενεργό, συντάκτης των commit είναι το Control Center και εσείς αναφέρεστε ως συνδημιουργός. Όταν είναι ανενεργό, τα commit χρησιμοποιούν την ταυτότητά σας στο Git χωρίς αναφορά στον πράκτορα.';
+      'Είστε πάντα ο συντάκτης και ο καταχωριστής των commit. Όταν η επιλογή είναι ενεργή, το Control Center (@usectrl) προστίθεται ως συνδημιουργός. Όταν είναι ανενεργή, τα commit δεν περιλαμβάνουν αναφορά στον πράκτορα.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

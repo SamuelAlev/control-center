@@ -6775,7 +6775,7 @@
   "settingsAgentAttributionDescription": "Kies of Control Center wordt vermeld bij commits van agents. Beheerders van de werkruimte kunnen deze keuze voor iedereen in een werkruimte overschrijven.",
   "settingsAgentCoauthorSection": "Vermelding van de agent",
   "settingsAgentCoauthorTitle": "Vermeld Control Center bij commits van agents",
-  "settingsAgentCoauthorDescription": "Wanneer dit is ingeschakeld, is Control Center de auteur van commits en word jij als mede-auteur vermeld. Wanneer dit is uitgeschakeld, gebruiken commits jouw Git-identiteit zonder vermelding van de agent.",
+  "settingsAgentCoauthorDescription": "Je bent altijd de auteur en committer van commits. Als dit is ingeschakeld, wordt Control Center (@usectrl) toegevoegd als mede-auteur. Als dit is uitgeschakeld, bevatten commits geen vermelding van de agent.",
   "settingsAgentCoauthorWorkspaceOverride": "Deze werkruimte heeft voorrang op je persoonlijke keuze. Je voorkeur blijft opgeslagen, maar geldt hier niet.",
   "settingsAgentAttributionLoading": "Instellingen voor toeschrijving laden…",
   "settingsWorkspaceAgentCoauthorDescription": "Kies of Control Center wordt vermeld bij commits van agents. De instelling van de werkruimte heeft voorrang op de persoonlijke voorkeur van elk lid.",

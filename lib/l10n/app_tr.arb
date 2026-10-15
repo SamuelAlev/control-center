@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "Ajan commit'lerinde Control Center'a atıf yapılıp yapılmayacağını seçin. Çalışma alanı yöneticileri bu seçimi çalışma alanındaki herkes için geçersiz kılabilir.",
   "settingsAgentCoauthorSection": "Ajana atıf",
   "settingsAgentCoauthorTitle": "Ajan commit'lerinde Control Center'a atıf yap",
-  "settingsAgentCoauthorDescription": "Etkinleştirildiğinde commit'lerin yazarı Control Center olur ve siz ortak yazar olarak eklenirsiniz. Devre dışı bırakıldığında commit'ler ajan atfı olmadan Git kimliğinizi kullanır.",
+  "settingsAgentCoauthorDescription": "Commit'lerin yazarı ve commit'i oluşturan kişi her zaman sizsiniz. Etkinleştirildiğinde Control Center (@usectrl) ortak yazar olarak eklenir. Devre dışı bırakıldığında commit'lerde ajan atfı bulunmaz.",
   "settingsAgentCoauthorWorkspaceOverride": "Bu çalışma alanının ayarı kişisel seçiminizin yerine geçer. Tercihiniz kaydedilir ancak burada uygulanmaz.",
   "settingsAgentAttributionLoading": "Atıf ayarları yükleniyor…",
   "settingsWorkspaceAgentCoauthorDescription": "Ajan commit'lerinde Control Center'a atıf yapılıp yapılmayacağını seçin. Çalışma alanının ayarı her üyenin kişisel tercihinin yerine geçer.",

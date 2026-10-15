@@ -2,7 +2,7 @@
 title: Životní cyklus odeslání agenta
 description: Co se stane mezi příchodem zprávy a uzavřením záznamu běhu. Skládání promptu, worktree, identita, co běh ohraničuje a jak se výsledek zapíše poctivě.
 slug: cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani
-sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
+sourceHash: 781e03487b61d53f4032d785370f70457df0156b
 ---
 
 ## Co je odeslání
@@ -52,7 +52,7 @@ Copy-on-write je **jediná** implementace všude, kde se dodává `rift`, a stoj
 
 Na každý běh se před startem jakéhokoli procesu vyřeší dvě identity.
 
-**Autorství v Gitu.** Ve výchozím nastavení mají commity agenta v `GIT_AUTHOR_*` i `GIT_COMMITTER_*` identitu `Control Center <hi@usectrl.dev>` (účet GitHub `@usectrl`) a žádající člověk je uveden v traileru `Co-Authored-By:`. Připisování agentovi můžeš vypnout v **Nastavení → Vy → Připisování autorství commitů** a používat jen svou identitu Gitu. Správce pracovního prostoru může připisování vynutit či vypnout v **Nastavení → Pracovní prostor → Obecné**; tato volba má přednost a uzamkne osobní přepínač, aniž změní uloženou předvolbu. Změny se projeví od dalšího spuštění. Vlastní řádky Claude Code s autorstvím commitů a PR jsou vždy vypnuté. Hodnoty identity Gitu výslovně zadané volajícím mají nadále přednost; přihlašovací údaje k forge se nemění.
+**Autorství v Gitu.** Commity agenta vždy používají identitu Gitu žádajícího člověka určenou v pracovním prostoru, a to v `GIT_AUTHOR_*` i `GIT_COMMITTER_*`. Programově spouštěné běhy používají identitu vlastníka serveru. Ve výchozím nastavení trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` připisuje spoluautorství účtu GitHub `@usectrl`. Připisování agentovi můžeš vypnout v **Nastavení → Vy → Připisování autorství commitů**; tím se trailer vynechá. Správce pracovního prostoru může spoluautorství vynutit či vypnout v **Nastavení → Pracovní prostor → Obecné**; tato předvolba má přednost a zamkne osobní přepínač, aniž by změnila uloženou preferenci. Změny platí od dalšího běhu. Vlastní podpisy autorství commitů a PR od Claude Code jsou vždy vypnuté. Nastavení prostředí volajícího ani adaptéru nemůže nahradit určenou identitu; chybějící identita nebo chyba při jejím určení běh zastaví. Pověření pro forge a nastavení podepisování commitů se nemění; správná identita sama o sobě nezaručuje ověřený podpis.
 
 **Identita ve forgi.** Pověření GitHubu pro běh je vždy jen od brokeru: token instalace App vázaný na repozitář, nebo záložní PAT z prostředí. Nikdy uložený token žádajícího člena. `actingUserId` ohraničí záložní PAT, aby člen, který není vlastníkem serveru, nezdědil dosah serveru. Osobní token do prostředí agenta nepřekryje.
 

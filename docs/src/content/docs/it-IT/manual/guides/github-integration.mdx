@@ -2,7 +2,7 @@
 title: Configura l'integrazione GitHub
 description: Accedi a GitHub perché la superficie delle PR, la registrazione dei repo e le esecuzioni degli agenti funzionino.
 slug: it-IT/manuale/guide/integrazione-github
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 Questa guida copre le parti della configurazione specifiche di GitHub. GitHub è
@@ -106,7 +106,7 @@ di aggiornamento. Gli stati si aggiornano da soli ogni due minuti.
   **Eseguire il push a un remoto** e poi lo inoltra con un token di scrittura che
   l'agente non possiede mai. Vedi
   [Configura le policy del sandbox](/it-IT/manuale/guide/policy-sandbox/)
-- Per impostazione predefinita, i commit degli agenti sono attribuiti a **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`), mentre chi ha fatto la richiesta è accreditato in un trailer `Co-Authored-By`. In **Impostazioni → Tu → Attribuzione dei commit** puoi disattivare l'attribuzione all'agente per usare solo la tua identità Git. La scelta in **Impostazioni → Spazio di lavoro → Generale** ha la precedenza e blocca l'interruttore personale. L'attribuzione autonoma di Claude Code è sempre disabilitata
+- I commit degli agenti usano sempre l'identità Git del richiedente sia come autore sia come committer. Per impostazione predefinita, il trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` accredita l'account GitHub `@usectrl` come coautore. In **Impostazioni → Tu → Attribuzione dei commit** puoi disattivare questo credito senza cambiare la tua identità. La scelta in **Impostazioni → Spazio di lavoro → Generale** ha la precedenza e blocca l'interruttore personale. L'attribuzione autonoma di Claude Code è sempre disabilitata. La firma dei commit richiede comunque una configurazione valida dedicata
 - Con una GitHub App configurata, il broker conia token di installazione
   fine-grained, limitati al repo e di circa un'ora per ogni avvio, invece di
   consegnare un token ampio. L'installazione viene risolta dal **proprietario**

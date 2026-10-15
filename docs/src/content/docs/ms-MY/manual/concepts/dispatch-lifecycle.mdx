@@ -2,7 +2,7 @@
 title: Kitaran hayat penghantaran ejen
 description: Apa yang berlaku antara ketibaan mesej dan penutupan log larian — pemasangan prompt, worktree, identiti, apa yang membatasi larian dan bagaimana hasilnya direkodkan secara jujur.
 slug: ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran
-sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
+sourceHash: 781e03487b61d53f4032d785370f70457df0156b
 ---
 
 ## Apakah itu penghantaran
@@ -52,7 +52,7 @@ Salin-semasa-tulis ialah **satu-satunya** pelaksanaan di mana sahaja `rift` diha
 
 Dua identiti diselesaikan bagi setiap larian, sebelum mana-mana proses dilancarkan.
 
-**Pengarangan Git.** Secara lalai, komit ejen menggunakan `Control Center <hi@usectrl.dev>` (akaun GitHub `@usectrl`) dalam kedua-dua `GIT_AUTHOR_*` dan `GIT_COMMITTER_*`, manakala peminta dikreditkan melalui treler `Co-Authored-By:`. Matikan atribusi ejen dalam **Tetapan → Anda → Atribusi komit** untuk menggunakan identiti Git anda sahaja. Pentadbir ruang kerja boleh mewajibkan atau mematikan atribusi dalam **Tetapan → Ruang kerja → Umum**; tetapan ini mengatasi pilihan peribadi dan menyahaktifkan suis peribadi tanpa mengubah keutamaan yang disimpan. Perubahan berkuat kuasa pada larian seterusnya. Baris kredit commit dan PR milik Claude Code sendiri sentiasa dinyahaktifkan. Nilai identiti Git yang ditetapkan pemanggil secara jelas tetap diutamakan; kelayakan perkhidmatan Git tidak terjejas.
+**Pengarangan Git.** Komit ejen sentiasa menggunakan identiti Git manusia yang membuat permintaan, seperti yang ditentukan oleh ruang kerja, dalam kedua-dua `GIT_AUTHOR_*` dan `GIT_COMMITTER_*`. Larian programatik menggunakan identiti pemilik pelayan. Secara lalai, `Co-Authored-By: Control Center <hi@usectrl.dev>` mengiktiraf akaun GitHub `@usectrl` sebagai penulis bersama. Matikan atribusi ejen dalam **Tetapan → Anda → Atribusi komit** untuk menggugurkan treler itu. Pentadbir ruang kerja boleh mewajibkan atau mematikan kredit penulis bersama dalam **Tetapan → Ruang kerja → Umum**; tetapan ini mengatasi pilihan peribadi dan menyahaktifkan suis peribadi tanpa mengubah keutamaan yang disimpan. Perubahan berkuat kuasa pada larian seterusnya. Baris kredit komit dan PR milik Claude Code sendiri sentiasa dinyahaktifkan. Tetapan persekitaran pemanggil dan penyesuai tidak boleh menggantikan identiti yang telah ditentukan; jika identiti tiada atau penentuannya gagal, larian dihentikan. Kelayakan forge dan konfigurasi tandatangan komit tidak terjejas; identiti yang betul sahaja tidak menjamin tandatangan yang disahkan.
 
 **Identiti forge.** Kelayakan GitHub larian itu sentiasa hanya milik broker — token pemasangan App berlingkup repo, atau sandaran PAT persekitarannya — tidak pernah token tersimpan ahli yang membuat permintaan sendiri. `actingUserId` membatasi sandaran PAT supaya ahli yang bukan pemilik pelayan tidak mewarisi jangkauan pelayan; ia tidak melapisi token peribadi ke atas persekitaran ejen.
 

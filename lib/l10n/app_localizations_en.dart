@@ -12450,7 +12450,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'When enabled, commits are authored by Control Center and include you as a co-author. When disabled, commits use your Git identity without agent credit.';
+      'You are always the author and committer. When enabled, Control Center (@usectrl) is added as a co-author. When disabled, commits contain no agent credit.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

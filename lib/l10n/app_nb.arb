@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "Velg om agent-commits skal kreditere Control Center. Administratorer for arbeidsområdet kan overstyre dette valget for alle i et arbeidsområde.",
   "settingsAgentCoauthorSection": "Agentkreditering",
   "settingsAgentCoauthorTitle": "Krediter Control Center i agent-commits",
-  "settingsAgentCoauthorDescription": "Når dette er på, står Control Center som forfatter av commits, og du er oppført som medforfatter. Når det er av, bruker commits Git-identiteten din uten å kreditere agenten.",
+  "settingsAgentCoauthorDescription": "Du er alltid forfatter og committer for commits. Når dette er på, legges Control Center (@usectrl) til som medforfatter. Når det er av, inneholder commits ingen kreditering av agenten.",
   "settingsAgentCoauthorWorkspaceOverride": "Dette arbeidsområdet overstyrer ditt personlige valg. Preferansen din er lagret, men gjelder ikke her.",
   "settingsAgentAttributionLoading": "Laster inn krediteringsinnstillinger…",
   "settingsWorkspaceAgentCoauthorDescription": "Velg om agent-commits skal kreditere Control Center. Valget for arbeidsområdet overstyrer hvert medlems personlige preferanse.",

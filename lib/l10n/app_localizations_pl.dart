@@ -12663,10 +12663,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get settingsAgentAttributionDescription =>
-      'Wybierz, czy commity agenta mają wskazywać Control Center jako autora. Administratorzy obszaru roboczego mogą zastąpić ten wybór dla wszystkich w obszarze roboczym.';
+      'Wybierz, czy commity agenta mają wskazywać Control Center jako współautora. Administratorzy obszaru roboczego mogą zastąpić ten wybór dla wszystkich w obszarze roboczym.';
 
   @override
-  String get settingsAgentCoauthorSection => 'Wskazanie agenta jako autora';
+  String get settingsAgentCoauthorSection =>
+      'Wskazanie agenta jako współautora';
 
   @override
   String get settingsAgentCoauthorTitle =>
@@ -12674,7 +12675,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Gdy opcja jest włączona, autorem commitów jest Control Center, a Ty figurujesz jako współautor. Gdy jest wyłączona, commity używają Twojej tożsamości Git bez wskazania agenta.';
+      'Zawsze jesteś autorem i committerem commitów. Po włączeniu Control Center (@usectrl) jest dodawane jako współautor. Po wyłączeniu commity nie zawierają wzmianki o agencie.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>
@@ -12686,7 +12687,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get settingsWorkspaceAgentCoauthorDescription =>
-      'Wybierz, czy commity agenta mają wskazywać Control Center jako autora. Ustawienie obszaru roboczego zastępuje osobistą preferencję każdego członka.';
+      'Wybierz, czy commity agenta mają wskazywać Control Center jako współautora. Ustawienie obszaru roboczego zastępuje osobistą preferencję każdego członka.';
 
   @override
   String get settingsWorkspaceAgentCoauthorInherit =>

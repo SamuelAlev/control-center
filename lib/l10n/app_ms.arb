@@ -7333,7 +7333,7 @@
   "settingsAgentAttributionDescription": "Pilih sama ada komit ejen mengkreditkan Control Center. Pentadbir ruang kerja boleh mengatasi pilihan ini untuk semua orang dalam ruang kerja.",
   "settingsAgentCoauthorSection": "Atribusi ejen",
   "settingsAgentCoauthorTitle": "Kreditkan Control Center pada komit ejen",
-  "settingsAgentCoauthorDescription": "Apabila dihidupkan, Control Center ialah pengarang komit dan anda disertakan sebagai penulis bersama. Apabila dimatikan, komit menggunakan identiti Git anda tanpa kredit kepada ejen.",
+  "settingsAgentCoauthorDescription": "Anda sentiasa pengarang dan pencatat komit. Apabila dihidupkan, Control Center (@usectrl) ditambah sebagai penulis bersama. Apabila dimatikan, komit tidak mengandungi kredit ejen.",
   "settingsAgentCoauthorWorkspaceOverride": "Tetapan ruang kerja ini mengatasi pilihan peribadi anda. Keutamaan anda disimpan tetapi tidak terpakai di sini.",
   "settingsAgentAttributionLoading": "Memuatkan tetapan atribusi…",
   "settingsWorkspaceAgentCoauthorDescription": "Pilih sama ada komit ejen mengkreditkan Control Center. Pilihan ruang kerja mengatasi keutamaan peribadi setiap ahli.",

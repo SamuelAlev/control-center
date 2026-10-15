@@ -2,7 +2,7 @@
 title: Ciclul de viață al trimiterii agenților
 description: Ce se întâmplă între sosirea unui mesaj și închiderea unui jurnal de rulare — asamblarea promptului, worktree-urile, identitatea, ce limitează o rulare și cum este înregistrat cu onestitate rezultatul ei.
 slug: ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii
-sourceHash: 62c50a72d400e02cfaa2fa53fe2a565126f8f56d
+sourceHash: 781e03487b61d53f4032d785370f70457df0156b
 ---
 
 ## Ce este o trimitere
@@ -52,7 +52,7 @@ Copy-on-write este **singura** implementare oriunde `rift` este livrat, susținu
 
 Două identități sunt rezolvate pentru fiecare rulare, înainte de lansarea oricărui proces.
 
-**Paternitatea Git.** În mod implicit, commit-urile agentului folosesc `Control Center <hi@usectrl.dev>` (contul GitHub `@usectrl`) atât în `GIT_AUTHOR_*`, cât și în `GIT_COMMITTER_*`, iar persoana care a făcut solicitarea este creditată printr-un trailer `Co-Authored-By:`. Dezactivează atribuirea agentului în **Setări → Tu → Atribuirea autorului commiturilor** pentru a folosi numai identitatea ta Git. Un administrator al spațiului de lucru poate impune sau dezactiva atribuirea din **Setări → Spațiu de lucru → General**; această setare are prioritate și dezactivează comutatorul personal fără să schimbe preferința salvată. Modificările se aplică de la următoarea rulare. Semnăturile proprii ale Claude Code în commit-uri și PR-uri sunt întotdeauna dezactivate. Valorile identității Git stabilite explicit de apelant au în continuare prioritate; acreditările pentru platforma Git nu sunt afectate.
+**Paternitatea Git.** Commiturile agentului folosesc întotdeauna identitatea Git a persoanei care a făcut solicitarea, stabilită în spațiul de lucru, atât în `GIT_AUTHOR_*`, cât și în `GIT_COMMITTER_*`. Rulările programatice folosesc identitatea proprietarului serverului. În mod implicit, `Co-Authored-By: Control Center <hi@usectrl.dev>` creditează contul GitHub `@usectrl` drept coautor. Dezactivează atribuirea agentului din **Setări → Tu → Atribuirea autorului commiturilor** pentru a omite acel trailer. Un administrator poate impune sau dezactiva creditarea coautorului din **Setări → Spațiu de lucru → General**; această setare are prioritate și dezactivează comutatorul personal fără să schimbe preferința salvată. Modificările se aplică de la rularea următoare. Liniile proprii de atribuire ale Claude Code pentru commituri și PR-uri sunt întotdeauna dezactivate. Setările de mediu ale solicitantului și adaptorului nu pot înlocui identitatea stabilită; lipsa ei sau o eroare la stabilirea ei oprește lansarea rulării. Acreditările pentru hostul de cod și configurația semnării commiturilor nu sunt afectate; identitatea corectă nu garantează, singură, o semnătură verificată.
 
 **Identitatea pe hostul de cod.** Datele de autentificare GitHub ale rulării sunt mereu doar ale brokerului — un token de instalare App limitat la depozit sau revenirea lui la PAT din mediu — niciodată tokenul stocat al membrului care solicită. `actingUserId` limitează revenirea la PAT, astfel încât un membru care nu este proprietarul serverului să nu moștenească anvergura serverului; nu suprapune un token personal peste mediul agentului.
 

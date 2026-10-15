@@ -2,7 +2,7 @@
 title: Configurar a integração com o GitHub
 description: Inicie sessão no GitHub para que a superfície de PR, o registo de repos e as execuções de agentes funcionem.
 slug: pt-PT/manual/guias/integracao-github
-sourceHash: 920c8449bd5317ffe3faaef3ecd600a132608a1d
+sourceHash: b334c22ee66503aa4e7a59b928bb5c8b06bad5c3
 ---
 
 Este guia aborda as partes da configuração específicas do GitHub. O GitHub é um
@@ -109,7 +109,7 @@ minutos.
   **Fazer push para um remoto** e depois o reencaminha com um token de escrita
   que o agente nunca detém. Consulte
   [Configurar políticas de sandbox](/pt-PT/manual/guias/politicas-de-sandbox/)
-- Por predefinição, os commits do agente têm **Control Center** (`hi@usectrl.dev`, GitHub `@usectrl`) como autor, ficando a pessoa que fez o pedido creditada num trailer `Co-Authored-By`. Em **Definições → Você → Atribuição de autoria dos commits**, pode desativar a atribuição ao agente e usar apenas a sua identidade Git. Uma definição do espaço de trabalho em **Definições → Espaço de trabalho → Geral** prevalece e bloqueia esse controlo pessoal. A atribuição própria do Claude Code está sempre desativada
+- Os commits do agente usam sempre a identidade Git de quem fez o pedido como autor e committer. Por predefinição, o trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` credita a conta GitHub `@usectrl` como coautora. Em **Definições → Você → Atribuição de autoria dos commits**, pode desativar esse crédito de coautoria sem mudar a sua identidade. Uma definição do espaço de trabalho em **Definições → Espaço de trabalho → Geral** prevalece e bloqueia esse controlo pessoal. A atribuição própria do Claude Code está sempre desativada. A assinatura de commits continua a exigir uma configuração válida própria
 - Com uma GitHub App configurada, o intermediário emite, por lançamento, tokens
   de instalação granulares, limitados ao repo e com cerca de uma hora de duração,
   em vez de entregar um token amplo. A instalação é resolvida a partir do

@@ -12497,7 +12497,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Jika diaktifkan, penulis commit adalah Control Center dan Anda dicantumkan sebagai penulis bersama. Jika dinonaktifkan, commit menggunakan identitas Git Anda tanpa mencantumkan agen.';
+      'Anda selalu menjadi penulis dan pelaku commit. Jika diaktifkan, Control Center (@usectrl) ditambahkan sebagai penulis bersama. Jika dinonaktifkan, commit tidak mencantumkan kredit agen.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>

@@ -2472,10 +2472,8 @@ Future<CcServer> runCcServer({
       modelCatalogService.catalogSync().resolve,
       qualified,
     ),
-    // Git authorship (PRD 14 §14): resolve the requesting human's git
-    // identity for the commit co-author trailer. A null userId means no
-    // acting human was threaded (programmatic dispatch) — attribute to the
-    // server owner rather than dropping the credit.
+    // Resolve the requesting human as Git author and committer. A null userId
+    // means programmatic dispatch, which uses the server owner's identity.
     resolveGitIdentity: (userId, {workspaceId}) => resolveWorkspaceGitIdentity(
       users: userRepository,
       members: membershipRepository,
@@ -2492,9 +2490,9 @@ Future<CcServer> runCcServer({
         ),
     // Resolves the run worktree's origin coordinates so the broker mints a
     // repo-scoped GitHub App installation token for exactly that repo. Agent
-    // runs never carry a member's personal GitHub token: agent work is
-    // authored on the forge as the App (the human is credited via the commit
-    // co-author trailer); only the per-actor RPC lane acts as a person.
+    // runs never carry a member's personal GitHub token: forge authentication
+    // uses the App, independently of the human's Git authorship. Only the
+    // per-actor RPC lane authenticates as a person.
     repoInspector: const GitRepoInspector(),
     // Original repo checkouts become sandbox deny-write rules in every mode:
     // agents only ever write in their per-conversation CoW worktrees and the

@@ -12641,7 +12641,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get settingsAgentCoauthorDescription =>
-      'Якщо ввімкнено, автором комітів буде Control Center, а ви — співавтором. Якщо вимкнено, коміти використовуватимуть вашу Git-ідентичність без зазначення агента.';
+      'Автором і комітером комітів завжди є ви. Якщо ввімкнено, Control Center (@usectrl) додається як співавтор. Якщо вимкнено, коміти не містять згадок про агента.';
 
   @override
   String get settingsAgentCoauthorWorkspaceOverride =>
