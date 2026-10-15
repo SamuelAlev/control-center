@@ -63,6 +63,7 @@ class CodeServerWebView extends StatefulWidget {
     required this.url,
     required this.cover,
     this.onBridgeWindow,
+    this.onReady,
   });
 
   /// Absolute URL of the code-server workbench to load.
@@ -74,6 +75,9 @@ class CodeServerWebView extends StatefulWidget {
   /// Called with the window id the bridge extension logs on activation
   /// ([codeServerBridgeWindowMarker]); again if its extension host restarts.
   final ValueChanged<String>? onBridgeWindow;
+
+  /// Called once startup finishes, allowing a parked view to go offstage.
+  final VoidCallback? onReady;
 
   @override
   State<CodeServerWebView> createState() => _CodeServerWebViewState();
@@ -104,6 +108,7 @@ class _CodeServerWebViewState extends State<CodeServerWebView> {
     _coverFallback?.cancel();
     if (mounted && _covered) {
       setState(() => _covered = false);
+      widget.onReady?.call();
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:control_center/features/messaging/presentation/ide/editor/code_s
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _kind = 'codeServer';
@@ -36,12 +37,23 @@ class _Harness {
           opens.add('$windowId:$path'),
       closeFile: (worktree, path) async => closes.add(path),
     )..attach(layout);
+    addTearDown(dispose);
   }
 
   late final EditorLayoutController layout;
   late final CodeServerWindowPool pool;
   final opens = <String>[];
   final closes = <String>[];
+  bool _disposed = false;
+
+  void dispose() {
+    if (_disposed) {
+      return;
+    }
+    _disposed = true;
+    pool.dispose();
+    layout.dispose();
+  }
 
   EditorTabGroupController get leaf0 =>
       (layout.root is EditorLeafNode
@@ -211,5 +223,203 @@ void main() {
     h.pool.attach(next);
     expect(h.closes, isEmpty);
     expect(h.pool.windowOf(a), isNull);
+  });
+
+  testWidgets(
+    'preloads one bare editor only after a second of idle time, then expires without repeating',
+    (tester) async {
+      final h = _Harness([_other('chat')]);
+      const target = CodeServerTarget(spaceId: 's1', repoId: 'r1');
+      h.pool.setPreloadTarget(target);
+
+      await tester.pump(const Duration(milliseconds: 999));
+      expect(h.pool.parked, isEmpty);
+      await tester.pump(const Duration(milliseconds: 1));
+      await tester.pump();
+      expect(h.pool.parked, hasLength(1));
+      final window = h.pool.parked.single;
+      expect(window.boot.spaceId, 's1');
+      expect(window.boot.repoId, 'r1');
+      expect(window.boot.path, isNull);
+      expect(window.owner, isNull);
+      expect(window.isBooting, isTrue);
+
+      h.pool.setPreloadTarget(target);
+      await tester.pump(const Duration(seconds: 59));
+      expect(h.pool.parked, [window]);
+      await tester.pump(const Duration(seconds: 1));
+      expect(h.pool.parked, isEmpty);
+      await tester.pump(const Duration(minutes: 2));
+      h.pool.setPreloadTarget(target);
+      await tester.pump(const Duration(seconds: 2));
+      expect(
+        h.pool.parked,
+        isEmpty,
+        reason: 'the same target must not restart after expiry',
+      );
+    },
+  );
+
+  testWidgets(
+    'clearing or switching targets cancels pending preloads and drops unused windows',
+    (tester) async {
+      final h = _Harness([_other('chat')]);
+      const first = CodeServerTarget(spaceId: 's1', repoId: 'r1');
+      const second = CodeServerTarget(spaceId: 's1', repoId: 'r2');
+      h.pool.setPreloadTarget(first);
+      await tester.pump(const Duration(milliseconds: 500));
+      h.pool.setPreloadTarget(null);
+      await tester.pump(const Duration(seconds: 2));
+      expect(h.pool.parked, isEmpty);
+
+      h.pool.setPreloadTarget(first);
+      await tester.pump(const Duration(milliseconds: 500));
+      h.pool.setPreloadTarget(second);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        h.pool.parked,
+        isEmpty,
+        reason: 'the old target timer was cancelled',
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      expect(h.pool.parked.single.boot.repoId, 'r2');
+      h.pool.setPreloadTarget(const CodeServerTarget(spaceId: 's2'));
+      expect(
+        h.pool.parked,
+        isEmpty,
+        reason: 'switching worktrees drops the unused editor',
+      );
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+      expect(h.pool.parked.single.boot.spaceId, 's2');
+
+      h.pool.setPreloadTarget(null);
+      expect(h.pool.parked, isEmpty);
+      h.pool.setPreloadTarget(first);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+      expect(h.pool.parked.single.boot.repoId, 'r1');
+      final next = EditorLayoutController.single();
+      addTearDown(next.dispose);
+      h.pool.attach(next);
+      expect(
+        h.pool.parked,
+        isEmpty,
+        reason: 'changing layouts clears speculative work',
+      );
+      await tester.pump(const Duration(seconds: 2));
+      expect(h.pool.parked, isEmpty);
+      h.pool.setPreloadTarget(const CodeServerTarget(spaceId: 's3'));
+      await tester.pump(const Duration(milliseconds: 500));
+      final third = EditorLayoutController.single();
+      addTearDown(third.dispose);
+      h.pool.attach(third);
+      await tester.pump(const Duration(seconds: 2));
+      expect(
+        h.pool.parked,
+        isEmpty,
+        reason: 'layout switch cancels pending work',
+      );
+    },
+  );
+
+  testWidgets(
+    'an editor already serving the target needs no speculative window',
+    (tester) async {
+      final file = _file('lib/a.dart', repo: 'r1');
+      final chat = _other('chat');
+      final h = _Harness([file, chat]);
+      final existing = h.pool.windowOf(file)!;
+      const target = CodeServerTarget(spaceId: 's1', repoId: 'r1');
+
+      h.pool.setPreloadTarget(target);
+      await tester.pump(const Duration(seconds: 2));
+      expect(h.pool.windowOf(file), same(existing));
+      expect(h.pool.parked, isEmpty);
+
+      h.select(chat);
+      expect(h.pool.parked, [existing]);
+      h.pool.setPreloadTarget(target);
+      await tester.pump(const Duration(seconds: 2));
+      expect(h.pool.parked, [existing]);
+
+      final beforeDelay = _Harness([_other('chat')]);
+      beforeDelay.pool.setPreloadTarget(target);
+      await tester.pump(const Duration(milliseconds: 500));
+      final opened = _file('lib/b.dart', repo: 'r1');
+      beforeDelay.leaf0.openTab(opened);
+      final inUse = beforeDelay.pool.windowOf(opened)!;
+      await tester.pump(const Duration(seconds: 2));
+      expect(beforeDelay.pool.windowOf(opened), same(inUse));
+      expect(beforeDelay.pool.parked, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'first file adopts the bare window before bridge readiness, without sharing across worktrees',
+    (tester) async {
+      final chat = _other('chat');
+      final h = _Harness([chat]);
+      const target = CodeServerTarget(spaceId: 's1', repoId: 'r1');
+      h.pool.setPreloadTarget(target);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+      final speculative = h.pool.parked.single;
+      expect(speculative.boot.path, isNull);
+
+      final first = _file('lib/a.dart', repo: 'r1');
+      h.leaf0.openTab(first);
+      expect(h.pool.windowOf(first), same(speculative));
+      expect(h.pool.parked, isEmpty);
+      expect(
+        h.opens,
+        isEmpty,
+        reason: 'the bridge has not reported its id yet',
+      );
+      h.pool.bridgeReady(speculative, 'w1');
+      expect(h.opens, ['w1:lib/a.dart']);
+      expect(speculative.shownPath, 'lib/a.dart');
+
+      final otherRepo = _file('lib/b.dart', repo: 'r2');
+      h.leaf0.openTab(otherRepo);
+      final second = h.pool.windowOf(otherRepo)!;
+      expect(second, isNot(same(speculative)));
+      expect(second.boot.repoId, 'r2');
+
+      final otherSpace = _file('lib/c.dart', space: 's2', repo: 'r1');
+      h.leaf0.openTab(otherSpace);
+      final third = h.pool.windowOf(otherSpace)!;
+      expect(third, isNot(same(speculative)));
+      expect(third, isNot(same(second)));
+      expect(third.boot.spaceId, 's2');
+    },
+  );
+
+  testWidgets('disposing a pending or unclaimed preload cancels its timers', (
+    tester,
+  ) async {
+    final pending = _Harness([_other('chat')]);
+    pending.pool.setPreloadTarget(const CodeServerTarget(spaceId: 's1'));
+    pending.dispose();
+    await tester.pump(const Duration(seconds: 2));
+
+    final unclaimed = _Harness([_other('chat')]);
+    unclaimed.pool.setPreloadTarget(const CodeServerTarget(spaceId: 's2'));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    expect(unclaimed.pool.parked, hasLength(1));
+    unclaimed.dispose();
+    await tester.pump(const Duration(minutes: 2));
+  });
+  testWidgets('unsupported platforms do not preload a native window', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final h = _Harness([_other('chat')]);
+    h.pool.setPreloadTarget(const CodeServerTarget(spaceId: 's1'));
+    await tester.pump(const Duration(seconds: 2));
+    expect(h.pool.parked, isEmpty);
   });
 }

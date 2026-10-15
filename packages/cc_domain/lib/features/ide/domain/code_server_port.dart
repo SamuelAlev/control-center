@@ -41,11 +41,14 @@ abstract interface class CodeServerPort {
   /// reference revokes that device's capability but does not terminate a shared
   /// process while another device still has live references. Idempotent for an
   /// already-closed capability; rejects a live capability owned by another
-  /// device or workspace.
+  /// device or workspace. By default an unreferenced process retains its idle
+  /// grace period. [discardIfUnused] ends that process immediately only when
+  /// this close released its last reference across all devices and windows.
   Future<void> closeSession({
     required String workspaceId,
     required String sessionId,
     required String deviceId,
+    bool discardIfUnused = false,
   });
 
   /// Resolves a live public capability to the owning device and shared process.

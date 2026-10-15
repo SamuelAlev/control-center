@@ -2,17 +2,27 @@ import 'package:cc_domain/cc_domain.dart' show RepoOpKind;
 import 'package:cc_domain/features/ide/domain/code_server_port.dart';
 import 'package:cc_host/cc_host.dart';
 
-/// Per-window file navigation in the embedded editor (`codeServer.openFile` /
-/// `codeServer.closeFile`).
-///
-/// The client keeps one editor window per worktree and moves it between app
-/// tabs, so these address files in a running code-server rather than booting
-/// one. Both return `{sent: bool}`, false when no code-server runs for the
-/// worktree.
+/// Embedded editor navigation and session release. File operations address a
+/// running code-server and return `{sent: bool}`, false when none runs for the
+/// worktree. `codeServer.close` releases one device-bound open reference.
 ///
 /// Spread from `buildRemoteRpcCatalog` (under its `fullClientOnly` gate) so
 /// the catalog freeze does not grow.
 List<RepoOp> buildCodeServerFileOps({required CodeServerPort codeServer}) => [
+  RepoOp(
+    name: 'codeServer.close',
+    kind: RepoOpKind.mutate,
+    requiredArgs: const ['workspace_id', 'session_id'],
+    handler: (ctx) async {
+      await codeServer.closeSession(
+        workspaceId: ctx.workspaceId!,
+        sessionId: ctx.args['session_id'] as String,
+        deviceId: ctx.deviceId,
+        discardIfUnused: ctx.args['discard_if_unused'] == true,
+      );
+      return {'ok': true};
+    },
+  ),
   // Switch the file one embedded editor window shows: a tab switch is an
   // `open` command to the bridge in that window (addressed by its
   // `window_id`) rather than a fresh VS Code boot.

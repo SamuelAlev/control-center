@@ -85,6 +85,7 @@ class CodeServerWindowView extends ConsumerStatefulWidget {
     required this.request,
     this.onBooting,
     this.onBridgeWindow,
+    this.onReady,
   });
 
   /// The session (worktree + boot file) the window opens.
@@ -95,6 +96,9 @@ class CodeServerWindowView extends ConsumerStatefulWidget {
 
   /// Called with the bridge extension's window id once it logs it.
   final ValueChanged<String>? onBridgeWindow;
+
+  /// Called when the native workbench no longer needs foreground painting.
+  final VoidCallback? onReady;
 
   @override
   ConsumerState<CodeServerWindowView> createState() =>
@@ -206,6 +210,7 @@ class _CodeServerWindowViewState extends ConsumerState<CodeServerWindowView> {
             url: embedUrl,
             cover: preparing,
             onBridgeWindow: widget.onBridgeWindow,
+            onReady: widget.onReady,
           )
         : preparing;
   }

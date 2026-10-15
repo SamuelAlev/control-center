@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:cc_domain/features/ide/domain/code_server_session.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/settings/providers/editor_preferences_provider.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,12 +13,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// reuses) a loopback-bound code-server on the conversation's isolated CoW
 /// worktree and returns an app-relative proxy URL plus its readiness.
 ///
-/// `workspace_id` is NOT passed — the host binds the authoritative workspace
-/// per session and validates session ownership server-side, so a client can
-/// never touch another workspace's code-server. When the connected server does
-/// NOT host these ops (no code-server capability wired), `build` throws a
-/// [RemoteRpcException] with code `RpcErrorCodes.opUnknown`; the pane catches
-/// it and renders an honest "code-server is unavailable on this server" card.
+/// Requests carry the active workspace explicitly; the server validates
+/// workspace, space and device ownership. Disposing the last view releases its
+/// server reference, including when an in-flight open completes after disposal.
 class CodeServerSessionRequest {
   /// Creates a [CodeServerSessionRequest].
   const CodeServerSessionRequest({
@@ -68,7 +68,6 @@ class CodeServerSessionResult {
   /// tier; same-origin to the web bundle and to the desktop-served bundle.
   final String url;
 
-
   /// Server-side readiness (spinner while installing, card when unavailable).
   final CodeServerStatus status;
 }
@@ -84,6 +83,33 @@ final codeServerSessionProvider = FutureProvider.autoDispose
       request,
     ) async {
       final client = ref.watch(rpcClientProvider);
+      final workspaceId = ref.watch(activeWorkspaceIdProvider);
+      if (workspaceId == null) {
+        throw StateError('An editor requires an active workspace.');
+      }
+      var disposed = false;
+      String? sessionId;
+      Future<void> release() async {
+        final id = sessionId;
+        sessionId = null;
+        if (id == null || id.isEmpty) {
+          return;
+        }
+        try {
+          await client.call('codeServer.close', {
+            'workspace_id': workspaceId,
+            'session_id': id,
+            'discard_if_unused': true,
+          });
+        } on Exception {
+          // Cleanup cannot be sent after connection teardown.
+        }
+      }
+
+      ref.onDispose(() {
+        disposed = true;
+        unawaited(release());
+      });
       // Push the editor auto-save preference on every open. Read (not watch): a
       // preference change must NOT re-resolve — and thus flash/reload — an already
       // open editor. The change still takes effect the next time any editor tab
@@ -91,12 +117,17 @@ final codeServerSessionProvider = FutureProvider.autoDispose
       // included) and VS Code hot-reloads it for the whole worktree's windows.
       final autoSave = ref.read(editorAutoSaveModeProvider).wireValue;
       final data = await client.call('codeServer.open', {
+        'workspace_id': workspaceId,
         'space_id': request.spaceId,
         if (request.repoId != null) 'repo_id': request.repoId!,
         if (request.path != null) 'path': request.path!,
         if (request.line != null && request.line! > 0) 'line': request.line!,
         'auto_save': autoSave,
       });
+      sessionId = data['session_id'] as String?;
+      if (disposed) {
+        unawaited(release());
+      }
       final statusName = data['status'] as String? ?? 'ready';
       CodeServerStatus status;
       switch (statusName) {

@@ -64,6 +64,7 @@ void main() {
     'mcp.setEnabled',
     'mcp.setToken',
     'codeServer.open',
+    'codeServer.close',
     'codeServer.saveFile',
     'codeServer.openFile',
     'codeServer.closeFile',

@@ -49,10 +49,12 @@ void main() {
   late EditorLayoutController layout;
   late CodeServerWindowPool pool;
   final opens = <String>[];
+  var resolutions = 0;
 
   setUp(() {
     InAppWebViewPlatform.instance = _FakeInAppWebViewPlatform();
     opens.clear();
+    resolutions = 0;
   });
 
   Future<void> pumpWorkbench(WidgetTester tester, List<EditorTab> tabs) async {
@@ -83,41 +85,41 @@ void main() {
             deviceId: 'desktop',
             psk: 'test-key',
           ),
-          child:
-        ProviderScope(
-          overrides: [
-            codeServerSessionProvider.overrideWith(
-              (ref, request) async => const CodeServerSessionResult(
-                sessionId: 'sid',
-                url: '/proxy/vscode/sid/',
-                status: CodeServerStatus.ready,
-              ),
-            ),
-          ],
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              CodeServerWindowParking(pool: pool),
-              EditorWorkspace(
-                layout: layout,
-                chrome: const EditorChrome(),
-                buildBody: (tab, {required isVisible}) => bodyHost.wrap(
-                  tab,
-                  isVisible: isVisible,
-                  background: const Color(0xFFFFFFFF),
-                  buildContent: () => tab.kind == _kind
-                      ? CodeServerPane(
-                          spaceId: 's1',
-                          path: tab.args['path'] as String?,
-                          tab: tab,
-                          pool: pool,
-                        )
-                      : Text(tab.label),
-                ),
-              ),
+          child: ProviderScope(
+            overrides: [
+              codeServerSessionProvider.overrideWith((ref, request) async {
+                resolutions++;
+                return const CodeServerSessionResult(
+                  sessionId: 'sid',
+                  url: '/proxy/vscode/sid/',
+                  status: CodeServerStatus.ready,
+                );
+              }),
             ],
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CodeServerWindowParking(pool: pool),
+                EditorWorkspace(
+                  layout: layout,
+                  chrome: const EditorChrome(),
+                  buildBody: (tab, {required isVisible}) => bodyHost.wrap(
+                    tab,
+                    isVisible: isVisible,
+                    background: const Color(0xFFFFFFFF),
+                    buildContent: () => tab.kind == _kind
+                        ? CodeServerPane(
+                            spaceId: 's1',
+                            path: tab.args['path'] as String?,
+                            tab: tab,
+                            pool: pool,
+                          )
+                        : Text(tab.label),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -145,6 +147,7 @@ void main() {
     await pumpWorkbench(tester, [a, b, chat]);
     final webview = webviewState(tester);
     pool.bridgeReady(pool.windowOf(a)!, 'w1');
+    pool.windowReady(pool.windowOf(a)!);
 
     select(b);
     await tester.pump();
@@ -174,6 +177,69 @@ void main() {
     // Unmount so the webview's cover timer is cancelled.
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets(
+    'preloaded webview paints behind chat, moves into first file unchanged, then parks offstage',
+    (tester) async {
+      const chat = EditorTab(kind: 'chat', label: 'chat');
+      await pumpWorkbench(tester, [chat]);
+      const target = CodeServerTarget(spaceId: 's1');
+      pool.setPreloadTarget(target);
+
+      bool webviewIsOffstage() => tester
+          .widgetList<Offstage>(
+            find.ancestor(
+              of: find.byType(CodeServerWebView, skipOffstage: false),
+              matching: find.byType(Offstage, skipOffstage: false),
+            ),
+          )
+          .any((slot) => slot.offstage);
+      await tester.pump(const Duration(milliseconds: 999));
+      expect(find.byType(CodeServerWebView, skipOffstage: false), findsNothing);
+      await tester.pump(const Duration(milliseconds: 1));
+      await tester.pump();
+      await tester.pump();
+      final window = pool.parked.single;
+      expect(window.boot.path, isNull);
+      expect(window.isBooting, isTrue);
+      expect(find.text('chat'), findsWidgets);
+      expect(find.byType(CodeServerWebView), findsOneWidget);
+      expect(tester.getSize(find.byType(CodeServerWebView)).isEmpty, isFalse);
+      expect(webviewIsOffstage(), isFalse);
+      final webview = webviewState(tester);
+      expect(resolutions, 1);
+
+      final first = _file('lib/first.dart');
+      layout.focusOrOpenInLeaf(layout.activeLeafId, (_) => false, () => first);
+      await tester.pump();
+      expect(pool.windowOf(first), same(window));
+      expect(pool.parked, isEmpty);
+      expect(webviewState(tester), same(webview));
+      expect(
+        resolutions,
+        1,
+        reason: 'adoption must not request a second session',
+      );
+      expect(
+        opens,
+        isEmpty,
+        reason: 'the first file waits for bridge readiness',
+      );
+      pool.bridgeReady(window, 'w1');
+      expect(opens, ['w1:lib/first.dart']);
+
+      pool.windowReady(window);
+      select(chat);
+      await tester.pump();
+      expect(pool.parked, [window]);
+      expect(window.isBooting, isFalse);
+      expect(find.byType(CodeServerWebView), findsNothing);
+      expect(webviewState(tester), same(webview));
+      expect(webviewIsOffstage(), isTrue);
+      expect(resolutions, 1);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   testWidgets('side-by-side panes of one worktree show two windows', (
     tester,
@@ -219,8 +285,14 @@ void main() {
 
   test('rejects absolute and missing-facade iframe URLs', () {
     final local = Uri.parse('http://127.0.0.1:4100/_cc_resource/cap/');
-    expect(codeServerEmbedUrl('http://remote.example/proxy/vscode/sid/', local), isNull);
+    expect(
+      codeServerEmbedUrl('http://remote.example/proxy/vscode/sid/', local),
+      isNull,
+    );
     expect(codeServerEmbedUrl('/proxy/vscode/sid/', null), isNull);
-    expect(codeServerEmbedUrl('//remote.example/proxy/vscode/sid/', local), isNull);
+    expect(
+      codeServerEmbedUrl('//remote.example/proxy/vscode/sid/', local),
+      isNull,
+    );
   });
 }

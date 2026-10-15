@@ -612,6 +612,7 @@ class CodeServerService implements CodeServerPort {
     required String workspaceId,
     required String sessionId,
     required String deviceId,
+    bool discardIfUnused = false,
   }) async {
     final binding = _bindings[sessionId];
     if (binding == null) return;
@@ -628,6 +629,9 @@ class CodeServerService implements CodeServerPort {
     instance.refCount--;
     instance.lastTouched = _now();
     if (binding.refCount == 0) _revokeBinding(sessionId);
+    if (discardIfUnused && instance.refCount == 0) {
+      _killAndRemove(instance.bridgeId);
+    }
   }
 
   @override

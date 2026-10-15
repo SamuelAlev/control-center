@@ -305,6 +305,7 @@ void main() {
               workspaceId: 'wsB',
               sessionId: sessionId,
               deviceId: 'device-a',
+              discardIfUnused: true,
             ),
             throwsStateError,
           );
@@ -313,6 +314,7 @@ void main() {
               workspaceId: 'wsA',
               sessionId: sessionId,
               deviceId: 'device-b',
+              discardIfUnused: true,
             ),
             throwsStateError,
           );
@@ -335,6 +337,61 @@ void main() {
           expect(reopened.sessionId, isNot(sessionId));
           expect(reopened.port, b.port);
           expect(service.lookup(sessionId), isNull);
+        });
+
+        test('discard kills only after the last device and window close', () async {
+          final sameDevice = await service.ensureSession(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            deviceId: 'device-a',
+          );
+          final otherDevice = await service.ensureSession(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            deviceId: 'device-b',
+          );
+          expect(sameDevice.sessionId, sessionId);
+          expect(File('${tmp.path}/launches').readAsLinesSync(), hasLength(1));
+
+          await service.closeSession(
+            workspaceId: 'wsA',
+            sessionId: sessionId,
+            deviceId: 'device-a',
+            discardIfUnused: true,
+          );
+          expect(service.lookup(sessionId), isNotNull);
+          expect(service.lookup(otherDevice.sessionId), isNotNull);
+          expect(service.lookupBridge(bridgeId), isTrue);
+
+          await service.closeSession(
+            workspaceId: 'wsA',
+            sessionId: sessionId,
+            deviceId: 'device-a',
+            discardIfUnused: true,
+          );
+          expect(service.lookup(sessionId), isNull);
+          expect(service.lookup(otherDevice.sessionId), isNotNull);
+          expect(service.lookupBridge(bridgeId), isTrue);
+          expect(File('${tmp.path}/launches').readAsLinesSync(), hasLength(1));
+
+          await service.closeSession(
+            workspaceId: 'wsA',
+            sessionId: otherDevice.sessionId,
+            deviceId: 'device-b',
+            discardIfUnused: true,
+          );
+          expect(service.lookup(otherDevice.sessionId), isNull);
+          expect(service.lookupBridge(bridgeId), isFalse);
+          final reopened = await service.ensureSession(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            deviceId: 'device-a',
+          );
+          expect(reopened.sessionId, isNot(sessionId));
+          expect(File('${tmp.path}/launches').readAsLinesSync(), hasLength(2));
         });
 
         test('simultaneous opens share one new process, not a capability', () async {
@@ -411,6 +468,14 @@ void main() {
             ),
             isFalse,
           );
+          final reopened = await service.ensureSession(
+            workspaceId: 'wsA',
+            spaceId: 'chA',
+            repoId: 'repoA',
+            deviceId: 'device-a',
+          );
+          expect(reopened.sessionId, isNot(sessionId));
+          expect(File('${tmp.path}/launches').readAsLinesSync(), hasLength(1));
         });
 
         test('expiry revokes only the stale device capability', () async {

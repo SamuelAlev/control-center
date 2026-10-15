@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_status.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/artifacts/presentation/widgets/artifact_detail_view.dart';
@@ -40,6 +42,7 @@ import 'package:control_center/features/messaging/providers/recent_files_provide
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
 import 'package:control_center/features/messaging/providers/space_browser_tabs_provider.dart';
 import 'package:control_center/features/messaging/providers/space_takeover_provider.dart';
+import 'package:control_center/features/messaging/providers/space_worktrees_provider.dart';
 import 'package:control_center/features/messaging/providers/worktree_file_ops_provider.dart';
 import 'package:control_center/features/observability/presentation/tool_render/run_activity_opener_scope.dart';
 import 'package:control_center/features/plan_studio/presentation/screens/plan_studio_screen.dart';
@@ -130,7 +133,8 @@ class MessagingIdeLayout extends ConsumerStatefulWidget {
   ConsumerState<MessagingIdeLayout> createState() => _MessagingIdeLayoutState();
 }
 
-class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
+class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
+    with WidgetsBindingObserver {
   late EditorLayoutController _layout;
   late final ValueNotifier<IdeSidebarView> _sidebarTab;
 
@@ -241,6 +245,9 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     ),
   );
 
+  String? _defaultEditorRepoId;
+  bool _preloadSuppressed = false;
+
   static CodeServerTarget? _codeServerTarget(EditorTab tab) {
     final spaceId = tab.args['spaceId'];
     if (tab.kind != MessagingTabKinds.codeServer || spaceId is! String) {
@@ -284,6 +291,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _sidebarTab = ValueNotifier<IdeSidebarView>(IdeSidebarView.general);
     _persistence = _newPersistence();
     _workspaceId = ref.read(activeWorkspaceIdProvider);
@@ -353,6 +361,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _unwireActions(widget.actions);
     // Flush the current conversation's layout synchronously before tearing down.
     _persistNow(widget.selectedSpaceId);
@@ -362,6 +371,22 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     _layout.removeListener(_onLayoutChanged);
     _layout.dispose();
     super.dispose();
+  }
+
+  @override
+  void didHaveMemoryPressure() {
+    // Do not speculate again in this space after the OS asks for memory back.
+    _preloadSuppressed = true;
+    _windowPool.setPreloadTarget(null);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      _windowPool.setPreloadTarget(null);
+    } else if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -500,7 +525,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         kind: MessagingTabKinds.codeServer,
         label: l10n.ideCodeServer,
         icon: MessagingTabKinds.iconFor(MessagingTabKinds.codeServer),
-        args: {'spaceId': spaceId},
+        args: {'spaceId': spaceId, 'repoId': ?_defaultEditorRepoId},
       ),
     );
   }
@@ -925,6 +950,8 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   /// conversation can't leak into the incoming one's pane.
   void _switchConversation(String? from, String? to) {
     _persistNow(from);
+    _defaultEditorRepoId = null;
+    _preloadSuppressed = false;
     // The incoming space re-runs its restore + conversation-tab mirror.
     _layoutRestored = false;
     _conversationTabsSyncedFor = null;
@@ -1650,6 +1677,48 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final spaceId = widget.selectedSpaceId;
 
+    // Warm only the selected, provisioned space's first repo, never the
+    // workspace's whole repo list. The pool debounces navigation, waits for
+    // scheduler idle and expires an unused window instead of retaining it.
+    final canPreload =
+        CodeServerWindowPool.sharesWindows &&
+        spaceId != null &&
+        !ref.watch(isDemoServerProvider);
+    final worktrees = canPreload
+        ? ref
+              .watch(
+                spaceWorktreesProvider((
+                  workspaceId: widget.workspaceId,
+                  spaceId: spaceId,
+                )),
+              )
+              .value
+        : null;
+    _defaultEditorRepoId = worktrees?.firstOrNull?.repoId;
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    final preload =
+        canPreload &&
+            _defaultEditorRepoId != null &&
+            !_preloadSuppressed &&
+            TickerMode.valuesOf(context).enabled &&
+            (lifecycle == null || lifecycle == AppLifecycleState.resumed) &&
+            ref.watch(spaceProvisioningStatusProvider(spaceId)) ==
+                SpaceProvisioningStatus.ready
+        ? CodeServerTarget(spaceId: spaceId, repoId: _defaultEditorRepoId)
+        : null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.selectedSpaceId != spaceId) {
+        return;
+      }
+      final state = WidgetsBinding.instance.lifecycleState;
+      _windowPool.setPreloadTarget(
+        !_preloadSuppressed &&
+                (state == null || state == AppLifecycleState.resumed)
+            ? preload
+            : null,
+      );
+    });
+
     // Chat tabs label themselves from the LIVE conversation list rather than
     // the label frozen into the tab, so a rename lands immediately and a
     // thread is legible as one. Watched here (not read inside the chrome
@@ -1782,7 +1851,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       // divider both span the full surface, as the top-level Row did before.
       fit: StackFit.expand,
       children: [
-        // Editor windows no visible tab shows, kept warm offstage.
+        // Boot behind the foreground; park ready windows offstage.
         CodeServerWindowParking(pool: _windowPool),
         // Panes laid out flush, edge-to-edge: the editor fills the remaining
         // width and the sidebar abuts it with no gap. The boundary line is the

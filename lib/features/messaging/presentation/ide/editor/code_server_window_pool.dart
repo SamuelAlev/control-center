@@ -76,6 +76,9 @@ class CodeServerWindow {
   /// The worktree-relative file the window shows.
   String? shownPath;
 
+  /// Whether the native view still needs to paint to finish its first boot.
+  bool isBooting = true;
+
   /// The visible tab showing this window, or null while it is parked.
   EditorTab? owner;
 
@@ -132,6 +135,72 @@ class CodeServerWindowPool extends ChangeNotifier {
   Map<EditorTab, CodeServerTarget> _liveTargets = Map.identity();
   int _clock = 0;
   bool _reconcileScheduled = false;
+  bool _disposed = false;
+  bool _windowsChanged = false;
+  CodeServerTarget? _preloadTarget;
+  CodeServerWindow? _preloadedWindow;
+  Timer? _preloadDelay;
+  Timer? _preloadExpiry;
+  int _preloadEpoch = 0;
+
+  /// Speculates once per target, only after a stable second and scheduler idle.
+  /// An unclaimed window expires after a minute; expiry never starts another.
+  void setPreloadTarget(CodeServerTarget? target) {
+    if (_disposed) {
+      return;
+    }
+    if (!sharesWindows) {
+      target = null;
+    }
+    if (_preloadTarget?.worktreeKey == target?.worktreeKey) {
+      return;
+    }
+    _preloadDelay?.cancel();
+    _preloadExpiry?.cancel();
+    final epoch = ++_preloadEpoch;
+    final unused = _preloadedWindow;
+    _preloadedWindow = null;
+    if (unused != null) {
+      _windowsChanged = _windows.remove(unused) || _windowsChanged;
+    }
+    _preloadTarget = target;
+    if (target != null) {
+      // Never deep-link a speculative window: the user's first tab supplies
+      // its file through the bridge, without rebuilding the workbench.
+      final boot = CodeServerTarget(
+        spaceId: target.spaceId,
+        repoId: target.repoId,
+      );
+      _preloadDelay = Timer(const Duration(seconds: 1), () {
+        unawaited(
+          SchedulerBinding.instance.scheduleTask<void>(() {
+            if (_disposed || epoch != _preloadEpoch || _layout == null) {
+              return;
+            }
+            if (_windows.any((w) => w.boot.worktreeKey == boot.worktreeKey) ||
+                _liveTargets.values.any((t) => t.spaceId == boot.spaceId)) {
+              return;
+            }
+            final window = _create(boot);
+            _preloadedWindow = window;
+            _preloadExpiry = Timer(const Duration(seconds: 60), () {
+              if (_disposed || !identical(_preloadedWindow, window)) {
+                return;
+              }
+              _preloadedWindow = null;
+              _windowsChanged = _windows.remove(window) || _windowsChanged;
+              _onLayoutChanged();
+            });
+            _windowsChanged = true;
+            _onLayoutChanged();
+          }, Priority.idle),
+        );
+      });
+    }
+    if (_windowsChanged) {
+      _onLayoutChanged();
+    }
+  }
 
   /// The window [tab] shows, or null when it holds none.
   CodeServerWindow? windowOf(EditorTab tab) {
@@ -167,6 +236,7 @@ class CodeServerWindowPool extends ChangeNotifier {
     if (identical(_layout, layout)) {
       return;
     }
+    setPreloadTarget(null);
     _layout?.removeListener(_onLayoutChanged);
     _layout = layout;
     // A swapped layout is another conversation: its tabs never closed, so no
@@ -188,6 +258,7 @@ class CodeServerWindowPool extends ChangeNotifier {
   /// its owner's file is re-requested once that bridge is up.
   void windowBooting(CodeServerWindow window) {
     window
+      ..isBooting = true
       ..bridgeId = null
       ..shownPath = window.boot.path
       .._pendingOpen = null;
@@ -196,6 +267,16 @@ class CodeServerWindowPool extends ChangeNotifier {
     if (target != null) {
       _want(window, target);
     }
+  }
+
+  /// A booting parked window can now go offstage without stalling startup.
+  void windowReady(CodeServerWindow window) {
+    if (_disposed || !window.isBooting || !_windows.contains(window)) {
+      return;
+    }
+    window.isBooting = false;
+    _windowsChanged = true;
+    _onLayoutChanged();
   }
 
   /// The window [bridgeId] navigated itself to [path] (go to definition,
@@ -210,7 +291,7 @@ class CodeServerWindowPool extends ChangeNotifier {
 
   /// Reconciles after the current frame (safe to call from build).
   void requestReconcile() {
-    if (_reconcileScheduled) {
+    if (_disposed || _reconcileScheduled) {
       return;
     }
     _reconcileScheduled = true;
@@ -233,6 +314,9 @@ class CodeServerWindowPool extends ChangeNotifier {
   /// Moves windows to the code-server tabs now visible, parks the rest, closes
   /// files whose last tab closed and drops windows no tab can use.
   void reconcile() {
+    if (_disposed) {
+      return;
+    }
     final layout = _layout;
     if (layout == null) {
       return;
@@ -264,7 +348,8 @@ class CodeServerWindowPool extends ChangeNotifier {
     _closeRemovedFiles(liveTargets);
     _liveTargets = liveTargets;
 
-    var changed = false;
+    var changed = _windowsChanged;
+    _windowsChanged = false;
     final visibleTabs = Set<EditorTab>.identity()
       ..addAll(visible.map((v) => v.tab));
     for (final w in _windows) {
@@ -278,6 +363,10 @@ class CodeServerWindowPool extends ChangeNotifier {
         continue;
       }
       final window = _pick(v.target, v.leafId) ?? _create(v.target);
+      if (identical(window, _preloadedWindow)) {
+        _preloadExpiry?.cancel();
+        _preloadedWindow = null;
+      }
       window
         ..owner = v.tab
         .._leafId = v.leafId
@@ -343,7 +432,10 @@ class CodeServerWindowPool extends ChangeNotifier {
   /// Keeps one parked window per worktree that still has a tab, so the next
   /// switch to it is instant; drops the rest.
   bool _pruneParked(Iterable<CodeServerTarget> live) {
-    final liveKeys = {for (final t in live) t.worktreeKey};
+    final liveKeys = {
+      for (final t in live) t.worktreeKey,
+      if (_preloadedWindow != null) _preloadedWindow!.boot.worktreeKey,
+    };
     final kept = <String>{};
     final byRecency = [..._windows]
       ..sort((a, b) => b._lastUsed.compareTo(a._lastUsed));
@@ -385,6 +477,10 @@ class CodeServerWindowPool extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    ++_preloadEpoch;
+    _preloadDelay?.cancel();
+    _preloadExpiry?.cancel();
     _layout?.removeListener(_onLayoutChanged);
     _layout = null;
     super.dispose();

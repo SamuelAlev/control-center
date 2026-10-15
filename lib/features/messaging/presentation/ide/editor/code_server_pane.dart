@@ -68,9 +68,8 @@ class CodeServerPane extends StatelessWidget {
   }
 }
 
-/// Keeps a [CodeServerWindowPool]'s parked windows mounted, offstage, so a
-/// switch back to their worktree reuses the running editor. Place one beside
-/// the editor layout the pool follows.
+/// Keeps parked windows mounted behind the layout. Booting native views must
+/// paint to initialize; ready windows go offstage to avoid background painting.
 class CodeServerWindowParking extends StatelessWidget {
   /// Creates a [CodeServerWindowParking].
   const CodeServerWindowParking({super.key, required this.pool});
@@ -85,12 +84,23 @@ class CodeServerWindowParking extends StatelessWidget {
     }
     return ListenableBuilder(
       listenable: pool,
-      builder: (context, _) => Offstage(
-        child: Stack(
-          children: [
-            for (final window in pool.parked)
-              Positioned.fill(child: codeServerWindowSlot(pool, window)),
-          ],
+      builder: (context, _) => ExcludeSemantics(
+        child: ExcludeFocus(
+          child: IgnorePointer(
+            child: TickerMode(
+              enabled: false,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  for (final window in pool.parked)
+                    Offstage(
+                      offstage: !window.isBooting,
+                      child: codeServerWindowSlot(pool, window),
+                    ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -108,6 +118,7 @@ Widget codeServerWindowSlot(
   child: CodeServerWindowView(
     request: window.request,
     onBooting: () => pool.windowBooting(window),
+    onReady: () => pool.windowReady(window),
     onBridgeWindow: (id) => pool.bridgeReady(window, id),
   ),
 );
