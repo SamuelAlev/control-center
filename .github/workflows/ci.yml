@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   analyze:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -58,7 +58,7 @@ jobs:
 
   build-web:
     name: web wasm (${{ matrix.target }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -114,7 +114,7 @@ jobs:
           test -f build/web/main.dart.js
 
   browser-resources:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -138,7 +138,7 @@ jobs:
     # Sharded by test file (tool/test_shard.dart). `flutter test --total-shards`
     # still compiles every file. Shard count is this list; --total is job-total.
     name: test (shard ${{ matrix.shard }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -209,7 +209,7 @@ jobs:
   # Workspace package suites. Grouped so checkout + SDK setup is not paid per package.
   test-packages:
     name: packages (${{ matrix.runner }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
       contents: read
@@ -302,7 +302,7 @@ jobs:
   # Committed *.g.dart and l10n must match a fresh build_runner + gen-l10n.
   codegen:
     name: generated code is current
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -492,7 +492,7 @@ jobs:
   build:
     if: always()
     needs: [analyze, codegen, build-web, browser-resources, test, test-packages, e2e]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}
     steps:

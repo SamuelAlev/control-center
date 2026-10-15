@@ -258,8 +258,8 @@ dev_dependencies:
   patchwork: ^0.7.0
   # Server HTTP adapters exercised by root tests; pinned for the headless patch.
   rhttp: 0.18.0
-  # Match the pinned Rust bridge ABI used by rhttp's generated bindings.
-  flutter_rust_bridge: 2.12.0
+  # Runtime used by rhttp's generated Rust bridge bindings.
+  flutter_rust_bridge: 2.13.0
 
   # Code generation — drift + json_serializable.
   #

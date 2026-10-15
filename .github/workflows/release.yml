@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     outputs:
@@ -502,7 +502,7 @@ jobs:
 
   release:
     needs: [prepare, build-macos, build-windows, build-linux]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write # create the GitHub Release
     env:
@@ -560,7 +560,7 @@ jobs:
   # cc_server archive. Separate from the Cloudflare deploys.
   containers:
     needs: [prepare, build-linux]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write # push images + attestations
