@@ -6,8 +6,8 @@ CI and release workflows use GitHub's [native background steps](https://github.b
 
 ## Cut a release
 
-1. Optionally update `version:` in `pubspec.yaml` (the build overrides the in-app version from the tag).
-2. Run `git tag v1.2.3 && git push origin v1.2.3`, or use **Actions → Release → Run workflow** with a version.
+1. Update `version:` in `pubspec.yaml` and sync the unstamped defaults in `packages/cc_domain/lib/src/build_info.dart`, `web/deploy.json` and `apps/cc_remote/web/deploy.json`. Keep `gitSha` as `dev` and build timestamps empty. Add the release notes to `docs/src/data/changelog.ts`, newest first, with only the newest entry marked `latest`. The `version-bump` skill covers this checklist; release builds override the in-app version from the tag.
+2. Resolve public-distribution prerequisites before triggering the workflow: it pushes GHCR images even while the GitHub Release stays a draft. Commit the changes and wait for CI to pass, then run `git tag v1.2.3 && git push origin main v1.2.3`, or use **Actions → Release → Run workflow** with a version.
 3. Check all build jobs, artifacts, `SHA256SUMS.txt`, provenance attestations and release notes in the draft. Publish only after review.
 
 ## What gets built

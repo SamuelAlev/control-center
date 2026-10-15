@@ -28,14 +28,43 @@ export interface Release {
 // Newest first.
 export const releases: Release[] = [
   {
-    id: "v0-0-1-rc-1",
-    version: "v0.0.1-rc.1",
+    id: "v0-0-9",
+    version: "v0.0.9",
+    date: "Oct 16, 2026",
+    isoDate: "2026-10-16",
+    tag: "Patch release",
+    title: "Faster space switching and clearer approvals",
+    lead: "This update expands the command palette, keeps space editors warm and improves conversation rendering. It also fixes Claude Code token refresh and commit authorship.",
+    latest: true,
+    changes: [
+      {
+        type: "improved",
+        items: [
+          "Search and open spaces, conversations and settings from the command palette.",
+          "Space editors stay warm to reduce reloads when switching between conversations.",
+          "Updated conversation sidebars, message rendering and built-in harness guidance and skills.",
+          "Follow mode now targets human users only; agent following has been removed.",
+        ],
+      },
+      {
+        type: "fixed",
+        items: [
+          "Approval prompts and agent questions render Markdown consistently on desktop and phone.",
+          "Claude Code accounts can refresh authentication tokens inside the sandbox.",
+          "Agent commits use the connected user's identity rather than the bot as their author.",
+          "Fixed Windows PDF renderer builds.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "v0-0-1",
+    version: "v0.0.1",
     date: "Sep 10, 2026",
     isoDate: "2026-09-10",
     tag: "Release candidate",
     title: "Control Center takes off",
     lead: "The first release candidate ships the whole product at once: a native desktop app for running a fleet of AI coding agents across isolated Git worktrees, reviewing and merging their PRs and orchestrating the work as pipelines and tickets, with OS-native sandboxing, code-graph and hybrid semantic memory search, on-device meeting transcription, multiplayer for humans and agents and 100+ MCP tools, in 7 languages — on macOS, Windows and Linux, with web and phone companions over one self-hosted cc_server.",
-    latest: true,
     showViz: true,
     vizBranch: "feature/onboarding",
     changes: [

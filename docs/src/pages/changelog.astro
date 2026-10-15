@@ -4,6 +4,16 @@ import ChangelogHeader from '../components/changelog/ChangelogHeader.astro';
 import ChangelogEntry from '../components/changelog/ChangelogEntry.astro';
 import ChangelogScripts from '../components/changelog/ChangelogScripts.astro';
 import { releases } from '../data/changelog';
+
+const monthFormat = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const dayFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const releasesByMonth = new Map<string, typeof releases>();
+for (const release of releases) {
+  const month = monthFormat.format(new Date(release.isoDate));
+  const group = releasesByMonth.get(month);
+  if (group) group.push(release);
+  else releasesByMonth.set(month, [release]);
+}
 ---
 
 <MarketingLayout
@@ -23,20 +33,26 @@ import { releases } from '../data/changelog';
         aria-label="Jump to release"
       >
         <p class="font-mono text-[10.5px] uppercase tracking-[0.12em] text-idle pb-2 border-0 min-[920px]:pb-[14px] min-[920px]:border-b min-[920px]:border-border">All releases</p>
-        <div class="font-mono text-[11px] uppercase tracking-[0.06em] text-muted mt-[10px] mb-[6px] min-[920px]:mt-[22px]">September 2026</div>
-        <ul class="cl-jump list-none m-0 p-0 flex flex-wrap gap-[6px] min-[920px]:flex-col min-[920px]:flex-nowrap min-[920px]:gap-0">
-          <li>
-            <a
-              href="#v0-0-1-rc-1"
-              data-spy="v0-0-1-rc-1"
-              class="group flex items-center gap-2 py-[7px] px-[11px] rounded-sm border border-border bg-panel text-muted no-underline transition-colors hover:text-fg [&.active]:text-fg min-[920px]:gap-[11px] min-[920px]:py-2 min-[920px]:px-0 min-[920px]:rounded-none min-[920px]:border-0 min-[920px]:bg-transparent"
-            >
-              <span class="w-2 h-2 flex-none rounded-full border border-line-strong bg-bg transition-[background-color,border-color] group-[.active]:bg-accent group-[.active]:border-accent group-[.active]:shadow-[0_0_0_3px_var(--color-accent-soft)]" aria-hidden="true"></span>
-              <span class="font-mono text-[13px] tracking-[-0.01em]">v0.0.1-rc.1</span>
-              <span class="num ml-1 font-mono text-[11px] text-idle min-[920px]:ml-auto">Sep 10</span>
-            </a>
-          </li>
-        </ul>
+        {Array.from(releasesByMonth, ([month, monthReleases]) => (
+          <Fragment>
+            <div class="font-mono text-[11px] uppercase tracking-[0.06em] text-muted mt-[10px] mb-[6px] min-[920px]:mt-[22px]">{month}</div>
+            <ul class="cl-jump list-none m-0 p-0 flex flex-wrap gap-[6px] min-[920px]:flex-col min-[920px]:flex-nowrap min-[920px]:gap-0">
+              {monthReleases.map((release) => (
+                <li>
+                  <a
+                    href={`#${release.id}`}
+                    data-spy={release.id}
+                    class="group flex items-center gap-2 py-[7px] px-[11px] rounded-sm border border-border bg-panel text-muted no-underline transition-colors hover:text-fg [&.active]:text-fg min-[920px]:gap-[11px] min-[920px]:py-2 min-[920px]:px-0 min-[920px]:rounded-none min-[920px]:border-0 min-[920px]:bg-transparent"
+                  >
+                    <span class="w-2 h-2 flex-none rounded-full border border-line-strong bg-bg transition-[background-color,border-color] group-[.active]:bg-accent group-[.active]:border-accent group-[.active]:shadow-[0_0_0_3px_var(--color-accent-soft)]" aria-hidden="true"></span>
+                    <span class="font-mono text-[13px] tracking-[-0.01em]">{release.version}</span>
+                    <span class="num ml-1 font-mono text-[11px] text-idle min-[920px]:ml-auto">{dayFormat.format(new Date(release.isoDate))}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Fragment>
+        ))}
       </nav>
 
       <!-- release timeline -->

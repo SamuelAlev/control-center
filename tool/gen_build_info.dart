@@ -1,16 +1,6 @@
-// -*- mode: dart -*-
-// Stamps the shared build identity (packages/cc_domain/lib/src/build_info.dart)
-// before CI builds anything. One identity compiles into every artifact — the
-// Flutter clients, cc_remote and the cc_server binary — so /healthz,
-// `cc_server --version`, the RPC handshake and the About row all agree and
-// the stale-binary comparison is honest.
-//
-// Usage (repo root):
-//   dart run tool/gen_build_info.dart                     # version from pubspec
-//   dart run tool/gen_build_info.dart --version 1.2.3     # release tag override
-//
-// The committed file carries the unstamped dev identity (0.0.8 / dev); CI
-// rewrites it in the build job checkout, it is never committed stamped.
+// Stamps packages/cc_domain/lib/src/build_info.dart for every shipped artifact.
+// Usage: fvm dart run tool/gen_build_info.dart [--version X.Y.Z]
+// Without --version, reads the root pubspec. Do not commit stamped output.
 import 'dart:io';
 
 void main(List<String> args) {
@@ -66,19 +56,9 @@ String _gitSha() {
 
 String _template(String version, String sha, String builtAt) =>
     '''
-/// Build identity for every surface shipped from this repo: the Flutter
-/// clients (desktop + web), the `cc_remote` PWA and the `cc_server` /
-/// `cc_worker` binaries.
-///
-/// The values are plain `const`s so the SAME identity compiles into both the
-/// client and the server (both link this package), which is what makes the
-/// stale-binary comparison honest. CI stamps them by re-running
-/// `tool/gen_build_info.dart` over this file before building — the committed
-/// values are the unstamped dev identity (`0.0.8` / `dev`), so a local
-/// `flutter run` or `dart build cli` is self-consistent too.
-///
-/// This file is data, not logic: pure Dart, no platform imports and the
-/// generator writes the same shape every time.
+/// Shared build identity for clients, servers and workers.
+/// CI stamps this file with `tool/gen_build_info.dart`; committed values stay
+/// unstamped for local development.
 library;
 
 /// Namespace for the CI-stamped build identity constants.
