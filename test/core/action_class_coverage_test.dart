@@ -403,6 +403,11 @@ void main() {
         'and writes no byte to the shell — declaring `processSpawn` here would '
         'be a false claim, and a taxonomy people stop believing stops being '
         'read.',
+    'codeServer.close':
+        'Releases one device-bound reference to an embedded editor session; '
+        '`discard_if_unused` may stop the process after the final reference. '
+        'It neither spawns a process nor writes/deletes a file, and stopping '
+        'one does not match any ActionClass.',
     'codeServer.saveFile':
         'Saves a file INSIDE the conversation worktree (the handler confines '
         'the path to it), so the same reasoning as `worktree.writeFile` '

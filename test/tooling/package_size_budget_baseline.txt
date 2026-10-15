@@ -26,9 +26,8 @@ packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seed
 packages/cc_domain/lib/src/dtos/dtos.dart  4235
 packages/cc_harness/lib/src/loop/agent_loop_runner.dart  2196
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1868
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2670
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2665
 packages/cc_infra/lib/src/dispatch/dispatch_session_claude_cli.dart  1545
-packages/cc_infra/lib/src/ide/code_server_service.dart  1581
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1696
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1585
 packages/cc_infra/lib/src/network/github_graphql_client.dart  2372
@@ -41,7 +40,7 @@ packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2088
 packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1722
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2904
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3356
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8276
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8264
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
 packages/cc_server_core/lib/src/local_rpc_server.dart  2570
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1715

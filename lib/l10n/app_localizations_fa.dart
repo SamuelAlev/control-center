@@ -9692,25 +9692,8 @@ class AppLocalizationsFa extends AppLocalizations {
   String get presenceTyping => 'در حال تایپ…';
 
   @override
-  String get presenceAgentThinking => 'در حال فکر';
-
-  @override
-  String get presenceAgentRunning => 'در حال اجرا';
-
-  @override
-  String get presenceAgentBlocked => 'مسدود';
-
-  @override
-  String get presenceAgentDone => 'انجام‌شده';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '⁨$name⁩ — ⁨$status⁩';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '⁨$name⁩ — ⁨$status⁩ (⁨$cost⁩)';
   }
 
   @override

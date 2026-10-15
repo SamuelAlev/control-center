@@ -9829,25 +9829,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get presenceTyping => 'Píše…';
 
   @override
-  String get presenceAgentThinking => 'Přemýšlí';
-
-  @override
-  String get presenceAgentRunning => 'Běží';
-
-  @override
-  String get presenceAgentBlocked => 'Blokováno';
-
-  @override
-  String get presenceAgentDone => 'Hotovo';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

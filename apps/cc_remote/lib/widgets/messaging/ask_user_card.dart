@@ -4,6 +4,8 @@ import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
+part 'ask_user_option.dart';
+
 /// Phone-sized structured question: numbered options, optional free text,
 /// skip, and Continue for multi-select / typed answers.
 ///
@@ -279,68 +281,5 @@ class _AskUserCardState extends State<AskUserCard> {
           : l10n.agentQuestionAnsweredLabel;
     }
     return widget.caption ?? l10n.agentQuestionHeader;
-  }
-
-  Widget _option(DesignSystemTokens t, int index, AgentQuestionOption option) {
-    final selected = _selected.contains(index);
-    final subtitle = option.description;
-    return CcTappable(
-      onPressed: _interactive ? () => _activate(index) : null,
-      semanticLabel: subtitle == null || subtitle.isEmpty
-          ? option.label
-          : '${option.label}. $subtitle',
-      builder: (context, states) {
-        return ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 44),
-          child: ColoredBox(
-            color: selected ? t.hoverStrong : const Color(0x00000000),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: option.label,
-                            style: CcTypography.body.copyWith(
-                              color: t.textPrimary,
-                              fontWeight: CcTypography.semiboldWeight,
-                            ),
-                          ),
-                          if (subtitle != null && subtitle.isNotEmpty)
-                            TextSpan(
-                              text: ' $subtitle',
-                              style: CcTypography.body.copyWith(
-                                color: t.textSecondary,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 28,
-                    child: Center(
-                      child: Text(
-                        '${index + 1}',
-                        style: CcFonts.code(
-                          textStyle: CcTypography.monoNum.copyWith(
-                            color: selected ? t.textPrimary : t.textTertiary,
-                            fontWeight: CcTypography.semiboldWeight,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 }

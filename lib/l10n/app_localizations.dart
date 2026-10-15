@@ -16749,41 +16749,11 @@ abstract class AppLocalizations {
   /// **'Typing…'**
   String get presenceTyping;
 
-  /// No description provided for @presenceAgentThinking.
-  ///
-  /// In en, this message translates to:
-  /// **'Thinking'**
-  String get presenceAgentThinking;
-
-  /// No description provided for @presenceAgentRunning.
-  ///
-  /// In en, this message translates to:
-  /// **'Running'**
-  String get presenceAgentRunning;
-
-  /// No description provided for @presenceAgentBlocked.
-  ///
-  /// In en, this message translates to:
-  /// **'Blocked'**
-  String get presenceAgentBlocked;
-
-  /// No description provided for @presenceAgentDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get presenceAgentDone;
-
   /// Tooltip for a presence avatar chip: participant name and current status
   ///
   /// In en, this message translates to:
   /// **'{name} — {status}'**
   String presenceNameStatus(String name, String status);
-
-  /// Tooltip for an agent presence avatar chip, including its running cost
-  ///
-  /// In en, this message translates to:
-  /// **'{name} — {status} ({cost})'**
-  String presenceNameStatusCost(String name, String status, String cost);
 
   /// No description provided for @presenceRailLabel.
   ///

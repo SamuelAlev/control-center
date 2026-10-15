@@ -9840,25 +9840,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get presenceTyping => 'Печатает…';
 
   @override
-  String get presenceAgentThinking => 'Думает';
-
-  @override
-  String get presenceAgentRunning => 'Выполняет';
-
-  @override
-  String get presenceAgentBlocked => 'Заблокирован';
-
-  @override
-  String get presenceAgentDone => 'Готово';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

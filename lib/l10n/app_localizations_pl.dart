@@ -9865,25 +9865,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get presenceTyping => 'Pisze…';
 
   @override
-  String get presenceAgentThinking => 'Myśli';
-
-  @override
-  String get presenceAgentRunning => 'Pracuje';
-
-  @override
-  String get presenceAgentBlocked => 'Zablokowany';
-
-  @override
-  String get presenceAgentDone => 'Gotowe';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

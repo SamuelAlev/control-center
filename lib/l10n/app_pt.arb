@@ -4768,10 +4768,6 @@
   "presenceOnline": "Online",
   "presenceIdle": "Inativo",
   "presenceTyping": "Digitando…",
-  "presenceAgentThinking": "Pensando",
-  "presenceAgentRunning": "Em execução",
-  "presenceAgentBlocked": "Bloqueado",
-  "presenceAgentDone": "Concluído",
   "presenceNameStatus": "{name} — {status}",
   "@presenceNameStatus": {
     "description": "Tooltip for a presence avatar chip: participant name and current status",
@@ -4780,21 +4776,6 @@
         "type": "String"
       },
       "status": {
-        "type": "String"
-      }
-    }
-  },
-  "presenceNameStatusCost": "{name} — {status} ({cost})",
-  "@presenceNameStatusCost": {
-    "description": "Tooltip for an agent presence avatar chip, including its running cost",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "status": {
-        "type": "String"
-      },
-      "cost": {
         "type": "String"
       }
     }

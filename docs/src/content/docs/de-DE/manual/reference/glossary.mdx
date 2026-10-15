@@ -2,7 +2,7 @@
 title: Glossar
 description: Definitionen der zentralen Begriffe in Control Center.
 slug: de-DE/handbuch/referenz/glossar
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', 'Eine Mitgliedszeile, die einen Benutzer an einen Arbeitsbereich in einer WorkspaceRole bindet. Die Mitgliedschaft ist die Zugriffsgrenze, nicht der Kopplungsschlüssel.'],
 ['WorkspaceRole', 'Abgestufte Mitgliedsrolle: owner, admin, member, viewer oder guest (Eigentümer, Admin, Mitglied, Betrachter, Gast). Der Engpass der Repo-Operationen leitet je Operationsart eine Mindestrolle ab.'],
 ['ParticipantPresence', 'Flüchtiges Gewahrsein für einen Prinzipal (Status, Locus, Cursor, Tippen, Live-Status des Agenten und laufende Kosten). Nie gespeichert; der Server sammelt es; vor dem Fan-out nach der Repo-Freigabe gefiltert.'],
-['Folgemodus', 'Klicke einen Avatar an und fahre seinen Viewport mit, bis du selbst handelst, dann löst du dich. Gilt für Menschen und für Agenten („einem Agenten bei der Arbeit zusehen“).'],
+['Folgemodus', 'Klicke auf den Avatar eines anderen Nutzers, um dessen Ansicht zu folgen, bis du woandershin navigierst. Agenten kann man nicht folgen.'],
 ['Autonomieregler', 'Ein Regler je Bereich und je Agent: propose-only / act-with-approval / act-freely (Nur vorschlagen / Mit Genehmigung handeln / Frei handeln), umgesetzt als benanntes Profil über dem Speicher der Aktions-Schutzregeln.'],
 ['cc_worker', 'Ein Headless-Binary in reinem Dart, das die Fleet ausführt. Koppelt sich an einen cc_server, meldet seine Fähigkeiten, holt befristet zugewiesene Jobs ab, führt sie aus und streamt Ereignisse zurück. Hält keinen dauerhaften Zustand.'],
 ['JobSpec', 'Die typisierte Spezifikation für alles Ausführbare (Agentenlauf, Pipeline-Schritt, Code-Index, Golden-Render, Benchmark, Eval-Batch): verlangte Fähigkeiten, Priorität, Budget, Arbeitsbereich.'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence**: Flüchtiges Gewahrsein für einen Prinzipal (Status, Locus, Cursor, Tippen, Live-Status eines Agenten und laufende Kosten). Nie gespeichert; der Server sammelt es; vor dem Fan-out nach der Repo-Freigabe gefiltert.
 
-**Folgemodus**: Klicke einen Avatar an und fahre seinen Viewport mit, bis du selbst handelst, dann löst du dich. Gilt für Menschen und für Agenten („einem Agenten bei der Arbeit zusehen“).
+**Folgemodus**: Klicke auf den Avatar eines anderen Nutzers, um dessen Ansicht zu folgen, bis du woandershin navigierst. Agenten kann man nicht folgen.
 
 **Autonomieregler**: Ein Regler je Bereich und je Agent, **Nur vorschlagen** / **Mit Genehmigung handeln** / **Frei handeln** (`propose-only` / `act-with-approval` / `act-freely`), umgesetzt als benanntes Profil über dem Speicher der Aktions-Schutzregeln.
 

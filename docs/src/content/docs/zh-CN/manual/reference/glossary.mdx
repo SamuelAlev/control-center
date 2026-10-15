@@ -2,7 +2,7 @@
 title: 术语表
 description: 贯穿 Control Center 全站的关键术语定义。
 slug: zh-CN/手册/参考/术语表
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', '把 User 以某个 WorkspaceRole 绑定到 Workspace 的成员记录。成员身份——而不是配对密钥——才是访问边界。'],
 ['WorkspaceRole', '分级的成员角色：owner、admin、member、viewer 或 guest。仓库操作收口点会按操作种类推导出一个最低角色下限。'],
 ['ParticipantPresence', '针对某个主体的临时感知（状态、位置、光标、正在输入、智能体实时状态与运行费用）。从不持久化；由服务器集中中转；在扇出前先按仓库授权过滤。'],
-['跟随模式', '点击某个头像即可跟随其视口，直到你自己动手，然后脱钩。对人和智能体都适用（“观看智能体干活”）。'],
+['跟随模式', '点击其他用户的头像，即可跟随其视口，直到你导航至其他位置。无法跟随智能体。'],
 ['自主程度', '按空间、按智能体的控件——propose-only / act-with-approval / act-freely——以动作护栏存储之上的一个具名档位实现。'],
 ['cc_worker', '无界面的纯 Dart 机群执行器二进制文件。与某个 cc_server 配对，声明自己的能力，拉取租约作业，执行它们并把事件流式回传。不持有任何持久状态。'],
 ['JobSpec', '一切可执行对象（智能体运行、流水线步骤、代码索引、金样渲染、基准测试、评测批次）的带类型规格：所需能力、优先级、预算、工作区。'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence**：针对某个主体的临时感知（状态、位置、光标、正在输入、智能体的实时状态与运行费用）。从不持久化；由服务器集中中转；在扇出前先按仓库授权过滤。
 
-**跟随模式**：点击某个头像即可跟随其视口，直到你自己动手，然后脱钩。对人和智能体都适用（“观看智能体干活”）。
+**跟随模式**：点击其他用户的头像，即可跟随其视口，直到你导航至其他位置。无法跟随智能体。
 
 **自主程度**：按空间、按智能体的控件——`propose-only` / `act-with-approval` / `act-freely`——以动作护栏存储之上的一个具名档位实现。
 

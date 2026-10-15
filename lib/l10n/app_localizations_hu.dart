@@ -9773,25 +9773,8 @@ class AppLocalizationsHu extends AppLocalizations {
   String get presenceTyping => 'Gépel…';
 
   @override
-  String get presenceAgentThinking => 'Gondolkodik';
-
-  @override
-  String get presenceAgentRunning => 'Fut';
-
-  @override
-  String get presenceAgentBlocked => 'Blokkolva';
-
-  @override
-  String get presenceAgentDone => 'Kész';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

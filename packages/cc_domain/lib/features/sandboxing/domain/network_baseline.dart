@@ -12,6 +12,8 @@ const List<String> kBaselineAllowedDomains = [
   // LLM API providers
   'api.openai.com',
   '*.anthropic.com',
+  // Claude Code subscription OAuth token exchange, refresh and revocation.
+  'platform.claude.com',
   'api.githubcopilot.com',
   'generativelanguage.googleapis.com',
   'api.mistral.ai',

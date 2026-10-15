@@ -2,7 +2,7 @@
 title: Ordliste
 description: Definisjoner av sentrale begreper som brukes gjennomgående i Control Center.
 slug: nb-NO/handbok/referanse/ordliste
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', 'En medlemsrad som binder en Bruker til et Arbeidsområde på en WorkspaceRole. Medlemskap — ikke en parkoblingsnøkkel — er tilgangsgrensen.'],
 ['WorkspaceRole', 'Gradert medlemsrolle: owner, admin, member, viewer eller guest. Repo-operasjonsknutepunktet utleder et gulv for minimumsrolle per operasjonstype.'],
 ['ParticipantPresence', 'Flyktig tilstedeværelse for en Principal (status, posisjon, markør, skriving, agentens levende status + løpende kostnad). Lagres aldri; samles på serveren; filtreres etter repo-tilgang før spredning.'],
-['Følg-modus', 'Klikk på en avatar for å ri på visningsfeltet dens til du handler, og koble deretter fra. Fungerer for mennesker og for agenter («se en agent arbeide»).'],
+['Følg-modus', 'Klikk på avataren til en annen bruker for å følge visningen deres til du navigerer et annet sted. Agenter kan ikke følges.'],
 ['Autonomivriden', 'En kontroll per område og per agent — propose-only / act-with-approval / act-freely — implementert som en navngitt profil over lageret for handlingstillatelsesregler.'],
 ['cc_worker', 'En headless ren-Dart-binær for flåteutførelse. Kobler seg til en cc_server, erklærer evnene sine, henter leide jobber, utfører dem og strømmer hendelser tilbake. Har ingen varig tilstand.'],
 ['JobSpec', 'Den typede spesifikasjonen for alt som kan utføres (agentkjøring, pipeline-steg, kodeindeks, golden-render, benchmark, eval-batch): nødvendige evner, prioritet, budsjett, arbeidsområde.'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence**: Flyktig tilstedeværelse for en Principal (status, posisjon, markør, skriving, en agents levende status og løpende kostnad). Lagres aldri; samles på serveren; filtreres etter repo-tilgang før spredning.
 
-**Følg-modus**: Klikk på en avatar for å ri på visningsfeltet dens til du handler, og koble deretter fra. Fungerer for mennesker og for agenter («se en agent arbeide»).
+**Følg-modus**: Klikk på avataren til en annen bruker for å følge visningen deres til du navigerer et annet sted. Agenter kan ikke følges.
 
 **Autonomivriden**: En kontroll per område og per agent — `propose-only` / `act-with-approval` / `act-freely` — implementert som en navngitt profil over lageret for handlingstillatelsesregler.
 

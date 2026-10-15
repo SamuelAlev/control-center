@@ -9783,25 +9783,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get presenceTyping => 'Digitando…';
 
   @override
-  String get presenceAgentThinking => 'Pensando';
-
-  @override
-  String get presenceAgentRunning => 'Em execução';
-
-  @override
-  String get presenceAgentBlocked => 'Bloqueado';
-
-  @override
-  String get presenceAgentDone => 'Concluído';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

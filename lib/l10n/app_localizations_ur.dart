@@ -9693,25 +9693,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get presenceTyping => 'ٹائپ کر رہا ہے…';
 
   @override
-  String get presenceAgentThinking => 'سوچ رہا ہے';
-
-  @override
-  String get presenceAgentRunning => 'چل رہا ہے';
-
-  @override
-  String get presenceAgentBlocked => 'بلاک';
-
-  @override
-  String get presenceAgentDone => 'مکمل';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '⁨$name⁩ — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '⁨$name⁩ — $status (⁨$cost⁩)';
   }
 
   @override

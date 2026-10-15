@@ -2,7 +2,7 @@
 title: 詞彙表
 description: Control Center 全站關鍵術語的定義。
 slug: zh-TW/手冊/參考/詞彙表
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', '把 User 以某個 WorkspaceRole 繫結到一個 Workspace 的成員資格資料列。'],
 ['WorkspaceRole', '分級的成員資格角色：owner、admin、member、viewer 或 guest。儲存庫操作的把關點會依操作種類推導出最低角色門檻。'],
 ['ParticipantPresence', '針對某個主體的短暫感知（狀態、位置、游標、輸入中、代理即時狀態與執行成本）。永不持久化；由伺服器中樞轉送；在扇出前先依儲存庫授權過濾。'],
-['跟隨模式', '點選頭像即可跟隨其檢視畫面，直到你自己動手為止，然後脫離。對人類與代理都適用（「觀看代理工作」）。'],
+['跟隨模式', '點選其他使用者的頭像，即可跟隨其檢視畫面，直到你導覽至其他位置。無法跟隨代理。'],
 ['自主程度旋鈕', '依空間、依代理的控制項——propose-only／act-with-approval／act-freely——以動作護欄儲存之上的具名設定檔實作。'],
 ['cc_worker', '無介面的純 Dart 機群執行器二進位檔。與 cc_server 配對，宣告自己的能力，拉取已租用的作業，執行它們並把事件串流回傳。不持有任何持久狀態。'],
 ['JobSpec', '所有可執行項目（代理執行、管線步驟、程式碼索引、黃金算繪、基準測試、評測批次）的具型別規格：所需能力、優先順序、預算、工作區。'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence**：針對某個主體的短暫感知（狀態、位置、游標、輸入中、代理的即時狀態與執行成本）。永不持久化；由伺服器中樞轉送；在扇出前先依儲存庫授權過濾。
 
-**跟隨模式**：點選頭像即可跟隨其檢視畫面，直到你自己動手為止，然後脫離。對人類與代理都適用（「觀看代理工作」）。
+**跟隨模式**：點選其他使用者的頭像，即可跟隨其檢視畫面，直到你導覽至其他位置。無法跟隨代理。
 
 **自主程度旋鈕**：依空間、依代理的控制項——`propose-only` / `act-with-approval` / `act-freely`——以動作護欄儲存之上的具名設定檔實作。
 

@@ -58,9 +58,16 @@ class PhoneMarkdown extends ConsumerWidget {
 /// verbatim source: a script may contain fence delimiters or trailing newlines.
 /// Copy bypasses selection filters so every source byte stays intact.
 class PhoneApprovalCodeBlock extends StatelessWidget {
-  const PhoneApprovalCodeBlock({super.key, required this.source});
+  const PhoneApprovalCodeBlock({
+    super.key,
+    required this.source,
+    this.language = 'bash',
+  });
 
   final String source;
+
+  /// Code-fence language identifier; technical names are not translated.
+  final String language;
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +83,10 @@ class PhoneApprovalCodeBlock extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('bash', style: style.code?.copyWith(color: t.textTertiary)),
+              Text(
+                language,
+                style: style.code?.copyWith(color: t.textTertiary),
+              ),
               const Spacer(),
               CcButton(
                 variant: CcButtonVariant.ghost,

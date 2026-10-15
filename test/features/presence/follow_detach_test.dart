@@ -61,7 +61,7 @@ void main() {
 
     test('SpaceLocus with a conversation deep-links to its tab', () {
       // The space alone opens whichever conversation is standing; `?tab=` is
-      // what lands the follower on the one the agent is actually working in.
+      // what lands the follower on the conversation the other user is viewing.
       expect(
         routeForLocus(
           workspaceId,

@@ -9828,25 +9828,8 @@ class AppLocalizationsEl extends AppLocalizations {
   String get presenceTyping => 'Πληκτρολογεί…';
 
   @override
-  String get presenceAgentThinking => 'Σκέψη';
-
-  @override
-  String get presenceAgentRunning => 'Σε εκτέλεση';
-
-  @override
-  String get presenceAgentBlocked => 'Αποκλεισμένος';
-
-  @override
-  String get presenceAgentDone => 'Ολοκληρώθηκε';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

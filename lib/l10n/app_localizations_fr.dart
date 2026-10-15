@@ -9813,25 +9813,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get presenceTyping => 'Écrit…';
 
   @override
-  String get presenceAgentThinking => 'Réflexion';
-
-  @override
-  String get presenceAgentRunning => 'En cours';
-
-  @override
-  String get presenceAgentBlocked => 'Bloqué';
-
-  @override
-  String get presenceAgentDone => 'Terminé';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

@@ -2,7 +2,7 @@
 title: Slovník
 description: Definice klíčových pojmů, které se v Control Center používají.
 slug: cs-CZ/prirucka/referencni-prirucka/slovnik
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', 'Řádek členství, který váže uživatele k pracovnímu prostoru v roli WorkspaceRole. Hranice přístupu je členství, ne párovací klíč.'],
 ['WorkspaceRole', 'Odstupňovaná role členství: owner, admin, member, viewer nebo guest. Úzké místo operací nad repozitáři odvodí spodní hranici role podle druhu operace.'],
 ['ParticipantPresence', 'Pomíjivé povědomí o principálovi (stav, lokus, kurzor, psaní, živý stav agenta a běžící náklad). Nikdy se neukládá; soustředí ho server; před rozesláním se filtruje podle oprávnění k repozitáři.'],
-['Režim sledování', 'Klikni na avatar a jeď po jeho zobrazení, dokud nezasáhneš, a pak se sledování odpojí. Funguje pro lidi i pro agenty („sledovat, jak agent pracuje“).'],
+['Režim sledování', 'Klikni na avatar jiného uživatele a sleduj jeho zobrazení, dokud nepřejdeš jinam. Agenty sledovat nelze.'],
 ['Volič autonomie', 'Ovládání na prostor a na agenta: propose-only / act-with-approval / act-freely. Je to pojmenovaný profil nad úložištěm guardrailů akcí.'],
 ['cc_worker', 'Bezhlavá binárka vykonavatele flotily v čistém Dartu. Spáruje se s cc_server, ohlásí své schopnosti, stahuje zapůjčené úlohy, provede je a streamuje události zpátky. Nedrží žádný trvalý stav.'],
 ['JobSpec', 'Typovaná specifikace všeho, co se dá spustit (běh agenta, krok pipeline, index kódu, golden-render, benchmark, dávka eval): požadované schopnosti, priorita, rozpočet, pracovní prostor.'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence**: Pomíjivé povědomí o principálovi (stav, lokus, kurzor, psaní, živý stav agenta a běžící náklad). Nikdy se neukládá; soustředí ho server; před rozesláním se filtruje podle oprávnění k repozitáři.
 
-**Režim sledování**: Klikni na avatar a jeď po jeho zobrazení, dokud nezasáhneš, a pak se sledování odpojí. Funguje pro lidi i pro agenty („sledovat, jak agent pracuje“).
+**Režim sledování**: Klikni na avatar jiného uživatele a sleduj jeho zobrazení, dokud nepřejdeš jinam. Agenty sledovat nelze.
 
 **Volič autonomie**: Ovládání na prostor a na agenta, `propose-only` / `act-with-approval` / `act-freely`, pojmenovaný profil nad úložištěm guardrailů akcí.
 

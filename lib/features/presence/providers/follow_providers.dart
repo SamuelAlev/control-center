@@ -9,15 +9,14 @@ import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Which principal (human or agent) this client is riding the viewport of
-/// (PRD 16 §4 — "watch a teammate or an agent work"). Null means nobody is
-/// followed.
-class FollowedPrincipalNotifier extends Notifier<Principal?> {
+/// Which other user this client is following. Null means nobody is followed.
+/// Agent presence is available for status, but agents are not follow targets.
+class FollowedPrincipalNotifier extends Notifier<UserPrincipal?> {
   @override
-  Principal? build() => null;
+  UserPrincipal? build() => null;
 
   /// Starts following [principal], replacing any prior follow target.
-  void follow(Principal principal) => state = principal;
+  void follow(UserPrincipal principal) => state = principal;
 
   /// Stops following. No-op if nobody is currently followed.
   void detach() {
@@ -28,14 +27,14 @@ class FollowedPrincipalNotifier extends Notifier<Principal?> {
 
   /// Follows [principal], or detaches if it is already the followed one — the
   /// toggle behind clicking a presence avatar a second time.
-  void toggle(Principal principal) {
+  void toggle(UserPrincipal principal) {
     state = state == principal ? null : principal;
   }
 }
 
-/// The currently-followed principal, if any.
+/// The currently-followed user, if any.
 final followedPrincipalProvider =
-    NotifierProvider<FollowedPrincipalNotifier, Principal?>(
+    NotifierProvider<FollowedPrincipalNotifier, UserPrincipal?>(
       FollowedPrincipalNotifier.new,
     );
 
@@ -153,7 +152,7 @@ final followSyncProvider = Provider<void>((ref) {
     goTo(route);
   }
 
-  ref.listen<Principal?>(followedPrincipalProvider, (previous, next) {
+  ref.listen<UserPrincipal?>(followedPrincipalProvider, (previous, next) {
     if (next == null) {
       lastNavigated = null;
       return;

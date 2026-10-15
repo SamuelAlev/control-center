@@ -2,7 +2,7 @@
 title: Glossaire
 description: Définitions des termes clés employés dans Control Center.
 slug: fr-FR/manuel/reference/glossaire
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', 'Une ligne d’appartenance qui lie un utilisateur à un espace de travail selon un WorkspaceRole. C’est l’appartenance — et non une clé d’appairage — qui constitue la frontière d’accès.'],
 ['WorkspaceRole', 'Rôle d’appartenance gradué : owner, admin, member, viewer ou guest. Le point de passage des opérations sur les dépôts en déduit un seuil minimal de rôle par type d’opération.'],
 ['ParticipantPresence', 'Signalement éphémère propre à un principal (état, position, curseur, frappe, état en direct de l’agent et coût en cours). Jamais persisté ; concentré par le serveur ; filtré selon l’autorisation de dépôt avant la diffusion.'],
-['Mode suivi', 'Cliquez sur un avatar pour suivre sa vue jusqu’à ce que vous agissiez, puis détachez-vous. Fonctionne pour les humains comme pour les agents (« regarder un agent travailler »).'],
+['Mode suivi', 'Cliquez sur l’avatar d’un autre utilisateur pour suivre sa vue jusqu’à ce que vous naviguiez ailleurs. Il n’est pas possible de suivre les agents.'],
 ['Réglage d’autonomie', 'Un réglage par espace et par agent — propose-only / act-with-approval / act-freely — mis en œuvre comme profil nommé au-dessus du magasin de garde-fous d’actions.'],
 ['cc_worker', 'Un binaire exécuteur de flotte sans interface, en Dart pur. S’apparie à un cc_server, déclare ses capacités, tire les tâches louées, les exécute et renvoie les événements en flux. Ne détient aucun état durable.'],
 ['JobSpec', 'La spécification typée de tout ce qui est exécutable (exécution d’agent, étape de pipeline, index de code, rendu golden, benchmark, lot d’évaluations) : capacités requises, priorité, budget, espace de travail.'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence** : Signalement éphémère propre à un principal (état, position, curseur, frappe, état en direct de l’agent et coût en cours). Jamais persisté ; concentré par le serveur ; filtré selon l’autorisation de dépôt avant la diffusion.
 
-**Mode suivi** : Cliquez sur un avatar pour suivre sa vue jusqu’à ce que vous agissiez, puis détachez-vous. Fonctionne pour les humains comme pour les agents (« regarder un agent travailler »).
+**Mode suivi** : Cliquez sur l’avatar d’un autre utilisateur pour suivre sa vue jusqu’à ce que vous naviguiez ailleurs. Il n’est pas possible de suivre les agents.
 
 **Réglage d’autonomie** : Un réglage par espace et par agent — `propose-only` / `act-with-approval` / `act-freely` — mis en œuvre comme profil nommé au-dessus du magasin de garde-fous d’actions.
 

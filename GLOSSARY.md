@@ -175,7 +175,7 @@ Names and distinctions used across the domain. This is not a field inventory; en
 ## Presence & Real-Time Collaboration Bounded Context
 
 - **ParticipantPresence:** ephemeral, never-persisted human/agent awareness; repo-grant filtered before fan-out. **PresenceLocus:** tagged position in a space, file, PR, ticket or plan node.
-- **Follow / steer / take-over / hand-back:** follow another viewport; redirect a running agent via conversation; pause at a turn boundary to edit its worktree; send the change summary before resuming. Paused state survives restart.
+- **Follow / steer / take-over / hand-back:** follow another human user's viewport until navigating away (never an agent); redirect a running agent via conversation; pause at a turn boundary to edit its worktree; send the change summary before resuming. Paused state survives restart.
 - **Autonomy dial:** per-space/agent `propose-only`, `act-with-approval` or `act-freely` profile over action guardrails; risky actions still require the policy gate.
 
 ## Plan Studio Bounded Context

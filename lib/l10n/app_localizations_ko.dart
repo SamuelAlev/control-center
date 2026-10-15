@@ -9528,25 +9528,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get presenceTyping => '입력 중…';
 
   @override
-  String get presenceAgentThinking => '생각 중';
-
-  @override
-  String get presenceAgentRunning => '실행 중';
-
-  @override
-  String get presenceAgentBlocked => '차단됨';
-
-  @override
-  String get presenceAgentDone => '완료';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

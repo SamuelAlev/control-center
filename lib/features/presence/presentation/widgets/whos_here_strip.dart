@@ -8,13 +8,9 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Compact avatar strip for the space header: one chip per participant
-/// (human or agent) whose presence currently targets this space — viewing
-/// it or typing in it (PRD 16 §1–§3).
+/// Compact avatar strip for other users viewing or typing in this space.
 ///
-/// Solo-mode zero-regression: renders nothing when the workspace roster has
-/// nobody else at all (no other humans, no live agents) and nothing when
-/// nobody relevant is on this specific space.
+/// Hidden in solo mode, even while agents are active in the space.
 class WhosHereStrip extends ConsumerWidget {
   /// Creates a [WhosHereStrip] for [spaceId].
   const WhosHereStrip({super.key, required this.spaceId});
@@ -22,9 +18,8 @@ class WhosHereStrip extends ConsumerWidget {
   /// The space this header belongs to.
   final String spaceId;
 
-  /// Who the strip shows for [spaceId]: everyone but me whose presence
-  /// targets the space. Empty in solo mode. Hosts read it to reserve the
-  /// strip's width before laying out around it.
+  /// Other users whose presence targets [spaceId]. Hosts read this to reserve
+  /// the strip's width before laying out around it.
   static List<ParticipantPresence> visitors(WidgetRef ref, String spaceId) {
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
     if (workspaceId == null) {
@@ -35,7 +30,8 @@ class WhosHereStrip extends ConsumerWidget {
     final myUserId = ref.watch(currentUserIdProvider);
     return [
       for (final p in roster)
-        if (!(p.principal is UserPrincipal && p.principal.id == myUserId) &&
+        if (p.principal is UserPrincipal &&
+            p.principal.id != myUserId &&
             _targetsSpace(p, spaceId))
           p,
     ];

@@ -9744,25 +9744,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get presenceTyping => 'Mengetik…';
 
   @override
-  String get presenceAgentThinking => 'Berpikir';
-
-  @override
-  String get presenceAgentRunning => 'Berjalan';
-
-  @override
-  String get presenceAgentBlocked => 'Terblokir';
-
-  @override
-  String get presenceAgentDone => 'Selesai';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

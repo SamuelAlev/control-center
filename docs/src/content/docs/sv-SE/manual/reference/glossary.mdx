@@ -2,7 +2,7 @@
 title: Ordlista
 description: Definitioner av centrala begrepp som används i Control Center.
 slug: sv-SE/handbok/referens/ordlista
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', 'En medlemsrad som binder en användare till en arbetsyta i en WorkspaceRole. Medlemskapet – inte en parkopplingsnyckel – är åtkomstgränsen.'],
 ['WorkspaceRole', 'Graderad medlemsroll: owner, admin, member, viewer eller guest. Repo-operationernas flaskhals härleder ett golv för minsta roll per operationstyp.'],
 ['ParticipantPresence', 'Flyktig närvaro för en principal (status, locus, markör, skrivande, agentens livestatus + pågående kostnad). Sparas aldrig; hubbas av servern; filtreras på repo-behörighet före utskicket.'],
-['Följläge', 'Klicka på en avatar för att följa dess viewport tills du agerar, och koppla då loss. Fungerar för människor och för agenter ("se en agent arbeta").'],
+['Följläge', 'Klicka på en annan användares avatar för att följa dennes vy tills du navigerar någon annanstans. Agenter kan inte följas.'],
 ['Autonomireglage', 'En kontroll per yta och per agent – propose-only / act-with-approval / act-freely – implementerad som en namngiven profil ovanpå lagret för åtgärdsräcken.'],
 ['cc_worker', 'En headless-binär i ren Dart som kör flottan. Parkopplas med en cc_server, deklarerar sina förmågor, hämtar leasade jobb, utför dem och strömmar händelser tillbaka. Håller inget varaktigt tillstånd.'],
 ['JobSpec', 'Den typade specifikationen för allt körbart (agentkörning, pipelinesteg, kodindex, golden-render, benchmark, eval-batch): nödvändiga förmågor, prioritet, budget, arbetsyta.'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence**: Flyktig närvaro för en principal (status, locus, markör, skrivande, en agents livestatus och pågående kostnad). Sparas aldrig; hubbas av servern; filtreras på repo-behörighet före utskicket.
 
-**Följläge**: Klicka på en avatar för att följa dess viewport tills du agerar, och koppla då loss. Fungerar för människor och för agenter ("se en agent arbeta").
+**Följläge**: Klicka på en annan användares avatar för att följa dennes vy tills du navigerar någon annanstans. Agenter kan inte följas.
 
 **Autonomireglage**: En kontroll per yta och per agent – `propose-only` / `act-with-approval` / `act-freely` – implementerad som en namngiven profil ovanpå lagret för åtgärdsräcken.
 

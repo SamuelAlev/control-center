@@ -2,7 +2,7 @@
 title: Szójegyzék
 description: A Control Centerben használt kulcsfontosságú kifejezések meghatározásai.
 slug: hu-HU/kezikonyv/referencia/szojegyzek
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', 'Egy tagsági sor, amely egy Felhasználót egy Munkaterülethez köt egy WorkspaceRole értékkel. A tagság — nem egy párosítási kulcs — a hozzáférési határ.'],
 ['WorkspaceRole', 'Fokozatos tagsági szerep: owner, admin, member, viewer vagy guest. A repóműveleti szűk keresztmetszet műveletfajtánként levezet egy minimális szerepküszöböt.'],
 ['ParticipantPresence', 'Efemer jelenlét egy Principal számára (állapot, hely, kurzor, gépelés, ügynök élő állapota + futó költsége). Soha nem perzisztálódik; szerver-hubos; a repó-jogosultság szerint szűrve a szétosztás előtt.'],
-['Follow-mode', 'Kattintson egy avatarra, hogy az ő nézetén utazzon, amíg nem cselekszik, majd váljon le. Embereknél és ügynököknél is működik („nézze, ahogy egy ügynök dolgozik”).'],
+['Follow-mode', 'Kattintson egy másik felhasználó avatárjára, hogy kövesse a nézetét, amíg máshová nem navigál. Ügynököket nem lehet követni.'],
 ['Autonomy dial', 'Térénként és ügynökönkénti vezérlő — propose-only / act-with-approval / act-freely — a műveleti-korlát tároló fölötti nevesített profilként megvalósítva.'],
 ['cc_worker', 'Egy headless, tiszta Dart nyelvű flottavégrehajtó bináris. Párosul egy cc_serverrel, deklarálja a képességeit, bérbe adott feladatokat húz, végrehajtja őket, és visszafolyatja az eseményeket. Nem tart fenn tartós állapotot.'],
 ['JobSpec', 'Minden végrehajtható dolog típusos specifikációja (ügynökfutás, pipeline-lépés, code-index, golden-render, benchmark, eval batch): szükséges képességek, prioritás, büdzsé, munkaterület.'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence**: Efemer jelenlét egy Principal számára (állapot, hely, kurzor, gépelés, egy ügynök élő állapota és futó költsége). Soha nem perzisztálódik; szerver-hubos; a repó-jogosultság szerint szűrve a szétosztás előtt.
 
-**Követési mód**: Kattintson egy avatarra, hogy az ő nézetén utazzon, amíg nem cselekszik, majd váljon le. Embereknél és ügynököknél is működik („nézze, ahogy egy ügynök dolgozik”).
+**Követési mód**: Kattintson egy másik felhasználó avatárjára, hogy kövesse a nézetét, amíg máshová nem navigál. Ügynököket nem lehet követni.
 
 **Autonómiatárcsa**: Térénként és ügynökönkénti vezérlő — `propose-only` / `act-with-approval` / `act-freely` — a műveleti-korlát tároló fölötti nevesített profilként megvalósítva.
 

@@ -2,7 +2,7 @@
 title: Glosar
 description: Definiții ale termenilor-cheie folosiți în tot Control Center.
 slug: ro-RO/manual/referinta/glosar
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', 'Un rând de apartenență care leagă un Utilizator de un Spațiu de lucru la un WorkspaceRole. Apartenența — nu o cheie de asociere — este granița de acces.'],
 ['WorkspaceRole', 'Rol de apartenență gradual: owner, admin, member, viewer sau guest. Punctul unic de trecere pentru operațiile pe repo derivă un prag minim de rol per tip de operație.'],
 ['ParticipantPresence', 'Prezență efemeră pentru un Principal (stare, loc, cursor, tastare, starea live a agentului + costul de rulare). Niciodată persistată; găzduită pe server; filtrată după acordările per repo înainte de difuzare.'],
-['Mod urmărire', 'Dă clic pe un avatar ca să îi urmărești viewportul până când acționezi, apoi te detașezi. Funcționează pentru oameni și pentru agenți („urmărește un agent la lucru”).'],
+['Mod urmărire', 'Dă clic pe avatarul altui utilizator ca să îi urmărești vizualizarea până când navighezi în altă parte. Agenții nu pot fi urmăriți.'],
 ['Cadran de autonomie', 'Un control per spațiu și per agent — propose-only / act-with-approval / act-freely — implementat ca profil numit peste depozitul de guardrail-uri de acțiune.'],
 ['cc_worker', 'Un binar executant de flotă, headless, în Dart pur. Se asociază cu un cc_server, își declară capabilitățile, preia joburi închiriate, le execută și transmite înapoi evenimente. Nu deține nicio stare durabilă.'],
 ['JobSpec', 'Specificația tipizată pentru tot ce este executabil (rulare de agent, pas de pipeline, index de cod, randare de referință, benchmark, lot de eval-uri): capabilitățile necesare, prioritatea, bugetul, spațiul de lucru.'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence**: Prezență efemeră pentru un Principal (stare, loc, cursor, tastare, starea live și costul de rulare ale unui agent). Niciodată persistată; găzduită pe server; filtrată după acordările per repo înainte de difuzare.
 
-**Mod urmărire**: Dă clic pe un avatar ca să îi urmărești viewportul până când acționezi, apoi te detașezi. Funcționează pentru oameni și pentru agenți („urmărește un agent la lucru”).
+**Mod urmărire**: Dă clic pe avatarul altui utilizator ca să îi urmărești vizualizarea până când navighezi în altă parte. Agenții nu pot fi urmăriți.
 
 **Cadran de autonomie**: Un control per spațiu și per agent — `propose-only` / `act-with-approval` / `act-freely` — implementat ca profil numit peste depozitul de guardrail-uri de acțiune.
 

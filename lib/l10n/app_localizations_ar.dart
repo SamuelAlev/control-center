@@ -9837,25 +9837,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get presenceTyping => 'يكتب…';
 
   @override
-  String get presenceAgentThinking => 'يفكر';
-
-  @override
-  String get presenceAgentRunning => 'قيد التشغيل';
-
-  @override
-  String get presenceAgentBlocked => 'معلّق';
-
-  @override
-  String get presenceAgentDone => 'تم';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

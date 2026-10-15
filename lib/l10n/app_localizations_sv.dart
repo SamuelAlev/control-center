@@ -9739,25 +9739,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get presenceTyping => 'Skriver…';
 
   @override
-  String get presenceAgentThinking => 'Tänker';
-
-  @override
-  String get presenceAgentRunning => 'Körs';
-
-  @override
-  String get presenceAgentBlocked => 'Blockerad';
-
-  @override
-  String get presenceAgentDone => 'Klar';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

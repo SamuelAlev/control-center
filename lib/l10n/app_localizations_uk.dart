@@ -9838,25 +9838,8 @@ class AppLocalizationsUk extends AppLocalizations {
   String get presenceTyping => 'Друкує…';
 
   @override
-  String get presenceAgentThinking => 'Думає';
-
-  @override
-  String get presenceAgentRunning => 'Виконується';
-
-  @override
-  String get presenceAgentBlocked => 'Заблоковано';
-
-  @override
-  String get presenceAgentDone => 'Готово';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

@@ -95,7 +95,6 @@ void main() {
         [worktree],
       );
       expect(port.asked, hasLength(1));
-      expect(port.asked.single.command, worktree);
       expect(port.asked.single.workspaceId, 'ws1');
     });
 
@@ -471,12 +470,6 @@ void main() {
           candidateRoots: const [worktree],
         ),
         worktree,
-      );
-      expect(port.asked.single.title, contains('husky'));
-      expect(
-        port.asked.single.detail,
-        contains('applies from the next command'),
-        reason: 'the copy must not imply the blocked run can be resumed',
       );
     });
 

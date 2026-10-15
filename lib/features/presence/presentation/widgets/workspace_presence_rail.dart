@@ -9,13 +9,11 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Compact "who's online" cluster for the shell title bar: up to 5 avatars
-/// plus an overflow count and a do-not-disturb toggle (PRD 16 §1).
+/// Compact "who's online" cluster for the shell title bar: up to 5 other
+/// users plus an overflow count and a do-not-disturb toggle.
 ///
-/// Solo-mode zero-regression: renders nothing when the workspace roster has
-/// nobody else at all (no other humans, no live agents) — multiplayer chrome,
-/// including the DND control, must be invisible until a second principal
-/// connects.
+/// Hidden until another human is present. Agent activity does not enable
+/// multiplayer chrome.
 class WorkspacePresenceRail extends ConsumerWidget {
   /// Creates a [WorkspacePresenceRail].
   const WorkspacePresenceRail({super.key});
@@ -34,7 +32,7 @@ class WorkspacePresenceRail extends ConsumerWidget {
 
     final others = [
       for (final p in roster)
-        if (!(p.principal is UserPrincipal && p.principal.id == myUserId)) p,
+        if (p.principal is UserPrincipal && p.principal.id != myUserId) p,
     ];
     if (others.isEmpty) {
       return const SizedBox.shrink();

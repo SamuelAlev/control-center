@@ -2,7 +2,7 @@
 title: Glossário
 description: Definições dos termos-chave usados em todo o Control Center.
 slug: pt-PT/manual/referencia/glossario
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', 'Uma linha de pertença que vincula um Utilizador a um Espaço de trabalho com uma WorkspaceRole. A pertença — e não uma chave de emparelhamento — é a fronteira de acesso.'],
 ['WorkspaceRole', 'Função de pertença gradual: owner, admin, member, viewer ou guest. O ponto de estrangulamento das operações sobre repos deriva um piso de função mínima por tipo de operação.'],
 ['ParticipantPresence', 'Conhecimento efémero sobre um Principal (estado, local, cursor, a escrever, estado em direto do agente + custo em curso). Nunca é persistido; encaminhado pelo servidor; filtrado pelas concessões de repo antes da difusão.'],
-['Modo de seguimento', 'Clique num avatar para acompanhar a sua viewport até agir e, em seguida, desligue-se. Funciona para humanos e para agentes ("ver um agente a trabalhar").'],
+['Modo de seguimento', 'Clique no avatar de outro utilizador para acompanhar a sua vista até navegar para outro local. Não é possível seguir agentes.'],
 ['Dial de autonomia', 'Um controlo por espaço e por agente — propose-only / act-with-approval / act-freely — implementado como um perfil com nome sobre o armazenamento de barreiras de ação.'],
 ['cc_worker', 'Um binário executor de frota headless em Dart puro. Emparelha com um cc_server, declara as suas capacidades, recolhe trabalhos em lease, executa-os e transmite os eventos de processo de volta. Não detém qualquer estado durável.'],
 ['JobSpec', 'A especificação tipada de tudo o que é executável (execução de agente, passo de pipeline, índice de código, golden-render, benchmark, lote de avaliação): capacidades necessárias, prioridade, orçamento, espaço de trabalho.'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence**: Conhecimento efémero sobre um Principal (estado, local, cursor, a escrever, o estado em direto de um agente e o custo em curso). Nunca é persistido; encaminhado pelo servidor; filtrado pelas concessões de repo antes da difusão.
 
-**Modo de seguimento**: Clique num avatar para acompanhar a sua viewport até agir e, em seguida, desligue-se. Funciona para humanos e para agentes ("ver um agente a trabalhar").
+**Modo de seguimento**: Clique no avatar de outro utilizador para acompanhar a sua vista até navegar para outro local. Não é possível seguir agentes.
 
 **Dial de autonomia**: Um controlo por espaço e por agente — `propose-only` / `act-with-approval` / `act-freely` — implementado como um perfil com nome sobre o armazenamento de barreiras de ação.
 

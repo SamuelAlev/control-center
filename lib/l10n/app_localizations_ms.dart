@@ -9751,25 +9751,8 @@ class AppLocalizationsMs extends AppLocalizations {
   String get presenceTyping => 'Menaip…';
 
   @override
-  String get presenceAgentThinking => 'Berfikir';
-
-  @override
-  String get presenceAgentRunning => 'Berjalan';
-
-  @override
-  String get presenceAgentBlocked => 'Disekat';
-
-  @override
-  String get presenceAgentDone => 'Selesai';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

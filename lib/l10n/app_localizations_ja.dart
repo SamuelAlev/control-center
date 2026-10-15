@@ -9529,25 +9529,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get presenceTyping => '入力中…';
 
   @override
-  String get presenceAgentThinking => '思考中';
-
-  @override
-  String get presenceAgentRunning => '実行中';
-
-  @override
-  String get presenceAgentBlocked => 'ブロック中';
-
-  @override
-  String get presenceAgentDone => '完了';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

@@ -2,7 +2,7 @@
 title: Słownik
 description: Definicje kluczowych pojęć używanych w Control Center.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/slownik
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', 'Wiersz członkostwa wiążący użytkownika z obszarem roboczym w danej roli WorkspaceRole. Członkostwo — a nie klucz parowania — jest granicą dostępu.'],
 ['WorkspaceRole', 'Stopniowana rola członkostwa: owner, admin, member, viewer lub guest. Punkt kontrolny operacji na repozytorium wyznacza minimalny próg roli dla danego rodzaju operacji.'],
 ['ParticipantPresence', 'Ulotna obecność Principal (status, położenie, kursor, pisanie, status agenta na żywo i bieżący koszt). Nigdy nie jest zapisywana; hubem jest serwer; filtrowana według uprawnień do repozytorium przed rozgłoszeniem.'],
-['Tryb podążania', 'Kliknięcie awatara powoduje podążanie za jego widokiem, dopóki nie wykonasz działania, a potem odłączenie. Działa dla ludzi i dla agentów (obserwuj agenta przy pracy).'],
+['Tryb podążania', 'Kliknij awatar innego użytkownika, aby śledzić jego widok, dopóki nie przejdziesz gdzie indziej. Nie można śledzić agentów.'],
 ['Pokrętło autonomii', 'Sterowanie dla danego obszaru roboczego i agenta — propose-only / act-with-approval / act-freely — zaimplementowane jako nazwany profil nad magazynem guardraili akcji.'],
 ['cc_worker', 'Bezgłowa binarka wykonawcy floty w czystym Darcie. Paruje się z cc_server, deklaruje swoje możliwości, pobiera dzierżawione zadania, wykonuje je i strumieniuje zdarzenia z powrotem. Nie przechowuje żadnego trwałego stanu.'],
 ['JobSpec', 'Typowana specyfikacja wszystkiego, co wykonywalne (uruchomienie agenta, krok potoku, indeks kodu, render golden, benchmark, wsad ewaluacji): wymagane możliwości, priorytet, budżet, obszar roboczy.'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence**: Ulotna obecność Principal (status, położenie, kursor, pisanie, status agenta na żywo i bieżący koszt). Nigdy nie jest zapisywana; hubem jest serwer; filtrowana według uprawnień do repozytorium przed rozgłoszeniem.
 
-**Tryb podążania**: Kliknij awatar, aby jechać za jego widokiem, dopóki nie wykonasz działania, a potem się odłącz. Działa dla ludzi i dla agentów („obserwuj agenta przy pracy”).
+**Tryb podążania**: Kliknij awatar innego użytkownika, aby śledzić jego widok, dopóki nie przejdziesz gdzie indziej. Nie można śledzić agentów.
 
 **Pokrętło autonomii**: Sterowanie dla danego obszaru roboczego i agenta — `propose-only` / `act-with-approval` / `act-freely` — zaimplementowane jako nazwany profil nad magazynem guardraili akcji.
 

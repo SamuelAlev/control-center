@@ -10,6 +10,9 @@ binary and the desktop's embedded server both boot.
 - **`cc_server_runtime.dart`** — `runCcServer(...)`: opens the DB, builds every
   repository/service/DAO, starts the RPC server, wires the event bus,
   reconcilers, pipeline engine, sync, retention and the periodic services.
+  Focused wiring lives in same-library `runtime/` parts; for example,
+  `server_viewer_activity_wiring.dart` constructs the owner's GitHub activity
+  poller, while the composition root owns its startup and shutdown.
 - **`local_rpc_server.dart`** (`LocalRpcServer`) — the HTTP/WSS listener,
   signed-identity Noise sessions, repo-RPC catalog, webhooks, `/healthz` and
   static web-bundle serving. Sensitive media/editor/transfer HTTP routes return

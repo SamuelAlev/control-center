@@ -9731,25 +9731,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get presenceTyping => 'Yazıyor…';
 
   @override
-  String get presenceAgentThinking => 'Düşünüyor';
-
-  @override
-  String get presenceAgentRunning => 'Çalışıyor';
-
-  @override
-  String get presenceAgentBlocked => 'Engellendi';
-
-  @override
-  String get presenceAgentDone => 'Bitti';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

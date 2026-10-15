@@ -9643,25 +9643,8 @@ class AppLocalizationsTh extends AppLocalizations {
   String get presenceTyping => 'กำลังพิมพ์…';
 
   @override
-  String get presenceAgentThinking => 'กำลังคิด';
-
-  @override
-  String get presenceAgentRunning => 'กำลังรัน';
-
-  @override
-  String get presenceAgentBlocked => 'ถูกบล็อก';
-
-  @override
-  String get presenceAgentDone => 'เสร็จแล้ว';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

@@ -9424,25 +9424,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get presenceTyping => '正在输入…';
 
   @override
-  String get presenceAgentThinking => '思考中';
-
-  @override
-  String get presenceAgentRunning => '运行中';
-
-  @override
-  String get presenceAgentBlocked => '已阻塞';
-
-  @override
-  String get presenceAgentDone => '已完成';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status（$cost）';
   }
 
   @override
@@ -24868,25 +24851,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get presenceTyping => '輸入中…';
 
   @override
-  String get presenceAgentThinking => '思考中';
-
-  @override
-  String get presenceAgentRunning => '執行中';
-
-  @override
-  String get presenceAgentBlocked => '已封鎖';
-
-  @override
-  String get presenceAgentDone => '完成';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status（$cost）';
   }
 
   @override

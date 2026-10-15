@@ -9829,25 +9829,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get presenceTyping => 'Tastează…';
 
   @override
-  String get presenceAgentThinking => 'Se gândește';
-
-  @override
-  String get presenceAgentRunning => 'În rulare';
-
-  @override
-  String get presenceAgentBlocked => 'Blocat';
-
-  @override
-  String get presenceAgentDone => 'Gata';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

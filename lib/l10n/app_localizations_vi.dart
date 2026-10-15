@@ -9717,25 +9717,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get presenceTyping => 'Đang nhập…';
 
   @override
-  String get presenceAgentThinking => 'Đang nghĩ';
-
-  @override
-  String get presenceAgentRunning => 'Đang chạy';
-
-  @override
-  String get presenceAgentBlocked => 'Bị chặn';
-
-  @override
-  String get presenceAgentDone => 'Xong';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override

@@ -2,7 +2,7 @@
 title: Thuật ngữ
 description: Định nghĩa các thuật ngữ then chốt được dùng xuyên suốt Control Center.
 slug: vi-VN/so-tay/tham-chieu/thuat-ngu
-sourceHash: a332be529e9154b12c8ff0bf31ad0c9b4b06b724
+sourceHash: c523a04ff7657b47bab5685f5e5746b240fe3336
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -70,7 +70,7 @@ export const glossaryTerms = [
 ['WorkspaceMember', 'Một hàng tư cách thành viên gắn một Người dùng với một Không gian làm việc ở một WorkspaceRole. Tư cách thành viên — không phải khóa ghép nối — chính là ranh giới truy cập.'],
 ['WorkspaceRole', 'Vai trò thành viên phân bậc: owner, admin, member, viewer hoặc guest. Điểm chốt thao tác kho mã suy ra mức vai trò tối thiểu cho từng loại thao tác.'],
 ['ParticipantPresence', 'Thông tin hiện diện tạm thời cho một Principal (trạng thái, vị trí, con trỏ, đang gõ, trạng thái trực tiếp của agent và chi phí đang chạy). Không bao giờ được lưu bền; tập trung ở hub phía máy chủ; được lọc theo cấp quyền kho mã trước khi phân phát.'],
-['Chế độ theo dõi', 'Nhấp vào một avatar để bám theo khung nhìn của người đó cho đến khi bạn tự thao tác, rồi tách ra. Hoạt động với cả người và agent (“xem một agent làm việc”).'],
+['Chế độ theo dõi', 'Nhấp vào ảnh đại diện của người dùng khác để theo dõi khung nhìn của họ cho đến khi bạn điều hướng sang nơi khác. Không thể theo dõi agent.'],
 ['Nút tự chủ', 'Một điều khiển theo từng space, theo từng agent — propose-only / act-with-approval / act-freely — được hiện thực như một hồ sơ có tên trên kho rào chắn hành động.'],
 ['cc_worker', 'Một tệp nhị phân thực thi đội máy không giao diện, thuần Dart. Ghép nối với một cc_server, khai báo các năng lực của nó, kéo các công việc đã thuê, thực thi chúng và truyền sự kiện ngược về. Không giữ trạng thái bền vững nào.'],
 ['JobSpec', 'Đặc tả có kiểu cho mọi thứ có thể thực thi (lượt chạy agent, bước quy trình, chỉ mục mã, golden-render, benchmark, lô đánh giá): năng lực cần thiết, độ ưu tiên, ngân sách, không gian làm việc.'],
@@ -225,7 +225,7 @@ export const glossaryTerms = [
 
 **ParticipantPresence**: Thông tin hiện diện tạm thời cho một Principal (trạng thái, vị trí, con trỏ, đang gõ, trạng thái trực tiếp của agent và chi phí đang chạy). Không bao giờ được lưu bền; tập trung ở hub phía máy chủ; được lọc theo cấp quyền kho mã trước khi phân phát.
 
-**Chế độ theo dõi**: Nhấp vào một avatar để bám theo khung nhìn của người đó cho đến khi bạn tự thao tác, rồi tách ra. Hoạt động với cả người và agent (“xem một agent làm việc”).
+**Chế độ theo dõi**: Nhấp vào ảnh đại diện của người dùng khác để theo dõi khung nhìn của họ cho đến khi bạn điều hướng sang nơi khác. Không thể theo dõi agent.
 
 **Nút tự chủ**: Một điều khiển theo từng space, theo từng agent — `propose-only` / `act-with-approval` / `act-freely` — được hiện thực như một hồ sơ có tên trên kho rào chắn hành động.
 

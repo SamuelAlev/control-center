@@ -9731,25 +9731,8 @@ class AppLocalizationsNb extends AppLocalizations {
   String get presenceTyping => 'Skriver…';
 
   @override
-  String get presenceAgentThinking => 'Tenker';
-
-  @override
-  String get presenceAgentRunning => 'Kjører';
-
-  @override
-  String get presenceAgentBlocked => 'Blokkert';
-
-  @override
-  String get presenceAgentDone => 'Ferdig';
-
-  @override
   String presenceNameStatus(String name, String status) {
     return '$name — $status';
-  }
-
-  @override
-  String presenceNameStatusCost(String name, String status, String cost) {
-    return '$name — $status ($cost)';
   }
 
   @override
