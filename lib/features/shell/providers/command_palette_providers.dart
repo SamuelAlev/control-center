@@ -3,11 +3,14 @@ import 'package:control_center/core/infrastructure/audio/audio_output_settings.d
 import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/features/focus_mode/presentation/widgets/focus_config_dialog.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
+import 'package:control_center/features/messaging/providers/space_command_source.dart';
 import 'package:control_center/features/plan_studio/providers/playbook_command_source.dart';
 import 'package:control_center/features/pr_review/providers/pr_command_source.dart';
+import 'package:control_center/features/settings/providers/settings_command_source.dart';
 import 'package:control_center/features/soundscape/presentation/screens/soundscape_panel.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_command_source.dart';
 import 'package:control_center/features/user_profiles/providers/user_command_source.dart';
+import 'package:control_center/features/workspaces/presentation/widgets/show_add_workspace_dialog.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
@@ -17,7 +20,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
-
 
 /// Static source providing global navigation shortcuts.
 class _NavigationCommandSource implements CommandSource {
@@ -42,7 +44,6 @@ class _NavigationCommandSource implements CommandSource {
       CommandItem(
         id: 'inbox',
         label: l10n.inboxTitle,
-        shortcut: '⌘1',
         icon: AppIcons.inbox,
         category: l10n.categoryNavigation,
         onExecute: () => router.go(nav(inboxRoute)),
@@ -64,36 +65,76 @@ class _NavigationCommandSource implements CommandSource {
         },
       ),
       CommandItem(
-        id: 'pull-requests',
-        label: 'Go to pull requests',
-        shortcut: '\u23182',
-        icon: AppIcons.gitPullRequest,
+        id: 'spaces',
+        label: l10n.spaces,
+        icon: AppIcons.messagesSquare,
         category: l10n.categoryNavigation,
-        onExecute: () => router.go(nav(pullRequestsRoute)),
+        onExecute: () => router.go(nav(spacesRoute)),
       ),
       CommandItem(
-        id: 'agents',
-        label: 'Go to agents',
-        shortcut: '\u23183',
-        icon: AppIcons.bot,
+        id: 'calendar',
+        label: l10n.navCalendar,
+        icon: AppIcons.calendar,
         category: l10n.categoryNavigation,
-        onExecute: () => router.go(nav(settingsAgentsRoute)),
+        onExecute: () => router.go(nav(calendarRoute)),
+      ),
+      CommandItem(
+        id: 'meetings',
+        label: l10n.navMeetings,
+        icon: AppIcons.audioLines,
+        category: l10n.categoryNavigation,
+        onExecute: () => router.go(nav(meetingsRoute)),
+      ),
+      CommandItem(
+        id: 'pipelines',
+        label: l10n.pipelinesScreenTitle,
+        icon: AppIcons.workflow,
+        category: l10n.categoryNavigation,
+        onExecute: () => router.go(nav(pipelinesRoute)),
+      ),
+      CommandItem(
+        id: 'plans',
+        label: l10n.plansTitle,
+        icon: AppIcons.fileText,
+        category: l10n.categoryNavigation,
+        onExecute: () => router.go(nav(plansRoute)),
+      ),
+      CommandItem(
+        id: 'go-newsfeed',
+        label: l10n.newsfeed,
+        icon: AppIcons.newspaper,
+        category: l10n.categoryNavigation,
+        onExecute: () => router.go(nav(newsfeedRoute)),
+      ),
+      CommandItem(
+        id: 'observability',
+        label: l10n.navObservability,
+        icon: AppIcons.gauge,
+        category: l10n.categoryNavigation,
+        onExecute: () => router.go(nav(observabilityRoute)),
       ),
       CommandItem(
         id: 'workspaces',
-        label: 'Go to workspaces',
-        shortcut: '\u23184',
+        label: l10n.workspaces,
         icon: AppIcons.folder,
         category: l10n.categoryNavigation,
         onExecute: () => router.go(workspaceListRoute),
       ),
       CommandItem(
         id: 'new-workspace',
-        label: 'New workspace',
-        shortcut: '\u2318N',
+        label: l10n.keybindingNewWorkspace,
         icon: AppIcons.plus,
-        category: 'Workspace',
-        onExecute: () => router.go(workspaceListRoute),
+        category: l10n.workspaces,
+        onExecute: () async {
+          final ctx = rootNavigatorKey.currentContext;
+          if (ctx == null) {
+            return;
+          }
+          final id = await showAddWorkspaceDialog(ctx);
+          if (id != null) {
+            router.go(inboxRoute(id));
+          }
+        },
       ),
     ];
   }
@@ -103,7 +144,6 @@ class _NavigationCommandSource implements CommandSource {
 final navigationCommandSourceProvider = Provider<CommandSource>(
   (_) => _NavigationCommandSource(),
 );
-
 
 /// Static source providing view-related actions (theme toggle, settings).
 class _ViewCommandSource implements CommandSource {
@@ -188,7 +228,6 @@ final viewCommandSourceProvider = Provider<CommandSource>(
   (_) => _ViewCommandSource(),
 );
 
-
 /// Collects all registered [CommandSource] providers.
 ///
 /// Features register their sources by overriding this provider (or by adding
@@ -198,59 +237,19 @@ final commandSourcesProvider = Provider<List<CommandSource>>((ref) {
   return [
     ref.watch(navigationCommandSourceProvider),
     ref.watch(viewCommandSourceProvider),
+    ref.watch(spaceCommandSourceProvider),
+    ref.watch(settingsCommandSourceProvider),
     ref.watch(userCommandSourceProvider),
     ref.watch(prCommandSourceProvider),
     ref.watch(ticketingCommandSourceProvider),
-    ref.watch(agentActionCommandSourceProvider),
     ref.watch(playbookCommandSourceProvider),
   ];
 });
-
-
-class _AgentActionCommandSource implements CommandSource {
-  @override
-  String get id => 'agent-actions';
-  @override
-  String get category => 'Quick actions';
-  @override
-  bool get isDynamic => false;
-
-  @override
-  List<CommandItem> buildItems(BuildContext context, WidgetRef ref) {
-    final router = GoRouter.of(context);
-    final workspaceId = ref.read(activeWorkspaceIdProvider);
-    String nav(String Function(String) build) =>
-        workspaceId == null ? workspaceListRoute : build(workspaceId);
-
-    return [
-      CommandItem(
-        id: 'go-newsfeed',
-        label: 'Go to feed',
-        icon: AppIcons.rss,
-        category: 'Quick actions',
-        onExecute: () => router.go(nav(newsfeedRoute)),
-      ),
-      CommandItem(
-        id: 'go-agents',
-        label: 'Go to agents',
-        icon: AppIcons.users,
-        category: 'Agents',
-        onExecute: () => router.go(nav(settingsAgentsRoute)),
-      ),
-    ];
-  }
-}
-
-/// Provider for the agent-action command source.
-final agentActionCommandSourceProvider = Provider<CommandSource>(
-  (_) => _AgentActionCommandSource(),
-);
 
 // NOTE: there is intentionally no "keep palette data warm" helper. Pinning the
 // full PR list + workspace tickets for the app's lifetime just so the palette
 // opens pre-populated cost far more memory than the one-frame loading state it
 // saved; palette sources load on open.
-
 
 /// Build global commands by collecting items from all registered [CommandSource]s.
 List<CommandItem> buildGlobalCommands(BuildContext context, WidgetRef ref) {

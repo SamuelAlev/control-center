@@ -1,88 +1,92 @@
-import 'dart:async';
-
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/shell/providers/command_palette_providers.dart';
-import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/features/workspaces/presentation/widgets/add_workspace_form.dart';
+import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/command_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A simple fake [CommandSource] for testing.
-class FakeCommandSource implements CommandSource {
-  FakeCommandSource({
-    this.id = 'fake',
-    this.category = 'Fake',
-    this.isDynamic = false,
-    this.items = const [],
-  });
-
-  @override
-  final String id;
-  @override
-  final String category;
-  @override
-  final bool isDynamic;
-  final List<CommandItem> items;
-
-  @override
-  List<CommandItem> buildItems(BuildContext context, WidgetRef ref) => items;
-}
-
-CommandItem fakeItem(String id, String label) => CommandItem(
-  id: id,
-  label: label,
-  icon: AppIcons.star,
-  category: 'Fake',
-  onExecute: () {},
-);
+import '../../helpers/active_workspace.dart';
 
 void main() {
-  late AppPreferences prefs;
-  setUp(() async {
-    prefs = AppPreferences.inMemory();
+  Future<GoRouter> openPalette(
+    WidgetTester tester, {
+    String? workspaceId = 'w1',
+  }) async {
+    final router = GoRouter(
+      navigatorKey: rootNavigatorKey,
+      initialLocation: workspaceId == null
+          ? workspaceListRoute
+          : inboxRoute(workspaceId),
+      routes: [
+        GoRoute(
+          path: workspaceListRoute,
+          builder: (_, _) => const Text('Workspace picker'),
+        ),
+        GoRoute(
+          path: '/workspaces/:workspaceId/:surface',
+          builder: (_, _) => const Text('Workspace surface'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appPreferencesProvider.overrideWithValue(AppPreferences.inMemory()),
+          codeFontFamilyProvider.overrideWithValue('Fira Code'),
+          activeWorkspaceIdOverride(workspaceId),
+          commandSourcesProvider.overrideWith(
+            (ref) => [ref.watch(navigationCommandSourceProvider)],
+          ),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) =>
+              CcTheme(data: CcThemeData.light(), child: child!),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    showCommandPalette(rootNavigatorKey.currentContext!, buildGlobalCommands);
+    await tester.pumpAndSettle();
+    return router;
+  }
+
+  testWidgets('new workspace opens the creation form instead of the picker', (
+    tester,
+  ) async {
+    final router = await openPalette(tester);
+    await tester.enterText(find.byType(EditableText), 'New workspace');
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AddWorkspaceForm), findsOneWidget);
+    expect(router.routeInformationProvider.value.uri.path, inboxRoute('w1'));
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AddWorkspaceForm), findsNothing);
   });
 
-  group('buildGlobalCommands with sources', () {
-    testWidgets('collects items from all sources via Consumer widget', (
-      tester,
-    ) async {
-      final completer = Completer<List<CommandItem>>();
+  testWidgets('spaces without a workspace returns to the workspace picker', (
+    tester,
+  ) async {
+    final router = await openPalette(tester, workspaceId: null);
+    await tester.enterText(find.byType(EditableText), 'Spaces');
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appPreferencesProvider.overrideWithValue(prefs),
-            commandSourcesProvider.overrideWith(
-              (ref) => [
-                FakeCommandSource(
-                  id: 'src-a',
-                  category: 'A',
-                  items: [fakeItem('a1', 'Item A1')],
-                ),
-                FakeCommandSource(
-                  id: 'src-b',
-                  category: 'B',
-                  items: [fakeItem('b1', 'Item B1')],
-                ),
-              ],
-            ),
-          ],
-          child: MaterialApp(
-            home: Consumer(
-              builder: (context, ref, _) {
-                final items = buildGlobalCommands(context, ref);
-                completer.complete(items);
-                return const SizedBox();
-              },
-            ),
-          ),
-        ),
-      );
-
-      final items = await completer.future;
-      expect(items, hasLength(2));
-      expect(items.map((i) => i.id), containsAll(['a1', 'b1']));
-    });
+    expect(find.text('Workspace picker'), findsOneWidget);
+    expect(router.routeInformationProvider.value.uri.path, workspaceListRoute);
+    expect(find.byType(EditableText), findsNothing);
   });
 }
