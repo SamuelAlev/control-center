@@ -189,6 +189,7 @@ done
 for f in "$APP/Contents/Resources/cc_server/bin/media/ffmpeg" \
          "$APP/Contents/Resources/cc_server/bin/media/ffprobe" \
          "$APP/Contents/Resources/cc_server/bin/media/cc_pdf_render" \
+         "$APP/Contents/Resources/cc_server/bin/media/cc_svg_render" \
          "$APP/Contents/Resources/cc_server/bin/media/libpdfium.dylib"; do
   echo "  sign cc_server/bin/media/$(basename "$f")"; sign "$f"
 done
