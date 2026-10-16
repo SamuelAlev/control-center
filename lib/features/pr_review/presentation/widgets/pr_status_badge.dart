@@ -6,19 +6,13 @@ import 'package:flutter/widgets.dart';
 
 /// Resolves the status icon + colour for a PR. Shared between [PrStatusBadge]
 /// and [PrStatusIcon] so the two stay in sync.
+/// Terminal lifecycle states take precedence over a retained draft flag.
 ({IconData icon, Color color, String label}) prStatusIconData(
   PullRequest pr,
   BuildContext context,
 ) {
   final tokens = context.designSystem;
-  if (pr.isDraft) {
-    return (
-      icon: AppIcons.gitPullRequestDraft,
-      color: tokens?.textTertiary ?? const Color(0xFF6B7280),
-      label: AppLocalizations.of(context).draft,
-    );
-  }
-  if (pr.mergedAt != null) {
+  if (pr.isMerged || pr.mergedAt != null) {
     return (
       icon: AppIcons.gitMerge,
       color: tokens?.fgMergedPrimary ?? const Color(0xFF8957E5),
@@ -30,6 +24,13 @@ import 'package:flutter/widgets.dart';
       icon: AppIcons.gitPullRequestClosed,
       color: tokens?.fgErrorPrimary ?? const Color(0xFFCF222E),
       label: AppLocalizations.of(context).closed,
+    );
+  }
+  if (pr.isDraft) {
+    return (
+      icon: AppIcons.gitPullRequestDraft,
+      color: tokens?.textTertiary ?? const Color(0xFF6B7280),
+      label: AppLocalizations.of(context).draft,
     );
   }
   return (
@@ -83,12 +84,12 @@ class PrStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = prStatusIconData(pr, context);
-    final variant = pr.isDraft
-        ? CcBadgeVariant.neutral
-        : pr.mergedAt != null
+    final variant = pr.isMerged || pr.mergedAt != null
         ? CcBadgeVariant.brand
         : !pr.isOpen
         ? CcBadgeVariant.danger
+        : pr.isDraft
+        ? CcBadgeVariant.neutral
         : CcBadgeVariant.success;
     return CcBadge(label: data.label, variant: variant);
   }

@@ -106,14 +106,14 @@ class PrCommandSource implements CommandSource {
   }
 
   IconData _iconForState(PullRequest pr) {
-    if (pr.isDraft) {
-      return AppIcons.filePen;
-    }
     if (pr.isMerged) {
       return AppIcons.gitMerge;
     }
     if (pr.isClosed) {
       return AppIcons.gitPullRequestClosed;
+    }
+    if (pr.isDraft) {
+      return AppIcons.filePen;
     }
     return AppIcons.gitPullRequestArrow;
   }

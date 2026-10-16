@@ -7,6 +7,7 @@ import 'package:control_center/bootstrap/thin_client_boot.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/server/auth_providers.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
+import 'package:control_center/core/server/server_discovery.dart';
 import 'package:control_center/core/server/server_pairing.dart';
 import 'package:control_center/core/server/sso_login.dart';
 import 'package:control_center/core/server/sso_pair_link.dart';
@@ -276,7 +277,7 @@ Future<ServerBackend> showServerSetup(
   runServerSetupWindow(
     ProviderScope(
       child: DesktopUpdateLifecycle(
-        child: _ServerSetupApp(
+        child: ServerSetupApp(
           store: store,
           initialError: error,
           previousSessionClosed: previousSessionClosed,
@@ -292,18 +293,31 @@ Future<ServerBackend> showServerSetup(
 /// app boots. Themed by [CcTheme] off the OS appearance and localized via the
 /// app's l10n delegates. Its isolated provider scope runs only the updater;
 /// no authenticated providers or database are mounted before server admission.
-class _ServerSetupApp extends StatelessWidget {
-  const _ServerSetupApp({
+class ServerSetupApp extends StatelessWidget {
+  /// Creates the standalone setup surface, independent of native window hosting.
+  const ServerSetupApp({
+    super.key,
     required this.store,
     required this.initialError,
     required this.previousSessionClosed,
     required this.onResolved,
+    this.discovery = const ServerDiscovery(),
   });
 
+  /// Saved server choices and device credentials.
   final ServerConnectionStore store;
+
+  /// The failed boot attempt that brought the user back to setup.
   final Object? initialError;
+
+  /// Completes when the previous session has released its local server.
   final Future<void>? previousSessionClosed;
+
+  /// Adopts the backend after a successful connection.
   final ValueChanged<ServerBackend> onResolved;
+
+  /// Server discovery, shared with the URL field's discovery control.
+  final ServerDiscovery discovery;
 
   @override
   Widget build(BuildContext context) {
@@ -321,6 +335,7 @@ class _ServerSetupApp extends StatelessWidget {
             initialError: initialError,
             previousSessionClosed: previousSessionClosed,
             onResolved: onResolved,
+            discovery: discovery,
           );
           return WidgetsApp(
             debugShowCheckedModeBanner: false,
@@ -363,6 +378,7 @@ class _ServerSetupScreen extends StatefulWidget {
     required this.initialError,
     required this.previousSessionClosed,
     required this.onResolved,
+    required this.discovery,
   });
 
   final ServerConnectionStore store;
@@ -372,6 +388,7 @@ class _ServerSetupScreen extends StatefulWidget {
   /// on boot, where there was none). Gates the local spawn.
   final Future<void>? previousSessionClosed;
   final ValueChanged<ServerBackend> onResolved;
+  final ServerDiscovery discovery;
 
   @override
   State<_ServerSetupScreen> createState() => _ServerSetupScreenState();
@@ -446,7 +463,13 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
   /// only ever appear after the user edited an address that was already
   /// correct.
   void _selectMode(ServerConnectionMode mode) {
-    setState(() => _mode = mode);
+    if (mode == _mode) {
+      return;
+    }
+    setState(() {
+      _mode = mode;
+      _error = null;
+    });
     _scheduleSsoProbe();
   }
 
@@ -700,6 +723,7 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
                       // button badges the found count, the dialog lists the
                       // servers and a pick fills this field.
                       suffix: ServerDiscoveryButton(
+                        discovery: widget.discovery,
                         onSelected: (server) =>
                             setState(() => _url.text = server.rpcUrl),
                       ),

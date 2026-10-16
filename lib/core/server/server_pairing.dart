@@ -113,9 +113,11 @@ Future<RemoteServerConnection> connectToEntry({
   }
 }
 
-/// Pairs this client with a server and persists the entry. Two shapes:
+/// Connects this client with a server and remembers successful pairings:
 ///  * [inviteCode] non-empty → redeem it at the server named by [rawUrl]
 ///    (JIT user + device credential + descriptor).
+///  * no invite or [psk] → reuse the saved device, key and identity pin when
+///    [rawUrl] matches exactly one saved RPC endpoint.
 ///  * otherwise → manual credentials: probe the URL's identity, then connect
 ///    with [deviceId] + [psk].
 /// Returns the connected handle; the entry is stored only after a
@@ -131,6 +133,34 @@ Future<RemoteServerConnection> pairWithServer({
   ServerEntry entry;
   String effectivePsk;
   final previousEntries = store.readEntries();
+  if (inviteCode.trim().isEmpty && psk.trim().isEmpty) {
+    final normalized = normalizeServerUrl(rawUrl);
+    final saved = normalized == null
+        ? null
+        : previousEntries.where((entry) {
+            return entry.descriptor.paths.any((path) {
+              final uri = path.rpcUri;
+              return uri != null &&
+                  normalizeServerUrl(uri.toString()) == normalized;
+            });
+          }).singleOrNull;
+    if (saved != null) {
+      final savedPsk = await store.readPsk(saved.serverId);
+      if (savedPsk == null || savedPsk.isEmpty) {
+        throw StateError(
+          'No pairing key is stored for ${saved.name}. Pair with it again.',
+        );
+      }
+      final connection = await connectToEntry(
+        store: store,
+        entry: saved,
+        psk: savedPsk,
+      );
+      await store.setMode(ServerConnectionMode.remote);
+      await store.setActiveServer(saved.serverId);
+      return connection;
+    }
+  }
   if (inviteCode.trim().isNotEmpty) {
     final normalized = normalizeServerUrl(rawUrl);
     if (normalized == null) {

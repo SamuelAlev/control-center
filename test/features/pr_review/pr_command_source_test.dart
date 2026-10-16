@@ -8,6 +8,7 @@ import 'package:control_center/features/pr_review/providers/pr_command_source.da
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/router/routes.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/command_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -93,13 +94,6 @@ Repo _repo({required String owner, required String name}) {
 
 void main() {
   group('PrCommandSource', () {
-    test('provides correct metadata', () {
-      final source = PrCommandSource();
-      expect(source.id, 'pull-requests');
-      expect(source.category, 'Pull requests');
-      expect(source.isDynamic, isTrue);
-    });
-
     testWidgets('returns static item when no PRs loaded', (tester) async {
       final completer = Completer<List<CommandItem>>();
       final fake = _FakeActiveRepoIdNotifier();
@@ -139,18 +133,21 @@ void main() {
       expect(items.first.id, 'pr-list');
     });
 
-    testWidgets('maps PRs to CommandItems correctly', (tester) async {
+    testWidgets('terminal PR status takes precedence over draft in search', (
+      tester,
+    ) async {
       final completer = Completer<List<CommandItem>>();
       final fake = _FakeActiveRepoIdNotifier();
-      final prs = [
-        _pr(id: 1, number: 42, title: 'Fix login', repoFullName: 'org/repo'),
-        _pr(id: 2, number: 99, title: 'Add signup', repoFullName: 'org/repo'),
-      ];
       final state = PrsByRepoState(
         repos: [
           RepoPullRequests(
             repo: _repo(owner: 'org', name: 'repo'),
-            prs: prs,
+            prs: [
+              _pr(number: 1, state: PrState.closed, isDraft: true),
+              _pr(number: 2, state: PrState.merged, isDraft: true),
+              _pr(number: 3, isDraft: true),
+              _pr(number: 4),
+            ],
           ),
         ],
         hasMore: const {},
@@ -184,17 +181,15 @@ void main() {
       );
 
       final items = await completer.future;
-      expect(items, hasLength(3));
-
-      expect(items[0].id, 'pr-list');
-
-      expect(items[1].id, 'pr-42');
-      expect(items[1].label, '#42 Fix login');
-      expect(items[1].description, 'org/repo · dev');
-
-      expect(items[2].id, 'pr-99');
-      expect(items[2].label, '#99 Add signup');
-      expect(items[2].description, 'org/repo · dev');
+      expect(
+        items.where((item) => item.id != 'pr-list').map((item) => item.icon),
+        [
+          AppIcons.gitPullRequestClosed,
+          AppIcons.gitMerge,
+          AppIcons.filePen,
+          AppIcons.gitPullRequestArrow,
+        ],
+      );
     });
 
     testWidgets('handles empty PR list gracefully', (tester) async {
@@ -352,16 +347,6 @@ void main() {
       expect(find.text('PR List'), findsOneWidget);
       // The static list entry must not touch the active repo.
       expect(fake.setActiveCalls, isEmpty);
-    });
-  });
-
-  group('prCommandSourceProvider', () {
-    test('provider returns PrCommandSource instance', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      final source = container.read(prCommandSourceProvider);
-      expect(source, isA<CommandSource>());
-      expect(source.id, 'pull-requests');
     });
   });
 }

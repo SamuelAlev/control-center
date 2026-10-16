@@ -193,13 +193,6 @@ class _LoadedContent extends StatelessWidget {
 ) {
   final l10n = AppLocalizations.of(context);
   final tokens = context.designSystem;
-  if (preview.isDraft) {
-    return (
-      icon: AppIcons.gitPullRequestDraft,
-      color: tokens?.textTertiary ?? const Color(0xFF656D76),
-      label: l10n.draft,
-    );
-  }
   if (preview.isMerged) {
     return (
       icon: AppIcons.gitMerge,
@@ -212,6 +205,13 @@ class _LoadedContent extends StatelessWidget {
       icon: AppIcons.gitPullRequestClosed,
       color: tokens?.fgErrorPrimary ?? const Color(0xFFCF222E),
       label: l10n.closed,
+    );
+  }
+  if (preview.isDraft) {
+    return (
+      icon: AppIcons.gitPullRequestDraft,
+      color: tokens?.textTertiary ?? const Color(0xFF656D76),
+      label: l10n.draft,
     );
   }
   return (
