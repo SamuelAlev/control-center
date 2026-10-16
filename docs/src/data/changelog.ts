@@ -28,6 +28,40 @@ export interface Release {
 // Newest first.
 export const releases: Release[] = [
   {
+    id: "v0-0-10",
+    version: "v0.0.10",
+    date: "Oct 16, 2026",
+    isoDate: "2026-10-16",
+    tag: "Patch release",
+    title: "Restore conversations and see server progress",
+    lead: "Browse and restore archived conversations, choose your language before signing in and track server startup and model downloads. This update also fixes macOS startup and reconnecting to saved servers.",
+    latest: true,
+    changes: [
+      {
+        type: "new",
+        items: [
+          "Browse archived conversations in a space and restore them directly into an active tab.",
+          "Choose your language from the login and onboarding screens without opening settings.",
+          "A floating activity panel shows server startup, connection progress and model downloads, with error details and retry actions where available.",
+        ],
+      },
+      {
+        type: "improved",
+        items: [
+          "Desktop update checks now run on login and server setup screens as well as inside the app.",
+        ],
+      },
+      {
+        type: "fixed",
+        items: [
+          "Fixed a macOS startup crash and unintended exits when replacing the setup window or switching servers.",
+          "Reconnect to a saved server using its stored device credentials without entering a new pairing code.",
+          "Closed and merged pull requests show their final status even when they retain a draft flag.",
+        ],
+      },
+    ],
+  },
+  {
     id: "v0-0-9",
     version: "v0.0.9",
     date: "Oct 16, 2026",
@@ -35,7 +69,6 @@ export const releases: Release[] = [
     tag: "Patch release",
     title: "Faster space switching and clearer approvals",
     lead: "This update expands the command palette, keeps space editors warm and improves conversation rendering. It also fixes Claude Code token refresh and commit authorship.",
-    latest: true,
     changes: [
       {
         type: "improved",
