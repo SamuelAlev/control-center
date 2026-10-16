@@ -30,6 +30,87 @@ void main() {
             .trim(),
   };
 
+  group('FFmpeg release pin', () {
+    final release = values['FFMPEG_MEDIA_BTBN_RELEASE']!;
+
+    test('reaches the October 31 baseline by November 1 UTC', () {
+      expect(
+        _ffmpegMeetsBaseline(release, DateTime.now().toUtc()),
+        isTrue,
+        reason:
+            'From 2026-11-01 00:00 UTC, FFmpeg must use the 2026-10-31 '
+            'BtbN build or a newer month-end build. Update the release, build, '
+            'publisher checksums and recipe/source commits together; '
+            'do not extend the deadline. Current pin: $release',
+      );
+    });
+
+    test('uses a retained month-end build', () {
+      expect(
+        _ffmpegUsesMonthEndBuild(release, DateTime.now().toUtc()),
+        isTrue,
+        reason:
+            'BtbN retains month-end builds for two years. Only '
+            '$_temporaryFfmpegRelease is allowed as a daily workaround, '
+            'and only through 2026-10-31 UTC. Current pin: $release',
+      );
+    });
+
+    test('expires the daily workaround at the UTC deadline', () {
+      final before = DateTime.utc(2026, 10, 31, 23, 59, 59, 999, 999);
+      final deadline = DateTime.utc(2026, 11, 1);
+      expect(_ffmpegMeetsBaseline(_temporaryFfmpegRelease, before), isTrue);
+      expect(_ffmpegUsesMonthEndBuild(_temporaryFfmpegRelease, before), isTrue);
+      expect(_ffmpegMeetsBaseline(_temporaryFfmpegRelease, deadline), isFalse);
+      expect(
+        _ffmpegUsesMonthEndBuild(_temporaryFfmpegRelease, deadline),
+        isFalse,
+      );
+      const retainedRelease = 'autobuild-2026-10-31-13-03';
+      expect(_ffmpegMeetsBaseline(retainedRelease, deadline), isTrue);
+      expect(_ffmpegUsesMonthEndBuild(retainedRelease, deadline), isTrue);
+    });
+
+    test('rejects an older month-end baseline after the deadline', () {
+      expect(
+        _ffmpegMeetsBaseline(
+          'autobuild-2026-09-30-13-08',
+          DateTime.utc(2026, 11, 1),
+        ),
+        isFalse,
+      );
+    });
+
+    test('recognizes calendar month ends including leap years', () {
+      final now = DateTime.utc(2026, 11, 1);
+      for (final (release, retained) in [
+        ('autobuild-2026-11-30-13-03', true),
+        ('autobuild-2026-12-31-13-03', true),
+        ('autobuild-2027-02-28-13-03', true),
+        ('autobuild-2028-02-29-13-03', true),
+        ('autobuild-2026-10-30-13-03', false),
+        ('autobuild-2026-11-29-13-03', false),
+        ('autobuild-2028-02-28-13-03', false),
+      ]) {
+        expect(
+          _ffmpegUsesMonthEndBuild(release, now),
+          retained,
+          reason: release,
+        );
+      }
+    });
+
+    test('does not extend the exception to another daily build', () {
+      expect(
+        _ffmpegUsesMonthEndBuild(
+          'autobuild-2026-10-16-13-03',
+          DateTime.utc(2026, 10, 16),
+        ),
+        isFalse,
+      );
+    });
+  });
+
   test('the pin file parses into plain KEY=value pairs', () {
     // The format is deliberately dumb so bash can source it and Renovate can
     // regex it. A quoted value or a shell expansion would break one or both.
@@ -243,4 +324,36 @@ void main() {
           'bump the pin and the patch together',
     );
   });
+}
+
+const _temporaryFfmpegRelease = 'autobuild-2026-10-15-13-03';
+final _ffmpegBaseline = DateTime.utc(2026, 10, 31);
+final _ffmpegDailyDeadline = DateTime.utc(2026, 11, 1);
+
+bool _ffmpegMeetsBaseline(String release, DateTime now) =>
+    now.toUtc().isBefore(_ffmpegDailyDeadline) ||
+    !_btbnReleaseDate(release).isBefore(_ffmpegBaseline);
+
+bool _ffmpegUsesMonthEndBuild(String release, DateTime now) {
+  final date = _btbnReleaseDate(release);
+  return date.day == DateTime.utc(date.year, date.month + 1, 0).day ||
+      (release == _temporaryFfmpegRelease &&
+          now.toUtc().isBefore(_ffmpegDailyDeadline));
+}
+
+DateTime _btbnReleaseDate(String release) {
+  final match = RegExp(
+    r'^autobuild-(\d{4})-(\d{2})-(\d{2})-\d{2}-\d{2}$',
+  ).firstMatch(release);
+  if (match == null) {
+    throw FormatException('Expected autobuild-YYYY-MM-DD-HH-MM', release);
+  }
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3)!);
+  final date = DateTime.utc(year, month, day);
+  if (date.year != year || date.month != month || date.day != day) {
+    throw FormatException('Invalid BtbN release date', release);
+  }
+  return date;
 }

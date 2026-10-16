@@ -286,7 +286,7 @@ fi
       "$ZLIB_MEDIA_VERSION"
     printf 'The publisher ZIPs contain executables only; GPLv3 and FFmpeg notices here come from the checksum-pinned upstream source archive.\n'
   else
-    printf 'Publisher retained release: https://github.com/BtbN/FFmpeg-Builds/releases/tag/%s\n' \
+    printf 'Publisher release: https://github.com/BtbN/FFmpeg-Builds/releases/tag/%s\n' \
       "$FFMPEG_MEDIA_BTBN_RELEASE"
     printf 'Publisher build recipe: https://github.com/BtbN/FFmpeg-Builds/tree/%s\n' \
       "$FFMPEG_MEDIA_BTBN_RECIPE_COMMIT"
