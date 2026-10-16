@@ -212,18 +212,24 @@ bash scripts/release/builtin_credentials.sh restore
 
 ## Crash symbols and source maps
 
+Desktop release builds report to Sentry organization `use-ctrl`, project
+`control-center-app`, using the DSN in
+`lib/core/observability/sentry_bootstrap.dart`. Debug/profile builds and users
+who disable diagnostics do not initialize Sentry.
+
 `scripts/release/sentry_upload.sh` uses the checksum-pinned official `sentry-cli`
 from `scripts/lib/native_pins.env`. Desktop release jobs invoke it after the
 Flutter build and before packaging. It derives the release identity from the
 built artifact, uploads native debug files, and accepts `--split-debug-info`
 for Dart symbol files. Source-bundle uploads are not enabled.
 
-Configure the repository's `SENTRY_AUTH_TOKEN` Actions secret to upload to
-organization `parced`, project `control-center`. Pass the token through the
-environment, never command-line arguments or committed files. CI explicitly
-allows missing credentials: it emits a warning and uploads nothing. With a token
-configured, an upload failure fails the build. Direct script invocations require
-credentials unless `--allow-missing-credentials` is supplied.
+The repository's `SENTRY_AUTH_TOKEN` Actions secret must authorize uploads to
+organization `use-ctrl`, project `control-center-app` (the uploader defaults).
+Pass the token through the environment, never command-line arguments or
+committed files. CI explicitly allows missing credentials: it emits a warning
+and uploads nothing. With a token configured, an upload failure fails the build.
+Direct script invocations require credentials unless
+`--allow-missing-credentials` is supplied.
 
 Web source maps are supported by `--platform web --web-dir build/web`; this
 injects matching debug IDs into JavaScript/maps before uploading. The current

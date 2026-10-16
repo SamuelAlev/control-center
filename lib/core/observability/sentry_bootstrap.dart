@@ -5,9 +5,9 @@ import 'package:flutter/widgets.dart';
 import 'package:nativeapi_flutter/nativeapi_flutter.dart' show Preferences;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-/// Sentry DSN for the Control Center project.
+/// Sentry DSN for use-ctrl/control-center-app.
 const String _sentryDsn =
-    'https://099ea742dcbae8ef6c31cad7a89b3a53@o4510620405530624.ingest.de.sentry.io/4511531427561552';
+    'https://b0c35d16e275dc80c9bb05052f1dda03@o4512268058165248.ingest.de.sentry.io/4512268061507664';
 
 /// Whether crash reporting is active this run (release build + user opted in).
 ///

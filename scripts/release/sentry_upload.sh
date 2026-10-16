@@ -24,7 +24,7 @@
 #
 # CREDENTIALS
 # SENTRY_AUTH_TOKEN is handed to sentry-cli through the environment only, never
-# argv. SENTRY_ORG / SENTRY_PROJECT default to parced / control-center.
+# argv. SENTRY_ORG / SENTRY_PROJECT default to use-ctrl / control-center-app.
 # SENTRY_URL is honored by sentry-cli for self-hosted or regional installs.
 #
 # RELEASE / DIST
@@ -167,8 +167,8 @@ require_python3() {
   fi
 }
 
-SENTRY_ORG="${SENTRY_ORG:-parced}"
-SENTRY_PROJECT="${SENTRY_PROJECT:-control-center}"
+SENTRY_ORG="${SENTRY_ORG:-use-ctrl}"
+SENTRY_PROJECT="${SENTRY_PROJECT:-control-center-app}"
 
 # ---------------------------------------------------------------------------
 # sentry-cli: the pinned upstream binary
