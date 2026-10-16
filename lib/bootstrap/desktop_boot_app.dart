@@ -1,6 +1,8 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/foreground_ticker_gate.dart';
+import 'package:control_center/shared/widgets/server_activity_overlay.dart'
+    show ServerStartupIndicator;
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
@@ -38,25 +40,27 @@ class DesktopBootApp extends StatelessWidget {
           ),
           builder: (context, _) {
             final loading = AppLocalizations.of(context).loadingEllipsis;
-            return ColoredBox(
-              color: theme.tokens.bgPrimary,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(_productName),
-                      const SizedBox(height: 16),
-                      CcSpinner(semanticLabel: loading),
-                      const SizedBox(height: 12),
-                      ExcludeSemantics(
-                        child: Text(
-                          loading,
-                          style: TextStyle(color: theme.tokens.textSecondary),
+            return ServerStartupIndicator(
+              child: ColoredBox(
+                color: theme.tokens.bgPrimary,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(_productName),
+                        const SizedBox(height: 16),
+                        CcSpinner(semanticLabel: loading),
+                        const SizedBox(height: 12),
+                        ExcludeSemantics(
+                          child: Text(
+                            loading,
+                            style: TextStyle(color: theme.tokens.textSecondary),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

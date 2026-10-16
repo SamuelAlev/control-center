@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -25,7 +23,6 @@ Future<void> showDeviceCodeDialog(
   BuildContext context, {
   required String providerName,
   required SignInDeviceCode prompt,
-  required Future<bool> Function() connected,
 }) => showCcDialog<void>(
   context: context,
   barrierDismissible: false,
@@ -34,33 +31,23 @@ Future<void> showDeviceCodeDialog(
       const SingleActivator(LogicalKeyboardKey.escape): () =>
           Navigator.of(dialogContext).maybePop(),
     },
-    child: _DeviceCodeDialog(
-      providerName: providerName,
-      prompt: prompt,
-      connected: connected,
-    ),
+    child: _DeviceCodeDialog(providerName: providerName, prompt: prompt),
   ),
 );
 
 class _DeviceCodeDialog extends StatefulWidget {
-  const _DeviceCodeDialog({
-    required this.providerName,
-    required this.prompt,
-    required this.connected,
-  });
+  const _DeviceCodeDialog({required this.providerName, required this.prompt});
 
   final String providerName;
   final SignInDeviceCode prompt;
-  final Future<bool> Function() connected;
 
   @override
   State<_DeviceCodeDialog> createState() => _DeviceCodeDialogState();
 }
 
 class _DeviceCodeDialogState extends State<_DeviceCodeDialog> {
-  bool _done = false;
-  bool _checking = false;
-  Timer? _poll;
+  bool _waiting = true;
+  String? _error;
 
   @override
   void initState() {
@@ -83,45 +70,24 @@ class _DeviceCodeDialogState extends State<_DeviceCodeDialog> {
     _watch();
   }
 
-  @override
-  void dispose() {
-    _poll?.cancel();
-    super.dispose();
-  }
-
   Future<void> _watch() async {
-    // "Sign in again" is already connected. The first poll would match that
-    // existing row and close this before the new code can be read. Stay up;
-    // the server still stores the new credential when the browser flow ends.
-    final alreadyConnected = await widget.connected();
-    if (!mounted || alreadyConnected) {
-      return;
-    }
-    final deadline = DateTime.now().add(kSignInTimeout);
-    _poll = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (DateTime.now().isAfter(deadline)) {
-        _poll?.cancel();
-        return;
-      }
-      unawaited(_check());
-    });
-  }
-
-  Future<void> _check() async {
-    if (_checking || !mounted) {
-      return;
-    }
-    _checking = true;
     try {
-      final ok = await widget.connected();
-      if (!mounted || !ok) {
+      final completed = await widget.prompt.completion;
+      if (!mounted) {
         return;
       }
-      _poll?.cancel();
-      setState(() => _done = true);
-      Navigator.of(context).maybePop();
-    } finally {
-      _checking = false;
+      if (completed) {
+        Navigator.of(context).maybePop();
+      } else {
+        setState(() => _waiting = false);
+      }
+    } on Object catch (error) {
+      if (mounted) {
+        setState(() {
+          _waiting = false;
+          _error = '$error';
+        });
+      }
     }
   }
 
@@ -168,11 +134,17 @@ class _DeviceCodeDialogState extends State<_DeviceCodeDialog> {
           const SizedBox(height: 16),
           Row(
             children: [
-              const CcSpinner(size: 14),
-              const SizedBox(width: 10),
+              if (_waiting) ...[
+                const CcSpinner(size: 14),
+                const SizedBox(width: 10),
+              ],
               Expanded(
                 child: Text(
-                  _done ? l10n.signedIn : l10n.deviceCodeWaiting,
+                  _error != null
+                      ? l10n.failedWithError(_error!)
+                      : _waiting
+                      ? l10n.deviceCodeWaiting
+                      : l10n.signInNotFinished,
                   style: CcTypography.caption.copyWith(
                     color: tokens?.textTertiary,
                   ),

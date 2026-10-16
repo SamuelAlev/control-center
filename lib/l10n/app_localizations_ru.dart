@@ -1008,6 +1008,36 @@ class AppLocalizationsRu extends AppLocalizations {
   String get serverSetupErrorDetails => 'Технические сведения';
 
   @override
+  String get serverActivityTitle => 'Активность сервера';
+
+  @override
+  String get serverActivityStarting => 'Запуск локального сервера…';
+
+  @override
+  String get serverActivityConnecting => 'Подключение к серверу…';
+
+  @override
+  String get serverActivityStartFailed => 'Не удалось запустить сервер';
+
+  @override
+  String get serverActivityDownloadFailed => 'Не удалось скачать';
+
+  @override
+  String get serverActivityStatusUnavailable =>
+      'Не удалось получить состояние модели';
+
+  @override
+  String get serverActivityPreparingModel => 'Подготовка модели…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'Порт сервера уже занят. Остановите другой процесс или выберите другой порт на сервере.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Проверьте технические сведения и повторите попытку в настройке сервера.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14186,6 +14216,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Восстановить';
+
+  @override
+  String get archivedConversations => 'Архивные беседы';
+
+  @override
+  String get archivedConversationsEmpty => 'Нет архивных бесед';
+
+  @override
+  String get restoreConversation => 'Восстановить';
 
   @override
   String archivedWhen(String time) {

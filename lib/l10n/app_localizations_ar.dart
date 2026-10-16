@@ -1002,6 +1002,35 @@ class AppLocalizationsAr extends AppLocalizations {
   String get serverSetupErrorDetails => 'التفاصيل التقنية';
 
   @override
+  String get serverActivityTitle => 'نشاط الخادم';
+
+  @override
+  String get serverActivityStarting => 'جارٍ بدء تشغيل الخادم المحلي…';
+
+  @override
+  String get serverActivityConnecting => 'جارٍ الاتصال بالخادم…';
+
+  @override
+  String get serverActivityStartFailed => 'تعذّر بدء تشغيل الخادم';
+
+  @override
+  String get serverActivityDownloadFailed => 'فشل التنزيل';
+
+  @override
+  String get serverActivityStatusUnavailable => 'تعذّرت قراءة حالة النموذج';
+
+  @override
+  String get serverActivityPreparingModel => 'جارٍ إعداد النموذج…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'منفذ الخادم قيد الاستخدام بالفعل. أوقف العملية الأخرى أو اختر منفذًا مختلفًا على الخادم.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'تحقّق من التفاصيل التقنية، ثم حاول مرة أخرى من إعداد الخادم.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14214,6 +14243,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get restoreSpace => 'استعادة';
+
+  @override
+  String get archivedConversations => 'المحادثات المؤرشفة';
+
+  @override
+  String get archivedConversationsEmpty => 'لا محادثات مؤرشفة';
+
+  @override
+  String get restoreConversation => 'استعادة';
 
   @override
   String archivedWhen(String time) {

@@ -47,6 +47,15 @@ void main() {
       );
     });
 
+    test('closed wins over a retained draft flag', () {
+      expect(
+        PrSidebarStatus.fromPullRequest(
+          _pr(state: PrState.closed, isDraft: true),
+        ),
+        PrSidebarStatus.closed,
+      );
+    });
+
     test('merged → merged', () {
       expect(
         PrSidebarStatus.fromPullRequest(_pr(state: PrState.merged)),

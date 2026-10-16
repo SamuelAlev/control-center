@@ -991,6 +991,35 @@ class AppLocalizationsHe extends AppLocalizations {
   String get serverSetupErrorDetails => 'פרטים טכניים';
 
   @override
+  String get serverActivityTitle => 'פעילות השרת';
+
+  @override
+  String get serverActivityStarting => 'מפעיל את השרת המקומי…';
+
+  @override
+  String get serverActivityConnecting => 'מתחבר לשרת…';
+
+  @override
+  String get serverActivityStartFailed => 'לא ניתן להפעיל את השרת';
+
+  @override
+  String get serverActivityDownloadFailed => 'ההורדה נכשלה';
+
+  @override
+  String get serverActivityStatusUnavailable => 'לא ניתן לקרוא את מצב המודל';
+
+  @override
+  String get serverActivityPreparingModel => 'מכין את המודל…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'יציאת השרת כבר נמצאת בשימוש. עצור את התהליך האחר או בחר יציאה אחרת בהגדרות השרת.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'בדוק את הפרטים הטכניים ונסה שוב דרך הגדרת השרת.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14010,6 +14039,15 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get restoreSpace => 'שחזור';
+
+  @override
+  String get archivedConversations => 'שיחות בארכיון';
+
+  @override
+  String get archivedConversationsEmpty => 'אין שיחות בארכיון';
+
+  @override
+  String get restoreConversation => 'שחזור';
 
   @override
   String archivedWhen(String time) {

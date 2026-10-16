@@ -1015,6 +1015,37 @@ class AppLocalizationsEl extends AppLocalizations {
   String get serverSetupErrorDetails => 'Τεχνικές λεπτομέρειες';
 
   @override
+  String get serverActivityTitle => 'Δραστηριότητα διακομιστή';
+
+  @override
+  String get serverActivityStarting => 'Εκκίνηση τοπικού διακομιστή…';
+
+  @override
+  String get serverActivityConnecting => 'Σύνδεση με τον διακομιστή…';
+
+  @override
+  String get serverActivityStartFailed =>
+      'Δεν ήταν δυνατή η εκκίνηση του διακομιστή';
+
+  @override
+  String get serverActivityDownloadFailed => 'Η λήψη απέτυχε';
+
+  @override
+  String get serverActivityStatusUnavailable =>
+      'Δεν ήταν δυνατή η ανάγνωση της κατάστασης του μοντέλου';
+
+  @override
+  String get serverActivityPreparingModel => 'Προετοιμασία μοντέλου…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'Η θύρα του διακομιστή χρησιμοποιείται ήδη. Σταματήστε την άλλη διεργασία ή επιλέξτε διαφορετική θύρα στον διακομιστή.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Ελέγξτε τις τεχνικές λεπτομέρειες και δοκιμάστε ξανά από τη ρύθμιση του διακομιστή.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14139,6 +14170,16 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Επαναφορά';
+
+  @override
+  String get archivedConversations => 'Αρχειοθετημένες συνομιλίες';
+
+  @override
+  String get archivedConversationsEmpty =>
+      'Δεν υπάρχουν αρχειοθετημένες συνομιλίες';
+
+  @override
+  String get restoreConversation => 'Επαναφορά';
 
   @override
   String archivedWhen(String time) {

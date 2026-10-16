@@ -993,6 +993,8 @@ void main() {
     var spawnCount = 0;
     var killCount = 0;
     final cacheStore = <String, String?>{};
+    final spaceUpdates = StreamController<List<Space>>.broadcast();
+    addTearDown(spaceUpdates.close);
     final host = FakeRpcHost();
     host.onCall = (op, args) {
       switch (op) {
@@ -1078,9 +1080,10 @@ void main() {
         selectedSpaceIdProvider.overrideWith(
           () => _TestSelectedSpaceNotifier('ch-1'),
         ),
-        spacesProvider.overrideWith(
-          (ref) => Stream.value([_testSpaceA, _testSpaceB]),
-        ),
+        spacesProvider.overrideWith((ref) async* {
+          yield [_testSpaceA, _testSpaceB];
+          yield* spaceUpdates.stream;
+        }),
         workspaceSpacesProvider(
           _kWorkspaceId,
         ).overrideWith((ref) => Stream.value([_testSpaceA, _testSpaceB])),
@@ -1171,6 +1174,46 @@ void main() {
     expect(
       Uri.parse(routeUpdates.last['uri']! as String).queryParameters['tab'],
       'chat:conv-2',
+    );
+
+    final conversationLayout = tester
+        .widget<EditorWorkspace>(find.byType(EditorWorkspace))
+        .layout;
+    final originalConversationTab = conversationLayout.allTabs().singleWhere(
+      (tab) => tab.args['conversationId'] == 'conv-2',
+    );
+    conversationLayout.closeTabByIdentity(originalConversationTab);
+    await settle();
+    router.go('/workspaces/ws-1/spaces/ch-2?tab=chat:conv-2');
+    await settle();
+    expect(focusedTab(), 'chat:conv-2');
+    final reopenedConversationTab = conversationLayout.allTabs().singleWhere(
+      (tab) => tab.args['conversationId'] == 'conv-2',
+    );
+    expect(
+      identical(originalConversationTab, reopenedConversationTab),
+      isFalse,
+    );
+
+    // A local tab press only publishes platform history, leaving GoRouter's
+    // route key stale. Following that same conversation link must still focus
+    // the existing tab, without opening a duplicate.
+    conversationLayout.focusTab((tab) => tab.args['conversationId'] == null);
+    await settle();
+    spaceUpdates.add([_testSpaceB, _testSpaceA]);
+    await settle();
+    expect(focusedTab(), 'chat:space:ch-2');
+    router.go('/workspaces/ws-1/spaces/ch-2?tab=chat:conv-2');
+    await settle();
+    expect(focusedTab(), 'chat:conv-2');
+    expect(
+      identical(
+        conversationLayout.allTabs().singleWhere(
+          (tab) => tab.args['conversationId'] == 'conv-2',
+        ),
+        reopenedConversationTab,
+      ),
+      isTrue,
     );
 
     // Bare space links restore independently, including when the outgoing

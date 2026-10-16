@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_infra/src/util/command_redaction.dart';
 import 'package:meta/meta.dart';
 
 /// The loopback endpoint a spawned [CcServerProcess] is listening on.
@@ -83,6 +84,9 @@ class CcServerProcess {
   static final RegExp _readyPattern = RegExp(
     r'cc_server ready on ([^\s:]+):(\d+)',
   );
+  static const _maxDiagnosticLines = 12;
+  static const _maxDiagnosticLineLength = 512;
+  final List<String> _startupOutput = [];
 
   Process? _process;
   final Completer<CcServerEndpoint> _ready = Completer<CcServerEndpoint>();
@@ -91,6 +95,7 @@ class CcServerProcess {
   bool _exited = false;
   StreamSubscription<String>? _stdoutSub;
   StreamSubscription<String>? _stderrSub;
+  Future<void>? _outputDone;
 
   /// The endpoint once the server is ready, else null.
   CcServerEndpoint? get endpoint => _endpoint;
@@ -129,31 +134,37 @@ class CcServerProcess {
         workingDirectory: workingDirectory,
       );
     } on ProcessException catch (e) {
-      throw CcServerStartException('could not spawn cc_server: ${e.message}');
+      throw CcServerStartException(
+        'could not spawn cc_server: ${redactSecrets(e.message)}',
+      );
     }
     _process = process;
 
     _stdoutSub = process.stdout
-        .transform(utf8.decoder)
+        .transform(const Utf8Decoder(allowMalformed: true))
         .transform(const LineSplitter())
         .listen(_onStdoutLine);
     _stderrSub = process.stderr
-        .transform(utf8.decoder)
+        .transform(const Utf8Decoder(allowMalformed: true))
         .transform(const LineSplitter())
-        .listen((line) => onLog?.call('error', line));
+        .listen(_onStderrLine);
+    final stdoutDone = _stdoutSub!.asFuture<void>();
+    final stderrDone = _stderrSub!.asFuture<void>();
+    _outputDone = Future.wait([stdoutDone, stderrDone]).then((_) {});
 
-    // Track child exit whether it dies before readiness (a startup failure) or
-    // after (a crash): mark exited, release the stdout/stderr subscriptions so
-    // they never leak and surface a startup error if we were still waiting.
+    // Process.exitCode can complete before the final pipe events have been
+    // delivered. Wait for both streams before constructing the startup error,
+    // otherwise the line explaining a bind or native failure disappears.
     unawaited(
-      process.exitCode.then((code) {
+      process.exitCode.then((code) async {
         _exited = true;
-        unawaited(_stdoutSub?.cancel());
-        unawaited(_stderrSub?.cancel());
+        await _drainOutput();
         if (!_ready.isCompleted) {
           _ready.completeError(
             CcServerStartException(
-              'cc_server exited with code $code before becoming ready',
+              _startupFailure(
+                'cc_server exited with code $code before becoming ready',
+              ),
             ),
           );
         }
@@ -166,17 +177,30 @@ class CcServerProcess {
       return endpoint;
     } on TimeoutException {
       await _kill();
-      throw const CcServerStartException(
-        'cc_server did not report readiness in time',
+      throw CcServerStartException(
+        _startupFailure('cc_server did not report readiness in time'),
       );
     }
   }
 
+  Future<void> _drainOutput() async {
+    await _outputDone?.timeout(
+      const Duration(milliseconds: 500),
+      onTimeout: () async {
+        // A descendant may inherit the pipes after cc_server itself exits.
+        await _stdoutSub?.cancel();
+        await _stderrSub?.cancel();
+      },
+    );
+  }
+
   void _onStdoutLine(String line) {
-    onLog?.call('info', line);
+    final safeLine = redactSecrets(line);
+    onLog?.call('info', safeLine);
     if (_ready.isCompleted) {
       return;
     }
+    _rememberStartupLine(safeLine);
     final match = _readyPattern.firstMatch(line);
     if (match != null) {
       final port = int.tryParse(match.group(2) ?? '');
@@ -184,9 +208,33 @@ class CcServerProcess {
         _ready.complete(
           CcServerEndpoint(host: match.group(1) ?? '127.0.0.1', port: port),
         );
+        _startupOutput.clear();
       }
     }
   }
+
+  void _onStderrLine(String line) {
+    final safeLine = redactSecrets(line);
+    onLog?.call('error', safeLine);
+    if (!_ready.isCompleted) {
+      _rememberStartupLine(safeLine);
+    }
+  }
+
+  void _rememberStartupLine(String line) {
+    _startupOutput.add(
+      line.length <= _maxDiagnosticLineLength
+          ? line
+          : '…${line.substring(line.length - _maxDiagnosticLineLength)}',
+    );
+    if (_startupOutput.length > _maxDiagnosticLines) {
+      _startupOutput.removeAt(0);
+    }
+  }
+
+  String _startupFailure(String reason) => _startupOutput.isEmpty
+      ? reason
+      : '$reason\nRecent cc_server output:\n${_startupOutput.join('\n')}';
 
   /// Stops the server (SIGTERM, escalating to SIGKILL after a grace period) and
   /// awaits its exit. Idempotent.
@@ -224,6 +272,7 @@ class CcServerProcess {
       process.kill(ProcessSignal.sigkill);
       await process.exitCode;
     }
+    await _drainOutput();
     await _stdoutSub?.cancel();
     await _stderrSub?.cancel();
     _process = null;

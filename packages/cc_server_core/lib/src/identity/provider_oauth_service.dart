@@ -26,17 +26,33 @@ import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 Uri providerOAuthRedirectUri(String origin, String provider) =>
     Uri.parse('$origin/oauth/$provider/callback');
 
+/// Completion of one device-code attempt, not the presence of an older token.
+enum DeviceLoginStatus {
+  /// Waiting for approval and credential storage.
+  pending,
+
+  /// The approved credential has been stored.
+  succeeded,
+
+  /// Refused, expired, superseded or unable to store the credential.
+  failed,
+}
+
 /// What the human needs in order to finish a device-code sign-in: a short code
 /// and where to type it. Deliberately carries no `device_code` — that is the
 /// server's half of the exchange.
 class DeviceLoginPrompt {
   /// Creates a [DeviceLoginPrompt].
   const DeviceLoginPrompt({
+    required this.loginId,
     required this.userCode,
     required this.verificationUri,
     required this.expiresIn,
     required this.interval,
   });
+
+  /// Opaque status handle, bound to the caller and workspace on the server.
+  final String loginId;
 
   /// The code the human types into the provider's page.
   final String userCode;
@@ -54,6 +70,7 @@ class DeviceLoginPrompt {
   /// The wire shape.
   Map<String, Object?> toJson() => {
     'mode': 'device',
+    'login_id': loginId,
     'user_code': userCode,
     'verification_uri': verificationUri,
     'expires_in': expiresIn.inSeconds,
@@ -63,14 +80,27 @@ class DeviceLoginPrompt {
 
 /// A live device-code poll. Cancelled when the same user starts another one.
 class _DevicePoll {
-  _DevicePoll({required this.deadline, required this.interval});
+  _DevicePoll({
+    required this.userId,
+    required this.workspaceId,
+    required this.deadline,
+    required this.interval,
+  });
 
+  final String userId;
+  final String? workspaceId;
   final DateTime deadline;
   final Duration interval;
 
+  DeviceLoginStatus status = DeviceLoginStatus.pending;
   bool cancelled = false;
 
-  void cancel() => cancelled = true;
+  void cancel() {
+    cancelled = true;
+    if (status == DeviceLoginStatus.pending) {
+      status = DeviceLoginStatus.failed;
+    }
+  }
 }
 
 /// One provider's OAuth wiring. Hand-written per provider because the three
@@ -111,9 +141,8 @@ class _OAuthWiring {
 /// provider — carries nothing but that state. No client ever sends a user id
 /// into this flow, so no client can mint a credential for somebody else.
 ///
-/// What comes back is stored, never returned: the callback's reply is a page
-/// telling the human to close the tab, and the app learns the outcome by
-/// re-reading its connection list.
+/// What comes back is stored, never returned. Device status identifies the
+/// current attempt; a connection list can still describe an older credential.
 class ProviderOAuthService {
   /// Creates a [ProviderOAuthService].
   ///
@@ -168,8 +197,11 @@ class ProviderOAuthService {
         })
       >{};
 
-  /// Live device-code polls, one per `(user, provider)`.
+  /// Live device-code polls, one per `(user, provider, workspace)`.
   final _devicePolls = <String, _DevicePoll>{};
+
+  // Retain terminal outcomes until expiry so a client cannot miss completion.
+  final _deviceLogins = <String, _DevicePoll>{};
 
   static final Map<ProviderApp, _OAuthWiring> _wiring = {
     ProviderApp.github: _OAuthWiring(
@@ -291,8 +323,7 @@ class ProviderOAuthService {
   ///
   /// Returns the code the human types and where to type it. The server then
   /// polls the provider in the background and stores the credential when they
-  /// finish — the app learns the outcome by re-reading its connection list,
-  /// exactly as with the redirect flow.
+  /// finish. The app watches [deviceLoginStatus] for this attempt's outcome.
   ///
   /// The `device_code` itself never leaves this process: it is half of the
   /// exchange, and a client that held it could complete somebody else's login.
@@ -333,18 +364,31 @@ class ProviderOAuthService {
       );
     }
     final interval = (response['interval'] as num?)?.toInt() ?? 5;
+    _deviceLogins.removeWhere((_, poll) {
+      if (_now().isBefore(poll.deadline)) {
+        return false;
+      }
+      poll.cancel();
+      return true;
+    });
+    if (_deviceLogins.length >= maxPendingLogins) {
+      _deviceLogins.remove(_deviceLogins.keys.first)?.cancel();
+    }
     final expiresIn = (response['expires_in'] as num?)?.toInt() ?? 900;
 
-    // One live device login per (user, provider): starting a second one means
-    // the human abandoned the first, and two pollers would race to store two
-    // different credentials for the same person.
+    // One live device login per (user, provider, workspace): starting another
+    // supersedes the first, so two pollers cannot race to store credentials.
     final key = '$userId:${provider.wire}:${workspaceId ?? ''}';
     _devicePolls.remove(key)?.cancel();
     final poll = _DevicePoll(
       deadline: _now().add(Duration(seconds: expiresIn)),
+      userId: userId,
+      workspaceId: workspaceId,
       interval: Duration(seconds: interval.clamp(1, 60)),
     );
     _devicePolls[key] = poll;
+    final loginId = _randomToken();
+    _deviceLogins[loginId] = poll;
     unawaited(
       _pollDeviceLogin(
         key: key,
@@ -358,6 +402,7 @@ class ProviderOAuthService {
     );
 
     return DeviceLoginPrompt(
+      loginId: loginId,
       userCode: userCode,
       verificationUri: verification,
       expiresIn: Duration(seconds: expiresIn),
@@ -365,9 +410,25 @@ class ProviderOAuthService {
     );
   }
 
-  /// Polls the provider until the human approves, refuses, or the code
-  /// expires. Never throws: a failure simply leaves the user unconnected, and
-  /// the UI already reports that.
+  /// Reads only the calling user's attempt in the workspace where it began.
+  DeviceLoginStatus deviceLoginStatus({
+    required String loginId,
+    required String userId,
+    String? workspaceId,
+  }) {
+    final poll = _deviceLogins[loginId];
+    if (poll == null ||
+        poll.userId != userId ||
+        poll.workspaceId != workspaceId) {
+      throw const AuthException('This sign-in is no longer valid.');
+    }
+    if (!_now().isBefore(poll.deadline)) {
+      poll.cancel();
+    }
+    return poll.status;
+  }
+
+  /// Polls until approval, refusal or expiry, retaining the terminal outcome.
   Future<void> _pollDeviceLogin({
     required String key,
     required _DevicePoll poll,
@@ -435,15 +496,24 @@ class ProviderOAuthService {
         final account = await _wiring[provider]!
             .accountProbe(_http, access)
             .catchError((_) => '');
+        if (poll.cancelled) {
+          return;
+        }
         await _store(
           userId,
           provider,
           token.withAccount(account),
           workspaceId: workspaceId,
         );
+        poll.status = DeviceLoginStatus.succeeded;
         return;
       }
+    } on Object {
+      poll.status = DeviceLoginStatus.failed;
     } finally {
+      if (poll.status == DeviceLoginStatus.pending) {
+        poll.status = DeviceLoginStatus.failed;
+      }
       if (identical(_devicePolls[key], poll)) {
         _devicePolls.remove(key);
       }

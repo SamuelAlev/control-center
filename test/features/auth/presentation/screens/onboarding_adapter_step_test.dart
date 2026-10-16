@@ -17,10 +17,13 @@ import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_domain/features/settings/domain/repositories/harness_provider_repository.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/infrastructure/speech/voice_model_control.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/model_picker_field.dart';
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
@@ -31,6 +34,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+
+import '../../../../helpers/fake_rpc_client.dart';
 
 void main() {
   late AppPreferences prefs;
@@ -68,10 +73,16 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
+    final rpc = (FakeRpcHost()..onCall = (_, _) => {'status': 'installed'})
+        .client();
+    addTearDown(rpc.close);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           appPreferencesProvider.overrideWithValue(prefs),
+          rpcClientProvider.overrideWithValue(rpc),
+          isServerOwnerProvider.overrideWithValue(false),
+          voiceModelCatalogProvider.overrideWith((ref) async => null),
           // The onboarding gate is "at least one forge connected"; overriding
           // the connections keeps the real derivation under test.
           forgeConnectionsProvider.overrideWith(
@@ -106,7 +117,7 @@ void main() {
           locale: const Locale('en'),
           home: CcTheme(
             data: CcThemeData.light(),
-            child: const Scaffold(body: OnboardingScreen()),
+            child: const OnboardingScreen(),
           ),
         ),
       ),

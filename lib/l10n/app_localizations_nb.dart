@@ -1005,6 +1005,35 @@ class AppLocalizationsNb extends AppLocalizations {
   String get serverSetupErrorDetails => 'Tekniske detaljer';
 
   @override
+  String get serverActivityTitle => 'Serveraktivitet';
+
+  @override
+  String get serverActivityStarting => 'Starter lokal server…';
+
+  @override
+  String get serverActivityConnecting => 'Kobler til serveren…';
+
+  @override
+  String get serverActivityStartFailed => 'Serveren kunne ikke starte';
+
+  @override
+  String get serverActivityDownloadFailed => 'Nedlastingen mislyktes';
+
+  @override
+  String get serverActivityStatusUnavailable => 'Kunne ikke lese modellstatus';
+
+  @override
+  String get serverActivityPreparingModel => 'Klargjør modell…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'Serverporten er allerede i bruk. Stopp den andre prosessen eller velg en annen port på serveren.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Sjekk de tekniske detaljene, og prøv igjen fra serveroppsettet.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14012,6 +14041,15 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Gjenopprett';
+
+  @override
+  String get archivedConversations => 'Arkiverte samtaler';
+
+  @override
+  String get archivedConversationsEmpty => 'Ingen arkiverte samtaler';
+
+  @override
+  String get restoreConversation => 'Gjenopprett';
 
   @override
   String archivedWhen(String time) {

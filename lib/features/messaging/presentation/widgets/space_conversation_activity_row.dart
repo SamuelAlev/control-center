@@ -3,9 +3,11 @@ import 'package:control_center/features/messaging/presentation/utils/conversatio
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// One 30s clock shared by every conversation row's relative-time caption,
 /// instead of a periodic timer per row. Rows select the caption bucket off it
@@ -92,6 +94,18 @@ class SpaceConversationActivityRow extends ConsumerWidget {
       // The leading mark is the unread signal, so the trailing dot stays off.
       unread: false,
       leadingHandlesRunning: true,
+      onPress: () {
+        final workspaceId = routeWorkspaceIdOf(context);
+        if (workspaceId != null) {
+          GoRouter.of(context).go(
+            spaceRoute(
+              workspaceId,
+              conversation.spaceId,
+              tab: conversationTabKey(conversation.id),
+            ),
+          );
+        }
+      },
     );
   }
 }

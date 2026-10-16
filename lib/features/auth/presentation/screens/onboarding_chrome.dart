@@ -32,13 +32,21 @@ import 'package:material_ui/material_ui.dart';
 /// dragging it out from under the app's own title bar — so the app moves it itself, from
 class OnboardingScaffold extends StatelessWidget {
   /// Creates an [OnboardingScaffold].
-  const OnboardingScaffold({required this.child, super.key});
+  const OnboardingScaffold({
+    required this.child,
+    this.bottomActivity,
+    super.key,
+  });
 
   /// The surface's own content, centred in the frame.
   final Widget child;
 
+  /// Compact activity, inside the keyboard-resized body rather than over it.
+  final Widget? bottomActivity;
+
   @override
   Widget build(BuildContext context) {
+    final viewInsets = MediaQuery.viewInsetsOf(context);
     return ShaderBackground(
       child: WindowDragArea(
         moveWindowManually: true,
@@ -47,14 +55,31 @@ class OnboardingScaffold extends StatelessWidget {
           body: SafeArea(
             child: Stack(
               children: [
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 720),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-                      child: child,
+                Column(
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 720),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+                            child: child,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    if (bottomActivity case final activity?)
+                      Builder(
+                        builder: (context) => MediaQuery(
+                          // Scaffold removes these from its body; activity
+                          // still needs the keyboard state to fold its details.
+                          data: MediaQuery.of(
+                            context,
+                          ).copyWith(viewInsets: viewInsets),
+                          child: activity,
+                        ),
+                      ),
+                  ],
                 ),
                 const WindowCaptionCorner(
                   child: Row(
@@ -129,13 +154,23 @@ class OnboardingStepCopy {
 /// The card an onboarding step's copy and body sit in.
 class OnboardingStepHero extends StatelessWidget {
   /// Creates an [OnboardingStepHero].
-  const OnboardingStepHero({required this.copy, this.body, super.key});
+  const OnboardingStepHero({
+    required this.copy,
+    this.body,
+    this.scrollIntroduction = false,
+    super.key,
+  });
 
   /// The step's title and subtitle.
   final OnboardingStepCopy copy;
 
   /// The step's own content, scrolled independently of the pinned copy.
   final Widget? body;
+
+  /// Scrolls the copy with the fields, leaving the body's actions pinned.
+  ///
+  /// The body must contain an [OnboardingStepLayout].
+  final bool scrollIntroduction;
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +187,29 @@ class OnboardingStepHero extends StatelessWidget {
         ? (tokens?.borderSecondary ?? Colors.white).withValues(alpha: 0.65)
         : (tokens?.borderSoft ?? Colors.white).withValues(alpha: 0.10);
 
+    final introduction = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          copy.title,
+          style: CcTypography.display.copyWith(
+            color: tokens?.textPrimary,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          copy.subtitle,
+          style: CcTypography.body.copyWith(
+            color: tokens?.textTertiary,
+            height: 1.55,
+          ),
+        ),
+        if (body != null) const SizedBox(height: 24),
+      ],
+    );
+
     return Container(
       // No side padding: the body's scrolling viewport has to reach the card
       // border so the injected scrollbar hugs it. Every child re-applies
@@ -162,50 +220,21 @@ class OnboardingStepHero extends StatelessWidget {
         borderRadius: AppRadii.brLg,
         border: Border.all(color: borderColor, width: 1),
       ),
-      child: Column(
-        // Shrink-wraps so a short step keeps the compact centred card; the
-        // outer Flexible (in OnboardingScreen) caps it at the viewport, where
-        // the body below takes over scrolling.
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Which step this is is told by the labelled progress bar above the
-          // card, so the card opens straight on the title.
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: kOnboardingStepInset,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: scrollIntroduction && body != null
+          ? OnboardingStepIntroduction(introduction: introduction, child: body!)
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  copy.title,
-                  style: CcTypography.display.copyWith(
-                    color: tokens?.textPrimary,
-                    fontWeight: FontWeight.w700,
-                    height: 1.2,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: kOnboardingStepInset,
                   ),
+                  child: introduction,
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  copy.subtitle,
-                  style: CcTypography.body.copyWith(
-                    color: tokens?.textTertiary,
-                    height: 1.55,
-                  ),
-                ),
+                if (body != null) Flexible(child: body!),
               ],
             ),
-          ),
-          // The title/subtitle stay pinned under the step indicator and the
-          // body pins its own action row; scrolling is confined to the fields
-          // in between, via [OnboardingStepLayout].
-          if (body != null) ...[
-            const SizedBox(height: 24),
-            Flexible(child: body!),
-          ],
-        ],
-      ),
     );
   }
 }

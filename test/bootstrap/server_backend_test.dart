@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/bootstrap/server_backend.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
+import 'package:control_center/core/server/server_startup_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Decision tests for [resolveServerBackend]: which backend a boot or an
@@ -26,6 +29,7 @@ class _Sources {
   final List<ServerBackend> _made = [];
   Object? localError;
   Object? remoteError;
+  Completer<void>? remotePending;
 
   bool get startedLocal => calls.contains('local');
 
@@ -53,6 +57,7 @@ class _Sources {
     },
     connectRemote: (store, entry, psk) async {
       calls.add('remote:${entry.serverId}:$psk');
+      await remotePending?.future;
       if (remoteError case final error?) {
         throw error;
       }
@@ -82,9 +87,13 @@ void main() {
     secure = SecureStore.inMemory();
     store = ServerConnectionStore(prefs, secure);
     fakes = _Sources();
+    serverStartupStatus.value = null;
   });
 
-  tearDown(() => fakes.dispose());
+  tearDown(() async {
+    await fakes.dispose();
+    serverStartupStatus.value = null;
+  });
 
   Future<ServerBackend> resolve({String? forceServerId}) =>
       resolveServerBackend(
@@ -154,6 +163,47 @@ void main() {
 
       expect(fakes.calls, ['setup']);
     });
+
+    test(
+      'initial local failure remains visible before any backend exists',
+      () async {
+        await store.setMode(ServerConnectionMode.local);
+        final failure = StateError('Address already in use');
+        fakes.localError = failure;
+
+        await resolve();
+
+        expect(serverStartupStatus.value?.phase, ServerStartupPhase.failed);
+        expect(serverStartupStatus.value?.error, same(failure));
+      },
+    );
+
+    test(
+      'remote boot reports connecting, failure, and a successful retry',
+      () async {
+        await pair('srv-a');
+        await store.setMode(ServerConnectionMode.remote);
+        final pending = fakes.remotePending = Completer<void>();
+        final failure = StateError('connection refused');
+        fakes.remoteError = failure;
+
+        final attempt = resolve();
+        // The key lookup and fake remote connection both complete asynchronously.
+        while (fakes.calls.isEmpty) {
+          await Future<void>.delayed(Duration.zero);
+        }
+        expect(serverStartupStatus.value?.phase, ServerStartupPhase.connecting);
+        pending.complete();
+        await attempt;
+        expect(serverStartupStatus.value?.phase, ServerStartupPhase.failed);
+        expect(serverStartupStatus.value?.error, same(failure));
+
+        fakes.remotePending = null;
+        fakes.remoteError = null;
+        await resolve();
+        expect(serverStartupStatus.value?.phase, ServerStartupPhase.ready);
+      },
+    );
   });
 
   group('in-app switch', () {
@@ -225,6 +275,25 @@ void main() {
 
       expect(fakes.calls, ['local']);
       expect(store.readMode(), ServerConnectionMode.remote);
+    });
+
+    test('remote switch replaces a stale local startup error', () async {
+      await pair('srv-a');
+      await store.setMode(ServerConnectionMode.local);
+      serverStartupStatus.value = ServerStartupStatus(
+        phase: ServerStartupPhase.failed,
+        error: StateError('previous local spawn failed'),
+      );
+      final pending = fakes.remotePending = Completer<void>();
+
+      final attempt = resolve(forceServerId: 'srv-a');
+      while (fakes.calls.isEmpty) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect(serverStartupStatus.value?.phase, ServerStartupPhase.connecting);
+      pending.complete();
+      await attempt;
+      expect(serverStartupStatus.value?.phase, ServerStartupPhase.ready);
     });
   });
 }

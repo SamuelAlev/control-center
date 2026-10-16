@@ -388,6 +388,15 @@
   "serverSetupErrorInviteRejected": "Questo codice invito non è valido o è scaduto. Chiedine uno nuovo.",
   "serverSetupErrorGeneric": "Si è verificato un problema durante la connessione. Espandi i dettagli tecnici qui sotto per maggiori informazioni.",
   "serverSetupErrorDetails": "Dettagli tecnici",
+  "serverActivityTitle": "Attività del server",
+  "serverActivityStarting": "Avvio del server locale…",
+  "serverActivityConnecting": "Connessione al server…",
+  "serverActivityStartFailed": "Impossibile avviare il server",
+  "serverActivityDownloadFailed": "Download non riuscito",
+  "serverActivityStatusUnavailable": "Impossibile leggere lo stato del modello",
+  "serverActivityPreparingModel": "Preparazione del modello…",
+  "serverActivityPortInUse": "La porta del server è già in uso. Arresta l'altro processo o scegli un'altra porta sul server.",
+  "serverActivityStartFailedHint": "Controlla i dettagli tecnici, poi riprova dalla configurazione del server.",
   "calendarMoreEvents": "{count, plural, =1{1 altro} other{{count} altri}}",
   "calendarAllDayGutter": "Giornata",
   "calendarAllDayEventCount": "{count, plural, =1{1 evento} other{{count} eventi}}",
@@ -7487,6 +7496,18 @@
   "restoreSpace": "Ripristina",
   "@restoreSpace": {
     "description": "Restore an archived space to the sidebar"
+  },
+  "archivedConversations": "Conversazioni archiviate",
+  "@archivedConversations": {
+    "description": "Space menu item and archived conversations dialog title"
+  },
+  "archivedConversationsEmpty": "Nessuna conversazione archiviata",
+  "@archivedConversationsEmpty": {
+    "description": "Empty state of the archived conversations dialog"
+  },
+  "restoreConversation": "Ripristina",
+  "@restoreConversation": {
+    "description": "Tooltip for restoring an archived conversation"
   },
   "archivedWhen": "Archiviato {time}",
   "@archivedWhen": {

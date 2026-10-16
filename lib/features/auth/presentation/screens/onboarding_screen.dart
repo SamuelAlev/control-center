@@ -9,6 +9,7 @@ import 'package:control_center/features/auth/presentation/widgets/onboarding_ste
 import 'package:control_center/features/auth/providers/onboarding_providers.dart';
 import 'package:control_center/features/auth/providers/onboarding_runner_choice.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/sandboxing/presentation/onboarding_step_sandbox.dart';
 import 'package:control_center/features/settings/presentation/widgets/field_placeholder.dart';
 import 'package:control_center/features/settings/presentation/widgets/harness_provider_login.dart';
@@ -21,6 +22,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/server_activity_overlay.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -201,44 +203,68 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final l10n = AppLocalizations.of(context);
     final copy = _copyFor(_steps[_step], l10n);
 
-    // Pinned chrome, scrolling content: the step indicator, each step's
-    // title/subtitle and its action row never move — only the fields between
-    // them scroll — so the scrollbar hugs the card instead of spanning the
-    // full window.
-    return OnboardingScaffold(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          OnboardingStepIndicator(
-            currentStep: _step,
-            total: _steps.length,
-            labels: _stepLabels(l10n),
-          ),
-          const SizedBox(height: 32),
-          Flexible(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 280),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (child, animation) {
-                final offset = Tween<Offset>(
-                  begin: const Offset(0, 0.04),
-                  end: Offset.zero,
-                ).animate(animation);
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(position: offset, child: child),
-                );
-              },
-              child: KeyedSubtree(
-                key: ValueKey<int>(_step),
-                child: OnboardingStepHero(copy: copy, body: _bodyFor(_step)),
+    // Compact steps scroll their introduction with the fields; actions remain
+    // pinned above activity. Wide steps also keep their introduction pinned.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 720;
+        final content = Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            OnboardingStepIndicator(
+              currentStep: _step,
+              total: _steps.length,
+              labels: _stepLabels(l10n),
+            ),
+            const SizedBox(height: 32),
+            Flexible(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) {
+                  final offset = Tween<Offset>(
+                    begin: const Offset(0, 0.04),
+                    end: Offset.zero,
+                  ).animate(animation);
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(position: offset, child: child),
+                  );
+                },
+                child: KeyedSubtree(
+                  key: ValueKey<int>(_step),
+                  child: OnboardingStepHero(
+                    copy: copy,
+                    body: _bodyFor(_step),
+                    scrollIntroduction: compact,
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+        final activity = ServerActivityOverlay(
+          docked: compact,
+          canManageModels: ref.watch(isServerOwnerProvider),
+          hiddenModels: _steps[_step] == _StepId.voice
+              ? const {ServerActivityModel.voice}
+              : const {},
+        );
+        final scaffold = OnboardingScaffold(
+          bottomActivity: compact ? activity : null,
+          child: content,
+        );
+        return compact
+            ? scaffold
+            : Stack(
+                children: [
+                  scaffold,
+                  Positioned.fill(child: activity),
+                ],
+              );
+      },
     );
   }
 }

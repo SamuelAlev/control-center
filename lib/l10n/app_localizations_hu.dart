@@ -1005,6 +1005,36 @@ class AppLocalizationsHu extends AppLocalizations {
   String get serverSetupErrorDetails => 'Technikai részletek';
 
   @override
+  String get serverActivityTitle => 'Szervertevékenység';
+
+  @override
+  String get serverActivityStarting => 'Helyi szerver indítása…';
+
+  @override
+  String get serverActivityConnecting => 'Csatlakozás a szerverhez…';
+
+  @override
+  String get serverActivityStartFailed => 'A szervert nem sikerült elindítani';
+
+  @override
+  String get serverActivityDownloadFailed => 'A letöltés sikertelen';
+
+  @override
+  String get serverActivityStatusUnavailable =>
+      'Nem sikerült lekérni a modell állapotát';
+
+  @override
+  String get serverActivityPreparingModel => 'Modell előkészítése…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'A szerver portja már használatban van. Állítsa le a másik folyamatot, vagy válasszon másik portot a szerveren.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Ellenőrizze a technikai részleteket, majd próbálja újra a szerver beállításánál.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14062,6 +14092,15 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Visszaállítás';
+
+  @override
+  String get archivedConversations => 'Archivált beszélgetések';
+
+  @override
+  String get archivedConversationsEmpty => 'Nincsenek archivált beszélgetések';
+
+  @override
+  String get restoreConversation => 'Visszaállítás';
 
   @override
   String archivedWhen(String time) {

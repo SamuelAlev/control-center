@@ -205,10 +205,17 @@ final forgeSignInProvidersProvider = Provider<Set<ForgeHost>>((ref) {
 /// Starts [forge]'s sign-in and returns what the human has to do next — type
 /// a device code, or finish in the browser that just opened.
 Future<SignInStarted> signInToForge(WidgetRef ref, ForgeHost forge) =>
-    startProviderSignIn(ref, forge.wire);
+    startProviderSignIn(
+      ref,
+      forge.wire,
+      onConnected: () {
+        if (ref.context.mounted) {
+          ref.invalidate(forgeConnectionsProvider);
+        }
+      },
+    );
 
-/// Whether [forge] now reports a connection for the signed-in user. The poll
-/// both flows resolve through.
+/// Re-reads [forge]'s connection for the redirect sign-in flow.
 Future<bool> isForgeConnected(WidgetRef ref, ForgeHost forge) async {
   ref.invalidate(forgeConnectionsProvider);
   final connections = await ref.read(forgeConnectionsProvider.future);
@@ -228,11 +235,7 @@ Future<ForgeConnection> setForgeToken(
   final workspaceId = ref.read(activeWorkspaceIdProvider);
   final data = await ref.read(rpcClientProvider).call(
     'credentials.setForgeToken',
-    {
-      'forge': forge.wire,
-      'token': token,
-      ...overlayWorkspaceArgs(workspaceId),
-    },
+    {'forge': forge.wire, 'token': token, ...overlayWorkspaceArgs(workspaceId)},
   );
   ref.invalidate(forgeConnectionsProvider);
   return ForgeConnection.fromJson(data);
@@ -247,4 +250,3 @@ Future<void> clearForgeToken(WidgetRef ref, ForgeHost forge) async {
   });
   ref.invalidate(forgeConnectionsProvider);
 }
-

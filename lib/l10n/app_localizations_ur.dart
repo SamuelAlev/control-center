@@ -996,6 +996,35 @@ class AppLocalizationsUr extends AppLocalizations {
   String get serverSetupErrorDetails => 'تکنیکی تفصیلات';
 
   @override
+  String get serverActivityTitle => 'سرور کی سرگرمی';
+
+  @override
+  String get serverActivityStarting => 'مقامی سرور شروع ہو رہا ہے…';
+
+  @override
+  String get serverActivityConnecting => 'سرور سے منسلک ہو رہا ہے…';
+
+  @override
+  String get serverActivityStartFailed => 'سرور شروع نہیں ہو سکا';
+
+  @override
+  String get serverActivityDownloadFailed => 'ڈاؤن لوڈ ناکام رہا';
+
+  @override
+  String get serverActivityStatusUnavailable => 'ماڈل کی حالت نہیں پڑھی جا سکی';
+
+  @override
+  String get serverActivityPreparingModel => 'ماڈل تیار ہو رہا ہے…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'سرور کا پورٹ پہلے سے استعمال میں ہے۔ دوسرا عمل بند کریں یا سرور پر کوئی اور پورٹ منتخب کریں۔';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'تکنیکی تفصیلات دیکھیں، پھر سرور کی ترتیب سے دوبارہ کوشش کریں۔';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13957,6 +13986,15 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get restoreSpace => 'بحال کریں';
+
+  @override
+  String get archivedConversations => 'آرکائیو گفتگوئیں';
+
+  @override
+  String get archivedConversationsEmpty => 'کوئی آرکائیو گفتگو نہیں';
+
+  @override
+  String get restoreConversation => 'بحال کریں';
 
   @override
   String archivedWhen(String time) {

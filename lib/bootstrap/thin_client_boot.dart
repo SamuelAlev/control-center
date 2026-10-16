@@ -8,6 +8,7 @@ import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_natives/native_library_paths.dart' show nativeLibDirEnvVar;
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/server/client_resource_proxy.dart';
+import 'package:control_center/core/server/server_startup_status.dart';
 import 'package:control_center/core/server/snapshot_cache_binding.dart';
 import 'package:control_center/core/storage/control_center_paths.dart';
 import 'package:control_center/core/theme/font_loader_install.dart';
@@ -86,6 +87,8 @@ class LocalServerProcessHolder {
   CcServerProcess process;
 
   final List<StreamSubscription<ProcessSignal>> _signalSubs = [];
+  StreamSubscription<ServerConnectionStatus>? _connectionStatusSub;
+  ServerStartupStatus? _reconnectStatus;
 
   bool _shutDown = false;
 
@@ -105,13 +108,59 @@ class LocalServerProcessHolder {
     if (process.isRunning) {
       return false;
     }
-    final next = await spawn();
+    final current = serverStartupStatus.value;
+    if (current == null ||
+        current.phase == ServerStartupPhase.ready ||
+        identical(current, _reconnectStatus)) {
+      // Each reconnect owns a distinct identity, even with the same phase.
+      // ignore: prefer_const_constructors
+      _reconnectStatus = ServerStartupStatus(
+        phase: ServerStartupPhase.starting,
+      );
+      serverStartupStatus.value = _reconnectStatus;
+    }
+    final CcServerProcess next;
+    try {
+      next = await spawn();
+    } on Object catch (error) {
+      if (!_shutDown) {
+        _reportReconnect(ServerStartupPhase.failed, error: error);
+      }
+      rethrow;
+    }
     if (_shutDown) {
       await next.stop();
       _throwIfShutDown();
     }
     process = next;
+    _reportReconnect(ServerStartupPhase.connecting);
     return true;
+  }
+
+  void _reportReconnect(ServerStartupPhase phase, {Object? error}) {
+    final owned = _reconnectStatus;
+    if (owned == null || !identical(serverStartupStatus.value, owned)) {
+      _reconnectStatus = null;
+      return;
+    }
+    final next = ServerStartupStatus(phase: phase, error: error);
+    serverStartupStatus.value = next;
+    _reconnectStatus = phase == ServerStartupPhase.ready ? null : next;
+  }
+
+  /// Tracks successful reconnection without attaching UI state to RPC clients.
+  void watchConnection(ServerConnectionSupervisor supervisor) {
+    _connectionStatusSub = supervisor.status.listen((status) {
+      if (_shutDown) {
+        return;
+      }
+      if (status.phase == ServerConnectionPhase.connected) {
+        _reportReconnect(ServerStartupPhase.ready);
+      } else if (status.phase == ServerConnectionPhase.identityMismatch ||
+          status.authenticationRejected) {
+        _reportReconnect(ServerStartupPhase.failed, error: status.error);
+      }
+    });
   }
 
   void _throwIfShutDown() {
@@ -126,9 +175,11 @@ class LocalServerProcessHolder {
   /// [first] throws. Idempotent.
   Future<void> shutDown({Future<void> Function()? first}) async {
     _shutDown = true;
+    _reportReconnect(ServerStartupPhase.ready);
     try {
       await first?.call();
     } finally {
+      await _connectionStatusSub?.cancel();
       await stopWatchingQuitSignals();
       await process.stop();
     }
@@ -190,22 +241,42 @@ String _generatePsk() {
 /// a missing/failed server is surfaced to the boot path rather than silently
 /// degraded.
 Future<ThinClientBackend> startThinClientBackend() async {
-  final dataDir = (await controlCenterRootDir()).path;
-  // One PSK per app boot, reused across respawns so the supervisor's stored
-  // credential keeps working when the child is restarted.
-  final psk = _generatePsk();
-
-  final holder = LocalServerProcessHolder(
-    await _spawnLocalServer(dataDir: dataDir, psk: psk),
-  )..watchQuitSignals();
+  serverStartupStatus.value = const ServerStartupStatus(
+    phase: ServerStartupPhase.starting,
+  );
+  LocalServerProcessHolder? holder;
   try {
-    return await _connectThinClient(holder: holder, dataDir: dataDir, psk: psk);
-  } on Object {
-    // The child is up but the client never connected. The caller falls back
-    // to the setup screen, where the user may well pick a REMOTE server — so
-    // a child left running here would keep the bundled server alive behind
-    // that remote session for the rest of the app's life.
-    await holder.shutDown();
+    final dataDir = (await controlCenterRootDir()).path;
+    // One PSK per app boot, reused across respawns so the supervisor's stored
+    // credential keeps working when the child is restarted.
+    final psk = _generatePsk();
+
+    holder = LocalServerProcessHolder(
+      await _spawnLocalServer(dataDir: dataDir, psk: psk),
+    )..watchQuitSignals();
+    serverStartupStatus.value = const ServerStartupStatus(
+      phase: ServerStartupPhase.connecting,
+    );
+    final backend = await _connectThinClient(
+      holder: holder,
+      dataDir: dataDir,
+      psk: psk,
+    );
+    serverStartupStatus.value = const ServerStartupStatus(
+      phase: ServerStartupPhase.ready,
+    );
+    return backend;
+  } on Object catch (error) {
+    // If the client never connected, the caller may choose a remote server;
+    // never leave this child holding the local data directory open.
+    try {
+      await holder?.shutDown();
+    } finally {
+      serverStartupStatus.value = ServerStartupStatus(
+        phase: ServerStartupPhase.failed,
+        error: error,
+      );
+    }
     rethrow;
   }
 }
@@ -279,6 +350,7 @@ Future<ThinClientBackend> _connectThinClient({
     await supervisor.close();
     rethrow;
   }
+  holder.watchConnection(supervisor);
   final client = ResilientRpcClient(supervisor);
   LocalResourceProxy? resourceProxy;
   try {

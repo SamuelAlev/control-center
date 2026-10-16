@@ -1920,6 +1920,60 @@ abstract class AppLocalizations {
   /// **'Technical details'**
   String get serverSetupErrorDetails;
 
+  /// No description provided for @serverActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server activity'**
+  String get serverActivityTitle;
+
+  /// No description provided for @serverActivityStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting local server…'**
+  String get serverActivityStarting;
+
+  /// No description provided for @serverActivityConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to server…'**
+  String get serverActivityConnecting;
+
+  /// No description provided for @serverActivityStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Server could not start'**
+  String get serverActivityStartFailed;
+
+  /// No description provided for @serverActivityDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed'**
+  String get serverActivityDownloadFailed;
+
+  /// No description provided for @serverActivityStatusUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read model status'**
+  String get serverActivityStatusUnavailable;
+
+  /// No description provided for @serverActivityPreparingModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing model…'**
+  String get serverActivityPreparingModel;
+
+  /// No description provided for @serverActivityPortInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'The server port is already in use. Stop the other process or choose a different port on the server.'**
+  String get serverActivityPortInUse;
+
+  /// No description provided for @serverActivityStartFailedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the technical details, then try again from server setup.'**
+  String get serverActivityStartFailedHint;
+
   /// Month-cell overflow button: how many events are hidden
   ///
   /// In en, this message translates to:
@@ -23815,6 +23869,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restore'**
   String get restoreSpace;
+
+  /// Space menu item and archived conversations dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Archived conversations'**
+  String get archivedConversations;
+
+  /// Empty state of the archived conversations dialog
+  ///
+  /// In en, this message translates to:
+  /// **'No archived conversations'**
+  String get archivedConversationsEmpty;
+
+  /// Tooltip for restoring an archived conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get restoreConversation;
 
   /// Subtitle on an archived space row; {time} is a relative time like '2 days ago'
   ///

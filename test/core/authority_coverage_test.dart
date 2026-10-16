@@ -80,7 +80,7 @@ void main() {
       'newsfeed.setArticleRead', 'newsfeed.setArticleSaved',
       'newsfeed.setFeedEnabled',
       // Per-user provider/oauth flows (the target is always the caller).
-      'oauth.begin', 'oauth.providers',
+      'oauth.begin', 'oauth.providers', 'oauth.status',
       'providers.addCustom', 'providers.cancelOAuth',
       'providers.completeOAuth', 'providers.list', 'providers.listModels',
       'providers.oauthStatus', 'providers.removeCredential',

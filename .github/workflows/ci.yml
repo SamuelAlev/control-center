@@ -131,8 +131,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Test encrypted browser resource lifecycle
-        run: node --test --test-concurrency=2 tool/resource_worker.test.mjs tool/resource_bridge.test.mjs
+      - name: Test browser resource lifecycle and CSP
+        run: node --test --test-concurrency=2 tool/resource_worker.test.mjs tool/resource_bridge.test.mjs tool/csp.test.mjs
 
   test:
     # Sharded by test file (tool/test_shard.dart). `flutter test --total-shards`

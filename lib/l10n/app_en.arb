@@ -519,6 +519,15 @@
   "serverSetupErrorInviteRejected": "That invite code is invalid or has expired. Ask for a fresh one.",
   "serverSetupErrorGeneric": "Something went wrong while connecting. Expand the technical details below for more information.",
   "serverSetupErrorDetails": "Technical details",
+  "serverActivityTitle": "Server activity",
+  "serverActivityStarting": "Starting local server…",
+  "serverActivityConnecting": "Connecting to server…",
+  "serverActivityStartFailed": "Server could not start",
+  "serverActivityDownloadFailed": "Download failed",
+  "serverActivityStatusUnavailable": "Could not read model status",
+  "serverActivityPreparingModel": "Preparing model…",
+  "serverActivityPortInUse": "The server port is already in use. Stop the other process or choose a different port on the server.",
+  "serverActivityStartFailedHint": "Check the technical details, then try again from server setup.",
   "calendarMoreEvents": "{count, plural, =1{1 more} other{{count} more}}",
   "@calendarMoreEvents": {
     "description": "Month-cell overflow button: how many events are hidden",
@@ -12635,6 +12644,18 @@
   "restoreSpace": "Restore",
   "@restoreSpace": {
     "description": "Restore an archived space to the sidebar"
+  },
+  "archivedConversations": "Archived conversations",
+  "@archivedConversations": {
+    "description": "Space menu item and archived conversations dialog title"
+  },
+  "archivedConversationsEmpty": "No archived conversations",
+  "@archivedConversationsEmpty": {
+    "description": "Empty state of the archived conversations dialog"
+  },
+  "restoreConversation": "Restore",
+  "@restoreConversation": {
+    "description": "Tooltip for restoring an archived conversation"
   },
   "archivedWhen": "Archived {time}",
   "@archivedWhen": {

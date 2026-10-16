@@ -1003,6 +1003,36 @@ class AppLocalizationsMs extends AppLocalizations {
   String get serverSetupErrorDetails => 'Butiran teknikal';
 
   @override
+  String get serverActivityTitle => 'Aktiviti pelayan';
+
+  @override
+  String get serverActivityStarting => 'Memulakan pelayan setempat…';
+
+  @override
+  String get serverActivityConnecting => 'Menyambung ke pelayan…';
+
+  @override
+  String get serverActivityStartFailed => 'Pelayan tidak dapat dimulakan';
+
+  @override
+  String get serverActivityDownloadFailed => 'Muat turun gagal';
+
+  @override
+  String get serverActivityStatusUnavailable =>
+      'Tidak dapat membaca status model';
+
+  @override
+  String get serverActivityPreparingModel => 'Menyediakan model…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'Port pelayan sudah digunakan. Hentikan proses lain atau pilih port yang berbeza pada pelayan.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Semak butiran teknikal, kemudian cuba lagi daripada persediaan pelayan.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14029,6 +14059,15 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Pulihkan';
+
+  @override
+  String get archivedConversations => 'Perbualan diarkibkan';
+
+  @override
+  String get archivedConversationsEmpty => 'Tiada perbualan diarkibkan';
+
+  @override
+  String get restoreConversation => 'Pulihkan';
 
   @override
   String archivedWhen(String time) {

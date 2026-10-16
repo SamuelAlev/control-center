@@ -996,6 +996,35 @@ class AppLocalizationsTh extends AppLocalizations {
   String get serverSetupErrorDetails => 'รายละเอียดทางเทคนิค';
 
   @override
+  String get serverActivityTitle => 'กิจกรรมของเซิร์ฟเวอร์';
+
+  @override
+  String get serverActivityStarting => 'กำลังเริ่มเซิร์ฟเวอร์ในเครื่อง…';
+
+  @override
+  String get serverActivityConnecting => 'กำลังเชื่อมต่อกับเซิร์ฟเวอร์…';
+
+  @override
+  String get serverActivityStartFailed => 'ไม่สามารถเริ่มเซิร์ฟเวอร์ได้';
+
+  @override
+  String get serverActivityDownloadFailed => 'ดาวน์โหลดไม่สำเร็จ';
+
+  @override
+  String get serverActivityStatusUnavailable => 'ไม่สามารถอ่านสถานะของโมเดลได้';
+
+  @override
+  String get serverActivityPreparingModel => 'กำลังเตรียมโมเดล…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'พอร์ตเซิร์ฟเวอร์มีการใช้งานอยู่แล้ว หยุดกระบวนการอื่นหรือเลือกพอร์ตอื่นบนเซิร์ฟเวอร์';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'ตรวจสอบรายละเอียดทางเทคนิค แล้วลองอีกครั้งจากหน้าตั้งค่าเซิร์ฟเวอร์';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13882,6 +13911,15 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get restoreSpace => 'กู้คืน';
+
+  @override
+  String get archivedConversations => 'การสนทนาที่เก็บถาวร';
+
+  @override
+  String get archivedConversationsEmpty => 'ไม่มีการสนทนาที่เก็บถาวร';
+
+  @override
+  String get restoreConversation => 'กู้คืน';
 
   @override
   String archivedWhen(String time) {

@@ -1499,6 +1499,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (id == null || id.isEmpty) {
       return null;
     }
+    if (await workspaceRepository.getById(id) == null) {
+      throw const NotFoundException('Workspace not found');
+    }
     final members = identityMembers;
     if (members == null) {
       return id;
@@ -4169,6 +4172,22 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                 },
             ],
           };
+        },
+      ),
+      // A device attempt's outcome is private to its caller and workspace.
+      RepoOp(
+        name: 'oauth.status',
+        kind: RepoOpKind.read,
+        workspaceScoped: false,
+        requiredArgs: ['login_id'],
+        handler: (ctx) async => {
+          'status': providerOAuth
+              .deviceLoginStatus(
+                loginId: ctx.args['login_id'] as String,
+                userId: ctx.userId,
+                workspaceId: await overlayWorkspaceIdChecked(ctx),
+              )
+              .name,
         },
       ),
       // Starts a sign-in. The caller's identity comes from the SESSION — a
@@ -10797,11 +10816,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
           await assertSpaceOwned(ctx.workspaceId!, spaceId);
-          return spaceBranchPrMatches(
-            openPrPoller,
-            ctx.workspaceId!,
-            spaceId,
-          );
+          return spaceBranchPrMatches(openPrPoller, ctx.workspaceId!, spaceId);
         },
       ),
     // The SERVER's authenticated GitHub user (global — not workspace data). The

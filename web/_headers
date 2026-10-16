@@ -4,14 +4,10 @@
 # these. They are NOT applied by `flutter run -d chrome` locally (a strict CSP
 # there would block the dev server's hot-reload socket), which is fine.
 #
-# The Content-Security-Policy is NOT here: it is stamped per-request by
-# worker/csp.js (wrangler.jsonc `run_worker_first`). The web client dials a
-# cc-server whose host the user enters only at connect time, so a static policy
-# can't name it; the Worker reads the cc_proxy_origin cookie (written on connect
-# — see lib/bootstrap/bootstrap_web.dart) and adds that origin to connect-src,
-# img-src and media-src. Without the cookie (a fresh, unpaired page) the policy
-# is strict — no proxy egress — so the connect form loads against a locked-down
-# page.
+# The Content-Security-Policy is stamped by worker/csp.js (wrangler.jsonc
+# `run_worker_first`). Encrypted-resource URLs stay same-origin, so media never
+# needs a connected-host cookie or a reload. Only identity probes and encrypted
+# WebSocket sessions need remote connect-src destinations.
 #
 # The remaining headers below are also re-asserted by the Worker (it may not see
 # this file's rules on ASSETS subresponses when run_worker_first is on), kept

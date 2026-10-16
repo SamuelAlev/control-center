@@ -6,17 +6,25 @@ import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_detection_result.dart';
+import 'package:cc_domain/features/settings/domain/model_control.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/infrastructure/embedding/embedding_model_control.dart';
+import 'package:control_center/core/infrastructure/speech/voice_model_control.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/server_activity_panel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:riverpod/src/framework.dart' show Override;
+
+import '../../../../helpers/fake_rpc_client.dart';
 
 void main() {
   late AppPreferences prefs;
@@ -64,10 +72,16 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
+    final rpc = (FakeRpcHost()..onCall = (_, _) => {'status': 'installed'})
+        .client();
+    addTearDown(rpc.close);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           appPreferencesProvider.overrideWithValue(prefs),
+          rpcClientProvider.overrideWithValue(rpc),
+          isServerOwnerProvider.overrideWithValue(false),
+          voiceModelCatalogProvider.overrideWith((ref) async => null),
           if (!deriveAuth) ...[
             // The gate is "at least one forge connected", so the fixture is a
             // forge connection rather than a GitHub-specific flag. Overriding
@@ -94,7 +108,7 @@ void main() {
           locale: const Locale('en'),
           home: CcTheme(
             data: CcThemeData.light(),
-            child: const Scaffold(body: OnboardingScreen()),
+            child: const OnboardingScreen(),
           ),
         ),
       ),
@@ -123,6 +137,52 @@ void main() {
     await pumpOnboarding(tester, authenticated: false);
     expect(find.text("Let's plug in your tools."), findsOneWidget);
     expect(find.text('Continue'), findsOneWidget);
+  });
+
+  testWidgets('background failure keeps narrow onboarding actions reachable', (
+    tester,
+  ) async {
+    await pumpOnboarding(
+      tester,
+      authenticated: true,
+      extraOverrides: [
+        embeddingModelStatusSnapshotProvider.overrideWith(
+          (ref) => Stream.value(
+            const ModelStatusSnapshot(
+              status: ModelLifecycleStatus.error,
+              error: 'No space left on device',
+            ),
+          ),
+        ),
+      ],
+    );
+    tester.view.physicalSize = const Size(390, 640);
+    await tester.pump();
+    final next = find.widgetWithText(CcButton, 'Continue');
+    final activity = find.byType(ServerActivityPanel);
+    expect(
+      tester.getRect(next).bottom,
+      lessThanOrEqualTo(tester.getRect(activity).top),
+    );
+    await tester.tap(next);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Give your work a home.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    final name = find.byType(CcTextField);
+    await tester.ensureVisible(name);
+    await tester.enterText(name, 'My workspace');
+    tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(
+      tester.getRect(next).bottom,
+      lessThanOrEqualTo(tester.getRect(activity).top),
+    );
+    expect(tester.getRect(activity).bottom, lessThanOrEqualTo(360));
+    expect(next.hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('renders app title in app bar', (tester) async {

@@ -27,10 +27,8 @@ class SpaceLeadingIcon extends ConsumerWidget {
   /// Distinct conversations with unseen agent messages.
   final int unreadConversationCount;
 
-  /// On the selected row's solid brand fill the default accent spinner and
-  /// the accent count adornment would vanish into the fill, so both switch to
-  /// `accentOn` — and the status-colored PR glyph with them (a gray/green
-  /// glyph on the burnt fill fails the 3:1 non-text floor).
+  /// Single-status glyphs and activity adornments invert on the selected
+  /// row. Mixed-status glyphs retain their colors on a neutral backing.
   final bool selected;
 
   /// Mark shown when the space has no pull request. Null keeps the pencil.
@@ -43,17 +41,16 @@ class SpaceLeadingIcon extends ConsumerWidget {
     if (running) {
       mark = CcSpinner(size: 18, color: selected ? t.accentOn : null);
     } else {
-      final status = ref.watch(_spacePrBadgeProvider(spaceId));
-      mark = status == null
+      final statusMask = ref.watch(_spacePrBadgeProvider(spaceId));
+      mark = statusMask == 0
           ? absent ?? const Icon(AppIcons.pencil, size: 18)
-          : PrStatusBadge(status: status, color: selected ? t.accentOn : null);
-      if (status == PrSidebarStatus.merged) {
-        final label = AppLocalizations.of(context).spaceAllPrsMergedLabel;
-        mark = CcTooltip(
-          message: label,
-          child: Semantics(label: label, child: mark),
-        );
-      }
+          : PrStatusBadge(
+              statusMask: statusMask,
+              selected: selected,
+              semanticLabel: statusMask == PrSidebarStatus.merged.mask
+                  ? AppLocalizations.of(context).spaceAllPrsMergedLabel
+                  : null,
+            );
     }
     if (unreadConversationCount == 0) {
       return mark;
@@ -66,17 +63,22 @@ class SpaceLeadingIcon extends ConsumerWidget {
   }
 }
 
-/// The aggregate PR status (null for none), without a numeric PR inventory.
+/// A value-compared mask of distinct PR states (zero for none).
 /// Compared by value: the linked-PR list is rebuilt on every
 /// association or PR refresh, and the branch matches on every poller sweep,
 /// yet the badge rarely changes — so the row repaints only when it does.
-final _spacePrBadgeProvider = Provider.autoDispose
-    .family<PrSidebarStatus?, String>((ref, spaceId) {
-      final prs = ref.watch(spacePullRequestsProvider(spaceId));
-      final allMerged = ref.watch(spaceAllPrsMergedProvider(spaceId));
-      final status = PrSidebarStatus.aggregate(prs);
-      return status == PrSidebarStatus.merged && !allMerged ? null : status;
-    });
+final _spacePrBadgeProvider = Provider.autoDispose.family<int, String>((
+  ref,
+  spaceId,
+) {
+  final prs = ref.watch(spacePullRequestsProvider(spaceId));
+  final statusMask = PrSidebarStatus.aggregate(prs);
+  if (statusMask == PrSidebarStatus.merged.mask &&
+      !ref.watch(spaceAllPrsMergedProvider(spaceId))) {
+    return 0;
+  }
+  return statusMask;
+});
 
 /// Overlays the unread-conversation count on a space's status glyph.
 class _UnreadConversationAdornment extends StatelessWidget {

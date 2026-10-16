@@ -1009,6 +1009,36 @@ class AppLocalizationsCs extends AppLocalizations {
   String get serverSetupErrorDetails => 'Technické detaily';
 
   @override
+  String get serverActivityTitle => 'Aktivita serveru';
+
+  @override
+  String get serverActivityStarting => 'Spouštění místního serveru…';
+
+  @override
+  String get serverActivityConnecting => 'Připojování k serveru…';
+
+  @override
+  String get serverActivityStartFailed => 'Server se nepodařilo spustit';
+
+  @override
+  String get serverActivityDownloadFailed => 'Stažení se nezdařilo';
+
+  @override
+  String get serverActivityStatusUnavailable =>
+      'Nepodařilo se zjistit stav modelu';
+
+  @override
+  String get serverActivityPreparingModel => 'Příprava modelu…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'Port serveru se již používá. Zastavte druhý proces nebo na serveru zvolte jiný port.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Zkontrolujte technické detaily a zkuste to znovu v nastavení serveru.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14167,6 +14197,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Obnovit';
+
+  @override
+  String get archivedConversations => 'Archivované konverzace';
+
+  @override
+  String get archivedConversationsEmpty => 'Žádné archivované konverzace';
+
+  @override
+  String get restoreConversation => 'Obnovit';
 
   @override
   String archivedWhen(String time) {

@@ -961,6 +961,33 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serverSetupErrorDetails => '技术详情';
 
   @override
+  String get serverActivityTitle => '服务器活动';
+
+  @override
+  String get serverActivityStarting => '正在启动本地服务器…';
+
+  @override
+  String get serverActivityConnecting => '正在连接服务器…';
+
+  @override
+  String get serverActivityStartFailed => '服务器无法启动';
+
+  @override
+  String get serverActivityDownloadFailed => '下载失败';
+
+  @override
+  String get serverActivityStatusUnavailable => '无法读取模型状态';
+
+  @override
+  String get serverActivityPreparingModel => '正在准备模型…';
+
+  @override
+  String get serverActivityPortInUse => '服务器端口已被占用。请停止其他进程，或在服务器上选择其他端口。';
+
+  @override
+  String get serverActivityStartFailedHint => '请查看技术详情，然后从服务器设置中重试。';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13553,6 +13580,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get restoreSpace => '恢复';
 
   @override
+  String get archivedConversations => '已归档会话';
+
+  @override
+  String get archivedConversationsEmpty => '没有已归档会话';
+
+  @override
+  String get restoreConversation => '恢复';
+
+  @override
   String archivedWhen(String time) {
     return '归档于 $time';
   }
@@ -16384,6 +16420,33 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get serverSetupErrorDetails => '技術詳情';
+
+  @override
+  String get serverActivityTitle => '伺服器活動';
+
+  @override
+  String get serverActivityStarting => '正在啟動本機伺服器…';
+
+  @override
+  String get serverActivityConnecting => '正在連線至伺服器…';
+
+  @override
+  String get serverActivityStartFailed => '無法啟動伺服器';
+
+  @override
+  String get serverActivityDownloadFailed => '下載失敗';
+
+  @override
+  String get serverActivityStatusUnavailable => '無法讀取模型狀態';
+
+  @override
+  String get serverActivityPreparingModel => '正在準備模型…';
+
+  @override
+  String get serverActivityPortInUse => '伺服器連接埠已被使用。請停止其他程序，或在伺服器上選擇其他連接埠。';
+
+  @override
+  String get serverActivityStartFailedHint => '請查看技術詳情，然後從伺服器設定重試。';
 
   @override
   String calendarMoreEvents(int count) {
@@ -28980,6 +29043,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get restoreSpace => '還原';
+
+  @override
+  String get archivedConversations => '已封存的對話';
+
+  @override
+  String get archivedConversationsEmpty => '沒有已封存的對話';
+
+  @override
+  String get restoreConversation => '還原';
 
   @override
   String archivedWhen(String time) {

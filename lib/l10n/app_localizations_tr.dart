@@ -1000,6 +1000,35 @@ class AppLocalizationsTr extends AppLocalizations {
   String get serverSetupErrorDetails => 'Teknik ayrıntılar';
 
   @override
+  String get serverActivityTitle => 'Sunucu etkinliği';
+
+  @override
+  String get serverActivityStarting => 'Yerel sunucu başlatılıyor…';
+
+  @override
+  String get serverActivityConnecting => 'Sunucuya bağlanılıyor…';
+
+  @override
+  String get serverActivityStartFailed => 'Sunucu başlatılamadı';
+
+  @override
+  String get serverActivityDownloadFailed => 'İndirme başarısız oldu';
+
+  @override
+  String get serverActivityStatusUnavailable => 'Model durumu okunamadı';
+
+  @override
+  String get serverActivityPreparingModel => 'Model hazırlanıyor…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'Sunucu bağlantı noktası zaten kullanımda. Diğer işlemi durdurun veya sunucuda farklı bir bağlantı noktası seçin.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Teknik ayrıntıları kontrol edin, ardından sunucu kurulumundan tekrar deneyin.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14009,6 +14038,15 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Geri yükle';
+
+  @override
+  String get archivedConversations => 'Arşivlenmiş sohbetler';
+
+  @override
+  String get archivedConversationsEmpty => 'Arşivlenmiş sohbet yok';
+
+  @override
+  String get restoreConversation => 'Geri yükle';
 
   @override
   String archivedWhen(String time) {

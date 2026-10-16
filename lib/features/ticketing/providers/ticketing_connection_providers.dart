@@ -81,7 +81,15 @@ Future<void> clearTicketingToken(WidgetRef ref, TicketProvider provider) async {
 Future<SignInStarted> signInToTicketing(
   WidgetRef ref,
   TicketProvider provider,
-) => startProviderSignIn(ref, provider.toStorageString());
+) => startProviderSignIn(
+  ref,
+  provider.toStorageString(),
+  onConnected: () {
+    if (ref.context.mounted) {
+      ref.invalidate(ticketingConnectionsProvider);
+    }
+  },
+);
 
 /// Whether [provider] now reports a connection for the signed-in user.
 Future<bool> isTicketingConnected(

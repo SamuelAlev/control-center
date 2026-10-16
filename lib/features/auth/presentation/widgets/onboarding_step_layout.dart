@@ -20,6 +20,26 @@ const double kOnboardingStepInset = 24;
 /// rather than against zero.
 const double kOnboardingStepBottomGap = 16;
 
+/// Moves a step's introduction into its fields scroller on compact layouts.
+///
+/// The step body owns the pinned footer; carrying the introduction through the
+/// body keeps feature-specific fields and actions on the same layout seam.
+class OnboardingStepIntroduction extends InheritedWidget {
+  /// Supplies [introduction] to the descendant [OnboardingStepLayout].
+  const OnboardingStepIntroduction({
+    required this.introduction,
+    required super.child,
+    super.key,
+  });
+
+  /// Heading and description shown before the fields.
+  final Widget introduction;
+
+  @override
+  bool updateShouldNotify(OnboardingStepIntroduction oldWidget) =>
+      introduction != oldWidget.introduction;
+}
+
 /// The body layout shared by every onboarding step: the fields scroll, the
 /// action row does not.
 ///
@@ -72,6 +92,9 @@ class _OnboardingStepLayoutState extends State<OnboardingStepLayout> {
   Widget build(BuildContext context) {
     final tokens = context.designSystem;
     final footer = widget.footer;
+    final introduction = context
+        .dependOnInheritedWidgetOfExactType<OnboardingStepIntroduction>()
+        ?.introduction;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -87,7 +110,12 @@ class _OnboardingStepLayoutState extends State<OnboardingStepLayout> {
                 kOnboardingStepInset,
                 kOnboardingStepBottomGap,
               ),
-              child: widget.content,
+              child: introduction == null
+                  ? widget.content
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [introduction, widget.content],
+                    ),
             ),
           ),
         ),

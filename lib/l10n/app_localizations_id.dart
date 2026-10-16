@@ -999,6 +999,36 @@ class AppLocalizationsId extends AppLocalizations {
   String get serverSetupErrorDetails => 'Detail teknis';
 
   @override
+  String get serverActivityTitle => 'Aktivitas server';
+
+  @override
+  String get serverActivityStarting => 'Memulai server lokal…';
+
+  @override
+  String get serverActivityConnecting => 'Menghubungkan ke server…';
+
+  @override
+  String get serverActivityStartFailed => 'Server tidak dapat dimulai';
+
+  @override
+  String get serverActivityDownloadFailed => 'Unduhan gagal';
+
+  @override
+  String get serverActivityStatusUnavailable =>
+      'Tidak dapat membaca status model';
+
+  @override
+  String get serverActivityPreparingModel => 'Menyiapkan model…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'Port server sudah digunakan. Hentikan proses lain atau pilih port berbeda di server.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Periksa detail teknis, lalu coba lagi dari pengaturan server.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14023,6 +14053,15 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Pulihkan';
+
+  @override
+  String get archivedConversations => 'Percakapan terarsip';
+
+  @override
+  String get archivedConversationsEmpty => 'Tidak ada percakapan terarsip';
+
+  @override
+  String get restoreConversation => 'Pulihkan';
 
   @override
   String archivedWhen(String time) {

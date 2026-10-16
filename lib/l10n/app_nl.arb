@@ -388,6 +388,15 @@
   "serverSetupErrorInviteRejected": "Die uitnodigingscode is ongeldig of verlopen. Vraag om een nieuwe.",
   "serverSetupErrorGeneric": "Er is iets misgegaan tijdens het verbinden. Klap de technische details hieronder uit voor meer informatie.",
   "serverSetupErrorDetails": "Technische details",
+  "serverActivityTitle": "Serveractiviteit",
+  "serverActivityStarting": "Lokale server wordt gestart…",
+  "serverActivityConnecting": "Verbinding met server wordt gemaakt…",
+  "serverActivityStartFailed": "Server kon niet worden gestart",
+  "serverActivityDownloadFailed": "Download mislukt",
+  "serverActivityStatusUnavailable": "Modelstatus kon niet worden gelezen",
+  "serverActivityPreparingModel": "Model wordt voorbereid…",
+  "serverActivityPortInUse": "De serverpoort is al in gebruik. Stop het andere proces of kies een andere poort op de server.",
+  "serverActivityStartFailedHint": "Bekijk de technische details en probeer het opnieuw via de serverinstellingen.",
   "calendarMoreEvents": "{count, plural, =1{nog 1} other{nog {count}}}",
   "calendarAllDayGutter": "Hele dag",
   "calendarAllDayEventCount": "{count, plural, =1{1 afspraak} other{{count} afspraken}}",
@@ -7490,6 +7499,18 @@
   "restoreSpace": "Herstellen",
   "@restoreSpace": {
     "description": "Restore an archived space to the sidebar"
+  },
+  "archivedConversations": "Gearchiveerde gesprekken",
+  "@archivedConversations": {
+    "description": "Space menu item and archived conversations dialog title"
+  },
+  "archivedConversationsEmpty": "Geen gearchiveerde gesprekken",
+  "@archivedConversationsEmpty": {
+    "description": "Empty state of the archived conversations dialog"
+  },
+  "restoreConversation": "Herstellen",
+  "@restoreConversation": {
+    "description": "Tooltip for restoring an archived conversation"
   },
   "archivedWhen": "Gearchiveerd {time}",
   "@archivedWhen": {

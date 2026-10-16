@@ -399,9 +399,9 @@ class _WebRootState extends State<_WebRoot> {
     });
   }
 
-  /// Binds a live connection into the app: resolves the landing workspace,
-  /// reconciles the CSP cookie and watches for a terminal identity mismatch
-  /// (transient drops are the resilient client's business, not the gate's).
+  /// Binds a live connection into the app: resolves the landing workspace and
+  /// watches for a terminal identity mismatch (transient drops are the
+  /// resilient client's business, not the gate's).
   Future<void> _adopt(RemoteServerConnection connection) async {
     final workspaces = RemoteWorkspaceRepository(connection.client);
     final list = await workspaces.list();
@@ -422,20 +422,6 @@ class _WebRootState extends State<_WebRoot> {
     if (!mounted) {
       await connection.dispose();
       return;
-    }
-
-    // Reconcile the CSP cookie so the Cloudflare Worker can stamp a
-    // host-scoped policy on the next load (see _kProxyOriginCookie). CSP can
-    // only tighten, never relax, on a live page, so when the connected
-    // cc-server origin changes we reload once — the saved entry makes the
-    // reload resume straight back into this session.
-    final origin = connection.mediaProxy?.httpBase.toString() ?? '';
-    if (origin.isNotEmpty && origin != _readProxyOriginCookie()) {
-      _setProxyOriginCookie(origin);
-      if (_store.readActive() != null && _readProxyOriginCookie() == origin) {
-        web.window.location.reload();
-        return;
-      }
     }
 
     await _statusSub?.cancel();
@@ -464,8 +450,6 @@ class _WebRootState extends State<_WebRoot> {
             await _store.removeEntry(connection.entry.serverId);
           } on Object catch (error) {
             debugPrint('Could not remove revoked pairing: $error');
-          } finally {
-            _clearProxyOriginCookie();
           }
         }());
       }
@@ -512,9 +496,6 @@ class _WebRootState extends State<_WebRoot> {
     _statusSub = null;
     await _connection?.dispose();
     await _store.clear();
-    // Drop the CSP origin cookie so the next load returns to the strict
-    // (unpaired) policy — no host is connected to allow-list.
-    _clearProxyOriginCookie();
     if (!mounted) {
       return;
     }
@@ -769,59 +750,6 @@ const _kTheme = 'cc_web.theme';
 /// Loads the saved theme mode (defaults to following the system appearance).
 _WebThemeMode _loadThemeMode() =>
     _WebThemeMode.fromName(web.window.localStorage.getItem(_kTheme));
-
-// Connected-origin cookie → host-scoped CSP --------------------------------
-// The deployed web client is a static SPA served by Cloudflare; its CSP can't name the
-// cc-server host until the user connects (the host is typed in the connect form and only
-// then is it known).
-// The Cloudflare Worker (worker/csp.js, run_worker_first) reads this cookie on each
-// document request and stamps a per-request CSP adding the connected cc-server origin to
-// connect-src, img-src and media-src — so the CanvasKit `fetch()` to `/proxy/media`, the
-// `<img>` src and the `<audio>`/`<video>` src (soundscape stream, meeting playback,
-
-const _kProxyOriginCookie = 'cc_proxy_origin';
-
-/// Reads [name] from `document.cookie`, returning null when absent. Values are
-/// URL-encoded on write (see [_setProxyOriginCookie]); callers decode as needed.
-String? _readCookie(String name) {
-  final raw = web.document.cookie;
-  for (final part in raw.split(';')) {
-    final eq = part.indexOf('=');
-    final k = eq < 0 ? part.trim() : part.substring(0, eq).trim();
-    if (k == name) {
-      return eq < 0 ? '' : part.substring(eq + 1).trim();
-    }
-  }
-  return null;
-}
-
-/// The connected origin from the cookie, decoded, or null when absent/invalid.
-String? _readProxyOriginCookie() {
-  final raw = _readCookie(_kProxyOriginCookie);
-  if (raw == null || raw.isEmpty) {
-    return null;
-  }
-  try {
-    return Uri.decodeComponent(raw);
-  } catch (_) {
-    return null;
-  }
-}
-
-/// Stores the (non-sensitive) cc-server origin in the CSP cookie. `Secure`
-/// (Cloudflare serves https), `SameSite=Lax`, `Path=/`, ~1y. The value is
-/// URL-encoded so IPv6 hosts (with `[`/`]`) don't break the cookie octets.
-void _setProxyOriginCookie(String origin) {
-  web.document.cookie =
-      '$_kProxyOriginCookie=${Uri.encodeComponent(origin)}; Path=/; '
-      'Max-Age=31536000; SameSite=Lax; Secure';
-}
-
-/// Clears the CSP origin cookie (next load returns to the strict, unpaired CSP).
-void _clearProxyOriginCookie() {
-  web.document.cookie =
-      '$_kProxyOriginCookie=; Path=/; Max-Age=0; SameSite=Lax; Secure';
-}
 
 /// Reads connection hints from the current URL — a base64url-JSON or
 /// query-string URL FRAGMENT only. Query parameters deliberately carry

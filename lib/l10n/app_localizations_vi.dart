@@ -1002,6 +1002,36 @@ class AppLocalizationsVi extends AppLocalizations {
   String get serverSetupErrorDetails => 'Chi tiết kỹ thuật';
 
   @override
+  String get serverActivityTitle => 'Hoạt động của máy chủ';
+
+  @override
+  String get serverActivityStarting => 'Đang khởi động máy chủ cục bộ…';
+
+  @override
+  String get serverActivityConnecting => 'Đang kết nối với máy chủ…';
+
+  @override
+  String get serverActivityStartFailed => 'Không thể khởi động máy chủ';
+
+  @override
+  String get serverActivityDownloadFailed => 'Tải xuống thất bại';
+
+  @override
+  String get serverActivityStatusUnavailable =>
+      'Không thể đọc trạng thái mô hình';
+
+  @override
+  String get serverActivityPreparingModel => 'Đang chuẩn bị mô hình…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'Cổng máy chủ đã được sử dụng. Hãy dừng tiến trình khác hoặc chọn cổng khác trên máy chủ.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Kiểm tra chi tiết kỹ thuật, rồi thử lại từ phần thiết lập máy chủ.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13985,6 +14015,16 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Khôi phục';
+
+  @override
+  String get archivedConversations => 'Cuộc trò chuyện đã lưu trữ';
+
+  @override
+  String get archivedConversationsEmpty =>
+      'Không có cuộc trò chuyện đã lưu trữ';
+
+  @override
+  String get restoreConversation => 'Khôi phục';
 
   @override
   String archivedWhen(String time) {

@@ -52,6 +52,7 @@ export const releases: Release[] = [
           "Approval prompts and agent questions render Markdown consistently on desktop and phone.",
           "Claude Code accounts can refresh authentication tokens inside the sandbox.",
           "Agent commits use the connected user's identity rather than the bot as their author.",
+          "GitHub device sign-in closes after approval and updates the connected account without a second login, even if the code dialog was closed.",
           "Fixed Windows PDF renderer builds.",
         ],
       },

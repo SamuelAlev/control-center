@@ -1,3 +1,4 @@
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient;
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/shared/utils/open_url.dart';
@@ -94,6 +95,7 @@ class SignInDeviceCode extends SignInStarted {
     required this.userCode,
     required this.verificationUri,
     required this.expiresIn,
+    required this.completion,
   });
 
   /// The code the human types on the provider's page.
@@ -104,6 +106,9 @@ class SignInDeviceCode extends SignInStarted {
 
   /// How long the code stays valid.
   final Duration expiresIn;
+
+  /// Completes for this attempt, even if its dialog has been dismissed.
+  final Future<bool> completion;
 }
 
 /// A redirect flow: the browser has been opened at the provider.
@@ -119,29 +124,38 @@ class SignInBrowserOpened extends SignInStarted {
 ///
 /// The credential never comes back through the app: for a device flow the
 /// SERVER polls and stores it; for a redirect flow the browser talks to the
-/// server's own callback. Either way the app learns the outcome by re-reading
-/// its connection list — which is what lets the same flow work from a phone,
-/// or from a browser that is not on the server's machine.
+/// server's own callback. Device completion is watched independently of its
+/// dialog, so dismissing the code does not leave the connection list stale.
 Future<SignInStarted> startProviderSignIn(
   WidgetRef ref,
-  String provider,
-) async {
+  String provider, {
+  required void Function() onConnected,
+}) async {
   final workspaceId = ref.read(activeWorkspaceIdProvider);
-  final data = await ref.read(rpcClientProvider).call('oauth.begin', {
+  final rpc = ref.read(rpcClientProvider);
+  final data = await rpc.call('oauth.begin', {
     'provider': provider,
-    ...overlayWorkspaceArgs(workspaceId),
+    'workspace_id': workspaceId,
   });
   if (data['mode'] == 'device') {
     final code = data['user_code'] as String? ?? '';
     final uri = data['verification_uri'] as String? ?? '';
+    final expiresIn = Duration(
+      seconds: (data['expires_in'] as num?)?.toInt() ?? 900,
+    );
     // The dialog opens the page once the code is on screen. Opening it here,
     // before that route exists, steals focus first — the click that brings
     // the window back then lands on the scrim and dismisses the code.
     return SignInDeviceCode(
       userCode: code,
       verificationUri: uri,
-      expiresIn: Duration(
-        seconds: (data['expires_in'] as num?)?.toInt() ?? 900,
+      expiresIn: expiresIn,
+      completion: _awaitDeviceSignIn(
+        rpc,
+        loginId: data['login_id'] as String,
+        workspaceId: workspaceId,
+        expiresIn: expiresIn,
+        onConnected: onConnected,
       ),
     );
   }
@@ -149,7 +163,36 @@ Future<SignInStarted> startProviderSignIn(
   return SignInBrowserOpened(opened: url.isNotEmpty && openExternalUrl(url));
 }
 
-/// How long a started sign-in is waited on before the UI stops watching. The
+Future<bool> _awaitDeviceSignIn(
+  RemoteRpcClient rpc, {
+  required String loginId,
+  required String? workspaceId,
+  required Duration expiresIn,
+  required void Function() onConnected,
+}) async {
+  final deadline = DateTime.now().add(expiresIn);
+  do {
+    await Future<void>.delayed(const Duration(seconds: 2));
+    final data = await rpc.call('oauth.status', {
+      'login_id': loginId,
+      // Explicit null also prevents the RPC client's active workspace from
+      // retargeting a login started during onboarding.
+      'workspace_id': workspaceId,
+    });
+    switch (data['status']) {
+      case 'succeeded':
+        onConnected();
+        return true;
+      case 'pending':
+        continue;
+      default:
+        return false;
+    }
+  } while (DateTime.now().isBefore(deadline));
+  return false;
+}
+
+/// How long a redirect sign-in is waited on before the UI stops watching. The
 /// login itself stays valid server-side for its own window; this is only about
 /// how long a spinner is allowed to spin.
 const Duration kSignInTimeout = Duration(minutes: 10);

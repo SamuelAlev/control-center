@@ -50,8 +50,10 @@ void main() {
       // The provider compares this string exactly; two places composing "the
       // same" URL is how a trailing slash becomes a refused sign-in.
       expect(
-        providerOAuthRedirectUri('https://cc.example:9030', 'github')
-            .toString(),
+        providerOAuthRedirectUri(
+          'https://cc.example:9030',
+          'github',
+        ).toString(),
         'https://cc.example:9030/oauth/github/callback',
       );
     });
@@ -84,19 +86,21 @@ void main() {
   });
 
   group('beginLogin', () {
-    test('carries the client id, the redirect and an unguessable state',
-        () async {
-      final url = await oauth.beginLogin(
-        provider: ProviderApp.github,
-        userId: alice,
-        redirectUri: redirect,
-      );
-      expect(url.host, 'github.com');
-      expect(url.queryParameters['client_id'], 'client-id');
-      expect(url.queryParameters['redirect_uri'], redirect.toString());
-      expect(url.queryParameters['response_type'], 'code');
-      expect(url.queryParameters['state']!.length, greaterThanOrEqualTo(32));
-    });
+    test(
+      'carries the client id, the redirect and an unguessable state',
+      () async {
+        final url = await oauth.beginLogin(
+          provider: ProviderApp.github,
+          userId: alice,
+          redirectUri: redirect,
+        );
+        expect(url.host, 'github.com');
+        expect(url.queryParameters['client_id'], 'client-id');
+        expect(url.queryParameters['redirect_uri'], redirect.toString());
+        expect(url.queryParameters['response_type'], 'code');
+        expect(url.queryParameters['state']!.length, greaterThanOrEqualTo(32));
+      },
+    );
 
     test('never puts the user id in the URL', () async {
       // The callback resolves WHO from server-side state. A user id in the
@@ -245,10 +249,8 @@ void main() {
         clientSecret: 'secret',
       );
       expect(
-        () => oauth.beginDeviceLogin(
-          provider: ProviderApp.linear,
-          userId: alice,
-        ),
+        () =>
+            oauth.beginDeviceLogin(provider: ProviderApp.linear, userId: alice),
         throwsA(isA<AuthException>()),
       );
     });
@@ -261,10 +263,8 @@ void main() {
           ..connectionTimeout = const Duration(milliseconds: 1),
       );
       expect(
-        () => bare.beginDeviceLogin(
-          provider: ProviderApp.github,
-          userId: alice,
-        ),
+        () =>
+            bare.beginDeviceLogin(provider: ProviderApp.github, userId: alice),
         throwsA(isA<AuthException>()),
       );
     });
@@ -273,6 +273,7 @@ void main() {
       // The device code is the SERVER's half of the exchange; a client holding
       // it could complete somebody else's login.
       const prompt = DeviceLoginPrompt(
+        loginId: 'attempt-id',
         userCode: 'ABCD-1234',
         verificationUri: 'https://github.com/login/device',
         expiresIn: Duration(minutes: 15),
@@ -342,11 +343,8 @@ void main() {
         secrets: secrets,
         install: apps,
       );
-      oauth.workspaceLookup = (id) async => workspace(
-        id: id,
-        mode: GithubAuthMode.app,
-        appId: '999',
-      );
+      oauth.workspaceLookup = (id) async =>
+          workspace(id: id, mode: GithubAuthMode.app, appId: '999');
       await secrets.writePsk(
         WorkspaceGitHubAppSettings.clientIdSecret('ws-app'),
         'ws-client-id',
@@ -382,4 +380,3 @@ void main() {
     });
   });
 }
-

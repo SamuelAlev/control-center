@@ -320,6 +320,16 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     }
   }
 
+  RouteInformation? _lastRouteInformation;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _lastRouteInformation ??= GoRouter.maybeOf(
+      context,
+    )?.routeInformationProvider.value;
+  }
+
   EditorLayoutPersistence _newPersistence() => EditorLayoutPersistence(
     codec: messagingLayoutCodec,
     cache: ref.read(editorLayoutCacheRepositoryProvider),
@@ -405,13 +415,31 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     if (spaceChanged) {
       _switchConversation(oldWidget.selectedSpaceId, widget.selectedSpaceId);
     }
-    if (!spaceChanged && oldWidget.focusedTabKey != widget.focusedTabKey) {
+    final routeInformation = GoRouter.maybeOf(
+      context,
+    )?.routeInformationProvider.value;
+    // Local tab presses leave GoRouter's key untouched. A fresh navigation
+    // to that same key must still reopen/refocus its tab; ordinary provider
+    // rebuilds must not reapply the stale route over the user's local focus.
+    final explicitTabRequest =
+        widget.focusedTabKey != null &&
+        oldWidget.focusedTabKey == widget.focusedTabKey &&
+        _tabUrl.lastKey != widget.focusedTabKey &&
+        !identical(_lastRouteInformation, routeInformation);
+    _lastRouteInformation = routeInformation;
+    if (!spaceChanged &&
+        (oldWidget.focusedTabKey != widget.focusedTabKey ||
+            explicitTabRequest)) {
       // Same-space back/forward or deep link: focus after this build.
       // A space switch applies its URL key as part of restore instead;
       // applying a null key again would reset the restored selection.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _tabUrl.apply(_layout, widget.focusedTabKey);
+          _tabUrl.apply(
+            _layout,
+            widget.focusedTabKey,
+            force: explicitTabRequest,
+          );
           _syncRestoredTabUrl();
         }
       });

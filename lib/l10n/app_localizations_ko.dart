@@ -981,6 +981,35 @@ class AppLocalizationsKo extends AppLocalizations {
   String get serverSetupErrorDetails => '기술 세부 정보';
 
   @override
+  String get serverActivityTitle => '서버 활동';
+
+  @override
+  String get serverActivityStarting => '로컬 서버 시작하는 중…';
+
+  @override
+  String get serverActivityConnecting => '서버에 연결하는 중…';
+
+  @override
+  String get serverActivityStartFailed => '서버를 시작할 수 없습니다';
+
+  @override
+  String get serverActivityDownloadFailed => '다운로드 실패';
+
+  @override
+  String get serverActivityStatusUnavailable => '모델 상태를 읽을 수 없습니다';
+
+  @override
+  String get serverActivityPreparingModel => '모델 준비하는 중…';
+
+  @override
+  String get serverActivityPortInUse =>
+      '서버 포트가 이미 사용 중입니다. 다른 프로세스를 중지하거나 서버에서 다른 포트를 선택하세요.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      '기술 세부 정보를 확인한 다음 서버 설정에서 다시 시도하세요.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13701,6 +13730,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get restoreSpace => '복원';
+
+  @override
+  String get archivedConversations => '보관된 대화';
+
+  @override
+  String get archivedConversationsEmpty => '보관된 대화가 없습니다';
+
+  @override
+  String get restoreConversation => '복원';
 
   @override
   String archivedWhen(String time) {

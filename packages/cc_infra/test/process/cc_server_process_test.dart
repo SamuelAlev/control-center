@@ -77,20 +77,77 @@ void main() {
     },
   );
 
-  test('throws when the child exits before reporting readiness', () async {
-    final server = _sh('echo "booting"; exit 3');
+  test('early exit includes the final bind failure from stderr', () async {
+    final server = _sh(
+      'echo "preflight complete"; '
+      'echo "SocketException: Failed to bind: Address already in use, port = 9030" >&2; '
+      'exit 3',
+    );
 
-    await expectLater(server.start(), throwsA(isA<CcServerStartException>()));
+    await expectLater(
+      server.start(),
+      throwsA(
+        isA<CcServerStartException>()
+            .having((e) => e.message, 'message', contains('exited with code 3'))
+            .having(
+              (e) => e.message,
+              'message',
+              contains('Address already in use, port = 9030'),
+            ),
+      ),
+    );
   });
 
-  test('throws (and kills the child) when readiness times out', () async {
-    final server = _sh('sleep 30'); // never prints the ready line
+  test('retains the last output on both pipes before premature exit', () async {
+    final server = _sh(
+      'echo "loading native runtime" >&2; '
+      'printf "final stdout: native dependency missing"; '
+      'printf "final stderr: libonnxruntime unavailable" >&2; '
+      'exit 9',
+    );
+
+    await expectLater(
+      server.start(),
+      throwsA(
+        isA<CcServerStartException>().having(
+          (e) => e.message,
+          'message',
+          allOf(
+            contains('final stdout: native dependency missing'),
+            contains('final stderr: libonnxruntime unavailable'),
+          ),
+        ),
+      ),
+    );
+  });
+
+  test('timeout retains bounded and redacted startup diagnostics', () async {
+    final logs = <String>[];
+    final server = _sh(
+      'i=0; while [ "\$i" -lt 30 ]; do '
+      'echo "diagnostic \$i"; i=\$((i+1)); done; '
+      'echo "native preflight stalled, GH_TOKEN=example-secret" >&2; '
+      'sleep 30',
+      onLog: (_, message) => logs.add(message),
+    );
 
     await expectLater(
       server.start(timeout: const Duration(milliseconds: 300)),
-      throwsA(isA<CcServerStartException>()),
+      throwsA(
+        isA<CcServerStartException>().having(
+          (e) => e.message,
+          'message',
+          allOf(
+            contains('did not report readiness in time'),
+            contains('native preflight stalled'),
+            isNot(contains('example-secret')),
+            isNot(contains('diagnostic 0\n')),
+          ),
+        ),
+      ),
     );
     expect(server.isRunning, isFalse);
+    expect(logs.join('\n'), isNot(contains('example-secret')));
   });
 
   test('rejects a double start', () async {

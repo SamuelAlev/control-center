@@ -124,7 +124,6 @@ class _ForgeConnectionRowState extends ConsumerState<ForgeConnectionRow> {
             context,
             providerName: widget.forge.displayName,
             prompt: started,
-            connected: () => isForgeConnected(ref, widget.forge),
           );
         case SignInBrowserOpened(:final opened):
           if (!opened) {
@@ -175,39 +174,58 @@ class _ForgeConnectionRowState extends ConsumerState<ForgeConnectionRow> {
       child: Text(connected ? l10n.updateToken : l10n.addToken),
     );
 
-    return SettingsRow(
-      icon: AppIcons.gitBranch,
-      title: name,
-      subtitle: _subtitle(l10n),
-      subtitleWidget: widget.loading ? const SkeletonBar(width: 140) : null,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (connected) ...[
-            CcButton(
-              onPressed: () => clearForgeToken(ref, widget.forge),
-              variant: CcButtonVariant.ghost,
-              child: Text(l10n.disconnect),
-            ),
-            const SizedBox(width: 8),
-          ],
-          if (!connected || !widget.canSignIn) tokenButton,
-          if (widget.canSignIn) ...[
-            if (!connected) const SizedBox(width: 8),
-            CcButton(
-              onPressed: _busy ? null : _signIn,
-              variant: CcButtonVariant.secondary,
-              child: _busy
-                  ? const CcSpinner(size: 14)
-                  : Text(
-                      connected
-                          ? l10n.signInAgain
-                          : l10n.signInWithProvider(name),
-                    ),
-            ),
-          ],
+    final actions = Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (connected) ...[
+          CcButton(
+            onPressed: () => clearForgeToken(ref, widget.forge),
+            variant: CcButtonVariant.ghost,
+            child: Text(l10n.disconnect),
+          ),
         ],
-      ),
+        if (!connected || !widget.canSignIn) tokenButton,
+        if (widget.canSignIn) ...[
+          CcButton(
+            onPressed: _busy ? null : _signIn,
+            variant: CcButtonVariant.secondary,
+            child: _busy
+                ? const CcSpinner(size: 14)
+                : Text(
+                    connected
+                        ? l10n.signInAgain
+                        : l10n.signInWithProvider(name),
+                  ),
+          ),
+        ],
+      ],
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 480;
+        final row = SettingsRow(
+          icon: AppIcons.gitBranch,
+          title: name,
+          subtitle: _subtitle(l10n),
+          subtitleWidget: widget.loading ? const SkeletonBar(width: 140) : null,
+          trailing: compact ? const SizedBox.shrink() : actions,
+        );
+        return compact
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  row,
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: actions,
+                  ),
+                ],
+              )
+            : row;
+      },
     );
   }
 

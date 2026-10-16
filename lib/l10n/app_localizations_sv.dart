@@ -1007,6 +1007,35 @@ class AppLocalizationsSv extends AppLocalizations {
   String get serverSetupErrorDetails => 'Tekniska detaljer';
 
   @override
+  String get serverActivityTitle => 'Serveraktivitet';
+
+  @override
+  String get serverActivityStarting => 'Startar lokal server…';
+
+  @override
+  String get serverActivityConnecting => 'Ansluter till servern…';
+
+  @override
+  String get serverActivityStartFailed => 'Servern kunde inte startas';
+
+  @override
+  String get serverActivityDownloadFailed => 'Nedladdningen misslyckades';
+
+  @override
+  String get serverActivityStatusUnavailable => 'Kunde inte läsa modellstatus';
+
+  @override
+  String get serverActivityPreparingModel => 'Förbereder modellen…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'Serverporten används redan. Stoppa den andra processen eller välj en annan port på servern.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Kontrollera de tekniska detaljerna och försök igen via serverkonfigurationen.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14021,6 +14050,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Återställ';
+
+  @override
+  String get archivedConversations => 'Arkiverade samtal';
+
+  @override
+  String get archivedConversationsEmpty => 'Inga arkiverade samtal';
+
+  @override
+  String get restoreConversation => 'Återställ';
 
   @override
   String archivedWhen(String time) {

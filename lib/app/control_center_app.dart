@@ -17,6 +17,7 @@ import 'package:control_center/features/shell/presentation/widgets/server_discon
 import 'package:control_center/features/shell/presentation/widgets/server_shutdown_overlay.dart';
 import 'package:control_center/features/shell/presentation/widgets/title_bar_workspace_chip.dart';
 import 'package:control_center/features/shell/providers/command_palette_providers.dart';
+import 'package:control_center/features/shell/providers/shell_route_providers.dart';
 import 'package:control_center/features/workspaces/providers/rpc_client_workspace_sync_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_url_sync_provider.dart';
@@ -26,6 +27,7 @@ import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/app_shortcuts.dart';
 import 'package:control_center/shared/widgets/desktop_update_lifecycle.dart';
+import 'package:control_center/shared/widgets/server_activity_overlay.dart';
 import 'package:control_center/shared/widgets/window_caption_buttons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -186,6 +188,10 @@ class ControlCenterApp extends ConsumerWidget {
                                 child: child ?? const SizedBox.shrink(),
                               ),
                             ),
+                            OverlayEntry(
+                              builder: (context) =>
+                                  const _AppServerActivityOverlay(),
+                            ),
                             // The app-drawn window controls (desktop windows whose
                             // native ones went with the hidden title bar), above
                             // every route and dialog like a real caption. Only the
@@ -216,5 +222,22 @@ class ControlCenterApp extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class _AppServerActivityOverlay extends ConsumerWidget {
+  const _AppServerActivityOverlay();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    final onboarding = ref.watch(
+      routerPathProvider(router).select((path) => path == onboardingRoute),
+    );
+    return onboarding
+        ? const SizedBox.shrink()
+        : ServerActivityOverlay(
+            canManageModels: ref.watch(isServerOwnerProvider),
+          );
   }
 }

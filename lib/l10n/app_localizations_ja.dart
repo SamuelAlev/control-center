@@ -979,6 +979,34 @@ class AppLocalizationsJa extends AppLocalizations {
   String get serverSetupErrorDetails => '技術情報';
 
   @override
+  String get serverActivityTitle => 'サーバーの動作状況';
+
+  @override
+  String get serverActivityStarting => 'ローカルサーバーを起動しています…';
+
+  @override
+  String get serverActivityConnecting => 'サーバーに接続しています…';
+
+  @override
+  String get serverActivityStartFailed => 'サーバーを起動できませんでした';
+
+  @override
+  String get serverActivityDownloadFailed => 'ダウンロードに失敗しました';
+
+  @override
+  String get serverActivityStatusUnavailable => 'モデルの状態を読み取れませんでした';
+
+  @override
+  String get serverActivityPreparingModel => 'モデルを準備しています…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'サーバーのポートはすでに使用されています。別のプロセスを停止するか、サーバーで別のポートを選択してください。';
+
+  @override
+  String get serverActivityStartFailedHint => '技術情報を確認してから、サーバー設定でもう一度お試しください。';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13709,6 +13737,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get restoreSpace => '復元';
+
+  @override
+  String get archivedConversations => 'アーカイブ済みの会話';
+
+  @override
+  String get archivedConversationsEmpty => 'アーカイブ済みの会話はありません';
+
+  @override
+  String get restoreConversation => '復元';
 
   @override
   String archivedWhen(String time) {

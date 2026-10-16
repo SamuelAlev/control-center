@@ -174,7 +174,6 @@ class _TicketingCredentialRowState
             context,
             providerName: TicketingConnectionCard._label(widget.provider, l10n),
             prompt: started,
-            connected: () => isTicketingConnected(ref, widget.provider),
           );
         case SignInBrowserOpened(:final opened):
           if (!opened) {

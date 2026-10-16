@@ -1012,6 +1012,36 @@ class AppLocalizationsRo extends AppLocalizations {
   String get serverSetupErrorDetails => 'Detalii tehnice';
 
   @override
+  String get serverActivityTitle => 'Activitatea serverului';
+
+  @override
+  String get serverActivityStarting => 'Se pornește serverul local…';
+
+  @override
+  String get serverActivityConnecting => 'Se conectează la server…';
+
+  @override
+  String get serverActivityStartFailed => 'Serverul nu a putut porni';
+
+  @override
+  String get serverActivityDownloadFailed => 'Descărcarea a eșuat';
+
+  @override
+  String get serverActivityStatusUnavailable =>
+      'Nu s-a putut citi starea modelului';
+
+  @override
+  String get serverActivityPreparingModel => 'Se pregătește modelul…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'Portul serverului este deja folosit. Opriți celălalt proces sau alegeți un alt port pe server.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Verificați detaliile tehnice, apoi încercați din nou din configurarea serverului.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14158,6 +14188,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Restaurează';
+
+  @override
+  String get archivedConversations => 'Conversații arhivate';
+
+  @override
+  String get archivedConversationsEmpty => 'Nicio conversație arhivată';
+
+  @override
+  String get restoreConversation => 'Restaurează';
 
   @override
   String archivedWhen(String time) {

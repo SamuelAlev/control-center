@@ -996,6 +996,35 @@ class AppLocalizationsFa extends AppLocalizations {
   String get serverSetupErrorDetails => 'جزئیات فنی';
 
   @override
+  String get serverActivityTitle => 'فعالیت سرور';
+
+  @override
+  String get serverActivityStarting => 'در حال راه‌اندازی سرور محلی…';
+
+  @override
+  String get serverActivityConnecting => 'در حال اتصال به سرور…';
+
+  @override
+  String get serverActivityStartFailed => 'سرور راه‌اندازی نشد';
+
+  @override
+  String get serverActivityDownloadFailed => 'دانلود ناموفق بود';
+
+  @override
+  String get serverActivityStatusUnavailable => 'وضعیت مدل خوانده نشد';
+
+  @override
+  String get serverActivityPreparingModel => 'در حال آماده‌سازی مدل…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'درگاه سرور هم‌اکنون در حال استفاده است. فرایند دیگر را متوقف کنید یا در تنظیمات سرور درگاه دیگری انتخاب کنید.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'جزئیات فنی را بررسی کنید، سپس از بخش راه‌اندازی سرور دوباره تلاش کنید.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13957,6 +13986,15 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get restoreSpace => 'بازیابی';
+
+  @override
+  String get archivedConversations => 'گفتگوهای بایگانی‌شده';
+
+  @override
+  String get archivedConversationsEmpty => 'گفتگوی بایگانی‌شده‌ای نیست';
+
+  @override
+  String get restoreConversation => 'بازیابی';
 
   @override
   String archivedWhen(String time) {

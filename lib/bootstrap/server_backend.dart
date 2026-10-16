@@ -9,6 +9,7 @@ import 'package:control_center/core/server/auth_providers.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
 import 'package:control_center/core/server/server_discovery.dart';
 import 'package:control_center/core/server/server_pairing.dart';
+import 'package:control_center/core/server/server_startup_status.dart';
 import 'package:control_center/core/server/sso_login.dart';
 import 'package:control_center/core/server/sso_pair_link.dart';
 import 'package:control_center/core/utils/app_log.dart';
@@ -18,6 +19,8 @@ import 'package:control_center/shared/widgets/connection_error_alert.dart'
     show ConnectionErrorAlert, UserFacingMessage;
 import 'package:control_center/shared/widgets/desktop_update_lifecycle.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
+import 'package:control_center/shared/widgets/server_activity_overlay.dart'
+    show ServerStartupIndicator;
 import 'package:control_center/shared/widgets/server_discovery_button.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -122,7 +125,8 @@ Future<ServerBackend> resolveServerBackend({
   }
 
   if (!store.isConfigured) {
-    // First run: ask the user how Control Center should run.
+    // A return to setup must not replay a failure from an earlier session.
+    serverStartupStatus.value = null;
     return sources.runSetup(store);
   }
 
@@ -133,8 +137,16 @@ Future<ServerBackend> resolveServerBackend({
     // with the error so the user can retry locally or switch to a remote
     // server, instead of crashing the boot.
     try {
-      return await sources.startLocal();
+      final backend = await sources.startLocal();
+      serverStartupStatus.value = const ServerStartupStatus(
+        phase: ServerStartupPhase.ready,
+      );
+      return backend;
     } on Object catch (e) {
+      serverStartupStatus.value = ServerStartupStatus(
+        phase: ServerStartupPhase.failed,
+        error: e,
+      );
       AppLog.w('cc_server', 'local server start failed, asking user: $e');
       return sources.runSetup(store, error: e);
     }
@@ -143,6 +155,9 @@ Future<ServerBackend> resolveServerBackend({
   // Remote: resolve the active paired server. A missing entry/key or a failed
   // connect falls back to the setup screen (with the error) instead of
   // crashing the boot — the desktop cannot self-serve.
+  serverStartupStatus.value = const ServerStartupStatus(
+    phase: ServerStartupPhase.connecting,
+  );
   final entry = store.readActive();
   if (entry != null) {
     try {
@@ -154,13 +169,22 @@ Future<ServerBackend> resolveServerBackend({
       // credential into a silent, windowless boot.
       final psk = await store.readPsk(entry.serverId);
       if (psk != null && psk.isNotEmpty) {
-        return await sources.connectRemote(store, entry, psk);
+        final backend = await sources.connectRemote(store, entry, psk);
+        serverStartupStatus.value = const ServerStartupStatus(
+          phase: ServerStartupPhase.ready,
+        );
+        return backend;
       }
     } on Object catch (e) {
+      serverStartupStatus.value = ServerStartupStatus(
+        phase: ServerStartupPhase.failed,
+        error: e,
+      );
       AppLog.w('cc_server', 'remote connect failed, asking user: $e');
       return sources.runSetup(store, error: e);
     }
   }
+  serverStartupStatus.value = null;
   return sources.runSetup(store);
 }
 
@@ -185,37 +209,53 @@ Future<ServerBackend> _switchServerBackend(
   String serverId,
   ServerBackendSources sources,
 ) async {
-  final ServerBackend backend;
-  final Future<void> Function() persist;
-  if (serverId == localServerId) {
-    backend = await sources.startLocal();
-    persist = () => store.setMode(ServerConnectionMode.local);
-  } else {
-    final entry = store.entry(serverId);
-    if (entry == null) {
-      throw StateError('No paired server with id "$serverId".');
-    }
-    final psk = await store.readPsk(serverId);
-    if (psk == null || psk.isEmpty) {
-      throw StateError(
-        'No pairing key is stored for ${entry.name}. Pair with it again.',
-      );
-    }
-    backend = await sources.connectRemote(store, entry, psk);
-    persist = () async {
-      await store.setMode(ServerConnectionMode.remote);
-      await store.setActiveServer(serverId);
-    };
-  }
+  serverStartupStatus.value = ServerStartupStatus(
+    phase: serverId == localServerId
+        ? ServerStartupPhase.starting
+        : ServerStartupPhase.connecting,
+  );
   try {
-    await persist();
-  } on Object {
-    // The caller never sees this backend, so nobody else would stop a local
-    // child it spawned.
-    await backend.dispose();
+    final ServerBackend backend;
+    final Future<void> Function() persist;
+    if (serverId == localServerId) {
+      backend = await sources.startLocal();
+      persist = () => store.setMode(ServerConnectionMode.local);
+    } else {
+      final entry = store.entry(serverId);
+      if (entry == null) {
+        throw StateError('No paired server with id "$serverId".');
+      }
+      final psk = await store.readPsk(serverId);
+      if (psk == null || psk.isEmpty) {
+        throw StateError(
+          'No pairing key is stored for ${entry.name}. Pair with it again.',
+        );
+      }
+      backend = await sources.connectRemote(store, entry, psk);
+      persist = () async {
+        await store.setMode(ServerConnectionMode.remote);
+        await store.setActiveServer(serverId);
+      };
+    }
+    try {
+      await persist();
+    } on Object {
+      // The caller never sees this backend, so nobody else would stop a local
+      // child it spawned.
+      await backend.dispose();
+      rethrow;
+    }
+    serverStartupStatus.value = const ServerStartupStatus(
+      phase: ServerStartupPhase.ready,
+    );
+    return backend;
+  } on Object catch (error) {
+    serverStartupStatus.value = ServerStartupStatus(
+      phase: ServerStartupPhase.failed,
+      error: error,
+    );
     rethrow;
   }
-  return backend;
 }
 
 Future<ServerBackend> _connectRemoteBackend(
@@ -346,6 +386,10 @@ class ServerSetupApp extends StatelessWidget {
             textStyle: CcFonts.ui(
               textStyle: CcTypography.body,
             ).copyWith(color: t.textPrimary, decoration: TextDecoration.none),
+            builder: (context, child) => ServerStartupIndicator(
+              showFailures: false,
+              child: child ?? const SizedBox.shrink(),
+            ),
             pageRouteBuilder: <T>(settings, builder) => PageRouteBuilder<T>(
               settings: settings,
               pageBuilder: (c, _, _) => builder(c),
@@ -470,6 +514,7 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
       _mode = mode;
       _error = null;
     });
+    serverStartupStatus.value = null;
     _scheduleSsoProbe();
   }
 
@@ -582,6 +627,9 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
       }
     }
     setState(() => _busy = true);
+    serverStartupStatus.value = const ServerStartupStatus(
+      phase: ServerStartupPhase.connecting,
+    );
     try {
       final connection = await pairWithServer(
         store: widget.store,
@@ -590,12 +638,19 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
         deviceId: payload.deviceId,
         psk: payload.psk,
       );
+      serverStartupStatus.value = const ServerStartupStatus(
+        phase: ServerStartupPhase.ready,
+      );
       _resolved = true;
       widget.onResolved(_remoteBackend(connection));
     } on Object catch (e) {
       if (!mounted) {
         return;
       }
+      serverStartupStatus.value = ServerStartupStatus(
+        phase: ServerStartupPhase.failed,
+        error: e,
+      );
       setState(() {
         _busy = false;
         _awaitingBrowser = false;
@@ -612,6 +667,9 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
     });
     try {
       if (_mode == ServerConnectionMode.local) {
+        serverStartupStatus.value = const ServerStartupStatus(
+          phase: ServerStartupPhase.starting,
+        );
         await widget.previousSessionClosed;
         final backend = await _localBackend();
         try {
@@ -622,6 +680,9 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
           await backend.dispose();
           rethrow;
         }
+        serverStartupStatus.value = const ServerStartupStatus(
+          phase: ServerStartupPhase.ready,
+        );
         widget.onResolved(backend);
         return;
       }
@@ -633,6 +694,9 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
         });
         return;
       }
+      serverStartupStatus.value = const ServerStartupStatus(
+        phase: ServerStartupPhase.connecting,
+      );
       final connection = await pairWithServer(
         store: widget.store,
         rawUrl: _url.text,
@@ -641,11 +705,18 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
         deviceId: _device.text.trim(),
         psk: _psk.text.trim(),
       );
+      serverStartupStatus.value = const ServerStartupStatus(
+        phase: ServerStartupPhase.ready,
+      );
       widget.onResolved(_remoteBackend(connection));
     } on Object catch (e) {
       if (!mounted) {
         return;
       }
+      serverStartupStatus.value = ServerStartupStatus(
+        phase: ServerStartupPhase.failed,
+        error: e,
+      );
       setState(() {
         _busy = false;
         _error = e;
@@ -775,10 +846,11 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
                       ),
                     ],
                   ],
-                  if (_error != null) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    ConnectionErrorAlert(error: _error!),
-                  ],
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.md),
+                      child: ConnectionErrorAlert(error: _error!),
+                    ),
                   const SizedBox(height: AppSpacing.lg),
                   // Pairing disabled server-side = SSO-only onboarding: no
                   // manual submit (matches the web connect gate).

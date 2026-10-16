@@ -1011,6 +1011,36 @@ class AppLocalizationsPl extends AppLocalizations {
   String get serverSetupErrorDetails => 'Szczegóły techniczne';
 
   @override
+  String get serverActivityTitle => 'Aktywność serwera';
+
+  @override
+  String get serverActivityStarting => 'Uruchamianie lokalnego serwera…';
+
+  @override
+  String get serverActivityConnecting => 'Łączenie z serwerem…';
+
+  @override
+  String get serverActivityStartFailed => 'Nie udało się uruchomić serwera';
+
+  @override
+  String get serverActivityDownloadFailed => 'Pobieranie nie powiodło się';
+
+  @override
+  String get serverActivityStatusUnavailable =>
+      'Nie udało się odczytać stanu modelu';
+
+  @override
+  String get serverActivityPreparingModel => 'Przygotowywanie modelu…';
+
+  @override
+  String get serverActivityPortInUse =>
+      'Port serwera jest już używany. Zatrzymaj drugi proces lub wybierz inny port na serwerze.';
+
+  @override
+  String get serverActivityStartFailedHint =>
+      'Sprawdź szczegóły techniczne, a następnie spróbuj ponownie w konfiguracji serwera.';
+
+  @override
   String calendarMoreEvents(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -14214,6 +14244,15 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get restoreSpace => 'Przywróć';
+
+  @override
+  String get archivedConversations => 'Zarchiwizowane rozmowy';
+
+  @override
+  String get archivedConversationsEmpty => 'Brak zarchiwizowanych rozmów';
+
+  @override
+  String get restoreConversation => 'Przywróć';
 
   @override
   String archivedWhen(String time) {

@@ -193,7 +193,9 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
                 : _hoverFill(
                     t,
                     states,
-                    fluidActive: CcFluidHover.isItemActive(context),
+                    fluidActive:
+                        CcFluidHover.controlsTappable(context) &&
+                        CcFluidHover.isItemActive(context),
                   ),
             subtitle: subtitle,
             trailingLabel: trailingLabel,

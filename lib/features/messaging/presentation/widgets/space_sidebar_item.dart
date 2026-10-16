@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/presentation/widgets/archived_conversations_dialog.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_folder_picker_dialog.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_route_selection.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
@@ -192,6 +193,20 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
               ),
             ),
           ),
+        if (workspaceId != null &&
+            (space.workspaceId == null || space.workspaceId == workspaceId))
+          CcMenuItem(
+            label: l10n.archivedConversations,
+            icon: AppIcons.archiveRestore,
+            onSelected: () => unawaited(
+              showArchivedConversationsDialog(
+                context,
+                workspaceId: workspaceId,
+                spaceId: space.id,
+              ),
+            ),
+          ),
+        const CcMenuItem.divider(),
         CcMenuItem(
           label: l10n.archiveSpace,
           icon: AppIcons.archive,

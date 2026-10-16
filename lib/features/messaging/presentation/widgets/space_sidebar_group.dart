@@ -179,9 +179,8 @@ class _SpaceSidebarGroupState extends ConsumerState<SpaceSidebarGroup> {
           : const SizedBox.shrink(),
     );
 
-    // One press for the whole card. The title and the conversations are
-    // content on that surface; the disclosure and the overflow menu stay
-    // their own controls.
+    // The card opens the space; nested conversation rows, the disclosure and
+    // the overflow menu take their own presses.
     final card = CcTappable(
       onPressed: open,
       borderRadius: AppRadii.brSm,

@@ -17,6 +17,7 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/messaging/presentation/widgets/conversations_sidebar_section.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_folders_list.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_row_layout.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_group.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/presentation/widgets/spaces_sub_sidebar.dart';
@@ -1511,8 +1512,7 @@ void main() {
             child: _wrap(router),
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await _pumpOpenCard(tester);
 
         await tester.longPress(find.text('Design review'));
         await tester.pump();
@@ -2000,37 +2000,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('the open card is one press target', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            ..._commonOverrides(spaces: [_space]),
-            ..._listedConversationOverrides(),
-          ],
-          child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      Finder pressesAround(String text) =>
-          find.ancestor(of: find.text(text), matching: find.byType(CcTappable));
-
-      // Title and conversations share the card. The count line keeps its
-      // own disclosure on top of that card.
-      expect(pressesAround('Dev Team'), findsOneWidget);
-      expect(pressesAround('Design review'), findsOneWidget);
-      expect(pressesAround(l10n.conversationCount(2)), findsNWidgets(2));
-
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
-    testWidgets('tapping a conversation opens the space', (tester) async {
-      final router = _router(
-        spaceRoute(_workspaceId, 'g-1', tab: 'chat:conv-2'),
-      );
+    testWidgets('conversation rows navigate independently of the space card', (
+      tester,
+    ) async {
+      final router = _router(spaceRoute(_workspaceId, 'g-1'));
+      addTearDown(router.dispose);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -2043,12 +2017,75 @@ void main() {
       await _pumpOpenCard(tester);
 
       await tester.tap(find.text('Design review'));
-      await tester.pump();
-      await tester.pump();
+      await _pumpOpenCard(tester);
+      expect(
+        router.routeInformationProvider.value.uri.queryParameters['tab'],
+        conversationTabKey('conv-2'),
+      );
 
-      final uri = router.routeInformationProvider.value.uri;
-      expect(uri.path, '/workspaces/$_workspaceId/spaces/g-1');
-      expect(uri.queryParameters.containsKey('tab'), isFalse);
+      final mainPress = find.byWidgetPredicate(
+        (widget) =>
+            widget is CcTappable && widget.semanticLabel == 'Main thread',
+      );
+      tester
+          .widgetList<Focus>(
+            find.descendant(of: mainPress, matching: find.byType(Focus)),
+          )
+          .firstWhere((focus) => focus.focusNode != null)
+          .focusNode!
+          .requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      await tester.pump();
+      expect(
+        router.routeInformationProvider.value.uri.queryParameters['tab'],
+        conversationTabKey('conv-1'),
+      );
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/workspaces/$_workspaceId/spaces/g-1',
+      );
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('hover highlights only the pointed conversation row', (
+      tester,
+    ) async {
+      final router = _router(spaceRoute(_workspaceId, 'g-1'));
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space]),
+            ..._listedConversationOverrides(),
+          ],
+          child: _wrap(router),
+        ),
+      );
+      await _pumpOpenCard(tester);
+      Color wash(String label) => tester
+          .widget<SpaceRowLayout>(
+            find.byWidgetPredicate(
+              (widget) => widget is SpaceRowLayout && widget.label == label,
+            ),
+          )
+          .hoverColor;
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: const Offset(-20, -20));
+      await mouse.moveTo(tester.getCenter(find.text('Design review')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(wash('Design review'), DesignSystemTokens.light().hover);
+      expect(wash('Main thread').a, 0);
+
+      await mouse.moveTo(tester.getCenter(find.text('Main thread')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(wash('Main thread'), DesignSystemTokens.light().hover);
+      expect(wash('Design review').a, 0);
+      await mouse.removePointer();
       await tester.pumpWidget(Container());
       await tester.pump(const Duration(milliseconds: 100));
     });
