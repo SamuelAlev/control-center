@@ -53,7 +53,13 @@ See the [operator workflow](https://usectrl.dev/manual/guides/manage-skills/#eva
 
 ## Extending
 
-New RPC op → register it in the repo-RPC catalog + provide its handler. New
-periodic service → construct and `.start()` it in `cc_server_runtime` next to
-the others. Rebuild the binary (`cd apps/cc_server && fvm dart build cli`) so
-the running app picks it up.
+New RPC operations belong in focused `catalog/*_ops.dart` packs, composed by
+`runtime/server_extra_ops.dart` and passed through `extraOps`. Keep the frozen
+`remote_rpc_catalog.dart` operation count from growing. The OAuth pack owns
+provider discovery, sign-in and device-attempt status; its shared workspace
+overlay check validates existence before membership and binds attempts to the
+authenticated caller.
+
+New periodic service → construct and `.start()` it in `cc_server_runtime` next
+to the others. Rebuild the binary (`cd apps/cc_server && fvm dart build cli`)
+so the running app picks up either change.

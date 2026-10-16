@@ -46,5 +46,5 @@ packages/cc_server_core/lib/src/cc_server_runtime.dart  8262
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
 packages/cc_server_core/lib/src/local_rpc_server.dart  2570
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1715
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16097
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  15982
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2644

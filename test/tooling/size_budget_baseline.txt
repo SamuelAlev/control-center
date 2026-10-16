@@ -37,8 +37,6 @@ lib/features/agents/presentation/screens/agent_registry_screen.dart  609
 lib/features/agents/presentation/widgets/agent_form_dialog.dart  745
 lib/features/agents/presentation/widgets/agent_logs_tab.dart  483
 lib/features/agents/presentation/widgets/org_chart_view.dart  514
-lib/features/auth/presentation/screens/onboarding_chrome.dart  264
-lib/features/auth/presentation/screens/onboarding_screen.dart  519
 lib/features/calendar/presentation/screens/calendar_screen.dart  671
 lib/features/calendar/presentation/widgets/calendar_event_detail_panel.dart  1071
 lib/features/calendar/presentation/widgets/calendar_kalender_host.dart  1257
@@ -177,7 +175,6 @@ lib/features/settings/presentation/widgets/providers/add_provider_pane.dart  341
 lib/features/settings/presentation/widgets/providers/model_edit_dialog.dart  341
 lib/features/settings/presentation/widgets/providers/provider_model_list.dart  324
 lib/features/settings/presentation/widgets/sections/general/notifications_section.dart  665
-lib/features/settings/presentation/widgets/sections/general/settings_shared.dart  384
 lib/features/settings/presentation/widgets/sections/integrations/server_sharing_section.dart  345
 lib/features/settings/presentation/widgets/sections/skills/skill_evaluation_panel.dart  316
 lib/features/settings/presentation/widgets/sections/skills/skill_scan_widgets.dart  390

@@ -186,6 +186,7 @@ import 'package:cc_server_core/src/catalog/file_discard_ops.dart';
 import 'package:cc_server_core/src/catalog/meeting_ops.dart';
 import 'package:cc_server_core/src/catalog/model_control_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
+import 'package:cc_server_core/src/catalog/provider_oauth_ops.dart';
 import 'package:cc_server_core/src/catalog/space_stack_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_port_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_watch_queries.dart';
@@ -1494,24 +1495,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
 
   /// Like [overlayWorkspaceId], but refuses a workspace the caller is not
   /// a member of. Unscoped ops have no dispatcher membership gate.
-  Future<String?> overlayWorkspaceIdChecked(RepoOpContext ctx) async {
-    final id = overlayWorkspaceId(ctx);
-    if (id == null || id.isEmpty) {
-      return null;
-    }
-    if (await workspaceRepository.getById(id) == null) {
-      throw const NotFoundException('Workspace not found');
-    }
-    final members = identityMembers;
-    if (members == null) {
-      return id;
-    }
-    final member = await members.getMember(id, ctx.userId);
-    if (member == null) {
-      throw const AuthException('Not a member of this workspace');
-    }
-    return id;
-  }
+  Future<String?> overlayWorkspaceIdChecked(RepoOpContext ctx) =>
+      checkedOverlayWorkspaceId(
+        ctx,
+        workspaces: workspaceRepository,
+        members: identityMembers,
+      );
 
   final identityActivity = userActivityRepository;
   final identityPrefs = userPreferencesRepository;
@@ -4135,108 +4124,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // `oauth.providers` is what the account rows branch on: a provider whose
-    // app is configured offers "sign in", one without it offers "paste a
-    // token". The redirect URI rides along because the operator has to
-    // register it with the provider verbatim, and hand-assembling it is the
-    // most common way this is set up wrong.
-    if (providerOAuth != null) ...[
-      RepoOp(
-        name: 'oauth.providers',
-        kind: RepoOpKind.read,
-        workspaceScoped: false,
-        handler: (ctx) async {
-          final available = await providerOAuth.availableProviders(
-            workspaceId: await overlayWorkspaceIdChecked(ctx),
-          );
-          final origin = _httpOriginFrom(pairingServerUrl);
-          return {
-            'providers': [
-              for (final provider in available)
-                {
-                  'provider': provider.wire,
-                  // Which flow this provider signs in with. A device flow
-                  // needs no callback URL at all, so its row reports an empty
-                  // one rather than a URL nobody has to register.
-                  'flow': ProviderOAuthService.usesDeviceFlow(provider)
-                      ? 'device'
-                      : 'redirect',
-                  'redirect_uri':
-                      origin.isEmpty ||
-                          ProviderOAuthService.usesDeviceFlow(provider)
-                      ? ''
-                      : providerOAuthRedirectUri(
-                          origin,
-                          provider.wire,
-                        ).toString(),
-                },
-            ],
-          };
-        },
-      ),
-      // A device attempt's outcome is private to its caller and workspace.
-      RepoOp(
-        name: 'oauth.status',
-        kind: RepoOpKind.read,
-        workspaceScoped: false,
-        requiredArgs: ['login_id'],
-        handler: (ctx) async => {
-          'status': providerOAuth
-              .deviceLoginStatus(
-                loginId: ctx.args['login_id'] as String,
-                userId: ctx.userId,
-                workspaceId: await overlayWorkspaceIdChecked(ctx),
-              )
-              .name,
-        },
-      ),
-      // Starts a sign-in. The caller's identity comes from the SESSION — a
-      // client cannot start a login on behalf of another user, because it
-      // never gets to name one.
-      //
-      // Two shapes come back, and the client renders whichever it is handed:
-      // `{mode: 'device', user_code, verification_uri, …}` for a device flow
-      // (the server polls and stores the credential itself), or
-      // `{mode: 'redirect', url}` for a browser round-trip.
-      RepoOp(
-        name: 'oauth.begin',
-        kind: RepoOpKind.mutate,
-        workspaceScoped: false,
-        requiredArgs: ['provider'],
-        handler: (ctx) async {
-          final provider = ProviderApp.fromWire(
-            ctx.args['provider'] as String?,
-          );
-          if (provider == null) {
-            throw const NotFoundException(
-              'Missing or invalid argument: provider',
-            );
-          }
-          if (ProviderOAuthService.usesDeviceFlow(provider)) {
-            final prompt = await providerOAuth.beginDeviceLogin(
-              provider: provider,
-              userId: ctx.userId,
-              workspaceId: await overlayWorkspaceIdChecked(ctx),
-            );
-            return prompt.toJson();
-          }
-          final origin = _httpOriginFrom(pairingServerUrl);
-          if (origin.isEmpty) {
-            throw const AuthException(
-              'This server does not advertise a reachable URL, so a sign-in '
-              'has nowhere to come back to.',
-            );
-          }
-          final url = await providerOAuth.beginLogin(
-            provider: provider,
-            userId: ctx.userId,
-            redirectUri: providerOAuthRedirectUri(origin, provider.wire),
-            workspaceId: await overlayWorkspaceIdChecked(ctx),
-          );
-          return {'mode': 'redirect', 'url': url.toString()};
-        },
-      ),
-    ],
     // These configure how the SERVER authenticates as itself, which is a
     // server-wide decision — hence `requireServerAdmin`, matching `sso.*` and
     // `models.*`. Secrets are write-only: what comes back is presence flags.
@@ -4248,7 +4135,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         handler: (ctx) async {
           requireServerAdmin(ctx);
-          final origin = _httpOriginFrom(pairingServerUrl);
+          final origin = providerOAuthHttpOrigin(pairingServerUrl);
           return {
             'apps': [
               for (final status in await providerApps.statuses())
@@ -15926,30 +15813,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   return (ops: ops, watch: watch);
 }
 
-/// Derives the invite-redemption HTTP endpoint from the advertised RPC
-/// WebSocket URL. Returns '' when `rpcUrl` is empty/unparseable.
 /// Display names for `presence.update` entries, cached so cursor-cadence
 /// updates never turn into per-call user lookups. Names change rarely; a
 /// stale entry self-heals on server restart (presence is ephemeral anyway).
 final Map<String, String> _presenceNameCache = {};
 
-/// The HTTP origin of this server, derived from its advertised RPC URL
-/// (`wss://host:9030/rpc` → `https://host:9030`). Empty when the server
-/// advertises nothing reachable.
-String _httpOriginFrom(String rpcUrl) {
-  if (rpcUrl.isEmpty) {
-    return '';
-  }
-  final uri = Uri.tryParse(rpcUrl);
-  if (uri == null || uri.host.isEmpty) {
-    return '';
-  }
-  final scheme = uri.scheme == 'wss' || uri.scheme == 'https'
-      ? 'https'
-      : 'http';
-  return Uri(scheme: scheme, host: uri.host, port: uri.port).toString();
-}
-
+/// Derives the invite-redemption HTTP endpoint from the advertised RPC
+/// WebSocket URL. Returns '' when `rpcUrl` is empty/unparseable.
 String _redeemUrlFrom(String rpcUrl) {
   if (rpcUrl.isEmpty) {
     return '';

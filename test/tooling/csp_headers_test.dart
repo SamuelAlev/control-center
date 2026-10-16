@@ -4,13 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Ratchet over the Content-Security-Policies we SHIP.
 ///
-/// Four surfaces carry one: the Cloudflare Worker that stamps a per-request
-/// policy for the web client, the self-hosted nginx image for that same client,
-/// and the equivalent pair for the cc_remote phone PWA. They deliberately differ
-/// (cc_remote has no `ws:` and only the Worker can name the connected cc-server
-/// origin from a cookie), so this does NOT demand they be identical — it pins the
-/// two directives every font in the product depends on, which had already drifted
-/// in three of the four files before this test existed.
+/// Four surfaces carry one: the Cloudflare Worker for the web client, the
+/// self-hosted nginx image for that client, and the equivalent pair for the
+/// cc_remote phone PWA. They deliberately differ (cc_remote has no `ws:`), so
+/// this does not demand identical policies. Executable Worker policy coverage
+/// lives in `tool/csp.test.mjs`; decrypted media uses same-origin resources.
 void main() {
   final root = Directory.current.path;
 
@@ -79,37 +77,6 @@ void main() {
           reason: '$path would render emoji as tofu',
         );
         expect(fontSrc, contains("'self'"), reason: '$path: bundled fonts');
-      }
-    });
-
-    test('the web-client policies admit remote media playback', () {
-      // Audio/video load through a real <audio>/<video> element, which media-src
-      // governs — NOT img-src (thumbnails) and NOT connect-src (XHR). Omit the
-      // directive and it falls back to `default-src 'self'`, which blocks the
-      // soundscape stream, meeting playback and proxied video attachments in
-      // one go. The failure is silent (the player simply never starts), which is
-      // exactly how it shipped unnoticed.
-      //
-      // Only the web client is checked: cc_remote plays no media at all today,
-      // so `default-src 'self'` is correctly tighter there. Add it to the phone
-      // policies at the same time as the first player.
-      for (final path in const ['worker/csp.js', 'docker/web/nginx.conf']) {
-        final mediaSrc = directive(policies[path]!, 'media-src');
-        expect(
-          mediaSrc,
-          isNotNull,
-          reason:
-              '$path declares no media-src, so remote audio/video is '
-              "blocked by default-src 'self'",
-        );
-        expect(mediaSrc, contains("'self'"), reason: '$path: bundled sounds');
-        // The paired cc-server: an interpolated origin in the Worker (which
-        // alone can read it from the cookie), a broad scheme in static nginx.
-        expect(
-          mediaSrc,
-          anyOf(contains(r'${proxy}'), contains('https:')),
-          reason: '$path cannot play media from the connected cc-server',
-        );
       }
     });
 

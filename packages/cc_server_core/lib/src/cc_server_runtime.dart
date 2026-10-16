@@ -5592,6 +5592,8 @@ Future<CcServer> runCcServer({
     workspaceFilesystem: workspaceFilesystem,
     workspaceRepository: workspaceRepository,
     membershipRepository: membershipRepository,
+    providerOAuth: demo != null ? null : providerOAuth,
+    pairingServerUrl: config.publicUrl,
     eventBus: eventBus,
     contextInspection: ContextInspectionService(
       agentRepository: agentRepository,
@@ -5994,7 +5996,6 @@ Future<CcServer> runCcServer({
         demo?.adapterDetection ??
         const AdapterDetectionRepository(AdapterDetectionService()),
     acpModels: AcpModelRepositoryImpl(AcpModelsService()),
-    // demo: no OAuth round trips.
     providerOAuth: demo != null ? null : providerOAuth,
     // demo: no app identity to configure.
     providerApps: demo != null ? null : providerApps,
@@ -7103,7 +7104,6 @@ Future<CcServer> runCcServer({
           },
     // demo: no SSO on a public demo.
     oidc: demo != null ? null : oidcService,
-    // demo: no OAuth callback route.
     providerOAuth: demo != null ? null : providerOAuth,
     // demo: no SSO on a public demo.
     saml: demo != null ? null : samlService,

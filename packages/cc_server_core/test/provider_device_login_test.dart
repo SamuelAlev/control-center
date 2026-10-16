@@ -1,8 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/cc_domain.dart' show AuthException;
+import 'package:cc_domain/cc_domain.dart' show AuthException, NotFoundException;
+import 'package:cc_domain/core/domain/entities/workspace.dart';
+import 'package:cc_domain/core/domain/entities/workspace_member.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
+import 'package:cc_host/cc_host.dart' show RepoOpContext;
+import 'package:cc_server_core/src/catalog/provider_oauth_ops.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/forge/forge_credentials.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
@@ -167,6 +174,65 @@ void main() {
     expect(await finish(prompt), DeviceLoginStatus.failed);
   });
 
+  test(
+    'OAuth RPC pack binds device attempts to caller and workspace',
+    () async {
+      final workspaces = _DeviceLoginWorkspaces();
+      final members = _DeviceLoginMembers();
+      final ops = buildProviderOAuthOps(
+        providerOAuth: oauth,
+        workspaces: workspaces,
+        members: members,
+        pairingServerUrl: 'wss://example.com/rpc',
+      );
+      final start = ops.singleWhere((op) => op.name == 'oauth.begin');
+      final statusOp = ops.singleWhere((op) => op.name == 'oauth.status');
+
+      RepoOpContext ctx(String user, String workspace, String loginId) =>
+          RepoOpContext(
+            args: {'workspace_id': workspace, 'login_id': loginId},
+            workspaceId: 'ws-a',
+            deviceId: 'device-1',
+            userId: user,
+            role: WorkspaceRole.member,
+          );
+
+      final prompt = await start.handler(
+        const RepoOpContext(
+          args: {'workspace_id': 'ws-a', 'provider': 'github'},
+          workspaceId: 'ws-b',
+          deviceId: 'device-1',
+          userId: 'alice',
+          role: WorkspaceRole.member,
+        ),
+      );
+      expect(prompt['mode'], 'device');
+      final loginId = prompt['login_id'] as String;
+      expect(
+        (await statusOp.handler(ctx('alice', 'ws-a', loginId)))['status'],
+        'pending',
+      );
+      await expectLater(
+        statusOp.handler(ctx('bob', 'ws-a', loginId)),
+        throwsA(isA<AuthException>()),
+      );
+      await expectLater(
+        statusOp.handler(ctx('alice', 'ws-b', loginId)),
+        throwsA(isA<AuthException>()),
+      );
+      await expectLater(
+        statusOp.handler(ctx('carol', 'ws-a', loginId)),
+        throwsA(isA<AuthException>()),
+      );
+      final checkedBefore = members.lookups;
+      await expectLater(
+        statusOp.handler(ctx('alice', 'missing', loginId)),
+        throwsA(isA<NotFoundException>()),
+      );
+      expect(members.lookups, checkedBefore);
+    },
+  );
+
   test('refusal terminates without replacing an existing credential', () async {
     await users.setForgeToken(
       'alice',
@@ -206,6 +272,42 @@ void main() {
       isNull,
     );
   });
+}
+
+class _DeviceLoginWorkspaces implements WorkspaceRepository {
+  @override
+  Future<Workspace?> getById(String id) async {
+    if (id != 'ws-a' && id != 'ws-b') {
+      return null;
+    }
+    final now = DateTime.utc(2026);
+    return Workspace(id: id, name: id, createdAt: now, updatedAt: now);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _DeviceLoginMembers implements WorkspaceMembershipRepository {
+  int lookups = 0;
+
+  @override
+  Future<WorkspaceMember?> getMember(String workspaceId, String userId) async {
+    lookups++;
+    if (userId != 'alice' && userId != 'bob') {
+      return null;
+    }
+    return WorkspaceMember(
+      id: '$workspaceId-$userId',
+      workspaceId: workspaceId,
+      userId: userId,
+      role: WorkspaceRole.member,
+      joinedAt: DateTime.utc(2026),
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 /// Exercise real HTTP parsing and persistence without contacting GitHub.

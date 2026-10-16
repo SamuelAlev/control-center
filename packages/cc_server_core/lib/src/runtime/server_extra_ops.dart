@@ -21,6 +21,7 @@ import 'package:cc_server_core/src/backup/backup_rpc.dart';
 import 'package:cc_server_core/src/catalog/account_pool_ops.dart';
 import 'package:cc_server_core/src/catalog/conversation_title_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
+import 'package:cc_server_core/src/catalog/provider_oauth_ops.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
 import 'package:cc_server_core/src/code_graph/code_graph_rpc.dart';
@@ -28,6 +29,7 @@ import 'package:cc_server_core/src/context/context_inspection_service.dart';
 import 'package:cc_server_core/src/context/context_rpc_ops.dart';
 import 'package:cc_server_core/src/fonts/fonts_rpc.dart';
 import 'package:cc_server_core/src/identity/caching_workspace_membership_repository.dart';
+import 'package:cc_server_core/src/identity/provider_oauth_service.dart';
 import 'package:cc_server_core/src/identity/sso_ops.dart';
 import 'package:cc_server_core/src/identity/sso_settings_service.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
@@ -55,6 +57,8 @@ ExtraOpsResult buildServerExtraOps({
   required WorkspaceFilesystemPort workspaceFilesystem,
   required DaoWorkspaceRepository workspaceRepository,
   required CachingWorkspaceMembershipRepository membershipRepository,
+  required ProviderOAuthService? providerOAuth,
+  required String pairingServerUrl,
   required DomainEventBus eventBus,
   required ContextInspectionService contextInspection,
   required ServerWeatherService weatherService,
@@ -101,6 +105,12 @@ ExtraOpsResult buildServerExtraOps({
     ...buildWorkspaceGitHubOps(
       workspaceRepository: workspaceRepository,
       apps: workspaceGitHubApps,
+    ),
+    ...buildProviderOAuthOps(
+      providerOAuth: providerOAuth,
+      workspaces: workspaceRepository,
+      members: membershipRepository,
+      pairingServerUrl: pairingServerUrl,
     ),
     ...buildCodeGraphOps(
       workspaceRepository: workspaceRepository,
