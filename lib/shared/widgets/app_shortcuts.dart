@@ -114,7 +114,13 @@ class _AppShortcutsState extends ConsumerState<AppShortcuts> {
               current == ThemeMode.light ? ThemeMode.dark : ThemeMode.light,
             );
       },
-      'sys.settings': () => router.go(nav(settingsRoute)),
+      'sys.settings': () {
+        if (!isAuthenticationRoute(
+          router.routerDelegate.currentConfiguration.uri.path,
+        )) {
+          router.go(nav(settingsRoute));
+        }
+      },
       if (widget.onToggleFocusMode != null)
         'sys.focus-mode': widget.onToggleFocusMode!,
       if (widget.onToggleWorkspaceSwitcher != null)
@@ -131,6 +137,11 @@ class _AppShortcutsState extends ConsumerState<AppShortcuts> {
   }
 
   void _openCommandPalette() {
+    if (isAuthenticationRoute(
+      ref.read(routerProvider).routerDelegate.currentConfiguration.uri.path,
+    )) {
+      return;
+    }
     final paletteContext = rootNavigatorKey.currentContext ?? context;
     showCommandPalette(paletteContext, widget.commandBuilder);
   }

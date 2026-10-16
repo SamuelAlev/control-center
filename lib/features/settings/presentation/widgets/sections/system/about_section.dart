@@ -1,9 +1,9 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/server_build_provider.dart';
-import 'package:control_center/core/update/desktop_update_controller.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/desktop_update_action.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -27,8 +27,6 @@ class AboutSection extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final server = ref.watch(serverBuildProvider);
     final older = serverOlderThanClient(server);
-    final t = context.designSystem;
-    final update = ref.watch(desktopUpdateProvider);
 
     return SectionCard(
       label: l10n.aboutTitle,
@@ -66,45 +64,7 @@ class AboutSection extends ConsumerWidget {
           ],
           if (!kIsWeb) ...[
             const SizedBox(height: 12),
-            Row(
-              children: [
-                CcButton(
-                  onPressed: () =>
-                      ref.read(desktopUpdateProvider.notifier).checkNow(),
-                  variant: CcButtonVariant.secondary,
-                  child: Text(l10n.updateCheckButton),
-                ),
-                if (update.status != DesktopUpdateStatus.idle &&
-                    update.status != DesktopUpdateStatus.available) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      switch (update.status) {
-                        DesktopUpdateStatus.checking => l10n.updateChecking,
-                        DesktopUpdateStatus.upToDate => l10n.updateUpToDate,
-                        DesktopUpdateStatus.deferred => l10n.updateDeferredBusy,
-                        DesktopUpdateStatus.openedReleasesPage =>
-                          l10n.updateOpenedReleasesPage,
-                        DesktopUpdateStatus.error =>
-                          update.errorMessage ?? l10n.updateCheckFailed,
-                        _ => '',
-                      },
-                      style: CcTypography.bodySm.copyWith(
-                        color: t?.textTertiary,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            if (update.status == DesktopUpdateStatus.available &&
-                update.version != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                l10n.updateAvailableVersion(update.version!),
-                style: CcTypography.bodySm.copyWith(color: t?.textPrimary),
-              ),
-            ],
+            const DesktopUpdateAction(),
           ],
         ],
       ),

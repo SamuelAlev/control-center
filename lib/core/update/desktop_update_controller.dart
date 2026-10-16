@@ -29,7 +29,7 @@ enum DesktopUpdateStatus {
   error,
 }
 
-/// The desktop updater's observable state (drives the Settings → About rows).
+/// The desktop updater's observable state for Settings → About.
 class DesktopUpdateState {
   /// Creates a [DesktopUpdateState].
   const DesktopUpdateState({
@@ -75,8 +75,8 @@ class DesktopUpdateState {
 /// Owns WHEN the desktop checks for updates and when it is allowed to
 /// prompt, on top of the platform updater seam (Sparkle 2 / WinSparkle).
 ///
-/// Cadence: once shortly after the shell is ready (never on the boot path),
-/// then every 24h. Drain rule: a check whose result would PROMPT is deferred
+/// Cadence: once shortly after the first app or setup frame (never on the boot
+/// path), then every 24h. Drain rule: a check whose result would PROMPT is deferred
 /// while the busy probe says the app is mid-something-unsafe-to-quit (a
 /// recording in flight); a deferred check retries on its own short timer
 /// rather than waiting out the full day.
@@ -126,9 +126,9 @@ class DesktopUpdateController extends Notifier<DesktopUpdateState> {
     return const DesktopUpdateState();
   }
 
-  /// Arms the updater + the check schedule. Call once from the desktop
-  /// shell's first frame; no-op on web and on re-mounts. [busyProbe] is the
-  /// "unsafe to prompt right now" check (a recording in flight).
+  /// Arms the updater + the check schedule after the first app or setup frame.
+  /// No-op on web and on re-mounts. [busyProbe] is the "unsafe to prompt right
+  /// now" check (a recording in flight).
   void start({bool Function()? busyProbe}) {
     if (kIsWeb || !_updater.supported) {
       return;
@@ -143,6 +143,9 @@ class DesktopUpdateController extends Notifier<DesktopUpdateState> {
 
   Future<void> _schedule() async {
     await _ensureInit();
+    if (!ref.mounted) {
+      return;
+    }
     // First check well after ready (boot pays nothing), then daily.
     _firstCheckTimer = Timer(const Duration(seconds: 60), _scheduledCheck);
     _timer = Timer.periodic(
@@ -162,6 +165,9 @@ class DesktopUpdateController extends Notifier<DesktopUpdateState> {
 
   Future<void> _init() async {
     await _updater.init();
+    if (!ref.mounted) {
+      return;
+    }
     // Hold the registration so a rebuilt controller (server switch) releases
     // its own handlers instead of leaving a dead closure wired to the updater.
     _handlers?.release();
@@ -202,7 +208,7 @@ class DesktopUpdateController extends Notifier<DesktopUpdateState> {
     );
   }
 
-  /// The Settings → About button. On a platform with a native updater this
+  /// The Settings → About action. With a native updater this
   /// opens the updater's own prompt (release notes + confirm); everywhere
   /// else it opens the latest release page (the notify-only path).
   Future<void> checkNow() async {
@@ -225,6 +231,9 @@ class DesktopUpdateController extends Notifier<DesktopUpdateState> {
     _beginChecking();
     try {
       await _ensureInit();
+      if (!ref.mounted) {
+        return;
+      }
       await _updater.check(background: false);
     } on Object catch (e) {
       _reportError(e);
@@ -274,6 +283,9 @@ class DesktopUpdateController extends Notifier<DesktopUpdateState> {
   }
 
   void _reportError(Object e) {
+    if (!ref.mounted) {
+      return;
+    }
     _settle(
       state.copyWith(
         status: DesktopUpdateStatus.error,

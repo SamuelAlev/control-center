@@ -287,10 +287,12 @@ Future<void> _prepareDesktop() async {
   // This reuses the pre-app setup window, so first-run setup replaces only its
   // contents. No authenticated providers or cached workspace data are mounted.
   runServerSetupWindow(const DesktopBootApp());
-  // The native runner begins headless and may still report `hidden`. Force the
-  // first frame rather than waiting for a vsync that disabled frames suppress.
+  // The headless runner may still report `hidden`, so force a frame. A
+  // framework endOfFrame can complete without any native view rasterizing;
+  // wait for the engine's first rendered frame before synchronous native work
+  // can delay presentation of the boot surface.
   WidgetsBinding.instance.scheduleForcedFrame();
-  await WidgetsBinding.instance.endOfFrame;
+  await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
 
   // Load the libmpv-backed player (media_kit) before any Player is created —
   // every playback surface (soundscape, meeting audio, rig listen,
@@ -787,6 +789,11 @@ class _DesktopAppHostState extends State<_DesktopAppHost> {
       switch (call.method) {
         case 'openSettings':
           final router = container.read(routerProvider);
+          if (isAuthenticationRoute(
+            router.routerDelegate.currentConfiguration.uri.path,
+          )) {
+            return;
+          }
           final wsId = container.read(activeWorkspaceIdProvider);
           router.go(
             wsId == null ? workspaceListRoute : settingsAppearanceRoute(wsId),

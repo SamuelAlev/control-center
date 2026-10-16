@@ -1,11 +1,14 @@
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/constants/app_constants.dart';
+import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_chrome.dart';
 import 'package:control_center/features/auth/presentation/screens/signed_out_screen.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
+import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
 import 'package:flutter/gestures.dart';
@@ -23,17 +26,29 @@ void main() {
   Widget wrap({
     List<ForgeConnection> connections = const [],
     Map<String, SignInProvider> signIn = const {},
+    AppPreferences? preferences,
   }) => ProviderScope(
     overrides: [
-      appPreferencesProvider.overrideWithValue(AppPreferences.inMemory()),
+      appPreferencesProvider.overrideWithValue(
+        preferences ?? AppPreferences.inMemory(),
+      ),
       forgeConnectionsProvider.overrideWith((ref) async => connections),
       signInProvidersProvider.overrideWith((ref) async => signIn),
     ],
-    child: MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      locale: const Locale('en'),
-      home: CcTheme(data: CcThemeData.light(), child: const SignedOutScreen()),
+    child: Consumer(
+      builder: (context, ref, _) => MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: kSupportedAppLocales,
+        localeResolutionCallback: resolveAppLocale,
+        locale: ref.watch(localeProvider),
+        home: CcTheme(
+          data: CcThemeData.light(),
+          child: const SignedOutScreen(),
+        ),
+      ),
     ),
   );
 
@@ -103,6 +118,41 @@ void main() {
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     expect(find.widgetWithText(CcButton, l10n.addToken), findsWidgets);
+  });
+  testWidgets('changes login language and can return to the system locale', (
+    tester,
+  ) async {
+    final prefs = AppPreferences.inMemory();
+    await tester.pumpWidget(wrap(preferences: prefs));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final field = find.descendant(
+      of: find.byType(OnboardingLanguagePicker),
+      matching: find.byType(EditableText),
+    );
+    await tester.tap(field);
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.enterText(field, 'fr-FR');
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text('Français (France)'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final french = await AppLocalizations.delegate.load(const Locale('fr'));
+    expect(find.text(french.signedOutTitle), findsOneWidget);
+    expect(prefs.getString(localeKey), 'fr-FR');
+
+    await tester.tap(field);
+    await tester.enterText(field, '');
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text(french.languageSystem).last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final english = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text(english.signedOutTitle), findsOneWidget);
+    expect(prefs.getString(localeKey), isNull);
   });
 
   testWidgets('the background moves the window — nothing else here can', (

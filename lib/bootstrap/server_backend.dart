@@ -15,9 +15,11 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/connection_error_alert.dart'
     show ConnectionErrorAlert, UserFacingMessage;
+import 'package:control_center/shared/widgets/desktop_update_lifecycle.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:control_center/shared/widgets/server_discovery_button.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The desktop's resolved backend: the resilient RPC client, its connection
 /// supervisor (path + health for the connection pill) and — for the local
@@ -272,11 +274,15 @@ Future<ServerBackend> showServerSetup(
   // the screen would build but no window would appear. Once the user resolves,
   // the bootstrap runs the main `AppWindows` tree, which replaces this window.
   runServerSetupWindow(
-    _ServerSetupApp(
-      store: store,
-      initialError: error,
-      previousSessionClosed: previousSessionClosed,
-      onResolved: completer.complete,
+    ProviderScope(
+      child: DesktopUpdateLifecycle(
+        child: _ServerSetupApp(
+          store: store,
+          initialError: error,
+          previousSessionClosed: previousSessionClosed,
+          onResolved: completer.complete,
+        ),
+      ),
     ),
   );
   return completer.future;
@@ -284,7 +290,8 @@ Future<ServerBackend> showServerSetup(
 
 /// Minimal Material-free app that hosts the server-setup screen before the full
 /// app boots. Themed by [CcTheme] off the OS appearance and localized via the
-/// app's l10n delegates (no Riverpod, no database — there is no server yet).
+/// app's l10n delegates. Its isolated provider scope runs only the updater;
+/// no authenticated providers or database are mounted before server admission.
 class _ServerSetupApp extends StatelessWidget {
   const _ServerSetupApp({
     required this.store,

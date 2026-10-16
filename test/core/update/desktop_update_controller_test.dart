@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:control_center/core/update/desktop_update_controller.dart';
 import 'package:control_center/core/update/desktop_updater_port.dart';
 import 'package:fake_async/fake_async.dart';
@@ -18,6 +20,7 @@ class _FakeUpdaterPort implements DesktopUpdaterPort {
 
   /// Set when [check] should fail instead of completing.
   Object? failWith;
+  Future<void>? initPending;
 
   void Function(String? version, String? notes)? _onAvailable;
   void Function()? _onNotAvailable;
@@ -28,7 +31,10 @@ class _FakeUpdaterPort implements DesktopUpdaterPort {
   bool get handlersRegistered => _onAvailable != null;
 
   @override
-  Future<void> init() async => initCalls++;
+  Future<void> init() async {
+    initCalls++;
+    await initPending;
+  }
 
   @override
   DesktopUpdaterHandlerRegistration setHandlers({
@@ -97,6 +103,21 @@ void main() {
     expect(port.initCalls, 1);
     expect(port.checks, [false, false]);
   });
+  test(
+    'leaving sign-in during updater initialization cancels its check',
+    () async {
+      final initialized = Completer<void>();
+      port.initPending = initialized.future;
+      final checking = controller().checkNow();
+
+      container.dispose();
+      initialized.complete();
+      await checking;
+
+      expect(port.checks, isEmpty);
+      expect(port.handlersRegistered, isFalse);
+    },
+  );
 
   test('an available outcome carries the version', () async {
     await controller().checkNow();
@@ -119,16 +140,19 @@ void main() {
     expect(state().version, isNull);
   });
 
-  test('an error outcome is reported and then cleared by a new check', () async {
-    await controller().checkNow();
-    port.fireError('feed unreachable');
-    expect(state().status, DesktopUpdateStatus.error);
-    expect(state().errorMessage, 'feed unreachable');
+  test(
+    'an error outcome is reported and then cleared by a new check',
+    () async {
+      await controller().checkNow();
+      port.fireError('feed unreachable');
+      expect(state().status, DesktopUpdateStatus.error);
+      expect(state().errorMessage, 'feed unreachable');
 
-    await controller().checkNow();
-    expect(state().status, DesktopUpdateStatus.checking);
-    expect(state().errorMessage, isNull);
-  });
+      await controller().checkNow();
+      expect(state().status, DesktopUpdateStatus.checking);
+      expect(state().errorMessage, isNull);
+    },
+  );
 
   test('a throwing check surfaces as an error, not a stuck spinner', () async {
     port.failWith = StateError('boom');
@@ -174,6 +198,31 @@ void main() {
       expect(port.checks, [true], reason: 'first check is a silent probe');
 
       async.elapse(const Duration(hours: 24));
+      expect(port.checks, [true, true]);
+    });
+  });
+
+  test('restarting preserves the schedule and refreshes the busy probe', () {
+    fakeAsync((async) {
+      controller().start(busyProbe: () => false);
+      async
+        ..flushMicrotasks()
+        ..elapse(const Duration(seconds: 30));
+
+      var recording = false;
+      controller().start(busyProbe: () => recording);
+      async.elapse(const Duration(seconds: 31));
+      expect(port.initCalls, 1);
+      expect(port.checks, [true]);
+      port.fireNotAvailable();
+
+      recording = true;
+      async.elapse(const Duration(hours: 24));
+      expect(port.checks, [true]);
+      expect(state().status, DesktopUpdateStatus.deferred);
+
+      recording = false;
+      async.elapse(const Duration(minutes: 30));
       expect(port.checks, [true, true]);
     });
   });

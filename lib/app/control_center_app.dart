@@ -9,6 +9,7 @@ import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/features/auth/providers/credential_migration.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
+import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_controller.dart';
 import 'package:control_center/features/presence/providers/follow_providers.dart';
 import 'package:control_center/features/presence/providers/presence_providers.dart';
 import 'package:control_center/features/shell/presentation/widgets/route_title.dart';
@@ -24,6 +25,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/app_shortcuts.dart';
+import 'package:control_center/shared/widgets/desktop_update_lifecycle.dart';
 import 'package:control_center/shared/widgets/window_caption_buttons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -80,131 +82,138 @@ class ControlCenterApp extends ConsumerWidget {
     final fontSettings = ref.watch(fontSettingsProvider);
     final appFontFamily = fontSettings.appFontSelection.family;
 
-    return AppShortcuts(
-      commandBuilder: buildGlobalCommands,
-      readActiveWorkspaceId: () => ref.read(activeWorkspaceIdProvider),
-      onToggleWorkspaceSwitcher: () {
-        final ctx = rootNavigatorKey.currentContext;
-        if (ctx != null) {
-          toggleWorkspaceSwitcher(ctx);
-        }
-      },
-      onCycleWorkspace: (delta) {
-        final workspaces = ref.read(workspacesProvider).value ?? const [];
-        if (workspaces.length < 2) {
-          return;
-        }
-        final currentId = ref.read(activeWorkspaceIdProvider);
-        final currentIndex = workspaces.indexWhere((w) => w.id == currentId);
-        final base = currentIndex < 0 ? 0 : currentIndex;
-        var nextIndex = (base + delta) % workspaces.length;
-        if (nextIndex < 0) {
-          nextIndex += workspaces.length;
-        }
-        // Switching workspaces is a navigation: the URL drives the active id.
-        ref.read(routerProvider).go(inboxRoute(workspaces[nextIndex].id));
-      },
-      onSelectWorkspaceByIndex: (index) {
-        final workspaces = ref.read(workspacesProvider).value ?? const [];
-        if (index < 0 || index >= workspaces.length) {
-          return;
-        }
-        ref.read(routerProvider).go(inboxRoute(workspaces[index].id));
-      },
-      onToggleFocusMode: () {
-        ref.read(focusModeProvider.notifier).toggle();
-      },
-      child: MaterialApp.router(
-        title: 'Control Center',
-        debugShowCheckedModeBanner: false,
-        // Every desktop scrollable gets the design-system scrollbar (angular,
-        // token-colored) instead of Material's rounded one. Surfaces needing
-        // explicit control wrap their scrollable in [CcScrollbar] themselves.
-        scrollBehavior: const CcScrollBehavior(),
-        routerConfig: router,
-        theme: AppTheme.light(appFontFamily: appFontFamily),
-        darkTheme: AppTheme.dark(appFontFamily: appFontFamily),
-        themeMode: themeMode,
-        locale: localeOverride,
-        supportedLocales: kSupportedAppLocales,
-        localeResolutionCallback: resolveAppLocale,
-        // material_ui's bundle: its Material and Cupertino localizations plus
-        // the widgets ones. Third-party widgets still on the framework's
-        // deprecated Material library get theirs from [LegacyMaterialBridge].
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          ...GlobalMaterialLocalizations.delegates,
-        ],
-        builder: (context, child) {
-          // The one chokepoint for intl: bare DateFormat/NumberFormat calls
-          // resolve Intl.defaultLocale, so pin it to the locale the app
-          // actually resolved (override or system) instead of threading a
-          // locale through every formatting call site. The builder sits below
-          // the app's Localizations, after the global delegates have loaded
-          // this locale's date symbols.
-          Intl.defaultLocale = Localizations.localeOf(context).toLanguageTag();
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          // CcTheme is the purist token-delivery space (replacing the Material
-          // ThemeExtension). It wraps the whole navigator so every route and
-          // overlay can resolve `context.designSystem`. CcToastScope hosts the
-          // app-wide toast overlay — it needs an Overlay ancestor to insert
-          // into and `MaterialApp.builder` sits *above* the router's own
-          // overlay, so we provide a root Overlay here for it to mount toasts on
-          // top of every route.
-          // RouteTitle wraps the whole navigator so the browser-tab title
-          // follows the active page (it re-resolves on every navigation) rather
-          // than the static `MaterialApp.title` every page would share. It sits
-          // inside CcTheme so token lookups in its subtree resolve.
-          return installTextUndoShadow(
-            // Undo/redo strokes are owned by the [KeybindingDispatcher], which
-            // bridges them to the focused field's UndoHistory (see
-            // `_bridgeTextUndoRedo` in keybinding_dispatcher.dart). The shadow
-            // sits INSIDE WidgetsApp's DefaultTextEditingShortcuts
-            // (MaterialApp.builder wraps the router), so it shadows the
-            // framework's own undo/redo mapping — see text_undo_shortcuts.dart
-            // for why it reports the key handled over real fields.
-            RouteTitle(
-              child: CcTheme(
-                data: isDark
-                    ? CcThemeData.dark(fontFamily: appFontFamily)
-                    : CcThemeData.light(fontFamily: appFontFamily),
-                // Third-party widgets on the deprecated framework Material
-                // library resolve their own Theme/MaterialLocalizations here.
-                child: LegacyMaterialBridge(
-                  child: Stack(
-                    children: [
-                      Overlay(
-                        initialEntries: [
-                          OverlayEntry(
-                            builder: (context) => CcToastScope(
-                              child: child ?? const SizedBox.shrink(),
+    return DesktopUpdateLifecycle(
+      busyProbe: () => ref.read(meetingRecorderControllerProvider).isRecording,
+      child: AppShortcuts(
+        commandBuilder: buildGlobalCommands,
+        readActiveWorkspaceId: () => ref.read(activeWorkspaceIdProvider),
+        onToggleWorkspaceSwitcher: () {
+          final ctx = rootNavigatorKey.currentContext;
+          if (ctx != null) {
+            toggleWorkspaceSwitcher(ctx);
+          }
+        },
+        onCycleWorkspace: (delta) {
+          final workspaces = ref.read(workspacesProvider).value ?? const [];
+          if (workspaces.length < 2) {
+            return;
+          }
+          final currentId = ref.read(activeWorkspaceIdProvider);
+          final currentIndex = workspaces.indexWhere((w) => w.id == currentId);
+          final base = currentIndex < 0 ? 0 : currentIndex;
+          var nextIndex = (base + delta) % workspaces.length;
+          if (nextIndex < 0) {
+            nextIndex += workspaces.length;
+          }
+          // Switching workspaces is a navigation: the URL drives the active id.
+          ref.read(routerProvider).go(inboxRoute(workspaces[nextIndex].id));
+        },
+        onSelectWorkspaceByIndex: (index) {
+          final workspaces = ref.read(workspacesProvider).value ?? const [];
+          if (index < 0 || index >= workspaces.length) {
+            return;
+          }
+          ref.read(routerProvider).go(inboxRoute(workspaces[index].id));
+        },
+        onToggleFocusMode: () {
+          ref.read(focusModeProvider.notifier).toggle();
+        },
+        child: MaterialApp.router(
+          title: 'Control Center',
+          debugShowCheckedModeBanner: false,
+          // Every desktop scrollable gets the design-system scrollbar (angular,
+          // token-colored) instead of Material's rounded one. Surfaces needing
+          // explicit control wrap their scrollable in [CcScrollbar] themselves.
+          scrollBehavior: const CcScrollBehavior(),
+          routerConfig: router,
+          theme: AppTheme.light(appFontFamily: appFontFamily),
+          darkTheme: AppTheme.dark(appFontFamily: appFontFamily),
+          themeMode: themeMode,
+          locale: localeOverride,
+          supportedLocales: kSupportedAppLocales,
+          localeResolutionCallback: resolveAppLocale,
+          // material_ui's bundle: its Material and Cupertino localizations plus
+          // the widgets ones. Third-party widgets still on the framework's
+          // deprecated Material library get theirs from [LegacyMaterialBridge].
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          builder: (context, child) {
+            // The one chokepoint for intl: bare DateFormat/NumberFormat calls
+            // resolve Intl.defaultLocale, so pin it to the locale the app
+            // actually resolved (override or system) instead of threading a
+            // locale through every formatting call site. The builder sits below
+            // the app's Localizations, after the global delegates have loaded
+            // this locale's date symbols.
+            Intl.defaultLocale = Localizations.localeOf(
+              context,
+            ).toLanguageTag();
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            // CcTheme is the purist token-delivery space (replacing the Material
+            // ThemeExtension). It wraps the whole navigator so every route and
+            // overlay can resolve `context.designSystem`. CcToastScope hosts the
+            // app-wide toast overlay — it needs an Overlay ancestor to insert
+            // into and `MaterialApp.builder` sits *above* the router's own
+            // overlay, so we provide a root Overlay here for it to mount toasts on
+            // top of every route.
+            // RouteTitle wraps the whole navigator so the browser-tab title
+            // follows the active page (it re-resolves on every navigation) rather
+            // than the static `MaterialApp.title` every page would share. It sits
+            // inside CcTheme so token lookups in its subtree resolve.
+            return installTextUndoShadow(
+              // Undo/redo strokes are owned by the [KeybindingDispatcher], which
+              // bridges them to the focused field's UndoHistory (see
+              // `_bridgeTextUndoRedo` in keybinding_dispatcher.dart). The shadow
+              // sits INSIDE WidgetsApp's DefaultTextEditingShortcuts
+              // (MaterialApp.builder wraps the router), so it shadows the
+              // framework's own undo/redo mapping — see text_undo_shortcuts.dart
+              // for why it reports the key handled over real fields.
+              RouteTitle(
+                child: CcTheme(
+                  data: isDark
+                      ? CcThemeData.dark(fontFamily: appFontFamily)
+                      : CcThemeData.light(fontFamily: appFontFamily),
+                  // Third-party widgets on the deprecated framework Material
+                  // library resolve their own Theme/MaterialLocalizations here.
+                  child: LegacyMaterialBridge(
+                    child: Stack(
+                      children: [
+                        Overlay(
+                          initialEntries: [
+                            OverlayEntry(
+                              builder: (context) => CcToastScope(
+                                child: child ?? const SizedBox.shrink(),
+                              ),
                             ),
-                          ),
-                          // The app-drawn window controls (desktop windows whose
-                          // native ones went with the hidden title bar), above
-                          // every route and dialog like a real caption. Only the
-                          // buttons hit-test; nothing renders on the web.
-                          OverlayEntry(
-                            builder: (context) => const Align(
-                              alignment: AlignmentDirectional.topEnd,
-                              child: WindowCaptionButtons(),
+                            // The app-drawn window controls (desktop windows whose
+                            // native ones went with the hidden title bar), above
+                            // every route and dialog like a real caption. Only the
+                            // buttons hit-test; nothing renders on the web.
+                            OverlayEntry(
+                              builder: (context) => const Align(
+                                alignment: AlignmentDirectional.topEnd,
+                                child: WindowCaptionButtons(),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      // App-wide shutdown overlay (above every route + toasts),
-                      // driven by server-fed progress during a local-server quit.
-                      const Positioned.fill(child: ServerShutdownOverlay()),
-                      // Takes over once the connection drops (shutdown or
-                      // not): retry now or leave for the sign-in screen.
-                      const Positioned.fill(child: ServerDisconnectedOverlay()),
-                    ],
+                          ],
+                        ),
+                        // App-wide shutdown overlay (above every route + toasts),
+                        // driven by server-fed progress during a local-server quit.
+                        const Positioned.fill(child: ServerShutdownOverlay()),
+                        // Takes over once the connection drops (shutdown or
+                        // not): retry now or leave for the sign-in screen.
+                        const Positioned.fill(
+                          child: ServerDisconnectedOverlay(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

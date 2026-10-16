@@ -2,11 +2,9 @@ import 'dart:math' as math;
 
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/keybindings/keybinding_providers.dart';
-import 'package:control_center/core/update/desktop_update_controller.dart';
 import 'package:control_center/features/chat_bridges/providers/chat_bridge_space_auto_open.dart';
 import 'package:control_center/features/demo/presentation/widgets/demo_shell_overlay.dart';
 import 'package:control_center/features/dispatch/presentation/widgets/credential_gate_overlay.dart';
-import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_controller.dart';
 import 'package:control_center/features/meetings/presentation/widgets/meeting_recording_hud.dart';
 import 'package:control_center/features/messaging/presentation/widgets/agent_approval_overlay.dart';
 import 'package:control_center/features/messaging/presentation/widgets/spaces_sub_sidebar.dart';
@@ -56,20 +54,6 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
     // activity. Never marks the event handled — this must never steal a key
     // from the app's real shortcut/input handling.
     HardwareKeyboard.instance.addHandler(_onKeyEventTouch);
-    // Desktop in-app updater (Sparkle/WinSparkle): arm the check schedule
-    // once the shell is live (past the boot path). The busy probe defers any
-    // prompt while a meeting is recording — never interrupt it with an
-    // update dialog. No-op on web.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        ref
-            .read(desktopUpdateProvider.notifier)
-            .start(
-              busyProbe: () =>
-                  ref.read(meetingRecorderControllerProvider).isRecording,
-            );
-      }
-    });
   }
 
   @override

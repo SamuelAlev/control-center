@@ -1,6 +1,6 @@
 /// The chrome around the pre-context auth surfaces — first-run onboarding and
 /// the re-authentication screen: the full-screen frame, the labelled progress
-/// bar, the card each step's copy and body sit in, and the theme toggle.
+/// bar, the card each step's copy and body sit in, and local appearance controls.
 ///
 /// Split out of `onboarding_screen.dart` so the screen file is the FLOW — which
 /// step follows which, and what each one says — rather than the flow plus the
@@ -10,10 +10,12 @@
 library;
 
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_step_layout.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/language_picker.dart';
 import 'package:control_center/shared/widgets/shader_background.dart';
 import 'package:control_center/shared/widgets/window_caption_buttons.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
@@ -21,7 +23,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The full-screen frame every pre-context auth surface sits in: the shader background, a
-/// centred column capped at a readable width, and the theme toggle in the corner.
+/// centred column capped at a readable width, and language/theme controls.
 /// Shared rather than copied because these screens are the app's first impression and the
 /// only ones drawn outside the shell — two hand-rolled frames drift in exactly the places
 /// (the max width, the inset, where the toggle sits) where the drift is visible as a jump
@@ -54,12 +56,38 @@ class OnboardingScaffold extends StatelessWidget {
                     ),
                   ),
                 ),
-                const WindowCaptionCorner(child: OnboardingThemeToggle()),
+                const WindowCaptionCorner(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(width: 200, child: OnboardingLanguagePicker()),
+                      SizedBox(width: AppSpacing.sm),
+                      OnboardingThemeToggle(),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Local language selection without opening the app's settings.
+class OnboardingLanguagePicker extends ConsumerWidget {
+  /// Creates the login language picker.
+  const OnboardingLanguagePicker({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return LanguagePicker(
+      selected: ref.watch(localeProvider),
+      systemLabel: l10n.languageSystem,
+      searchHint: l10n.searchPlaceholder,
+      semanticLabel: l10n.settingsLanguage,
     );
   }
 }

@@ -34,6 +34,11 @@ const String onboardingRoute = '/onboarding';
 /// flow to fix one expired token reads as if their install was reset.
 const String signedOutRoute = '/signed-out';
 
+/// Whether a route is still showing startup, sign-in or first-run setup.
+/// App settings and the command palette stay unavailable on these surfaces.
+bool isAuthenticationRoute(String path) =>
+    path == splashRoute || path == onboardingRoute || path == signedOutRoute;
+
 /// Workspaces list / picker. Full-screen (outside the workspace shell) — it is where the user chooses or creates the workspace whose context everything else runs in.
 const String workspaceListRoute = '/workspaces';
 
