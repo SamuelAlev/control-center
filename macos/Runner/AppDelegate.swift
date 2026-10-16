@@ -187,18 +187,11 @@ class AppDelegate: FlutterAppDelegate {
   private var windowDragObserver: NSObjectProtocol?
 
   override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-    // With Flutter's native windowing, every window is Dart-owned. A hot
-    // restart tears down the widget tree — closing all NSWindows — before the
-    // restarted isolate recreates them, so the window count momentarily hits
-    // zero. If we terminated on the last window closing, every hot restart
-    // would kill the app ("Lost connection to device"). Hot restart is
-    // debug-only (JIT), so suppress auto-terminate in DEBUG and keep the normal
-    // close-to-quit behavior for release.
-    #if DEBUG
-      return false
-    #else
-      return true
-    #endif
+    // Dart owns both user-requested close-to-quit (`_QuitOnCloseDelegate`) and
+    // programmatic window replacement. Closing the setup window during boot,
+    // switching servers or hot restarting can temporarily leave no NSWindows;
+    // AppKit must not interpret that handoff as a request to quit.
+    return false
   }
 
   override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
@@ -315,7 +308,8 @@ class AppDelegate: FlutterAppDelegate {
     )
     NSLog("[BackgroundActivity] live session started (App Nap disabled)")
 
-    super.applicationDidFinishLaunching(notification)
+    // FlutterAppDelegate does not implement this optional NSApplicationDelegate
+    // callback. Calling super sends an unrecognized selector at launch.
   }
 
   override func applicationWillTerminate(_ notification: Notification) {
@@ -323,7 +317,7 @@ class AppDelegate: FlutterAppDelegate {
       ProcessInfo.processInfo.endActivity(activity)
       liveSessionActivity = nil
     }
-    super.applicationWillTerminate(notification)
+    // FlutterAppDelegate does not implement this optional callback either.
   }
 
   override func application(_ application: NSApplication, open urls: [URL]) {
