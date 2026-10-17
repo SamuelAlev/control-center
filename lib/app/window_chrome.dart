@@ -217,21 +217,12 @@ void styleWindowOnShow(Window window, AppPreferences prefs) {
   }
 }
 
-/// Applies [styleWindowOnShow] to every window this app recognises, and calls
-/// [onMainWindow] for each main (non-HUD) one.
+/// Reconciles known windows' chrome and reports each main (non-HUD) window.
 ///
-/// This exists because a window's title is not set when it is first shown.
-/// Flutter's `WindowControllerMacOS` calls `createWindow` — which creates the
-/// `NSWindow` AND calls `makeKeyAndOrderFront:` on it, the very call that
-/// invokes the will-show hook — and only applies `setTitle` after that returns
-/// (see `_window_macos.dart`). So the hook's own pass runs against an untitled
-/// window, [styleWindowOnShow]'s title switch matches nothing, and the window
-/// arrives wearing the stock macOS title bar instead of the app's own chrome.
-///
-/// Running this from a microtask scheduled inside the hook is what fixes it:
-/// the title is applied in the same synchronous turn that created the window,
-/// so by the time the microtask runs every window can be identified. Styling
-/// is idempotent, so re-dressing an already-correct window costs nothing.
+/// Deferred from the will-show hook until the native show has returned, so the
+/// visibility guard can inspect the window's actual visibility and focus.
+/// Styling is idempotent, and geometry restoration is latched per window ID:
+/// repeated shows must not reset a window the operator has moved or resized.
 void dressKnownWindows(
   WindowManager manager,
   AppPreferences prefs, {

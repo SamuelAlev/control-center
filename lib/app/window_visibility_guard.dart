@@ -12,7 +12,7 @@ import 'package:nativeapi_flutter/nativeapi_flutter.dart'
 
 /// Repairs stale [AppLifecycleState.hidden] that leaves a visible window black.
 ///
-/// Headless macOS: windows are created from Dart after `cc_server` connects.
+/// Headless macOS: boot/setup and primary windows are created from Dart.
 /// At launch (and when one main window replaces another), AppKit's
 /// `handleWillBecomeActive` finds no visible window and reports `hidden`, which
 /// sets `SchedulerBinding.framesEnabled = false` — later `scheduleFrame()` is a

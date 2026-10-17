@@ -10,10 +10,10 @@ import 'package:flutter/widgets.dart';
 /// every locale, so it is not routed through `AppLocalizations`.
 const String _productName = 'Control Center';
 
-/// The first desktop frame, before secure storage, native media and server boot.
+/// The first-run desktop frame, before native media and server boot.
 ///
-/// Contains no session or cached workspace data. The setup window hosts it
-/// until authentication and workspace admission permit the real app to mount.
+/// Contains no session or cached workspace data. Configured launches skip it;
+/// first-run setup reuses its window until the authenticated app can mount.
 class DesktopBootApp extends StatelessWidget {
   /// Creates the localized, OS-themed startup surface.
   @Preview(name: 'Desktop startup', group: 'Bootstrap', size: Size(640, 420))

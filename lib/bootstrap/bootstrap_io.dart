@@ -9,7 +9,8 @@ import 'package:cc_rpc/cc_rpc.dart'
     show RemoteRpcClient, RemoteRpcClientClosedException;
 import 'package:cc_ui/cc_ui.dart' show CcToastScope, CcToastVariant;
 import 'package:control_center/app/app_windows.dart'
-    show AppWindows, runBootFailureWindow, runServerSetupWindow;
+    show AppWindows, runBootFailureWindow, runDesktopBootWindow;
+import 'package:control_center/app/control_center_app.dart';
 import 'package:control_center/app/window_chrome.dart';
 import 'package:control_center/app/window_geometry_watcher.dart';
 import 'package:control_center/app/window_visibility_guard.dart';
@@ -59,7 +60,6 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/syntax/shiki_bootstrap.dart';
-import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -100,7 +100,7 @@ bool _mediaPlaybackAvailable = true;
 /// `ProviderContainer` with its real (keychain + native preferences) storage
 /// overrides, font preload, deep-link wiring and spawning/connecting to the
 /// `cc_server` that owns all data and execution — culminating in
-/// `runAppWithSentry(AppWindows())`. The desktop is a thin client exactly like
+/// `runAppWithSentry` with `_DesktopAppHost`. The desktop is a thin client like
 /// web: it hosts no server, no MCP, no database. The web counterpart is
 /// `bootstrap_web.dart`.
 Future<void> bootstrapAndRun() async {
@@ -121,7 +121,7 @@ Future<void> bootstrapAndRun() async {
   await runAppWithSentry(() => const _DesktopAppHost());
 }
 
-/// Paints a dependency-light boot surface, then prepares the authenticated app.
+/// Prepares the authenticated app, showing a boot surface only on first run.
 ///
 /// Separated from [bootstrapAndRun] so a failure in here is distinguishable
 /// from one thrown after the app tree is mounted — only the former may replace
@@ -233,11 +233,10 @@ Future<void> _prepareDesktop() async {
   // frameless always-on-top chrome. Replaces window_manager's WindowOptions +
   // waitUntilReadyToShow + WindowListener.
   //
-  // The guard installed alongside them repairs the launch-time lifecycle
-  // state: the runner is headless, so at the moment AppKit activates the app
-  // there is no window yet and the engine reports `hidden` — which disables
-  // frames, leaving the window that appears seconds later (once cc_server is
-  // up) black until something forces a frame. See `WindowVisibilityGuard`.
+  // The guard repairs stale `hidden` lifecycle state after a main window
+  // appears, including the setup→primary handoff. AppWindows also explicitly
+  // shows each new macOS main window before its first frame: the engine's
+  // delayed show cannot break a pre-presentation `hidden` state on its own.
   WindowVisibilityGuard.instance.install();
   const windowManager = WindowManager.instance;
   windowManager.setWillShowHook((windowId) {
@@ -254,10 +253,9 @@ Future<void> _prepareDesktop() async {
     // empty screen. This must stay AFTER the styling (that is the point of
     // styling on show) and must run even for a window we could not resolve.
     windowManager.callOriginalShow(windowId);
-    // The pass above cannot identify a window on its FIRST show: Flutter
-    // applies the title only after the call that created and showed it, so
-    // `styleWindowOnShow` matched nothing and the window is wearing stock
-    // macOS chrome right now. The title lands before this microtask runs.
+    // Reconcile after the native show returns, then arm frame repairs. The
+    // guard needs real visibility/focus to distinguish stale `hidden` from
+    // the operator intentionally hiding the app.
     scheduleMicrotask(
       () => dressKnownWindows(
         windowManager,
@@ -284,15 +282,14 @@ Future<void> _prepareDesktop() async {
     persist: (snapshot) => persistWindowSnapshot(prefs, snapshot),
   )..start();
 
-  // This reuses the pre-app setup window, so first-run setup replaces only its
-  // contents. No authenticated providers or cached workspace data are mounted.
-  runServerSetupWindow(const DesktopBootApp());
-  // The headless runner may still report `hidden`, so force a frame. A
-  // framework endOfFrame can complete without any native view rasterizing;
-  // wait for the engine's first rendered frame before synchronous native work
-  // can delay presentation of the boot surface.
-  WidgetsBinding.instance.scheduleForcedFrame();
-  await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
+  // Constructing the keychain facade does not read credentials. Saved-server
+  // launches skip the temporary setup window and its first-frame wait; the
+  // backend resolver still opens real setup if reconnecting needs user input.
+  final secureStore = SecureStore.keychain();
+  await runDesktopBootWindow(
+    const DesktopBootApp(),
+    isServerConfigured: ServerConnectionStore(prefs, secureStore).isConfigured,
+  );
 
   // Load the libmpv-backed player (media_kit) before any Player is created —
   // every playback surface (soundscape, meeting audio, rig listen,
@@ -343,7 +340,6 @@ Future<void> _prepareDesktop() async {
     await localNotifier.setup(appName: 'Control Center');
   }
   await removeLegacyCalendarSnapshots(prefs);
-  final secureStore = SecureStore.keychain();
   // Thin-client flip: the desktop opens NO database. It connects to a
   // `cc_server` that owns the data over loopback/WSS RPC — the same path the web
   // build uses. The user's persisted choice decides which server:
@@ -550,7 +546,7 @@ class DesktopServerSwitcher {
   /// The live session (the host widget renders it).
   DesktopBackendSession? get current => _current;
 
-  /// Bumped on every adopted session; the host listens and remounts.
+  /// Bumped on every adopted session; the host remounts the session UI.
   ValueListenable<int> get generation => _generation;
 
   /// Adopts only an expected, client-held decrypted SSO handoff. The browser
@@ -637,8 +633,8 @@ class DesktopServerSwitcher {
     final old = _current;
     _adopt(next, prefs, secure);
     if (old != null) {
-      // Tear the OLD session down only AFTER the frame that remounts the app
-      // around the new one. `_adopt` merely schedules that rebuild (setState),
+      // Tear the OLD session down only AFTER the frame that remounts its UI in
+      // the existing window. `_adopt` merely schedules that rebuild (setState),
       // so disposing here and now would leave the still-mounted widget tree
       // sitting on a disposed `ProviderContainer`: every `ref.watch` in it
       // throws, the remount frame dies half-built and the window is left
@@ -728,10 +724,9 @@ class DesktopServerSwitcher {
   }
 }
 
-/// Root desktop widget: renders the current [DesktopBackendSession]'s
-/// provider tree and remounts it (new `ValueKey`) when the switcher adopts a
-/// new session. Also owns the container-scoped platform handlers (menu-bar
-/// Preferences, deep links), re-registered per session.
+/// Root desktop widget: keeps the primary native window while remounting the
+/// current [DesktopBackendSession]'s UI. Also owns the container-scoped platform
+/// handlers (menu-bar Preferences, deep links), re-registered per session.
 class _DesktopAppHost extends StatefulWidget {
   const _DesktopAppHost();
 
@@ -834,17 +829,12 @@ class _DesktopAppHostState extends State<_DesktopAppHost> {
     // through the connected server's `/proxy/media` endpoint — the desktop is
     // a thin client, so it must not hit upstream hosts directly. Omitted only
     // if the connection couldn't be expressed as a proxy base.
-    final mediaProxy = session.backend.mediaProxy;
-    return KeyedSubtree(
-      key: ValueKey(
-        'server-${session.backend.entry?.serverId ?? 'local'}-'
-        '${DesktopServerSwitcher.instance.generation.value}',
-      ),
-      child: UncontrolledProviderScope(
-        container: session.container,
-        child: mediaProxy != null
-            ? MediaProxyScope(config: mediaProxy, child: const AppWindows())
-            : const AppWindows(),
+    return UncontrolledProviderScope(
+      container: session.container,
+      child: AppWindows(
+        sessionKey: ObjectKey(session),
+        mediaProxy: session.backend.mediaProxy,
+        app: const ControlCenterApp(),
       ),
     );
   }

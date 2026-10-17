@@ -7,7 +7,6 @@
 
 import 'dart:ui' show AppExitType;
 
-import 'package:control_center/app/control_center_app.dart';
 import 'package:control_center/app/window_chrome.dart';
 import 'package:control_center/app/window_placement.dart';
 import 'package:control_center/core/observability/sentry_bootstrap.dart';
@@ -18,11 +17,17 @@ import 'package:control_center/features/meetings/presentation/screens/meeting_to
 import 'package:control_center/features/soundscape/presentation/notifiers/soundscape_mini_player_controller.dart';
 import 'package:control_center/features/soundscape/presentation/screens/soundscape_mini_player_window.dart';
 import 'package:control_center/shared/widgets/foreground_ticker_gate.dart';
+import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:control_center/shared/widgets/window_caption_buttons.dart';
 import 'package:flutter/src/widgets/_window.dart'
     show Window, WindowController, WindowControllerDelegate;
+import 'package:flutter/src/widgets/_window_macos.dart'
+    show BaseWindowControllerMacOS;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nativeapi_flutter/nativeapi_flutter.dart'
+    as nativeapi
+    show Window;
 import 'package:sentry_flutter/sentry_flutter.dart' show SentryWidget;
 
 /// Delegate that quits the whole application when its window is closed, instead of just
@@ -42,17 +47,77 @@ class _QuitOnCloseDelegate extends WindowControllerDelegate {
   }
 }
 
+/// Breaks macOS's first-frame/visibility dependency for a new main window.
+///
+/// Flutter keeps a regular NSWindow invisible until its first frame presents.
+/// A headless launch can report `hidden` before that, preventing the frame
+/// that would show it; the will-show visibility guard cannot run yet either.
+/// Show only this newly created window, through the existing chrome hook, so
+/// AppKit can report its real visibility before the first frame. Never repeat
+/// this from build/lifecycle callbacks: Cmd-H and minimize must stay respected.
+void _showMainWindowOnCreate(WindowController controller) {
+  if (controller is! BaseWindowControllerMacOS) {
+    return;
+  }
+  final window = nativeapi.Window.createWithNativeWindow(
+    (controller as BaseWindowControllerMacOS).windowHandle,
+  );
+  if (window == null) {
+    return;
+  }
+  try {
+    window.show();
+  } finally {
+    window.dispose();
+  }
+}
+
 /// Root of the application's native multi-window tree.
 ///
-/// Each entry is a [Window] backed by its own platform window in this
-/// single Dart isolate. The primary window is always present; the two floating
-/// HUDs are added/removed reactively as their owning providers flip — adding a
-/// window creates it, removing it destroys it. Because everything shares one
-/// isolate and [ProviderContainer], the HUDs read Riverpod state directly with
-/// no cross-engine IPC.
-class AppWindows extends ConsumerWidget {
+/// The primary native window survives server switches. Only its session
+/// content and the floating HUDs remount for [sessionKey], so replacing a
+/// provider container never tears down or re-shows the operator's main window.
+class AppWindows extends StatelessWidget {
   /// Creates the [AppWindows] root.
-  const AppWindows({super.key});
+  const AppWindows({
+    required this.sessionKey,
+    required this.app,
+    this.mediaProxy,
+    super.key,
+  });
+
+  /// Identity of the session-owned UI, not the primary native window.
+  final Key sessionKey;
+
+  /// The authenticated session's application.
+  final Widget app;
+
+  /// Connection-scoped media access for both the main app and its HUDs.
+  final MediaProxyConfig? mediaProxy;
+
+  Widget _sessionContent(Widget child) {
+    final proxy = mediaProxy;
+    return KeyedSubtree(
+      key: sessionKey,
+      child: proxy == null
+          ? child
+          : MediaProxyScope(config: proxy, child: child),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => ViewCollection(
+    views: [
+      PrimaryWindow(child: _sessionContent(app)),
+      _sessionContent(const _SessionHudWindows()),
+    ],
+  );
+}
+
+/// Session-owned windows share the current container, but not its lifetime
+/// with the primary native window.
+class _SessionHudWindows extends ConsumerWidget {
+  const _SessionHudWindows();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,7 +128,6 @@ class AppWindows extends ConsumerWidget {
     final soundscapeOpen = ref.watch(soundscapeMiniPlayerControllerProvider);
     return ViewCollection(
       views: [
-        const PrimaryWindow(),
         if (focusCompact) const FocusPillWindow(),
         if (toolbarOpen) const MeetingToolbarWindow(),
         if (soundscapeOpen) const SoundscapeMiniPlayerWindow(),
@@ -73,11 +137,13 @@ class AppWindows extends ConsumerWidget {
 }
 
 /// The main application window. Owns the regular window controller and renders
-/// [ControlCenterApp] into it (wrapped in [SentryWidget] when crash reporting
-/// is active).
+/// [child] into it (wrapped in [SentryWidget] when crash reporting is active).
 class PrimaryWindow extends StatefulWidget {
   /// Creates the [PrimaryWindow].
-  const PrimaryWindow({super.key});
+  const PrimaryWindow({required this.child, super.key});
+
+  /// Session content, which can remount without replacing the native window.
+  final Widget child;
 
   @override
   State<PrimaryWindow> createState() => _PrimaryWindowState();
@@ -110,10 +176,16 @@ class _PrimaryWindowState extends State<PrimaryWindow> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    _showMainWindowOnCreate(_controller);
+  }
+
+  @override
   void dispose() {
-    // Unmounted mid-frame when the app gives way to the server setup window
-    // (or remounts on a server switch): defer the native destroy past the
-    // frame for the same focus reason as `_ServerSetupWindowState.dispose`.
+    // Unmounted mid-frame when the app gives way to the server setup window:
+    // defer the native destroy past the frame for the same focus reason as
+    // `_ServerSetupWindowState.dispose`. Server switches keep this State.
     final controller = _controller;
     WidgetsBinding.instance.addPostFrameCallback((_) => controller.destroy());
     super.dispose();
@@ -128,8 +200,8 @@ class _PrimaryWindowState extends State<PrimaryWindow> {
     // another app.
     final Widget app = ForegroundTickerGate(
       child: sentryReportingActive
-          ? SentryWidget(child: const ControlCenterApp())
-          : const ControlCenterApp(),
+          ? SentryWidget(child: widget.child)
+          : widget.child,
     );
     return Window(
       controller: _controller,
@@ -171,6 +243,27 @@ class _ControllerCaptionActions implements WindowCaptionActions {
   @override
   void removeListener(VoidCallback listener) =>
       _controller.removeListener(listener);
+}
+
+/// Shows the pre-connection boot surface only when no server has been saved.
+///
+/// A configured launch connects silently and mounts [AppWindows] directly;
+/// [runServerSetupWindow] remains available if that connection needs recovery.
+/// Only a visible boot surface waits for rasterization: waiting on the
+/// configured path would deadlock before its first window can be created.
+Future<void> runDesktopBootWindow(
+  Widget app, {
+  required bool isServerConfigured,
+}) async {
+  if (isServerConfigured) {
+    return;
+  }
+  runServerSetupWindow(app);
+  // A headless framework frame can finish without a native view rendering.
+  // Force one past stale `hidden` state before native initialization starts.
+  final binding = WidgetsBinding.instance;
+  binding.scheduleForcedFrame();
+  await binding.waitUntilFirstFrameRasterized;
 }
 
 /// Renders [app] in the native startup/setup window before [AppWindows].
@@ -216,6 +309,12 @@ class _BootFailureWindowState extends State<_BootFailureWindow> {
     title: bootFailureWindowTitle,
     delegate: _QuitOnCloseDelegate(),
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _showMainWindowOnCreate(_controller);
+  }
 
   @override
   void dispose() {
@@ -296,6 +395,12 @@ class _ServerSetupWindowState extends State<_ServerSetupWindow> {
     // app rather than orphaning a headless engine with no windows.
     delegate: _QuitOnCloseDelegate(),
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _showMainWindowOnCreate(_controller);
+  }
 
   @override
   void dispose() {
