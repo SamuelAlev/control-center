@@ -903,4 +903,1715 @@ class AppLocalizationsIt extends AppLocalizations {
   String durationHoursMinutes(int hours, int minutes) {
     return '${hours}h ${minutes}m';
   }
+
+  @override
+  String get mobileConversations => 'Conversazioni';
+
+  @override
+  String get mobileNewConversation => 'Nuova conversazione';
+
+  @override
+  String get mobileConversationName => 'Nome della conversazione';
+
+  @override
+  String get mobileRename => 'Rinomina';
+
+  @override
+  String get mobileManageSpace => 'Gestisci spazio';
+
+  @override
+  String get mobileArchived => 'Archiviato';
+
+  @override
+  String get mobileSearchMessages => 'Cerca tutti i messaggi in questo spazio';
+
+  @override
+  String get mobileSearch => 'Cerca';
+
+  @override
+  String get mobileNoResults => 'Nessun risultato';
+
+  @override
+  String get mobileReopen => 'Riapri';
+
+  @override
+  String get mobileArchive => 'Archivia';
+
+  @override
+  String get mobileProgress => 'Avanzamento e contesto';
+
+  @override
+  String get mobileReadFailed =>
+      'Impossibile contrassegnare questa conversazione come letta';
+
+  @override
+  String get mobileSendFailed =>
+      'Messaggio non inviato. La bozza è ancora qui.';
+
+  @override
+  String get mobileActionFailed => 'Azione non riuscita';
+
+  @override
+  String get mobileRemove => 'Rimuovi';
+
+  @override
+  String get mobileLinkedMessage => 'Messaggio collegato';
+
+  @override
+  String get mobileOlderMessages => 'Messaggi precedenti';
+
+  @override
+  String get mobileMessageActions => 'Azioni del messaggio';
+
+  @override
+  String get mobileOpenThread => 'Apri discussione';
+
+  @override
+  String get mobileCopyLink => 'Copia link';
+
+  @override
+  String get mobileStopRun => 'Interrompi esecuzione';
+
+  @override
+  String get mobileStopRunConfirm =>
+      'Interrompere questa esecuzione dell\'agente? Il lavoro già completato verrà conservato.';
+
+  @override
+  String get mobileControlUnsupported =>
+      'Questa esecuzione è terminata o non supporta questo comando.';
+
+  @override
+  String get mobilePauseRequested =>
+      'Pausa richiesta alla fine del prossimo turno';
+
+  @override
+  String get mobileResumed => 'Esecuzione ripresa';
+
+  @override
+  String get mobileStopRequested => 'Interruzione richiesta';
+
+  @override
+  String get mobileQueuedMessages => 'Messaggi in coda';
+
+  @override
+  String get mobilePauseRun => 'Metti in pausa al prossimo turno';
+
+  @override
+  String get mobileResumeRun => 'Riprendi';
+
+  @override
+  String get mobileEditQueued => 'Modifica il messaggio in coda';
+
+  @override
+  String get mobileSteerNow => 'Dai indicazioni ora';
+
+  @override
+  String get mobileMoveUp => 'Sposta su';
+
+  @override
+  String get mobileMoveDown => 'Sposta giù';
+
+  @override
+  String get mobileQueueChanged =>
+      'La coda è cambiata o questa esecuzione non accetta indicazioni in tempo reale. Aggiorna e riprova.';
+
+  @override
+  String get mobileActivity => 'Attività';
+
+  @override
+  String get mobilePermissions => 'Autorizzazioni e audit';
+
+  @override
+  String get mobilePlans => 'Piani';
+
+  @override
+  String get mobileGoals => 'Obiettivi supervisionati';
+
+  @override
+  String get mobileCredentials => 'Connessioni e credenziali';
+
+  @override
+  String get mobileWorkspaceUnavailable =>
+      'Questo spazio di lavoro non è disponibile o non hai più accesso.';
+
+  @override
+  String get mobilePrReviewThreads => 'Discussioni di revisione';
+
+  @override
+  String get mobilePrThreadsLoadFailed =>
+      'Impossibile caricare le discussioni di revisione';
+
+  @override
+  String get mobilePrNoReviewThreads =>
+      'Nessuna discussione di revisione nel codice';
+
+  @override
+  String get mobilePrCommentPermissionDenied =>
+      'Non hai l\'autorizzazione per commentare questo repository.';
+
+  @override
+  String get mobilePrPermissionChecking =>
+      'Verifica delle autorizzazioni per i commenti…';
+
+  @override
+  String get mobilePrPermissionLoadFailed =>
+      'Impossibile verificare le autorizzazioni per i commenti. Riprova per commentare.';
+
+  @override
+  String mobilePrThreadLine(String side, String line) {
+    return '$side, riga $line';
+  }
+
+  @override
+  String get mobilePrOriginalSide => 'Originale';
+
+  @override
+  String get mobilePrUpdatedSide => 'Aggiornato';
+
+  @override
+  String get mobilePrThreadResolved => 'Risolto';
+
+  @override
+  String get mobilePrReplyHint => 'Scrivi una risposta…';
+
+  @override
+  String get mobilePrCommentRequired =>
+      'Scrivi un commento prima di pubblicarlo.';
+
+  @override
+  String get mobilePrReply => 'Rispondi';
+
+  @override
+  String get mobilePrReopenThread => 'Riapri il thread';
+
+  @override
+  String get mobilePrResolveThread => 'Risolvi il thread';
+
+  @override
+  String get mobilePrResolvePermissionDenied =>
+      'Solo l\'autore della pull request o chi ha accesso in scrittura può risolvere questa discussione.';
+
+  @override
+  String mobilePrCommentOnLine(String side, String line) {
+    return 'Commenta $side, riga $line';
+  }
+
+  @override
+  String get mobilePrInlineCommentHint => 'Scrivi un commento nel codice…';
+
+  @override
+  String get mobilePrPostInlineComment => 'Pubblica commento';
+
+  @override
+  String get mobilePrCommentUnavailable =>
+      'I commenti nel codice non sono disponibili per questa pull request.';
+
+  @override
+  String get mobilePrPatchUnavailable =>
+      'Il servizio Git non ha fornito una patch testuale per questo file.';
+
+  @override
+  String get mobilePrNoPatchForFile =>
+      'La patch per questo file non è disponibile.';
+
+  @override
+  String get mobileTicketNew => 'Nuovo ticket';
+
+  @override
+  String get mobileTicketCreate => 'Crea ticket';
+
+  @override
+  String get mobileTicketEdit => 'Modifica ticket';
+
+  @override
+  String get mobileTicketTitle => 'Titolo';
+
+  @override
+  String get mobileTicketTitleRequired =>
+      'Inserisci un titolo per salvare il ticket.';
+
+  @override
+  String get mobileTicketDescription => 'Descrizione';
+
+  @override
+  String get mobileTicketMarkdownHint => 'Aggiungi dettagli in Markdown';
+
+  @override
+  String get mobileTicketPriority => 'Priorità';
+
+  @override
+  String get mobileTicketPriorityNone => 'Nessuna priorità';
+
+  @override
+  String get mobileTicketPriorityUrgent => 'Urgente';
+
+  @override
+  String get mobileTicketPriorityHigh => 'Alto';
+
+  @override
+  String get mobileTicketPriorityMedium => 'Medio';
+
+  @override
+  String get mobileTicketPriorityLow => 'Basso';
+
+  @override
+  String get mobileTicketLabels => 'Etichette';
+
+  @override
+  String get mobileTicketLabelsHint => 'Un\'etichetta per riga';
+
+  @override
+  String get mobileTicketLabelsHelp =>
+      'Inserisci ogni etichetta su una riga separata.';
+
+  @override
+  String mobileTicketWorkspaceProvider(String provider) {
+    return 'Registrato in $provider';
+  }
+
+  @override
+  String get mobileTicketProviderLocal => 'Control Center';
+
+  @override
+  String get mobileTicketUnassigned => 'Non assegnato';
+
+  @override
+  String get mobileTicketAssignedFilter => 'Assegnati';
+
+  @override
+  String get mobileTicketAgentsLoadFailed => 'Impossibile caricare gli agenti';
+
+  @override
+  String get mobileTicketSearch => 'Cerca ticket';
+
+  @override
+  String get mobileTicketSearchHint =>
+      'Titolo, codice, descrizione, etichetta o assegnatario';
+
+  @override
+  String get mobileTicketClearSearch => 'Cancella ricerca ticket';
+
+  @override
+  String get mobileTicketNoMatches => 'Nessun ticket corrispondente';
+
+  @override
+  String get mobileTicketAdjustFilters =>
+      'Prova un\'altra ricerca o modifica i filtri.';
+
+  @override
+  String get mobileTicketClearFilters => 'Cancella filtri';
+
+  @override
+  String get mobileTicketNotFound => 'Ticket non trovato';
+
+  @override
+  String get mobileTicketNotFoundDescription =>
+      'Il ticket potrebbe essere stato eliminato o spostato fuori da questo spazio di lavoro.';
+
+  @override
+  String get mobileTicketWorkspaceChanged =>
+      'Lo spazio di lavoro è cambiato. Torna a quello attuale prima di salvare.';
+
+  @override
+  String get mobileTicketOpenLinkedSpace => 'Apri spazio collegato';
+
+  @override
+  String get mobileTicketReadOnly =>
+      'Per modificare i ticket devi essere membro dello spazio di lavoro.';
+
+  @override
+  String get permissionTitle => 'Autorizzazioni';
+
+  @override
+  String get permissionWorkspaceFailed =>
+      'Impossibile caricare lo spazio di lavoro';
+
+  @override
+  String get permissionNoWorkspace =>
+      'Seleziona uno spazio di lavoro per esaminare le autorizzazioni.';
+
+  @override
+  String get permissionLoading => 'Caricamento autorizzazioni…';
+
+  @override
+  String get permissionScopeDescription =>
+      'Esamina come viene decisa ogni azione a questo livello. Le regole dello spazio di lavoro possono essere ereditate da agenti e spazi.';
+
+  @override
+  String get permissionScope => 'Ambito delle regole';
+
+  @override
+  String get permissionWorkspaceScope => 'Spazio di lavoro';
+
+  @override
+  String get permissionAgentScope => 'Agente';
+
+  @override
+  String get permissionSpaceScope => 'Spazio';
+
+  @override
+  String get permissionAgentContext => 'Agente attivo in questo spazio';
+
+  @override
+  String get permissionNoAgentContext => 'Nessun agente selezionato';
+
+  @override
+  String get permissionTargetsFailed =>
+      'Impossibile caricare le destinazioni dell\'ambito';
+
+  @override
+  String get permissionNoTargets =>
+      'Nessuna destinazione disponibile in questo ambito.';
+
+  @override
+  String get permissionRoleFailed =>
+      'Impossibile verificare il tuo ruolo nello spazio di lavoro';
+
+  @override
+  String get permissionMemberRequired =>
+      'Per vedere le regole devi essere membro dello spazio di lavoro.';
+
+  @override
+  String get permissionRulesFailed => 'Impossibile caricare le regole';
+
+  @override
+  String get permissionAuditAdminOnly =>
+      'La cronologia delle autorizzazioni è disponibile solo agli amministratori dello spazio di lavoro.';
+
+  @override
+  String get permissionAllow => 'Consenti';
+
+  @override
+  String get permissionAsk => 'Chiedi prima';
+
+  @override
+  String get permissionDeny => 'Nega';
+
+  @override
+  String get permissionFileDelete => 'Elimina file';
+
+  @override
+  String get permissionFileWriteOutsideWorktree =>
+      'Scrivi fuori dalla directory di lavoro Git';
+
+  @override
+  String get permissionGitCommit => 'Crea commit';
+
+  @override
+  String get permissionGitPush => 'Invia commit';
+
+  @override
+  String get permissionPrCreate => 'Crea pull request';
+
+  @override
+  String get permissionPrPublish => 'Pubblica pull request';
+
+  @override
+  String get permissionVendorSyncWrite =>
+      'Scrivi sincronizzazione del provider';
+
+  @override
+  String get permissionNetworkEgress => 'Accedi alla rete';
+
+  @override
+  String get permissionSecretAccess => 'Accedi ai segreti';
+
+  @override
+  String get permissionPackageInstall => 'Installa pacchetti';
+
+  @override
+  String get permissionProcessSpawn => 'Avvia processi';
+
+  @override
+  String get permissionWorkspaceMutation => 'Modifica spazio di lavoro';
+
+  @override
+  String get permissionEnclosureControl => 'Controlla enclosure';
+
+  @override
+  String get permissionChangeFailed => 'Impossibile modificare la regola';
+
+  @override
+  String get permissionEffectiveDescription =>
+      'Valida per questo ambito senza argomenti dell\'azione. Le autorizzazioni condizionali sotto valgono solo per le richieste corrispondenti; la decisione finale spetta al server.';
+
+  @override
+  String get permissionSpaceAgentNote =>
+      'Nessun agente selezionato. Scegline uno sopra per vedere le regole specifiche dell\'agente.';
+
+  @override
+  String get permissionScopedGrants => 'Regole in questo ambito';
+
+  @override
+  String get permissionModePreset => 'Preimpostazione della modalità';
+
+  @override
+  String get permissionBuiltInDefault => 'Predefinito';
+
+  @override
+  String get permissionRemembered => 'Approvazione memorizzata';
+
+  @override
+  String get permissionSource => 'Sorgente';
+
+  @override
+  String permissionSetAtThisScope(String source) {
+    return '$source · impostata qui';
+  }
+
+  @override
+  String permissionInheritedFrom(String source) {
+    return '$source · ereditata';
+  }
+
+  @override
+  String permissionExpiresAt(String date) {
+    return 'Scade il $date';
+  }
+
+  @override
+  String get permissionSetHere => 'Imposta una regola qui';
+
+  @override
+  String get permissionRevokeBeforeEdit =>
+      'Revoca la regola specifica o memorizzata prima di impostare una regola generale per questa azione.';
+
+  @override
+  String get permissionConfirmRevoke => 'Conferma revoca';
+
+  @override
+  String get permissionRevokeRule => 'Revoca regola';
+
+  @override
+  String permissionCommandPrefix(String prefix) {
+    return 'Prefisso comando: $prefix';
+  }
+
+  @override
+  String get permissionNoExpiry => 'Senza scadenza';
+
+  @override
+  String get permissionExpired => 'Scaduto';
+
+  @override
+  String get permissionExplicitRule => 'Regola esplicita';
+
+  @override
+  String get permissionEnforcementAdvisory =>
+      'Modalità consultiva: le regole «chiedi prima» vengono registrate senza chiedere conferma';
+
+  @override
+  String get permissionEnforcementSoft =>
+      'Applicazione flessibile: la deroga richiede autorizzazione';
+
+  @override
+  String get permissionEnforcementHard =>
+      'Applicazione rigorosa: non sono consentite deroghe';
+
+  @override
+  String permissionPaths(String paths) {
+    return 'Percorsi: $paths';
+  }
+
+  @override
+  String permissionRefs(String refs) {
+    return 'Riferimenti Git: $refs';
+  }
+
+  @override
+  String permissionHosts(String hosts) {
+    return 'Host: $hosts';
+  }
+
+  @override
+  String permissionCommands(String commands) {
+    return 'Comandi: $commands';
+  }
+
+  @override
+  String permissionMaxCount(String count) {
+    return 'Numero massimo: $count';
+  }
+
+  @override
+  String permissionMaxCents(String cents) {
+    return 'Centesimi massimi: $cents';
+  }
+
+  @override
+  String get permissionAuditHeading => 'Cronologia delle autorizzazioni';
+
+  @override
+  String get permissionAuditDescription =>
+      'Decisioni recenti registrate dal server. Solo gli amministratori possono consultare il registro o verificarne la catena di hash.';
+
+  @override
+  String permissionOnBehalfOf(String user) {
+    return 'per conto di $user';
+  }
+
+  @override
+  String get permissionPrompted => 'Richiesta approvazione umana';
+
+  @override
+  String get permissionVerifyChain => 'Verifica catena di audit';
+
+  @override
+  String get permissionVerifyFailed =>
+      'Impossibile verificare la catena di audit';
+
+  @override
+  String permissionChainIntact(String count) {
+    return 'Catena integra · $count voci verificate';
+  }
+
+  @override
+  String permissionChainBroken(String sequence, String reason) {
+    return 'Catena interrotta alla voce $sequence: $reason';
+  }
+
+  @override
+  String get permissionAuditEmpty =>
+      'Nessuna decisione di autorizzazione registrata.';
+
+  @override
+  String get permissionAuditFailed =>
+      'Impossibile caricare la cronologia delle autorizzazioni';
+
+  @override
+  String get mobilePlansLoadFailed => 'Impossibile caricare i piani';
+
+  @override
+  String get mobilePlansEmpty => 'Ancora nessun piano';
+
+  @override
+  String get mobilePlansEmptyDescription =>
+      'I piani presentati dagli agenti appariranno qui per la revisione.';
+
+  @override
+  String get mobilePlanTitle => 'Piano';
+
+  @override
+  String get mobilePlanMissing =>
+      'Questo piano non è più disponibile nello spazio di lavoro.';
+
+  @override
+  String mobilePlanStepCount(int count) {
+    return '$count passaggi';
+  }
+
+  @override
+  String get mobilePlanDraft => 'Bozza';
+
+  @override
+  String get mobilePlanProposed => 'In attesa di revisione';
+
+  @override
+  String get mobilePlanApproved => 'Approvato';
+
+  @override
+  String get mobilePlanRejected => 'Rifiutato';
+
+  @override
+  String get mobilePlanSuperseded => 'Sostituito';
+
+  @override
+  String get mobilePlanExecuting => 'In esecuzione';
+
+  @override
+  String get mobilePlanSynthesizing => 'Sintesi';
+
+  @override
+  String get mobilePlanCompleted => 'Completed';
+
+  @override
+  String get mobilePlanFailed => 'Non riuscito';
+
+  @override
+  String get mobilePlanCancelled => 'Cancelled';
+
+  @override
+  String mobilePlanRevision(String revision) {
+    return 'Revisione $revision';
+  }
+
+  @override
+  String get mobilePlanSteps => 'Passaggi';
+
+  @override
+  String get mobilePlanNoSteps =>
+      'Non sono stati presentati passaggi per questo piano.';
+
+  @override
+  String get mobilePlanAssumptions => 'Chiarimenti';
+
+  @override
+  String mobilePlanDependsOn(String keys) {
+    return 'Dipende da $keys';
+  }
+
+  @override
+  String mobilePlanStepCost(String cost) {
+    return 'Stima fino a $cost';
+  }
+
+  @override
+  String get mobilePlanSelect => 'Seleziona';
+
+  @override
+  String get mobilePlanSelected => 'Selezionato';
+
+  @override
+  String get mobilePlanEstimate => 'Stima costi';
+
+  @override
+  String get mobilePlanEstimateRequired =>
+      'Stima il piano prima di approvarne l\'esecuzione.';
+
+  @override
+  String mobilePlanEstimatedCost(String low, String high) {
+    return 'Costo stimato: $low–$high';
+  }
+
+  @override
+  String get mobilePlanCostUnknown => 'non disponibile';
+
+  @override
+  String get mobilePlanNoHardCap => 'nessun limite rigido';
+
+  @override
+  String get mobilePlanExceedsBudget =>
+      'La stima supera il budget configurato. Verificala prima di approvare.';
+
+  @override
+  String get mobilePlanPartialEstimate =>
+      'Questa stima riguarda l\'intero piano; i passaggi selezionati potrebbero costare meno.';
+
+  @override
+  String get mobilePlanConfirmAll => 'Avviare l\'intero piano?';
+
+  @override
+  String get mobilePlanConfirmSelected => 'Avviare i passaggi selezionati?';
+
+  @override
+  String mobilePlanExecutionConfirmation(String cost, String cap) {
+    return 'L\'approvazione avvia l\'esecuzione e può comportare costi. Costo massimo stimato: $cost. Limite di spesa: $cap.';
+  }
+
+  @override
+  String get mobilePlanApproveAll => 'Approva tutto e avvia';
+
+  @override
+  String get mobilePlanApproveSelected => 'Approva selezione e avvia';
+
+  @override
+  String get mobilePlanWiden => 'Approva altri passaggi';
+
+  @override
+  String mobilePlanWidenConfirm(String count, String cap) {
+    return 'Consentire l\'esecuzione di altri $count passaggi? Possono comportare costi. Limite di spesa attuale: $cap.';
+  }
+
+  @override
+  String get mobilePlanChanged =>
+      'Il piano è cambiato durante la revisione. Riapri l\'ultima revisione e ripeti la stima.';
+
+  @override
+  String get mobilePlanReject => 'Rifiuta piano';
+
+  @override
+  String get mobilePlanRejectConfirm =>
+      'Rifiutare questo piano? Non verrà eseguito.';
+
+  @override
+  String get mobilePlanStop => 'Interrompi esecuzione';
+
+  @override
+  String get mobilePlanStopConfirm =>
+      'Interrompere l\'esecuzione del piano? Il lavoro già completato non verrà annullato.';
+
+  @override
+  String mobilePlanRunId(String runId) {
+    return 'Esecuzione: $runId';
+  }
+
+  @override
+  String get mobilePlanExecutionPending =>
+      'Approvazione accettata. In attesa del registro di esecuzione…';
+
+  @override
+  String mobilePlanProgress(String completed, String total) {
+    return '$completed passaggi di $total completati';
+  }
+
+  @override
+  String get mobilePlanOpenConversation => 'Apri conversazione';
+
+  @override
+  String get mobileGoalsTitle => 'Obiettivi supervisionati';
+
+  @override
+  String get mobileGoalsLoadFailed =>
+      'Impossibile caricare gli obiettivi supervisionati';
+
+  @override
+  String get mobileGoalsEmpty => 'Ancora nessun obiettivo supervisionato';
+
+  @override
+  String get mobileGoalsEmptyDescription =>
+      'Avviane uno in uno spazio oppure invia /goal in una conversazione.';
+
+  @override
+  String get mobileGoalMissing =>
+      'Questo obiettivo non è più disponibile nello spazio di lavoro.';
+
+  @override
+  String get mobileGoalActive => 'Attivo';
+
+  @override
+  String get mobileGoalPaused => 'In pausa';
+
+  @override
+  String get mobileGoalCompleted => 'Completed';
+
+  @override
+  String get mobileGoalFailed => 'Non riuscito';
+
+  @override
+  String get mobileGoalCancelled => 'Cancelled';
+
+  @override
+  String get mobileGoalBudgetExhausted => 'Budget raggiunto';
+
+  @override
+  String get mobileGoalGoal => 'Obiettivo';
+
+  @override
+  String get mobileGoalLoop => 'Ciclo';
+
+  @override
+  String mobileGoalKind(String kind) {
+    return 'Tipo: $kind';
+  }
+
+  @override
+  String mobileGoalRuns(String count) {
+    return '$count esecuzioni';
+  }
+
+  @override
+  String get mobileGoalNoRunLimit => 'illimitate';
+
+  @override
+  String mobileGoalProgress(
+    String runs,
+    String maxRuns,
+    String spent,
+    String cap,
+  ) {
+    return 'Esecuzioni: $runs / $maxRuns · Spesa: $spent / $cap';
+  }
+
+  @override
+  String mobileGoalDeadline(String date) {
+    return 'Scadenza: $date';
+  }
+
+  @override
+  String mobileGoalFailures(String count) {
+    return 'Esecuzioni consecutive non riuscite: $count';
+  }
+
+  @override
+  String get mobileGoalSummary => 'Riepilogo finale';
+
+  @override
+  String get mobileGoalFailedDescription =>
+      'Il supervisore si è fermato dopo ripetuti errori di esecuzione. Consulta la conversazione per i dettagli.';
+
+  @override
+  String get mobileGoalBudgetWall =>
+      'È stata raggiunta la scadenza o il limite di esecuzioni. Aumentare il limite di spesa non permetterà di riprendere questo obiettivo.';
+
+  @override
+  String get mobileGoalPause => 'Metti in pausa l\'obiettivo';
+
+  @override
+  String get mobileGoalResume => 'Riprendi l\'obiettivo';
+
+  @override
+  String get mobileGoalStop => 'Annulla obiettivo';
+
+  @override
+  String get mobileGoalStopConfirm =>
+      'Annullare definitivamente questo obiettivo supervisionato? Non potrà essere ripreso.';
+
+  @override
+  String get mobileGoalRaiseBudget => 'Aumenta budget e riprendi';
+
+  @override
+  String mobileGoalRaiseTo(String amount) {
+    return 'Aumenta il budget a $amount e riprendi';
+  }
+
+  @override
+  String mobileGoalRaiseConfirm(String oldCap, String newCap) {
+    return 'Aumentare il limite di spesa dell\'obiettivo da $oldCap a $newCap e riprendere le spese?';
+  }
+
+  @override
+  String get mobileGoalOpenConversation =>
+      'Apri la conversazione dell\'obiettivo';
+
+  @override
+  String get mobileGoalCreate => 'Avvia obiettivo supervisionato';
+
+  @override
+  String get mobileGoalChooseSpace => 'Esegui nello spazio';
+
+  @override
+  String get mobileGoalNoSpaces =>
+      'Crea uno spazio prima di avviare un obiettivo.';
+
+  @override
+  String get mobileGoalChooseAgent => 'Esegui con l\'agente';
+
+  @override
+  String get mobileGoalNoAgents =>
+      'Aggiungi un agente attivo prima di avviare un obiettivo.';
+
+  @override
+  String mobileGoalSelectedAgent(String name) {
+    return '$name selezionato';
+  }
+
+  @override
+  String get mobileGoalObjectiveHint =>
+      'Quale risultato deve perseguire l\'agente?';
+
+  @override
+  String get mobileGoalBudgetUsd => 'Limite di spesa (USD)';
+
+  @override
+  String get mobileGoalCreateInvalid =>
+      'Scegli uno spazio e un agente, inserisci un obiettivo e imposta un limite di spesa positivo in USD.';
+
+  @override
+  String mobileGoalCreateConfirm(String cap) {
+    return 'Avviare un obiettivo supervisionato con un costo massimo di $cap? L\'agente potrebbe iniziare subito.';
+  }
+
+  @override
+  String get mobileGoalUnavailable =>
+      'La connessione al server non è pronta. Riprova dopo esserti riconnesso.';
+
+  @override
+  String get mobileGoalConversationMissing =>
+      'La conversazione selezionata non è più disponibile nello spazio di lavoro.';
+
+  @override
+  String get mobileGoalCreateSent =>
+      'Obiettivo avviato. Lo stato del supervisore apparirà in questo elenco.';
+
+  @override
+  String get mobileGoalStartRefused =>
+      'Nessuna esecuzione dell\'obiettivo avviata. Consulta la conversazione per conoscere il motivo indicato dal supervisore.';
+
+  @override
+  String mobileGoalSelectedSpace(String name) {
+    return '$name selezionato';
+  }
+
+  @override
+  String get requestUnavailable =>
+      'Questa richiesta non è più disponibile nello spazio di lavoro attivo.';
+
+  @override
+  String get requestAlreadyResolved => 'Questa richiesta è già stata risolta.';
+
+  @override
+  String get inboxCredentialsBlocked =>
+      'Credenziali che bloccano le esecuzioni';
+
+  @override
+  String get inboxSyncFailures =>
+      'Sincronizzazioni con i provider non riuscite';
+
+  @override
+  String get inboxConfigureCredentials => 'Configura credenziali';
+
+  @override
+  String get openTicket => 'Apri ticket';
+
+  @override
+  String get activityTitle => 'Attività';
+
+  @override
+  String get activityClearAll => 'Cancella attività';
+
+  @override
+  String get activityClearConfirm =>
+      'Questa azione nasconde su tutti i tuoi dispositivi le attività registrate finora. Le nuove attività continueranno a comparire.';
+
+  @override
+  String get activityMarkAllRead => 'Segna tutto come letto';
+
+  @override
+  String get activityMarkAllConfirm =>
+      'Segnare come lette tutte le attività di questo spazio di lavoro su tutti i tuoi dispositivi?';
+
+  @override
+  String get activityMarkRead => 'Segna come letto';
+
+  @override
+  String get activityMarkUnread => 'Segna come da leggere';
+
+  @override
+  String get activityDismiss => 'Ignora';
+
+  @override
+  String get activityResolved => 'Risolto';
+
+  @override
+  String get activityOpen => 'Aperta';
+
+  @override
+  String get activityEmpty => 'Ancora nessuna attività';
+
+  @override
+  String get activityLoadFailed => 'Impossibile caricare le attività';
+
+  @override
+  String get activityAgentWaiting => 'L\'agente attende istruzioni';
+
+  @override
+  String get activityAgentBlocked => 'Azione dell\'agente bloccata';
+
+  @override
+  String get activityMessage => 'Nuovo messaggio';
+
+  @override
+  String get activityPullRequest => 'Aggiornamento pull request';
+
+  @override
+  String get activityTicket => 'Aggiornamento ticket';
+
+  @override
+  String get activityMeeting => 'Aggiornamento riunione';
+
+  @override
+  String get activityCalendar => 'Connessione calendario';
+
+  @override
+  String get activityRig => 'Aggiornamento enclosure';
+
+  @override
+  String get activityEvent => 'Aggiorna';
+
+  @override
+  String get activityPrReady => 'Pull request pronta per il merge';
+
+  @override
+  String get activityPrBlocked => 'Merge della pull request bloccato';
+
+  @override
+  String get activityPrApproved => 'Pull request approvata';
+
+  @override
+  String get activityPrChanges => 'Modifiche richieste';
+
+  @override
+  String get activityPrChecksFailed =>
+      'Controlli della pull request non riusciti';
+
+  @override
+  String get activityPrChecksRecovered =>
+      'Controlli della pull request ripristinati';
+
+  @override
+  String get activityPrComment => 'Commento alla pull request';
+
+  @override
+  String get activityPrPublished => 'Pull request pubblicata';
+
+  @override
+  String get activityPrMerged => 'Pull request merged';
+
+  @override
+  String get activityPrMentioned => 'Menzione in una pull request';
+
+  @override
+  String get activityPrReviewRequested => 'Revisione richiesta';
+
+  @override
+  String get activityPrReviewStale => 'La revisione va aggiornata';
+
+  @override
+  String get activityTicketAssigned => 'Ticket assegnato';
+
+  @override
+  String get activityTicketChanged => 'Stato del ticket modificato';
+
+  @override
+  String get activityMeetingSoon => 'Riunione in arrivo';
+
+  @override
+  String get activityCalendarExpired => 'Connessione al calendario scaduta';
+
+  @override
+  String get activityRigControl => 'Controllo dell\'enclosure modificato';
+
+  @override
+  String get activityRigClosed => 'Enclosure arrestata';
+
+  @override
+  String get mobileSpacesSearch => 'Cerca spazi';
+
+  @override
+  String get mobileSpacesArchived => 'Archiviato';
+
+  @override
+  String get mobileSpacesActive => 'Attivo';
+
+  @override
+  String get mobileSpacesNew => 'Nuovo spazio';
+
+  @override
+  String get mobileSpacesManage => 'Gestisci spazio';
+
+  @override
+  String get mobileSpacesName => 'Nome dello spazio';
+
+  @override
+  String get mobileSpacesAgents => 'Agenti';
+
+  @override
+  String get mobileSpacesMembers => 'Persone';
+
+  @override
+  String get mobileSpacesRepos => 'Repository';
+
+  @override
+  String get mobileSpacesAllRepos => 'Tutti i repository collegati';
+
+  @override
+  String get mobileSpacesNoRepos => 'Nessun repository';
+
+  @override
+  String get mobileSpacesBaseBranch => 'Branch di base (facoltativo)';
+
+  @override
+  String get mobileSpacesDefaultBranch => 'Branch predefinito';
+
+  @override
+  String get mobileSpacesMode => 'Modalità';
+
+  @override
+  String get mobileSpacesModeChat => 'Chat';
+
+  @override
+  String get mobileSpacesModeReview => 'Revisione (sola lettura)';
+
+  @override
+  String get mobileSpacesModePlan => 'Pianificazione (sola lettura)';
+
+  @override
+  String get mobileSpacesModeOrchestrate => 'Orchestra';
+
+  @override
+  String get mobileSpacesAutonomy => 'Personalizzazione dell\'autonomia';
+
+  @override
+  String get mobileSpacesAutonomyInherited => 'Ereditato';
+
+  @override
+  String get mobileSpacesAutonomyPropose => 'Solo proposta';
+
+  @override
+  String get mobileSpacesAutonomyApproval => 'Agisci con approvazione';
+
+  @override
+  String get mobileSpacesAutonomyFreely => 'Agisci liberamente';
+
+  @override
+  String get mobileSpacesAutonomyNotice =>
+      'La personalizzazione non può ignorare le richieste di conferma o i divieti delle regole sulle azioni. Solo gli amministratori dello spazio di lavoro possono modificarla.';
+
+  @override
+  String get mobileSpacesArchive => 'Archivia spazio';
+
+  @override
+  String get mobileSpacesReopen => 'Riapri spazio';
+
+  @override
+  String get mobileSpacesSave => 'Salva modifiche';
+
+  @override
+  String get mobileSpacesCreate => 'Crea spazio';
+
+  @override
+  String get mobileSpacesOperationFailed => 'Impossibile aggiornare lo spazio';
+
+  @override
+  String get mobileSpacesMissing =>
+      'Spazio non trovato in questo spazio di lavoro';
+
+  @override
+  String get mobileSpacesEmptyName => 'Inserisci un nome per lo spazio';
+
+  @override
+  String get mobileSpacesNoMatches => 'Nessuno spazio corrispondente';
+
+  @override
+  String get mobileSpacesUnread => 'Risposta dell\'agente non letta';
+
+  @override
+  String get mobileSpacesNeedsInput => 'Richiede il tuo intervento';
+
+  @override
+  String get mobileSpacesRunning => 'Agente in esecuzione';
+
+  @override
+  String get mobileSpacesNoAgents => 'Nessun agente in questo spazio di lavoro';
+
+  @override
+  String get mobileSpacesNoMembers =>
+      'Nessun altro membro dello spazio di lavoro';
+
+  @override
+  String get mobileSpacesRepoError => 'Impossibile caricare i repository';
+
+  @override
+  String get mobileSpacesRetry => 'Riprova';
+
+  @override
+  String get mobileSpacesBranchUnavailable =>
+      'Scegli o digita un branch di base quando crei uno spazio; il branch di base di uno spazio esistente non può essere modificato.';
+
+  @override
+  String get mobileSpacesArchivedEmpty => 'Nessuno spazio archiviato';
+
+  @override
+  String get mobileSpacesAllRepoWarning =>
+      'In questo spazio saranno inclusi anche i repository collegati in futuro allo spazio di lavoro.';
+
+  @override
+  String get mobileSpacesCreatedRetry =>
+      'Spazio creato. Riprova ad aggiungere persone oppure apri la pagina di gestione.';
+
+  @override
+  String get progressTitle => 'Avanzamento';
+
+  @override
+  String get progressConversation => 'Conversazione';
+
+  @override
+  String get progressLoadFailed => 'Impossibile caricare l\'avanzamento';
+
+  @override
+  String get progressUnavailable => 'Conversazione non disponibile';
+
+  @override
+  String get progressUnavailableDescription =>
+      'Questa conversazione non si trova nello spazio di lavoro e nello spazio attivi. Torna al suo spazio per continuare.';
+
+  @override
+  String get progressSaveFailed => 'Impossibile aggiornare l\'avanzamento';
+
+  @override
+  String get progressGoal => 'Obiettivo';
+
+  @override
+  String get progressNoGoal => 'Nessun obiettivo di lavoro impostato';
+
+  @override
+  String get progressSetGoal => 'Imposta obiettivo';
+
+  @override
+  String get progressEditGoal => 'Modifica obiettivo';
+
+  @override
+  String get progressClearGoal => 'Cancella obiettivo';
+
+  @override
+  String get progressGoalRequired => 'Inserisci un obiettivo prima di salvare.';
+
+  @override
+  String get progressTodos => 'Attività da svolgere';
+
+  @override
+  String get progressNoTodos => 'Ancora nessuna attività da svolgere';
+
+  @override
+  String get progressNewTodo => 'Nuova attività';
+
+  @override
+  String get progressAddTodo => 'Aggiungi attività';
+
+  @override
+  String get progressEditTodo => 'Modifica attività';
+
+  @override
+  String get progressTodoRequired => 'Inserisci un\'attività prima di salvare.';
+
+  @override
+  String get progressTodoNoLongerExists =>
+      'Questa attività è stata rimossa. Ricarica l\'elenco e riprova.';
+
+  @override
+  String get progressWorkspaceChanged =>
+      'Lo spazio di lavoro attivo è cambiato. Torna a questa conversazione e riprova.';
+
+  @override
+  String progressRemoveTodo(String name) {
+    return 'Rimuovi attività $name';
+  }
+
+  @override
+  String get progressPending => 'Pending';
+
+  @override
+  String get progressInProgress => 'In corso';
+
+  @override
+  String get progressCompleted => 'Completed';
+
+  @override
+  String get progressMoveUp => 'Sposta attività su';
+
+  @override
+  String get progressMoveDown => 'Sposta attività giù';
+
+  @override
+  String get progressRunTree => 'Esecuzioni degli agenti';
+
+  @override
+  String get progressNoRuns =>
+      'Ancora nessuna esecuzione in questa conversazione';
+
+  @override
+  String get progressRunning => 'In esecuzione';
+
+  @override
+  String get progressFailed => 'Non riuscito';
+
+  @override
+  String get progressUnknown => 'Sconosciuto';
+
+  @override
+  String get progressHealthy => 'Attivo';
+
+  @override
+  String get progressBlocked => 'Bloccato';
+
+  @override
+  String get progressLooping => 'In ciclo';
+
+  @override
+  String get progressStalled => 'Bloccato';
+
+  @override
+  String get progressDead => 'Interrotto in modo imprevisto';
+
+  @override
+  String get progressQuiet => 'Ancora nessun output';
+
+  @override
+  String get progressCostReported => 'Addebito dichiarato dal provider';
+
+  @override
+  String get progressCostNotional =>
+      'Prezzo di listino teorico dell\'abbonamento; non è una fattura';
+
+  @override
+  String get progressCostMixed => 'Fonti di costo diverse';
+
+  @override
+  String get progressCostEstimated => 'Costo stimato';
+
+  @override
+  String progressDurationSeconds(String seconds) {
+    return '${seconds}s';
+  }
+
+  @override
+  String progressRunDetails(String model, String duration, String cost) {
+    return 'Modello: $model · Durata: $duration · Costo: $cost';
+  }
+
+  @override
+  String progressStartedAt(String time) {
+    return 'Avviato $time';
+  }
+
+  @override
+  String progressLiveness(String state) {
+    return 'Stato: $state';
+  }
+
+  @override
+  String progressRunTokens(String input, String output) {
+    return 'Input: $input · Output: $output token';
+  }
+
+  @override
+  String get progressOutputPreviewLimited =>
+      'Sono mostrati solo i primi 6.000 caratteri dell\'output strutturato.';
+
+  @override
+  String progressRetryOf(String runId) {
+    return 'Nuovo tentativo dell\'esecuzione $runId';
+  }
+
+  @override
+  String get progressContext => 'Contesto e limiti';
+
+  @override
+  String get progressNoAgent => 'Nessun agente da esaminare';
+
+  @override
+  String progressContextReading(String used, String window) {
+    return '$used / $window token';
+  }
+
+  @override
+  String get progressMeasured =>
+      'Contesto dichiarato dal provider nell\'ultima chiamata';
+
+  @override
+  String get progressEstimated =>
+      'Stima basata sulla conversazione salvata e sul contesto persistente';
+
+  @override
+  String get progressContextUnknown =>
+      'Utilizzo del contesto non ancora disponibile';
+
+  @override
+  String progressContextPercent(String percent) {
+    return '$percent% della finestra di contesto';
+  }
+
+  @override
+  String progressMonthlyBudget(String amount) {
+    return 'Limite mensile configurato per l\'agente: $amount';
+  }
+
+  @override
+  String progressConversationTokens(String tokens) {
+    return 'Conversazione attiva salvata: circa $tokens token';
+  }
+
+  @override
+  String progressInspectionFor(String agent, String model) {
+    return 'Contesto persistente di $agent · $model';
+  }
+
+  @override
+  String get progressContextSystem => 'Prompt di sistema';
+
+  @override
+  String get progressContextRules => 'Regole';
+
+  @override
+  String get progressContextSkills => 'Competenze';
+
+  @override
+  String get progressContextTools => 'Definizioni degli strumenti';
+
+  @override
+  String get progressContextMcp => 'Strumenti MCP';
+
+  @override
+  String get progressContextDeferred => 'Strumenti differiti';
+
+  @override
+  String get progressContextSubagents => 'Subagenti';
+
+  @override
+  String get progressContextRunner => 'Esecutore esterno';
+
+  @override
+  String get progressContextMemory => 'MEMORIA';
+
+  @override
+  String get progressContextHistory => 'Cronologia conversazione';
+
+  @override
+  String progressContextSegment(String label, String tokens) {
+    return '$label · $tokens token';
+  }
+
+  @override
+  String progressContextPart(String title, String tokens) {
+    return '$title · $tokens token';
+  }
+
+  @override
+  String get progressOutputs => 'Output recenti';
+
+  @override
+  String get progressNoOutputs => 'Nessun output recente degli agenti';
+
+  @override
+  String get progressStructuredOutputsAbove =>
+      'Gli output strutturati delle esecuzioni sono mostrati sopra, nella sezione dedicata.';
+
+  @override
+  String get progressRecentOutputsOnly =>
+      'Sono mostrati solo i messaggi recenti. Apri la conversazione per vedere quelli precedenti.';
+
+  @override
+  String get progressPlan => 'Piano';
+
+  @override
+  String get progressArtifact => 'Artefatto';
+
+  @override
+  String get progressResult => 'Risultato';
+
+  @override
+  String get progressHideArtifact => 'Nascondi artefatto';
+
+  @override
+  String get progressReadArtifact => 'Leggi artefatto';
+
+  @override
+  String get progressArtifactUnavailable => 'Artefatto non più disponibile';
+
+  @override
+  String get progressArtifactPreviewLimited =>
+      'Anteprima limitata di questo artefatto.';
+
+  @override
+  String get progressDiagramSource => 'Codice sorgente del diagramma';
+
+  @override
+  String progressOpenAttachment(String name) {
+    return 'Apri $name';
+  }
+
+  @override
+  String get progressOpenPlan => 'Apri piano';
+
+  @override
+  String progressOpenDiff(String label) {
+    return 'Esamina i file modificati: $label';
+  }
+
+  @override
+  String get progressViewMessage => 'Visualizza messaggio';
+
+  @override
+  String get pushTitle => 'Notifiche in background';
+
+  @override
+  String get pushIntro =>
+      'Ricevi un avviso privato quando qualcosa richiede la tua attenzione, anche ad app chiusa. I dettagli restano nella connessione crittografata.';
+
+  @override
+  String get pushLoading => 'Verifica delle impostazioni delle notifiche…';
+
+  @override
+  String get pushError =>
+      'Impossibile aggiornare le notifiche. Controlla la connessione e riprova.';
+
+  @override
+  String get pushEnable => 'Abilita notifiche';
+
+  @override
+  String get pushDisable => 'Disattiva notifiche';
+
+  @override
+  String get pushQuiet => 'Sospendi gli avvisi su questo dispositivo';
+
+  @override
+  String get pushCategories => 'Ricevi notifiche su';
+
+  @override
+  String get pushCategoryAgents => 'Agenti';
+
+  @override
+  String get pushCategoryMessages => 'Messaggi';
+
+  @override
+  String get pushCategoryPullRequests => 'Pull request';
+
+  @override
+  String get pushCategoryTickets => 'Ticket';
+
+  @override
+  String get pushCategoryCalendar => 'Calendario';
+
+  @override
+  String get pushCategoryMachines => 'Macchine';
+
+  @override
+  String get pushSecureOrigin => 'Le notifiche richiedono HTTPS.';
+
+  @override
+  String get pushInstallIos =>
+      'Su iPhone o iPad, aggiungi l\'app alla schermata Home e aprila da lì per attivare le notifiche.';
+
+  @override
+  String get pushUnsupported =>
+      'Questo browser non supporta le notifiche in background.';
+
+  @override
+  String get pushDenied =>
+      'Le notifiche sono bloccate nelle impostazioni del browser. Abilitale lì per continuare.';
+
+  @override
+  String get pushResubscribe => 'Riconnetti notifiche';
+
+  @override
+  String get pushStatusEnabled =>
+      'Le notifiche sono attive su questo dispositivo.';
+
+  @override
+  String get pushStatusDisabled =>
+      'Le notifiche sono disattivate su questo dispositivo.';
+
+  @override
+  String get credentialsTitle => 'Connessioni e credenziali';
+
+  @override
+  String get credentialsIntro =>
+      'Collega gli account usati dalle esecuzioni e dalle integrazioni. I segreti sono conservati sul server, non su questo telefono.';
+
+  @override
+  String get credentialsModelProviders => 'Fornitori di modelli';
+
+  @override
+  String get credentialsOwnerOnly =>
+      'Solo il proprietario del server può aggiungere, collegare o rimuovere le credenziali dei fornitori di modelli. Queste chiavi sono condivise tra gli spazi di lavoro.';
+
+  @override
+  String get credentialsContactOwner =>
+      'Chiedi al proprietario del server di collegare il fornitore necessario per l\'esecuzione bloccata.';
+
+  @override
+  String get credentialsClaudeCode => 'Claude Code';
+
+  @override
+  String get credentialsClaudeHostOnly =>
+      'Claude Code accede tramite la CLI sul computer host. Chiedi al proprietario del server di completare o rinnovare l\'accesso all\'account nel terminale dell\'host: non è possibile farlo da questo telefono.';
+
+  @override
+  String get credentialsYourForgeAccounts => 'I tuoi account dei servizi Git';
+
+  @override
+  String get credentialsYourTicketingAccount => 'Il tuo account per i ticket';
+
+  @override
+  String get credentialsLocalTicketsNoLogin =>
+      'I ticket locali non richiedono l\'accesso. Collega Linear qui se lo usa il tuo spazio di lavoro.';
+
+  @override
+  String get credentialsMembershipRequired =>
+      'Per gestire le credenziali dei servizi Git o dei ticket devi far parte di uno spazio di lavoro. Chiedi l\'accesso a un amministratore.';
+
+  @override
+  String get credentialsSwitchWorkspace =>
+      'Questo link rimanda a un altro spazio di lavoro. Passa a quello spazio prima di modificare le credenziali.';
+
+  @override
+  String get credentialsReturnToInbox =>
+      'Quando la credenziale è collegata, torna alla Posta in arrivo per riprovare l\'esecuzione bloccata. L\'host controlla automaticamente anche le esecuzioni in attesa.';
+
+  @override
+  String get credentialsLoadFailed =>
+      'Impossibile caricare le connessioni. Verifica il collegamento al server e riprova.';
+
+  @override
+  String get credentialsOperationFailed =>
+      'Impossibile modificare questa connessione. Verifica il collegamento al server, i tuoi permessi e la credenziale, poi riprova.';
+
+  @override
+  String get credentialsConnected => 'Connesso';
+
+  @override
+  String get credentialsNotConnected => 'Non connesso';
+
+  @override
+  String credentialsSignedInAs(String username) {
+    return 'Accesso effettuato come $username';
+  }
+
+  @override
+  String get credentialsAccount => 'Account collegato';
+
+  @override
+  String get credentialsStoredKey => 'Chiave salvata';
+
+  @override
+  String get credentialsActive => 'Attivo';
+
+  @override
+  String get credentialsRemove => 'Rimuovi';
+
+  @override
+  String get credentialsRemoveConfirm =>
+      'Rimuovere la credenziale salvata? Potrebbe essere necessario accedere di nuovo.';
+
+  @override
+  String get credentialsApiKey => 'Chiave API';
+
+  @override
+  String get credentialsApiKeyHint => 'Incolla una chiave API del fornitore';
+
+  @override
+  String get credentialsBrowserLogin => 'Accedi dal browser';
+
+  @override
+  String get credentialsSignInAgain => 'Accedi di nuovo';
+
+  @override
+  String get credentialsWaitingForLogin =>
+      'In attesa dell\'autorizzazione nel browser…';
+
+  @override
+  String get credentialsLoginTimedOut =>
+      'L\'accesso è scaduto. Avvia un nuovo tentativo.';
+
+  @override
+  String get credentialsCopyCode => 'Copia codice';
+
+  @override
+  String get credentialsDeviceCodeHint =>
+      'Conferma questo codice nella pagina del fornitore. Tieni aperta questa schermata mentre il server completa l\'accesso.';
+
+  @override
+  String get credentialsPasteRedirect =>
+      'Codice di autorizzazione o URL di reindirizzamento';
+
+  @override
+  String get credentialsPasteRedirectHint =>
+      'Incolla il codice o l\'URL completo di reindirizzamento del fornitore';
+
+  @override
+  String get credentialsCompleteLogin => 'Completa l\'accesso';
+
+  @override
+  String get credentialsRedirectUnavailable =>
+      'Il callback del browser di questo server non è raggiungibile in modo sicuro da un telefono. Chiedi al proprietario del server di configurare un callback HTTPS pubblico oppure aggiungi un token.';
+
+  @override
+  String get credentialsUpdateToken => 'Aggiorna token';
+
+  @override
+  String get credentialsAddToken => 'Aggiungi token';
+
+  @override
+  String get credentialsPersonalToken => 'Token di accesso personale';
+
+  @override
+  String get credentialsPersonalTokenHint =>
+      'Incolla un token di accesso personale';
+
+  @override
+  String get credentialsHostManaged =>
+      'Questa connessione proviene dall\'applicazione server o dall\'ambiente. Solo il proprietario del server può modificarla lì; puoi comunque aggiungere un tuo token.';
+
+  @override
+  String get credentialsStopWatching => 'Interrompi l\'attesa';
 }

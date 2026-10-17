@@ -19,7 +19,7 @@ void main() {
     'id': id,
     'workspace_id': 'ws-1',
     'scope_type': scope,
-    'scope_id': '',
+    'scope_id': scope == 'workspace' ? '' : '$scope-1',
     'decision': decision,
     'action_class': 'processSpawn',
     'provenance': 'user',
@@ -56,10 +56,14 @@ void main() {
       });
     });
 
-    test('rules returns empty when the key is absent', () async {
+    test('missing or foreign policy data fails closed', () async {
       host.callResults['action_policy.list'] = const {};
       final repo = RpcActionPolicyRepository(client);
-      expect(await repo.rules('ws-1'), isEmpty);
+      await expectLater(repo.rules('ws-1'), throwsFormatException);
+      host.callResults['action_policy.list'] = {
+        'rules': [ruleJson()..['workspace_id'] = 'ws-2'],
+      };
+      await expectLater(repo.rules('ws-1'), throwsFormatException);
     });
 
     test('watchRules maps the live stream', () async {
@@ -88,6 +92,7 @@ void main() {
       final rule = (await repo.rules('ws-1')).first;
       await repo.upsertRule(rule);
       final call = host.lastCall('action_policy.upsert')!;
+      expect(call.args['workspace_id'], 'ws-1');
       final sent = (call.args['rule'] as Map).cast<String, dynamic>();
       expect(sent['id'], 'r-1');
       expect(sent['decision'], 'allow');
@@ -113,7 +118,7 @@ void main() {
       final scoped = await repo.rulesForScope(
         'ws-1',
         ActionScopeType.space,
-        '',
+        'space-1',
       );
       expect(scoped.length, 1);
       expect(scoped.first.id, 'c');

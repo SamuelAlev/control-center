@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart';
 import 'package:cc_domain/features/dispatch/domain/repositories/agent_goal_run_repository.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
@@ -6,14 +8,14 @@ import 'package:cc_host/cc_host.dart';
 import 'package:cc_server_core/src/remote_rpc_catalog.dart';
 import 'package:test/test.dart';
 
-/// List-backed [AgentGoalRunRepository] fake: [watchByWorkspace] replays the
-/// current goals (newest first, like the Drift stream) so the watch query can
-/// assert its conversation filter on a single snapshot.
+/// List-backed goal repository with optional controlled emissions for watches.
 class _FakeAgentGoalRunRepository implements AgentGoalRunRepository {
   final List<AgentGoalRun> goals = [];
+  StreamController<List<AgentGoalRun>>? emissions;
 
   @override
   Stream<List<AgentGoalRun>> watchByWorkspace(String workspaceId) =>
+      emissions?.stream ??
       Stream.value(goals.where((g) => g.workspaceId == workspaceId).toList());
 
   @override
@@ -92,16 +94,19 @@ WatchQueryContext _watchCtx(
 AgentGoalRun _goal({
   String id = 'g-1',
   String workspaceId = 'ws-1',
+  String spaceId = 'ch-1',
   String conversationId = 'c-1',
+  String userText = 'keep polishing until done',
+  String? summary,
   AgentGoalKind kind = AgentGoalKind.loop,
   AgentGoalStatus status = AgentGoalStatus.paused,
 }) => AgentGoalRun(
   id: id,
   workspaceId: workspaceId,
-  spaceId: 'ch-1',
+  spaceId: spaceId,
   conversationId: conversationId,
   agentId: 'a-1',
-  userText: 'keep polishing until done',
+  userText: userText,
   kind: kind,
   status: status,
   deadlineAt: DateTime(2026, 8, 1, 12),
@@ -112,6 +117,7 @@ AgentGoalRun _goal({
   consecutiveFailures: 1,
   activeRunId: 'run-9',
   requestedByUserId: 'user-1',
+  summary: summary,
   createdAt: DateTime(2026, 7, 1, 9),
   updatedAt: DateTime(2026, 7, 1, 10),
 );
@@ -171,6 +177,87 @@ void main() {
       final query = agentGoalRunsWatchQuery(agentGoalRunRepository: repository);
       expect(query.workspaceScoped, isTrue);
     });
+  });
+
+  group('agentGoalRuns.watchForWorkspace', () {
+    test(
+      'filters each emission by the subscriber’s current space grants',
+      () async {
+        final restricted = _goal(
+          id: 'restricted',
+          spaceId: 'repo-space',
+          userText: 'restricted objective',
+          summary: 'restricted completion',
+        );
+        final allowed = _goal(
+          id: 'allowed',
+          spaceId: 'open-space',
+          userText: 'open objective',
+          summary: 'open completion',
+        );
+        final foreign = _goal(
+          id: 'foreign',
+          workspaceId: 'ws-2',
+          spaceId: 'open-space',
+        );
+        final emissions = StreamController<List<AgentGoalRun>>();
+        repository.emissions = emissions;
+        final deniedSpaces = {'repo-space'};
+        final checks =
+            <({String workspaceId, String spaceId, String userId})>[];
+        final query = agentGoalRunsWorkspaceWatchQuery(
+          agentGoalRunRepository: repository,
+          viewerTraceRestricted: (workspaceId, spaceId, userId) async {
+            checks.add((
+              workspaceId: workspaceId,
+              spaceId: spaceId,
+              userId: userId,
+            ));
+            return deniedSpaces.contains(spaceId);
+          },
+        );
+        final snapshots = StreamIterator(query.handler(_watchCtx(const {})));
+        addTearDown(() async {
+          await snapshots.cancel();
+          await emissions.close();
+        });
+
+        Future<List<Map<String, dynamic>>> nextGoals(
+          List<AgentGoalRun> rows,
+        ) async {
+          final next = snapshots.moveNext();
+          emissions.add(rows);
+          expect(await next, isTrue);
+          return (snapshots.current['goals'] as List)
+              .cast<Map<String, dynamic>>();
+        }
+
+        expect(query.workspaceScoped, isTrue);
+        final first = await nextGoals([restricted, allowed]);
+        expect(first.map((goal) => goal['id']), ['allowed']);
+        expect(first.single['user_text'], 'open objective');
+        expect(first.single['summary'], 'open completion');
+
+        deniedSpaces.clear();
+        final granted = await nextGoals([restricted, allowed]);
+        expect(granted.map((goal) => goal['id']), ['restricted', 'allowed']);
+        expect(granted.first['user_text'], 'restricted objective');
+        expect(granted.first['summary'], 'restricted completion');
+
+        deniedSpaces.add('repo-space');
+        final revoked = await nextGoals([restricted, allowed, foreign]);
+        expect(revoked.map((goal) => goal['id']), ['allowed']);
+        expect(revoked.single['user_text'], 'open objective');
+        expect(revoked.single['summary'], 'open completion');
+        expect(checks, hasLength(6));
+        expect(checks.map((check) => check.workspaceId), everyElement('ws-1'));
+        expect(checks.map((check) => check.userId), everyElement('user-1'));
+        expect(checks.map((check) => check.spaceId).toSet(), {
+          'repo-space',
+          'open-space',
+        });
+      },
+    );
   });
 
   group('agentGoalRuns mutations', () {

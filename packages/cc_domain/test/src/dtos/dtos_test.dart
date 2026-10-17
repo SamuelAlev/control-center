@@ -1,9 +1,15 @@
-import 'package:cc_domain/core/domain/value_objects/agent_role.dart'
-    show AgentRole;
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart'
     show ActionPolicyRule;
+import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart'
+    show EnforcementLevel;
+import 'package:cc_domain/features/guardrails/domain/services/policy_resolver.dart'
+    show PolicyResolver;
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_constraint.dart'
+    show ActionConstraint;
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart'
     show ActionDecision, ActionScopeType;
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart'
+    show ActionRequest;
 import 'package:cc_domain/features/weather/domain/entities/weather_snapshot.dart'
     show WeatherCondition, WeatherSnapshot;
 import 'package:cc_domain/src/dtos/dtos.dart';
@@ -701,6 +707,69 @@ void main() {
       expect(dto.scopeType, 'agent');
       expect(dto.actionClass, 'gitCommit');
       expect(dto.createdAt, DateTime(2025, 1, 1).toIso8601String());
+    });
+
+    test('expired remembered approval stays expired across RPC wire', () {
+      final expires = DateTime.utc(2025, 1, 2, 8);
+      final rule = ActionPolicyRule(
+        id: 'remembered-push',
+        workspaceId: 'w',
+        scopeType: ActionScopeType.space,
+        scopeId: 'space-1',
+        actionClass: ActionClass.gitPush,
+        decision: ActionDecision.allow,
+        provenance: 'remembered',
+        constraint: const ActionConstraint(refs: ['feature/*']),
+        expiresAt: expires,
+        enforcement: EnforcementLevel.hard,
+        createdAt: DateTime.utc(2025, 1, 1),
+        updatedAt: DateTime.utc(2025, 1, 1),
+      );
+      final wire = ActionPolicyRuleDto.fromEntity(rule).toJson();
+      expect(wire['constraint'], {
+        'refs': ['feature/*'],
+      });
+      expect(wire['expires_at'], expires.toIso8601String());
+      expect(wire['enforcement'], 'hard');
+
+      final restored = ActionPolicyRuleDto.fromJson(wire).toEntity();
+      expect(restored.provenance, 'remembered');
+      expect(restored.constraint?.refs, ['feature/*']);
+      expect(restored.expiresAt, expires);
+      expect(restored.enforcement, EnforcementLevel.hard);
+      const resolver = PolicyResolver();
+      const request = ActionRequest(refs: ['feature/new']);
+      expect(
+        resolver
+            .resolveClass(
+              ActionClass.gitPush,
+              rules: [restored],
+              spaceId: 'space-1',
+              request: request,
+              now: expires.subtract(const Duration(seconds: 1)),
+            )
+            .decision,
+        ActionDecision.allow,
+      );
+      expect(
+        resolver
+            .resolveClass(
+              ActionClass.gitPush,
+              rules: [restored],
+              spaceId: 'space-1',
+              request: request,
+              now: expires,
+            )
+            .decision,
+        ActionDecision.prompt,
+      );
+      expect(
+        () => ActionPolicyRuleDto.fromJson({
+          ...wire,
+          'expires_at': 'invalid',
+        }).toEntity(),
+        throwsFormatException,
+      );
     });
 
     test('fromJson defaults', () {
@@ -2555,10 +2624,5 @@ void main() {
       expect(out['sunrise'], '2025-01-01T06:00:00.000');
       expect(out['sunset'], '2025-01-01T18:00:00.000');
     });
-  });
-
-  // Sanity: AgentRole import path compiles & is usable.
-  test('AgentRole import resolves', () {
-    expect(AgentRole.values, isNotEmpty);
   });
 }

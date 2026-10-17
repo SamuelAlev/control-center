@@ -646,5 +646,61 @@ void main() {
       expect(rawLite['segments_elided'], isTrue);
       expect(rawLite['keep'], 'raw');
     });
+    test('pending questions include old and archived conversations; first answer wins',
+        () async {
+      await db.messagingDao.insertSpace(
+        SpacesTableCompanion.insert(
+          id: 'questions-space', name: 'Questions',
+          workspaceId: const Value('test-workspace'),
+        ),
+      );
+      await db.into(db.conversationsTable).insert(
+        ConversationsTableCompanion.insert(
+          id: 'archived-thread', spaceId: 'questions-space',
+          status: const Value('archived'),
+        ),
+      );
+      await db.messagingDao.insertMessage(
+        ConversationMessagesTableCompanion.insert(
+          id: 'early-question', spaceId: 'questions-space',
+          conversationId: 'archived-thread', senderId: 'agent',
+          senderType: 'agent', content: 'Choose a deployment target?',
+          messageType: const Value('user_question'),
+          metadata: Value(jsonEncode({
+            'question': 'Choose a deployment target?',
+            'options': [{'label': 'staging'}],
+            'answered': false,
+          })),
+        ),
+      );
+      for (var i = 0; i < 70; i++) {
+        await db.messagingDao.insertMessage(
+          ConversationMessagesTableCompanion.insert(
+            id: 'recent-$i', spaceId: 'questions-space',
+            conversationId: 'archived-thread', senderId: 'agent',
+            senderType: 'agent', content: '$i',
+          ),
+        );
+      }
+      final pending = await db.messagingDao
+          .watchPendingQuestions('test-workspace').first;
+      expect(pending.map((row) => row.id), ['early-question']);
+      expect(await db.messagingDao.watchPendingQuestions('other').first, isEmpty);
+      expect(await db.messagingDao.answerQuestion(
+        'early-question', {'selected': ['staging']},
+      ), isTrue);
+      expect(await db.messagingDao.answerQuestion(
+        'early-question', {'selected': ['production']},
+      ), isFalse);
+      await db.messagingDao.updateMessage('early-question',
+        metadata: {'answered': true, 'expired': true});
+      final answered = await db.messagingDao.getMessageById('early-question');
+      final metadata = jsonDecode(answered!.metadata!) as Map<String, dynamic>;
+      expect(metadata['answer'], {'selected': ['staging']});
+      expect(metadata['expired'], isNull);
+      expect(await db.messagingDao.watchPendingQuestions('test-workspace').first,
+        isEmpty);
+    });
+
   });
 }

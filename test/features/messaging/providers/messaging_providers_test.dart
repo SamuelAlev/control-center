@@ -81,6 +81,15 @@ class _RecordingSpaceReadRepository implements SpaceReadRepository {
     watched.add((workspaceId: workspaceId, spaceId: spaceId));
     return Stream<DateTime?>.value(DateTime(2024));
   }
+
+  @override
+  Stream<Map<String, DateTime>> watchUserSpaceReads(
+    String workspaceId,
+    String userId,
+  ) => Stream.value({
+    for (final entry in watched)
+      if (entry.workspaceId == workspaceId) entry.spaceId: DateTime(2024),
+  });
 }
 
 void main() {

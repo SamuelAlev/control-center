@@ -1,3 +1,4 @@
+import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/widgets/diff_view.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -124,5 +125,38 @@ void main() {
     // Without this marker the jump from line 2 to line 40 reads as a
     // numbering bug rather than as lines the forge never sent.
     expect(find.textContaining('unchanged lines'), findsOneWidget);
+  });
+  testWidgets(
+    'selects only changed lines with their matching side coordinates',
+    (tester) async {
+      final selected = <DiffLine>[];
+      await tester.pumpWidget(
+        host(DiffView(patch: patch, onLineSelected: selected.add)),
+      );
+
+      await tester.tap(find.text("import 'dart:async';"));
+      expect(selected, isEmpty);
+
+      await tester.tap(find.text('final answer = 41;'));
+      expect(selected.single.kind, DiffLineKind.deletion);
+      expect(selected.single.oldLine, 2);
+      expect(selected.single.newLine, isNull);
+
+      await tester.tap(find.text('final extra = true;'));
+      expect(selected.last.kind, DiffLineKind.addition);
+      expect(selected.last.oldLine, isNull);
+      expect(selected.last.newLine, 3);
+    },
+  );
+  testWidgets('does not offer inline comments without a valid hunk anchor', (
+    tester,
+  ) async {
+    final selected = <DiffLine>[];
+    await tester.pumpWidget(
+      host(DiffView(patch: '+unanchored change', onLineSelected: selected.add)),
+    );
+
+    await tester.tap(find.text('unanchored change'));
+    expect(selected, isEmpty);
   });
 }

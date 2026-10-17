@@ -103,6 +103,12 @@ void main() {
   });
 
   group('per-item states', () {
+    setUp(() async {
+      for (final id in ['n1', 'n2', 'unread', 'hidden']) {
+        await dao.insertAndPrune(entry(id, DateTime(2026, 8, 14)));
+      }
+    });
+
     test('watchItemStates is empty until an item is acted on', () async {
       expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
     });
@@ -170,6 +176,24 @@ void main() {
 
       // The cleared watermark hides every current row, so no override can
       // still change an answer.
+      expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
+    });
+
+    test('rejects missing and foreign-workspace item IDs without phantom states',
+        () async {
+      await dao.insertAndPrune(
+        entry('foreign', DateTime(2026, 8, 15), workspaceId: 'ws-2'),
+      );
+      for (final id in ['absent', 'foreign']) {
+        await expectLater(
+          dao.setItemRead('ws-1', 'user-1', id, DateTime(2026, 8, 16)),
+          throwsA(isA<Exception>()),
+        );
+        await expectLater(
+          dao.dismissItem('ws-1', 'user-1', id, DateTime(2026, 8, 16)),
+          throwsA(isA<Exception>()),
+        );
+      }
       expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
     });
 

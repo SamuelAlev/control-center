@@ -2139,6 +2139,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
       startSide: startSide,
       body: body,
     );
+    await _invalidatePrKinds(prNumber, const [_Kind.prReviewComments]);
     return {'id': result?.id ?? 0};
   }
 

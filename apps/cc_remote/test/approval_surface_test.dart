@@ -120,46 +120,46 @@ void main() {
     },
   );
 
-  testWidgets('inline queue exposes the oldest request and counts the rest', (
-    tester,
-  ) async {
-    const oldest = ConfirmationRequestDto(
-      id: 'old',
-      spaceId: 'space-1',
-      title: 'Push to feature/old?',
-      detail: 'Publish the older branch.',
-      severity: 'warning',
-      command: 'git push origin feature/old',
-      createdAt: '2025-01-01T00:00:00Z',
-    );
-    const newer = ConfirmationRequestDto(
-      id: 'new',
-      spaceId: 'space-1',
-      title: 'Push to feature/new?',
-      detail: 'Publish the newer branch.',
-      severity: 'warning',
-      command: 'git push origin feature/new',
-      createdAt: '2025-01-02T00:00:00Z',
-    );
-    await tester.pumpWidget(
-      host(
-        ProviderScope(
-          overrides: [
-            pendingConfirmationsProvider(
-              'space-1',
-            ).overrideWith((ref) => Stream.value([newer, oldest])),
-          ],
-          child: const PendingApprovals(spaceId: 'space-1'),
+  testWidgets(
+    'inline queue exposes the oldest request without crowding the conversation',
+    (tester) async {
+      const oldest = ConfirmationRequestDto(
+        id: 'old',
+        spaceId: 'space-1',
+        title: 'Push to feature/old?',
+        detail: 'Publish the older branch.',
+        severity: 'warning',
+        command: 'git push origin feature/old',
+        createdAt: '2025-01-01T00:00:00Z',
+      );
+      const newer = ConfirmationRequestDto(
+        id: 'new',
+        spaceId: 'space-1',
+        title: 'Push to feature/new?',
+        detail: 'Publish the newer branch.',
+        severity: 'warning',
+        command: 'git push origin feature/new',
+        createdAt: '2025-01-02T00:00:00Z',
+      );
+      await tester.pumpWidget(
+        host(
+          ProviderScope(
+            overrides: [
+              pendingConfirmationsProvider(
+                'space-1',
+              ).overrideWith((ref) => Stream.value([newer, oldest])),
+            ],
+            child: const PendingApprovals(spaceId: 'space-1'),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text(oldest.title), findsOneWidget);
-    expect(find.text(oldest.command!), findsOneWidget);
-    expect(find.text(newer.title), findsNothing);
-    expect(find.text(newer.command!), findsNothing);
-    expect(find.text('Approval required, 1 waiting'), findsOneWidget);
-  });
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(oldest.title), findsOneWidget);
+      expect(find.text(oldest.command!), findsOneWidget);
+      expect(find.text(newer.title), findsNothing);
+      expect(find.text(newer.command!), findsNothing);
+    },
+  );
 
   testWidgets('inbox card scrolls full explanation and code above actions', (
     tester,

@@ -60,6 +60,12 @@ class _FakeSpaceReadRepository implements SpaceReadRepository {
     String spaceId,
     String userId,
   ) => Stream.value(null);
+
+  @override
+  Stream<Map<String, DateTime>> watchUserSpaceReads(
+    String workspaceId,
+    String userId,
+  ) => Stream.value(const {});
 }
 
 /// The feed's own scrollable: the reverse (axisDirection up) viewport the

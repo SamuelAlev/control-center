@@ -115,10 +115,20 @@ class _CcRemoteAppState extends ConsumerState<CcRemoteApp>
       color: const Color(0xFFFCFBF9),
       // Desktop-browser sessions get the design-system scrollbar (angular,
       // token-colored); on phones no scrollbar is injected, as before.
-      builder: (context, child) => ScrollConfiguration(
-        behavior: const CcScrollBehavior(),
-        child: _Themed(child: child),
-      ),
+      builder: (context, child) {
+        final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+        return MediaQuery.removeViewInsets(
+          context: context,
+          removeBottom: true,
+          child: Padding(
+            padding: EdgeInsetsDirectional.only(bottom: keyboardInset),
+            child: ScrollConfiguration(
+              behavior: const CcScrollBehavior(),
+              child: _Themed(child: child),
+            ),
+          ),
+        );
+      },
     );
   }
 }

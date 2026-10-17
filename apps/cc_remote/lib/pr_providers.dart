@@ -14,6 +14,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/classify_pr_inbox_use_case.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_remote/requests_activity_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// How long to wait before re-asking the server for the operator's forge
@@ -206,8 +207,7 @@ final prInboxProvider = Provider<AsyncValue<PrInboxData>>((ref) {
 /// badge at all. It is derived from feeds the app already holds, so the badge
 /// costs no extra subscription.
 final inboxAttentionCountProvider = Provider<int>((ref) {
-  final blocked =
-      ref.watch(workspacePendingConfirmationsProvider).value?.length ?? 0;
+  final blocked = ref.watch(requestActionableCountProvider);
   final inbox = ref.watch(prInboxProvider).value;
   if (inbox == null) {
     return blocked;
@@ -340,6 +340,7 @@ final prRepoPermissionProvider = FutureProvider.autoDispose
       }
       try {
         final data = await client.call('github.repoPermission', {
+          'workspace_id': ref.read(activeWorkspaceIdProvider).value,
           'owner': repo.remoteOwner,
           'repo': repo.remoteName,
         });

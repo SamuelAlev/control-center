@@ -15,6 +15,10 @@ import 'package:cc_domain/features/fonts/domain/entities/font_family_info.dart'
     show FontFamilyInfo;
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart'
     show ActionPolicyRule;
+import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart'
+    show EnforcementLevel;
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_constraint.dart'
+    show ActionConstraint;
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart'
     show ActionDecision, ActionScopeType;
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart'
@@ -1417,6 +1421,9 @@ class ActionPolicyRuleDto {
     this.createdBy,
     this.createdAt,
     this.updatedAt,
+    this.constraint,
+    this.expiresAt,
+    this.enforcement,
   });
 
   factory ActionPolicyRuleDto.fromJson(Map<String, dynamic> json) =>
@@ -1432,6 +1439,11 @@ class ActionPolicyRuleDto {
         createdBy: json['created_by'] as String?,
         createdAt: json['created_at'] as String?,
         updatedAt: json['updated_at'] as String?,
+        constraint: json['constraint'] == null
+            ? null
+            : (json['constraint'] as Map).cast<String, dynamic>(),
+        expiresAt: json['expires_at'] as String?,
+        enforcement: json['enforcement'] as String?,
       );
 
   factory ActionPolicyRuleDto.fromEntity(ActionPolicyRule r) =>
@@ -1447,6 +1459,9 @@ class ActionPolicyRuleDto {
         createdBy: r.createdBy,
         createdAt: r.createdAt.toIso8601String(),
         updatedAt: r.updatedAt.toIso8601String(),
+        constraint: r.constraint?.toJson(),
+        expiresAt: r.expiresAt?.toIso8601String(),
+        enforcement: r.enforcement.wire,
       );
 
   final String id;
@@ -1460,6 +1475,9 @@ class ActionPolicyRuleDto {
   final String? createdBy;
   final String? createdAt;
   final String? updatedAt;
+  final Map<String, dynamic>? constraint;
+  final String? expiresAt;
+  final String? enforcement;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -1473,6 +1491,9 @@ class ActionPolicyRuleDto {
     if (createdBy != null) 'created_by': createdBy,
     if (createdAt != null) 'created_at': createdAt,
     if (updatedAt != null) 'updated_at': updatedAt,
+    if (constraint != null) 'constraint': constraint,
+    if (expiresAt != null) 'expires_at': expiresAt,
+    if (enforcement != null) 'enforcement': enforcement,
   };
 
   /// Rebuilds the domain entity. [workspaceId] is forced by the caller (the
@@ -1492,6 +1513,11 @@ class ActionPolicyRuleDto {
       commandPrefix: commandPrefix,
       provenance: provenance,
       createdBy: createdBy,
+      constraint: constraint == null
+          ? null
+          : ActionConstraint.fromJson(constraint!),
+      expiresAt: expiresAt == null ? null : DateTime.parse(expiresAt!),
+      enforcement: EnforcementLevel.fromWire(enforcement),
       createdAt: createdAt == null ? ts : DateTime.tryParse(createdAt!) ?? ts,
       updatedAt: updatedAt == null ? ts : DateTime.tryParse(updatedAt!) ?? ts,
     );
@@ -2531,6 +2557,7 @@ class OrchestrationDto {
     this.estimatedCostCents,
     this.maxCostCents,
     this.hiredAgentIds = const [],
+    this.approvedNodeKeys,
     this.errorMessage,
     required this.createdAt,
     required this.updatedAt,
@@ -2557,6 +2584,9 @@ class OrchestrationDto {
         hiredAgentIds:
             (json['hired_agent_ids'] as List?)?.whereType<String>().toList() ??
             const [],
+        approvedNodeKeys: (json['approved_node_keys'] as List?)
+            ?.whereType<String>()
+            .toList(),
         errorMessage: json['error_message'] as String?,
         createdAt: json['created_at'] as String? ?? '',
         updatedAt: json['updated_at'] as String? ?? '',
@@ -2579,6 +2609,9 @@ class OrchestrationDto {
   final int? estimatedCostCents;
   final int? maxCostCents;
   final List<String> hiredAgentIds;
+
+  /// Null approves the whole plan; a non-null list tracks partial approval.
+  final List<String>? approvedNodeKeys;
   final String? errorMessage;
   final String createdAt;
   final String updatedAt;
@@ -2602,6 +2635,7 @@ class OrchestrationDto {
     if (estimatedCostCents != null) 'estimated_cost_cents': estimatedCostCents,
     if (maxCostCents != null) 'max_cost_cents': maxCostCents,
     'hired_agent_ids': hiredAgentIds,
+    if (approvedNodeKeys != null) 'approved_node_keys': approvedNodeKeys,
     if (errorMessage != null) 'error_message': errorMessage,
     'created_at': createdAt,
     'updated_at': updatedAt,

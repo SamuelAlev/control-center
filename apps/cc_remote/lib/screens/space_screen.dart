@@ -1,59 +1,121 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
+import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/attachments.dart';
+import 'package:cc_remote/conversation_drafts.dart';
+import 'package:cc_remote/conversation_feed.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/jump_to_latest.dart';
+import 'package:cc_remote/widgets/messaging/conversation_actions.dart';
+import 'package:cc_remote/widgets/messaging/conversation_chrome.dart';
 import 'package:cc_remote/widgets/messaging/detail_header.dart';
-import 'package:cc_remote/widgets/messaging/pending_approvals.dart';
 import 'package:cc_remote/widgets/messaging/space_composer_bar.dart';
 import 'package:cc_remote/widgets/messaging/space_message_tile.dart';
 import 'package:cc_remote/widgets/reverse_follow_physics.dart';
+import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/semantics.dart' show SemanticsService;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-part 'space_screen_follow.dart';
 part 'space_screen_composer.dart';
+part 'space_screen_follow.dart';
+part 'space_screen_messages.dart';
 
-/// `/spaces/:spaceId` — a realtime conversation. Messages stream live
-/// (`messaging.watchMessagesWindow`, newest page first); an agent turn renders
-/// its transcript (reasoning, tool calls, results) as it happens. The composer
-/// dispatches the space's agents (`dispatch.sendAndDispatch`) so a reply
-/// streams back.
-class SpaceScreen extends ConsumerStatefulWidget {
-  /// Creates a [SpaceScreen].
-  const SpaceScreen({required this.spaceId, super.key});
-
-  /// The space id from the route.
+/// Resolves exact conversation/message identities before opening a composer.
+class SpaceScreen extends ConsumerWidget {
+  const SpaceScreen({
+    required this.spaceId,
+    this.conversationId,
+    this.messageId,
+    super.key,
+  });
   final String spaceId;
+  final String? conversationId;
+  final String? messageId;
 
   @override
-  ConsumerState<SpaceScreen> createState() => _SpaceScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final route = (
+      spaceId: spaceId,
+      conversationId: conversationId,
+      messageId: messageId,
+    );
+    final conversation = ref.watch(remoteConversationProvider(route));
+    final workspaceId = ref.watch(activeWorkspaceIdProvider).value;
+    return conversation.when(
+      loading: () => const Center(child: CcSpinner()),
+      error: (e, _) => SafeArea(
+        child: Column(
+          children: [
+            DetailHeader(title: AppLocalizations.of(context).thread),
+            Expanded(
+              child: CcEmptyState(
+                icon: AppIcons.triangleAlert,
+                message: AppLocalizations.of(context).messagesLoadFailed,
+                description: '$e',
+              ),
+            ),
+            CcButton(
+              onPressed: () =>
+                  ref.invalidate(remoteConversationProvider(route)),
+              child: Text(AppLocalizations.of(context).retry),
+            ),
+          ],
+        ),
+      ),
+      data: (value) => value == null || workspaceId == null
+          ? const Center(child: CcSpinner())
+          : _ConversationScreen(
+              key: ValueKey((workspaceId, value.id, messageId)),
+              workspaceId: workspaceId,
+              spaceId: spaceId,
+              conversation: value,
+              messageId: messageId,
+            ),
+    );
+  }
 }
 
-class _SpaceScreenState extends ConsumerState<SpaceScreen> {
-  final TextEditingController _composer = TextEditingController();
+class _ConversationScreen extends ConsumerStatefulWidget {
+  const _ConversationScreen({
+    super.key,
+    required this.workspaceId,
+    required this.spaceId,
+    required this.conversation,
+    this.messageId,
+  });
+  final String workspaceId;
+  final String spaceId;
+  final Conversation conversation;
+  final String? messageId;
+  String get conversationId => conversation.id;
+
+  @override
+  ConsumerState<_ConversationScreen> createState() => _SpaceScreenState();
+}
+
+class _SpaceScreenState extends ConsumerState<_ConversationScreen> {
   final ScrollController _scroll = ScrollController();
   final _follow = FollowState();
   final _rowKeys = <String, GlobalKey>{};
-
-  /// Tiles reused when a window emission changes some other message.
-  ///
-  /// The list builder runs for every visible index on each snapshot. The
-  /// same widget instance lets the element skip the update, so one streaming
-  /// row does not lay out every other tile again.
   final _keptTiles = <String, _KeptTile>{};
-  bool _sending = false;
-
-  /// Files picked but not yet sent.
-  final List<PickedAttachment> _pending = [];
-
-  /// Why the last attach or send left something out.
+  late final ConversationDraft _draft;
+  TextEditingController get _composer => _draft.controller;
+  bool get _sending => _draft.sending;
+  List<DraftAttachment> get _pending => _draft.attachments;
+  RemoteConversationKey get _scope => (
+    workspaceId: widget.workspaceId,
+    spaceId: widget.spaceId,
+    conversationId: widget.conversationId,
+  );
+  String get _feedKey => conversationFeedKey(_scope);
   String? _attachError;
   bool _didInitialLanding = false;
   String? _lastNewestId;
@@ -63,50 +125,33 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
   String? _announcedStartFor;
   String? _announcedDoneFor;
   bool _newestWasStreaming = false;
-
-  /// Whether the server has messages older than the subscribed window.
   bool _hasMore = false;
-
-  /// Previous window length, so a grown page can release [FollowState.loadingOlder].
   int _lastMessageCount = 0;
-
-  /// The signed-in user's id (from `identity.me`).
   String? _myUserId;
-
-  /// Display names of co-members.
   Map<String, String> _userNames = const {};
+  String? _lastReadId;
+  bool _markingRead = false;
+  Object? _readError;
 
-  void _set(VoidCallback fn) => setState(fn);
+  void _set(VoidCallback fn) {
+    if (mounted) setState(fn);
+  }
+
+  void _draftChanged() => _set(() {});
 
   @override
   void initState() {
     super.initState();
+    _draft = ref
+        .read(conversationDraftsProvider)
+        .putIfAbsent(_scope, ConversationDraft.new);
+    _draft.addListener(_draftChanged);
     _scroll.addListener(_onScroll);
-    _loadIdentity();
-  }
-
-  Future<void> _loadIdentity() async {
-    try {
-      final client = ref.read(rpcClientProvider).value;
-      if (client == null) return;
-      final me = await client.call('identity.me', const {});
-      final user = me['user'];
-      final users = await client.call('users.list', const {});
-      if (!mounted) return;
-      setState(() {
-        _myUserId = user is Map ? user['id'] as String? : null;
-        _userNames = {
-          for (final u in (users['users'] as List? ?? const []))
-            if (u is Map && u['id'] is String)
-              u['id'] as String: (u['display_name'] as String?) ?? '',
-        };
-      });
-    } catch (_) {}
   }
 
   @override
   void dispose() {
-    _composer.dispose();
+    _draft.removeListener(_draftChanged);
     _scroll.dispose();
     super.dispose();
   }
@@ -114,226 +159,88 @@ class _SpaceScreenState extends ConsumerState<SpaceScreen> {
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final messagesAsync = ref.watch(spaceMessagesProvider(widget.spaceId));
-    ref.listen(spaceMessagesProvider(widget.spaceId), (_, next) {
-      final msgs = next.value?.messages ?? const <MessageDto>[];
-      _onMessagesChanged(msgs);
-    });
-    final conversationId = ref
-        .watch(spaceConversationIdProvider(widget.spaceId))
-        .value;
-    final runsAsync = conversationId == null
-        ? const AsyncValue<List<AgentRunLogDto>>.loading()
-        : ref.watch(activeRunLogsProvider(conversationId));
-    final turns = ref.watch(phoneTurnRelayProvider(widget.spaceId));
-    final feed = messagesAsync.value;
-    final messages = feed?.messages ?? const <MessageDto>[];
-    _hasMore = feed?.hasMore ?? false;
-    final liveIds = {for (final m in messages) m.id};
-    _keptTiles.removeWhere((id, _) => !liveIds.contains(id));
-    _rowKeys.removeWhere((id, _) => !liveIds.contains(id));
-    if (messages.length != _lastMessageCount) {
-      final grew = messages.length > _lastMessageCount;
-      _lastMessageCount = messages.length;
-      if (grew && _follow.loadingOlder) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) {
-            return;
-          }
-          _follow.loadingOlder = false;
-          _maybeLoadOlder();
-        });
-      }
-    }
-
-    final hasActiveRun = (runsAsync.value ?? const <AgentRunLogDto>[]).any(
-      (r) => r.status == 'running' || r.status == 'pending',
+    _myUserId = ref.watch(remoteIdentityProvider).value?.userId;
+    _userNames = ref.watch(remoteUserNamesProvider).value ?? const {};
+    final feedProvider = conversationFeedProvider(_scope);
+    final feed = ref.watch(feedProvider);
+    ref.listen(
+      feedProvider,
+      (_, next) => _onMessagesChanged(
+        next.value?.messages.where((message) => !_queued(message)).toList() ??
+            const [],
+      ),
     );
-    final isStreamingBelow =
-        hasActiveRun &&
-        _scroll.hasClients &&
-        _scroll.position.pixels > kFollowPinThreshold;
-
+    final allMessages = feed.value?.messages ?? const <MessageDto>[];
+    final messages = allMessages.where((m) => !_queued(m)).toList();
+    final queued = allMessages.where(_queued).toList();
+    _hasMore = feed.value?.hasMore ?? false;
+    final runs = ref.watch(activeRunLogsProvider(widget.conversationId));
+    final hasActiveRun = (runs.value ?? const <AgentRunLogDto>[]).any(
+      (run) => const ['running', 'pending', 'paused'].contains(run.status),
+    );
+    final turns = ref.watch(phoneTurnRelayProvider(widget.spaceId));
+    final conversation =
+        ref
+            .watch(remoteConversationsProvider(widget.spaceId))
+            .value
+            ?.where((c) => c.id == widget.conversationId)
+            .firstOrNull ??
+        widget.conversation;
+    final writable =
+        ref.watch(workspaceRoleProvider).value?.canWrite == true &&
+        !conversation.isArchived &&
+        ref.watch(activeWorkspaceIdProvider).value == widget.workspaceId;
+    _updateWindow(messages);
+    _scheduleRead(messages);
     return SafeArea(
       child: ColoredBox(
         color: t.canvas,
-        child: Column(
-          children: [
-            DetailHeader(title: AppLocalizations.of(context).thread),
-            if (hasActiveRun) _activeBanner(t),
-            PendingApprovals(spaceId: widget.spaceId),
-            Expanded(
-              child: messagesAsync.when(
-                loading: () => const Center(child: CcSpinner(size: 24)),
-                error: (e, _) => CcEmptyState(
-                  icon: AppIcons.triangleAlert,
-                  message: AppLocalizations.of(context).messagesLoadFailed,
-                  description: e.toString(),
-                ),
-                data: (_) {
-                  if (messages.isEmpty) {
-                    return CcEmptyState(
-                      icon: AppIcons.messageCircle,
-                      message: AppLocalizations.of(context).noMessagesYet,
-                      description: AppLocalizations.of(
-                        context,
-                      ).noMessagesDescription,
-                    );
-                  }
-                  final platformPhysics = ScrollConfiguration.of(
-                    context,
-                  ).getScrollPhysics(context);
-                  return NotificationListener<UserScrollNotification>(
-                    onNotification: (n) {
-                      if (_follow.mode == FollowMode.following &&
-                          n.direction != ScrollDirection.idle) {
-                        _releaseFollowing();
-                      }
-                      return false;
-                    },
-                    child: Listener(
-                      onPointerDown: (_) => _releaseFollowing(),
-                      child: Stack(
-                        children: [
-                          ListView.builder(
-                            controller: _scroll,
-                            reverse: true,
-                            physics: ReverseFollowPhysics(
-                              state: _follow,
-                            ).applyTo(platformPhysics),
-                            padding: const EdgeInsets.all(16),
-                            itemCount: messages.length + (_hasMore ? 1 : 0),
-                            itemBuilder: (context, i) {
-                              if (_hasMore && i == messages.length) {
-                                return const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 12),
-                                  child: Center(child: CcSpinner(size: 16)),
-                                );
-                              }
-                              final m = messages[messages.length - 1 - i];
-                              final key = _rowKeys.putIfAbsent(
-                                m.id,
-                                GlobalKey.new,
-                              );
-                              final kept = _keptTiles[m.id];
-                              final Widget tile;
-                              if (kept != null &&
-                                  _sameMessage(kept.message, m) &&
-                                  kept.myUserId == _myUserId &&
-                                  identical(kept.userNames, _userNames) &&
-                                  identical(kept.turns, turns)) {
-                                tile = kept.child;
-                              } else {
-                                tile = SpaceMessageTile(
-                                  message: m,
-                                  myUserId: _myUserId,
-                                  userNames: _userNames,
-                                  turns: turns,
-                                );
-                                _keptTiles[m.id] = _KeptTile(
-                                  message: m,
-                                  myUserId: _myUserId,
-                                  userNames: _userNames,
-                                  turns: turns,
-                                  child: tile,
-                                );
-                              }
-                              return RepaintBoundary(
-                                child: KeyedSubtree(key: key, child: tile),
-                              );
-                            },
-                          ),
-                          if (_showJump)
-                            Positioned(
-                              left: 0,
-                              right: 0,
-                              bottom: 12,
-                              child: Center(
-                                child: JumpToLatest(
-                                  onTap: _jumpToLatest,
-                                  isStreaming: isStreamingBelow,
-                                  newCount: _newWhileAway,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
+        child: LayoutBuilder(
+          builder: (context, constraints) => Column(
+            children: [
+              ConversationHeader(scope: _scope, title: conversation.title),
+              ConversationAttention(
+                scope: _scope,
+                runs: runs,
+                queued: queued,
+                canWrite: writable,
+                archived: conversation.isArchived,
+                readError: _readError,
+                onReadRetry: () {
+                  _readError = null;
+                  _scheduleRead(messages);
                 },
+                maxHeight: constraints.maxHeight * .35,
               ),
-            ),
-            SpaceComposerBar(
-              controller: _composer,
-              sending: _sending,
-              pending: _pending,
-              attachError: _attachError,
-              onAttach: _attach,
-              onSend: _send,
-              onRemovePending: (a) => setState(() => _pending.remove(a)),
-            ),
-          ],
+              Expanded(
+                child: _messageFeed(t, feed, messages, turns, hasActiveRun),
+              ),
+              SpaceComposerBar(
+                controller: _composer,
+                sending: _sending,
+                enabled: writable,
+                ready: _draft.ready,
+                pending: _pending,
+                attachError: _attachError ?? _draft.error?.toString(),
+                detailsMaxHeight: (constraints.maxHeight * .16).clamp(
+                  32.0,
+                  120.0,
+                ),
+                maxLines: constraints.maxHeight < 500 ? 2 : 5,
+                onAttach: _attach,
+                onSend: _send,
+                onRemovePending: _removeAttachment,
+                onRetryPending: _uploadDraftAttachment,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// One phone-feed tile kept while its message is still in the window.
-class _KeptTile {
-  const _KeptTile({
-    required this.message,
-    required this.myUserId,
-    required this.userNames,
-    required this.turns,
-    required this.child,
-  });
-
-  final MessageDto message;
-  final String? myUserId;
-  final Map<String, String> userNames;
-  final PhoneTurnRelay turns;
-  final Widget child;
-}
-
-/// Value equality for a lite row. [MessageDto] is a wire bag and has no `==`.
-bool _sameMessage(MessageDto a, MessageDto b) {
-  return a.content == b.content &&
-      a.senderId == b.senderId &&
-      a.senderType == b.senderType &&
-      a.messageType == b.messageType &&
-      a.compacted == b.compacted &&
-      a.createdAt == b.createdAt &&
-      a.spaceId == b.spaceId &&
-      a.conversationId == b.conversationId &&
-      _sameValue(a.metadata, b.metadata);
-}
-
-bool _sameValue(Object? a, Object? b) {
-  if (identical(a, b)) {
-    return true;
-  }
-  if (a is Map<dynamic, dynamic> && b is Map<dynamic, dynamic>) {
-    if (a.length != b.length) {
-      return false;
-    }
-    for (final key in a.keys) {
-      if (!b.containsKey(key) || !_sameValue(a[key], b[key])) {
-        return false;
-      }
-    }
-    return true;
-  }
-  if (a is List<dynamic> && b is List<dynamic>) {
-    if (a.length != b.length) {
-      return false;
-    }
-    for (var i = 0; i < a.length; i++) {
-      if (!_sameValue(a[i], b[i])) {
-        return false;
-      }
-    }
-    return true;
-  }
-  return a == b;
-}
+bool _queued(MessageDto message) =>
+    message.messageType == 'steering' &&
+    message.metadata is Map &&
+    (message.metadata as Map)['steerState'] == 'queued';

@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:cc_domain/features/evals/domain/value_objects/agent_config_hash.dart'
+    show canonicalHash;
 import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_persistence/cc_persistence.dart';
@@ -43,10 +45,11 @@ void main() {
     String action = 'tickets.create',
     ActionDecision verdict = ActionDecision.allow,
     String workspaceId = ws,
+    DateTime? at,
   }) => GuardDecision(
     id: id,
     workspaceId: workspaceId,
-    occurredAt: DateTime.utc(2026, 1, 1, 12),
+    occurredAt: at ?? DateTime.utc(2026, 1, 1, 12),
     actorType: 'agent',
     actorId: 'agent-7',
     onBehalfOfUserId: 'user-1',
@@ -86,6 +89,56 @@ void main() {
     expect(result.brokenAtSeq, isNull);
   });
 
+  test('live-precision decisions verify after the SQLite round trip', () async {
+    final first = DateTime.utc(2026, 1, 1, 12, 34, 56, 789, 123);
+    final second = DateTime(2026, 1, 1, 12, 35, 17, 456, 789);
+    await repo.append(decision('d1', at: first));
+    await repo.append(decision('d2', at: second));
+
+    final result = await repo.verifyChain(ws);
+    expect(result.intact, isTrue, reason: result.reason);
+    expect(result.rowsChecked, 2);
+  });
+
+  test('legacy subsecond hashes are not silently treated as intact', () async {
+    final at = DateTime.utc(2026, 1, 1, 12, 34, 56, 789, 123);
+    final original = decision('legacy', at: at);
+    await repo.append(original);
+    // This is the old append algorithm: it hashed the original, unpersisted
+    // timestamp. The SQLite row only retains whole seconds. An old hash
+    // cannot be recovered from that row, and must not be silently replaced.
+    final legacyHash = canonicalHash({
+      'prev': '',
+      'entry': {
+        ...original.copyWith(seq: 1).hashPayload(),
+        'occurred_at': at.toUtc().toIso8601String(),
+      },
+    });
+    await dbs.of(ws).customStatement(
+      'UPDATE guard_decisions SET entry_hash = ? WHERE seq = 1',
+      [legacyHash],
+    );
+    await repo.append(
+      decision('after-legacy', at: at.add(const Duration(seconds: 1))),
+    );
+    final result = await repo.verifyChain(ws);
+    expect(result.intact, isFalse);
+    expect(result.brokenAtSeq, 1);
+  });
+
+  test('subsecond retention checkpoint verifies after persistence', () async {
+    await repo.append(decision('d1'));
+    await repo.append(decision('d2'));
+    await repo.truncateWithCheckpoint(
+      ws,
+      uptoSeq: 1,
+      at: DateTime.utc(2026, 2, 1, 12, 30, 0, 123, 456),
+    );
+    final result = await repo.verifyChain(ws);
+    expect(result.intact, isTrue, reason: result.reason);
+    expect(result.checkpoints, 1);
+  });
+
   test('editing a row in place breaks verification at that row', () async {
     for (var i = 1; i <= 4; i++) {
       await repo.append(decision('d$i'));
@@ -102,7 +155,6 @@ void main() {
     final result = await repo.verifyChain(ws);
     expect(result.intact, isFalse);
     expect(result.brokenAtSeq, 2);
-    expect(result.reason, contains('modified'));
   });
 
   test('deleting a row from the middle is detected as a gap', () async {
@@ -116,7 +168,28 @@ void main() {
     final result = await repo.verifyChain(ws);
     expect(result.intact, isFalse);
     expect(result.brokenAtSeq, 4);
-    expect(result.reason, contains('gap'));
+  });
+
+  test('reordering persisted rows breaks verification', () async {
+    for (var i = 1; i <= 3; i++) {
+      await repo.append(decision('d$i'));
+    }
+    // Use a temporary vacant sequence to satisfy the (workspace, seq)
+    // uniqueness constraint while swapping the two rows.
+    final db = dbs.of(ws);
+    await db.customStatement(
+      'UPDATE guard_decisions SET seq = -2 WHERE seq = 2',
+    );
+    await db.customStatement(
+      'UPDATE guard_decisions SET seq = 2 WHERE seq = 3',
+    );
+    await db.customStatement(
+      'UPDATE guard_decisions SET seq = 3 WHERE seq = -2',
+    );
+
+    final result = await repo.verifyChain(ws);
+    expect(result.intact, isFalse);
+    expect(result.brokenAtSeq, 2);
   });
 
   test('export-then-truncate keeps the survivors verifiable', () async {

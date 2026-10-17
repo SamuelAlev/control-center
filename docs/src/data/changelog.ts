@@ -36,6 +36,7 @@ export const releases: Release[] = [
     title: "Restore conversations and see server progress",
     lead: "Browse and restore archived conversations, choose your language before signing in and track server startup and model downloads. This update also fixes macOS startup and reconnecting to saved servers.",
     latest: true,
+    note: "Development branch, Oct 17 (not included in the v0.0.10 release): the phone client gains conversation and thread management, retained attachment drafts, independent requests and durable Activity, space management, run/progress controls, permission and audit views, PR discussion, ticket editing, plans and supervised goals, provider connections and background push preferences. Space attention excludes orphaned questions, and all six navigation destinations fit narrow LTR and RTL phones. Reopening an already-trusted pairing offer no longer asks for confirmation again. New audit hashes use SQLite's persisted timestamp precision; unverifiable historical hashes remain flagged rather than rewritten.",
     changes: [
       {
         type: "new",

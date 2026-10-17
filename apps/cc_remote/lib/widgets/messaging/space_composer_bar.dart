@@ -1,45 +1,38 @@
 import 'package:cc_remote/app_icons.dart';
-import 'package:cc_remote/attachments.dart';
+import 'package:cc_remote/conversation_drafts.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
-import 'package:cc_remote/widgets/messaging/sent_attachments.dart';
 import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
-/// Composer at the bottom of a space: attach, pending chips, send.
 class SpaceComposerBar extends StatelessWidget {
-  /// Creates a [SpaceComposerBar].
   const SpaceComposerBar({
-    super.key,
     required this.controller,
     required this.sending,
+    required this.enabled,
+    required this.ready,
     required this.pending,
     required this.attachError,
     required this.onAttach,
     required this.onSend,
     required this.onRemovePending,
+    required this.onRetryPending,
+    this.detailsMaxHeight = 120,
+    this.maxLines = 5,
+    super.key,
   });
-
-  /// Text field controller.
   final TextEditingController controller;
-
-  /// True while a send is in flight.
   final bool sending;
-
-  /// Files picked but not yet sent.
-  final List<PickedAttachment> pending;
-
-  /// Why the last attach or send left something out.
+  final bool enabled;
+  final bool ready;
+  final List<DraftAttachment> pending;
   final String? attachError;
-
-  /// Opens the file picker.
   final VoidCallback onAttach;
-
-  /// Sends the composed message.
   final VoidCallback onSend;
-
-  /// Drops a pending attachment.
-  final ValueChanged<PickedAttachment> onRemovePending;
+  final ValueChanged<DraftAttachment> onRemovePending;
+  final ValueChanged<DraftAttachment> onRetryPending;
+  final double detailsMaxHeight;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -56,27 +49,61 @@ class SpaceComposerBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (attachError != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  attachError!,
-                  style: TextStyle(fontSize: 12, color: t.danger),
-                ),
-              ),
-            if (pending.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (final attachment in pending)
-                      PendingChip(
-                        attachment: attachment,
-                        onRemove: () => onRemovePending(attachment),
-                      ),
-                  ],
+            if (attachError != null || pending.isNotEmpty)
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: detailsMaxHeight),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (attachError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: CcAlert(
+                            title: l10n.mobileSendFailed,
+                            description: Text(attachError!),
+                            variant: CcAlertVariant.danger,
+                          ),
+                        ),
+                      for (final file in pending)
+                        Row(
+                          children: [
+                            Icon(
+                              file.uploading
+                                  ? AppIcons.loader
+                                  : file.error != null
+                                  ? AppIcons.triangleAlert
+                                  : AppIcons.file,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                file.picked.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (file.error != null)
+                              CcButton(
+                                size: CcButtonSize.lg,
+                                variant: CcButtonVariant.secondary,
+                                onPressed: sending || !enabled
+                                    ? null
+                                    : () => onRetryPending(file),
+                                child: Text(l10n.retry),
+                              ),
+                            PhoneIconButton(
+                              icon: AppIcons.x,
+                              semanticLabel: l10n.mobileRemove,
+                              onPressed: sending || file.uploading || !enabled
+                                  ? null
+                                  : () => onRemovePending(file),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
             Row(
@@ -86,21 +113,24 @@ class SpaceComposerBar extends StatelessWidget {
                   icon: AppIcons.plus,
                   semanticLabel: l10n.attachFile,
                   color: t.fgSecondary,
-                  onPressed: sending ? null : onAttach,
+                  onPressed: sending || !enabled ? null : onAttach,
                 ),
                 Expanded(
                   child: CcTextField(
                     controller: controller,
+                    enabled: enabled && !sending,
                     hintText: l10n.messageHint,
+                    minLines: 1,
+                    maxLines: maxLines,
                     keyboardType: TextInputType.multiline,
-                    onSubmitted: (_) => onSend(),
                   ),
                 ),
                 const SizedBox(width: 8),
                 CcButton(
                   icon: AppIcons.send,
+                  size: CcButtonSize.lg,
                   loading: sending,
-                  onPressed: onSend,
+                  onPressed: ready && enabled ? onSend : null,
                   child: Text(l10n.send),
                 ),
               ],

@@ -2,6 +2,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
+import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:cc_rpc/cc_rpc.dart';
 
 /// An [ActionPolicyRepository] backed by the RPC client — the thin-client data
@@ -20,22 +21,47 @@ class RpcActionPolicyRepository implements ActionPolicyRepository {
 
   final RemoteRpcClient _client;
 
-  List<ActionPolicyRule> _parse(Map<String, dynamic> data) =>
-      ((data['rules'] as List?) ?? const [])
-          .whereType<Map>()
-          .map(
-            (r) => ActionPolicyRuleDto.fromJson(
-              r.cast<String, dynamic>(),
-            ).toEntity(now: DateTime.now()),
-          )
-          .toList();
+  List<ActionPolicyRule> _parse(Map<String, dynamic> data, String workspaceId) {
+    final rows = data['rules'];
+    if (rows is! List) {
+      throw const FormatException('Missing action policy rules');
+    }
+    return [for (final value in rows) _rule(value, workspaceId)];
+  }
+
+  ActionPolicyRule _rule(Object? value, String workspaceId) {
+    if (value is! Map) {
+      throw const FormatException('Invalid action policy rule');
+    }
+    final json = value.cast<String, dynamic>();
+    if (json['workspace_id'] != workspaceId ||
+        json['id'] is! String ||
+        (json['id'] as String).isEmpty ||
+        !ActionScopeType.values.any((s) => s.wire == json['scope_type']) ||
+        json['scope_id'] is! String ||
+        (json['scope_type'] == ActionScopeType.workspace.wire
+            ? json['scope_id'] != ''
+            : (json['scope_id'] as String).isEmpty) ||
+        !ActionDecision.values.any((d) => d.wire == json['decision']) ||
+        ((json['action_class'] == null) == (json['command_prefix'] == null)) ||
+        (json['action_class'] != null &&
+            (json['action_class'] is! String ||
+                ActionClass.fromWire(json['action_class'] as String) ==
+                    null)) ||
+        (json['command_prefix'] != null &&
+            (json['command_prefix'] is! String ||
+                (json['command_prefix'] as String).isEmpty))) {
+      throw const FormatException('Invalid action policy rule');
+    }
+    return ActionPolicyRuleDto.fromJson(json).toEntity(now: DateTime.now());
+  }
 
   @override
   Future<List<ActionPolicyRule>> rules(String workspaceId) async {
     final data = await _client.call('action_policy.list', {
       'workspace_id': workspaceId,
     });
-    return _parse(data);
+    return _parse(data, workspaceId);
   }
 
   @override
@@ -46,13 +72,14 @@ class RpcActionPolicyRepository implements ActionPolicyRepository {
       .subscribe('action_policy.watchForWorkspace', {
         'workspace_id': workspaceId,
       })
-      .map(_parse);
+      .map((data) => _parse(data, workspaceId));
 
   @override
-  Future<void> upsertRule(ActionPolicyRule rule) => _client.call(
-    'action_policy.upsert',
-    {'rule': ActionPolicyRuleDto.fromEntity(rule).toJson()},
-  );
+  Future<void> upsertRule(ActionPolicyRule rule) =>
+      _client.call('action_policy.upsert', {
+        'workspace_id': rule.workspaceId,
+        'rule': ActionPolicyRuleDto.fromEntity(rule).toJson(),
+      });
 
   @override
   Future<void> deleteRule(String workspaceId, String id) => _client.call(

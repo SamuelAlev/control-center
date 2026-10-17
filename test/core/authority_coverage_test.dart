@@ -73,20 +73,18 @@ void main() {
       'credentials.clearTicketingToken',
       'identity.me', 'users.updateProfile', 'users.markOnboardingFinished',
       'subscriptions.usage',
+      // Browser subscriptions are owned by ctx.userId + ctx.deviceId, never
+      // an arbitrary client-supplied device. Workspace grants gate delivery.
+      'push.status', 'push.register', 'push.remove',
       // Per-user newsfeed (its own user-scoped pillar).
       'newsfeed.addFeed', 'newsfeed.deleteFeed', 'newsfeed.getArticle',
       'newsfeed.listArticles', 'newsfeed.markAllRead', 'newsfeed.refreshAll',
       'newsfeed.refreshFeed', 'newsfeed.seedDefaultFeedsIfEmpty',
       'newsfeed.setArticleRead', 'newsfeed.setArticleSaved',
       'newsfeed.setFeedEnabled',
-      // Per-user provider/oauth flows (the target is always the caller).
+      // Caller-owned sign-in, forge/ticket status, and read-only harness listings.
       'oauth.begin', 'oauth.providers', 'oauth.status',
-      'providers.addCustom', 'providers.cancelOAuth',
-      'providers.completeOAuth', 'providers.list', 'providers.listModels',
-      'providers.oauthStatus', 'providers.removeCredential',
-      'providers.removeCustom', 'providers.removeModelOverride',
-      'providers.saveApiKey', 'providers.saveGenerationDefaults',
-      'providers.saveModelOverride', 'providers.startOAuth',
+      'providers.list', 'providers.listModels',
       'forge.capabilities', 'forge.listConnections', 'forge.testConnection',
       'ticketing.listConnections', 'github.currentUser', 'github.teamProfile',
       'github.userProfile',
@@ -206,6 +204,7 @@ void main() {
       'notes.watchForSpace', 'notifications.watch',
       'notifications.watchItemStates', 'notifications.watchReadMark',
       'reactions.watchForSpace', 'space_read.watchUserLastReadAt',
+      'space_read.watchUserSpaceReads',
       'presence.watch',
       // Work surfaces (tickets, plans, PRs, reviews, todos, memory, teams).
       'goals.watchForWorkspace', 'isolated_repo.watchForWorkspace',

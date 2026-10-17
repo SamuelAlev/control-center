@@ -872,6 +872,1605 @@ class AppLocalizationsZh extends AppLocalizations {
   String durationHoursMinutes(int hours, int minutes) {
     return '$hours 小时 $minutes 分钟';
   }
+
+  @override
+  String get mobileConversations => '对话';
+
+  @override
+  String get mobileNewConversation => '新对话';
+
+  @override
+  String get mobileConversationName => '对话名称';
+
+  @override
+  String get mobileRename => '重命名';
+
+  @override
+  String get mobileManageSpace => '管理空间';
+
+  @override
+  String get mobileArchived => '已归档';
+
+  @override
+  String get mobileSearchMessages => '搜索此空间中的所有消息';
+
+  @override
+  String get mobileSearch => '搜索';
+
+  @override
+  String get mobileNoResults => '无结果';
+
+  @override
+  String get mobileReopen => '重新打开';
+
+  @override
+  String get mobileArchive => '归档';
+
+  @override
+  String get mobileProgress => '进度与上下文';
+
+  @override
+  String get mobileReadFailed => '无法将此对话标记为已读';
+
+  @override
+  String get mobileSendFailed => '消息未发送，草稿仍在此处。';
+
+  @override
+  String get mobileActionFailed => '操作失败';
+
+  @override
+  String get mobileRemove => '移除';
+
+  @override
+  String get mobileLinkedMessage => '关联消息';
+
+  @override
+  String get mobileOlderMessages => '更早的消息';
+
+  @override
+  String get mobileMessageActions => '消息操作';
+
+  @override
+  String get mobileOpenThread => '打开讨论串';
+
+  @override
+  String get mobileCopyLink => '复制链接';
+
+  @override
+  String get mobileStopRun => '停止运行';
+
+  @override
+  String get mobileStopRunConfirm => '停止此次智能体运行？已完成的工作会保留。';
+
+  @override
+  String get mobileControlUnsupported => '此次运行已结束或不支持此操作。';
+
+  @override
+  String get mobilePauseRequested => '已请求在下一轮结束时暂停';
+
+  @override
+  String get mobileResumed => '已继续运行';
+
+  @override
+  String get mobileStopRequested => '已请求停止';
+
+  @override
+  String get mobileQueuedMessages => '排队的消息';
+
+  @override
+  String get mobilePauseRun => '下一轮暂停';
+
+  @override
+  String get mobileResumeRun => '继续';
+
+  @override
+  String get mobileEditQueued => '编辑已排队的消息';
+
+  @override
+  String get mobileSteerNow => '立即引导';
+
+  @override
+  String get mobileMoveUp => '上移';
+
+  @override
+  String get mobileMoveDown => '下移';
+
+  @override
+  String get mobileQueueChanged => '队列已变化，或此次运行无法接受实时引导。请刷新后重试。';
+
+  @override
+  String get mobileActivity => '活动';
+
+  @override
+  String get mobilePermissions => '权限与审计';
+
+  @override
+  String get mobilePlans => '计划';
+
+  @override
+  String get mobileGoals => '监督目标';
+
+  @override
+  String get mobileCredentials => '连接与凭据';
+
+  @override
+  String get mobileWorkspaceUnavailable => '此工作区不可用，或你已无权访问。';
+
+  @override
+  String get mobilePrReviewThreads => '评审讨论串';
+
+  @override
+  String get mobilePrThreadsLoadFailed => '无法加载评审讨论串';
+
+  @override
+  String get mobilePrNoReviewThreads => '尚无行内评审讨论串';
+
+  @override
+  String get mobilePrCommentPermissionDenied => '你无权在此仓库发表评论。';
+
+  @override
+  String get mobilePrPermissionChecking => '正在检查评论权限…';
+
+  @override
+  String get mobilePrPermissionLoadFailed => '无法检查评论权限。请重试后发表评论。';
+
+  @override
+  String mobilePrThreadLine(String side, String line) {
+    return '$side第 $line 行';
+  }
+
+  @override
+  String get mobilePrOriginalSide => '原始版本';
+
+  @override
+  String get mobilePrUpdatedSide => '更新时间';
+
+  @override
+  String get mobilePrThreadResolved => '已解决';
+
+  @override
+  String get mobilePrReplyHint => '撰写回复…';
+
+  @override
+  String get mobilePrCommentRequired => '请先填写评论再发布。';
+
+  @override
+  String get mobilePrReply => '回复';
+
+  @override
+  String get mobilePrReopenThread => '重新打开讨论';
+
+  @override
+  String get mobilePrResolveThread => '解决讨论';
+
+  @override
+  String get mobilePrResolvePermissionDenied =>
+      '只有 pull request 作者或拥有写入权限的人才能解决此讨论串。';
+
+  @override
+  String mobilePrCommentOnLine(String side, String line) {
+    return '评论$side第 $line 行';
+  }
+
+  @override
+  String get mobilePrInlineCommentHint => '撰写行内评论…';
+
+  @override
+  String get mobilePrPostInlineComment => '发布评论';
+
+  @override
+  String get mobilePrCommentUnavailable => '此 pull request 无法添加行内评论。';
+
+  @override
+  String get mobilePrPatchUnavailable => '代码托管服务未提供此文件的文本补丁。';
+
+  @override
+  String get mobilePrNoPatchForFile => '此文件的补丁不可用。';
+
+  @override
+  String get mobileTicketNew => '新建工单';
+
+  @override
+  String get mobileTicketCreate => '创建工单';
+
+  @override
+  String get mobileTicketEdit => '编辑工单';
+
+  @override
+  String get mobileTicketTitle => '标题';
+
+  @override
+  String get mobileTicketTitleRequired => '请输入标题以保存工单。';
+
+  @override
+  String get mobileTicketDescription => '描述';
+
+  @override
+  String get mobileTicketMarkdownHint => '使用 Markdown 添加详情';
+
+  @override
+  String get mobileTicketPriority => '优先级';
+
+  @override
+  String get mobileTicketPriorityNone => '无优先级';
+
+  @override
+  String get mobileTicketPriorityUrgent => '紧急';
+
+  @override
+  String get mobileTicketPriorityHigh => '高';
+
+  @override
+  String get mobileTicketPriorityMedium => '中';
+
+  @override
+  String get mobileTicketPriorityLow => '低';
+
+  @override
+  String get mobileTicketLabels => '标签';
+
+  @override
+  String get mobileTicketLabelsHint => '每行一个标签';
+
+  @override
+  String get mobileTicketLabelsHelp => '每个标签单独占一行。';
+
+  @override
+  String mobileTicketWorkspaceProvider(String provider) {
+    return '已提交至 $provider';
+  }
+
+  @override
+  String get mobileTicketProviderLocal => 'Control Center';
+
+  @override
+  String get mobileTicketUnassigned => '未分配';
+
+  @override
+  String get mobileTicketAssignedFilter => '已分配';
+
+  @override
+  String get mobileTicketAgentsLoadFailed => '无法加载智能体';
+
+  @override
+  String get mobileTicketSearch => '搜索工单';
+
+  @override
+  String get mobileTicketSearchHint => '标题、编号、描述、标签或负责人';
+
+  @override
+  String get mobileTicketClearSearch => '清除工单搜索';
+
+  @override
+  String get mobileTicketNoMatches => '没有匹配的工单';
+
+  @override
+  String get mobileTicketAdjustFilters => '请尝试其他搜索词或调整筛选条件。';
+
+  @override
+  String get mobileTicketClearFilters => '清除筛选';
+
+  @override
+  String get mobileTicketNotFound => '找不到工单';
+
+  @override
+  String get mobileTicketNotFoundDescription => '此工单可能已被删除或移出此工作区。';
+
+  @override
+  String get mobileTicketWorkspaceChanged => '工作区已变更。请返回当前工作区后再保存。';
+
+  @override
+  String get mobileTicketOpenLinkedSpace => '打开关联空间';
+
+  @override
+  String get mobileTicketReadOnly => '更改工单需要工作区成员权限。';
+
+  @override
+  String get permissionTitle => '权限';
+
+  @override
+  String get permissionWorkspaceFailed => '无法加载工作区';
+
+  @override
+  String get permissionNoWorkspace => '请选择工作区以查看权限。';
+
+  @override
+  String get permissionLoading => '正在加载权限…';
+
+  @override
+  String get permissionScopeDescription => '查看此范围内各项操作的判定方式。智能体和空间可继承工作区规则。';
+
+  @override
+  String get permissionScope => '策略范围';
+
+  @override
+  String get permissionWorkspaceScope => '工作区';
+
+  @override
+  String get permissionAgentScope => '智能体';
+
+  @override
+  String get permissionSpaceScope => '空间';
+
+  @override
+  String get permissionAgentContext => '在此空间中执行操作的智能体';
+
+  @override
+  String get permissionNoAgentContext => '未选择智能体';
+
+  @override
+  String get permissionTargetsFailed => '无法加载范围目标';
+
+  @override
+  String get permissionNoTargets => '此范围内没有可用目标。';
+
+  @override
+  String get permissionRoleFailed => '无法确认你的工作区角色';
+
+  @override
+  String get permissionMemberRequired => '查看策略规则需要工作区成员权限。';
+
+  @override
+  String get permissionRulesFailed => '无法加载策略规则';
+
+  @override
+  String get permissionAuditAdminOnly => '仅工作区管理员可查看授权记录。';
+
+  @override
+  String get permissionAllow => '允许';
+
+  @override
+  String get permissionAsk => '先询问';
+
+  @override
+  String get permissionDeny => '拒绝';
+
+  @override
+  String get permissionFileDelete => '删除文件';
+
+  @override
+  String get permissionFileWriteOutsideWorktree => '在工作树外写入';
+
+  @override
+  String get permissionGitCommit => '提交更改';
+
+  @override
+  String get permissionGitPush => '推送提交';
+
+  @override
+  String get permissionPrCreate => '创建 pull request';
+
+  @override
+  String get permissionPrPublish => '发布 pull request';
+
+  @override
+  String get permissionVendorSyncWrite => '写入供应商同步';
+
+  @override
+  String get permissionNetworkEgress => '访问网络';
+
+  @override
+  String get permissionSecretAccess => '访问机密信息';
+
+  @override
+  String get permissionPackageInstall => '安装软件包';
+
+  @override
+  String get permissionProcessSpawn => '启动进程';
+
+  @override
+  String get permissionWorkspaceMutation => '更改工作区';
+
+  @override
+  String get permissionEnclosureControl => '控制设备舱';
+
+  @override
+  String get permissionChangeFailed => '无法更改规则';
+
+  @override
+  String get permissionEffectiveDescription =>
+      '在不指定操作参数时，此范围内的有效规则如下。下方的条件授权仅适用于匹配的请求；最终由服务器裁定。';
+
+  @override
+  String get permissionSpaceAgentNote => '未选择智能体。请在上方选择智能体，以查看专属规则。';
+
+  @override
+  String get permissionScopedGrants => '此范围内的规则';
+
+  @override
+  String get permissionModePreset => '模式预设';
+
+  @override
+  String get permissionBuiltInDefault => '内置默认值';
+
+  @override
+  String get permissionRemembered => '已记住的批准';
+
+  @override
+  String get permissionSource => '源码';
+
+  @override
+  String permissionSetAtThisScope(String source) {
+    return '$source · 在此设置';
+  }
+
+  @override
+  String permissionInheritedFrom(String source) {
+    return '$source · 已继承';
+  }
+
+  @override
+  String permissionExpiresAt(String date) {
+    return '到期时间：$date';
+  }
+
+  @override
+  String get permissionSetHere => '在此设置规则';
+
+  @override
+  String get permissionRevokeBeforeEdit => '请先撤销此范围内的规则或已记住的规则，再为此操作设置通用规则。';
+
+  @override
+  String get permissionConfirmRevoke => '确认撤销';
+
+  @override
+  String get permissionRevokeRule => '撤销规则';
+
+  @override
+  String permissionCommandPrefix(String prefix) {
+    return '命令前缀：$prefix';
+  }
+
+  @override
+  String get permissionNoExpiry => '永不过期';
+
+  @override
+  String get permissionExpired => '已过期';
+
+  @override
+  String get permissionExplicitRule => '明确规则';
+
+  @override
+  String get permissionEnforcementAdvisory => '建议执行：先询问规则仅记录日志，不弹出提示';
+
+  @override
+  String get permissionEnforcementSoft => '软性执行：覆盖规则需要授权';
+
+  @override
+  String get permissionEnforcementHard => '强制执行：无法覆盖规则';
+
+  @override
+  String permissionPaths(String paths) {
+    return '路径：$paths';
+  }
+
+  @override
+  String permissionRefs(String refs) {
+    return 'Git 引用：$refs';
+  }
+
+  @override
+  String permissionHosts(String hosts) {
+    return '主机：$hosts';
+  }
+
+  @override
+  String permissionCommands(String commands) {
+    return '命令：$commands';
+  }
+
+  @override
+  String permissionMaxCount(String count) {
+    return '最大数量：$count';
+  }
+
+  @override
+  String permissionMaxCents(String cents) {
+    return '最高美分数：$cents';
+  }
+
+  @override
+  String get permissionAuditHeading => '授权记录';
+
+  @override
+  String get permissionAuditDescription => '服务器记录的近期决策。只有管理员可以查看日志或验证其哈希链。';
+
+  @override
+  String permissionOnBehalfOf(String user) {
+    return '代表 $user';
+  }
+
+  @override
+  String get permissionPrompted => '已请求人工批准';
+
+  @override
+  String get permissionVerifyChain => '验证审计链';
+
+  @override
+  String get permissionVerifyFailed => '无法验证审计链';
+
+  @override
+  String permissionChainIntact(String count) {
+    return '链完整 · 已检查 $count 条记录';
+  }
+
+  @override
+  String permissionChainBroken(String sequence, String reason) {
+    return '链在第 $sequence 条记录处断裂：$reason';
+  }
+
+  @override
+  String get permissionAuditEmpty => '尚无授权决策记录。';
+
+  @override
+  String get permissionAuditFailed => '无法加载授权记录';
+
+  @override
+  String get mobilePlansLoadFailed => '无法加载计划';
+
+  @override
+  String get mobilePlansEmpty => '暂无计划';
+
+  @override
+  String get mobilePlansEmptyDescription => '智能体提交的计划将在此显示，供你评审。';
+
+  @override
+  String get mobilePlanTitle => '规划';
+
+  @override
+  String get mobilePlanMissing => '此计划已不在当前工作区中。';
+
+  @override
+  String mobilePlanStepCount(int count) {
+    return '$count 个步骤';
+  }
+
+  @override
+  String get mobilePlanDraft => '草稿';
+
+  @override
+  String get mobilePlanProposed => '等待评审';
+
+  @override
+  String get mobilePlanApproved => '已批准';
+
+  @override
+  String get mobilePlanRejected => '已拒绝';
+
+  @override
+  String get mobilePlanSuperseded => '已替代';
+
+  @override
+  String get mobilePlanExecuting => '执行中';
+
+  @override
+  String get mobilePlanSynthesizing => '汇总中';
+
+  @override
+  String get mobilePlanCompleted => '已完成';
+
+  @override
+  String get mobilePlanFailed => '失败';
+
+  @override
+  String get mobilePlanCancelled => '已取消';
+
+  @override
+  String mobilePlanRevision(String revision) {
+    return '修订 $revision';
+  }
+
+  @override
+  String get mobilePlanSteps => '步骤';
+
+  @override
+  String get mobilePlanNoSteps => '此计划未提交任何步骤。';
+
+  @override
+  String get mobilePlanAssumptions => '待澄清事项';
+
+  @override
+  String mobilePlanDependsOn(String keys) {
+    return '依赖 $keys';
+  }
+
+  @override
+  String mobilePlanStepCost(String cost) {
+    return '预估最高 $cost';
+  }
+
+  @override
+  String get mobilePlanSelect => '选择';
+
+  @override
+  String get mobilePlanSelected => '已选中';
+
+  @override
+  String get mobilePlanEstimate => '估算费用';
+
+  @override
+  String get mobilePlanEstimateRequired => '请先估算计划费用，再批准执行。';
+
+  @override
+  String mobilePlanEstimatedCost(String low, String high) {
+    return '预估费用：$low–$high';
+  }
+
+  @override
+  String get mobilePlanCostUnknown => '不可用';
+
+  @override
+  String get mobilePlanNoHardCap => '无硬性上限';
+
+  @override
+  String get mobilePlanExceedsBudget => '预估费用超出设定预算。请在批准前核查。';
+
+  @override
+  String get mobilePlanPartialEstimate => '此费用估算涵盖整个计划；所选步骤的费用可能更低。';
+
+  @override
+  String get mobilePlanConfirmAll => '开始执行整个计划？';
+
+  @override
+  String get mobilePlanConfirmSelected => '开始执行所选步骤？';
+
+  @override
+  String mobilePlanExecutionConfirmation(String cost, String cap) {
+    return '批准后将开始执行，可能产生费用。预估费用上限：$cost。预算上限：$cap。';
+  }
+
+  @override
+  String get mobilePlanApproveAll => '全部批准并执行';
+
+  @override
+  String get mobilePlanApproveSelected => '批准所选步骤并执行';
+
+  @override
+  String get mobilePlanWiden => '批准更多步骤';
+
+  @override
+  String mobilePlanWidenConfirm(String count, String cap) {
+    return '允许再执行 $count 个步骤？这些步骤可能产生费用。当前执行费用上限：$cap。';
+  }
+
+  @override
+  String get mobilePlanChanged => '计划在评审期间发生变化。请打开最新修订版并重新估算。';
+
+  @override
+  String get mobilePlanReject => '拒绝计划';
+
+  @override
+  String get mobilePlanRejectConfirm => '拒绝此计划？计划将不会执行。';
+
+  @override
+  String get mobilePlanStop => '停止执行';
+
+  @override
+  String get mobilePlanStopConfirm => '停止执行此计划？已完成的工作不会撤销。';
+
+  @override
+  String mobilePlanRunId(String runId) {
+    return '执行编号：$runId';
+  }
+
+  @override
+  String get mobilePlanExecutionPending => '已批准。正在等待执行记录…';
+
+  @override
+  String mobilePlanProgress(String completed, String total) {
+    return '已完成 $completed/$total 个执行步骤';
+  }
+
+  @override
+  String get mobilePlanOpenConversation => '打开对话';
+
+  @override
+  String get mobileGoalsTitle => '监督目标';
+
+  @override
+  String get mobileGoalsLoadFailed => '无法加载监督目标';
+
+  @override
+  String get mobileGoalsEmpty => '暂无监督目标';
+
+  @override
+  String get mobileGoalsEmptyDescription => '在空间中启动目标，或在对话中发送 /goal。';
+
+  @override
+  String get mobileGoalMissing => '此目标已不在当前工作区中。';
+
+  @override
+  String get mobileGoalActive => '使用中';
+
+  @override
+  String get mobileGoalPaused => '已暂停';
+
+  @override
+  String get mobileGoalCompleted => '已完成';
+
+  @override
+  String get mobileGoalFailed => '失败';
+
+  @override
+  String get mobileGoalCancelled => '已取消';
+
+  @override
+  String get mobileGoalBudgetExhausted => '预算已用尽';
+
+  @override
+  String get mobileGoalGoal => '目标';
+
+  @override
+  String get mobileGoalLoop => '循环';
+
+  @override
+  String mobileGoalKind(String kind) {
+    return '类型：$kind';
+  }
+
+  @override
+  String mobileGoalRuns(String count) {
+    return '$count 次运行';
+  }
+
+  @override
+  String get mobileGoalNoRunLimit => '不限次数';
+
+  @override
+  String mobileGoalProgress(
+    String runs,
+    String maxRuns,
+    String spent,
+    String cap,
+  ) {
+    return '运行次数：$runs/$maxRuns · 已花费：$spent/$cap';
+  }
+
+  @override
+  String mobileGoalDeadline(String date) {
+    return '截止时间：$date';
+  }
+
+  @override
+  String mobileGoalFailures(String count) {
+    return '连续失败次数：$count';
+  }
+
+  @override
+  String get mobileGoalSummary => '完成摘要';
+
+  @override
+  String get mobileGoalFailedDescription => '监督程序在多次运行失败后已停止。请查看对话了解详情。';
+
+  @override
+  String get mobileGoalBudgetWall => '已达到截止时间或运行次数上限。提高费用上限也无法继续此目标。';
+
+  @override
+  String get mobileGoalPause => '暂停目标';
+
+  @override
+  String get mobileGoalResume => '继续目标';
+
+  @override
+  String get mobileGoalStop => '取消目标';
+
+  @override
+  String get mobileGoalStopConfirm => '永久取消此监督目标？取消后无法继续。';
+
+  @override
+  String get mobileGoalRaiseBudget => '提高预算并继续';
+
+  @override
+  String mobileGoalRaiseTo(String amount) {
+    return '将预算提高到 $amount 并继续';
+  }
+
+  @override
+  String mobileGoalRaiseConfirm(String oldCap, String newCap) {
+    return '将此目标的费用上限从 $oldCap 提高到 $newCap，并继续产生费用？';
+  }
+
+  @override
+  String get mobileGoalOpenConversation => '打开目标对话';
+
+  @override
+  String get mobileGoalCreate => '启动监督目标';
+
+  @override
+  String get mobileGoalChooseSpace => '运行空间';
+
+  @override
+  String get mobileGoalNoSpaces => '请先创建空间，再启动目标。';
+
+  @override
+  String get mobileGoalChooseAgent => '运行智能体';
+
+  @override
+  String get mobileGoalNoAgents => '请先添加使用中的智能体，再启动目标。';
+
+  @override
+  String mobileGoalSelectedAgent(String name) {
+    return '已选择 $name';
+  }
+
+  @override
+  String get mobileGoalObjectiveHint => '希望智能体实现什么目标？';
+
+  @override
+  String get mobileGoalBudgetUsd => '费用上限（美元）';
+
+  @override
+  String get mobileGoalCreateInvalid => '请选择空间和智能体，输入目标，并设置大于零的美元费用上限。';
+
+  @override
+  String mobileGoalCreateConfirm(String cap) {
+    return '以最高 $cap 的费用启动监督目标？智能体可能立即开始运行。';
+  }
+
+  @override
+  String get mobileGoalUnavailable => '服务器连接尚未就绪。请重新连接后重试。';
+
+  @override
+  String get mobileGoalConversationMissing => '所选对话已不在当前工作区中。';
+
+  @override
+  String get mobileGoalCreateSent => '目标已启动。监督状态将在此列表中显示。';
+
+  @override
+  String get mobileGoalStartRefused => '目标未启动。请查看对话，了解监督程序的原因。';
+
+  @override
+  String mobileGoalSelectedSpace(String name) {
+    return '已选择 $name';
+  }
+
+  @override
+  String get requestUnavailable => '此请求已不在当前工作区中。';
+
+  @override
+  String get requestAlreadyResolved => '此请求已解决。';
+
+  @override
+  String get inboxCredentialsBlocked => '凭据阻碍运行';
+
+  @override
+  String get inboxSyncFailures => '供应商同步失败';
+
+  @override
+  String get inboxConfigureCredentials => '配置凭据';
+
+  @override
+  String get openTicket => '打开工单';
+
+  @override
+  String get activityTitle => '活动';
+
+  @override
+  String get activityClearAll => '清除活动';
+
+  @override
+  String get activityClearConfirm => '此操作将在你的所有设备上隐藏目前记录的全部活动。新活动仍会显示。';
+
+  @override
+  String get activityMarkAllRead => '全部标为已读';
+
+  @override
+  String get activityMarkAllConfirm => '将此工作区中的所有活动在你的全部设备上标为已读？';
+
+  @override
+  String get activityMarkRead => '标为已读';
+
+  @override
+  String get activityMarkUnread => '标为未读';
+
+  @override
+  String get activityDismiss => '忽略';
+
+  @override
+  String get activityResolved => '已解决';
+
+  @override
+  String get activityOpen => '打开';
+
+  @override
+  String get activityEmpty => '暂无动态';
+
+  @override
+  String get activityLoadFailed => '无法加载活动';
+
+  @override
+  String get activityAgentWaiting => '智能体需要你提供信息';
+
+  @override
+  String get activityAgentBlocked => '智能体操作受阻';
+
+  @override
+  String get activityMessage => '新消息';
+
+  @override
+  String get activityPullRequest => 'Pull request 更新';
+
+  @override
+  String get activityTicket => '工单更新';
+
+  @override
+  String get activityMeeting => '会议更新';
+
+  @override
+  String get activityCalendar => '日历连接';
+
+  @override
+  String get activityRig => '设备舱更新';
+
+  @override
+  String get activityEvent => '更新';
+
+  @override
+  String get activityPrReady => 'Pull request 已可合并';
+
+  @override
+  String get activityPrBlocked => 'Pull request 合并受阻';
+
+  @override
+  String get activityPrApproved => 'Pull request 已获批准';
+
+  @override
+  String get activityPrChanges => '已请求变更';
+
+  @override
+  String get activityPrChecksFailed => 'Pull request 检查失败';
+
+  @override
+  String get activityPrChecksRecovered => 'Pull request 检查已恢复';
+
+  @override
+  String get activityPrComment => 'Pull request 评论';
+
+  @override
+  String get activityPrPublished => 'Pull request 已发布';
+
+  @override
+  String get activityPrMerged => '已合并 pull request';
+
+  @override
+  String get activityPrMentioned => '在 pull request 中被提及';
+
+  @override
+  String get activityPrReviewRequested => '请求评审';
+
+  @override
+  String get activityPrReviewStale => '需要重新评审';
+
+  @override
+  String get activityTicketAssigned => '工单已分配';
+
+  @override
+  String get activityTicketChanged => '工单状态已更改';
+
+  @override
+  String get activityMeetingSoon => '会议即将开始';
+
+  @override
+  String get activityCalendarExpired => '日历连接已过期';
+
+  @override
+  String get activityRigControl => '设备舱控制已更改';
+
+  @override
+  String get activityRigClosed => '设备舱已停止';
+
+  @override
+  String get mobileSpacesSearch => '搜索空间';
+
+  @override
+  String get mobileSpacesArchived => '已归档';
+
+  @override
+  String get mobileSpacesActive => '使用中';
+
+  @override
+  String get mobileSpacesNew => '新建空间';
+
+  @override
+  String get mobileSpacesManage => '管理空间';
+
+  @override
+  String get mobileSpacesName => '空间名称';
+
+  @override
+  String get mobileSpacesAgents => '智能体';
+
+  @override
+  String get mobileSpacesMembers => '人员';
+
+  @override
+  String get mobileSpacesRepos => '仓库';
+
+  @override
+  String get mobileSpacesAllRepos => '所有关联仓库';
+
+  @override
+  String get mobileSpacesNoRepos => '无仓库';
+
+  @override
+  String get mobileSpacesBaseBranch => '基础分支（可选）';
+
+  @override
+  String get mobileSpacesDefaultBranch => '默认分支';
+
+  @override
+  String get mobileSpacesMode => '模式';
+
+  @override
+  String get mobileSpacesModeChat => '聊天';
+
+  @override
+  String get mobileSpacesModeReview => '评审（只读）';
+
+  @override
+  String get mobileSpacesModePlan => '规划（只读）';
+
+  @override
+  String get mobileSpacesModeOrchestrate => '编排';
+
+  @override
+  String get mobileSpacesAutonomy => '自主权限覆盖设置';
+
+  @override
+  String get mobileSpacesAutonomyInherited => '继承';
+
+  @override
+  String get mobileSpacesAutonomyPropose => '仅提议';
+
+  @override
+  String get mobileSpacesAutonomyApproval => '批准后行动';
+
+  @override
+  String get mobileSpacesAutonomyFreely => '自由行动';
+
+  @override
+  String get mobileSpacesAutonomyNotice => '覆盖设置无法绕过操作策略的询问或拒绝。只有工作区管理员可以更改。';
+
+  @override
+  String get mobileSpacesArchive => '归档空间';
+
+  @override
+  String get mobileSpacesReopen => '重新打开空间';
+
+  @override
+  String get mobileSpacesSave => '保存更改';
+
+  @override
+  String get mobileSpacesCreate => '创建空间';
+
+  @override
+  String get mobileSpacesOperationFailed => '无法更新空间';
+
+  @override
+  String get mobileSpacesMissing => '在此工作区中找不到该空间';
+
+  @override
+  String get mobileSpacesEmptyName => '请输入空间名称';
+
+  @override
+  String get mobileSpacesNoMatches => '没有匹配的空间';
+
+  @override
+  String get mobileSpacesUnread => '未读的智能体回复';
+
+  @override
+  String get mobileSpacesNeedsInput => '需要你提供信息';
+
+  @override
+  String get mobileSpacesRunning => '智能体运行中';
+
+  @override
+  String get mobileSpacesNoAgents => '此工作区中没有智能体';
+
+  @override
+  String get mobileSpacesNoMembers => '没有其他工作区成员';
+
+  @override
+  String get mobileSpacesRepoError => '无法加载仓库';
+
+  @override
+  String get mobileSpacesRetry => '重试';
+
+  @override
+  String get mobileSpacesBranchUnavailable => '创建空间时请选择或输入基础分支；现有空间的基础分支无法更改。';
+
+  @override
+  String get mobileSpacesArchivedEmpty => '没有已归档空间';
+
+  @override
+  String get mobileSpacesAllRepoWarning => '之后关联到工作区的新仓库也会纳入此空间。';
+
+  @override
+  String get mobileSpacesCreatedRetry => '空间已创建。请重试添加人员，或打开空间管理页面。';
+
+  @override
+  String get progressTitle => '进度';
+
+  @override
+  String get progressConversation => '对话';
+
+  @override
+  String get progressLoadFailed => '无法加载进度';
+
+  @override
+  String get progressUnavailable => '对话不可用';
+
+  @override
+  String get progressUnavailableDescription => '此对话不在当前工作区和空间中。请返回所属空间继续。';
+
+  @override
+  String get progressSaveFailed => '无法更新进度';
+
+  @override
+  String get progressGoal => '目标';
+
+  @override
+  String get progressNoGoal => '未设定当前目标';
+
+  @override
+  String get progressSetGoal => '设定目标';
+
+  @override
+  String get progressEditGoal => '编辑目标';
+
+  @override
+  String get progressClearGoal => '清除目标';
+
+  @override
+  String get progressGoalRequired => '请先输入目标再保存。';
+
+  @override
+  String get progressTodos => '任务';
+
+  @override
+  String get progressNoTodos => '暂无任务';
+
+  @override
+  String get progressNewTodo => '新建任务';
+
+  @override
+  String get progressAddTodo => '添加任务';
+
+  @override
+  String get progressEditTodo => '编辑任务';
+
+  @override
+  String get progressTodoRequired => '请先输入任务再保存。';
+
+  @override
+  String get progressTodoNoLongerExists => '该任务已移除。请重新加载列表后重试。';
+
+  @override
+  String get progressWorkspaceChanged => '当前工作区已变更。请返回此对话后重试。';
+
+  @override
+  String progressRemoveTodo(String name) {
+    return '移除任务 $name';
+  }
+
+  @override
+  String get progressPending => '等待中';
+
+  @override
+  String get progressInProgress => '进行中';
+
+  @override
+  String get progressCompleted => '已完成';
+
+  @override
+  String get progressMoveUp => '上移任务';
+
+  @override
+  String get progressMoveDown => '下移任务';
+
+  @override
+  String get progressRunTree => '智能体运行记录';
+
+  @override
+  String get progressNoRuns => '此对话尚无运行记录';
+
+  @override
+  String get progressRunning => '运行中';
+
+  @override
+  String get progressFailed => '失败';
+
+  @override
+  String get progressUnknown => '未知';
+
+  @override
+  String get progressHealthy => '使用中';
+
+  @override
+  String get progressBlocked => '已阻塞';
+
+  @override
+  String get progressLooping => '陷入循环';
+
+  @override
+  String get progressStalled => '停滞';
+
+  @override
+  String get progressDead => '意外停止';
+
+  @override
+  String get progressQuiet => '尚无输出';
+
+  @override
+  String get progressCostReported => '服务商报告的费用';
+
+  @override
+  String get progressCostNotional => '按订阅标价估算，并非账单';
+
+  @override
+  String get progressCostMixed => '混合费用来源';
+
+  @override
+  String get progressCostEstimated => '预估费用';
+
+  @override
+  String progressDurationSeconds(String seconds) {
+    return '$seconds 秒';
+  }
+
+  @override
+  String progressRunDetails(String model, String duration, String cost) {
+    return '模型：$model · 时长：$duration · 费用：$cost';
+  }
+
+  @override
+  String progressStartedAt(String time) {
+    return '开始于 $time';
+  }
+
+  @override
+  String progressLiveness(String state) {
+    return '运行状态：$state';
+  }
+
+  @override
+  String progressRunTokens(String input, String output) {
+    return '输入：$input · 输出：$output 个 token';
+  }
+
+  @override
+  String get progressOutputPreviewLimited => '仅显示结构化输出的前 6,000 个字符。';
+
+  @override
+  String progressRetryOf(String runId) {
+    return '重试运行 $runId';
+  }
+
+  @override
+  String get progressContext => '上下文与限制';
+
+  @override
+  String get progressNoAgent => '没有可查看的智能体';
+
+  @override
+  String progressContextReading(String used, String window) {
+    return '$used/$window 个 token';
+  }
+
+  @override
+  String get progressMeasured => '服务商报告的最近一次调用上下文用量';
+
+  @override
+  String get progressEstimated => '根据已存储的对话和持久上下文估算';
+
+  @override
+  String get progressContextUnknown => '尚无上下文用量报告';
+
+  @override
+  String progressContextPercent(String percent) {
+    return '占上下文窗口的 $percent%';
+  }
+
+  @override
+  String progressMonthlyBudget(String amount) {
+    return '已配置的智能体月度上限：$amount';
+  }
+
+  @override
+  String progressConversationTokens(String tokens) {
+    return '已存储的当前对话：约 $tokens 个 token';
+  }
+
+  @override
+  String progressInspectionFor(String agent, String model) {
+    return '$agent 的持久上下文 · $model';
+  }
+
+  @override
+  String get progressContextSystem => '系统提示词';
+
+  @override
+  String get progressContextRules => '规则';
+
+  @override
+  String get progressContextSkills => '技能';
+
+  @override
+  String get progressContextTools => '工具定义';
+
+  @override
+  String get progressContextMcp => 'MCP 工具';
+
+  @override
+  String get progressContextDeferred => '延迟加载的工具';
+
+  @override
+  String get progressContextSubagents => '子智能体';
+
+  @override
+  String get progressContextRunner => '外部运行器';
+
+  @override
+  String get progressContextMemory => '记忆';
+
+  @override
+  String get progressContextHistory => '对话历史';
+
+  @override
+  String progressContextSegment(String label, String tokens) {
+    return '$label · $tokens 个 token';
+  }
+
+  @override
+  String progressContextPart(String title, String tokens) {
+    return '$title · $tokens 个 token';
+  }
+
+  @override
+  String get progressOutputs => '最近的输出';
+
+  @override
+  String get progressNoOutputs => '暂无近期智能体输出';
+
+  @override
+  String get progressStructuredOutputsAbove => '结构化运行输出显示在上方的智能体运行记录中。';
+
+  @override
+  String get progressRecentOutputsOnly => '仅显示近期消息。要查看更早的工作，请打开对话。';
+
+  @override
+  String get progressPlan => '规划';
+
+  @override
+  String get progressArtifact => '制品';
+
+  @override
+  String get progressResult => '结果';
+
+  @override
+  String get progressHideArtifact => '隐藏制品';
+
+  @override
+  String get progressReadArtifact => '查看制品';
+
+  @override
+  String get progressArtifactUnavailable => '制品已不可用';
+
+  @override
+  String get progressArtifactPreviewLimited => '仅显示此制品的部分预览。';
+
+  @override
+  String get progressDiagramSource => '图表源代码';
+
+  @override
+  String progressOpenAttachment(String name) {
+    return '打开 $name';
+  }
+
+  @override
+  String get progressOpenPlan => '打开计划';
+
+  @override
+  String progressOpenDiff(String label) {
+    return '查看已更改的文件：$label';
+  }
+
+  @override
+  String get progressViewMessage => '查看消息';
+
+  @override
+  String get pushTitle => '后台通知';
+
+  @override
+  String get pushIntro => '即使应用已关闭，也能在需要你处理事务时收到私人提醒。详情仅通过加密连接查看。';
+
+  @override
+  String get pushLoading => '正在检查通知设置…';
+
+  @override
+  String get pushError => '无法更新通知。请检查连接后重试。';
+
+  @override
+  String get pushEnable => '启用通知';
+
+  @override
+  String get pushDisable => '关闭通知';
+
+  @override
+  String get pushQuiet => '暂停此设备上的提醒';
+
+  @override
+  String get pushCategories => '通知我以下事项';
+
+  @override
+  String get pushCategoryAgents => '智能体';
+
+  @override
+  String get pushCategoryMessages => '消息';
+
+  @override
+  String get pushCategoryPullRequests => 'Pull requests';
+
+  @override
+  String get pushCategoryTickets => '工单';
+
+  @override
+  String get pushCategoryCalendar => '日历';
+
+  @override
+  String get pushCategoryMachines => '机器';
+
+  @override
+  String get pushSecureOrigin => '通知需要 HTTPS。';
+
+  @override
+  String get pushInstallIos => '在 iPhone 或 iPad 上，请将此应用添加到主屏幕并从主屏幕打开，以启用通知。';
+
+  @override
+  String get pushUnsupported => '此浏览器不支持后台通知。';
+
+  @override
+  String get pushDenied => '浏览器设置已阻止通知。请在设置中允许通知后继续。';
+
+  @override
+  String get pushResubscribe => '重新连接通知';
+
+  @override
+  String get pushStatusEnabled => '此设备已开启通知。';
+
+  @override
+  String get pushStatusDisabled => '此设备已关闭通知。';
+
+  @override
+  String get credentialsTitle => '连接与凭据';
+
+  @override
+  String get credentialsIntro => '连接运行任务和集成所需的账户。机密信息存储在服务器上，而非此手机上。';
+
+  @override
+  String get credentialsModelProviders => '模型提供商';
+
+  @override
+  String get credentialsOwnerOnly =>
+      '只有服务器所有者才能添加模型提供商凭据、登录或移除凭据。这些密钥在各工作区之间共用。';
+
+  @override
+  String get credentialsContactOwner => '请联系服务器所有者，连接受阻运行任务所需的提供商。';
+
+  @override
+  String get credentialsClaudeCode => 'Claude Code';
+
+  @override
+  String get credentialsClaudeHostOnly =>
+      'Claude Code 需要通过主机上的 CLI 登录。请让服务器所有者在主机终端完成或更新账户登录；无法在此手机上操作。';
+
+  @override
+  String get credentialsYourForgeAccounts => '你的代码托管平台账户';
+
+  @override
+  String get credentialsYourTicketingAccount => '你的工单平台账户';
+
+  @override
+  String get credentialsLocalTicketsNoLogin => '本地工单无需登录。如果工作区使用 Linear，请在此连接。';
+
+  @override
+  String get credentialsMembershipRequired =>
+      '加入工作区后才能管理你的代码托管平台或工单平台凭据。请联系工作区管理员申请访问权限。';
+
+  @override
+  String get credentialsSwitchWorkspace => '此链接指向另一个工作区。请切换到该工作区后再更改凭据。';
+
+  @override
+  String get credentialsReturnToInbox =>
+      '连接凭据后，请返回收件箱重试受阻的运行任务。主机也会自动检查暂停等待的运行任务。';
+
+  @override
+  String get credentialsLoadFailed => '无法加载连接。请检查服务器连接并重试。';
+
+  @override
+  String get credentialsOperationFailed => '无法更改此连接。请检查服务器连接、访问权限和凭据，然后重试。';
+
+  @override
+  String get credentialsConnected => '已连接';
+
+  @override
+  String get credentialsNotConnected => '未连接';
+
+  @override
+  String credentialsSignedInAs(String username) {
+    return '已登录为 $username';
+  }
+
+  @override
+  String get credentialsAccount => '已连接的账户';
+
+  @override
+  String get credentialsStoredKey => '已存储的密钥';
+
+  @override
+  String get credentialsActive => '使用中';
+
+  @override
+  String get credentialsRemove => '移除';
+
+  @override
+  String get credentialsRemoveConfirm => '移除已保存的凭据？之后可能需要重新登录。';
+
+  @override
+  String get credentialsApiKey => 'API 密钥';
+
+  @override
+  String get credentialsApiKeyHint => '粘贴提供商 API 密钥';
+
+  @override
+  String get credentialsBrowserLogin => '通过浏览器登录';
+
+  @override
+  String get credentialsSignInAgain => '请重新登录';
+
+  @override
+  String get credentialsWaitingForLogin => '正在等待浏览器授权…';
+
+  @override
+  String get credentialsLoginTimedOut => '登录已过期。请重新发起登录。';
+
+  @override
+  String get credentialsCopyCode => '复制代码';
+
+  @override
+  String get credentialsDeviceCodeHint => '请在提供商页面确认此代码。在服务器完成登录前，请保持此页面打开。';
+
+  @override
+  String get credentialsPasteRedirect => '授权码或重定向 URL';
+
+  @override
+  String get credentialsPasteRedirectHint => '粘贴提供商提供的代码或完整重定向 URL';
+
+  @override
+  String get credentialsCompleteLogin => '完成登录';
+
+  @override
+  String get credentialsRedirectUnavailable =>
+      '此服务器的浏览器回调无法通过手机安全访问。请让服务器所有者配置公开的 HTTPS 回调，或改为添加令牌。';
+
+  @override
+  String get credentialsUpdateToken => '更新令牌';
+
+  @override
+  String get credentialsAddToken => '添加令牌';
+
+  @override
+  String get credentialsPersonalToken => '个人访问令牌';
+
+  @override
+  String get credentialsPersonalTokenHint => '粘贴个人访问令牌';
+
+  @override
+  String get credentialsHostManaged =>
+      '此连接来自服务器应用或环境。只有服务器所有者能在那里更改；你仍可添加自己的令牌。';
+
+  @override
+  String get credentialsStopWatching => '停止监测';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -1752,4 +3351,1602 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String durationHoursMinutes(int hours, int minutes) {
     return '$hours 時 $minutes 分';
   }
+
+  @override
+  String get mobileConversations => '對話';
+
+  @override
+  String get mobileNewConversation => '新對話';
+
+  @override
+  String get mobileConversationName => '對話名稱';
+
+  @override
+  String get mobileRename => '重新命名';
+
+  @override
+  String get mobileManageSpace => '管理空間';
+
+  @override
+  String get mobileArchived => '已封存';
+
+  @override
+  String get mobileSearchMessages => '搜尋此空間中的所有訊息';
+
+  @override
+  String get mobileSearch => '搜尋';
+
+  @override
+  String get mobileNoResults => '無結果';
+
+  @override
+  String get mobileReopen => '重新開啟';
+
+  @override
+  String get mobileArchive => '封存';
+
+  @override
+  String get mobileProgress => '進度與上下文';
+
+  @override
+  String get mobileReadFailed => '無法將此對話標記為已讀';
+
+  @override
+  String get mobileSendFailed => '訊息未傳送，草稿仍在此處。';
+
+  @override
+  String get mobileActionFailed => '動作失敗';
+
+  @override
+  String get mobileRemove => '移除';
+
+  @override
+  String get mobileLinkedMessage => '關聯訊息';
+
+  @override
+  String get mobileOlderMessages => '更早的訊息';
+
+  @override
+  String get mobileMessageActions => '訊息操作';
+
+  @override
+  String get mobileOpenThread => '開啟討論串';
+
+  @override
+  String get mobileCopyLink => '複製連結';
+
+  @override
+  String get mobileStopRun => '停止執行';
+
+  @override
+  String get mobileStopRunConfirm => '停止此次代理執行？已完成的工作會保留。';
+
+  @override
+  String get mobileControlUnsupported => '此次執行已結束或不支援此操作。';
+
+  @override
+  String get mobilePauseRequested => '已請求在下一輪結束時暫停';
+
+  @override
+  String get mobileResumed => '已繼續執行';
+
+  @override
+  String get mobileStopRequested => '已請求停止';
+
+  @override
+  String get mobileQueuedMessages => '排隊的訊息';
+
+  @override
+  String get mobilePauseRun => '下一輪暫停';
+
+  @override
+  String get mobileResumeRun => '繼續';
+
+  @override
+  String get mobileEditQueued => '編輯排隊訊息';
+
+  @override
+  String get mobileSteerNow => '立即引導';
+
+  @override
+  String get mobileMoveUp => '上移';
+
+  @override
+  String get mobileMoveDown => '下移';
+
+  @override
+  String get mobileQueueChanged => '佇列已變更，或此次執行無法接受即時引導。請重新整理後重試。';
+
+  @override
+  String get mobileActivity => '活動';
+
+  @override
+  String get mobilePermissions => '權限與稽核';
+
+  @override
+  String get mobilePlans => '計畫';
+
+  @override
+  String get mobileGoals => '監督目標';
+
+  @override
+  String get mobileCredentials => '連線與憑證';
+
+  @override
+  String get mobileWorkspaceUnavailable => '此工作區不可用，或你已無權存取。';
+
+  @override
+  String get mobilePrReviewThreads => '審查討論串';
+
+  @override
+  String get mobilePrThreadsLoadFailed => '無法載入審查討論串';
+
+  @override
+  String get mobilePrNoReviewThreads => '尚無行內審查討論串';
+
+  @override
+  String get mobilePrCommentPermissionDenied => '你無權在此存放庫發表留言。';
+
+  @override
+  String get mobilePrPermissionChecking => '正在檢查留言權限…';
+
+  @override
+  String get mobilePrPermissionLoadFailed => '無法檢查留言權限。請重試後發表留言。';
+
+  @override
+  String mobilePrThreadLine(String side, String line) {
+    return '$side第 $line 行';
+  }
+
+  @override
+  String get mobilePrOriginalSide => '原始版本';
+
+  @override
+  String get mobilePrUpdatedSide => '更新時間';
+
+  @override
+  String get mobilePrThreadResolved => '已解決';
+
+  @override
+  String get mobilePrReplyHint => '撰寫回覆…';
+
+  @override
+  String get mobilePrCommentRequired => '請先填寫留言再發佈。';
+
+  @override
+  String get mobilePrReply => '回覆';
+
+  @override
+  String get mobilePrReopenThread => '重新開啟討論';
+
+  @override
+  String get mobilePrResolveThread => '解決討論';
+
+  @override
+  String get mobilePrResolvePermissionDenied =>
+      '只有 pull request 作者或擁有寫入權限的人才能解決此討論串。';
+
+  @override
+  String mobilePrCommentOnLine(String side, String line) {
+    return '在$side第 $line 行留言';
+  }
+
+  @override
+  String get mobilePrInlineCommentHint => '撰寫行內留言…';
+
+  @override
+  String get mobilePrPostInlineComment => '發佈留言';
+
+  @override
+  String get mobilePrCommentUnavailable => '此 pull request 無法新增行內留言。';
+
+  @override
+  String get mobilePrPatchUnavailable => '程式碼代管服務未提供此檔案的文字修補檔。';
+
+  @override
+  String get mobilePrNoPatchForFile => '此檔案的修補檔不可用。';
+
+  @override
+  String get mobileTicketNew => '新增工單';
+
+  @override
+  String get mobileTicketCreate => '建立工單';
+
+  @override
+  String get mobileTicketEdit => '編輯工單';
+
+  @override
+  String get mobileTicketTitle => '標題';
+
+  @override
+  String get mobileTicketTitleRequired => '請輸入標題以儲存工單。';
+
+  @override
+  String get mobileTicketDescription => '說明';
+
+  @override
+  String get mobileTicketMarkdownHint => '使用 Markdown 新增詳情';
+
+  @override
+  String get mobileTicketPriority => '優先順序';
+
+  @override
+  String get mobileTicketPriorityNone => '無優先順序';
+
+  @override
+  String get mobileTicketPriorityUrgent => '緊急';
+
+  @override
+  String get mobileTicketPriorityHigh => '高';
+
+  @override
+  String get mobileTicketPriorityMedium => '中';
+
+  @override
+  String get mobileTicketPriorityLow => '低';
+
+  @override
+  String get mobileTicketLabels => '標籤';
+
+  @override
+  String get mobileTicketLabelsHint => '每行一個標籤';
+
+  @override
+  String get mobileTicketLabelsHelp => '每個標籤單獨佔一行。';
+
+  @override
+  String mobileTicketWorkspaceProvider(String provider) {
+    return '已提交至 $provider';
+  }
+
+  @override
+  String get mobileTicketProviderLocal => 'Control Center';
+
+  @override
+  String get mobileTicketUnassigned => '未指派';
+
+  @override
+  String get mobileTicketAssignedFilter => '已指派';
+
+  @override
+  String get mobileTicketAgentsLoadFailed => '無法載入代理';
+
+  @override
+  String get mobileTicketSearch => '搜尋工單';
+
+  @override
+  String get mobileTicketSearchHint => '標題、編號、說明、標籤或負責人';
+
+  @override
+  String get mobileTicketClearSearch => '清除工單搜尋';
+
+  @override
+  String get mobileTicketNoMatches => '沒有符合的工單';
+
+  @override
+  String get mobileTicketAdjustFilters => '請嘗試其他搜尋詞或調整篩選條件。';
+
+  @override
+  String get mobileTicketClearFilters => '清除篩選';
+
+  @override
+  String get mobileTicketNotFound => '找不到工單';
+
+  @override
+  String get mobileTicketNotFoundDescription => '此工單可能已被刪除或移出此工作區。';
+
+  @override
+  String get mobileTicketWorkspaceChanged => '工作區已變更。請返回目前工作區後再儲存。';
+
+  @override
+  String get mobileTicketOpenLinkedSpace => '開啟關聯空間';
+
+  @override
+  String get mobileTicketReadOnly => '更改工單需要工作區成員身分。';
+
+  @override
+  String get permissionTitle => '權限';
+
+  @override
+  String get permissionWorkspaceFailed => '無法載入工作區';
+
+  @override
+  String get permissionNoWorkspace => '請選擇工作區以查看權限。';
+
+  @override
+  String get permissionLoading => '正在載入權限…';
+
+  @override
+  String get permissionScopeDescription => '查看此範圍內各項操作的判定方式。代理和空間可繼承工作區規則。';
+
+  @override
+  String get permissionScope => '策略範圍';
+
+  @override
+  String get permissionWorkspaceScope => '工作區';
+
+  @override
+  String get permissionAgentScope => '代理';
+
+  @override
+  String get permissionSpaceScope => '空間';
+
+  @override
+  String get permissionAgentContext => '在此空間中執行操作的代理';
+
+  @override
+  String get permissionNoAgentContext => '未選擇代理';
+
+  @override
+  String get permissionTargetsFailed => '無法載入範圍目標';
+
+  @override
+  String get permissionNoTargets => '此範圍內沒有可用目標。';
+
+  @override
+  String get permissionRoleFailed => '無法確認你的工作區角色';
+
+  @override
+  String get permissionMemberRequired => '查看策略規則需要工作區成員身分。';
+
+  @override
+  String get permissionRulesFailed => '無法載入策略規則';
+
+  @override
+  String get permissionAuditAdminOnly => '僅工作區管理員可查看授權紀錄。';
+
+  @override
+  String get permissionAllow => '允許';
+
+  @override
+  String get permissionAsk => '先詢問';
+
+  @override
+  String get permissionDeny => '拒絕';
+
+  @override
+  String get permissionFileDelete => '刪除檔案';
+
+  @override
+  String get permissionFileWriteOutsideWorktree => '在工作樹之外寫入';
+
+  @override
+  String get permissionGitCommit => '提交更改';
+
+  @override
+  String get permissionGitPush => '推送提交';
+
+  @override
+  String get permissionPrCreate => '建立 pull request';
+
+  @override
+  String get permissionPrPublish => '發佈 pull request';
+
+  @override
+  String get permissionVendorSyncWrite => '寫入供應商同步資料';
+
+  @override
+  String get permissionNetworkEgress => '存取網路';
+
+  @override
+  String get permissionSecretAccess => '存取機密資訊';
+
+  @override
+  String get permissionPackageInstall => '安裝軟體套件';
+
+  @override
+  String get permissionProcessSpawn => '啟動程序';
+
+  @override
+  String get permissionWorkspaceMutation => '更改工作區';
+
+  @override
+  String get permissionEnclosureControl => '控制設備艙';
+
+  @override
+  String get permissionChangeFailed => '無法更改規則';
+
+  @override
+  String get permissionEffectiveDescription =>
+      '在不指定操作引數時，此範圍內的有效規則如下。下方的條件授權僅適用於符合的請求；最終由伺服器裁定。';
+
+  @override
+  String get permissionSpaceAgentNote => '未選擇代理。請在上方選擇代理，以查看專屬規則。';
+
+  @override
+  String get permissionScopedGrants => '此範圍內的規則';
+
+  @override
+  String get permissionModePreset => '模式預設';
+
+  @override
+  String get permissionBuiltInDefault => '內建預設';
+
+  @override
+  String get permissionRemembered => '已記住的核准';
+
+  @override
+  String get permissionSource => '原始碼';
+
+  @override
+  String permissionSetAtThisScope(String source) {
+    return '$source · 在此設定';
+  }
+
+  @override
+  String permissionInheritedFrom(String source) {
+    return '$source · 已繼承';
+  }
+
+  @override
+  String permissionExpiresAt(String date) {
+    return '到期時間：$date';
+  }
+
+  @override
+  String get permissionSetHere => '在此設定規則';
+
+  @override
+  String get permissionRevokeBeforeEdit => '請先撤銷此範圍內的規則或已記住的規則，再為此操作設定通用規則。';
+
+  @override
+  String get permissionConfirmRevoke => '確認撤銷';
+
+  @override
+  String get permissionRevokeRule => '撤銷規則';
+
+  @override
+  String permissionCommandPrefix(String prefix) {
+    return '命令字首：$prefix';
+  }
+
+  @override
+  String get permissionNoExpiry => '永不過期';
+
+  @override
+  String get permissionExpired => '已過期';
+
+  @override
+  String get permissionExplicitRule => '明確規則';
+
+  @override
+  String get permissionEnforcementAdvisory => '建議性執行：先詢問規則只會記錄，不會顯示確認提示';
+
+  @override
+  String get permissionEnforcementSoft => '軟性執行：覆蓋規則需要授權';
+
+  @override
+  String get permissionEnforcementHard => '強制執行：無法覆蓋規則';
+
+  @override
+  String permissionPaths(String paths) {
+    return '路徑：$paths';
+  }
+
+  @override
+  String permissionRefs(String refs) {
+    return 'Git 引用：$refs';
+  }
+
+  @override
+  String permissionHosts(String hosts) {
+    return '主機：$hosts';
+  }
+
+  @override
+  String permissionCommands(String commands) {
+    return '命令：$commands';
+  }
+
+  @override
+  String permissionMaxCount(String count) {
+    return '最大數量：$count';
+  }
+
+  @override
+  String permissionMaxCents(String cents) {
+    return '最高金額（美分）：$cents';
+  }
+
+  @override
+  String get permissionAuditHeading => '授權紀錄';
+
+  @override
+  String get permissionAuditDescription => '伺服器記錄的近期決策。只有管理員可以查看紀錄或驗證其雜湊鏈。';
+
+  @override
+  String permissionOnBehalfOf(String user) {
+    return '代表 $user';
+  }
+
+  @override
+  String get permissionPrompted => '已請求人工核准';
+
+  @override
+  String get permissionVerifyChain => '驗證稽核鏈';
+
+  @override
+  String get permissionVerifyFailed => '無法驗證稽核鏈';
+
+  @override
+  String permissionChainIntact(String count) {
+    return '鏈完整 · 已檢查 $count 筆紀錄';
+  }
+
+  @override
+  String permissionChainBroken(String sequence, String reason) {
+    return '鏈在第 $sequence 筆紀錄處斷裂：$reason';
+  }
+
+  @override
+  String get permissionAuditEmpty => '尚無授權決策紀錄。';
+
+  @override
+  String get permissionAuditFailed => '無法載入授權紀錄';
+
+  @override
+  String get mobilePlansLoadFailed => '無法載入計畫';
+
+  @override
+  String get mobilePlansEmpty => '尚無計畫';
+
+  @override
+  String get mobilePlansEmptyDescription => '代理提交的計畫將在此顯示，供你審查。';
+
+  @override
+  String get mobilePlanTitle => '規劃';
+
+  @override
+  String get mobilePlanMissing => '此計畫已不在目前工作區中。';
+
+  @override
+  String mobilePlanStepCount(int count) {
+    return '$count 個步驟';
+  }
+
+  @override
+  String get mobilePlanDraft => '草稿';
+
+  @override
+  String get mobilePlanProposed => '等待審查';
+
+  @override
+  String get mobilePlanApproved => '已核准';
+
+  @override
+  String get mobilePlanRejected => '已拒絕';
+
+  @override
+  String get mobilePlanSuperseded => '已取代';
+
+  @override
+  String get mobilePlanExecuting => '執行中';
+
+  @override
+  String get mobilePlanSynthesizing => '彙整中';
+
+  @override
+  String get mobilePlanCompleted => '已完成';
+
+  @override
+  String get mobilePlanFailed => '失敗';
+
+  @override
+  String get mobilePlanCancelled => '已取消';
+
+  @override
+  String mobilePlanRevision(String revision) {
+    return '修訂版 $revision';
+  }
+
+  @override
+  String get mobilePlanSteps => '步驟';
+
+  @override
+  String get mobilePlanNoSteps => '此計畫未提交任何步驟。';
+
+  @override
+  String get mobilePlanAssumptions => '待澄清事項';
+
+  @override
+  String mobilePlanDependsOn(String keys) {
+    return '依賴 $keys';
+  }
+
+  @override
+  String mobilePlanStepCost(String cost) {
+    return '預估最高 $cost';
+  }
+
+  @override
+  String get mobilePlanSelect => '選擇';
+
+  @override
+  String get mobilePlanSelected => '已選中';
+
+  @override
+  String get mobilePlanEstimate => '估算費用';
+
+  @override
+  String get mobilePlanEstimateRequired => '請先估算計畫費用，再核准執行。';
+
+  @override
+  String mobilePlanEstimatedCost(String low, String high) {
+    return '預估費用：$low–$high';
+  }
+
+  @override
+  String get mobilePlanCostUnknown => '不可用';
+
+  @override
+  String get mobilePlanNoHardCap => '無硬性上限';
+
+  @override
+  String get mobilePlanExceedsBudget => '預估費用超出設定預算。請在核准前確認。';
+
+  @override
+  String get mobilePlanPartialEstimate => '此費用估算涵蓋整個計畫；所選步驟的費用可能更低。';
+
+  @override
+  String get mobilePlanConfirmAll => '開始執行整個計畫？';
+
+  @override
+  String get mobilePlanConfirmSelected => '開始執行所選步驟？';
+
+  @override
+  String mobilePlanExecutionConfirmation(String cost, String cap) {
+    return '核准後將開始執行，可能產生費用。預估費用上限：$cost。預算上限：$cap。';
+  }
+
+  @override
+  String get mobilePlanApproveAll => '全部核准並執行';
+
+  @override
+  String get mobilePlanApproveSelected => '核准所選步驟並執行';
+
+  @override
+  String get mobilePlanWiden => '核准更多步驟';
+
+  @override
+  String mobilePlanWidenConfirm(String count, String cap) {
+    return '允許再執行 $count 個步驟？這些步驟可能產生費用。目前執行費用上限：$cap。';
+  }
+
+  @override
+  String get mobilePlanChanged => '計畫在審查期間發生變化。請開啟最新修訂版並重新估算。';
+
+  @override
+  String get mobilePlanReject => '拒絕計畫';
+
+  @override
+  String get mobilePlanRejectConfirm => '拒絕此計畫？計畫將不會執行。';
+
+  @override
+  String get mobilePlanStop => '停止執行';
+
+  @override
+  String get mobilePlanStopConfirm => '停止執行此計畫？已完成的工作不會撤銷。';
+
+  @override
+  String mobilePlanRunId(String runId) {
+    return '執行編號：$runId';
+  }
+
+  @override
+  String get mobilePlanExecutionPending => '已核准。正在等待執行紀錄…';
+
+  @override
+  String mobilePlanProgress(String completed, String total) {
+    return '已完成 $completed/$total 個執行步驟';
+  }
+
+  @override
+  String get mobilePlanOpenConversation => '開啟對話';
+
+  @override
+  String get mobileGoalsTitle => '監督目標';
+
+  @override
+  String get mobileGoalsLoadFailed => '無法載入監督目標';
+
+  @override
+  String get mobileGoalsEmpty => '尚無監督目標';
+
+  @override
+  String get mobileGoalsEmptyDescription => '在空間中啟動目標，或在對話中傳送 /goal。';
+
+  @override
+  String get mobileGoalMissing => '此目標已不在目前工作區中。';
+
+  @override
+  String get mobileGoalActive => '使用中';
+
+  @override
+  String get mobileGoalPaused => '已暫停';
+
+  @override
+  String get mobileGoalCompleted => '已完成';
+
+  @override
+  String get mobileGoalFailed => '失敗';
+
+  @override
+  String get mobileGoalCancelled => '已取消';
+
+  @override
+  String get mobileGoalBudgetExhausted => '預算已用盡';
+
+  @override
+  String get mobileGoalGoal => '目標';
+
+  @override
+  String get mobileGoalLoop => '迴圈';
+
+  @override
+  String mobileGoalKind(String kind) {
+    return '類型：$kind';
+  }
+
+  @override
+  String mobileGoalRuns(String count) {
+    return '$count 次執行';
+  }
+
+  @override
+  String get mobileGoalNoRunLimit => '不限次數';
+
+  @override
+  String mobileGoalProgress(
+    String runs,
+    String maxRuns,
+    String spent,
+    String cap,
+  ) {
+    return '執行次數：$runs/$maxRuns · 已花費：$spent/$cap';
+  }
+
+  @override
+  String mobileGoalDeadline(String date) {
+    return '截止時間：$date';
+  }
+
+  @override
+  String mobileGoalFailures(String count) {
+    return '連續失敗次數：$count';
+  }
+
+  @override
+  String get mobileGoalSummary => '完成摘要';
+
+  @override
+  String get mobileGoalFailedDescription => '監督程式在多次執行失敗後已停止。請查看對話瞭解詳情。';
+
+  @override
+  String get mobileGoalBudgetWall => '已達到截止時間或執行次數上限。提高費用上限也無法繼續此目標。';
+
+  @override
+  String get mobileGoalPause => '暫停目標';
+
+  @override
+  String get mobileGoalResume => '繼續目標';
+
+  @override
+  String get mobileGoalStop => '取消目標';
+
+  @override
+  String get mobileGoalStopConfirm => '永久取消此監督目標？取消後無法繼續。';
+
+  @override
+  String get mobileGoalRaiseBudget => '提高預算並繼續';
+
+  @override
+  String mobileGoalRaiseTo(String amount) {
+    return '將預算提高到 $amount 並繼續';
+  }
+
+  @override
+  String mobileGoalRaiseConfirm(String oldCap, String newCap) {
+    return '將此目標的費用上限從 $oldCap 提高到 $newCap，並繼續產生費用？';
+  }
+
+  @override
+  String get mobileGoalOpenConversation => '開啟目標對話';
+
+  @override
+  String get mobileGoalCreate => '啟動監督目標';
+
+  @override
+  String get mobileGoalChooseSpace => '在空間中執行';
+
+  @override
+  String get mobileGoalNoSpaces => '請先建立空間，再啟動目標。';
+
+  @override
+  String get mobileGoalChooseAgent => '使用代理執行';
+
+  @override
+  String get mobileGoalNoAgents => '請先新增使用中的代理，再啟動目標。';
+
+  @override
+  String mobileGoalSelectedAgent(String name) {
+    return '已選擇 $name';
+  }
+
+  @override
+  String get mobileGoalObjectiveHint => '希望代理實現什麼目標？';
+
+  @override
+  String get mobileGoalBudgetUsd => '費用上限（美元）';
+
+  @override
+  String get mobileGoalCreateInvalid => '請選擇空間和代理，輸入目標，並設定大於零的美元費用上限。';
+
+  @override
+  String mobileGoalCreateConfirm(String cap) {
+    return '以最高 $cap 的費用啟動監督目標？代理可能立即開始執行。';
+  }
+
+  @override
+  String get mobileGoalUnavailable => '伺服器連線尚未就緒。請重新連線後重試。';
+
+  @override
+  String get mobileGoalConversationMissing => '所選對話已不在目前工作區中。';
+
+  @override
+  String get mobileGoalCreateSent => '目標已啟動。監督狀態將在此清單中顯示。';
+
+  @override
+  String get mobileGoalStartRefused => '目標未啟動。請查看對話，瞭解監督程式的原因。';
+
+  @override
+  String mobileGoalSelectedSpace(String name) {
+    return '已選擇 $name';
+  }
+
+  @override
+  String get requestUnavailable => '此請求已不在目前工作區中。';
+
+  @override
+  String get requestAlreadyResolved => '此請求已解決。';
+
+  @override
+  String get inboxCredentialsBlocked => '憑證阻礙執行';
+
+  @override
+  String get inboxSyncFailures => '供應商同步失敗';
+
+  @override
+  String get inboxConfigureCredentials => '設定憑證';
+
+  @override
+  String get openTicket => '開啟工單';
+
+  @override
+  String get activityTitle => '活動';
+
+  @override
+  String get activityClearAll => '清除活動';
+
+  @override
+  String get activityClearConfirm => '此操作將在你的所有裝置上隱藏目前紀錄的全部活動。新活動仍會顯示。';
+
+  @override
+  String get activityMarkAllRead => '全部標為已讀';
+
+  @override
+  String get activityMarkAllConfirm => '將此工作區中的所有活動在你的全部裝置上標為已讀？';
+
+  @override
+  String get activityMarkRead => '標為已讀';
+
+  @override
+  String get activityMarkUnread => '標為未讀';
+
+  @override
+  String get activityDismiss => '關閉';
+
+  @override
+  String get activityResolved => '已解決';
+
+  @override
+  String get activityOpen => '開啟';
+
+  @override
+  String get activityEmpty => '尚無活動';
+
+  @override
+  String get activityLoadFailed => '無法載入活動';
+
+  @override
+  String get activityAgentWaiting => '代理需要你提供資訊';
+
+  @override
+  String get activityAgentBlocked => '代理操作受阻';
+
+  @override
+  String get activityMessage => '新訊息';
+
+  @override
+  String get activityPullRequest => 'Pull request 更新';
+
+  @override
+  String get activityTicket => '工單更新';
+
+  @override
+  String get activityMeeting => '會議更新';
+
+  @override
+  String get activityCalendar => '行事曆連線';
+
+  @override
+  String get activityRig => '設備艙更新';
+
+  @override
+  String get activityEvent => '更新';
+
+  @override
+  String get activityPrReady => 'Pull request 已可合併';
+
+  @override
+  String get activityPrBlocked => 'Pull request 合併受阻';
+
+  @override
+  String get activityPrApproved => 'Pull request 已核准';
+
+  @override
+  String get activityPrChanges => '要求變更';
+
+  @override
+  String get activityPrChecksFailed => 'Pull request 檢查失敗';
+
+  @override
+  String get activityPrChecksRecovered => 'Pull request 檢查已恢復';
+
+  @override
+  String get activityPrComment => 'Pull request 留言';
+
+  @override
+  String get activityPrPublished => 'Pull request 已發佈';
+
+  @override
+  String get activityPrMerged => 'Pull request 已合併';
+
+  @override
+  String get activityPrMentioned => '在 pull request 中被提及';
+
+  @override
+  String get activityPrReviewRequested => '已請求審查';
+
+  @override
+  String get activityPrReviewStale => '需要重新審查';
+
+  @override
+  String get activityTicketAssigned => '工單已指派';
+
+  @override
+  String get activityTicketChanged => '工單狀態已變更';
+
+  @override
+  String get activityMeetingSoon => '會議即將開始';
+
+  @override
+  String get activityCalendarExpired => '行事曆連線已過期';
+
+  @override
+  String get activityRigControl => '設備艙控制已更改';
+
+  @override
+  String get activityRigClosed => '設備艙已停止';
+
+  @override
+  String get mobileSpacesSearch => '搜尋空間';
+
+  @override
+  String get mobileSpacesArchived => '已封存';
+
+  @override
+  String get mobileSpacesActive => '使用中';
+
+  @override
+  String get mobileSpacesNew => '新增空間';
+
+  @override
+  String get mobileSpacesManage => '管理空間';
+
+  @override
+  String get mobileSpacesName => '空間名稱';
+
+  @override
+  String get mobileSpacesAgents => '代理';
+
+  @override
+  String get mobileSpacesMembers => '人員';
+
+  @override
+  String get mobileSpacesRepos => '存放庫';
+
+  @override
+  String get mobileSpacesAllRepos => '所有關聯存放庫';
+
+  @override
+  String get mobileSpacesNoRepos => '無存放庫';
+
+  @override
+  String get mobileSpacesBaseBranch => '基礎分支（可選）';
+
+  @override
+  String get mobileSpacesDefaultBranch => '預設分支';
+
+  @override
+  String get mobileSpacesMode => '模式';
+
+  @override
+  String get mobileSpacesModeChat => '聊天';
+
+  @override
+  String get mobileSpacesModeReview => '審查（唯讀）';
+
+  @override
+  String get mobileSpacesModePlan => '規劃（唯讀）';
+
+  @override
+  String get mobileSpacesModeOrchestrate => '編排';
+
+  @override
+  String get mobileSpacesAutonomy => '自主程度覆寫設定';
+
+  @override
+  String get mobileSpacesAutonomyInherited => '繼承';
+
+  @override
+  String get mobileSpacesAutonomyPropose => '僅提出建議';
+
+  @override
+  String get mobileSpacesAutonomyApproval => '經核准後行動';
+
+  @override
+  String get mobileSpacesAutonomyFreely => '自由行動';
+
+  @override
+  String get mobileSpacesAutonomyNotice => '覆寫設定無法跳過操作政策的確認或拒絕。只有工作區管理員可以變更。';
+
+  @override
+  String get mobileSpacesArchive => '封存空間';
+
+  @override
+  String get mobileSpacesReopen => '重新開啟空間';
+
+  @override
+  String get mobileSpacesSave => '儲存變更';
+
+  @override
+  String get mobileSpacesCreate => '建立空間';
+
+  @override
+  String get mobileSpacesOperationFailed => '無法更新空間';
+
+  @override
+  String get mobileSpacesMissing => '在此工作區中找不到該空間';
+
+  @override
+  String get mobileSpacesEmptyName => '請輸入空間名稱';
+
+  @override
+  String get mobileSpacesNoMatches => '沒有符合的空間';
+
+  @override
+  String get mobileSpacesUnread => '未讀的代理回覆';
+
+  @override
+  String get mobileSpacesNeedsInput => '需要你提供資訊';
+
+  @override
+  String get mobileSpacesRunning => '代理執行中';
+
+  @override
+  String get mobileSpacesNoAgents => '此工作區中沒有代理';
+
+  @override
+  String get mobileSpacesNoMembers => '沒有其他工作區成員';
+
+  @override
+  String get mobileSpacesRepoError => '無法載入存放庫';
+
+  @override
+  String get mobileSpacesRetry => '重試';
+
+  @override
+  String get mobileSpacesBranchUnavailable => '建立空間時請選擇或輸入基礎分支；現有空間的基礎分支無法更改。';
+
+  @override
+  String get mobileSpacesArchivedEmpty => '沒有已封存的空間';
+
+  @override
+  String get mobileSpacesAllRepoWarning => '之後關聯到工作區的新存放庫也會納入此空間。';
+
+  @override
+  String get mobileSpacesCreatedRetry => '空間已建立。請重試新增人員，或開啟空間管理頁面。';
+
+  @override
+  String get progressTitle => '進度';
+
+  @override
+  String get progressConversation => '對話';
+
+  @override
+  String get progressLoadFailed => '無法載入進度';
+
+  @override
+  String get progressUnavailable => '對話不可用';
+
+  @override
+  String get progressUnavailableDescription => '此對話不在目前工作區和空間中。請返回所屬空間繼續。';
+
+  @override
+  String get progressSaveFailed => '無法更新進度';
+
+  @override
+  String get progressGoal => '目標';
+
+  @override
+  String get progressNoGoal => '未設定目前目標';
+
+  @override
+  String get progressSetGoal => '設定目標';
+
+  @override
+  String get progressEditGoal => '編輯目標';
+
+  @override
+  String get progressClearGoal => '清除目標';
+
+  @override
+  String get progressGoalRequired => '請先輸入目標再儲存。';
+
+  @override
+  String get progressTodos => '任務';
+
+  @override
+  String get progressNoTodos => '尚無任務';
+
+  @override
+  String get progressNewTodo => '新增任務';
+
+  @override
+  String get progressAddTodo => '新增任務';
+
+  @override
+  String get progressEditTodo => '編輯任務';
+
+  @override
+  String get progressTodoRequired => '請先輸入任務再儲存。';
+
+  @override
+  String get progressTodoNoLongerExists => '該任務已移除。請重新載入清單後重試。';
+
+  @override
+  String get progressWorkspaceChanged => '目前工作區已變更。請返回此對話後重試。';
+
+  @override
+  String progressRemoveTodo(String name) {
+    return '移除任務 $name';
+  }
+
+  @override
+  String get progressPending => '等待中';
+
+  @override
+  String get progressInProgress => '進行中';
+
+  @override
+  String get progressCompleted => '已完成';
+
+  @override
+  String get progressMoveUp => '上移任務';
+
+  @override
+  String get progressMoveDown => '下移任務';
+
+  @override
+  String get progressRunTree => '代理執行紀錄';
+
+  @override
+  String get progressNoRuns => '此對話尚無執行紀錄';
+
+  @override
+  String get progressRunning => '執行中';
+
+  @override
+  String get progressFailed => '失敗';
+
+  @override
+  String get progressUnknown => '未知';
+
+  @override
+  String get progressHealthy => '使用中';
+
+  @override
+  String get progressBlocked => '已封鎖';
+
+  @override
+  String get progressLooping => '陷入迴圈';
+
+  @override
+  String get progressStalled => '停滯';
+
+  @override
+  String get progressDead => '意外停止';
+
+  @override
+  String get progressQuiet => '尚無輸出';
+
+  @override
+  String get progressCostReported => '供應商回報的費用';
+
+  @override
+  String get progressCostNotional => '按訂閱標價估算，並非帳單';
+
+  @override
+  String get progressCostMixed => '混合費用來源';
+
+  @override
+  String get progressCostEstimated => '預估費用';
+
+  @override
+  String progressDurationSeconds(String seconds) {
+    return '$seconds 秒';
+  }
+
+  @override
+  String progressRunDetails(String model, String duration, String cost) {
+    return '模型：$model · 時長：$duration · 費用：$cost';
+  }
+
+  @override
+  String progressStartedAt(String time) {
+    return '開始於 $time';
+  }
+
+  @override
+  String progressLiveness(String state) {
+    return '健康狀態：$state';
+  }
+
+  @override
+  String progressRunTokens(String input, String output) {
+    return '輸入：$input · 輸出：$output 個 token';
+  }
+
+  @override
+  String get progressOutputPreviewLimited => '僅顯示結構化輸出的前 6,000 個字元。';
+
+  @override
+  String progressRetryOf(String runId) {
+    return '重試執行 $runId';
+  }
+
+  @override
+  String get progressContext => '上下文與限制';
+
+  @override
+  String get progressNoAgent => '沒有可查看的代理';
+
+  @override
+  String progressContextReading(String used, String window) {
+    return '$used/$window 個 token';
+  }
+
+  @override
+  String get progressMeasured => '供應商回報的最近一次呼叫上下文用量';
+
+  @override
+  String get progressEstimated => '根據已儲存的對話和持久上下文估算';
+
+  @override
+  String get progressContextUnknown => '尚未回報上下文用量';
+
+  @override
+  String progressContextPercent(String percent) {
+    return '占上下文視窗的 $percent%';
+  }
+
+  @override
+  String progressMonthlyBudget(String amount) {
+    return '已設定的代理月度上限：$amount';
+  }
+
+  @override
+  String progressConversationTokens(String tokens) {
+    return '已儲存的目前對話：約 $tokens 個 token';
+  }
+
+  @override
+  String progressInspectionFor(String agent, String model) {
+    return '$agent 的持久上下文 · $model';
+  }
+
+  @override
+  String get progressContextSystem => '系統提示';
+
+  @override
+  String get progressContextRules => '規則';
+
+  @override
+  String get progressContextSkills => '技能';
+
+  @override
+  String get progressContextTools => '工具定義';
+
+  @override
+  String get progressContextMcp => 'MCP 工具';
+
+  @override
+  String get progressContextDeferred => '延遲載入的工具';
+
+  @override
+  String get progressContextSubagents => '子代理';
+
+  @override
+  String get progressContextRunner => '外部執行器';
+
+  @override
+  String get progressContextMemory => '記憶';
+
+  @override
+  String get progressContextHistory => '對話歷史';
+
+  @override
+  String progressContextSegment(String label, String tokens) {
+    return '$label · $tokens 個 token';
+  }
+
+  @override
+  String progressContextPart(String title, String tokens) {
+    return '$title · $tokens 個 token';
+  }
+
+  @override
+  String get progressOutputs => '最近的輸出';
+
+  @override
+  String get progressNoOutputs => '尚無近期代理輸出';
+
+  @override
+  String get progressStructuredOutputsAbove => '結構化執行輸出顯示在上方的代理執行紀錄中。';
+
+  @override
+  String get progressRecentOutputsOnly => '僅顯示近期訊息。要查看更早的工作，請開啟對話。';
+
+  @override
+  String get progressPlan => '規劃';
+
+  @override
+  String get progressArtifact => '成品';
+
+  @override
+  String get progressResult => '結果';
+
+  @override
+  String get progressHideArtifact => '隱藏成品';
+
+  @override
+  String get progressReadArtifact => '查看成品';
+
+  @override
+  String get progressArtifactUnavailable => '成品已不可用';
+
+  @override
+  String get progressArtifactPreviewLimited => '僅顯示此成品的部分預覽。';
+
+  @override
+  String get progressDiagramSource => '圖表原始碼';
+
+  @override
+  String progressOpenAttachment(String name) {
+    return '開啟 $name';
+  }
+
+  @override
+  String get progressOpenPlan => '開啟計畫';
+
+  @override
+  String progressOpenDiff(String label) {
+    return '查看已更改的檔案：$label';
+  }
+
+  @override
+  String get progressViewMessage => '查看訊息';
+
+  @override
+  String get pushTitle => '背景通知';
+
+  @override
+  String get pushIntro => '即使應用程式已關閉，有需要你留意的事也能收到私人通知。詳細內容只會透過加密連線顯示。';
+
+  @override
+  String get pushLoading => '正在檢查通知設定…';
+
+  @override
+  String get pushError => '無法更新通知。請檢查連線後重試。';
+
+  @override
+  String get pushEnable => '啟用通知';
+
+  @override
+  String get pushDisable => '關閉通知';
+
+  @override
+  String get pushQuiet => '暫停此裝置上的提醒';
+
+  @override
+  String get pushCategories => '通知我以下事項';
+
+  @override
+  String get pushCategoryAgents => '代理';
+
+  @override
+  String get pushCategoryMessages => '訊息';
+
+  @override
+  String get pushCategoryPullRequests => 'Pull requests';
+
+  @override
+  String get pushCategoryTickets => '工單';
+
+  @override
+  String get pushCategoryCalendar => '行事曆';
+
+  @override
+  String get pushCategoryMachines => '機器';
+
+  @override
+  String get pushSecureOrigin => '通知需要 HTTPS。';
+
+  @override
+  String get pushInstallIos => '在 iPhone 或 iPad 上，請將此應用程式新增到主畫面並從主畫面開啟，以啟用通知。';
+
+  @override
+  String get pushUnsupported => '此瀏覽器不支援背景通知。';
+
+  @override
+  String get pushDenied => '瀏覽器設定已阻止通知。請在設定中允許通知後繼續。';
+
+  @override
+  String get pushResubscribe => '重新連接通知';
+
+  @override
+  String get pushStatusEnabled => '此裝置已開啟通知。';
+
+  @override
+  String get pushStatusDisabled => '此裝置已關閉通知。';
+
+  @override
+  String get credentialsTitle => '連線與憑證';
+
+  @override
+  String get credentialsIntro => '連接執行任務與整合功能使用的帳戶。機密資訊儲存在伺服器上，而非這支手機。';
+
+  @override
+  String get credentialsModelProviders => '模型供應商';
+
+  @override
+  String get credentialsOwnerOnly => '只有伺服器擁有者能新增、登入或移除模型供應商憑證。這些金鑰由各工作區共用。';
+
+  @override
+  String get credentialsContactOwner => '請聯絡伺服器擁有者，連接執行受阻時所需的供應商。';
+
+  @override
+  String get credentialsClaudeCode => 'Claude Code';
+
+  @override
+  String get credentialsClaudeHostOnly =>
+      'Claude Code 須透過主機上的 CLI 登入。請伺服器擁有者在主機終端機完成或更新帳戶登入；無法在這支手機上操作。';
+
+  @override
+  String get credentialsYourForgeAccounts => '你的程式碼代管平台帳戶';
+
+  @override
+  String get credentialsYourTicketingAccount => '你的工單平台帳戶';
+
+  @override
+  String get credentialsLocalTicketsNoLogin => '本機工單無須登入。如果工作區使用 Linear，請在此連線。';
+
+  @override
+  String get credentialsMembershipRequired =>
+      '加入工作區後才能管理你的程式碼代管平台或工單平台憑證。請向工作區管理員申請存取權限。';
+
+  @override
+  String get credentialsSwitchWorkspace => '此連結指向另一個工作區。請切換到該工作區後再變更憑證。';
+
+  @override
+  String get credentialsReturnToInbox =>
+      '連接憑證後，請返回收件匣重試受阻的執行任務。主機也會自動檢查等待中的執行任務。';
+
+  @override
+  String get credentialsLoadFailed => '無法載入連線。請檢查伺服器連線後重試。';
+
+  @override
+  String get credentialsOperationFailed => '無法變更此連線。請檢查伺服器連線、存取權限和憑證，然後重試。';
+
+  @override
+  String get credentialsConnected => '已連線';
+
+  @override
+  String get credentialsNotConnected => '未連線';
+
+  @override
+  String credentialsSignedInAs(String username) {
+    return '已登入為 $username';
+  }
+
+  @override
+  String get credentialsAccount => '已連線的帳戶';
+
+  @override
+  String get credentialsStoredKey => '已儲存的金鑰';
+
+  @override
+  String get credentialsActive => '使用中';
+
+  @override
+  String get credentialsRemove => '移除';
+
+  @override
+  String get credentialsRemoveConfirm => '移除已儲存的憑證？之後可能需要重新登入。';
+
+  @override
+  String get credentialsApiKey => 'API 金鑰';
+
+  @override
+  String get credentialsApiKeyHint => '貼上供應商 API 金鑰';
+
+  @override
+  String get credentialsBrowserLogin => '透過瀏覽器登入';
+
+  @override
+  String get credentialsSignInAgain => '重新登入';
+
+  @override
+  String get credentialsWaitingForLogin => '正在等待瀏覽器授權…';
+
+  @override
+  String get credentialsLoginTimedOut => '登入已過期。請重新開始登入。';
+
+  @override
+  String get credentialsCopyCode => '複製代碼';
+
+  @override
+  String get credentialsDeviceCodeHint => '請在供應商頁面確認此代碼。伺服器完成登入前，請保持此畫面開啟。';
+
+  @override
+  String get credentialsPasteRedirect => '授權碼或重新導向 URL';
+
+  @override
+  String get credentialsPasteRedirectHint => '貼上供應商提供的代碼或完整重新導向 URL';
+
+  @override
+  String get credentialsCompleteLogin => '完成登入';
+
+  @override
+  String get credentialsRedirectUnavailable =>
+      '無法從手機安全連線至此伺服器的瀏覽器回呼網址。請伺服器擁有者設定公開的 HTTPS 回呼網址，或改為新增權杖。';
+
+  @override
+  String get credentialsUpdateToken => '更新權杖';
+
+  @override
+  String get credentialsAddToken => '新增權杖';
+
+  @override
+  String get credentialsPersonalToken => '個人存取權杖';
+
+  @override
+  String get credentialsPersonalTokenHint => '貼上個人存取權杖';
+
+  @override
+  String get credentialsHostManaged =>
+      '此連線來自伺服器應用程式或環境。只有伺服器擁有者能在該處變更；你仍可新增自己的權杖。';
+
+  @override
+  String get credentialsStopWatching => '停止監看';
 }

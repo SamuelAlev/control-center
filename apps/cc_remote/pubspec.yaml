@@ -29,6 +29,8 @@ dependencies:
   # Transport-agnostic JSON-RPC client + the PRD 15 connectivity stack: the
   # ReachabilityResolver / ServerConnectionSupervisor / ResilientRpcClient the
   # phone connects through — the SAME protocol the desktop/web build use.
+  cc_harness:
+    path: ../../packages/cc_harness
   cc_rpc:
     path: ../../packages/cc_rpc
   # Remote data-layer adapters over the RPC client (web-safe: cc_domain +
@@ -60,6 +62,7 @@ dependencies:
   # gen-l10n's runtime (message lookup) + locale-aware date formatting.
   # Workspace-pinned to the same version as the root app.
   intl: ^0.20.3
+  uuid: ^4.5.3
   # Required by gen-l10n. Only `AppLocalizations.delegate` plus a hand-rolled
   # widgets delegate are referenced at runtime — the Material/Cupertino
   # localization data the package also carries is never reachable from this

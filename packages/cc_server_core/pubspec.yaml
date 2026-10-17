@@ -48,6 +48,8 @@ dependencies:
   # Cross-platform WebSocket client — cc_server dials the signaling broker as a
   # peer to relay the phone's RPC when it isn't directly reachable.
   meta: any
+  webpush_encryption: ^1.0.1
+  webcrypto: ^0.6.1
 
 dev_dependencies:
   # The real broker, run in-process to integration-test the relay path end to

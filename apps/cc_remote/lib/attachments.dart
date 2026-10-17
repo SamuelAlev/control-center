@@ -18,7 +18,6 @@ import 'package:web/web.dart' as web;
 /// ceiling so the refusal happens before the bytes cross the wire.
 const int kMaxAttachmentBytes = 24 * 1024 * 1024;
 
-
 /// A file the person picked, held as bytes because a browser tab has nothing
 /// else to hold.
 class PickedAttachment {
@@ -68,10 +67,15 @@ Future<List<PickedAttachment>> pickAttachments({String accept = ''}) async {
   }
 
   input.onchange = (web.Event _) {
-    unawaited(_readFiles(input).then(settle, onError: (Object e) {
-      rlog('attachments', 'read failed: $e');
-      settle(const []);
-    }));
+    unawaited(
+      _readFiles(input).then(
+        settle,
+        onError: (Object e) {
+          rlog('attachments', 'read failed: $e');
+          settle(const []);
+        },
+      ),
+    );
   }.toJS;
   input.oncancel = (web.Event _) {
     settle(const []);
@@ -109,84 +113,52 @@ Future<List<PickedAttachment>> _readFiles(web.HTMLInputElement input) async {
   return out;
 }
 
-/// Uploads [picked] and returns the attachment entries a message's metadata
-/// carries, in the order they were picked.
-///
-/// One that will not upload is dropped and named in the log rather than taking
-/// the whole send with it: losing a picture is bad, losing the question typed
-/// alongside it is worse. The caller sees a short list and can say so.
-Future<List<MessageAttachment>> uploadAttachments({
-  required List<PickedAttachment> picked,
+/// Uploads one draft file and preserves the catalog identity required to claim
+/// it when the message is sent. Failure never consumes the picked file.
+Future<MessageAttachment> uploadAttachment({
+  required PickedAttachment picked,
   required String workspaceId,
-  required RemoteMediaEndpoint? endpoint,
+  required RemoteMediaEndpoint endpoint,
+  required int order,
+  http.Client? client,
 }) async {
-  final out = <MessageAttachment>[];
-  for (var i = 0; i < picked.length; i++) {
-    final attachment = picked[i];
-    final ref = await _upload(
-      attachment: attachment,
-      workspaceId: workspaceId,
-      endpoint: endpoint,
-    );
-    if (ref == null) {
-      continue;
-    }
-    out.add(
-      MessageAttachment(
-        id: 'phone-$i-${attachment.name}',
-        path: ref,
-        // The name is what the message's `@[file:…]` token carries, so it has
-        // to be a name a token CAN carry: a `]` in a filename would close the
-        // reference early and the reader would never find it.
-        name: sanitizeFileRefName(attachment.name),
-        kind: attachment.isImage ? AttachmentKind.image : AttachmentKind.file,
-        size: attachment.bytes.length,
-        order: i,
-        mediaType: attachment.mediaType,
-      ),
+  if (!attachmentFitsLane(picked.bytes.length)) {
+    throw const FormatException(
+      'Attachment exceeds the encrypted upload limit',
     );
   }
-  return out;
+  final response = await (client?.post ?? http.post)(
+    Uri.parse(endpoint.blobUploadUrl(workspaceId: workspaceId)),
+    headers: {
+      'content-type': picked.mediaType,
+      'x-cc-file-name': Uri.encodeComponent(picked.name),
+    },
+    body: picked.bytes,
+  );
+  if (response.statusCode != 200) {
+    throw http.ClientException(
+      'Attachment upload: HTTP ${response.statusCode}',
+    );
+  }
+  final decoded = jsonDecode(response.body);
+  final ref = decoded is Map ? decoded['ref'] : null;
+  final fileId = decoded is Map ? decoded['file_id'] : null;
+  if (ref is! String || fileId is! String || fileId.isEmpty) {
+    throw const FormatException(
+      'Upload did not return a catalog file identity',
+    );
+  }
+  return MessageAttachment(
+    id: fileId,
+    fileId: fileId,
+    path: ref,
+    name: sanitizeFileRefName(picked.name),
+    kind: picked.isImage ? AttachmentKind.image : AttachmentKind.file,
+    size: picked.bytes.length,
+    order: order,
+    mediaType: picked.mediaType,
+  );
 }
 
 /// Bounded by the server's blob store, regardless of direct or relay path.
 bool attachmentFitsLane(int bytes) => bytes > 0 && bytes <= kMaxAttachmentBytes;
-
-Future<String?> _upload({
-  required PickedAttachment attachment,
-  required String workspaceId,
-  required RemoteMediaEndpoint? endpoint,
-}) async {
-  if (!attachmentFitsLane(attachment.bytes.length)) {
-    rlog(
-      'attachments',
-      '${attachment.name} is ${attachment.bytes.length}B — over the '
-          'encrypted upload ceiling; dropped',
-    );
-    return null;
-  }
-  if (endpoint == null) {
-    return null;
-  }
-  try {
-    final response = await http.post(
-      Uri.parse(endpoint.blobUploadUrl(workspaceId: workspaceId)),
-      headers: {'content-type': attachment.mediaType},
-      body: attachment.bytes,
-    );
-    if (response.statusCode != 200) {
-      rlog(
-        'attachments',
-        'upload of ${attachment.name} failed: HTTP ${response.statusCode}',
-      );
-      return null;
-    }
-    final decoded = jsonDecode(response.body);
-    final ref = decoded is Map ? decoded['ref'] : null;
-    return ref is String && ref.isNotEmpty ? ref : null;
-  } on Object catch (e) {
-    rlog('attachments', 'upload of ${attachment.name} failed: $e');
-    return null;
-  }
-}
-

@@ -8,10 +8,10 @@ import 'package:cc_rpc/cc_rpc.dart';
 
 /// Reads/mutates the Plan Studio surface (PRD 17) over the RPC client.
 ///
-/// Backs the web build and the desktop in remote mode. The workspace is bound
-/// server-side, so no `workspace_id` travels on the wire — the host injects
-/// the authoritative one and enforces ownership. Mirrors the
-/// `orchestration.*` (revision/partial-approval), `plan.*` and `playbook.*`
+/// Backs the web build and the desktop in remote mode. Keyed phone callers
+/// pass `workspace_id` explicitly; legacy desktop callers use the RPC client's
+/// ambient workspace. The host enforces membership and row ownership.
+/// Mirrors `orchestration.*` (revision/partial-approval), `plan.*` and `playbook.*`
 /// ops + their watch queries in the host catalog. Parses wire maps straight
 /// into the shipped domain entities (no separate DTO layer — the entities own
 /// their JSON codecs).
@@ -68,17 +68,22 @@ class RemotePlanStudioRepository {
 
   /// Widens an executing partial approval, resuming the newly approved nodes'
   /// gates.
-  Future<void> approveNodes(String orchestrationId, Set<String> nodeKeys) =>
-      _client.call('orchestration.approveNodes', {
-        'orchestration_id': orchestrationId,
-        'node_keys': nodeKeys.toList(),
-      });
+  Future<void> approveNodes(
+    String orchestrationId,
+    Set<String> nodeKeys, {
+    String? workspaceId,
+  }) => _client.call('orchestration.approveNodes', {
+    'workspace_id': ?workspaceId,
+    'orchestration_id': orchestrationId,
+    'node_keys': nodeKeys.toList(),
+  });
 
   /// Cancels an orchestration.
-  Future<void> cancel(String orchestrationId) => _client.call(
-    'orchestration.cancel',
-    {'orchestration_id': orchestrationId},
-  );
+  Future<void> cancel(String orchestrationId, {String? workspaceId}) =>
+      _client.call('orchestration.cancel', {
+        'workspace_id': ?workspaceId,
+        'orchestration_id': orchestrationId,
+      });
 
   // ── Estimate (PRD 17 §3) ──
 
@@ -94,8 +99,14 @@ class RemotePlanStudioRepository {
   }
 
   /// Computes + persists per-node estimates for a plan document.
-  Future<Map<String, dynamic>> estimatePlan(String planId) async {
-    final data = await _client.call('plan.estimate', {'plan_id': planId});
+  Future<Map<String, dynamic>> estimatePlan(
+    String planId, {
+    String? workspaceId,
+  }) async {
+    final data = await _client.call('plan.estimate', {
+      'workspace_id': ?workspaceId,
+      'plan_id': planId,
+    });
     return (data['estimate'] as Map?)?.cast<String, dynamic>() ?? const {};
   }
 
@@ -120,17 +131,26 @@ class RemotePlanStudioRepository {
   // ── Plan-mode documents (PRD 17 §8) ──
 
   /// Live plan documents for the workspace, newest first.
-  Stream<List<PlanDocument>> watchPlanDocuments() =>
-      _client.subscribe('plan.watchForWorkspace', const {}).map(_plans);
+  Stream<List<PlanDocument>> watchPlanDocuments({String? workspaceId}) =>
+      _client
+          .subscribe('plan.watchForWorkspace', {'workspace_id': ?workspaceId})
+          .map(_plans);
 
   /// Live single plan document by id.
-  Stream<PlanDocument?> watchPlanById(String planId) => _client
-      .subscribe('plan.watchById', {'plan_id': planId})
-      .map((d) => _plan(d['plan']));
+  Stream<PlanDocument?> watchPlanById(String planId, {String? workspaceId}) =>
+      _client
+          .subscribe('plan.watchById', {
+            'workspace_id': ?workspaceId,
+            'plan_id': planId,
+          })
+          .map((d) => _plan(d['plan']));
 
   /// A plan document by id, or null.
-  Future<PlanDocument?> getPlan(String planId) async {
-    final data = await _client.call('plan.getById', {'plan_id': planId});
+  Future<PlanDocument?> getPlan(String planId, {String? workspaceId}) async {
+    final data = await _client.call('plan.getById', {
+      'workspace_id': ?workspaceId,
+      'plan_id': planId,
+    });
     return _plan(data['plan']);
   }
 
@@ -138,10 +158,12 @@ class RemotePlanStudioRepository {
   /// orchestration approval does). Returns the created orchestration id.
   Future<String> approvePlan(
     String planId, {
+    String? workspaceId,
     Set<String>? approvedNodeKeys,
     int? maxCostCents,
   }) async {
     final data = await _client.call('plan.approve', {
+      'workspace_id': ?workspaceId,
       'plan_id': planId,
       if (approvedNodeKeys != null)
         'approved_node_keys': approvedNodeKeys.toList(),
@@ -151,11 +173,15 @@ class RemotePlanStudioRepository {
   }
 
   /// Sets a plan document's status (e.g. reject).
-  Future<void> updatePlanStatus(String planId, PlanDocumentStatus status) =>
-      _client.call('plan.updateStatus', {
-        'plan_id': planId,
-        'status': status.name,
-      });
+  Future<void> updatePlanStatus(
+    String planId,
+    PlanDocumentStatus status, {
+    String? workspaceId,
+  }) => _client.call('plan.updateStatus', {
+    'workspace_id': ?workspaceId,
+    'plan_id': planId,
+    'status': status.name,
+  });
 
   /// Deletes a plan document.
   Future<void> deletePlan(String planId) =>

@@ -8,10 +8,13 @@ import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/external_link.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/pr_providers.dart';
+import 'package:cc_remote/pr_thread_providers.dart';
+import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/pr_detail/check_row.dart';
 import 'package:cc_remote/widgets/pr_detail/file_diff_tile.dart';
 import 'package:cc_remote/widgets/pr_detail/pr_action_bar.dart';
 import 'package:cc_remote/widgets/pr_detail/pr_conversation.dart';
+import 'package:cc_remote/widgets/pr_detail/pr_review_threads.dart';
 import 'package:cc_remote/widgets/pr_detail/pr_summary.dart';
 import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -125,8 +128,7 @@ class _PrDetailScreenState extends ConsumerState<PrDetailScreen> {
 
   bool _canEditComment(PrUser? author) {
     final login = _viewerLogin();
-    final isAuthor =
-        login.isNotEmpty && author?.login.toLowerCase() == login;
+    final isAuthor = login.isNotEmpty && author?.login.toLowerCase() == login;
     return isAuthor || _hasWriteAccess();
   }
 
@@ -192,6 +194,18 @@ class _PrDetailScreenState extends ConsumerState<PrDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<String?>>(activeWorkspaceIdProvider, (
+      previous,
+      next,
+    ) {
+      if (previous?.value == next.value) return;
+      _comment.clear();
+      setState(() {
+        _optimisticPrBody = null;
+        _optimisticComments.clear();
+        _error = _notice = null;
+      });
+    });
     final t = context.designSystem ?? DesignSystemTokens.light();
     final async = ref.watch(prDetailProvider(_coords));
     final repo = ref.watch(prRepoProvider(_coords));
@@ -235,5 +249,4 @@ class _PrDetailScreenState extends ConsumerState<PrDetailScreen> {
       ),
     );
   }
-
 }

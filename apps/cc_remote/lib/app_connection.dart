@@ -5,6 +5,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_remote/debug_log.dart';
 import 'package:cc_remote/media_proxy.dart';
 import 'package:cc_remote/pairing/pairing_store.dart';
+import 'package:cc_remote/push/push_unpair.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -236,12 +237,15 @@ class RemoteSession {
     _activeWorkspaceId = _prefs?.getString(kActiveWorkspaceIdPref);
     rlog('boot', 'session starting (workspace=$_activeWorkspaceId)');
 
+    // Decode first so the secret leaves this tab's URL even when the offer
+    // repeats a credential we have already confirmed.
     final offer = await _store.decodeFragmentOffer();
-    if (offer != null) {
-      // VULN-004: a fragment-delivered pairing offer is held UNCONFIRMED —
-      // never auto-saved / auto-connected (any page could open the PWA with a
-      // forged `#<payload>`). The connect screen shows the server name and
-      // requires explicit confirmation before we persist or connect anything.
+    final stored = await _store.load();
+    if (offer != null &&
+        (stored == null || !stored.matchesConfirmedOffer(offer))) {
+      // VULN-004: any new or changed fragment-delivered trust context must
+      // still pass the explicit confirmation gate. Do not persist it or dial
+      // the paths supplied by an unconfirmed fragment.
       _pendingFragment = offer;
       rlog(
         'boot',
@@ -251,8 +255,12 @@ class RemoteSession {
       _setState(const RemoteUiState.pendingPairing());
       return;
     }
-
-    final stored = await _store.load();
+    // A repeated offer is not a replacement pairing. Keep the saved
+    // descriptor and fingerprint (which may have been refreshed since the QR
+    // was made) and resume normally, including after offer expiry.
+    if (offer != null) {
+      rlog('boot', 'ignoring already-confirmed pairing offer');
+    }
     _paired = stored != null;
     rlog(
       'boot',
@@ -300,6 +308,7 @@ class RemoteSession {
     _pendingFragment = null;
     // Replacing a pairing replaces the whole trust context, including any
     // previously pinned fingerprint and live connection.
+    await unsubscribeBeforeRemoteUnpair(_client);
     await _teardownConnection();
     await _store.save(offer);
     _paired = true;
@@ -333,6 +342,7 @@ class RemoteSession {
   /// Also the escape hatch from [RemoteStatus.identityMismatch]: forgetting
   /// the pairing clears the stale pin so the user can re-pair from a fresh QR.
   Future<void> unpair() async {
+    await unsubscribeBeforeRemoteUnpair(_client);
     await _teardownConnection();
     await _store.clear();
     _record = null;
@@ -522,9 +532,9 @@ class RemoteSession {
           'connected via ${path?.toJson()['t']} '
               '(relayed=${status.relayed}, latency=${status.latency?.inMilliseconds}ms)',
         );
-        _setMediaEndpoint(_resourceProxy == null
-            ? null
-            : _endpointFor(_resourceProxy!.baseUri));
+        _setMediaEndpoint(
+          _resourceProxy == null ? null : _endpointFor(_resourceProxy!.baseUri),
+        );
         _setState(const RemoteUiState.connected());
       case ServerConnectionPhase.reconnecting:
         if (status.attempt >= _failureThreshold) {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
+import 'package:cc_domain/src/errors/app_exceptions.dart';
 import 'package:cc_persistence/database/tables/notification_feed_table.dart';
 import 'package:cc_persistence/database/tables/notification_item_states_table.dart';
 import 'package:cc_persistence/database/tables/notification_read_marks_table.dart';
@@ -72,6 +73,15 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
           [entry.workspaceId.value],
         );
       });
+
+  Future<void> _requireItem(String workspaceId, String itemId) async {
+    final row = await (select(notificationFeedTable)..where(
+      (t) => t.workspaceId.equals(workspaceId) & t.id.equals(itemId),
+    )).getSingleOrNull();
+    if (row == null) {
+      throw const NotFoundException('Notification not found in this workspace');
+    }
+  }
 
   /// Watches one user's read mark. Emits null until the first acknowledge.
   Stream<NotificationReadMarksTableData?> watchReadMark(
@@ -164,18 +174,21 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
     String userId,
     String itemId,
     DateTime? readAt,
-  ) => into(notificationItemStatesTable).insert(
-    NotificationItemStatesTableCompanion.insert(
-      workspaceId: workspaceId,
-      userId: userId,
-      itemId: itemId,
-      readAt: Value(readAt),
-    ),
-    onConflict: DoUpdate(
-      (old) =>
-          NotificationItemStatesTableCompanion(readAt: Value(readAt)),
-    ),
-  );
+  ) => transaction(() async {
+    await _requireItem(workspaceId, itemId);
+    await into(notificationItemStatesTable).insert(
+      NotificationItemStatesTableCompanion.insert(
+        workspaceId: workspaceId,
+        userId: userId,
+        itemId: itemId,
+        readAt: Value(readAt),
+      ),
+      onConflict: DoUpdate(
+        (old) =>
+            NotificationItemStatesTableCompanion(readAt: Value(readAt)),
+      ),
+    );
+  });
 
   /// Marks read, for [userId], every `notifications/message_received` item
   /// from [conversationId] in [spaceId] recorded at or before [readAt] — the
@@ -310,19 +323,22 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
     String userId,
     String itemId,
     DateTime at,
-  ) => into(notificationItemStatesTable).insert(
-    NotificationItemStatesTableCompanion.insert(
-      workspaceId: workspaceId,
-      userId: userId,
-      itemId: itemId,
-      readAt: Value(at),
-      dismissedAt: Value(at),
-    ),
-    onConflict: DoUpdate(
-      (old) => NotificationItemStatesTableCompanion(
+  ) => transaction(() async {
+    await _requireItem(workspaceId, itemId);
+    await into(notificationItemStatesTable).insert(
+      NotificationItemStatesTableCompanion.insert(
+        workspaceId: workspaceId,
+        userId: userId,
+        itemId: itemId,
         readAt: Value(at),
         dismissedAt: Value(at),
       ),
-    ),
-  );
+      onConflict: DoUpdate(
+        (old) => NotificationItemStatesTableCompanion(
+          readAt: Value(at),
+          dismissedAt: Value(at),
+        ),
+      ),
+    );
+  });
 }

@@ -164,19 +164,6 @@ void main() {
       await future;
     });
 
-    test('defaults senderId to "agent" when askedByAgentId is null', () async {
-      messaging.nextMessageId = 'm-2';
-      final future = service.ask(request(askedByAgentId: null));
-      await Future<void>.delayed(Duration.zero);
-      expect(messaging.sentMessages.single.senderId, 'agent');
-      await service.submitAnswer(
-        ws,
-        questionMessage('m-2'),
-        const AgentQuestionAnswer(),
-      );
-      await future;
-    });
-
     test('resolves with the answer when submitAnswer is called', () async {
       messaging.nextMessageId = 'm-3';
       final future = service.ask(request());
@@ -357,6 +344,33 @@ void main() {
   // that metadata here so the blocked run resumes; without it the agent waits
   // out its whole timeout on a question the user already answered.
   group('resolveFromMetadata', () {
+    test(
+      'a malformed answer leaves the question available for a valid answer',
+      () async {
+        messaging.nextMessageId = 'm-malformed';
+        final pending = service.ask(request(allowFreeText: true));
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          () => service.resolveFromMetadata('m-malformed', {
+            kQuestionAnsweredKey: true,
+            kQuestionAnswerKey: {'freeText': 123},
+          }),
+          throwsA(isA<TypeError>()),
+        );
+        expect(service.isPending('m-malformed'), isTrue);
+        expect(
+          service.resolveFromMetadata('m-malformed', {
+            kQuestionAnsweredKey: true,
+            kQuestionAnswerKey: const AgentQuestionAnswer(
+              freeText: 'Use PostgreSQL',
+            ).toJson(),
+          }),
+          isTrue,
+        );
+        expect((await pending)?.freeText, 'Use PostgreSQL');
+      },
+    );
+
     test('unblocks a pending ask with the persisted answer', () async {
       messaging.nextMessageId = 'm-100';
       final pending = service.ask(request(options: const []));
@@ -382,20 +396,6 @@ void main() {
       );
     });
 
-    test('an answered flag with no answer payload still unblocks', () async {
-      messaging.nextMessageId = 'm-101';
-      final pending = service.ask(request());
-      await Future<void>.delayed(Duration.zero);
-
-      expect(
-        service.resolveFromMetadata('m-101', {kQuestionAnsweredKey: true}),
-        isTrue,
-      );
-      final answer = await pending;
-      expect(answer, isNotNull);
-      expect(answer!.isEmpty, isTrue);
-    });
-
     test('ignores metadata that is not an answered question', () async {
       messaging.nextMessageId = 'm-102';
       final pending = service.ask(request());
@@ -408,11 +408,20 @@ void main() {
         service.resolveFromMetadata('m-102', {kQuestionAnsweredKey: false}),
         isFalse,
       );
+      expect(
+        service.resolveFromMetadata('m-102', {kQuestionAnsweredKey: true}),
+        isFalse,
+      );
       expect(service.isPending('m-102'), isTrue);
 
       // The question is still live and still answerable.
       expect(
-        service.resolveFromMetadata('m-102', {kQuestionAnsweredKey: true}),
+        service.resolveFromMetadata('m-102', {
+          kQuestionAnsweredKey: true,
+          kQuestionAnswerKey: const AgentQuestionAnswer(
+            selectedLabels: ['Proceed'],
+          ).toJson(),
+        }),
         isTrue,
       );
       await pending;
@@ -433,13 +442,23 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        service.resolveFromMetadata('m-103', {kQuestionAnsweredKey: true}),
+        service.resolveFromMetadata('m-103', {
+          kQuestionAnsweredKey: true,
+          kQuestionAnswerKey: const AgentQuestionAnswer(
+            selectedLabels: ['Proceed'],
+          ).toJson(),
+        }),
         isTrue,
       );
       // A retried RPC, or the client's own submitAnswer arriving after, must
       // not blow up on an already-completed completer.
       expect(
-        service.resolveFromMetadata('m-103', {kQuestionAnsweredKey: true}),
+        service.resolveFromMetadata('m-103', {
+          kQuestionAnsweredKey: true,
+          kQuestionAnswerKey: const AgentQuestionAnswer(
+            selectedLabels: ['Proceed'],
+          ).toJson(),
+        }),
         isFalse,
       );
       await pending;

@@ -61,14 +61,16 @@ class RemoteTicketRepository {
     return TicketDto.fromJson((data['ticket'] as Map).cast<String, dynamic>());
   }
 
-  /// Assigns [ticketId] to an agent or team; returns the updated ticket (or
-  /// null if the server reported no row).
+  /// Assigns [ticketId] to an agent or team in [workspaceId]; returns the
+  /// updated ticket (or null if the server reported no row).
   Future<TicketDto?> assign(
     String ticketId, {
+    String? workspaceId,
     String? agentId,
     String? teamId,
   }) async {
     final data = await _client.call('tickets.assign', {
+      'workspace_id': ?workspaceId,
       'ticket_id': ticketId,
       'agent_id': ?agentId,
       'team_id': ?teamId,
@@ -93,10 +95,12 @@ class RemoteTicketRepository {
   /// Updates [ticket] with optimistic concurrency. When [expectedVersion] is
   /// stale the host throws and the call surfaces a [RemoteRpcException] carrying
   /// [RpcErrorCodes.conflict].
-  Future<void> update(TicketDto ticket, {int? expectedVersion}) => _client.call(
-    'tickets.update',
-    {'ticket': ticket.toJson(), 'expected_version': ?expectedVersion},
-  );
+  Future<void> update(TicketDto ticket, {int? expectedVersion}) =>
+      _client.call('tickets.update', {
+        'workspace_id': ticket.workspaceId,
+        'ticket': ticket.toJson(),
+        'expected_version': ?expectedVersion,
+      });
 
   /// Per-column LWW field patch (PRD 16 §6): concurrent edits to DIFFERENT
   /// fields both land in server receipt order — no `expectedVersion`, no

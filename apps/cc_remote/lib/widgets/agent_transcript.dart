@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/widgets/phone_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
@@ -103,17 +104,12 @@ class _AgentTranscriptState extends State<AgentTranscript> {
     };
   }
 
-  /// Visible answer text, rendered inline as plain prose at its chronological
-  /// position in the flow (the phone PWA has no markdown engine, matching the
-  /// previous plain-text answer rendering).
+  /// Answer markdown stays in its chronological position in the transcript.
   Widget? _answer(DesignSystemTokens t, TextSegment s) {
     if (s.text.trim().isEmpty) {
       return null;
     }
-    return Text(
-      s.text,
-      style: TextStyle(fontSize: 14, height: 1.4, color: t.textPrimary),
-    );
+    return PhoneMarkdown(data: s.text);
   }
 
   Widget? _reasoning(DesignSystemTokens t, ReasoningSegment s) {

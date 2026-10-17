@@ -55,7 +55,7 @@ extension _PrDetailBody on _PrDetailScreenState {
         const SizedBox(height: 12),
         ...switch (_tab) {
           _PrTab.conversation => _conversation(t, pr),
-          _PrTab.files => _files(t),
+          _PrTab.files => _files(t, pr),
           _PrTab.checks => _checks(t),
         },
       ],
@@ -143,19 +143,60 @@ extension _PrDetailBody on _PrDetailScreenState {
     );
   }
 
-  List<Widget> _files(DesignSystemTokens t) {
+  List<Widget> _files(DesignSystemTokens t, PullRequest pr) {
     final async = ref.watch(prFilesProvider(_coords));
     final files = async.value ?? const <PrFile>[];
-    if (async.isLoading && files.isEmpty) {
-      return const [
-        Padding(
+    final permission = ref.watch(prThreadPermissionProvider(_coords));
+    final workspaceId = ref
+        .watch(prReviewRepositoryProvider(_coords))
+        ?.workspaceId;
+    final canComment =
+        pr.isOpen && permission.hasValue && permission.value != 'none';
+    final permissionReason = permission.hasError
+        ? AppLocalizations.of(context).mobilePrPermissionLoadFailed
+        : !permission.hasValue
+        ? AppLocalizations.of(context).mobilePrPermissionChecking
+        : !pr.isOpen
+        ? AppLocalizations.of(context).mobilePrCommentUnavailable
+        : AppLocalizations.of(context).mobilePrCommentPermissionDenied;
+    return [
+      PrReviewThreads(
+        key: ValueKey('threads:$workspaceId:${widget.repoId}:${widget.number}'),
+        coords: _coords,
+        pr: pr,
+      ),
+      if (permission.hasError)
+        Column(
+          children: [
+            Text(
+              '${permission.error}',
+              style: TextStyle(color: t.textErrorPrimary),
+            ),
+            CcButton(
+              variant: CcButtonVariant.secondary,
+              onPressed: () =>
+                  ref.invalidate(prThreadPermissionProvider(_coords)),
+              child: Text(AppLocalizations.of(context).retry),
+            ),
+          ],
+        ),
+      if (async.hasError)
+        Column(
+          children: [
+            Text('${async.error}', style: TextStyle(color: t.textErrorPrimary)),
+            CcButton(
+              variant: CcButtonVariant.secondary,
+              onPressed: () => ref.invalidate(prFilesProvider(_coords)),
+              child: Text(AppLocalizations.of(context).retry),
+            ),
+          ],
+        ),
+      if (async.isLoading && files.isEmpty)
+        const Padding(
           padding: EdgeInsets.symmetric(vertical: 32),
           child: Center(child: CcSpinner(size: 20)),
-        ),
-      ];
-    }
-    if (files.isEmpty) {
-      return [
+        )
+      else if (files.isEmpty && !async.hasError)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: Text(
@@ -163,15 +204,22 @@ extension _PrDetailBody on _PrDetailScreenState {
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 13, color: t.textTertiary),
           ),
-        ),
-      ];
-    }
-    return [
-      for (final f in files)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: FileDiffTile(key: ValueKey(f.filename), file: f),
-        ),
+        )
+      else
+        for (final file in files)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: FileDiffTile(
+              key: ValueKey(
+                '$workspaceId:${pr.baseSha}:${pr.headSha}:${file.filename}',
+              ),
+              file: file,
+              coords: _coords,
+              commitSha: pr.headSha,
+              canComment: canComment,
+              commentDisabledReason: permissionReason,
+            ),
+          ),
     ];
   }
 

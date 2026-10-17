@@ -10,6 +10,7 @@ import 'package:cc_domain/core/domain/events/ticketing_events.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/notification_wire.dart';
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 
 /// Durable per-workspace notification feed from domain events (same mapping as live toasts).
 ///
@@ -21,10 +22,14 @@ class NotificationFeedRecorder {
   NotificationFeedRecorder({
     required this._eventBus,
     required this._repository,
+    this.onRecorded,
   });
 
   final DomainEventBus _eventBus;
   final DaoNotificationFeedRepository _repository;
+  /// Called only after the feed row is committed; transient push failures do
+  /// not undo the authoritative feed record.
+  final void Function(NotificationFeedItem item)? onRecorded;
   final List<StreamSubscription<Object?>> _subs = [];
 
   /// Feed writes run one after another, in event order: a wait that resolves
@@ -160,14 +165,14 @@ class NotificationFeedRecorder {
     if (workspaceId is! String || workspaceId.isEmpty) {
       return;
     }
-    _write(
-      'record',
-      () => _repository.record(workspaceId, frame.method, frame.params),
-    );
+    _write('record', () async {
+      final item = await _repository.record(workspaceId, frame.method, frame.params);
+      onRecorded?.call(item);
+    });
   }
 
   // Fire-and-forget: a failed write drops one history row, never the event.
-  void _write(String what, Future<Object?> Function() write) {
+  void _write(String what, Future<void> Function() write) {
     _writes = _writes.then((_) async {
       try {
         await write();
@@ -181,5 +186,6 @@ class NotificationFeedRecorder {
   Future<void> dispose() async {
     await Future.wait(_subs.map((s) => s.cancel()));
     _subs.clear();
+    await _writes;
   }
 }

@@ -3,6 +3,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/format.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/phone_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -29,9 +30,15 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
   bool _acting = false;
   String? _error;
 
-  Future<void> _respond({required bool approved}) async {
+  Future<void> _respond({required bool approved, bool remember = false}) async {
+    final l10n = AppLocalizations.of(context);
     final client = ref.read(rpcClientProvider).value;
-    if (client == null || _acting) {
+    if (client == null ||
+        _acting ||
+        (widget.request.workspaceId != null &&
+            widget.request.workspaceId !=
+                ref.read(activeWorkspaceIdProvider).value)) {
+      setState(() => _error = l10n.requestUnavailable);
       return;
     }
     setState(() {
@@ -39,9 +46,14 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
       _error = null;
     });
     try {
-      await RemoteConfirmationRepository(
-        client,
-      ).respond(widget.request.id, approved: approved);
+      final ok = await RemoteConfirmationRepository(client).respond(
+        widget.request.id,
+        approved: approved,
+        rememberForSeconds: remember ? 8 * 60 * 60 : null,
+      );
+      if (!ok) {
+        throw StateError(l10n.requestAlreadyResolved);
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -139,6 +151,7 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
             children: [
               Expanded(
                 child: CcButton(
+                  size: CcButtonSize.lg,
                   variant: CcButtonVariant.secondary,
                   onPressed: _acting ? null : () => _respond(approved: false),
                   child: Text(AppLocalizations.of(context).deny),
@@ -147,6 +160,7 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
               const SizedBox(width: 8),
               Expanded(
                 child: CcButton(
+                  size: CcButtonSize.lg,
                   variant: destructive
                       ? CcButtonVariant.destructive
                       : CcButtonVariant.primary,
@@ -157,14 +171,37 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
               ),
             ],
           ),
+          if (request.isRememberable) ...[
+            const SizedBox(height: 8),
+            CcButton(
+              fullWidth: true,
+              size: CcButtonSize.lg,
+              variant: CcButtonVariant.secondary,
+              onPressed: _acting
+                  ? null
+                  : () => _respond(approved: true, remember: true),
+              child: Text(AppLocalizations.of(context).approveAndRemember),
+            ),
+          ],
           if (request.spaceId.isNotEmpty) ...[
             const SizedBox(height: 6),
             CcButton(
               fullWidth: true,
               variant: CcButtonVariant.ghost,
-              size: CcButtonSize.sm,
+              size: CcButtonSize.lg,
               icon: AppIcons.messageCircle,
-              onPressed: () => context.push('/spaces/${request.spaceId}'),
+              onPressed: () {
+                final workspaceId =
+                    request.workspaceId ??
+                    ref.read(activeWorkspaceIdProvider).value;
+                if (workspaceId == null) return;
+                context.push(
+                  remoteSpaceLocation(
+                    workspaceId: workspaceId,
+                    spaceId: request.spaceId,
+                  ),
+                );
+              },
               child: Text(AppLocalizations.of(context).openConversation),
             ),
           ],

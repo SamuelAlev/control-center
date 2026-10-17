@@ -32,8 +32,7 @@ extension _SpaceFollow on _SpaceScreenState {
         _programmatic) {
       return;
     }
-    if (ref.read(remoteFeedWindowProvider(widget.spaceId)) >=
-        kRemoteFeedMaxWindow) {
+    if (ref.read(remoteFeedWindowProvider(_feedKey)) >= kRemoteFeedMaxWindow) {
       return;
     }
     final pos = _scroll.position;
@@ -41,7 +40,7 @@ extension _SpaceFollow on _SpaceScreenState {
       return;
     }
     _follow.loadingOlder = true;
-    ref.read(remoteFeedWindowProvider(widget.spaceId).notifier).loadMore();
+    ref.read(remoteFeedWindowProvider(_feedKey).notifier).loadMore();
   }
 
   void _reengageFollowing() {
@@ -169,27 +168,5 @@ extension _SpaceFollow on _SpaceScreenState {
       ),
     );
     _reengageFollowing();
-  }
-
-  Widget _activeBanner(DesignSystemTokens t) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: t.accentSoft,
-        border: Border(bottom: BorderSide(color: t.borderSoft)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            Icon(AppIcons.loader, size: 14, color: t.accent),
-            const SizedBox(width: 8),
-            Text(
-              AppLocalizations.of(context).agentWorking,
-              style: TextStyle(fontSize: 13, color: t.textPrimary),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

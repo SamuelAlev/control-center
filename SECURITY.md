@@ -48,6 +48,8 @@ Each GitHub device attempt returns an opaque `login_id`, not the provider's `dev
 
 Provider credentials may be configured through supported Settings fields or the environment, never command-line flags. `cc_server` reads `.env` from its working directory, beneath real environment values (`environmentWithDotenv`); clients do not forward it. `CcServerConfig.pickCredential` may fall back to release-baked **non-confidential** values only: Google device-code client, Klipy key, GitHub client ID. Never bake a GitHub private key or client secret. The shipped client ID enables sign-in, not installation-token background access; an operator with token expiry enabled supplies their own refresh secret. Connection RPCs return status/account only; secret settings are write-only, with presence flags returned.
 
+Personal credential operations bind to the authenticated user. Global harness/provider credential writes and OAuth state require the server owner, not merely a workspace owner or administrator. The phone can submit supported credentials but cannot read their secret values back or simulate host-only CLI authentication.
+
 SSO, owner identity and other mutable settings belong in Settings. `CC_SERVER_*`/matching flags are for pre-boot process configuration (paths, bind, port, TLS, logging), not a second settings store. Redact logged command output before display.
 
 ## Execution and untrusted input
@@ -102,6 +104,10 @@ Persisted attempt evidence is redacted and capped at 256 KiB; exports are capped
 - `RigService.act` blocks agent mutations during human control. Input is attributed and sequenced transactionally. Guest capture is unprivileged; QEMU input is injected via the hypervisor. Clipboard crossing requires per-user/per-direction permission before reading/transferring.
 - `enclosureControl` is denied in read-only modes. `SandboxBackend.microvm` is probe-gated and cannot downgrade to a host shell. Bound lifetimes/resources, recover only owned devices, and tear down owned machines at shutdown. Boot artifacts are checksum/digest-pinned; control sockets are private and reject symlinked namespaces. See [enclosure operational constraints](ARCH.md#enclosures).
 
+### Audit integrity
+
+Guard-decision hashes canonicalize timestamps to the UTC Unix-second precision persisted by SQLite. Verification still detects changed, reordered or removed decisions. Older hashes computed from fractional timestamps that were not persisted can remain unverifiable; the server reports those failures rather than rewriting historical hashes or accepting them as intact.
+
 ## Network boundaries
 
 - Non-loopback server binds require TLS (`--tls-cert`/`--tls-key`), or explicit `--insecure` behind a trusted TLS-terminating proxy.
@@ -113,6 +119,14 @@ Persisted attempt evidence is redacted and capped at 256 KiB; exports are capped
 - Random production invitations redeem through Noise before returning a device PSK. SSO and public-demo handoffs encrypt credentials to a client-held X25519 recipient key using HKDF and AES-256-GCM. Login/bootstrap origins and client-code delivery remain trusted: an active origin or TLS terminator that replaces the initial page/key can compromise that bootstrap. Unsolicited SAML uses a short-lived, single-use browser-bound grant and an explicit sealed claim, not a plaintext credential redirect.
 - The signaling broker relays ciphertext without seeing the PSK. Rooms are invite-gated, capacity-bounded, byte-paced and reaped when idle; room ID alone grants no access. It still sees IP addresses, room/peer identifiers, admission material, record sizes, timing and connection lifetime. It can deny service; encryption does not hide traffic analysis. See [broker protocol](apps/cc_signaling_server/README.md).
 - The trusted plaintext endpoints are the paired client and the chosen `cc_server`, including its execution environment. A hosted server operator, compromised endpoint, authorized recipient or configured model/forge provider can still see data it handles. This transport feature does not encrypt databases/backups at rest, erase previously downloaded data, or seal independent MCP, fleet-worker, webhook or provider protocols. TLS remains required for their transport, public metadata, bootstrap and web-code delivery. No independent cryptographic audit is claimed.
+
+### Browser push alerts
+
+Web Push is a separate outbound notification channel, not a plaintext exception to the first-party RPC/resource tunnel. Registrations belong to the authenticated active paired device and user; another device cannot read or remove their subscription secrets. VAPID and subscription material stays in owner-private server secrets, with restrictive permissions set before file contents are written.
+
+Only allowlisted push-provider HTTPS endpoints are admitted. Delivery resolves and pins public addresses, rejects private/loopback/link-local targets and redirects, and rechecks device status, workspace membership, recipient targeting and space/repository visibility immediately before the external request. Revocation removes registrations; losing workspace access suppresses delivery even if a browser still holds its local subscription.
+
+Encrypted payloads contain generic alert categories and scoped navigation identifiers, not message previews, approval commands or credentials. The provider still sees endpoint, traffic size and timing. Notification clicks navigate to the first-party origin and do not grant authority; opening content reauthorizes against the server. Quiet/category preferences control delivery, while OS permission and supported PWA installation remain browser requirements.
 
 ## Dependencies
 

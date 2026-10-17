@@ -2,6 +2,7 @@ import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 /// How many diff rows render before the "show the rest" affordance appears.
 ///
@@ -26,13 +27,16 @@ const int kDiffRowBudget = 400;
 /// by the +/− marker, the gutter and the row tint, in that order of
 /// precedence. The marker is a character, not a colour, so the diff still
 /// reads in greyscale or with red/green colour blindness.
-class DiffView extends StatelessWidget {
+class DiffView extends StatefulWidget {
   /// Creates a [DiffView] over a unified-diff [patch].
   const DiffView({
     super.key,
     required this.patch,
     this.expanded = false,
     this.onExpand,
+    this.onLineSelected,
+    this.selectedLine,
+    this.maxRows,
   });
 
   /// The file's unified diff, as GitHub returns it (hunks only, no `---`/`+++`
@@ -46,11 +50,37 @@ class DiffView extends StatelessWidget {
   /// affordance (the diff is already whole).
   final VoidCallback? onExpand;
 
+  /// Called for an added or deleted row only; line numbers are on that side.
+  final ValueChanged<DiffLine>? onLineSelected;
+
+  /// The selected changed row, highlighted until the composer is dismissed.
+  final DiffLine? selectedLine;
+
+  /// Optional incremental cap for large generated files.
+  final int? maxRows;
+  @override
+  State<DiffView> createState() => _DiffViewState();
+}
+
+class _DiffViewState extends State<DiffView> {
+  late List<DiffLine> _lines = parseUnifiedDiff(widget.patch);
+
+  @override
+  void didUpdateWidget(DiffView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.patch != widget.patch) {
+      _lines = parseUnifiedDiff(widget.patch);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    final lines = parseUnifiedDiff(patch);
+    final numberFormat = NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toLanguageTag(),
+    );
+    final lines = _lines;
     if (lines.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -61,8 +91,10 @@ class DiffView extends StatelessWidget {
       );
     }
 
-    final over = !expanded && lines.length > kDiffRowBudget;
-    final shown = over ? lines.take(kDiffRowBudget).toList() : lines;
+    final budget =
+        widget.maxRows ?? (widget.expanded ? lines.length : kDiffRowBudget);
+    final over = lines.length > budget;
+    final shown = over ? lines.take(budget) : lines;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -72,27 +104,25 @@ class DiffView extends StatelessWidget {
         Directionality(
           textDirection: TextDirection.ltr,
           child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: t.bgSecondary,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: t.borderSoft),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            // ONE horizontal scroller around the whole block, gutters
-            // included. Pinning the gutter and scrolling only the code needs a
-            // controller per row kept in sync, and on a phone the gutter is
-            // four characters wide — the width it would save is not worth a
-            // scroll position that can disagree with itself.
+            decoration: BoxDecoration(
+              color: t.bgSecondary,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: t.borderSoft),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              // ONE horizontal scroller around the whole block, gutters
+              // included. Pinning the gutter and scrolling only the code needs a
+              // controller per row kept in sync, and on a phone the gutter is
+              // four characters wide — the width it would save is not worth a
+              // scroll position that can disagree with itself.
               child: LayoutBuilder(
                 builder: (context, constraints) => SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: ConstrainedBox(
                     // At least as wide as the viewport, so a short line still
                     // paints its tint edge to edge instead of stopping mid-row.
-                    constraints: BoxConstraints(
-                      minWidth: constraints.maxWidth,
-                    ),
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
                     child: IntrinsicWidth(
                       // Required, not decorative. A scroll view hands its child
                       // an UNBOUNDED width, and `CrossAxisAlignment.stretch`
@@ -108,7 +138,29 @@ class DiffView extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           for (final line in shown)
-                            _DiffRow(line: line, tokens: t),
+                            _DiffRow(
+                              line: line,
+                              tokens: t,
+                              numberFormat: numberFormat,
+                              selected:
+                                  identical(line, widget.selectedLine) ||
+                                  (widget.selectedLine != null &&
+                                      line.kind == widget.selectedLine!.kind &&
+                                      line.oldLine ==
+                                          widget.selectedLine!.oldLine &&
+                                      line.newLine ==
+                                          widget.selectedLine!.newLine),
+                              onPressed:
+                                  widget.onLineSelected == null ||
+                                      !((line.kind == DiffLineKind.addition &&
+                                              line.newLine != null &&
+                                              line.newLine! > 0) ||
+                                          (line.kind == DiffLineKind.deletion &&
+                                              line.oldLine != null &&
+                                              line.oldLine! > 0))
+                                  ? null
+                                  : () => widget.onLineSelected!(line),
+                            ),
                         ],
                       ),
                     ),
@@ -124,10 +176,8 @@ class DiffView extends StatelessWidget {
             fullWidth: true,
             variant: CcButtonVariant.secondary,
             size: CcButtonSize.sm,
-            onPressed: onExpand,
-            child: Text(
-              l10n.showRemainingLines(lines.length - kDiffRowBudget),
-            ),
+            onPressed: widget.onExpand,
+            child: Text(l10n.showRemainingLines(lines.length - shown.length)),
           ),
         ],
       ],
@@ -136,10 +186,19 @@ class DiffView extends StatelessWidget {
 }
 
 class _DiffRow extends StatelessWidget {
-  const _DiffRow({required this.line, required this.tokens});
+  const _DiffRow({
+    required this.line,
+    required this.tokens,
+    required this.numberFormat,
+    this.onPressed,
+    this.selected = false,
+  });
 
   final DiffLine line;
   final DesignSystemTokens tokens;
+  final NumberFormat numberFormat;
+  final VoidCallback? onPressed;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -180,10 +239,15 @@ class _DiffRow extends StatelessWidget {
         ? '-'
         : ' ';
 
-    return DecoratedBox(
-      decoration: BoxDecoration(color: background),
+    final content = DecoratedBox(
+      decoration: BoxDecoration(
+        color: selected ? t.bgTertiary : background,
+        border: selected
+            ? Border(left: BorderSide(color: t.textPrimary, width: 2))
+            : null,
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 1),
+        padding: EdgeInsets.symmetric(vertical: onPressed == null ? 1 : 14),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,10 +269,6 @@ class _DiffRow extends StatelessWidget {
               ),
             ),
             Text(
-              // A tab renders as a single narrow glyph in most fonts, which
-              // silently destroys the indentation a diff is read by. Expand
-              // to two spaces — enough to show nesting without pushing every
-              // line off a 44-character column.
               line.content.replaceAll('\t', '  '),
               softWrap: false,
               style: _mono(t.textPrimary),
@@ -217,6 +277,15 @@ class _DiffRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+    if (onPressed == null) return content;
+    return CcTappable(
+      onPressed: onPressed,
+      semanticLabel: AppLocalizations.of(context).mobilePrCommentOnLine(
+        isAdd ? '+' : '-',
+        numberFormat.format(isAdd ? line.newLine! : line.oldLine!),
+      ),
+      builder: (context, _) => content,
     );
   }
 
@@ -236,7 +305,7 @@ class _DiffRow extends StatelessWidget {
     child: Padding(
       padding: const EdgeInsets.only(right: 4),
       child: Text(
-        number?.toString() ?? '',
+        number == null ? '' : numberFormat.format(number),
         textAlign: TextAlign.right,
         style: _mono(t.fgQuaternary),
       ),

@@ -17,6 +17,8 @@ import 'package:cc_domain/core/domain/events/identity_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/workspace_events.dart';
 import 'package:cc_domain/core/domain/ports/activity_log_reader.dart';
+import 'package:cc_domain/core/domain/ports/agent_question_port.dart'
+    show AgentQuestionAnswer;
 import 'package:cc_domain/core/domain/ports/agent_shell_process_port.dart';
 import 'package:cc_domain/core/domain/ports/directory_browser_port.dart';
 import 'package:cc_domain/core/domain/ports/editor_launcher_port.dart';
@@ -99,6 +101,7 @@ import 'package:cc_domain/features/messaging/domain/value_objects/message_page.d
 import 'package:cc_domain/features/messaging/domain/value_objects/space_activity.dart';
 import 'package:cc_domain/features/model_routing/model_routing.dart';
 import 'package:cc_domain/features/newsfeed/domain/repositories/newsfeed_repository.dart';
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_proposal.dart';
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
@@ -173,6 +176,8 @@ import 'package:cc_persistence/cc_persistence.dart'
         PairedDevicesTableCompanion,
         TicketsTableCompanion,
         WorkspaceDatabaseManager;
+import 'package:cc_persistence/database/daos/notification_feed_dao.dart'
+    show NotificationFeedDao;
 import 'package:cc_persistence/database/daos/paired_device_dao.dart'
     show PairedDeviceDao, PairedDeviceStatus;
 import 'package:cc_rpc/cc_rpc.dart' show RemoteControlCrypto;
@@ -184,7 +189,10 @@ import 'package:cc_server_core/src/catalog/code_server_file_ops.dart';
 import 'package:cc_server_core/src/catalog/demo_review_ops.dart';
 import 'package:cc_server_core/src/catalog/file_discard_ops.dart';
 import 'package:cc_server_core/src/catalog/meeting_ops.dart';
+import 'package:cc_server_core/src/catalog/mobile_space_ops.dart';
 import 'package:cc_server_core/src/catalog/model_control_ops.dart';
+import 'package:cc_server_core/src/catalog/notification_feed_visibility.dart';
+import 'package:cc_server_core/src/catalog/pending_question_watch.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
 import 'package:cc_server_core/src/catalog/provider_oauth_ops.dart';
 import 'package:cc_server_core/src/catalog/space_stack_ops.dart';
@@ -211,6 +219,8 @@ import 'package:cc_server_core/src/identity/workspace_profile.dart';
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 import 'package:cc_server_core/src/pr_review/review_ci_signal_service.dart';
+import 'package:cc_server_core/src/push/web_push_ops.dart';
+import 'package:cc_server_core/src/push/web_push_service.dart';
 import 'package:cc_server_core/src/rig_rpc_ops.dart';
 import 'package:cc_server_core/src/rig_wire.dart';
 import 'package:cc_server_core/src/run_log_reader.dart';
@@ -441,6 +451,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // The feed is written ONLY by the server's `NotificationFeedRecorder`;
   // clients watch it and acknowledge their own read state.
   required NotificationFeedRepository notificationFeedRepository,
+  WebPushService? webPushService,
   // Durable supervised goals (`/goal` + `/loop`): the thin client lists a
   // conversation's `AgentGoalRun`s (watch) and drives pause / resume /
   // cancel through the supervisor (thin delegations — the lifecycle itself
@@ -1227,6 +1238,64 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       }
     }
     return false;
+  }
+
+  /// Filter durable feed rows before serializing them. Repo names and PR
+  /// titles are not public just because a caller belongs to the workspace.
+  /// The same predicate gates per-item mutations, including guessed IDs.
+  Future<List<NotificationFeedItem>> visibleNotificationItems(
+    String workspaceId,
+    String userId,
+    List<NotificationFeedItem> items,
+  ) async {
+    final members = membershipRepository;
+    if (members != null) {
+      return visibleNotificationItemsForUser(
+        workspaceId: workspaceId,
+        userId: userId,
+        items: items,
+        members: members,
+        workspaces: workspaceRepository,
+        isolatedRepos: isolatedRepoRepository,
+      );
+    }
+    // Bare catalogs without membership cannot expose repository-scoped rows.
+    final repos = await workspaceRepository
+        .watchReposForWorkspace(workspaceId)
+        .first;
+    return filterNotificationFeedItems(
+      workspaceId: workspaceId,
+      userId: userId,
+      items: items,
+      isMember: true,
+      repoIdsByCoordinate: {
+        for (final repo in repos)
+          if (repo.remoteOwner.isNotEmpty && repo.remoteName.isNotEmpty)
+            '${repo.remoteOwner}/${repo.remoteName}'.toLowerCase(): repo.id,
+      },
+      readableRepoIds: const <String>{},
+      canReadSpace: (spaceId) async =>
+          !await viewerTraceRestricted(workspaceId, spaceId, userId),
+    );
+  }
+
+  Future<void> requireNotificationItemAccess(RepoOpContext ctx) async {
+    final id = ctx.args['item_id'];
+    if (id is! String || id.isEmpty) {
+      throw const ValidationException('Missing notification item id');
+    }
+    final list = await notificationFeedRepository
+        .watchFeed(ctx.workspaceId!, limit: NotificationFeedDao.retainedRows)
+        .first;
+    final item = list.where((row) => row.id == id).firstOrNull;
+    if (item == null || item.workspaceId != ctx.workspaceId) {
+      throw const NotFoundException('Notification not found in this workspace');
+    }
+    if ((await visibleNotificationItems(ctx.workspaceId!, ctx.userId, [
+      item,
+    ])).isEmpty) {
+      throw const AuthException('No access to this notification');
+    }
   }
 
   Future<void> assertSpaceOwned(String workspaceId, String spaceId) async {
@@ -2684,6 +2753,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // authenticate (fail closed) rather than orphaning a live credential.
         await pairedDeviceSecretsPort.deletePsk(deviceId);
         await pairedDeviceDao.remove(deviceId);
+        await webPushService?.revokeDevice(deviceId);
         if (existing.userId != null) {}
         return {'ok': true};
       },
@@ -6539,6 +6609,63 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         final typedMetadata = metadata is Map
             ? metadata.cast<String, dynamic>()
             : null;
+        // Questions are first-answer-wins across every client. A stale
+        // metadata snapshot must not replace an earlier answer or resurrect an
+        // expired wait. The conditional SQL update is the serialization point,
+        // not this earlier read (which may race another respondent).
+        if (existing.isUserQuestion &&
+            typedMetadata?['answered'] == true &&
+            typedMetadata?['answer'] is Map) {
+          if (await viewerTraceRestricted(
+            ctx.workspaceId!,
+            existing.spaceId,
+            ctx.userId,
+          )) {
+            throw const AuthException(
+              'Answering this question requires access to its repositories',
+            );
+          }
+          if (agentQuestions == null || !agentQuestions.isPending(messageId)) {
+            throw const ValidationException(
+              'This question is no longer awaiting an answer',
+            );
+          }
+          if (workspaceDbs == null) {
+            throw const ValidationException('Question storage is unavailable');
+          }
+          final rawAnswer = (typedMetadata!['answer'] as Map)
+              .cast<String, dynamic>();
+          final selected = rawAnswer['selected'];
+          if ((selected != null &&
+                  (selected is! List ||
+                      selected.any((value) => value is! String))) ||
+              (rawAnswer['freeText'] != null &&
+                  rawAnswer['freeText'] is! String) ||
+              (rawAnswer['skipped'] != null && rawAnswer['skipped'] is! bool)) {
+            throw const ValidationException('Invalid question answer');
+          }
+          final answer = AgentQuestionAnswer.fromJson(rawAnswer).toJson();
+          final accepted = await workspaceDbs
+              .of(ctx.workspaceId!)
+              .messagingDao
+              .answerQuestion(messageId, answer);
+          if (!accepted) {
+            throw const ValidationException(
+              'This question has already been answered or closed',
+            );
+          }
+          agentQuestions.resolveFromMetadata(messageId, {
+            ...?existing.metadata,
+            'answered': true,
+            'answer': answer,
+          });
+          return {'ok': true};
+        }
+        if (existing.isUserQuestion && typedMetadata != null) {
+          throw const ValidationException(
+            'Question metadata can only change through a pending answer',
+          );
+        }
         // Unchanged historic attachments lack fileId; unrelated metadata
         // edits must keep working without revalidating old stored bytes.
         if (typedMetadata?['attachments'] != null &&
@@ -6639,6 +6766,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
 
     ...buildFileDiscardOps(fileCatalog: fileCatalog, blobStore: blobStore),
+    if (webPushService != null) ...buildWebPushOps(webPushService),
+    if (identityMembers != null)
+      ...buildMobileSpaceOps(
+        messaging: messagingRepository,
+        members: identityMembers,
+      ),
     // Opening a DM, creating a group, deleting/clearing a space and removing
     // a participant are pure persistence — they need no dispatch engine — so
     // they are served on EVERY host (including a pure-Dart headless server),
@@ -9321,10 +9454,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (harnessCreds != null)
       RepoOp(
         name: 'providers.saveApiKey',
+        serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         requiredArgs: ['provider_id', 'api_key'],
         handler: (ctx) async {
+          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           final key = ctx.args['api_key'] as String;
           final baseUrl = ctx.args['base_url'] as String?;
@@ -9375,10 +9510,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (harnessCreds != null)
       RepoOp(
         name: 'providers.removeCredential',
+        serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         requiredArgs: ['provider_id'],
         handler: (ctx) async {
+          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           // For a custom provider "remove credential" drops only the key —
           // the provider definition survives (delete it via
@@ -9416,10 +9553,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (harnessCreds != null)
       RepoOp(
         name: 'providers.addCustom',
+        serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         requiredArgs: ['display_name', 'dialect', 'base_url'],
         handler: (ctx) async {
+          requireServerAdmin(ctx);
           final name = (ctx.args['display_name'] as String).trim();
           final dialect = CustomProviderDialect.fromWire(
             ctx.args['dialect'] as String?,
@@ -9491,10 +9630,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (harnessCreds != null)
       RepoOp(
         name: 'providers.removeCustom',
+        serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         requiredArgs: ['provider_id'],
         handler: (ctx) async {
+          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           if (harnessProviderMetas.containsKey(id)) {
             throw ArgumentError('"$id" is a built-in provider.');
@@ -9515,10 +9656,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // values degrades it. Every field is optional and omitting one clears
         // it back to "let the endpoint decide".
         name: 'providers.saveGenerationDefaults',
+        serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         requiredArgs: ['provider_id'],
         handler: (ctx) async {
+          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           if (!harnessProviderMetas.containsKey(id)) {
             final known = {
@@ -9585,10 +9728,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // report (its only listing, when the endpoint cannot enumerate its
         // own). An override with every field cleared is a remove.
         name: 'providers.saveModelOverride',
+        serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         requiredArgs: ['provider_id', 'model_id'],
         handler: (ctx) async {
+          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           await _requireKnownProvider(harnessCreds, id);
           final modelId = _bareModelId(id, ctx.args['model_id'] as String);
@@ -9627,10 +9772,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // leaves the list; for a live-reported model the endpoint's own
         // metadata takes over again.
         name: 'providers.removeModelOverride',
+        serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         requiredArgs: ['provider_id', 'model_id'],
         handler: (ctx) async {
+          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           await _requireKnownProvider(harnessCreds, id);
           final modelId = _bareModelId(id, ctx.args['model_id'] as String);
@@ -9653,10 +9800,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (oauthBroker != null)
       RepoOp(
         name: 'providers.startOAuth',
+        serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         requiredArgs: ['provider_id'],
         handler: (ctx) async {
+          requireServerAdmin(ctx);
           final start = await oauthBroker.start(
             ctx.args['provider_id'] as String,
           );
@@ -9673,10 +9822,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (oauthBroker != null)
       RepoOp(
         name: 'providers.oauthStatus',
+        serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.read,
         workspaceScoped: false,
         requiredArgs: ['flow_id'],
         handler: (ctx) async {
+          requireServerAdmin(ctx);
           final status = oauthBroker.status(ctx.args['flow_id'] as String);
           return {
             'status': status.state.name,
@@ -9688,10 +9839,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (oauthBroker != null)
       RepoOp(
         name: 'providers.completeOAuth',
+        serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         requiredArgs: ['flow_id', 'code'],
         handler: (ctx) async {
+          requireServerAdmin(ctx);
           await oauthBroker.complete(
             ctx.args['flow_id'] as String,
             ctx.args['code'] as String,
@@ -9708,10 +9861,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (oauthBroker != null)
       RepoOp(
         name: 'providers.cancelOAuth',
+        serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         requiredArgs: ['flow_id'],
         handler: (ctx) async {
+          requireServerAdmin(ctx);
           await oauthBroker.cancel(ctx.args['flow_id'] as String);
           return {'ok': true};
         },
@@ -13635,6 +13790,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       audited: false,
       requiredArgs: ['item_id'],
       handler: (ctx) async {
+        await requireNotificationItemAccess(ctx);
         await notificationFeedRepository.setItemRead(
           ctx.workspaceId!,
           ctx.userId,
@@ -13650,6 +13806,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       minRole: WorkspaceRole.guest,
       requiredArgs: ['item_id'],
       handler: (ctx) async {
+        await requireNotificationItemAccess(ctx);
         await notificationFeedRepository.dismissItem(
           ctx.workspaceId!,
           ctx.userId,
@@ -14431,6 +14588,29 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             .map((lastReadAt) => spaceReadToWire(spaceId, lastReadAt));
       },
     ),
+    WatchQuery(
+      name: 'space_read.watchUserSpaceReads',
+      handler: (ctx) => spaceReadRepository
+          .watchUserSpaceReads(ctx.workspaceId!, ctx.userId)
+          .map(
+            (reads) => {
+              'reads': [
+                for (final entry in reads.entries)
+                  {
+                    'space_id': entry.key,
+                    'last_read_at': entry.value.toIso8601String(),
+                  },
+              ],
+            },
+          ),
+    ),
+    if (workspaceDbs != null && agentQuestions != null)
+      pendingQuestionWatchQuery(
+        workspaceDbs: workspaceDbs,
+        isPending: agentQuestions.isPending,
+        pendingChanges: agentQuestions.pendingChanges,
+        viewerTraceRestricted: viewerTraceRestricted,
+      ),
     WatchQuery(
       name: 'memory_domain.watchForWorkspace',
       handler: (ctx) => memoryDomainRepository
@@ -15775,8 +15955,17 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       name: 'notifications.watch',
       handler: (ctx) => notificationFeedRepository
           .watchFeed(ctx.workspaceId!)
-          .map(
-            (list) => {'items': list.map(notificationFeedItemToWire).toList()},
+          .asyncMap(
+            (list) async => {
+              'items': [
+                for (final item in await visibleNotificationItems(
+                  ctx.workspaceId!,
+                  ctx.userId,
+                  list,
+                ))
+                  notificationFeedItemToWire(item),
+              ],
+            },
           ),
     ),
     WatchQuery(
@@ -15807,6 +15996,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // backing the client's goal-run list with pause / resume / cancel via
     // the `agentGoalRuns.*` ops.
     agentGoalRunsWatchQuery(agentGoalRunRepository: agentGoalRunRepository),
+    agentGoalRunsWorkspaceWatchQuery(
+      agentGoalRunRepository: agentGoalRunRepository,
+      viewerTraceRestricted: viewerTraceRestricted,
+    ),
     ...extraWatchQueries,
   ]);
 

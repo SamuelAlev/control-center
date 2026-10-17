@@ -1,6 +1,7 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_remote/widgets/workspace_avatar.dart';
@@ -32,34 +33,41 @@ class WorkspaceSwitcherButton extends ConsumerWidget {
 
     return CcTappable(
       onPressed: () => context.push('/workspaces'),
-      borderRadius: const BorderRadius.all(Radius.circular(8)),
+      borderRadius: const BorderRadius.all(Radius.circular(2)),
       builder: (context, states) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (active != null)
-                WorkspaceAvatar(
-                  workspaceId: active.id,
-                  name: active.name,
-                  hasLogo: _hasLogo(active),
-                  size: 20,
-                )
-              else
-                Icon(AppIcons.layers, size: 16, color: t.fgSecondary),
-              const SizedBox(width: 8),
-              Text(
-                name ?? l10n.chooseWorkspace,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: name == null ? t.fgTertiary : t.textPrimary,
+        return ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (active != null)
+                  WorkspaceAvatar(
+                    workspaceId: active.id,
+                    name: active.name,
+                    hasLogo: _hasLogo(active),
+                    size: 20,
+                  )
+                else
+                  Icon(AppIcons.layers, size: 16, color: t.fgSecondary),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    name ?? l10n.chooseWorkspace,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: name == null ? t.fgTertiary : t.textPrimary,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              Icon(AppIcons.chevronDown, size: 14, color: t.fgTertiary),
-            ],
+                const SizedBox(width: 4),
+                Icon(AppIcons.chevronDown, size: 14, color: t.fgTertiary),
+              ],
+            ),
           ),
         );
       },
@@ -168,9 +176,13 @@ class WorkspaceSwitcherScreen extends ConsumerWidget {
                 semanticLabel: AppLocalizations.of(
                   context,
                 ).selectWorkspace(w.name),
-                onPressed: () {
-                  ref.read(remoteSessionProvider).setActiveWorkspace(w.id);
-                  context.pop();
+                onPressed: () async {
+                  await ref
+                      .read(remoteSessionProvider)
+                      .setActiveWorkspace(w.id);
+                  if (context.mounted) {
+                    context.go(remoteWorkspaceLocation('/inbox', w.id));
+                  }
                 },
                 child: Row(
                   children: [

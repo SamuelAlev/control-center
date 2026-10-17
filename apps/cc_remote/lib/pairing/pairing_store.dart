@@ -82,6 +82,23 @@ class PairingRecord {
   /// keeps working across reconnects (the PSK is durable).
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 
+  /// Whether a fragment repeats this already-confirmed trust context.
+  ///
+  /// Network paths and offer expiry are not identity: a saved pairing can
+  /// reconnect after the offer expires or the server refreshes its paths.
+  /// Never adopt the fragment's descriptor when it matches — keep the stored
+  /// descriptor and pin. A changed key, server or fingerprint still requires
+  /// explicit confirmation.
+  bool matchesConfirmedOffer(PairingRecord offer) =>
+      deviceId.isNotEmpty &&
+      psk.isNotEmpty &&
+      pinnedFingerprint.isNotEmpty &&
+      descriptor.serverId == offer.descriptor.serverId &&
+      deviceId == offer.deviceId &&
+      psk == offer.psk &&
+      pinnedFingerprint == descriptor.fingerprint &&
+      pinnedFingerprint == offer.descriptor.fingerprint;
+
   /// Returns a copy with the given fields replaced.
   PairingRecord copyWith({
     ConnectionDescriptor? descriptor,

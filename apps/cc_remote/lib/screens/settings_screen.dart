@@ -2,6 +2,9 @@ import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/l10n/remote_locales.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_remote/push/push_settings_section.dart';
+import 'package:cc_remote/widgets/disconnect_card.dart';
+import 'package:cc_remote/widgets/operation_links.dart';
 import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -37,6 +40,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  const OperationLinks(),
+                  const SizedBox(height: 16),
                   _sectionLabel(t, l10n.appearance),
                   const SizedBox(height: 8),
                   _card(t, child: _themeRow(t, l10n, theme)),
@@ -45,9 +50,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 8),
                   _card(t, child: _languageRow(t, l10n, locale)),
                   const SizedBox(height: 24),
+                  const PushSettingsSection(),
+                  const SizedBox(height: 24),
                   _sectionLabel(t, l10n.device),
                   const SizedBox(height: 8),
-                  _DisconnectCard(onConfirm: _disconnect),
+                  DisconnectCard(onConfirm: _disconnect),
                 ],
               ),
             ),
@@ -70,7 +77,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             PhoneIconButton(
               icon: AppIcons.arrowLeft,
               semanticLabel: l10n.back,
-              onPressed: () => context.pop(),
+              onPressed: () =>
+                  context.canPop() ? context.pop() : context.go('/inbox'),
               color: t.fgSecondary,
             ),
             const SizedBox(width: 8),
@@ -92,7 +100,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: 4),
       child: Text(
-        text.toUpperCase(),
+        text,
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -106,7 +114,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: t.bgSecondary,
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        borderRadius: const BorderRadius.all(Radius.circular(2)),
       ),
       child: Padding(padding: const EdgeInsets.all(12), child: child),
     );
@@ -165,75 +173,5 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _disconnect() async {
     await ref.read(remoteSessionProvider).unpair();
-  }
-}
-
-/// Destructive "disconnect this device" card with a two-tap inline confirm — a
-/// stray tap must not drop the pairing. Clears the stored PSK and returns to the
-/// connect screen.
-class _DisconnectCard extends StatefulWidget {
-  const _DisconnectCard({required this.onConfirm});
-
-  final Future<void> Function() onConfirm;
-
-  @override
-  State<_DisconnectCard> createState() => _DisconnectCardState();
-}
-
-class _DisconnectCardState extends State<_DisconnectCard> {
-  bool _armed = false;
-  bool _busy = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final l10n = AppLocalizations.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: t.dangerSoft,
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(AppIcons.logOut, size: 18, color: t.textErrorPrimary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _armed ? l10n.disconnectTapAgain : l10n.disconnectDevice,
-                style: TextStyle(fontSize: 15, color: t.textPrimary),
-              ),
-            ),
-            const SizedBox(width: 8),
-            CcButton(
-              variant: CcButtonVariant.destructive,
-              size: CcButtonSize.sm,
-              loading: _busy,
-              onPressed: _tap,
-              child: Text(_armed ? l10n.confirm : l10n.disconnect),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _tap() async {
-    if (!_armed) {
-      setState(() => _armed = true);
-      return;
-    }
-    setState(() => _busy = true);
-    try {
-      await widget.onConfirm();
-    } finally {
-      if (mounted) {
-        setState(() {
-          _armed = false;
-          _busy = false;
-        });
-      }
-    }
   }
 }

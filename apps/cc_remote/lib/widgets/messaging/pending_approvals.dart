@@ -27,30 +27,41 @@ class PendingApprovals extends ConsumerStatefulWidget {
 
 class _PendingApprovalsState extends ConsumerState<PendingApprovals> {
   final Set<String> _responding = {};
+  final Map<String, String> _errors = {};
 
   static const int _rememberSeconds = 8 * 60 * 60;
 
   Future<void> _respond(
-    String id, {
+    ConfirmationRequestDto request, {
     required bool approved,
     bool remember = false,
   }) async {
-    setState(() => _responding.add(id));
+    final l10n = AppLocalizations.of(context);
+    if (_responding.contains(request.id)) return;
+    setState(() {
+      _responding.add(request.id);
+      _errors.remove(request.id);
+    });
     try {
       final client = ref.read(rpcClientProvider).value;
-      if (client != null) {
-        await RemoteConfirmationRepository(client).respond(
-          id,
-          approved: approved,
-          rememberForSeconds: remember ? _rememberSeconds : null,
-        );
+      final workspaceId = ref.read(activeWorkspaceIdProvider).value;
+      if (client == null ||
+          workspaceId == null ||
+          (request.workspaceId != null && request.workspaceId != workspaceId)) {
+        throw StateError(l10n.requestUnavailable);
       }
-    } catch (_) {
-      // The live subscription reconciles state on failure.
+      final ok = await RemoteConfirmationRepository(client).respond(
+        request.id,
+        approved: approved,
+        rememberForSeconds: remember ? _rememberSeconds : null,
+      );
+      if (!ok) {
+        throw StateError(l10n.requestAlreadyResolved);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _errors[request.id] = '$e');
     } finally {
-      if (mounted) {
-        setState(() => _responding.remove(id));
-      }
+      if (mounted) setState(() => _responding.remove(request.id));
     }
   }
 
@@ -58,60 +69,67 @@ class _PendingApprovalsState extends ConsumerState<PendingApprovals> {
     final value = answer.selectedLabels.firstOrNull;
     switch (value) {
       case 'deny':
-        unawaited(_respond(request.id, approved: false));
+        unawaited(_respond(request, approved: false));
       case 'remember':
-        unawaited(_respond(request.id, approved: true, remember: true));
+        unawaited(_respond(request, approved: true, remember: true));
       case 'approve':
-        unawaited(_respond(request.id, approved: true));
+        unawaited(_respond(request, approved: true));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final pending =
-        ref.watch(pendingConfirmationsProvider(widget.spaceId)).value ??
-        const <ConfirmationRequestDto>[];
-    if (pending.isEmpty) {
+    final pendingState = ref.watch(
+      pendingConfirmationsProvider(widget.spaceId),
+    );
+    final pending = [...?pendingState.value]
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    if (pending.isEmpty && !pendingState.hasError) {
       return const SizedBox.shrink();
     }
-    // Show the oldest request first; leaving every request inline can bury the
-    // conversation and its composer beneath an unbounded stack of approvals.
-    final first = pending.reduce(
-      (a, b) => a.createdAt.compareTo(b.createdAt) <= 0 ? a : b,
-    );
     final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Column(
         children: [
-          _card(context, first),
-          if (pending.length > 1)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                l10n.tabWaitingCount(
-                  l10n.agentApprovalRequired,
-                  pending.length - 1,
-                ),
-                style: CcTypography.caption.copyWith(
-                  color: (context.designSystem ?? DesignSystemTokens.light())
-                      .textSecondary,
-                ),
+          if (pendingState.hasError)
+            Text(
+              '${l10n.inboxLoadFailed}: ${pendingState.error}',
+              style: TextStyle(
+                color: (context.designSystem ?? DesignSystemTokens.light())
+                    .textErrorPrimary,
               ),
             ),
+          for (final request in pending.take(1)) ...[
+            _card(context, request, pending.length),
+            if (_errors[request.id] != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  _errors[request.id]!,
+                  style: TextStyle(
+                    color: (context.designSystem ?? DesignSystemTokens.light())
+                        .textErrorPrimary,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+          ],
         ],
       ),
     );
   }
 
-  Widget _card(BuildContext context, ConfirmationRequestDto p) {
+  Widget _card(BuildContext context, ConfirmationRequestDto p, int waiting) {
     final l10n = AppLocalizations.of(context);
     final command = p.command;
     return AskUserCard(
       key: ValueKey(p.id),
       question: p.title.isEmpty ? l10n.agentApprovalRequired : p.title,
       contextText: p.detail.isEmpty ? null : p.detail,
-      caption: l10n.agentApprovalRequired,
+      caption: waiting == 1
+          ? l10n.agentApprovalRequired
+          : l10n.tabWaitingCount(l10n.agentApprovalRequired, waiting),
       allowSkip: false,
       submitting: _responding.contains(p.id),
       scrollableBody: true,

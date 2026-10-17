@@ -11,6 +11,7 @@ import 'package:cc_remote/live_turns.dart';
 import 'package:cc_remote/widgets/agent_transcript.dart';
 import 'package:cc_remote/widgets/messaging/sent_attachments.dart';
 import 'package:cc_remote/widgets/messaging/user_question_tile.dart';
+import 'package:cc_remote/widgets/phone_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
@@ -140,7 +141,8 @@ class _SpaceMessageTileState extends State<SpaceMessageTile> {
       message: message,
       isMine:
           isHuman &&
-          (widget.myUserId == null || message.senderId == widget.myUserId),
+          widget.myUserId != null &&
+          message.senderId == widget.myUserId,
       turns: widget.turns,
       fetched: _fetched,
     );
@@ -180,7 +182,7 @@ class _SpaceMessageTileState extends State<SpaceMessageTile> {
     final m = widget.message;
     final isHuman = m.senderType == 'user';
     final isMine =
-        isHuman && (widget.myUserId == null || m.senderId == widget.myUserId);
+        isHuman && widget.myUserId != null && m.senderId == widget.myUserId;
     final meta = _meta;
     final view = _view;
     final segments = view.segments;
@@ -252,6 +254,7 @@ class _SpaceMessageTileState extends State<SpaceMessageTile> {
 
   Widget _textBubble(DesignSystemTokens t, String content, bool isMine) {
     final body = TextStyle(fontSize: 14, height: 1.4, color: t.textPrimary);
+    final refs = findFileRefs(content);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: isMine ? t.accentSoft : t.bgSecondary,
@@ -259,10 +262,12 @@ class _SpaceMessageTileState extends State<SpaceMessageTile> {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Text.rich(
-          TextSpan(children: _bodySpans(t, content, body)),
-          style: body,
-        ),
+        child: refs.isEmpty
+            ? PhoneMarkdown(data: content)
+            : Text.rich(
+                TextSpan(children: _bodySpans(t, content, body, refs)),
+                style: body,
+              ),
       ),
     );
   }
@@ -271,11 +276,8 @@ class _SpaceMessageTileState extends State<SpaceMessageTile> {
     DesignSystemTokens t,
     String content,
     TextStyle body,
+    List<FileRefMatch> refs,
   ) {
-    final refs = findFileRefs(content);
-    if (refs.isEmpty) {
-      return [TextSpan(text: content)];
-    }
     final spans = <InlineSpan>[];
     var cursor = 0;
     for (final ref in refs) {

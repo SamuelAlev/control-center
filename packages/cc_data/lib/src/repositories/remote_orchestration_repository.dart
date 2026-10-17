@@ -83,8 +83,13 @@ class RemoteOrchestrationRepository {
 
   /// Live single orchestration by id in the bound workspace — a fresh snapshot
   /// ([OrchestrationDto] or null) on every change.
-  Stream<OrchestrationDto?> watchById(String id) =>
-      _client.subscribe('orchestration.watchById', {'id': id}).map(_one);
+  Stream<OrchestrationDto?> watchById(String id, {String? workspaceId}) =>
+      _client
+          .subscribe('orchestration.watchById', {
+            'workspace_id': ?workspaceId,
+            'id': id,
+          })
+          .map(_one);
 
   OrchestrationDto? _one(Map<String, dynamic> data) {
     final o = data['orchestration'];

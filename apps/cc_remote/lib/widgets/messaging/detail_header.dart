@@ -26,7 +26,8 @@ class DetailHeader extends StatelessWidget {
             PhoneIconButton(
               icon: AppIcons.arrowLeft,
               semanticLabel: AppLocalizations.of(context).back,
-              onPressed: () => context.pop(),
+              onPressed: () =>
+                  context.canPop() ? context.pop() : context.go('/inbox'),
               color: t.fgSecondary,
             ),
             const SizedBox(width: 8),

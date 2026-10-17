@@ -186,6 +186,7 @@ class CcServer {
   /// reclaimed. Disposed with the other long-lived listeners.
   RigEventListener? _rigEventListener;
   NotificationFeedRecorder? _notificationFeedRecorder;
+  WebPushService? _webPushService;
 
   /// Raises "an agent is waiting on you" from pending approvals, parked runs
   /// and questions. Disposed with the feed recorder it feeds.
@@ -347,6 +348,7 @@ class CcServer {
       await _rigEventListener?.dispose();
       await _agentAwaitingInput?.dispose();
       await _notificationFeedRecorder?.dispose();
+      await _webPushService?.dispose();
       await _codeGraphWatch?.dispose();
       // Native watchers over every workspace's skills dir: arming is O(1) but
       // each one holds a kernel watch for the process lifetime.

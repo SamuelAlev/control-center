@@ -1106,5 +1106,922 @@
       "hours": { "type": "int" },
       "minutes": { "type": "int" }
     }
-  }
+  },
+
+  "mobileConversations": "Conversations",
+  "mobileNewConversation": "New conversation",
+  "mobileConversationName": "Conversation name",
+  "mobileRename": "Rename",
+  "mobileManageSpace": "Manage space",
+  "mobileArchived": "Archived",
+  "mobileSearchMessages": "Search all messages in this space",
+  "mobileSearch": "Search",
+  "mobileNoResults": "No results",
+  "mobileReopen": "Reopen",
+  "mobileArchive": "Archive",
+  "mobileProgress": "Progress and context",
+  "mobileReadFailed": "Could not mark this conversation as read",
+  "mobileSendFailed": "Message not sent. Your draft is still here.",
+  "mobileActionFailed": "Action failed",
+  "mobileRemove": "Remove",
+  "mobileLinkedMessage": "Linked message",
+  "mobileOlderMessages": "Older messages",
+  "mobileMessageActions": "Message actions",
+  "mobileOpenThread": "Open thread",
+  "mobileCopyLink": "Copy link",
+  "mobileStopRun": "Stop run",
+  "mobileStopRunConfirm": "Stop this agent run? Work already completed will be kept.",
+  "mobileControlUnsupported": "This run has finished or does not support this control.",
+  "mobilePauseRequested": "Pause requested at the next turn boundary",
+  "mobileResumed": "Run resumed",
+  "mobileStopRequested": "Stop requested",
+  "mobileQueuedMessages": "Queued messages",
+  "mobilePauseRun": "Pause at next turn",
+  "mobileResumeRun": "Resume",
+  "mobileEditQueued": "Edit queued message",
+  "mobileSteerNow": "Steer now",
+  "mobileMoveUp": "Move up",
+  "mobileMoveDown": "Move down",
+  "mobileQueueChanged": "The queue changed, or this run cannot accept live steering. Refresh and try again.",
+  "mobileActivity": "Activity",
+  "mobilePermissions": "Permissions and audit",
+  "mobilePlans": "Plans",
+  "mobileGoals": "Supervised goals",
+  "mobileCredentials": "Connections and credentials",
+  "mobileWorkspaceUnavailable": "This workspace is unavailable or you no longer have access.",
+  "mobilePrReviewThreads": "Review threads",
+  "mobilePrThreadsLoadFailed": "Could not load review threads",
+  "mobilePrNoReviewThreads": "No inline review threads yet",
+  "mobilePrCommentPermissionDenied": "You do not have permission to comment on this repository.",
+  "mobilePrPermissionChecking": "Checking comment permissions…",
+  "mobilePrPermissionLoadFailed": "Could not check comment permissions. Retry to comment.",
+  "mobilePrThreadLine": "{side} line {line}",
+  "@mobilePrThreadLine": {
+    "placeholders": {
+      "side": {
+        "type": "String"
+      },
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "mobilePrOriginalSide": "Original",
+  "mobilePrUpdatedSide": "Updated",
+  "mobilePrThreadResolved": "Resolved",
+  "mobilePrReplyHint": "Write a reply…",
+  "mobilePrCommentRequired": "Write a comment before posting.",
+  "mobilePrReply": "Reply",
+  "mobilePrReopenThread": "Reopen thread",
+  "mobilePrResolveThread": "Resolve thread",
+  "mobilePrResolvePermissionDenied": "Only the pull request author or someone with write access can resolve this thread.",
+  "mobilePrCommentOnLine": "Comment on {side} line {line}",
+  "@mobilePrCommentOnLine": {
+    "placeholders": {
+      "side": {
+        "type": "String"
+      },
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "mobilePrInlineCommentHint": "Write an inline comment…",
+  "mobilePrPostInlineComment": "Post comment",
+  "mobilePrCommentUnavailable": "Inline comments are unavailable for this pull request.",
+  "mobilePrPatchUnavailable": "The forge did not provide a text patch for this file.",
+  "mobilePrNoPatchForFile": "The patch for this file is not available.",
+  "mobileTicketNew": "New ticket",
+  "mobileTicketCreate": "Create ticket",
+  "mobileTicketEdit": "Edit ticket",
+  "mobileTicketTitle": "Title",
+  "mobileTicketTitleRequired": "Enter a title to save this ticket.",
+  "mobileTicketDescription": "Description",
+  "mobileTicketMarkdownHint": "Add details in Markdown",
+  "mobileTicketPriority": "Priority",
+  "mobileTicketPriorityNone": "No priority",
+  "mobileTicketPriorityUrgent": "Urgent",
+  "mobileTicketPriorityHigh": "High",
+  "mobileTicketPriorityMedium": "Medium",
+  "mobileTicketPriorityLow": "Low",
+  "mobileTicketLabels": "Labels",
+  "mobileTicketLabelsHint": "One label per line",
+  "mobileTicketLabelsHelp": "Enter each label on a separate line.",
+  "mobileTicketWorkspaceProvider": "Filed in {provider}",
+  "@mobileTicketWorkspaceProvider": {
+    "description": "Shows the workspace's configured ticketing provider in the create form.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "mobileTicketProviderLocal": "Control Center",
+  "mobileTicketUnassigned": "Unassigned",
+  "mobileTicketAssignedFilter": "Assigned",
+  "mobileTicketAgentsLoadFailed": "Couldn't load agents",
+  "mobileTicketSearch": "Search tickets",
+  "mobileTicketSearchHint": "Title, key, description, label or assignee",
+  "mobileTicketClearSearch": "Clear ticket search",
+  "mobileTicketNoMatches": "No matching tickets",
+  "mobileTicketAdjustFilters": "Try another search or change the filters.",
+  "mobileTicketClearFilters": "Clear filters",
+  "mobileTicketNotFound": "Ticket not found",
+  "mobileTicketNotFoundDescription": "This ticket may have been deleted or moved out of this workspace.",
+  "mobileTicketWorkspaceChanged": "The workspace changed. Return to the current workspace before saving.",
+  "mobileTicketOpenLinkedSpace": "Open linked space",
+  "mobileTicketReadOnly": "A workspace member role is required to change tickets.",
+  "permissionTitle": "Permissions",
+  "permissionWorkspaceFailed": "Couldn't load the workspace",
+  "permissionNoWorkspace": "Select a workspace to inspect permissions.",
+  "permissionLoading": "Loading permissions…",
+  "permissionScopeDescription": "Inspect how each action is decided at this scope. Workspace rules can be inherited by agents and spaces.",
+  "permissionScope": "Policy scope",
+  "permissionWorkspaceScope": "Workspace",
+  "permissionAgentScope": "Agent",
+  "permissionSpaceScope": "Space",
+  "permissionAgentContext": "Agent acting in this space",
+  "permissionNoAgentContext": "No agent selected",
+  "permissionTargetsFailed": "Couldn't load scope targets",
+  "permissionNoTargets": "No targets are available at this scope.",
+  "permissionRoleFailed": "Couldn't confirm your workspace role",
+  "permissionMemberRequired": "A workspace member role is required to view policy rules.",
+  "permissionRulesFailed": "Couldn't load policy rules",
+  "permissionAuditAdminOnly": "Authorization history is available to workspace admins only.",
+  "permissionAllow": "Allow",
+  "permissionAsk": "Ask first",
+  "permissionDeny": "Deny",
+  "permissionFileDelete": "Delete files",
+  "permissionFileWriteOutsideWorktree": "Write outside worktree",
+  "permissionGitCommit": "Commit changes",
+  "permissionGitPush": "Push commits",
+  "permissionPrCreate": "Create pull requests",
+  "permissionPrPublish": "Publish pull requests",
+  "permissionVendorSyncWrite": "Write vendor sync",
+  "permissionNetworkEgress": "Access network",
+  "permissionSecretAccess": "Access secrets",
+  "permissionPackageInstall": "Install packages",
+  "permissionProcessSpawn": "Spawn processes",
+  "permissionWorkspaceMutation": "Change workspace",
+  "permissionEnclosureControl": "Control enclosure",
+  "permissionChangeFailed": "Couldn't change the rule",
+  "permissionEffectiveDescription": "Effective for this scope without action arguments. Conditional grants below apply only to matching requests; the server makes the final decision.",
+  "permissionSpaceAgentNote": "No agent selected. Agent-specific rules are omitted until you choose one above.",
+  "permissionScopedGrants": "Rules at this scope",
+  "permissionModePreset": "Mode preset",
+  "permissionBuiltInDefault": "Built-in default",
+  "permissionRemembered": "Remembered approval",
+  "permissionSource": "Source",
+  "permissionSetAtThisScope": "{source} · set here",
+  "@permissionSetAtThisScope": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionInheritedFrom": "{source} · inherited",
+  "@permissionInheritedFrom": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionExpiresAt": "Expires {date}",
+  "@permissionExpiresAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionSetHere": "Set a rule here",
+  "permissionRevokeBeforeEdit": "Revoke the scoped or remembered rule before setting a general rule for this action.",
+  "permissionConfirmRevoke": "Confirm revoke",
+  "permissionRevokeRule": "Revoke rule",
+  "permissionCommandPrefix": "Command prefix: {prefix}",
+  "@permissionCommandPrefix": {
+    "placeholders": {
+      "prefix": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionNoExpiry": "No expiry",
+  "permissionExpired": "Expired",
+  "permissionExplicitRule": "Explicit rule",
+  "permissionEnforcementAdvisory": "Advisory: ask-first rules are logged without prompting",
+  "permissionEnforcementSoft": "Soft enforcement: override requires authorization",
+  "permissionEnforcementHard": "Hard enforcement: cannot be overridden",
+  "permissionPaths": "Paths: {paths}",
+  "@permissionPaths": {
+    "placeholders": {
+      "paths": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionRefs": "Git refs: {refs}",
+  "@permissionRefs": {
+    "placeholders": {
+      "refs": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionHosts": "Hosts: {hosts}",
+  "@permissionHosts": {
+    "placeholders": {
+      "hosts": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionCommands": "Commands: {commands}",
+  "@permissionCommands": {
+    "placeholders": {
+      "commands": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionMaxCount": "Maximum count: {count}",
+  "@permissionMaxCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionMaxCents": "Maximum cents: {cents}",
+  "@permissionMaxCents": {
+    "placeholders": {
+      "cents": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionAuditHeading": "Authorization history",
+  "permissionAuditDescription": "Recent decisions recorded by the server. Only admins can inspect the log or verify its hash chain.",
+  "permissionOnBehalfOf": "on behalf of {user}",
+  "@permissionOnBehalfOf": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionPrompted": "Human approval requested",
+  "permissionVerifyChain": "Verify audit chain",
+  "permissionVerifyFailed": "Couldn't verify the audit chain",
+  "permissionChainIntact": "Chain intact · {count} entries checked",
+  "@permissionChainIntact": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionChainBroken": "Chain broken at entry {sequence}: {reason}",
+  "@permissionChainBroken": {
+    "placeholders": {
+      "sequence": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionAuditEmpty": "No authorization decisions recorded yet.",
+  "permissionAuditFailed": "Couldn't load authorization history",
+  "mobilePlansLoadFailed": "Could not load plans",
+  "mobilePlansEmpty": "No plans yet",
+  "mobilePlansEmptyDescription": "Plans submitted by agents will appear here for review.",
+  "mobilePlanTitle": "Plan",
+  "mobilePlanMissing": "This plan is no longer available in this workspace.",
+  "mobilePlanStepCount": "{count} steps",
+  "@mobilePlanStepCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mobilePlanDraft": "Draft",
+  "mobilePlanProposed": "Awaiting review",
+  "mobilePlanApproved": "Approved",
+  "mobilePlanRejected": "Rejected",
+  "mobilePlanSuperseded": "Superseded",
+  "mobilePlanExecuting": "Executing",
+  "mobilePlanSynthesizing": "Synthesizing",
+  "mobilePlanCompleted": "Completed",
+  "mobilePlanFailed": "Failed",
+  "mobilePlanCancelled": "Cancelled",
+  "mobilePlanRevision": "Revision {revision}",
+  "@mobilePlanRevision": {
+    "placeholders": {
+      "revision": {
+        "type": "String"
+      }
+    }
+  },
+  "mobilePlanSteps": "Steps",
+  "mobilePlanNoSteps": "No steps were submitted for this plan.",
+  "mobilePlanAssumptions": "Clarifications",
+  "mobilePlanDependsOn": "Depends on {keys}",
+  "@mobilePlanDependsOn": {
+    "placeholders": {
+      "keys": {
+        "type": "String"
+      }
+    }
+  },
+  "mobilePlanStepCost": "Estimated up to {cost}",
+  "@mobilePlanStepCost": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "mobilePlanSelect": "Select",
+  "mobilePlanSelected": "Selected",
+  "mobilePlanEstimate": "Estimate cost",
+  "mobilePlanEstimateRequired": "Estimate the plan before approving execution.",
+  "mobilePlanEstimatedCost": "Estimated cost: {low}–{high}",
+  "@mobilePlanEstimatedCost": {
+    "placeholders": {
+      "low": {
+        "type": "String"
+      },
+      "high": {
+        "type": "String"
+      }
+    }
+  },
+  "mobilePlanCostUnknown": "not available",
+  "mobilePlanNoHardCap": "no hard cap",
+  "mobilePlanExceedsBudget": "The estimate exceeds the configured budget. Review before approving.",
+  "mobilePlanPartialEstimate": "This estimate covers the entire plan; selected steps may cost less.",
+  "mobilePlanConfirmAll": "Start the entire plan?",
+  "mobilePlanConfirmSelected": "Start selected steps?",
+  "mobilePlanExecutionConfirmation": "Approving starts execution and can incur charges. Estimated high cost: {cost}. Budget cap: {cap}.",
+  "@mobilePlanExecutionConfirmation": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "mobilePlanApproveAll": "Approve all and run",
+  "mobilePlanApproveSelected": "Approve selected and run",
+  "mobilePlanWiden": "Approve additional steps",
+  "mobilePlanWidenConfirm": "Release {count} more steps to execute? They can incur charges. Existing execution cost cap: {cap}.",
+  "@mobilePlanWidenConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "mobilePlanChanged": "The plan changed during review. Reopen the latest revision and estimate it again.",
+  "mobilePlanReject": "Reject plan",
+  "mobilePlanRejectConfirm": "Reject this plan? It will not execute.",
+  "mobilePlanStop": "Stop execution",
+  "mobilePlanStopConfirm": "Stop this plan's execution? Work already completed will not be undone.",
+  "mobilePlanRunId": "Execution run: {runId}",
+  "@mobilePlanRunId": {
+    "placeholders": {
+      "runId": {
+        "type": "String"
+      }
+    }
+  },
+  "mobilePlanExecutionPending": "Approval accepted. Waiting for the execution record…",
+  "mobilePlanProgress": "{completed} of {total} execution steps completed",
+  "@mobilePlanProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "mobilePlanOpenConversation": "Open conversation",
+  "mobileGoalsTitle": "Supervised goals",
+  "mobileGoalsLoadFailed": "Could not load supervised goals",
+  "mobileGoalsEmpty": "No supervised goals yet",
+  "mobileGoalsEmptyDescription": "Start one in a space, or send /goal in a conversation.",
+  "mobileGoalMissing": "This goal is no longer available in this workspace.",
+  "mobileGoalActive": "Active",
+  "mobileGoalPaused": "Paused",
+  "mobileGoalCompleted": "Completed",
+  "mobileGoalFailed": "Failed",
+  "mobileGoalCancelled": "Cancelled",
+  "mobileGoalBudgetExhausted": "Budget reached",
+  "mobileGoalGoal": "Goal",
+  "mobileGoalLoop": "Loop",
+  "mobileGoalKind": "Type: {kind}",
+  "@mobileGoalKind": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "mobileGoalRuns": "{count} runs",
+  "@mobileGoalRuns": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "mobileGoalNoRunLimit": "unlimited",
+  "mobileGoalProgress": "Runs: {runs} / {maxRuns} · Spent: {spent} / {cap}",
+  "@mobileGoalProgress": {
+    "placeholders": {
+      "runs": {
+        "type": "String"
+      },
+      "maxRuns": {
+        "type": "String"
+      },
+      "spent": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "mobileGoalDeadline": "Deadline: {date}",
+  "@mobileGoalDeadline": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mobileGoalFailures": "Consecutive failed runs: {count}",
+  "@mobileGoalFailures": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "mobileGoalSummary": "Completion summary",
+  "mobileGoalFailedDescription": "The supervisor stopped after repeated failed runs. Review the conversation for details.",
+  "mobileGoalBudgetWall": "The deadline or run limit was reached. This goal cannot resume by raising the cost cap.",
+  "mobileGoalPause": "Pause goal",
+  "mobileGoalResume": "Resume goal",
+  "mobileGoalStop": "Cancel goal",
+  "mobileGoalStopConfirm": "Permanently cancel this supervised goal? It cannot be resumed.",
+  "mobileGoalRaiseBudget": "Raise budget and resume",
+  "mobileGoalRaiseTo": "Raise budget to {amount} and resume",
+  "@mobileGoalRaiseTo": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mobileGoalRaiseConfirm": "Increase this goal's cost cap from {oldCap} to {newCap} and resume spending?",
+  "@mobileGoalRaiseConfirm": {
+    "placeholders": {
+      "oldCap": {
+        "type": "String"
+      },
+      "newCap": {
+        "type": "String"
+      }
+    }
+  },
+  "mobileGoalOpenConversation": "Open goal conversation",
+  "mobileGoalCreate": "Start supervised goal",
+  "mobileGoalChooseSpace": "Run in space",
+  "mobileGoalNoSpaces": "Create a space before starting a goal.",
+  "mobileGoalChooseAgent": "Run with agent",
+  "mobileGoalNoAgents": "Add an active agent before starting a goal.",
+  "mobileGoalSelectedAgent": "{name} selected",
+  "@mobileGoalSelectedAgent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mobileGoalObjectiveHint": "What outcome should the agent pursue?",
+  "mobileGoalBudgetUsd": "Cost cap (USD)",
+  "mobileGoalCreateInvalid": "Choose a space and agent, enter an objective and set a positive cost cap in USD.",
+  "mobileGoalCreateConfirm": "Start a supervised goal with a maximum cost of {cap}? The agent may begin immediately.",
+  "@mobileGoalCreateConfirm": {
+    "placeholders": {
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "mobileGoalUnavailable": "The server connection is not ready. Retry after reconnecting.",
+  "mobileGoalConversationMissing": "The selected conversation is no longer available in this workspace.",
+  "mobileGoalCreateSent": "Goal started. Supervisor state will appear in this list.",
+  "mobileGoalStartRefused": "No goal run started. Review the conversation for the supervisor's reason.",
+  "mobileGoalSelectedSpace": "{name} selected",
+  "@mobileGoalSelectedSpace": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "requestUnavailable": "This request is no longer available in the active workspace.",
+  "requestAlreadyResolved": "This request has already been resolved.",
+  "inboxCredentialsBlocked": "Credentials blocking runs",
+  "inboxSyncFailures": "Failed vendor syncs",
+  "inboxConfigureCredentials": "Configure credentials",
+  "openTicket": "Open ticket",
+  "activityTitle": "Activity",
+  "activityClearAll": "Clear activity",
+  "activityClearConfirm": "This hides all activity recorded so far for you on every device. New activity will still appear.",
+  "activityMarkAllRead": "Mark all read",
+  "activityMarkAllConfirm": "Mark every activity item in this workspace as read on all your devices?",
+  "activityMarkRead": "Mark read",
+  "activityMarkUnread": "Mark unread",
+  "activityDismiss": "Dismiss",
+  "activityResolved": "Resolved",
+  "activityOpen": "Open",
+  "activityEmpty": "No activity yet",
+  "activityLoadFailed": "Couldn’t load activity",
+  "activityAgentWaiting": "Agent needs input",
+  "activityAgentBlocked": "Agent action blocked",
+  "activityMessage": "New message",
+  "activityPullRequest": "Pull request update",
+  "activityTicket": "Ticket update",
+  "activityMeeting": "Meeting update",
+  "activityCalendar": "Calendar connection",
+  "activityRig": "Enclosure update",
+  "activityEvent": "Update",
+  "activityPrReady": "Pull request ready to merge",
+  "activityPrBlocked": "Pull request merge blocked",
+  "activityPrApproved": "Pull request approved",
+  "activityPrChanges": "Changes requested",
+  "activityPrChecksFailed": "Pull request checks failed",
+  "activityPrChecksRecovered": "Pull request checks recovered",
+  "activityPrComment": "Pull request comment",
+  "activityPrPublished": "Pull request published",
+  "activityPrMerged": "Pull request merged",
+  "activityPrMentioned": "Mentioned in a pull request",
+  "activityPrReviewRequested": "Review requested",
+  "activityPrReviewStale": "Review needs refreshing",
+  "activityTicketAssigned": "Ticket assigned",
+  "activityTicketChanged": "Ticket status changed",
+  "activityMeetingSoon": "Meeting starting soon",
+  "activityCalendarExpired": "Calendar connection expired",
+  "activityRigControl": "Enclosure control changed",
+  "activityRigClosed": "Enclosure stopped",
+  "mobileSpacesSearch": "Search spaces",
+  "mobileSpacesArchived": "Archived",
+  "mobileSpacesActive": "Active",
+  "mobileSpacesNew": "New space",
+  "mobileSpacesManage": "Manage space",
+  "mobileSpacesName": "Space name",
+  "mobileSpacesAgents": "Agents",
+  "mobileSpacesMembers": "People",
+  "mobileSpacesRepos": "Repositories",
+  "mobileSpacesAllRepos": "All linked repositories",
+  "mobileSpacesNoRepos": "No repositories",
+  "mobileSpacesBaseBranch": "Base branch (optional)",
+  "mobileSpacesDefaultBranch": "Default branch",
+  "mobileSpacesMode": "Mode",
+  "mobileSpacesModeChat": "Chat",
+  "mobileSpacesModeReview": "Review (read-only)",
+  "mobileSpacesModePlan": "Plan (read-only)",
+  "mobileSpacesModeOrchestrate": "Orchestrate",
+  "mobileSpacesAutonomy": "Autonomy override",
+  "mobileSpacesAutonomyInherited": "Inherited",
+  "mobileSpacesAutonomyPropose": "Propose only",
+  "mobileSpacesAutonomyApproval": "Act with approval",
+  "mobileSpacesAutonomyFreely": "Act freely",
+  "mobileSpacesAutonomyNotice": "An override cannot bypass action-policy prompts or denials. Only workspace admins can change it.",
+  "mobileSpacesArchive": "Archive space",
+  "mobileSpacesReopen": "Reopen space",
+  "mobileSpacesSave": "Save changes",
+  "mobileSpacesCreate": "Create space",
+  "mobileSpacesOperationFailed": "Couldn't update space",
+  "mobileSpacesMissing": "Space not found in this workspace",
+  "mobileSpacesEmptyName": "Enter a space name",
+  "mobileSpacesNoMatches": "No matching spaces",
+  "mobileSpacesUnread": "Unread agent reply",
+  "mobileSpacesNeedsInput": "Needs your input",
+  "mobileSpacesRunning": "Agent running",
+  "mobileSpacesNoAgents": "No agents in this workspace",
+  "mobileSpacesNoMembers": "No other workspace members",
+  "mobileSpacesRepoError": "Couldn't load repositories",
+  "mobileSpacesRetry": "Retry",
+  "mobileSpacesBranchUnavailable": "Choose or type a base branch when creating a space; existing space base branches cannot be changed.",
+  "mobileSpacesArchivedEmpty": "No archived spaces",
+  "mobileSpacesAllRepoWarning": "Newly linked workspace repositories will also be included in this space.",
+  "mobileSpacesCreatedRetry": "Space created. Retry adding people, or open its management page.",
+  "progressTitle": "Progress",
+  "progressConversation": "Conversation",
+  "progressLoadFailed": "Couldn’t load progress",
+  "progressUnavailable": "Conversation unavailable",
+  "progressUnavailableDescription": "This conversation is not in the active workspace and space. Return to its space to continue.",
+  "progressSaveFailed": "Couldn’t update progress",
+  "progressGoal": "Goal",
+  "progressNoGoal": "No working goal set",
+  "progressSetGoal": "Set goal",
+  "progressEditGoal": "Edit goal",
+  "progressClearGoal": "Clear goal",
+  "progressGoalRequired": "Enter a goal before saving.",
+  "progressTodos": "Tasks",
+  "progressNoTodos": "No tasks yet",
+  "progressNewTodo": "New task",
+  "progressAddTodo": "Add task",
+  "progressEditTodo": "Edit task",
+  "progressTodoRequired": "Enter a task before saving.",
+  "progressTodoNoLongerExists": "That task was removed. Reload the list and try again.",
+  "progressWorkspaceChanged": "The active workspace changed. Return to this conversation and try again.",
+  "progressRemoveTodo": "Remove task {name}",
+  "@progressRemoveTodo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "progressPending": "Pending",
+  "progressInProgress": "In progress",
+  "progressCompleted": "Completed",
+  "progressMoveUp": "Move task up",
+  "progressMoveDown": "Move task down",
+  "progressRunTree": "Agent runs",
+  "progressNoRuns": "No runs in this conversation yet",
+  "progressRunning": "Running",
+  "progressFailed": "Failed",
+  "progressUnknown": "Unknown",
+  "progressHealthy": "Active",
+  "progressBlocked": "Blocked",
+  "progressLooping": "Looping",
+  "progressStalled": "Stalled",
+  "progressDead": "Stopped unexpectedly",
+  "progressQuiet": "No output yet",
+  "progressCostReported": "Provider-reported charge",
+  "progressCostNotional": "Notional subscription list price; not a bill",
+  "progressCostMixed": "Mixed cost sources",
+  "progressCostEstimated": "Estimated cost",
+  "progressDurationSeconds": "{seconds}s",
+  "@progressDurationSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "progressRunDetails": "Model: {model} · Time: {duration} · Cost: {cost}",
+  "@progressRunDetails": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      },
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "progressStartedAt": "Started {time}",
+  "@progressStartedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "progressLiveness": "Health: {state}",
+  "@progressLiveness": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "progressRunTokens": "Input: {input} · Output: {output} tokens",
+  "@progressRunTokens": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "progressOutputPreviewLimited": "Only the first 6,000 characters of structured output are shown.",
+  "progressRetryOf": "Retry of run {runId}",
+  "@progressRetryOf": {
+    "placeholders": {
+      "runId": {
+        "type": "String"
+      }
+    }
+  },
+  "progressContext": "Context and limits",
+  "progressNoAgent": "No agent to inspect",
+  "progressContextReading": "{used} / {window} tokens",
+  "@progressContextReading": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "window": {
+        "type": "String"
+      }
+    }
+  },
+  "progressMeasured": "Provider-reported context on the latest call",
+  "progressEstimated": "Estimated from stored conversation and persistent context",
+  "progressContextUnknown": "Context usage not reported yet",
+  "progressContextPercent": "{percent}% of context window",
+  "@progressContextPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "progressMonthlyBudget": "Configured monthly agent limit: {amount}",
+  "@progressMonthlyBudget": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "progressConversationTokens": "Stored live conversation: {tokens} estimated tokens",
+  "@progressConversationTokens": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "progressInspectionFor": "Persistent context for {agent} · {model}",
+  "@progressInspectionFor": {
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      },
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "progressContextSystem": "System prompt",
+  "progressContextRules": "Rules",
+  "progressContextSkills": "Skills",
+  "progressContextTools": "Tool definitions",
+  "progressContextMcp": "MCP tools",
+  "progressContextDeferred": "Deferred tools",
+  "progressContextSubagents": "Subagents",
+  "progressContextRunner": "External runner",
+  "progressContextMemory": "Memory",
+  "progressContextHistory": "Conversation history",
+  "progressContextSegment": "{label} · {tokens} tokens",
+  "@progressContextSegment": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "progressContextPart": "{title} · {tokens} tokens",
+  "@progressContextPart": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "progressOutputs": "Recent outputs",
+  "progressNoOutputs": "No recent agent outputs",
+  "progressStructuredOutputsAbove": "Structured run outputs are shown in the agent runs above.",
+  "progressRecentOutputsOnly": "Showing recent messages only. Open the conversation for older work.",
+  "progressPlan": "Plan",
+  "progressArtifact": "Artifact",
+  "progressResult": "Result",
+  "progressHideArtifact": "Hide artifact",
+  "progressReadArtifact": "Read artifact",
+  "progressArtifactUnavailable": "Artifact no longer available",
+  "progressArtifactPreviewLimited": "Showing a limited preview of this artifact.",
+  "progressDiagramSource": "Diagram source",
+  "progressOpenAttachment": "Open {name}",
+  "@progressOpenAttachment": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "progressOpenPlan": "Open plan",
+  "progressOpenDiff": "Review changed files: {label}",
+  "@progressOpenDiff": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "progressViewMessage": "View message",
+  "pushTitle": "Background notifications",
+  "pushIntro": "Get a private alert when something needs your attention, even when the app is closed. Details stay inside your encrypted connection.",
+  "pushLoading": "Checking notification settings…",
+  "pushError": "Could not update notifications. Check your connection and try again.",
+  "pushEnable": "Enable notifications",
+  "pushDisable": "Turn off notifications",
+  "pushQuiet": "Pause alerts on this device",
+  "pushCategories": "Notify me about",
+  "pushCategoryAgents": "Agents",
+  "pushCategoryMessages": "Messages",
+  "pushCategoryPullRequests": "Pull requests",
+  "pushCategoryTickets": "Tickets",
+  "pushCategoryCalendar": "Calendar",
+  "pushCategoryMachines": "Machines",
+  "pushSecureOrigin": "Notifications require HTTPS.",
+  "pushInstallIos": "On iPhone or iPad, add this app to the Home Screen and open it there to enable notifications.",
+  "pushUnsupported": "This browser does not support background notifications.",
+  "pushDenied": "Notifications are blocked in browser settings. Allow them there to continue.",
+  "pushResubscribe": "Reconnect notifications",
+  "pushStatusEnabled": "Notifications are on for this device.",
+  "pushStatusDisabled": "Notifications are off for this device.",
+  "credentialsTitle": "Connections & credentials",
+  "@credentialsTitle": {
+    "description": "Phone credential-management screen heading."
+  },
+  "credentialsIntro": "Connect the accounts your runs and integrations use. Secrets are stored on your server, not this phone.",
+  "credentialsModelProviders": "Model providers",
+  "credentialsOwnerOnly": "Only the server owner can add, sign in to, or remove model-provider credentials. These keys are shared across workspaces.",
+  "credentialsContactOwner": "Ask the server owner to connect the provider needed by your blocked run.",
+  "credentialsClaudeCode": "Claude Code",
+  "credentialsClaudeHostOnly": "Claude Code signs in through the CLI on the host. Ask the server owner to complete or renew the account login on the host terminal; this phone cannot run it.",
+  "credentialsYourForgeAccounts": "Your forge accounts",
+  "credentialsYourTicketingAccount": "Your ticketing account",
+  "credentialsLocalTicketsNoLogin": "Local tickets need no login. Connect Linear here if your workspace uses Linear.",
+  "credentialsMembershipRequired": "Join a workspace to manage your forge or ticketing credentials. Ask a workspace administrator for access.",
+  "credentialsSwitchWorkspace": "This link points to another workspace. Switch to that workspace before changing credentials.",
+  "credentialsReturnToInbox": "Return to Inbox to retry a blocked run once its credential is connected. The host also checks parked runs automatically.",
+  "credentialsLoadFailed": "Could not load connections. Check the server link and retry.",
+  "credentialsOperationFailed": "Could not change this connection. Check the server link, your access, and the credential, then try again.",
+  "credentialsConnected": "Connected",
+  "credentialsNotConnected": "Not connected",
+  "credentialsSignedInAs": "Signed in as {username}",
+  "@credentialsSignedInAs": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "credentialsAccount": "Connected account",
+  "credentialsStoredKey": "Stored key",
+  "credentialsActive": "Active",
+  "credentialsRemove": "Remove",
+  "credentialsRemoveConfirm": "Remove your saved credential? You may need to sign in again.",
+  "credentialsApiKey": "API key",
+  "credentialsApiKeyHint": "Paste a provider API key",
+  "credentialsBrowserLogin": "Sign in with browser",
+  "credentialsSignInAgain": "Sign in again",
+  "credentialsWaitingForLogin": "Waiting for authorization in your browser…",
+  "credentialsLoginTimedOut": "The login expired. Start a new sign-in attempt.",
+  "credentialsCopyCode": "Copy code",
+  "credentialsDeviceCodeHint": "Confirm this code on the provider's page. Keep this screen open while the server completes sign-in.",
+  "credentialsPasteRedirect": "Authorization code or redirect URL",
+  "credentialsPasteRedirectHint": "Paste the code or full redirect URL from the provider",
+  "credentialsCompleteLogin": "Complete sign-in",
+  "credentialsRedirectUnavailable": "This server's browser callback is not reachable securely from a phone. Ask the server owner to configure a public HTTPS callback, or add a token instead.",
+  "credentialsUpdateToken": "Update token",
+  "credentialsAddToken": "Add token",
+  "credentialsPersonalToken": "Personal access token",
+  "credentialsPersonalTokenHint": "Paste a personal access token",
+  "credentialsHostManaged": "This connection comes from the server app or environment. Only the server owner can change it there; you can still add your own token.",
+  "credentialsStopWatching": "Stop watching"
 }

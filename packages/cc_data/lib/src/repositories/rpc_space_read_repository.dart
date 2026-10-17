@@ -41,6 +41,12 @@ class RpcSpaceReadRepository implements SpaceReadRepository {
     String userId,
   ) => _remote.watchUserLastReadAt(workspaceId, spaceId).map(_fromDto);
 
+  @override
+  Stream<Map<String, DateTime>> watchUserSpaceReads(
+    String workspaceId,
+    String userId,
+  ) => _remote.watchUserSpaceReads(workspaceId);
+
   /// Rebuilds the cursor [DateTime?] from its wire DTO. A missing/null
   /// `lastReadAt` means the space has never been opened under the user.
   static DateTime? _fromDto(SpaceReadDto d) =>

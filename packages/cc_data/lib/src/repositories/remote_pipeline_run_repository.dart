@@ -221,9 +221,11 @@ class RemotePipelineRunRepository {
 
   /// Live step runs for [pipelineRunId] (ownership-checked server-side).
   Stream<List<PipelineStepRunDto>> watchStepRunsForPipeline(
-    String pipelineRunId,
-  ) => _client
+    String pipelineRunId, {
+    String? workspaceId,
+  }) => _client
       .subscribe('pipeline_run.watchStepRunsForPipeline', {
+        'workspace_id': ?workspaceId,
         'pipeline_run_id': pipelineRunId,
       })
       .map(_stepRuns);

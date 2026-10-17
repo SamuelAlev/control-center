@@ -11,7 +11,6 @@ import 'package:drift/drift.dart';
 
 part 'messaging_dao.g.dart';
 
-
 /// Unicode code points in [text], which is what SQLite `LENGTH` counts.
 ///
 /// `String.length` counts UTF-16 code units, so an emoji is 2. The meter used
@@ -298,7 +297,6 @@ WHERE conversation_id = ? AND reverted = 0 AND compacted = 0
         variables: [Variable.withString(conversationId)],
         readsFrom: {conversationMessagesTable},
       ).watch().map(
-
         (rows) => rows
             .map(
               (r) => (
@@ -394,6 +392,51 @@ LIMIT 1
           ),
         )
         .get();
+  }
+
+  /// Watches every unanswered question in this workspace, including inactive
+  /// conversations and questions older than the message feed's page window.
+  /// Join the owning space so an orphan or foreign-space row cannot escape.
+  Stream<List<ConversationMessagesTableData>> watchPendingQuestions(
+    String workspaceId,
+  ) =>
+      customSelect(
+        'SELECT ${_messageColumnsSansEmbedding} FROM conversation_messages '
+        "WHERE EXISTS (SELECT 1 FROM spaces WHERE spaces.id = conversation_messages.space_id "
+        'AND spaces.workspace_id = ?) AND conversation_messages.reverted = 0 '
+        "AND conversation_messages.message_type = 'user_question' "
+        "AND COALESCE(json_extract(conversation_messages.metadata, '\$.answered'), 0) != 1 "
+        'ORDER BY conversation_messages.created_at ASC, conversation_messages.rowid ASC',
+        variables: [Variable.withString(workspaceId)],
+        readsFrom: {conversationMessagesTable, spacesTable},
+      ).watch().map(
+        (rows) => [
+          for (final row in rows) conversationMessagesTable.map(row.data),
+        ],
+      );
+
+  /// First answer wins, atomically. Preserve all stored question metadata
+  /// instead of replacing it with a stale client's snapshot.
+  Future<bool> answerQuestion(
+    String messageId,
+    Map<String, dynamic> answer,
+  ) async {
+    final changed = await customUpdate(
+      'UPDATE conversation_messages SET '
+      "metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
+      "'\$.answer', json(?)), "
+      "list_metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
+      "'\$.answer', json(?)) "
+      "WHERE id = ? AND message_type = 'user_question' AND reverted = 0 "
+      "AND COALESCE(json_extract(metadata, '\$.answered'), 0) != 1",
+      variables: [
+        Variable.withString(jsonEncode(answer)),
+        Variable.withString(jsonEncode(answer)),
+        Variable.withString(messageId),
+      ],
+      updates: {conversationMessagesTable},
+    );
+    return changed == 1;
   }
 
   /// Statement behind [watchSpaceActivity].
@@ -510,19 +553,20 @@ LIMIT 2
 
   /// Two newest live messages, newest first.
   Future<List<({String messageType, String? planStatus})>>
-  recentLiveMessageKinds(String conversationId) => customSelect(
-    recentLiveMessageKindsSql,
-    variables: [Variable.withString(conversationId)],
-    readsFrom: {conversationMessagesTable},
-  ).get().then(
-    (rows) => [
-      for (final row in rows)
-        (
-          messageType: row.read<String>('message_type'),
-          planStatus: row.read<String?>('plan_status'),
-        ),
-    ],
-  );
+  recentLiveMessageKinds(String conversationId) =>
+      customSelect(
+        recentLiveMessageKindsSql,
+        variables: [Variable.withString(conversationId)],
+        readsFrom: {conversationMessagesTable},
+      ).get().then(
+        (rows) => [
+          for (final row in rows)
+            (
+              messageType: row.read<String>('message_type'),
+              planStatus: row.read<String?>('plan_status'),
+            ),
+        ],
+      );
 
   /// Sender of the newest live agent text or agent-turn.
   ///
@@ -677,9 +721,7 @@ LIMIT 1
   /// Full metadata for [ids], so an empty agent turn can contribute its
   /// transcript. Other rows in the side-channel window stay on the lite
   /// select. Empty [ids] does not hit the database.
-  Future<List<ConversationMessagesTableData>> messagesByIds(
-    List<String> ids,
-  ) {
+  Future<List<ConversationMessagesTableData>> messagesByIds(List<String> ids) {
     if (ids.isEmpty) {
       return Future.value(const []);
     }
@@ -714,15 +756,16 @@ LIMIT 1
   /// Summaries for [contextSummarySql].
   Future<List<ConversationMessagesTableData>> contextSummaries(
     String conversationId,
-  ) => customSelect(
-    contextSummarySql,
-    variables: [Variable.withString(conversationId)],
-    readsFrom: {conversationMessagesTable},
-  ).get().then(
-    (rows) => rows
-        .map((r) => conversationMessagesTable.map(r.data))
-        .toList(growable: false),
-  );
+  ) =>
+      customSelect(
+        contextSummarySql,
+        variables: [Variable.withString(conversationId)],
+        readsFrom: {conversationMessagesTable},
+      ).get().then(
+        (rows) => rows
+            .map((r) => conversationMessagesTable.map(r.data))
+            .toList(growable: false),
+      );
 
   /// Id of the newest live, non-compacted agent turn.
   ///
@@ -762,18 +805,19 @@ LIMIT 1
   Future<List<ConversationMessagesTableData>> queuedSteeringMessages(
     String conversationId,
     String spaceId,
-  ) => customSelect(
-    queuedSteeringSql,
-    variables: [
-      Variable.withString(conversationId),
-      Variable.withString(spaceId),
-    ],
-    readsFrom: {conversationMessagesTable},
-  ).get().then(
-    (rows) => rows
-        .map((r) => conversationMessagesTable.map(r.data))
-        .toList(growable: false),
-  );
+  ) =>
+      customSelect(
+        queuedSteeringSql,
+        variables: [
+          Variable.withString(conversationId),
+          Variable.withString(spaceId),
+        ],
+        readsFrom: {conversationMessagesTable},
+      ).get().then(
+        (rows) => rows
+            .map((r) => conversationMessagesTable.map(r.data))
+            .toList(growable: false),
+      );
 
   /// Content of the oldest live human message, or null when there is none.
   ///
@@ -808,17 +852,15 @@ LIMIT 1
 ''';
 
   /// Null when [agentId] has no live message in the conversation.
-  Future<String?> latestAgentContent(
-    String conversationId,
-    String agentId,
-  ) => customSelect(
-    latestAgentContentSql,
-    variables: [
-      Variable.withString(conversationId),
-      Variable.withString(agentId),
-    ],
-    readsFrom: {conversationMessagesTable},
-  ).getSingleOrNull().then((row) => row?.read<String>('content'));
+  Future<String?> latestAgentContent(String conversationId, String agentId) =>
+      customSelect(
+        latestAgentContentSql,
+        variables: [
+          Variable.withString(conversationId),
+          Variable.withString(agentId),
+        ],
+        readsFrom: {conversationMessagesTable},
+      ).getSingleOrNull().then((row) => row?.read<String>('content'));
 
   /// Returns all (non-reverted) messages for a conversation in creation order.
   Future<List<ConversationMessagesTableData>> getMessages(
@@ -1117,32 +1159,40 @@ LIMIT 1
     final meta = metadata;
     final encoded = meta == null ? null : jsonEncode(meta);
     final context = meta == null ? null : _contextOf(meta);
-    return (update(
-      conversationMessagesTable,
-    )..where((t) => t.id.equals(messageId))).write(
-      ConversationMessagesTableCompanion(
-        content: content != null ? Value(content) : const Value.absent(),
-        contentChars: content != null
-            ? Value(_sqliteTextLength(content))
-            : const Value.absent(),
-        metadata: encoded != null ? Value(encoded) : const Value.absent(),
-        listMetadata: meta == null || !writeListMetadata
-            ? const Value.absent()
-            : Value(_listMetadataOf(meta, encoded!)),
-        transcriptChars: meta != null
-            ? Value(_transcriptCharsOf(meta))
-            : const Value.absent(),
-        contextTokens: context != null
-            ? Value(context.tokens)
-            : const Value.absent(),
-        contextWindowTokens: context != null
-            ? Value(context.window)
-            : const Value.absent(),
-        messageType: messageType != null
-            ? Value(messageType)
-            : const Value.absent(),
-      ),
-    );
+    return (update(conversationMessagesTable)..where(
+          (t) =>
+              t.id.equals(messageId) &
+              (meta?.containsKey('answered') == true
+                  ? (t.messageType.equals('user_question') &
+                        CustomExpression<bool>(
+                          "COALESCE(json_extract(metadata, '\$.answered'), 0) != 1",
+                        ))
+                  : const Constant(true)),
+        ))
+        .write(
+          ConversationMessagesTableCompanion(
+            content: content != null ? Value(content) : const Value.absent(),
+            contentChars: content != null
+                ? Value(_sqliteTextLength(content))
+                : const Value.absent(),
+            metadata: encoded != null ? Value(encoded) : const Value.absent(),
+            listMetadata: meta == null || !writeListMetadata
+                ? const Value.absent()
+                : Value(_listMetadataOf(meta, encoded!)),
+            transcriptChars: meta != null
+                ? Value(_transcriptCharsOf(meta))
+                : const Value.absent(),
+            contextTokens: context != null
+                ? Value(context.tokens)
+                : const Value.absent(),
+            contextWindowTokens: context != null
+                ? Value(context.window)
+                : const Value.absent(),
+            messageType: messageType != null
+                ? Value(messageType)
+                : const Value.absent(),
+          ),
+        );
   }
 
   /// Full-text search within a single space (§8.4). Matches [query] against
@@ -1287,6 +1337,32 @@ LIMIT 1
         .map((row) => row?.lastReadAt);
   }
 
+  /// One workspace-wide snapshot of the authenticated user's read cursors.
+  /// Missing rows stay absent so never-opened spaces never show as unread.
+  Stream<Map<String, DateTime>> watchUserSpaceReads(
+    String workspaceId,
+    String userId,
+  ) {
+    final query =
+        select(spaceParticipantsTable).join([
+          innerJoin(
+            spacesTable,
+            spacesTable.id.equalsExp(spaceParticipantsTable.spaceId),
+          ),
+        ])..where(
+          spacesTable.workspaceId.equals(workspaceId) &
+              spaceParticipantsTable.participantType.equals('user') &
+              spaceParticipantsTable.principalId.equals(userId),
+        );
+    return query.watch().map(
+      (rows) => {
+        for (final row in rows)
+          if (row.readTable(spaceParticipantsTable).lastReadAt case final at?)
+            row.readTable(spaceParticipantsTable).spaceId: at,
+      },
+    );
+  }
+
   /// Updates the embedding blob for a message.
   Future<void> updateMessageEmbedding(String id, Uint8List embedding) =>
       (update(conversationMessagesTable)..where((t) => t.id.equals(id))).write(
@@ -1338,17 +1414,18 @@ LIMIT 1
   /// turns does not pull every `segments` blob into the score loop.
   Future<List<ConversationMessagesTableData>> getMessagesWithEmbedding(
     String spaceId,
-  ) => customSelect(
-    'SELECT $_messageColumnsLite, embedding FROM conversation_messages '
-    'WHERE space_id = ? AND embedding IS NOT NULL AND reverted = 0 '
-    'ORDER BY created_at ASC, rowid ASC',
-    variables: [Variable.withString(spaceId)],
-    readsFrom: {conversationMessagesTable},
-  ).get().then(
-    (rows) => rows
-        .map((r) => conversationMessagesTable.map(r.data))
-        .toList(growable: false),
-  );
+  ) =>
+      customSelect(
+        'SELECT $_messageColumnsLite, embedding FROM conversation_messages '
+        'WHERE space_id = ? AND embedding IS NOT NULL AND reverted = 0 '
+        'ORDER BY created_at ASC, rowid ASC',
+        variables: [Variable.withString(spaceId)],
+        readsFrom: {conversationMessagesTable},
+      ).get().then(
+        (rows) => rows
+            .map((r) => conversationMessagesTable.map(r.data))
+            .toList(growable: false),
+      );
 
   /// This workspace's messages with a NULL embedding, limited for batch
   /// processing.

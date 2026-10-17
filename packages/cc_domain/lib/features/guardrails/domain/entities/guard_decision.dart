@@ -221,11 +221,17 @@ class GuardDecision {
   /// deliberate, chain-breaking act — verification of rows written before the
   /// change must use the old field list, exactly like `AgentConfigSnapshot`'s
   /// `hashVersion`.
+  /// Drift stores `occurred_at` as Unix seconds. Hash its persisted value,
+  /// not the subsecond precision or timezone of the caller's DateTime: those
+  /// do not survive a database round trip.
   Map<String, Object?> hashPayload() => {
     'id': id,
     'workspace_id': workspaceId,
     'seq': seq,
-    'occurred_at': occurredAt.toUtc().toIso8601String(),
+    'occurred_at': DateTime.fromMillisecondsSinceEpoch(
+      occurredAt.millisecondsSinceEpoch ~/ 1000 * 1000,
+      isUtc: true,
+    ).toIso8601String(),
     'actor_type': actorType,
     'actor_id': actorId,
     'on_behalf_of_user_id': onBehalfOfUserId,

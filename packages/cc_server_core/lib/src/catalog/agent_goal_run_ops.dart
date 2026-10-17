@@ -1,4 +1,5 @@
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/dispatch/domain/repositories/agent_goal_run_repository.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_server_core/src/catalog/catalog_wire.dart'
@@ -76,6 +77,37 @@ WatchQuery agentGoalRunsWatchQuery({
               (g) => g.conversationId == ctx.args['conversation_id'],
             ))
               agentGoalRunToWire(g),
+          ],
+        },
+      ),
+);
+
+/// Workspace-wide durable goals, filtered by the subscriber's per-space repo
+/// grants before any objective or completion text is serialized.
+WatchQuery agentGoalRunsWorkspaceWatchQuery({
+  required AgentGoalRunRepository agentGoalRunRepository,
+  required Future<bool> Function(
+    String workspaceId,
+    String spaceId,
+    String userId,
+  )
+  viewerTraceRestricted,
+}) => WatchQuery(
+  name: 'agentGoalRuns.watchForWorkspace',
+  minRole: WorkspaceRole.member,
+  handler: (ctx) => agentGoalRunRepository
+      .watchByWorkspace(ctx.workspaceId!)
+      .asyncMap(
+        (list) async => {
+          'goals': [
+            for (final goal in list)
+              if (goal.workspaceId == ctx.workspaceId &&
+                  !await viewerTraceRestricted(
+                    ctx.workspaceId!,
+                    goal.spaceId,
+                    ctx.userId,
+                  ))
+                agentGoalRunToWire(goal),
           ],
         },
       ),

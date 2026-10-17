@@ -55,6 +55,19 @@ class RpcAgentGoalRunRepository {
 
   final RemoteRpcClient _client;
 
+  /// Watches every durable goal in [workspaceId], newest first.
+  Stream<List<AgentGoalRun>> watchForWorkspace(String workspaceId) => _client
+      .subscribe('agentGoalRuns.watchForWorkspace', {
+        'workspace_id': workspaceId,
+      })
+      .map(
+        (data) => decodeRows(
+          _maps(data['goals']),
+          _agentGoalRunFromWire,
+          what: 'agent goal run',
+        ),
+      );
+
   /// Watches the durable goals of one conversation in [workspaceId], streamed
   /// live over RPC (`agentGoalRuns.watchForConversation`).
   Stream<List<AgentGoalRun>> watchForConversation(

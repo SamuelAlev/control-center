@@ -5,13 +5,16 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/space_activity.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/l10n/phone_widgets_localizations.dart';
 import 'package:cc_remote/l10n/remote_locales.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_remote/requests_activity_providers.dart';
 import 'package:cc_remote/screens/messaging_screen.dart';
 import 'package:cc_remote/space_folders.dart';
+import 'package:cc_remote/space_management_providers.dart';
 import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -86,6 +89,7 @@ class _PhoneHost {
     required this.spaces,
     required String folders,
     this.locale = const Locale('en'),
+    this.activities = const [],
   }) : _preferences = {'space_folders.$_ws': folders} {
     client = rpc.client;
     router = GoRouter(
@@ -120,10 +124,12 @@ class _PhoneHost {
   }
 
   final List<SpaceDto> spaces;
+  final List<SpaceActivity> activities;
   final Locale locale;
   final Map<String, String> _preferences;
   final _PhoneRpcHost rpc = _PhoneRpcHost();
   final changes = StreamController<Map<String, String>>.broadcast();
+  final questions = StreamController<List<PendingQuestion>>.broadcast();
   final List<({String key, String value})> written = [];
   final List<String> deleted = [];
   late final RemoteRpcClient client;
@@ -140,6 +146,13 @@ class _PhoneHost {
         await ref.watch(rpcClientProvider.future);
         ref.watch(activeWorkspaceIdProvider);
         yield spaces;
+      }),
+      remoteSpaceActivityProvider(
+        _ws,
+      ).overrideWith((ref) => Stream.value(activities)),
+      pendingQuestionsProvider.overrideWith((ref) async* {
+        yield const [];
+        yield* questions.stream;
       }),
       ownServerPrefsProvider.overrideWith((ref) async* {
         yield Map.of(_preferences);
@@ -175,6 +188,7 @@ class _PhoneHost {
     await client.close();
     await rpc.close();
     await changes.close();
+    await questions.close();
   }
 }
 
@@ -191,7 +205,66 @@ Finder _folderButton(String id) => find.descendant(
   matching: find.byType(PhoneIconButton),
 );
 
+Finder _dialogField() => find.descendant(
+  of: find.byType(CcDialog),
+  matching: find.byType(CcTextField),
+);
+
 void main() {
+  testWidgets(
+    'attention follows live scoped questions, not unanswered history',
+    (tester) async {
+      final host = _PhoneHost(
+        spaces: [_space('First'), _space('Second')],
+        folders: '[]',
+        activities: const [
+          SpaceActivity(spaceId: 'First', openQuestionCount: 1),
+        ],
+      );
+      addTearDown(host.close);
+      await host.mount(tester);
+      final attention = find.byIcon(AppIcons.triangleAlert);
+      expect(attention, findsNothing);
+
+      PendingQuestion question(String workspaceId) => PendingQuestion(
+        MessageDto(
+          id: 'question',
+          content: 'Proceed?',
+          senderId: 'agent',
+          senderType: 'agent',
+          messageType: 'user_question',
+          spaceId: 'Second',
+          conversationId: 'conversation',
+        ),
+        workspaceId,
+      );
+      host.questions.add([question('ws-2')]);
+      await tester.pumpAndSettle();
+      expect(attention, findsNothing);
+
+      host.questions.add([question(_ws)]);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('space-Second')),
+          matching: attention,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('space-First')),
+          matching: attention,
+        ),
+        findsNothing,
+      );
+
+      host.questions.add(const []);
+      await tester.pumpAndSettle();
+      expect(attention, findsNothing);
+    },
+  );
+
   testWidgets(
     'groups only visible workspace spaces; collapse does not unfile',
     (tester) async {
@@ -217,7 +290,7 @@ void main() {
       expect(find.text('First'), findsOneWidget);
       expect(find.text('Second'), findsOneWidget);
       expect(find.text('Other spaces'), findsOneWidget);
-      expect(find.text('Archived'), findsNothing);
+      expect(find.byKey(const ValueKey('space-Archived')), findsNothing);
       expect(find.text('Wrong'), findsNothing);
 
       await tester.tap(find.text('Pinned'));
@@ -303,12 +376,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('New folder').last);
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(CcTextField), '  Notes  ');
+      await tester.enterText(_dialogField(), '  Notes  ');
       await tester.pump();
       await tester.tap(find.text('Create'));
       await tester.pumpAndSettle();
-      expect(find.byType(CcTextField), findsNothing);
-      expect(find.textContaining('update folders'), findsNothing);
+      expect(find.byType(CcDialog), findsNothing);
       final created = _savedFolders(host).single;
       final folderId = created['id'] as String;
       expect(created['name'], 'Notes');
@@ -318,7 +390,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Rename folder'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(CcTextField), 'Current');
+      await tester.enterText(_dialogField(), 'Current');
       await tester.pump();
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
@@ -355,12 +427,11 @@ void main() {
     expect(find.text('No spaces'), findsOneWidget);
     await tester.tap(find.text('New folder'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(CcTextField), 'Planning');
+    await tester.enterText(_dialogField(), 'Planning');
     await tester.pump();
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
-    expect(find.byType(CcTextField), findsNothing);
-    expect(find.textContaining('update folders'), findsNothing);
+    expect(find.byType(CcDialog), findsNothing);
     expect(_savedFolders(host).single['name'], 'Planning');
     expect(find.text('Planning'), findsOneWidget);
   });

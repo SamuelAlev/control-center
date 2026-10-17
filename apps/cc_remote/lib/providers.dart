@@ -7,7 +7,6 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update_codec.dart';
 import 'package:cc_remote/app_connection.dart';
-import 'package:cc_remote/feed_window.dart';
 import 'package:cc_remote/l10n/remote_locales.dart';
 import 'package:cc_remote/live_turns.dart';
 import 'package:cc_remote/media_proxy.dart';
@@ -229,73 +228,6 @@ final newsfeedFeedsProvider = StreamProvider<List<FeedDto>>((ref) {
   return RemoteNewsfeedRepository(client).watchFeeds();
 });
 
-/// The space's standing conversation (`conversation.ensure`), minted server-side
-/// when the space has none yet.
-///
-/// The phone renders ONE stream per space — the standing conversation — and
-/// leaves the multi-conversation strip and threads to desktop/web. It has to
-/// be resolved rather than assumed: conversations own their own uuid, so the
-/// old "the main conversation's id IS the space id" shortcut names no row and
-/// every watch keyed on it comes back empty.
-final spaceConversationIdProvider = FutureProvider.autoDispose
-    .family<String?, String>((ref, spaceId) async {
-      final client = ref.watch(rpcClientProvider).value;
-      final workspaceId = ref.watch(activeWorkspaceIdProvider).value;
-      if (client == null || workspaceId == null) return null;
-      final conversation = await RpcConversationRepository(
-        client,
-      ).ensure(workspaceId: workspaceId, spaceId: spaceId);
-      return conversation.id;
-    });
-
-/// Live window of a space's standing conversation
-/// (`messaging.watchMessagesWindow`).
-///
-/// Family so a conversation screen subscribes to exactly its space and
-/// auto-resubscribes on reconnect. The wire is the newest
-/// [remoteFeedWindowProvider] rows, not the whole thread — a long
-/// conversation used to re-send its history on every write.
-final spaceMessagesProvider = StreamProvider.autoDispose
-    .family<({List<MessageDto> messages, bool hasMore}), String>((
-      ref,
-      spaceId,
-    ) {
-      final client = ref.watch(rpcClientProvider).value;
-      final workspaceId = ref.watch(activeWorkspaceIdProvider).value;
-      final conversationId = ref
-          .watch(spaceConversationIdProvider(spaceId))
-          .value;
-      final limit = ref.watch(remoteFeedWindowProvider(spaceId));
-      if (client == null || workspaceId == null || conversationId == null) {
-        return const Stream.empty();
-      }
-      return RemoteMessagingRepository(client)
-          .watchMessagesWindow(
-            workspaceId,
-            spaceId,
-            conversationId,
-            limit: limit,
-          )
-          .map((window) {
-            // A QUEUED steering card has not reached the agent yet — the desktop
-            // renders it in the steering queue strip below the trail. The phone
-            // has no strip (v1), so hide it here rather than showing it as a sent
-            // bubble that did nothing. The moment it is injected (or converted
-            // at run end) the row re-emits and renders as a normal user bubble.
-            final messages = <MessageDto>[
-              for (final m in window.messages)
-                if (!(m.messageType == 'steering' &&
-                    m.metadata is Map &&
-                    (m.metadata as Map)['steerState'] == 'queued'))
-                  m,
-            ];
-            return (
-              messages: messages,
-              hasMore: window.hasMore && limit < kRemoteFeedMaxWindow,
-            );
-          });
-    });
-
 /// Live turn relay for [spaceId], plus one-shot loads of finished transcripts.
 ///
 /// List rows omit `segments`. Watching this starts the subscription even when
@@ -324,7 +256,7 @@ final phoneTurnRelayProvider = Provider.autoDispose
       );
       if (client != null) {
         final sub = RemoteMessagingRepository(client)
-            .watchSpaceTurns(spaceId)
+            .watchSpaceTurns(spaceId, workspaceId: workspaceId)
             .listen((frame) {
               final event = spaceTurnEventFromWire(frame);
               if (event != null) {
@@ -361,10 +293,15 @@ final activeRunLogsProvider = StreamProvider.autoDispose
 final pendingConfirmationsProvider = StreamProvider.autoDispose
     .family<List<ConfirmationRequestDto>, String>((ref, spaceId) {
       final client = ref.watch(rpcClientProvider).value;
-      if (client == null) return const Stream.empty();
-      return RemoteConfirmationRepository(
-        client,
-      ).watchPending(spaceId: spaceId);
+      final workspaceId = ref.watch(activeWorkspaceIdProvider).value;
+      if (client == null || workspaceId == null) return const Stream.empty();
+      return RemoteConfirmationRepository(client)
+          .watchPending(spaceId: spaceId)
+          .map(
+            (requests) => requests
+                .where((request) => request.workspaceId == workspaceId)
+                .toList(),
+          );
     });
 
 /// Pending agent-action approvals in the ACTIVE workspace — the blocking half
@@ -385,7 +322,7 @@ final workspacePendingConfirmationsProvider =
       return RemoteConfirmationRepository(client).watchPending().map(
         (pending) => [
           for (final c in pending)
-            if (c.workspaceId == null || c.workspaceId == workspaceId) c,
+            if (c.workspaceId == workspaceId) c,
         ],
       );
     });

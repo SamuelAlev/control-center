@@ -1,16 +1,18 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/screens/session_utils.dart';
-import 'package:cc_remote/widgets/ticket_status_badge.dart';
+import 'package:cc_remote/widgets/ticket_fields_form.dart';
+import 'package:cc_remote/widgets/ticket_list_parts.dart';
+import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Tickets tab: live tickets (`tickets.watchForWorkspace`) with a status filter,
-/// and pushes a detail route for status change / assignment.
+/// Live workspace tickets, searchable and filterable by task state.
 class TicketsScreen extends ConsumerStatefulWidget {
   /// Creates a [TicketsScreen].
   const TicketsScreen({super.key});
@@ -20,132 +22,233 @@ class TicketsScreen extends ConsumerStatefulWidget {
 }
 
 class _TicketsScreenState extends ConsumerState<TicketsScreen> {
-  final List<String> _filters = <String>[
-    '',
-    'open',
-    'inProgress',
-    'blocked',
-    'done',
-  ];
-  int _filterIndex = 0;
+  final _search = TextEditingController();
+  String? _workspaceId;
+  String _query = '';
+  String _status = '';
+  String _assignee = '';
+  String _priority = '';
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
+    final workspace = ref.watch(activeWorkspaceIdProvider);
+    final workspaceId = workspace.value;
+    final role = ref.watch(workspaceRoleProvider);
+    final canWrite = !role.isLoading && role.value?.canWrite == true;
+    if (_workspaceId != workspaceId) {
+      _workspaceId = workspaceId;
+      _search.clear();
+      _query = '';
+      _status = '';
+      _assignee = '';
+      _priority = '';
+    }
     final async = ref.watch(ticketsProvider);
-    final status = _filters[_filterIndex];
-    final tickets = (async.value ?? const <TicketDto>[])
-        .where((tk) => status.isEmpty || tk.status == status)
-        .toList();
-
+    final agents = ref.watch(agentsProvider);
+    final agentNames = {
+      for (final agent in agents.asData?.value ?? const <AgentDto>[])
+        agent.id: agent.name,
+    };
+    final q = _query.trim().toLowerCase();
+    final hasFilters =
+        q.isNotEmpty ||
+        _status.isNotEmpty ||
+        _assignee.isNotEmpty ||
+        _priority.isNotEmpty;
+    final tickets =
+        async.asData?.value.where((ticket) {
+          if (ticket.workspaceId != workspaceId ||
+              (_status.isNotEmpty && ticket.status != _status) ||
+              (_assignee == 'assigned' && ticket.assignee == null) ||
+              (_assignee == 'unassigned' && ticket.assignee != null) ||
+              (_assignee.isNotEmpty &&
+                  _assignee != 'assigned' &&
+                  _assignee != 'unassigned' &&
+                  ticket.assignee != _assignee) ||
+              (_priority.isNotEmpty && ticket.priority != _priority)) {
+            return false;
+          }
+          return q.isEmpty ||
+              [
+                ticket.key,
+                ticket.title,
+                ticket.description ?? '',
+                ticket.assignee ?? '',
+                agentNames[ticket.assignee] ?? '',
+                ...ticket.labels,
+              ].any((field) => field.toLowerCase().contains(q));
+        }).toList() ??
+        const <TicketDto>[];
     return ColoredBox(
       color: t.canvas,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _filterBar(t),
-          Expanded(
-            child: async.when(
-              loading: () => const Center(child: CcSpinner(size: 24)),
-              error: (e, _) => CcEmptyState(
-                icon: AppIcons.triangleAlert,
-                message: AppLocalizations.of(context).ticketsLoadFailed,
-                description: e.toString(),
-              ),
-              data: (_) {
-                if (tickets.isEmpty) {
-                  return CcEmptyState(
-                    icon: AppIcons.ticket,
-                    message: AppLocalizations.of(context).noTickets,
-                    description: AppLocalizations.of(
-                      context,
-                    ).ticketsEmptyDescription,
-                  );
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: tickets.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, i) => _ticketCard(t, tickets[i]),
-                );
-              },
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
+            child: CcButton(
+              size: CcButtonSize.lg,
+              fullWidth: true,
+              icon: AppIcons.plus,
+              onPressed: !canWrite || workspaceId == null
+                  ? null
+                  : () => context.push(
+                      remoteWorkspaceLocation('/ticket/new', workspaceId),
+                    ),
+              child: Text(l10n.mobileTicketNew),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _ticketCard(DesignSystemTokens t, TicketDto ticket) {
-    return CcCard(
-      interactive: true,
-      semanticLabel: ticket.title,
-      onPressed: () => context.push('/ticket/${ticket.id}'),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(AppIcons.ticket, size: 18, color: t.fgSecondary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (ticket.key.isNotEmpty)
-                  Text(
-                    ticket.key,
-                    style: TextStyle(fontSize: 12, color: t.textTertiary),
-                  ),
-                Text(
-                  ticket.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: t.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    TicketStatusBadge(status: ticket.status),
-                    if (ticket.assignee != null)
-                      CcBadge(
-                        label: ticket.assignee!,
-                        variant: CcBadgeVariant.neutral,
-                      ),
-                  ],
-                ),
-              ],
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
+            child: CcTextField(
+              controller: _search,
+              label: l10n.mobileTicketSearch,
+              hintText: l10n.mobileTicketSearchHint,
+              suffix: _query.isEmpty
+                  ? null
+                  : PhoneIconButton(
+                      icon: AppIcons.x,
+                      borderRadius: BorderRadius.zero,
+                      semanticLabel: l10n.mobileTicketClearSearch,
+                      onPressed: () {
+                        _search.clear();
+                        setState(() => _query = '');
+                      },
+                    ),
+              onChanged: (value) => setState(() => _query = value),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterBar(DesignSystemTokens t) {
-    final l10n = AppLocalizations.of(context);
-    return SizedBox(
-      height: 44,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        children: [
-          for (var i = 0; i < _filters.length; i++)
+          TicketFilterBar(
+            title: l10n.status,
+            options: ['', ...ticketStatuses],
+            selected: _status,
+            label: (value) =>
+                value.isEmpty ? l10n.all : ticketStatusLabel(l10n, value),
+            onChanged: (value) => setState(() => _status = value),
+          ),
+          TicketFilterBar(
+            title: l10n.assign,
+            options: [
+              '',
+              'assigned',
+              'unassigned',
+              ...agentNames.keys,
+              if (_assignee.isNotEmpty &&
+                  _assignee != 'assigned' &&
+                  _assignee != 'unassigned' &&
+                  !agentNames.containsKey(_assignee))
+                _assignee,
+            ],
+            selected: _assignee,
+            label: (value) => switch (value) {
+              'assigned' => l10n.mobileTicketAssignedFilter,
+              'unassigned' => l10n.mobileTicketUnassigned,
+              '' => l10n.all,
+              _ => agentNames[value] ?? value,
+            },
+            onChanged: (value) => setState(() => _assignee = value),
+          ),
+          if (agents.hasError)
             Padding(
-              padding: const EdgeInsetsDirectional.only(end: 8, top: 8),
-              child: CcChip(
-                label: _filters[i].isEmpty
-                    ? l10n.all
-                    : ticketStatusLabel(l10n, _filters[i]),
-                selected: _filterIndex == i,
-                onPressed: () => setState(() => _filterIndex = i),
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 8),
+              child: CcAlert(
+                variant: CcAlertVariant.danger,
+                title: l10n.mobileTicketAgentsLoadFailed,
+                description: Text(agents.error.toString()),
+                action: CcButton(
+                  size: CcButtonSize.lg,
+                  variant: CcButtonVariant.secondary,
+                  onPressed: () => ref.invalidate(agentsProvider),
+                  child: Text(l10n.retry),
+                ),
               ),
             ),
+          TicketFilterBar(
+            title: l10n.mobileTicketPriority,
+            options: const ['', ...TicketFieldsForm.priorities],
+            selected: _priority,
+            label: (value) => value.isEmpty
+                ? l10n.all
+                : TicketFieldsForm.priorityLabel(l10n, value),
+            onChanged: (value) => setState(() => _priority = value),
+          ),
+          Expanded(
+            child:
+                workspace.isLoading || (workspaceId != null && async.isLoading)
+                ? const Center(child: CcSpinner(size: 24))
+                : workspaceId == null && !workspace.hasError
+                ? CcEmptyState(
+                    icon: AppIcons.ticket,
+                    message: l10n.chooseWorkspace,
+                    action: CcButton(
+                      size: CcButtonSize.lg,
+                      onPressed: () => context.push('/workspaces'),
+                      child: Text(l10n.workspaces),
+                    ),
+                  )
+                : workspace.hasError || async.hasError
+                ? CcEmptyState(
+                    icon: AppIcons.triangleAlert,
+                    message: l10n.ticketsLoadFailed,
+                    description: (workspace.error ?? async.error).toString(),
+                    action: CcButton(
+                      size: CcButtonSize.lg,
+                      onPressed: () {
+                        ref.invalidate(activeWorkspaceIdProvider);
+                        ref.invalidate(ticketsProvider);
+                      },
+                      child: Text(l10n.retry),
+                    ),
+                  )
+                : tickets.isEmpty
+                ? CcEmptyState(
+                    icon: AppIcons.ticket,
+                    message: hasFilters
+                        ? l10n.mobileTicketNoMatches
+                        : l10n.noTickets,
+                    description: hasFilters
+                        ? l10n.mobileTicketAdjustFilters
+                        : l10n.ticketsEmptyDescription,
+                    action: hasFilters
+                        ? CcButton(
+                            size: CcButtonSize.lg,
+                            onPressed: () {
+                              _search.clear();
+                              setState(() {
+                                _query = '';
+                                _status = '';
+                                _assignee = '';
+                                _priority = '';
+                              });
+                            },
+                            child: Text(l10n.mobileTicketClearFilters),
+                          )
+                        : null,
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: tickets.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) => TicketListCard(
+                      ticket: tickets[i],
+                      assigneeName: agentNames[tickets[i].assignee],
+                      onOpen: () => context.push(
+                        remoteWorkspaceLocation(
+                          '/ticket/${Uri.encodeComponent(tickets[i].id)}',
+                          workspaceId!,
+                        ),
+                      ),
+                    ),
+                  ),
+          ),
         ],
       ),
     );

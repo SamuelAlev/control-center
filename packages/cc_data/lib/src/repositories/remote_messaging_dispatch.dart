@@ -169,6 +169,7 @@ class RemoteMessagingDispatch {
     List<StructuredMention>? structuredMentions,
     List<EntityRef>? entityRefs,
     Map<String, dynamic>? metadata,
+    String? idempotencyKey,
   }) => _client.call('dispatch.sendAndDispatch', {
     'workspace_id': workspaceId,
     'space_id': spaceId,
@@ -179,7 +180,7 @@ class RemoteMessagingDispatch {
         .toList(),
     'entity_refs': ?entityRefs?.map((e) => e.toJson()).toList(),
     'metadata': ?metadata,
-  });
+  }, idempotencyKey: idempotencyKey);
 
   /// Dispatches [agentId] to respond in [spaceId]; returns the run-log id (or
   /// null when the agent could not be resolved server-side).
@@ -297,6 +298,7 @@ class RemoteMessagingDispatch {
     required String conversationId,
     required String content,
     List<Map<String, dynamic>> attachments = const [],
+    String? idempotencyKey,
   }) async {
     final result = await _client.call('steering.enqueue', {
       'workspace_id': workspaceId,
@@ -304,7 +306,7 @@ class RemoteMessagingDispatch {
       'conversation_id': conversationId,
       'message': content,
       if (attachments.isNotEmpty) 'metadata': {'attachments': attachments},
-    });
+    }, idempotencyKey: idempotencyKey);
     final messageId = result['message_id'] as String?;
     if (messageId == null) {
       return null;

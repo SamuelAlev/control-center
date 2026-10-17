@@ -4,7 +4,9 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_remote/requests_activity_providers.dart';
 import 'package:cc_remote/space_folders.dart';
+import 'package:cc_remote/space_management_providers.dart';
 import 'package:cc_remote/widgets/messaging/space_folder_dialogs.dart';
 import 'package:cc_remote/widgets/messaging/space_folder_rows.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -169,6 +171,27 @@ class _RemoteSpaceFoldersListState
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
+    final activityRows = ref
+        .watch(remoteSpaceActivityProvider(widget.workspaceId))
+        .value;
+    final activities = {
+      if (activityRows != null)
+        for (final row in activityRows) row.spaceId: row,
+    };
+    // Historical unanswered messages may no longer have a live agent waiter.
+    final questionSpaces = {
+      for (final question
+          in ref.watch(pendingQuestionsProvider).value ??
+              const <PendingQuestion>[])
+        if (question.workspaceId == widget.workspaceId)
+          ?question.message.spaceId,
+    };
+    final readAt =
+        ref.watch(remoteSpaceReadProvider(widget.workspaceId)).value ??
+        const <String, DateTime>{};
+    final running =
+        ref.watch(remoteRunningSpacesProvider(widget.workspaceId)).value ??
+        const <String>{};
     final available = <String, SpaceDto>{
       for (final space in widget.spaces)
         if (space.workspaceId == widget.workspaceId && space.archivedAt == null)
@@ -251,6 +274,17 @@ class _RemoteSpaceFoldersListState
                     if (row.space case final space?) {
                       return RemoteSpaceCard(
                         key: ValueKey('space-${space.id}'),
+                        workspaceId: widget.workspaceId,
+                        needsInput: questionSpaces.contains(space.id),
+                        running: running.contains(space.id),
+                        lastActivityAt: activities[space.id]?.lastMessageAt,
+                        unread:
+                            !running.contains(space.id) &&
+                            readAt[space.id] != null &&
+                            activities[space.id]?.lastAgentMessageAt?.isAfter(
+                                  readAt[space.id]!,
+                                ) ==
+                                true,
                         space: space,
                         inFolder: row.parentId != null,
                         onMove: () =>

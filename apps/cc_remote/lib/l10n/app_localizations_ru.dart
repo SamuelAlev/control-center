@@ -903,4 +903,1698 @@ class AppLocalizationsRu extends AppLocalizations {
   String durationHoursMinutes(int hours, int minutes) {
     return '$hoursч $minutesм';
   }
+
+  @override
+  String get mobileConversations => 'Разговоры';
+
+  @override
+  String get mobileNewConversation => 'Новый разговор';
+
+  @override
+  String get mobileConversationName => 'Название разговора';
+
+  @override
+  String get mobileRename => 'Переименовать';
+
+  @override
+  String get mobileManageSpace => 'Управление пространством';
+
+  @override
+  String get mobileArchived => 'В архиве';
+
+  @override
+  String get mobileSearchMessages =>
+      'Поиск по всем сообщениям в этом пространстве';
+
+  @override
+  String get mobileSearch => 'Поиск';
+
+  @override
+  String get mobileNoResults => 'Ничего не найдено';
+
+  @override
+  String get mobileReopen => 'Открыть снова';
+
+  @override
+  String get mobileArchive => 'Архивировать';
+
+  @override
+  String get mobileProgress => 'Прогресс и контекст';
+
+  @override
+  String get mobileReadFailed => 'Не удалось отметить разговор как прочитанный';
+
+  @override
+  String get mobileSendFailed => 'Сообщение не отправлено. Черновик сохранён.';
+
+  @override
+  String get mobileActionFailed => 'Не удалось выполнить действие';
+
+  @override
+  String get mobileRemove => 'Удалить';
+
+  @override
+  String get mobileLinkedMessage => 'Связанное сообщение';
+
+  @override
+  String get mobileOlderMessages => 'Более ранние сообщения';
+
+  @override
+  String get mobileMessageActions => 'Действия с сообщением';
+
+  @override
+  String get mobileOpenThread => 'Открыть ветку';
+
+  @override
+  String get mobileCopyLink => 'Копировать ссылку';
+
+  @override
+  String get mobileStopRun => 'Остановить запуск';
+
+  @override
+  String get mobileStopRunConfirm =>
+      'Остановить запуск агента? Уже выполненная работа сохранится.';
+
+  @override
+  String get mobileControlUnsupported =>
+      'Этот запуск завершён или не поддерживает это действие.';
+
+  @override
+  String get mobilePauseRequested => 'Пауза запрошена после следующего шага';
+
+  @override
+  String get mobileResumed => 'Запуск возобновлён';
+
+  @override
+  String get mobileStopRequested => 'Остановка запрошена';
+
+  @override
+  String get mobileQueuedMessages => 'Сообщения в очереди';
+
+  @override
+  String get mobilePauseRun => 'Пауза после следующего шага';
+
+  @override
+  String get mobileResumeRun => 'Продолжить';
+
+  @override
+  String get mobileEditQueued => 'Изменить сообщение в очереди';
+
+  @override
+  String get mobileSteerNow => 'Изменить ход работы сейчас';
+
+  @override
+  String get mobileMoveUp => 'Вверх';
+
+  @override
+  String get mobileMoveDown => 'Вниз';
+
+  @override
+  String get mobileQueueChanged =>
+      'Очередь изменилась или этот запуск не поддерживает изменение хода работы на лету. Обновите страницу и повторите попытку.';
+
+  @override
+  String get mobileActivity => 'Активность';
+
+  @override
+  String get mobilePermissions => 'Разрешения и аудит';
+
+  @override
+  String get mobilePlans => 'Планы';
+
+  @override
+  String get mobileGoals => 'Цели под контролем';
+
+  @override
+  String get mobileCredentials => 'Подключения и учётные данные';
+
+  @override
+  String get mobileWorkspaceUnavailable =>
+      'Это рабочее пространство недоступно или у вас больше нет к нему доступа.';
+
+  @override
+  String get mobilePrReviewThreads => 'Ветки обсуждения';
+
+  @override
+  String get mobilePrThreadsLoadFailed =>
+      'Не удалось загрузить ветки обсуждения';
+
+  @override
+  String get mobilePrNoReviewThreads => 'Пока нет веток обсуждения строк кода';
+
+  @override
+  String get mobilePrCommentPermissionDenied =>
+      'У вас нет права комментировать этот репозиторий.';
+
+  @override
+  String get mobilePrPermissionChecking =>
+      'Проверяем права на комментирование…';
+
+  @override
+  String get mobilePrPermissionLoadFailed =>
+      'Не удалось проверить права на комментирование. Повторите попытку.';
+
+  @override
+  String mobilePrThreadLine(String side, String line) {
+    return '$side, строка $line';
+  }
+
+  @override
+  String get mobilePrOriginalSide => 'Исходный';
+
+  @override
+  String get mobilePrUpdatedSide => 'Обновлён';
+
+  @override
+  String get mobilePrThreadResolved => 'Разрешено';
+
+  @override
+  String get mobilePrReplyHint => 'Напишите ответ…';
+
+  @override
+  String get mobilePrCommentRequired =>
+      'Напишите комментарий перед публикацией.';
+
+  @override
+  String get mobilePrReply => 'Ответить';
+
+  @override
+  String get mobilePrReopenThread => 'Открыть ветку снова';
+
+  @override
+  String get mobilePrResolveThread => 'Решить ветку';
+
+  @override
+  String get mobilePrResolvePermissionDenied =>
+      'Только автор pull request или пользователь с правом записи может закрыть эту ветку.';
+
+  @override
+  String mobilePrCommentOnLine(String side, String line) {
+    return 'Комментировать $side, строку $line';
+  }
+
+  @override
+  String get mobilePrInlineCommentHint => 'Напишите комментарий к строке…';
+
+  @override
+  String get mobilePrPostInlineComment => 'Опубликовать комментарий';
+
+  @override
+  String get mobilePrCommentUnavailable =>
+      'Комментарии к строкам недоступны для этого pull request.';
+
+  @override
+  String get mobilePrPatchUnavailable =>
+      'Платформа Git не предоставила текстовый патч для этого файла.';
+
+  @override
+  String get mobilePrNoPatchForFile => 'Патч для этого файла недоступен.';
+
+  @override
+  String get mobileTicketNew => 'Новый тикет';
+
+  @override
+  String get mobileTicketCreate => 'Создать тикет';
+
+  @override
+  String get mobileTicketEdit => 'Изменить тикет';
+
+  @override
+  String get mobileTicketTitle => 'Название';
+
+  @override
+  String get mobileTicketTitleRequired =>
+      'Введите название, чтобы сохранить тикет.';
+
+  @override
+  String get mobileTicketDescription => 'Описание';
+
+  @override
+  String get mobileTicketMarkdownHint => 'Добавьте подробности в Markdown';
+
+  @override
+  String get mobileTicketPriority => 'Приоритет';
+
+  @override
+  String get mobileTicketPriorityNone => 'Без приоритета';
+
+  @override
+  String get mobileTicketPriorityUrgent => 'Срочный';
+
+  @override
+  String get mobileTicketPriorityHigh => 'Высокий';
+
+  @override
+  String get mobileTicketPriorityMedium => 'Средний';
+
+  @override
+  String get mobileTicketPriorityLow => 'Низкий';
+
+  @override
+  String get mobileTicketLabels => 'Метки';
+
+  @override
+  String get mobileTicketLabelsHint => 'По одной метке на строку';
+
+  @override
+  String get mobileTicketLabelsHelp =>
+      'Введите каждую метку на отдельной строке.';
+
+  @override
+  String mobileTicketWorkspaceProvider(String provider) {
+    return 'Создан в $provider';
+  }
+
+  @override
+  String get mobileTicketProviderLocal => 'Control Center';
+
+  @override
+  String get mobileTicketUnassigned => 'Не назначен';
+
+  @override
+  String get mobileTicketAssignedFilter => 'Назначенные';
+
+  @override
+  String get mobileTicketAgentsLoadFailed => 'Не удалось загрузить агентов';
+
+  @override
+  String get mobileTicketSearch => 'Поиск тикетов';
+
+  @override
+  String get mobileTicketSearchHint =>
+      'Название, ключ, описание, метка или исполнитель';
+
+  @override
+  String get mobileTicketClearSearch => 'Очистить поиск тикетов';
+
+  @override
+  String get mobileTicketNoMatches => 'Подходящих тикетов нет';
+
+  @override
+  String get mobileTicketAdjustFilters =>
+      'Попробуйте другой запрос или измените фильтры.';
+
+  @override
+  String get mobileTicketClearFilters => 'Сбросить фильтры';
+
+  @override
+  String get mobileTicketNotFound => 'Тикет не найден';
+
+  @override
+  String get mobileTicketNotFoundDescription =>
+      'Возможно, тикет удалён или перенесён из этого рабочего пространства.';
+
+  @override
+  String get mobileTicketWorkspaceChanged =>
+      'Рабочее пространство изменилось. Вернитесь в текущее пространство перед сохранением.';
+
+  @override
+  String get mobileTicketOpenLinkedSpace => 'Открыть связанное пространство';
+
+  @override
+  String get mobileTicketReadOnly =>
+      'Для изменения тикетов нужно быть участником рабочего пространства.';
+
+  @override
+  String get permissionTitle => 'Разрешения';
+
+  @override
+  String get permissionWorkspaceFailed =>
+      'Не удалось загрузить рабочее пространство';
+
+  @override
+  String get permissionNoWorkspace =>
+      'Выберите рабочее пространство для просмотра разрешений.';
+
+  @override
+  String get permissionLoading => 'Загружаем разрешения…';
+
+  @override
+  String get permissionScopeDescription =>
+      'Посмотрите, как принимается решение для каждого действия в этой области. Агенты и пространства могут наследовать правила рабочего пространства.';
+
+  @override
+  String get permissionScope => 'Область действия политики';
+
+  @override
+  String get permissionWorkspaceScope => 'Рабочее пространство';
+
+  @override
+  String get permissionAgentScope => 'Агент';
+
+  @override
+  String get permissionSpaceScope => 'Пространство';
+
+  @override
+  String get permissionAgentContext => 'Агент, действующий в этом пространстве';
+
+  @override
+  String get permissionNoAgentContext => 'Агент не выбран';
+
+  @override
+  String get permissionTargetsFailed =>
+      'Не удалось загрузить объекты области действия';
+
+  @override
+  String get permissionNoTargets =>
+      'В этой области действия нет доступных объектов.';
+
+  @override
+  String get permissionRoleFailed =>
+      'Не удалось подтвердить вашу роль в рабочем пространстве';
+
+  @override
+  String get permissionMemberRequired =>
+      'Для просмотра правил политики нужно быть участником рабочего пространства.';
+
+  @override
+  String get permissionRulesFailed => 'Не удалось загрузить правила политики';
+
+  @override
+  String get permissionAuditAdminOnly =>
+      'История авторизаций доступна только администраторам рабочего пространства.';
+
+  @override
+  String get permissionAllow => 'Разрешить';
+
+  @override
+  String get permissionAsk => 'Спросить сначала';
+
+  @override
+  String get permissionDeny => 'Запретить';
+
+  @override
+  String get permissionFileDelete => 'Удалять файлы';
+
+  @override
+  String get permissionFileWriteOutsideWorktree =>
+      'Записывать вне рабочего дерева';
+
+  @override
+  String get permissionGitCommit => 'Создавать коммиты';
+
+  @override
+  String get permissionGitPush => 'Отправлять коммиты';
+
+  @override
+  String get permissionPrCreate => 'Создавать pull request';
+
+  @override
+  String get permissionPrPublish => 'Публиковать pull request';
+
+  @override
+  String get permissionVendorSyncWrite =>
+      'Записывать синхронизацию с поставщиком';
+
+  @override
+  String get permissionNetworkEgress => 'Подключаться к сети';
+
+  @override
+  String get permissionSecretAccess => 'Получать доступ к секретам';
+
+  @override
+  String get permissionPackageInstall => 'Устанавливать пакеты';
+
+  @override
+  String get permissionProcessSpawn => 'Запускать процессы';
+
+  @override
+  String get permissionWorkspaceMutation => 'Изменять рабочее пространство';
+
+  @override
+  String get permissionEnclosureControl => 'Управлять изолированной средой';
+
+  @override
+  String get permissionChangeFailed => 'Не удалось изменить правило';
+
+  @override
+  String get permissionEffectiveDescription =>
+      'Действует в этой области без аргументов действия. Условные разрешения ниже применяются только к подходящим запросам; окончательное решение принимает сервер.';
+
+  @override
+  String get permissionSpaceAgentNote =>
+      'Агент не выбран. Правила для конкретного агента появятся после выбора выше.';
+
+  @override
+  String get permissionScopedGrants => 'Правила в этой области';
+
+  @override
+  String get permissionModePreset => 'Пресет режима';
+
+  @override
+  String get permissionBuiltInDefault => 'Встроенное по умолчанию';
+
+  @override
+  String get permissionRemembered => 'Сохранённое одобрение';
+
+  @override
+  String get permissionSource => 'Исходник';
+
+  @override
+  String permissionSetAtThisScope(String source) {
+    return '$source · задано здесь';
+  }
+
+  @override
+  String permissionInheritedFrom(String source) {
+    return '$source · унаследовано';
+  }
+
+  @override
+  String permissionExpiresAt(String date) {
+    return 'Истекает $date';
+  }
+
+  @override
+  String get permissionSetHere => 'Задать правило здесь';
+
+  @override
+  String get permissionRevokeBeforeEdit =>
+      'Отзовите правило для этой области или сохранённое правило, прежде чем задать общее правило для этого действия.';
+
+  @override
+  String get permissionConfirmRevoke => 'Подтвердить отзыв';
+
+  @override
+  String get permissionRevokeRule => 'Отозвать правило';
+
+  @override
+  String permissionCommandPrefix(String prefix) {
+    return 'Префикс команды: $prefix';
+  }
+
+  @override
+  String get permissionNoExpiry => 'Без срока действия';
+
+  @override
+  String get permissionExpired => 'Истекло';
+
+  @override
+  String get permissionExplicitRule => 'Явное правило';
+
+  @override
+  String get permissionEnforcementAdvisory =>
+      'Рекомендательный режим: правила «Спросить сначала» записываются без запроса подтверждения';
+
+  @override
+  String get permissionEnforcementSoft =>
+      'Мягкое применение: для исключения требуется авторизация';
+
+  @override
+  String get permissionEnforcementHard =>
+      'Строгое применение: исключения невозможны';
+
+  @override
+  String permissionPaths(String paths) {
+    return 'Пути: $paths';
+  }
+
+  @override
+  String permissionRefs(String refs) {
+    return 'Ссылки Git: $refs';
+  }
+
+  @override
+  String permissionHosts(String hosts) {
+    return 'Хосты: $hosts';
+  }
+
+  @override
+  String permissionCommands(String commands) {
+    return 'Команды: $commands';
+  }
+
+  @override
+  String permissionMaxCount(String count) {
+    return 'Максимальное количество: $count';
+  }
+
+  @override
+  String permissionMaxCents(String cents) {
+    return 'Максимальная сумма в центах: $cents';
+  }
+
+  @override
+  String get permissionAuditHeading => 'История авторизаций';
+
+  @override
+  String get permissionAuditDescription =>
+      'Недавние решения, записанные сервером. Только администраторы могут просматривать журнал и проверять цепочку его хешей.';
+
+  @override
+  String permissionOnBehalfOf(String user) {
+    return 'от имени $user';
+  }
+
+  @override
+  String get permissionPrompted => 'Запрошено подтверждение человека';
+
+  @override
+  String get permissionVerifyChain => 'Проверить цепочку аудита';
+
+  @override
+  String get permissionVerifyFailed => 'Не удалось проверить цепочку аудита';
+
+  @override
+  String permissionChainIntact(String count) {
+    return 'Цепочка не нарушена · проверено записей: $count';
+  }
+
+  @override
+  String permissionChainBroken(String sequence, String reason) {
+    return 'Цепочка нарушена на записи $sequence: $reason';
+  }
+
+  @override
+  String get permissionAuditEmpty => 'Решения об авторизации пока не записаны.';
+
+  @override
+  String get permissionAuditFailed =>
+      'Не удалось загрузить историю авторизаций';
+
+  @override
+  String get mobilePlansLoadFailed => 'Не удалось загрузить планы';
+
+  @override
+  String get mobilePlansEmpty => 'Планов пока нет';
+
+  @override
+  String get mobilePlansEmptyDescription =>
+      'Планы, предложенные агентами, появятся здесь для проверки.';
+
+  @override
+  String get mobilePlanTitle => 'План';
+
+  @override
+  String get mobilePlanMissing =>
+      'Этот план больше недоступен в рабочем пространстве.';
+
+  @override
+  String mobilePlanStepCount(int count) {
+    return 'Шагов: $count';
+  }
+
+  @override
+  String get mobilePlanDraft => 'Черновик';
+
+  @override
+  String get mobilePlanProposed => 'Ожидает проверки';
+
+  @override
+  String get mobilePlanApproved => 'Одобрен';
+
+  @override
+  String get mobilePlanRejected => 'Отклонено';
+
+  @override
+  String get mobilePlanSuperseded => 'Заменено';
+
+  @override
+  String get mobilePlanExecuting => 'Выполняется';
+
+  @override
+  String get mobilePlanSynthesizing => 'Синтез';
+
+  @override
+  String get mobilePlanCompleted => 'Завершён';
+
+  @override
+  String get mobilePlanFailed => 'Сбой';
+
+  @override
+  String get mobilePlanCancelled => 'Отменён';
+
+  @override
+  String mobilePlanRevision(String revision) {
+    return 'Ревизия $revision';
+  }
+
+  @override
+  String get mobilePlanSteps => 'Шаги';
+
+  @override
+  String get mobilePlanNoSteps =>
+      'Для этого плана не предложено ни одного шага.';
+
+  @override
+  String get mobilePlanAssumptions => 'Уточнения';
+
+  @override
+  String mobilePlanDependsOn(String keys) {
+    return 'Зависит от $keys';
+  }
+
+  @override
+  String mobilePlanStepCost(String cost) {
+    return 'Предположительно до $cost';
+  }
+
+  @override
+  String get mobilePlanSelect => 'Выбрать';
+
+  @override
+  String get mobilePlanSelected => 'Выбрано';
+
+  @override
+  String get mobilePlanEstimate => 'Оценить стоимость';
+
+  @override
+  String get mobilePlanEstimateRequired =>
+      'Оцените план перед одобрением выполнения.';
+
+  @override
+  String mobilePlanEstimatedCost(String low, String high) {
+    return 'Оценка стоимости: $low–$high';
+  }
+
+  @override
+  String get mobilePlanCostUnknown => 'недоступно';
+
+  @override
+  String get mobilePlanNoHardCap => 'без жёсткого лимита';
+
+  @override
+  String get mobilePlanExceedsBudget =>
+      'Оценка превышает заданный бюджет. Проверьте её перед одобрением.';
+
+  @override
+  String get mobilePlanPartialEstimate =>
+      'Эта оценка относится ко всему плану; выбранные шаги могут стоить дешевле.';
+
+  @override
+  String get mobilePlanConfirmAll => 'Запустить весь план?';
+
+  @override
+  String get mobilePlanConfirmSelected => 'Запустить выбранные шаги?';
+
+  @override
+  String mobilePlanExecutionConfirmation(String cost, String cap) {
+    return 'После одобрения начнётся выполнение, за которое может взиматься плата. Верхняя оценка стоимости: $cost. Лимит бюджета: $cap.';
+  }
+
+  @override
+  String get mobilePlanApproveAll => 'Одобрить всё и запустить';
+
+  @override
+  String get mobilePlanApproveSelected => 'Одобрить выбранное и запустить';
+
+  @override
+  String get mobilePlanWiden => 'Одобрить дополнительные шаги';
+
+  @override
+  String mobilePlanWidenConfirm(String count, String cap) {
+    return 'Запустить ещё $count шагов? Они могут повлечь расходы. Текущий лимит затрат на выполнение: $cap.';
+  }
+
+  @override
+  String get mobilePlanChanged =>
+      'План изменился во время проверки. Откройте последнюю редакцию и оцените её заново.';
+
+  @override
+  String get mobilePlanReject => 'Отклонить план';
+
+  @override
+  String get mobilePlanRejectConfirm =>
+      'Отклонить этот план? Он не будет выполнен.';
+
+  @override
+  String get mobilePlanStop => 'Остановить выполнение';
+
+  @override
+  String get mobilePlanStopConfirm =>
+      'Остановить выполнение плана? Уже выполненная работа не будет отменена.';
+
+  @override
+  String mobilePlanRunId(String runId) {
+    return 'Запуск выполнения: $runId';
+  }
+
+  @override
+  String get mobilePlanExecutionPending =>
+      'Одобрение принято. Ожидаем запись о выполнении…';
+
+  @override
+  String mobilePlanProgress(String completed, String total) {
+    return 'Выполнено шагов: $completed из $total';
+  }
+
+  @override
+  String get mobilePlanOpenConversation => 'Открыть разговор';
+
+  @override
+  String get mobileGoalsTitle => 'Цели под контролем';
+
+  @override
+  String get mobileGoalsLoadFailed => 'Не удалось загрузить цели под контролем';
+
+  @override
+  String get mobileGoalsEmpty => 'Целей под контролем пока нет';
+
+  @override
+  String get mobileGoalsEmptyDescription =>
+      'Задайте цель в пространстве или отправьте /goal в разговоре.';
+
+  @override
+  String get mobileGoalMissing =>
+      'Эта цель больше недоступна в рабочем пространстве.';
+
+  @override
+  String get mobileGoalActive => 'Активен';
+
+  @override
+  String get mobileGoalPaused => 'Приостановлена';
+
+  @override
+  String get mobileGoalCompleted => 'Завершён';
+
+  @override
+  String get mobileGoalFailed => 'Сбой';
+
+  @override
+  String get mobileGoalCancelled => 'Отменён';
+
+  @override
+  String get mobileGoalBudgetExhausted => 'Бюджет исчерпан';
+
+  @override
+  String get mobileGoalGoal => 'Цель';
+
+  @override
+  String get mobileGoalLoop => 'Цикл';
+
+  @override
+  String mobileGoalKind(String kind) {
+    return 'Тип: $kind';
+  }
+
+  @override
+  String mobileGoalRuns(String count) {
+    return 'Запусков: $count';
+  }
+
+  @override
+  String get mobileGoalNoRunLimit => 'без ограничений';
+
+  @override
+  String mobileGoalProgress(
+    String runs,
+    String maxRuns,
+    String spent,
+    String cap,
+  ) {
+    return 'Запуски: $runs / $maxRuns · Потрачено: $spent / $cap';
+  }
+
+  @override
+  String mobileGoalDeadline(String date) {
+    return 'Срок: $date';
+  }
+
+  @override
+  String mobileGoalFailures(String count) {
+    return 'Неудачных запусков подряд: $count';
+  }
+
+  @override
+  String get mobileGoalSummary => 'Итоги выполнения';
+
+  @override
+  String get mobileGoalFailedDescription =>
+      'Контроллер остановился после повторных неудачных запусков. Подробности — в разговоре.';
+
+  @override
+  String get mobileGoalBudgetWall =>
+      'Срок или лимит запусков исчерпан. Повышение лимита затрат не позволит возобновить эту цель.';
+
+  @override
+  String get mobileGoalPause => 'Приостановить цель';
+
+  @override
+  String get mobileGoalResume => 'Возобновить цель';
+
+  @override
+  String get mobileGoalStop => 'Отменить цель';
+
+  @override
+  String get mobileGoalStopConfirm =>
+      'Отменить эту цель без возможности возобновления?';
+
+  @override
+  String get mobileGoalRaiseBudget => 'Увеличить бюджет и возобновить';
+
+  @override
+  String mobileGoalRaiseTo(String amount) {
+    return 'Увеличить бюджет до $amount и возобновить';
+  }
+
+  @override
+  String mobileGoalRaiseConfirm(String oldCap, String newCap) {
+    return 'Увеличить лимит затрат на эту цель с $oldCap до $newCap и возобновить расходы?';
+  }
+
+  @override
+  String get mobileGoalOpenConversation => 'Открыть разговор о цели';
+
+  @override
+  String get mobileGoalCreate => 'Задать цель под контролем';
+
+  @override
+  String get mobileGoalChooseSpace => 'Запустить в пространстве';
+
+  @override
+  String get mobileGoalNoSpaces => 'Создайте пространство перед запуском цели.';
+
+  @override
+  String get mobileGoalChooseAgent => 'Запустить с агентом';
+
+  @override
+  String get mobileGoalNoAgents =>
+      'Добавьте активного агента перед запуском цели.';
+
+  @override
+  String mobileGoalSelectedAgent(String name) {
+    return 'Выбран: $name';
+  }
+
+  @override
+  String get mobileGoalObjectiveHint =>
+      'Какого результата должен достичь агент?';
+
+  @override
+  String get mobileGoalBudgetUsd => 'Лимит затрат (USD)';
+
+  @override
+  String get mobileGoalCreateInvalid =>
+      'Выберите пространство и агента, укажите цель и положительный лимит затрат в USD.';
+
+  @override
+  String mobileGoalCreateConfirm(String cap) {
+    return 'Запустить цель под контролем с максимальными затратами $cap? Агент может начать сразу.';
+  }
+
+  @override
+  String get mobileGoalUnavailable =>
+      'Соединение с сервером ещё не готово. Повторите попытку после подключения.';
+
+  @override
+  String get mobileGoalConversationMissing =>
+      'Выбранный разговор больше недоступен в рабочем пространстве.';
+
+  @override
+  String get mobileGoalCreateSent =>
+      'Цель запущена. Состояние контроллера появится в этом списке.';
+
+  @override
+  String get mobileGoalStartRefused =>
+      'Запуск цели не начался. Причину отказа контроллера можно узнать в разговоре.';
+
+  @override
+  String mobileGoalSelectedSpace(String name) {
+    return 'Выбрано пространство: $name';
+  }
+
+  @override
+  String get requestUnavailable =>
+      'Этот запрос больше недоступен в активном рабочем пространстве.';
+
+  @override
+  String get requestAlreadyResolved => 'Этот запрос уже обработан.';
+
+  @override
+  String get inboxCredentialsBlocked => 'Учётные данные блокируют запуски';
+
+  @override
+  String get inboxSyncFailures => 'Сбои синхронизации с поставщиками';
+
+  @override
+  String get inboxConfigureCredentials => 'Настроить учётные данные';
+
+  @override
+  String get openTicket => 'Открыть тикет';
+
+  @override
+  String get activityTitle => 'Активность';
+
+  @override
+  String get activityClearAll => 'Очистить активность';
+
+  @override
+  String get activityClearConfirm =>
+      'Вся активность, записанная для вас до сих пор, будет скрыта на всех устройствах. Новая активность продолжит появляться.';
+
+  @override
+  String get activityMarkAllRead => 'Отметить всё как прочитанное';
+
+  @override
+  String get activityMarkAllConfirm =>
+      'Отметить всю активность в этом рабочем пространстве как прочитанную на всех ваших устройствах?';
+
+  @override
+  String get activityMarkRead => 'Отметить как прочитанное';
+
+  @override
+  String get activityMarkUnread => 'Отметить как непрочитанное';
+
+  @override
+  String get activityDismiss => 'Закрыть';
+
+  @override
+  String get activityResolved => 'Разрешено';
+
+  @override
+  String get activityOpen => 'Открыт';
+
+  @override
+  String get activityEmpty => 'Пока нет активности';
+
+  @override
+  String get activityLoadFailed => 'Не удалось загрузить активность';
+
+  @override
+  String get activityAgentWaiting => 'Агент ожидает ответа';
+
+  @override
+  String get activityAgentBlocked => 'Действие агента заблокировано';
+
+  @override
+  String get activityMessage => 'Новое сообщение';
+
+  @override
+  String get activityPullRequest => 'Обновление pull request';
+
+  @override
+  String get activityTicket => 'Обновление тикета';
+
+  @override
+  String get activityMeeting => 'Обновление встречи';
+
+  @override
+  String get activityCalendar => 'Подключение календаря';
+
+  @override
+  String get activityRig => 'Обновление изолированной среды';
+
+  @override
+  String get activityEvent => 'Обновить';
+
+  @override
+  String get activityPrReady => 'Pull request готов к слиянию';
+
+  @override
+  String get activityPrBlocked => 'Слияние pull request заблокировано';
+
+  @override
+  String get activityPrApproved => 'Pull request одобрен';
+
+  @override
+  String get activityPrChanges => 'Запрошены изменения';
+
+  @override
+  String get activityPrChecksFailed => 'Проверки pull request не пройдены';
+
+  @override
+  String get activityPrChecksRecovered =>
+      'Проверки pull request снова пройдены';
+
+  @override
+  String get activityPrComment => 'Комментарий к pull request';
+
+  @override
+  String get activityPrPublished => 'Pull request опубликован';
+
+  @override
+  String get activityPrMerged => 'Pull request слит';
+
+  @override
+  String get activityPrMentioned => 'Упоминание в pull request';
+
+  @override
+  String get activityPrReviewRequested => 'Запрошено ревью';
+
+  @override
+  String get activityPrReviewStale => 'Нужно обновить ревью';
+
+  @override
+  String get activityTicketAssigned => 'Тикет назначен';
+
+  @override
+  String get activityTicketChanged => 'Статус тикета изменён';
+
+  @override
+  String get activityMeetingSoon => 'Встреча скоро начнётся';
+
+  @override
+  String get activityCalendarExpired => 'Истёк срок подключения календаря';
+
+  @override
+  String get activityRigControl => 'Управление изолированной средой изменилось';
+
+  @override
+  String get activityRigClosed => 'Изолированная среда остановлена';
+
+  @override
+  String get mobileSpacesSearch => 'Поиск пространств';
+
+  @override
+  String get mobileSpacesArchived => 'В архиве';
+
+  @override
+  String get mobileSpacesActive => 'Активен';
+
+  @override
+  String get mobileSpacesNew => 'Новое пространство';
+
+  @override
+  String get mobileSpacesManage => 'Управление пространством';
+
+  @override
+  String get mobileSpacesName => 'Название пространства';
+
+  @override
+  String get mobileSpacesAgents => 'Агенты';
+
+  @override
+  String get mobileSpacesMembers => 'Люди';
+
+  @override
+  String get mobileSpacesRepos => 'Репозитории';
+
+  @override
+  String get mobileSpacesAllRepos => 'Все связанные репозитории';
+
+  @override
+  String get mobileSpacesNoRepos => 'Нет репозиториев';
+
+  @override
+  String get mobileSpacesBaseBranch => 'Базовая ветка (необязательно)';
+
+  @override
+  String get mobileSpacesDefaultBranch => 'Ветка по умолчанию';
+
+  @override
+  String get mobileSpacesMode => 'Режим';
+
+  @override
+  String get mobileSpacesModeChat => 'Чат';
+
+  @override
+  String get mobileSpacesModeReview => 'Ревью (только чтение)';
+
+  @override
+  String get mobileSpacesModePlan => 'Планирование (только чтение)';
+
+  @override
+  String get mobileSpacesModeOrchestrate => 'Оркестрировать';
+
+  @override
+  String get mobileSpacesAutonomy => 'Переопределение автономии';
+
+  @override
+  String get mobileSpacesAutonomyInherited => 'Унаследовано';
+
+  @override
+  String get mobileSpacesAutonomyPropose => 'Только предлагать';
+
+  @override
+  String get mobileSpacesAutonomyApproval => 'Действовать с одобрения';
+
+  @override
+  String get mobileSpacesAutonomyFreely => 'Действовать свободно';
+
+  @override
+  String get mobileSpacesAutonomyNotice =>
+      'Переопределение не отменяет запросы подтверждения и запреты политики действий. Изменять его могут только администраторы рабочего пространства.';
+
+  @override
+  String get mobileSpacesArchive => 'Архивировать пространство';
+
+  @override
+  String get mobileSpacesReopen => 'Открыть пространство снова';
+
+  @override
+  String get mobileSpacesSave => 'Сохранить изменения';
+
+  @override
+  String get mobileSpacesCreate => 'Создать пространство';
+
+  @override
+  String get mobileSpacesOperationFailed => 'Не удалось обновить пространство';
+
+  @override
+  String get mobileSpacesMissing =>
+      'Пространство не найдено в рабочем пространстве';
+
+  @override
+  String get mobileSpacesEmptyName => 'Введите название пространства';
+
+  @override
+  String get mobileSpacesNoMatches => 'Подходящих пространств нет';
+
+  @override
+  String get mobileSpacesUnread => 'Непрочитанный ответ агента';
+
+  @override
+  String get mobileSpacesNeedsInput => 'Нужен ваш ответ';
+
+  @override
+  String get mobileSpacesRunning => 'Агент работает';
+
+  @override
+  String get mobileSpacesNoAgents => 'В рабочем пространстве нет агентов';
+
+  @override
+  String get mobileSpacesNoMembers =>
+      'В рабочем пространстве нет других участников';
+
+  @override
+  String get mobileSpacesRepoError => 'Не удалось загрузить репозитории';
+
+  @override
+  String get mobileSpacesRetry => 'Повторить';
+
+  @override
+  String get mobileSpacesBranchUnavailable =>
+      'При создании пространства выберите или укажите базовую ветку. У существующих пространств её нельзя изменить.';
+
+  @override
+  String get mobileSpacesArchivedEmpty => 'Нет архивных пространств';
+
+  @override
+  String get mobileSpacesAllRepoWarning =>
+      'Новые репозитории, связанные с рабочим пространством, тоже будут включены сюда.';
+
+  @override
+  String get mobileSpacesCreatedRetry =>
+      'Пространство создано. Повторите добавление людей или откройте страницу управления пространством.';
+
+  @override
+  String get progressTitle => 'Прогресс';
+
+  @override
+  String get progressConversation => 'Диалог';
+
+  @override
+  String get progressLoadFailed => 'Не удалось загрузить прогресс';
+
+  @override
+  String get progressUnavailable => 'Разговор недоступен';
+
+  @override
+  String get progressUnavailableDescription =>
+      'Этот разговор не относится к активному рабочему пространству и пространству. Вернитесь в его пространство, чтобы продолжить.';
+
+  @override
+  String get progressSaveFailed => 'Не удалось обновить прогресс';
+
+  @override
+  String get progressGoal => 'Цель';
+
+  @override
+  String get progressNoGoal => 'Рабочая цель не задана';
+
+  @override
+  String get progressSetGoal => 'Задать цель';
+
+  @override
+  String get progressEditGoal => 'Изменить цель';
+
+  @override
+  String get progressClearGoal => 'Очистить цель';
+
+  @override
+  String get progressGoalRequired => 'Укажите цель перед сохранением.';
+
+  @override
+  String get progressTodos => 'Задачи';
+
+  @override
+  String get progressNoTodos => 'Задач пока нет';
+
+  @override
+  String get progressNewTodo => 'Новая задача';
+
+  @override
+  String get progressAddTodo => 'Добавить задачу';
+
+  @override
+  String get progressEditTodo => 'Изменить задачу';
+
+  @override
+  String get progressTodoRequired => 'Укажите задачу перед сохранением.';
+
+  @override
+  String get progressTodoNoLongerExists =>
+      'Эта задача была удалена. Обновите список и повторите попытку.';
+
+  @override
+  String get progressWorkspaceChanged =>
+      'Активное рабочее пространство изменилось. Вернитесь к этому разговору и повторите попытку.';
+
+  @override
+  String progressRemoveTodo(String name) {
+    return 'Удалить задачу $name';
+  }
+
+  @override
+  String get progressPending => 'Ожидание';
+
+  @override
+  String get progressInProgress => 'В работе';
+
+  @override
+  String get progressCompleted => 'Завершён';
+
+  @override
+  String get progressMoveUp => 'Переместить задачу вверх';
+
+  @override
+  String get progressMoveDown => 'Переместить задачу вниз';
+
+  @override
+  String get progressRunTree => 'Запуски агентов';
+
+  @override
+  String get progressNoRuns => 'В этом разговоре ещё нет запусков';
+
+  @override
+  String get progressRunning => 'Выполняется';
+
+  @override
+  String get progressFailed => 'Сбой';
+
+  @override
+  String get progressUnknown => 'Неизвестно';
+
+  @override
+  String get progressHealthy => 'Активен';
+
+  @override
+  String get progressBlocked => 'Заблокирован';
+
+  @override
+  String get progressLooping => 'Повторяется по кругу';
+
+  @override
+  String get progressStalled => 'Не продвигается';
+
+  @override
+  String get progressDead => 'Неожиданно остановлен';
+
+  @override
+  String get progressQuiet => 'Вывода пока нет';
+
+  @override
+  String get progressCostReported => 'Стоимость по данным поставщика';
+
+  @override
+  String get progressCostNotional =>
+      'Условная стоимость подписки по прайс-листу, не счёт к оплате';
+
+  @override
+  String get progressCostMixed => 'Разные источники данных о стоимости';
+
+  @override
+  String get progressCostEstimated => 'Оценка стоимости';
+
+  @override
+  String progressDurationSeconds(String seconds) {
+    return '$seconds с';
+  }
+
+  @override
+  String progressRunDetails(String model, String duration, String cost) {
+    return 'Модель: $model · Время: $duration · Стоимость: $cost';
+  }
+
+  @override
+  String progressStartedAt(String time) {
+    return 'Запущено $time';
+  }
+
+  @override
+  String progressLiveness(String state) {
+    return 'Состояние: $state';
+  }
+
+  @override
+  String progressRunTokens(String input, String output) {
+    return 'Вход: $input · Выход: $output токенов';
+  }
+
+  @override
+  String get progressOutputPreviewLimited =>
+      'Показаны только первые 6 000 символов структурированного вывода.';
+
+  @override
+  String progressRetryOf(String runId) {
+    return 'Повтор запуска $runId';
+  }
+
+  @override
+  String get progressContext => 'Контекст и лимиты';
+
+  @override
+  String get progressNoAgent => 'Нет агента для просмотра';
+
+  @override
+  String progressContextReading(String used, String window) {
+    return '$used / $window токенов';
+  }
+
+  @override
+  String get progressMeasured =>
+      'Контекст последнего вызова по данным поставщика';
+
+  @override
+  String get progressEstimated =>
+      'Оценка по сохранённому разговору и постоянному контексту';
+
+  @override
+  String get progressContextUnknown => 'Использование контекста ещё не указано';
+
+  @override
+  String progressContextPercent(String percent) {
+    return '$percent% окна контекста';
+  }
+
+  @override
+  String progressMonthlyBudget(String amount) {
+    return 'Заданный месячный лимит агента: $amount';
+  }
+
+  @override
+  String progressConversationTokens(String tokens) {
+    return 'Сохранённый текущий разговор: примерно $tokens токенов';
+  }
+
+  @override
+  String progressInspectionFor(String agent, String model) {
+    return 'Постоянный контекст для $agent · $model';
+  }
+
+  @override
+  String get progressContextSystem => 'Системный промпт';
+
+  @override
+  String get progressContextRules => 'Правила';
+
+  @override
+  String get progressContextSkills => 'Навыки';
+
+  @override
+  String get progressContextTools => 'Определения инструментов';
+
+  @override
+  String get progressContextMcp => 'Инструменты MCP';
+
+  @override
+  String get progressContextDeferred => 'Отложенные инструменты';
+
+  @override
+  String get progressContextSubagents => 'Субагенты';
+
+  @override
+  String get progressContextRunner => 'Внешний исполнитель';
+
+  @override
+  String get progressContextMemory => 'Память';
+
+  @override
+  String get progressContextHistory => 'История разговора';
+
+  @override
+  String progressContextSegment(String label, String tokens) {
+    return '$label · $tokens токенов';
+  }
+
+  @override
+  String progressContextPart(String title, String tokens) {
+    return '$title · $tokens токенов';
+  }
+
+  @override
+  String get progressOutputs => 'Недавние результаты';
+
+  @override
+  String get progressNoOutputs => 'Нет недавних результатов агентов';
+
+  @override
+  String get progressStructuredOutputsAbove =>
+      'Структурированные результаты запусков показаны выше, в списке запусков агентов.';
+
+  @override
+  String get progressRecentOutputsOnly =>
+      'Показаны только недавние сообщения. Откройте разговор, чтобы увидеть более раннюю работу.';
+
+  @override
+  String get progressPlan => 'План';
+
+  @override
+  String get progressArtifact => 'Артефакт';
+
+  @override
+  String get progressResult => 'Результат';
+
+  @override
+  String get progressHideArtifact => 'Скрыть артефакт';
+
+  @override
+  String get progressReadArtifact => 'Прочитать артефакт';
+
+  @override
+  String get progressArtifactUnavailable => 'Артефакт больше недоступен';
+
+  @override
+  String get progressArtifactPreviewLimited =>
+      'Показан сокращённый просмотр этого артефакта.';
+
+  @override
+  String get progressDiagramSource => 'Исходный код диаграммы';
+
+  @override
+  String progressOpenAttachment(String name) {
+    return 'Открыть $name';
+  }
+
+  @override
+  String get progressOpenPlan => 'Открыть план';
+
+  @override
+  String progressOpenDiff(String label) {
+    return 'Просмотреть изменённые файлы: $label';
+  }
+
+  @override
+  String get progressViewMessage => 'Посмотреть сообщение';
+
+  @override
+  String get pushTitle => 'Фоновые уведомления';
+
+  @override
+  String get pushIntro =>
+      'Получайте личные оповещения, когда что-то требует внимания, даже если приложение закрыто. Подробности остаются внутри вашего зашифрованного соединения.';
+
+  @override
+  String get pushLoading => 'Проверяем настройки уведомлений…';
+
+  @override
+  String get pushError =>
+      'Не удалось обновить уведомления. Проверьте подключение и повторите попытку.';
+
+  @override
+  String get pushEnable => 'Включить уведомления';
+
+  @override
+  String get pushDisable => 'Отключить уведомления';
+
+  @override
+  String get pushQuiet => 'Приостановить оповещения на этом устройстве';
+
+  @override
+  String get pushCategories => 'Уведомлять меня о';
+
+  @override
+  String get pushCategoryAgents => 'Агенты';
+
+  @override
+  String get pushCategoryMessages => 'Сообщения';
+
+  @override
+  String get pushCategoryPullRequests => 'Pull requests';
+
+  @override
+  String get pushCategoryTickets => 'Тикеты';
+
+  @override
+  String get pushCategoryCalendar => 'Календарь';
+
+  @override
+  String get pushCategoryMachines => 'Машины';
+
+  @override
+  String get pushSecureOrigin => 'Для уведомлений требуется HTTPS.';
+
+  @override
+  String get pushInstallIos =>
+      'На iPhone или iPad добавьте приложение на экран «Домой» и откройте его оттуда, чтобы включить уведомления.';
+
+  @override
+  String get pushUnsupported =>
+      'Этот браузер не поддерживает фоновые уведомления.';
+
+  @override
+  String get pushDenied =>
+      'Уведомления заблокированы в настройках браузера. Разрешите их там, чтобы продолжить.';
+
+  @override
+  String get pushResubscribe => 'Переподключить уведомления';
+
+  @override
+  String get pushStatusEnabled => 'На этом устройстве уведомления включены.';
+
+  @override
+  String get pushStatusDisabled => 'На этом устройстве уведомления отключены.';
+
+  @override
+  String get credentialsTitle => 'Подключения и учётные данные';
+
+  @override
+  String get credentialsIntro =>
+      'Подключите аккаунты, которые используют ваши запуски и интеграции. Секреты хранятся на вашем сервере, а не на этом телефоне.';
+
+  @override
+  String get credentialsModelProviders => 'Провайдеры моделей';
+
+  @override
+  String get credentialsOwnerOnly =>
+      'Только владелец сервера может добавлять, подключать и удалять учётные данные поставщиков моделей. Эти ключи общие для всех рабочих пространств.';
+
+  @override
+  String get credentialsContactOwner =>
+      'Попросите владельца сервера подключить поставщика, который нужен заблокированному запуску.';
+
+  @override
+  String get credentialsClaudeCode => 'Claude Code';
+
+  @override
+  String get credentialsClaudeHostOnly =>
+      'Вход в Claude Code выполняется через CLI на хосте. Попросите владельца сервера войти в аккаунт или обновить авторизацию в терминале хоста; с телефона это сделать нельзя.';
+
+  @override
+  String get credentialsYourForgeAccounts => 'Ваши аккаунты на Git-платформах';
+
+  @override
+  String get credentialsYourTicketingAccount => 'Ваш аккаунт в системе тикетов';
+
+  @override
+  String get credentialsLocalTicketsNoLogin =>
+      'Для локальных тикетов вход не нужен. Подключите Linear здесь, если ваше рабочее пространство использует Linear.';
+
+  @override
+  String get credentialsMembershipRequired =>
+      'Чтобы управлять учётными данными Git-платформ и системы тикетов, присоединитесь к рабочему пространству. Запросите доступ у его администратора.';
+
+  @override
+  String get credentialsSwitchWorkspace =>
+      'Эта ссылка ведёт в другое рабочее пространство. Переключитесь на него, прежде чем менять учётные данные.';
+
+  @override
+  String get credentialsReturnToInbox =>
+      'Вернитесь во «Входящие», чтобы повторить заблокированный запуск после подключения учётных данных. Хост также автоматически проверяет отложенные запуски.';
+
+  @override
+  String get credentialsLoadFailed =>
+      'Не удалось загрузить подключения. Проверьте связь с сервером и повторите попытку.';
+
+  @override
+  String get credentialsOperationFailed =>
+      'Не удалось изменить это подключение. Проверьте связь с сервером, свои права и учётные данные, затем повторите попытку.';
+
+  @override
+  String get credentialsConnected => 'Подключено';
+
+  @override
+  String get credentialsNotConnected => 'Не подключено';
+
+  @override
+  String credentialsSignedInAs(String username) {
+    return 'Вход выполнен как $username';
+  }
+
+  @override
+  String get credentialsAccount => 'Подключённый аккаунт';
+
+  @override
+  String get credentialsStoredKey => 'Сохранённый ключ';
+
+  @override
+  String get credentialsActive => 'Активен';
+
+  @override
+  String get credentialsRemove => 'Удалить';
+
+  @override
+  String get credentialsRemoveConfirm =>
+      'Удалить сохранённые учётные данные? Возможно, потребуется войти снова.';
+
+  @override
+  String get credentialsApiKey => 'API-ключ';
+
+  @override
+  String get credentialsApiKeyHint => 'Вставьте API-ключ поставщика';
+
+  @override
+  String get credentialsBrowserLogin => 'Войти через браузер';
+
+  @override
+  String get credentialsSignInAgain => 'Войдите снова';
+
+  @override
+  String get credentialsWaitingForLogin => 'Ожидаем авторизацию в браузере…';
+
+  @override
+  String get credentialsLoginTimedOut =>
+      'Время для входа истекло. Начните заново.';
+
+  @override
+  String get credentialsCopyCode => 'Скопировать код';
+
+  @override
+  String get credentialsDeviceCodeHint =>
+      'Подтвердите этот код на странице поставщика. Не закрывайте этот экран, пока сервер завершает вход.';
+
+  @override
+  String get credentialsPasteRedirect =>
+      'Код авторизации или URL перенаправления';
+
+  @override
+  String get credentialsPasteRedirectHint =>
+      'Вставьте код или полный URL перенаправления от поставщика';
+
+  @override
+  String get credentialsCompleteLogin => 'Завершить вход';
+
+  @override
+  String get credentialsRedirectUnavailable =>
+      'Обратный вызов браузера на этом сервере недоступен с телефона по защищённому соединению. Попросите владельца сервера настроить общедоступный обратный вызов через HTTPS или добавьте токен.';
+
+  @override
+  String get credentialsUpdateToken => 'Обновить токен';
+
+  @override
+  String get credentialsAddToken => 'Добавить токен';
+
+  @override
+  String get credentialsPersonalToken => 'Персональный токен доступа';
+
+  @override
+  String get credentialsPersonalTokenHint =>
+      'Вставьте персональный токен доступа';
+
+  @override
+  String get credentialsHostManaged =>
+      'Это подключение настроено в приложении сервера или его окружении. Изменить его там может только владелец сервера; вы также можете добавить свой токен.';
+
+  @override
+  String get credentialsStopWatching => 'Прекратить отслеживание';
 }

@@ -7,6 +7,7 @@ import 'package:cc_remote/screens/workspace_switcher.dart';
 import 'package:cc_remote/update/remote_update.dart';
 import 'package:cc_remote/widgets/app_shell_bottom_tabs.dart';
 import 'package:cc_remote/widgets/connection_chip.dart';
+import 'package:cc_remote/widgets/operation_links.dart';
 import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -67,10 +68,10 @@ class _Header extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Row(
           children: [
-            const WorkspaceSwitcherButton(),
-            const Spacer(),
+            const Expanded(child: WorkspaceSwitcherButton()),
             const ConnectionChip(),
             const SizedBox(width: 4),
+            const ActivityButton(),
             PhoneIconButton(
               icon: AppIcons.settings,
               semanticLabel: AppLocalizations.of(context).settings,

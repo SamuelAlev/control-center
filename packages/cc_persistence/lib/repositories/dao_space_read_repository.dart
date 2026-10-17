@@ -36,4 +36,10 @@ class DaoSpaceReadRepository implements SpaceReadRepository {
     String spaceId,
     String userId,
   ) => _dao(workspaceId).watchUserLastReadAt(spaceId, userId);
+
+  @override
+  Stream<Map<String, DateTime>> watchUserSpaceReads(
+    String workspaceId,
+    String userId,
+  ) => _dao(workspaceId).watchUserSpaceReads(workspaceId, userId);
 }

@@ -1,6 +1,7 @@
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/pr_providers.dart';
+import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,9 +17,6 @@ List<TabSpec> tabs(AppLocalizations l10n) => <TabSpec>[
   TabSpec(icon: AppIcons.calendarDays, label: l10n.tabCalendar),
   TabSpec(icon: AppIcons.newspaper, label: l10n.tabNews),
 ];
-
-/// The narrowest a labelled tab can get before its label starts truncating.
-const double kMinTabWidth = 58;
 
 /// Data class describing one tab's icon and label.
 class TabSpec {
@@ -52,7 +50,7 @@ class BottomTabs extends ConsumerWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final fits =
-                  constraints.maxWidth / tabList.length >= kMinTabWidth;
+                  constraints.maxWidth / tabList.length >= kMinTouchTarget;
               final buttons = [
                 for (var i = 0; i < tabList.length; i++)
                   _TabButton(
@@ -76,7 +74,7 @@ class BottomTabs extends ConsumerWidget {
                 scrollDirection: Axis.horizontal,
                 children: [
                   for (final button in buttons)
-                    SizedBox(width: kMinTabWidth, child: button),
+                    SizedBox(width: kMinTouchTarget, child: button),
                 ],
               );
             },

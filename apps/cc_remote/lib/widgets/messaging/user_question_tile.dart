@@ -5,6 +5,7 @@ import 'package:cc_domain/features/messaging/domain/services/agent_question_serv
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/messaging/ask_user_card.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,10 +13,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// the answer through `messaging.updateMessage`.
 class UserQuestionTile extends ConsumerStatefulWidget {
   /// Creates a [UserQuestionTile].
-  const UserQuestionTile({super.key, required this.message});
+  const UserQuestionTile({super.key, required this.message, this.workspaceId});
 
   /// The question message.
   final MessageDto message;
+
+  /// Inbox scope captured before any asynchronous answer; null inline.
+  final String? workspaceId;
 
   @override
   ConsumerState<UserQuestionTile> createState() => _UserQuestionTileState();
@@ -23,6 +27,7 @@ class UserQuestionTile extends ConsumerStatefulWidget {
 
 class _UserQuestionTileState extends ConsumerState<UserQuestionTile> {
   bool _submitting = false;
+  String? _error;
 
   Map<String, dynamic> get _meta {
     final raw = widget.message.metadata;
@@ -55,11 +60,18 @@ class _UserQuestionTileState extends ConsumerState<UserQuestionTile> {
       return;
     }
     final client = ref.read(rpcClientProvider).value;
-    final workspaceId = ref.read(activeWorkspaceIdProvider).value;
-    if (client == null || workspaceId == null) {
+    final workspaceId =
+        widget.workspaceId ?? ref.read(activeWorkspaceIdProvider).value;
+    if (client == null ||
+        workspaceId == null ||
+        workspaceId != ref.read(activeWorkspaceIdProvider).value) {
+      setState(() => _error = AppLocalizations.of(context).requestUnavailable);
       return;
     }
-    setState(() => _submitting = true);
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
     try {
       await RemoteMessagingRepository(client).updateMessage(
         workspaceId,
@@ -70,6 +82,8 @@ class _UserQuestionTileState extends ConsumerState<UserQuestionTile> {
           kQuestionAnswerKey: answer.toJson(),
         },
       );
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -80,16 +94,27 @@ class _UserQuestionTileState extends ConsumerState<UserQuestionTile> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return AskUserCard(
-      question: (_meta['question'] as String?) ?? widget.message.content,
-      contextText: _meta['context'] as String?,
-      options: _options,
-      allowFreeText: _meta['allowFreeText'] == true,
-      multiSelect: _meta['multiSelect'] == true,
-      caption: l10n.agentQuestionHeader,
-      answered: _answered,
-      submitting: _submitting,
-      onSubmit: _answered == null ? _submit : null,
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(_error!, style: TextStyle(color: t.textErrorPrimary)),
+          ),
+        AskUserCard(
+          question: (_meta['question'] as String?) ?? widget.message.content,
+          contextText: _meta['context'] as String?,
+          options: _options,
+          allowFreeText: _meta['allowFreeText'] == true,
+          multiSelect: _meta['multiSelect'] == true,
+          caption: l10n.agentQuestionHeader,
+          answered: _answered,
+          submitting: _submitting,
+          onSubmit: _answered == null ? _submit : null,
+        ),
+      ],
     );
   }
 }

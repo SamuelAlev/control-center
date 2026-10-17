@@ -60,6 +60,22 @@ class AgentQuestionService implements AgentQuestionPort {
   /// Pending questions keyed by the question message id.
   final Map<String, Completer<AgentQuestionAnswer?>> _pending = {};
 
+  StreamController<void>? _pendingChanges;
+
+  /// Emits when live waiters change, without replaying an initial value.
+  ///
+  /// Persisted unanswered messages can outlive the process awaiting them.
+  Stream<void> get pendingChanges =>
+      (_pendingChanges ??= StreamController<void>.broadcast()).stream;
+
+  Completer<AgentQuestionAnswer?>? _takePending(String messageId) {
+    final completer = _pending.remove(messageId);
+    if (completer != null) {
+      _pendingChanges?.add(null);
+    }
+    return completer;
+  }
+
   @override
   Future<AgentQuestionAnswer?> ask(
     AgentQuestionRequest request, {
@@ -114,6 +130,7 @@ class AgentQuestionService implements AgentQuestionPort {
 
     final completer = Completer<AgentQuestionAnswer?>();
     _pending[messageId] = completer;
+    _pendingChanges?.add(null);
     _onAsked?.call(request, messageId);
     var closedUnanswered = false;
     // The asker can stop waiting long before the timeout: its MCP client gave
@@ -141,7 +158,7 @@ class AgentQuestionService implements AgentQuestionPort {
         },
       );
     } finally {
-      _pending.remove(messageId);
+      _takePending(messageId);
       _onClosed?.call(messageId);
       if (closedUnanswered) {
         await _markExpired(request.workspaceId, messageId, metadata);
@@ -194,16 +211,17 @@ class AgentQuestionService implements AgentQuestionPort {
         metadata[kQuestionExpiredKey] == true) {
       return false;
     }
-    final completer = _pending.remove(messageId);
+    final completer = _pending[messageId];
     if (completer == null || completer.isCompleted) {
       return false;
     }
     final raw = metadata[kQuestionAnswerKey];
-    completer.complete(
-      raw is Map
-          ? AgentQuestionAnswer.fromJson(raw.cast<String, dynamic>())
-          : const AgentQuestionAnswer(),
-    );
+    if (raw is! Map) {
+      return false;
+    }
+    final answer = AgentQuestionAnswer.fromJson(raw.cast<String, dynamic>());
+    _takePending(messageId);
+    completer.complete(answer);
     return true;
   }
 
@@ -230,7 +248,7 @@ class AgentQuestionService implements AgentQuestionPort {
     } catch (_) {
       // Persisting the answered state is best-effort; still unblock the agent.
     }
-    final completer = _pending.remove(question.id);
+    final completer = _takePending(question.id);
     if (completer != null && !completer.isCompleted) {
       completer.complete(answer);
     }

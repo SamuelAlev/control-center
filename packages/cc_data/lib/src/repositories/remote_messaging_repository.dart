@@ -398,11 +398,15 @@ class RemoteMessagingRepository {
   /// Raw live turn-relay frames for [spaceId] (`seed` / `updates` — see
   /// `spaceTurnEventFromWire` for the typed decode).
   ///
-  /// Carries no `workspace_id`: `SpaceTurnRelayPort` is keyed by space
-  /// alone, so this subscription stays on the client's ambient active workspace
-  /// — the only surface here that does.
-  Stream<Map<String, dynamic>> watchSpaceTurns(String spaceId) => _client
-      .subscribeEvents('messaging.watchSpaceTurns', {'space_id': spaceId});
+  /// Workspace-keyed callers pass [workspaceId]. The legacy space-only
+  /// `SpaceTurnRelayPort` uses the client's active workspace when omitted.
+  Stream<Map<String, dynamic>> watchSpaceTurns(
+    String spaceId, {
+    String? workspaceId,
+  }) => _client.subscribeEvents('messaging.watchSpaceTurns', {
+    'space_id': spaceId,
+    if (workspaceId != null) 'workspace_id': workspaceId,
+  });
 
   /// Live per-space activity signals for [workspaceId] — or for the client's
   /// ambient active workspace when it is omitted (see [watchSpaces] for why

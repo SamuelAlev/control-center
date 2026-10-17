@@ -40,4 +40,11 @@ abstract class SpaceReadRepository {
     String spaceId,
     String userId,
   );
+
+  /// All the user's opened-space cursors inside this workspace, in one watch.
+  /// A space absent from the map has never been opened by this user.
+  Stream<Map<String, DateTime>> watchUserSpaceReads(
+    String workspaceId,
+    String userId,
+  );
 }

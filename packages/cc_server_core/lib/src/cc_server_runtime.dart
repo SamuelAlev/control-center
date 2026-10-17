@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:cc_domain/cc_domain.dart'
     show AuthException, NotFoundException, UserDto, ValidationException;
 import 'package:cc_domain/core/domain/entities/repo.dart';
@@ -151,6 +152,7 @@ import 'package:cc_server_core/src/activity_log_persister.dart';
 import 'package:cc_server_core/src/agent_action_blocked_publisher.dart';
 import 'package:cc_server_core/src/agent_awaiting_input_publisher.dart';
 import 'package:cc_server_core/src/backup_archive.dart';
+import 'package:cc_server_core/src/catalog/notification_feed_visibility.dart';
 import 'package:cc_server_core/src/cc_server_config.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_provider_plugin.dart';
@@ -219,6 +221,9 @@ import 'package:cc_server_core/src/pr_review/review_cohort_service.dart';
 import 'package:cc_server_core/src/pr_review/review_diagram_service.dart';
 import 'package:cc_server_core/src/pr_review/stale_review_watcher.dart';
 import 'package:cc_server_core/src/presence/agent_presence_synthesizer.dart';
+import 'package:cc_server_core/src/push/web_push_repository.dart';
+import 'package:cc_server_core/src/push/web_push_service.dart';
+import 'package:cc_server_core/src/push/web_push_transport.dart';
 import 'package:cc_server_core/src/relay/remote_relay_host.dart';
 import 'package:cc_server_core/src/remote_rpc_catalog.dart';
 import 'package:cc_server_core/src/repo_ide_data_service.dart';
@@ -1548,9 +1553,11 @@ Future<CcServer> runCcServer({
   final notificationFeedRepository = DaoNotificationFeedRepository(
     workspaceDbs,
   );
+  WebPushService? webPushService;
   final notificationFeedRecorder = NotificationFeedRecorder(
     eventBus: eventBus,
     repository: notificationFeedRepository,
+    onRecorded: (item) => webPushService?.onRecorded(item),
   )..start();
 
   late final SandboxedAgentDispatchAdapter agentDispatch;
@@ -2081,6 +2088,41 @@ Future<CcServer> runCcServer({
     _announce(
       'cc_server: DEMO MODE — ${demo.profile.runtimeType} lockdown, '
       'fictional provider accounts, no execution surface',
+    );
+  }
+  // Background push is an explicitly enabled, per-device capability. Never
+  // mount it in the public demo or let a browser choose its recipient identity.
+  if (demo == null) {
+    final pushRepository = WebPushRepository(secrets);
+    final storedVapid = await pushRepository.readVapid();
+    late final VapidIdentity vapid;
+    if (storedVapid == null) {
+      final generated = await VapidIdentity.generate();
+      await pushRepository.writeVapid(generated.persisted);
+      vapid = generated.identity;
+    } else {
+      vapid = await VapidIdentity.restore(storedVapid);
+    }
+    webPushService = WebPushService(
+      repository: pushRepository,
+      devices: globalDb.pairedDeviceDao,
+      workspaceExists: (id) async =>
+          await globalDb.workspaceRegistryDao.getById(id) != null,
+      isMember: (workspaceId, userId) async =>
+          await membershipRepository.getMember(workspaceId, userId) != null,
+      canViewNotification: (item, userId) async =>
+          (await visibleNotificationItemsForUser(
+            workspaceId: item.workspaceId,
+            userId: userId,
+            items: [item],
+            members: membershipRepository,
+            workspaces: workspaceRepository,
+            isolatedRepos: isolatedRepoRepository,
+          )).isNotEmpty,
+      ownerUserId: ownerUserId,
+      viewerLogin: (userId) =>
+          forgeCredentials.viewerLogin(ForgeHost.github, userId: userId),
+      vapid: vapid,
     );
   }
 
@@ -5687,6 +5729,7 @@ Future<CcServer> runCcServer({
     // demo: no worktrees to sync.
     syncPrWorktree: demo != null ? null : syncPrWorktree,
     extraOps: serverExtraOps.ops,
+    webPushService: webPushService,
     extraWatchQueries: serverExtraOps.watches,
     // Identity & membership (multi-user access): the users/members/invites/
     // prefs/activity ops + the invite service, plus the bootstrap owner (the
@@ -7975,6 +8018,7 @@ Future<CcServer> runCcServer({
     .._worktreeGcListener = worktreeGcListener
     .._rigEventListener = rigEventListener
     .._notificationFeedRecorder = notificationFeedRecorder
+    .._webPushService = webPushService
     .._agentAwaitingInput = agentAwaitingInput
     .._codeGraphWatch = codeGraphWatch
     .._lspSupervisor = lspSupervisor

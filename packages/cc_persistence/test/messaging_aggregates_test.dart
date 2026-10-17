@@ -105,6 +105,27 @@ void main() {
         );
   }
 
+  group('workspace read cursors', () {
+    test('only opened spaces owned by the workspace and user appear', () async {
+      final reads = DaoSpaceReadRepository(dbs);
+      expect(await reads.watchUserSpaceReads('ws-1', 'alice').first, isEmpty);
+      await reads.markSpaceRead('ws-1', 'a', 'alice');
+      await reads.markSpaceRead('ws-1', 'b', 'bob');
+      await reads.markSpaceRead('ws-1', 'mis-stamped', 'alice');
+      await reads.markSpaceRead('ws-2', 'foreign', 'alice');
+
+      final alice = await reads.watchUserSpaceReads('ws-1', 'alice').first;
+      expect(alice.keys, ['a']);
+      expect(alice['a'], isA<DateTime>());
+      expect((await reads.watchUserSpaceReads('ws-2', 'alice').first).keys, [
+        'foreign',
+      ]);
+      expect((await reads.watchUserSpaceReads('ws-1', 'bob').first).keys, [
+        'b',
+      ]);
+    });
+  });
+
   group('watchSpaceActivity', () {
     test('aggregates per space and scopes to the workspace', () async {
       // Space a: user msg, agent msg, a newer agent reply in a SIDE
@@ -358,8 +379,14 @@ void main() {
       final plan = rows.map((r) => r.data.values.join(' ')).join('\n');
       expect(plan, contains('idx_conversation_messages_live_chars'));
       expect(plan, contains('USING COVERING INDEX'));
-      expect(MessagingDao.conversationCharCountsSql, isNot(contains('json_extract')));
-      expect(MessagingDao.conversationCharCountsSql, isNot(contains('metadata')));
+      expect(
+        MessagingDao.conversationCharCountsSql,
+        isNot(contains('json_extract')),
+      );
+      expect(
+        MessagingDao.conversationCharCountsSql,
+        isNot(contains('metadata')),
+      );
     });
 
     test('the newest reported context reading rides with the totals', () async {

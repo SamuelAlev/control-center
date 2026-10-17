@@ -52,6 +52,12 @@ class _PersistedReads implements SpaceReadRepository {
     String spaceId,
     String userId,
   ) => Stream.value(null);
+
+  @override
+  Stream<Map<String, DateTime>> watchUserSpaceReads(
+    String workspaceId,
+    String userId,
+  ) => Stream.value(const {});
 }
 
 void main() {

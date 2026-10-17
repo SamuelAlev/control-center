@@ -113,7 +113,7 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
       final quarantined = '${_file.path}.corrupt-$stamp';
       _file.renameSync(quarantined);
       CcHostLog.warning(
-        'secrets: ${_file.path} could not be parsed ($error) — moved to '
+        'secrets: ${_file.path} could not be parsed (${error.runtimeType}) — moved to '
         '$quarantined. Paired devices must re-pair and provider credentials '
         'must be reconnected; the original bytes are still in that file.',
       );
@@ -152,9 +152,13 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
     });
     await _file.parent.create(recursive: true);
     final tmp = File('${_file.path}.tmp');
+    // Restrict the temporary inode BEFORE writing secret bytes. Renaming a
+    // world-readable temporary file and chmod-ing only the destination leaves
+    // a window where both the new VAPID key and every device PSK are readable.
+    await tmp.create();
+    await _restrictPerms(tmp);
     await tmp.writeAsString(jsonEncode(merged));
     await tmp.rename(_file.path);
-    await _restrictPerms(_file);
     _cache = merged;
     // Re-stamp against what we just wrote; `_readFromDisk` above stamped the
     // PRE-write file, which would make our own flush look like a foreign write.
@@ -168,19 +172,15 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
     });
   }
 
-  /// Tightens the secrets file to owner-only (0600) where `chmod` exists. The
-  /// server runs on macOS/Linux; Windows uses ACLs and is out of scope. The
-  /// class doc promised `0600` — `writeAsString` honors the umask (often 0644),
-  /// so this enforces it explicitly (data-protection note). Best-effort: a
-  /// chmod failure never blocks the write (the umask still applies).
+  /// The secrets file must be owner-only before any secret bytes are written.
+  /// A failed chmod aborts persistence rather than leaving a readable key.
   Future<void> _restrictPerms(File f) async {
     if (Platform.isWindows) {
       return;
     }
-    try {
-      await Process.run('chmod', ['600', f.path]);
-    } catch (_) {
-      // Best-effort — secrets are still written; the host umask applies.
+    final result = await Process.run('chmod', ['600', f.path]);
+    if (result.exitCode != 0) {
+      throw FileSystemException('Could not restrict secrets permissions', f.path);
     }
   }
 
