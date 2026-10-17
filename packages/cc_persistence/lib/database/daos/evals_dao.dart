@@ -348,14 +348,20 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
 
   bool _sameJson(dynamic first, dynamic second) {
     if (first is Map<String, dynamic> && second is Map<String, dynamic>) {
-      return first.length == second.length && first.keys.every(
-        (key) => second.containsKey(key) && _sameJson(first[key], second[key]),
-      );
+      return first.length == second.length &&
+          first.keys.every(
+            (key) =>
+                second.containsKey(key) && _sameJson(first[key], second[key]),
+          );
     }
     if (first is List && second is List) {
-      if (first.length != second.length) return false;
+      if (first.length != second.length) {
+        return false;
+      }
       for (var i = 0; i < first.length; i++) {
-        if (!_sameJson(first[i], second[i])) return false;
+        if (!_sameJson(first[i], second[i])) {
+          return false;
+        }
       }
       return true;
     }
@@ -366,24 +372,26 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
     SkillEvaluationCampaignStatus from,
     SkillEvaluationCampaignStatus to,
   ) {
-    if (from == to) return true;
+    if (from == to) {
+      return true;
+    }
     return switch (from) {
       SkillEvaluationCampaignStatus.queued =>
         to == SkillEvaluationCampaignStatus.running ||
-        to == SkillEvaluationCampaignStatus.cancelling ||
-        to == SkillEvaluationCampaignStatus.cancelled ||
-        to == SkillEvaluationCampaignStatus.failed ||
-        to == SkillEvaluationCampaignStatus.interrupted,
+            to == SkillEvaluationCampaignStatus.cancelling ||
+            to == SkillEvaluationCampaignStatus.cancelled ||
+            to == SkillEvaluationCampaignStatus.failed ||
+            to == SkillEvaluationCampaignStatus.interrupted,
       SkillEvaluationCampaignStatus.running =>
         to == SkillEvaluationCampaignStatus.cancelling ||
-        to == SkillEvaluationCampaignStatus.cancelled ||
-        to == SkillEvaluationCampaignStatus.completed ||
-        to == SkillEvaluationCampaignStatus.failed ||
-        to == SkillEvaluationCampaignStatus.interrupted,
+            to == SkillEvaluationCampaignStatus.cancelled ||
+            to == SkillEvaluationCampaignStatus.completed ||
+            to == SkillEvaluationCampaignStatus.failed ||
+            to == SkillEvaluationCampaignStatus.interrupted,
       SkillEvaluationCampaignStatus.cancelling =>
         to == SkillEvaluationCampaignStatus.cancelled ||
-        to == SkillEvaluationCampaignStatus.failed ||
-        to == SkillEvaluationCampaignStatus.interrupted,
+            to == SkillEvaluationCampaignStatus.failed ||
+            to == SkillEvaluationCampaignStatus.interrupted,
       SkillEvaluationCampaignStatus.cancelled ||
       SkillEvaluationCampaignStatus.completed ||
       SkillEvaluationCampaignStatus.failed ||
@@ -392,12 +400,15 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
   }
 
   /// An existing id cannot change workspace or skill, even through an upsert.
-  Future<void> upsertSkillCampaign(SkillEvalCampaignsTableCompanion entry) async {
+  Future<void> upsertSkillCampaign(
+    SkillEvalCampaignsTableCompanion entry,
+  ) async {
     final workspaceId = entry.workspaceId.value;
     _requireWorkspace(workspaceId);
     await transaction(() async {
-      final existing = await (select(skillEvalCampaignsTable)
-            ..where((t) => t.id.equals(entry.id.value))).getSingleOrNull();
+      final existing = await (select(
+        skillEvalCampaignsTable,
+      )..where((t) => t.id.equals(entry.id.value))).getSingleOrNull();
       if (existing == null) {
         await into(skillEvalCampaignsTable).insert(entry);
       } else {
@@ -405,40 +416,66 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
             existing.skillKey != entry.skillKey.value) {
           throw StateError('Cannot reassign an existing skill campaign');
         }
-        final previous = jsonDecode(existing.payloadJson) as Map<String, dynamic>;
-        final replacement = jsonDecode(entry.payloadJson.value) as Map<String, dynamic>;
+        final previous =
+            jsonDecode(existing.payloadJson) as Map<String, dynamic>;
+        final replacement =
+            jsonDecode(entry.payloadJson.value) as Map<String, dynamic>;
         for (final key in [
-          'skillSlug', 'skillHash', 'corpusId', 'providerId', 'modelId',
-          'configurationHash', 'baselineHash', 'repoId', 'comparison',
-          'repetitions', 'budgetMicros', 'plannedAttempts', 'createdAt',
-          'actor', 'triggeredBy',
+          'skillSlug',
+          'skillHash',
+          'corpusId',
+          'providerId',
+          'modelId',
+          'configurationHash',
+          'baselineHash',
+          'repoId',
+          'comparison',
+          'repetitions',
+          'budgetMicros',
+          'plannedAttempts',
+          'createdAt',
+          'actor',
+          'triggeredBy',
         ]) {
           if (previous[key] != replacement[key]) {
             throw StateError('Cannot change the identity of a skill campaign');
           }
         }
-        final oldStatus = SkillEvaluationCampaignStatus.fromWire(existing.status);
-        final newStatus = SkillEvaluationCampaignStatus.fromWire(entry.status.value);
-        if (!_sameJson(previous['configuration'], replacement['configuration']) ||
+        final oldStatus = SkillEvaluationCampaignStatus.fromWire(
+          existing.status,
+        );
+        final newStatus = SkillEvaluationCampaignStatus.fromWire(
+          entry.status.value,
+        );
+        if (!_sameJson(
+              previous['configuration'],
+              replacement['configuration'],
+            ) ||
             !_canMoveCampaign(oldStatus, newStatus) ||
             (previous['completedAttempts'] as int) >
                 (replacement['completedAttempts'] as int)) {
           throw StateError('Invalid skill campaign lifecycle transition');
         }
-        await (update(skillEvalCampaignsTable)
-              ..where((t) => t.id.equals(entry.id.value) &
+        await (update(skillEvalCampaignsTable)..where(
+              (t) =>
+                  t.id.equals(entry.id.value) &
                   t.workspaceId.equals(workspaceId) &
-                  t.skillKey.equals(entry.skillKey.value)))
-            .write(SkillEvalCampaignsTableCompanion(
-              status: entry.status,
-              payloadJson: entry.payloadJson,
-            ));
+                  t.skillKey.equals(entry.skillKey.value),
+            ))
+            .write(
+              SkillEvalCampaignsTableCompanion(
+                status: entry.status,
+                payloadJson: entry.payloadJson,
+              ),
+            );
       }
     });
   }
 
+  /// Reads one campaign by id within its owning workspace, if present.
   Future<SkillEvalCampaignsTableData?> skillCampaignById(
-    String workspaceId, String id,
+    String workspaceId,
+    String id,
   ) {
     _requireWorkspace(workspaceId);
     return (select(skillEvalCampaignsTable)
@@ -446,33 +483,54 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
         .getSingleOrNull();
   }
 
+  /// Lists newest campaigns in this workspace, optionally for one skill key.
   Future<List<SkillEvalCampaignsTableData>> skillCampaigns(
-    String workspaceId, {String? skillKey, int limit = 100}
-  ) {
+    String workspaceId, {
+    String? skillKey,
+    int limit = 100,
+  }) {
     _requireWorkspace(workspaceId);
     return (select(skillEvalCampaignsTable)
-          ..where((t) => t.workspaceId.equals(workspaceId) &
-              (skillKey == null ? const Constant(true) : t.skillKey.equals(skillKey)))
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt),
-                     (t) => OrderingTerm.desc(t.id)])
+          ..where(
+            (t) =>
+                t.workspaceId.equals(workspaceId) &
+                (skillKey == null
+                    ? const Constant(true)
+                    : t.skillKey.equals(skillKey)),
+          )
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ])
           ..limit(limit))
         .get();
   }
 
+  /// Watches workspace campaigns in reverse creation order, optionally by skill.
   Stream<List<SkillEvalCampaignsTableData>> watchSkillCampaigns(
-    String workspaceId, {String? skillKey}
-  ) {
+    String workspaceId, {
+    String? skillKey,
+  }) {
     _requireWorkspace(workspaceId);
     return (select(skillEvalCampaignsTable)
-          ..where((t) => t.workspaceId.equals(workspaceId) &
-              (skillKey == null ? const Constant(true) : t.skillKey.equals(skillKey)))
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt),
-                     (t) => OrderingTerm.desc(t.id)]))
+          ..where(
+            (t) =>
+                t.workspaceId.equals(workspaceId) &
+                (skillKey == null
+                    ? const Constant(true)
+                    : t.skillKey.equals(skillKey)),
+          )
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ]))
         .watch();
   }
 
+  /// Watches one campaign within its owning workspace, including its absence.
   Stream<SkillEvalCampaignsTableData?> watchSkillCampaign(
-    String workspaceId, String id,
+    String workspaceId,
+    String id,
   ) {
     _requireWorkspace(workspaceId);
     return (select(skillEvalCampaignsTable)
@@ -485,14 +543,21 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
     final workspaceId = entry.workspaceId.value;
     _requireWorkspace(workspaceId);
     await transaction(() async {
-      final campaign = await (select(skillEvalCampaignsTable)
-            ..where((t) => t.id.equals(entry.campaignId.value) &
-                t.workspaceId.equals(workspaceId))).getSingleOrNull();
+      final campaign =
+          await (select(skillEvalCampaignsTable)..where(
+                (t) =>
+                    t.id.equals(entry.campaignId.value) &
+                    t.workspaceId.equals(workspaceId),
+              ))
+              .getSingleOrNull();
       if (campaign == null) {
-        throw StateError('Skill evaluation campaign does not belong to workspace');
+        throw StateError(
+          'Skill evaluation campaign does not belong to workspace',
+        );
       }
-      final existing = await (select(skillEvalAttemptsTable)
-            ..where((t) => t.id.equals(entry.id.value))).getSingleOrNull();
+      final existing = await (select(
+        skillEvalAttemptsTable,
+      )..where((t) => t.id.equals(entry.id.value))).getSingleOrNull();
       if (existing == null) {
         await into(skillEvalAttemptsTable).insert(entry);
       } else {
@@ -501,67 +566,91 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
             existing.ordinal != entry.ordinal.value) {
           throw StateError('Cannot reassign an existing skill attempt');
         }
-        final previous = jsonDecode(existing.payloadJson) as Map<String, dynamic>;
-        final replacement = jsonDecode(entry.payloadJson.value) as Map<String, dynamic>;
+        final previous =
+            jsonDecode(existing.payloadJson) as Map<String, dynamic>;
+        final replacement =
+            jsonDecode(entry.payloadJson.value) as Map<String, dynamic>;
         for (final key in ['taskId', 'armId', 'repetition', 'createdAt']) {
           if (previous[key] != replacement[key]) {
             throw StateError('Cannot change the identity of a skill attempt');
           }
         }
-        await (update(skillEvalAttemptsTable)
-              ..where((t) => t.id.equals(entry.id.value) &
+        await (update(skillEvalAttemptsTable)..where(
+              (t) =>
+                  t.id.equals(entry.id.value) &
                   t.workspaceId.equals(workspaceId) &
-                  t.campaignId.equals(entry.campaignId.value)))
-            .write(SkillEvalAttemptsTableCompanion(
-              payloadJson: entry.payloadJson,
-            ));
+                  t.campaignId.equals(entry.campaignId.value),
+            ))
+            .write(
+              SkillEvalAttemptsTableCompanion(payloadJson: entry.payloadJson),
+            );
       }
     });
   }
 
+  /// Lists campaign attempts in stable ordinal and id order.
   Future<List<SkillEvalAttemptsTableData>> skillAttempts(
-    String workspaceId, String campaignId,
+    String workspaceId,
+    String campaignId,
   ) {
     _requireWorkspace(workspaceId);
     return (select(skillEvalAttemptsTable)
-          ..where((t) => t.workspaceId.equals(workspaceId) &
-              t.campaignId.equals(campaignId))
-          ..orderBy([(t) => OrderingTerm.asc(t.ordinal),
-                     (t) => OrderingTerm.asc(t.id)]))
+          ..where(
+            (t) =>
+                t.workspaceId.equals(workspaceId) &
+                t.campaignId.equals(campaignId),
+          )
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.ordinal),
+            (t) => OrderingTerm.asc(t.id),
+          ]))
         .get();
   }
 
+  /// Reads an attempt only when its campaign belongs to this workspace.
   Future<SkillEvalAttemptsTableData?> skillAttemptById(
-    String workspaceId, String campaignId, String id,
+    String workspaceId,
+    String campaignId,
+    String id,
   ) {
     _requireWorkspace(workspaceId);
-    return (select(skillEvalAttemptsTable)
-          ..where((t) => t.workspaceId.equals(workspaceId) &
-              t.campaignId.equals(campaignId) & t.id.equals(id)))
+    return (select(skillEvalAttemptsTable)..where(
+          (t) =>
+              t.workspaceId.equals(workspaceId) &
+              t.campaignId.equals(campaignId) &
+              t.id.equals(id),
+        ))
         .getSingleOrNull();
   }
 
+  /// Upserts a workspace-owned skill opt-in policy.
   Future<void> upsertSkillPolicy(SkillEvalPoliciesTableCompanion entry) {
     _requireWorkspace(entry.workspaceId.value);
     return into(skillEvalPoliciesTable).insertOnConflictUpdate(entry);
   }
 
+  /// Reads the policy for a skill in its owning workspace, if present.
   Future<SkillEvalPoliciesTableData?> skillPolicy(
-    String workspaceId, String skillKey,
+    String workspaceId,
+    String skillKey,
   ) {
     _requireWorkspace(workspaceId);
-    return (select(skillEvalPoliciesTable)
-          ..where((t) => t.workspaceId.equals(workspaceId) &
-              t.skillKey.equals(skillKey)))
+    return (select(skillEvalPoliciesTable)..where(
+          (t) =>
+              t.workspaceId.equals(workspaceId) & t.skillKey.equals(skillKey),
+        ))
         .getSingleOrNull();
   }
 
+  /// Lists opted-in skill policies in ascending skill-key order.
   Future<List<SkillEvalPoliciesTableData>> enabledSkillPolicies(
     String workspaceId,
   ) {
     _requireWorkspace(workspaceId);
     return (select(skillEvalPoliciesTable)
-          ..where((t) => t.workspaceId.equals(workspaceId) & t.enabled.equals(true))
+          ..where(
+            (t) => t.workspaceId.equals(workspaceId) & t.enabled.equals(true),
+          )
           ..orderBy([(t) => OrderingTerm.asc(t.skillKey)]))
         .get();
   }

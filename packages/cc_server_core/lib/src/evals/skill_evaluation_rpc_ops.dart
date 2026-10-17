@@ -3,9 +3,9 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_host/cc_host.dart';
-import 'package:cc_infra/src/evaluation/skill_evaluation_corpus.dart';
-
-import 'skill_evaluation_service.dart';
+import 'package:cc_infra/cc_infra.dart'
+    show skillEvaluationCorpora, skillEvaluationCorpusMetadata;
+import 'package:cc_server_core/src/evals/skill_evaluation_service.dart';
 
 /// Paid execution and evidence are explicit workspace surfaces. The shared
 /// dispatcher checks registration and membership before these handlers; service
@@ -137,6 +137,8 @@ List<RepoOp> buildSkillEvaluationOps(SkillEvaluationService service) => [
   ),
 ];
 
+/// Streams campaign updates through the same per-workspace and per-repository
+/// authorization enforced by [SkillEvaluationService].
 List<WatchQuery> buildSkillEvaluationWatchQueries(
   SkillEvaluationService service,
 ) => [

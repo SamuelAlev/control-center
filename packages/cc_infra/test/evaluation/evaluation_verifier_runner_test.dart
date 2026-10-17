@@ -467,7 +467,9 @@ void main() {
         ),
       )..writeAsStringSync('expected-answer');
       addTearDown(() {
-        if (secret.existsSync()) secret.deleteSync();
+        if (secret.existsSync()) {
+          secret.deleteSync();
+        }
       });
       File(p.join(workspace.path, 'probe.py')).writeAsStringSync(
         'from pathlib import Path\n'

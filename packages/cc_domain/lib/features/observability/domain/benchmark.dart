@@ -234,7 +234,9 @@ class BenchmarkRun {
       final micros =
           trial.costMicros ??
           (trial.costCents == null ? null : trial.costCents! * 10000);
-      if (micros == null) return null;
+      if (micros == null) {
+        return null;
+      }
       total += micros;
     }
     return total;

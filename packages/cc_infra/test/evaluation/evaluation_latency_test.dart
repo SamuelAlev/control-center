@@ -42,7 +42,7 @@ class _StreamedProvider implements LlmProviderPort {
   final int secondDelayMs;
   final int firstDispatchDelayMs;
   final int firstResponseDelayMs;
-  var calls = 0;
+  int calls = 0;
 
   @override
   String get displayName => 'scripted';
@@ -91,7 +91,7 @@ class _AuxCompactor implements HarnessCompactor {
   _AuxCompactor(this.provider);
 
   final LlmProviderPort provider;
-  var requested = false;
+  bool requested = false;
 
   @override
   Future<HarnessCompactionResult> maybeCompact(

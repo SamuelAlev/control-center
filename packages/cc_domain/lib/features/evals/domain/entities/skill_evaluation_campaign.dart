@@ -42,8 +42,9 @@ enum SkillEvaluationCampaignStatus {
 }
 
 String _nonEmpty(String value, String name) {
-  if (value.trim().isEmpty)
+  if (value.trim().isEmpty) {
     throw ArgumentError.value(value, name, 'Must not be empty');
+  }
   return value;
 }
 
@@ -61,10 +62,16 @@ dynamic _freezeValue(dynamic value) {
   if (value == null || value is String || value is bool || value is int) {
     return value;
   }
-  if (value is double && value.isFinite) return value;
-  if (value is Map<String, dynamic>) return _freezeJson(value);
-  if (value is List) return List<dynamic>.unmodifiable(value.map(_freezeValue));
-  throw FormatException('Campaign payload contains a non-JSON value');
+  if (value is double && value.isFinite) {
+    return value;
+  }
+  if (value is Map<String, dynamic>) {
+    return _freezeJson(value);
+  }
+  if (value is List) {
+    return List<dynamic>.unmodifiable(value.map(_freezeValue));
+  }
+  throw const FormatException('Campaign payload contains a non-JSON value');
 }
 
 /// Detached mutable JSON for wire encoders and callers.
@@ -86,6 +93,44 @@ Map<String, dynamic> _object(dynamic value, String field) {
 
 /// One immutable, revision-specific paired evaluation in a workspace.
 class SkillEvaluationCampaign {
+  factory SkillEvaluationCampaign.fromJson(
+    Map<String, dynamic> json,
+  ) => SkillEvaluationCampaign(
+    id: json['id'] as String,
+    workspaceId: json['workspaceId'] as String,
+    skillKey: json['skillKey'] as String,
+    skillSlug: json['skillSlug'] as String,
+    skillHash: json['skillHash'] as String,
+    corpusId: json['corpusId'] as String,
+    providerId: json['providerId'] as String,
+    modelId: json['modelId'] as String,
+    configurationHash: json['configurationHash'] as String,
+    baselineHash: json['baselineHash'] as String?,
+    repoId: json['repoId'] as String?,
+    comparison: SkillEvaluationComparison.fromWire(
+      json['comparison'] as String,
+    ),
+    status: SkillEvaluationCampaignStatus.fromWire(json['status'] as String),
+    repetitions: json['repetitions'] as int,
+    budgetMicros: json['budgetMicros'] as int,
+    plannedAttempts: json['plannedAttempts'] as int,
+    completedAttempts: json['completedAttempts'] as int,
+    spentMicros: json['spentMicros'] as int?,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    startedAt: json['startedAt'] == null
+        ? null
+        : DateTime.parse(json['startedAt'] as String),
+    finishedAt: json['finishedAt'] == null
+        ? null
+        : DateTime.parse(json['finishedAt'] as String),
+    actor: Principal.parse(json['actor'] as String),
+    triggeredBy: json['triggeredBy'] as String,
+    staleReason: json['staleReason'] as String?,
+    error: json['error'] as String?,
+    configuration: _object(json['configuration'], 'configuration'),
+    report: json['report'] == null ? null : _object(json['report'], 'report'),
+  );
+
   SkillEvaluationCampaign({
     required String id,
     required String workspaceId,
@@ -141,8 +186,9 @@ class SkillEvaluationCampaign {
         (baselineHash == null || baselineHash!.trim().isEmpty)) {
       throw ArgumentError('Previous comparison requires a baseline hash');
     }
-    if (actor.id.trim().isEmpty)
+    if (actor.id.trim().isEmpty) {
       throw ArgumentError('Actor id must not be empty');
+    }
   }
 
   final String id;
@@ -251,44 +297,6 @@ class SkillEvaluationCampaign {
     'report': report == null ? null : _jsonCopy(report!),
   };
 
-  factory SkillEvaluationCampaign.fromJson(
-    Map<String, dynamic> json,
-  ) => SkillEvaluationCampaign(
-    id: json['id'] as String,
-    workspaceId: json['workspaceId'] as String,
-    skillKey: json['skillKey'] as String,
-    skillSlug: json['skillSlug'] as String,
-    skillHash: json['skillHash'] as String,
-    corpusId: json['corpusId'] as String,
-    providerId: json['providerId'] as String,
-    modelId: json['modelId'] as String,
-    configurationHash: json['configurationHash'] as String,
-    baselineHash: json['baselineHash'] as String?,
-    repoId: json['repoId'] as String?,
-    comparison: SkillEvaluationComparison.fromWire(
-      json['comparison'] as String,
-    ),
-    status: SkillEvaluationCampaignStatus.fromWire(json['status'] as String),
-    repetitions: json['repetitions'] as int,
-    budgetMicros: json['budgetMicros'] as int,
-    plannedAttempts: json['plannedAttempts'] as int,
-    completedAttempts: json['completedAttempts'] as int,
-    spentMicros: json['spentMicros'] as int?,
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    startedAt: json['startedAt'] == null
-        ? null
-        : DateTime.parse(json['startedAt'] as String),
-    finishedAt: json['finishedAt'] == null
-        ? null
-        : DateTime.parse(json['finishedAt'] as String),
-    actor: Principal.parse(json['actor'] as String),
-    triggeredBy: json['triggeredBy'] as String,
-    staleReason: json['staleReason'] as String?,
-    error: json['error'] as String?,
-    configuration: _object(json['configuration'], 'configuration'),
-    report: json['report'] == null ? null : _object(json['report'], 'report'),
-  );
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -361,6 +369,19 @@ class SkillEvaluationCampaign {
 
 /// One indexed attempt and its redacted behavioral/verifier evidence.
 class SkillEvaluationAttemptRecord {
+  factory SkillEvaluationAttemptRecord.fromJson(Map<String, dynamic> json) =>
+      SkillEvaluationAttemptRecord(
+        id: json['id'] as String,
+        workspaceId: json['workspaceId'] as String,
+        campaignId: json['campaignId'] as String,
+        taskId: json['taskId'] as String,
+        armId: json['armId'] as String,
+        repetition: json['repetition'] as int,
+        ordinal: json['ordinal'] as int,
+        evidence: _object(json['evidence'], 'evidence'),
+        createdAt: DateTime.parse(json['createdAt'] as String),
+      );
+
   SkillEvaluationAttemptRecord({
     required String id,
     required String workspaceId,
@@ -377,8 +398,9 @@ class SkillEvaluationAttemptRecord {
        taskId = _nonEmpty(taskId, 'taskId'),
        armId = _nonEmpty(armId, 'armId'),
        evidence = _freezeJson(evidence) {
-    if (repetition < 0 || ordinal < 0)
+    if (repetition < 0 || ordinal < 0) {
       throw ArgumentError('Invalid attempt index');
+    }
   }
 
   final String id;
@@ -402,19 +424,6 @@ class SkillEvaluationAttemptRecord {
     'evidence': _jsonCopy(evidence),
     'createdAt': createdAt.toUtc().toIso8601String(),
   };
-
-  factory SkillEvaluationAttemptRecord.fromJson(Map<String, dynamic> json) =>
-      SkillEvaluationAttemptRecord(
-        id: json['id'] as String,
-        workspaceId: json['workspaceId'] as String,
-        campaignId: json['campaignId'] as String,
-        taskId: json['taskId'] as String,
-        armId: json['armId'] as String,
-        repetition: json['repetition'] as int,
-        ordinal: json['ordinal'] as int,
-        evidence: _object(json['evidence'], 'evidence'),
-        createdAt: DateTime.parse(json['createdAt'] as String),
-      );
 
   @override
   bool operator ==(Object other) =>
@@ -446,6 +455,16 @@ class SkillEvaluationAttemptRecord {
 
 /// Workspace/skill-scoped explicit opt-in for bounded reevaluation.
 class SkillEvaluationPolicy {
+  factory SkillEvaluationPolicy.fromJson(Map<String, dynamic> json) =>
+      SkillEvaluationPolicy(
+        workspaceId: json['workspaceId'] as String,
+        skillKey: json['skillKey'] as String,
+        enabled: json['enabled'] as bool,
+        actor: Principal.parse(json['actor'] as String),
+        configuration: _object(json['configuration'], 'configuration'),
+        updatedAt: DateTime.parse(json['updatedAt'] as String),
+      );
+
   SkillEvaluationPolicy({
     required String workspaceId,
     required String skillKey,
@@ -456,8 +475,9 @@ class SkillEvaluationPolicy {
   }) : workspaceId = _nonEmpty(workspaceId, 'workspaceId'),
        skillKey = _nonEmpty(skillKey, 'skillKey'),
        configuration = _freezeJson(configuration) {
-    if (actor.id.trim().isEmpty)
+    if (actor.id.trim().isEmpty) {
       throw ArgumentError('Actor id must not be empty');
+    }
   }
 
   final String workspaceId;
@@ -475,16 +495,6 @@ class SkillEvaluationPolicy {
     'configuration': _jsonCopy(configuration),
     'updatedAt': updatedAt.toUtc().toIso8601String(),
   };
-
-  factory SkillEvaluationPolicy.fromJson(Map<String, dynamic> json) =>
-      SkillEvaluationPolicy(
-        workspaceId: json['workspaceId'] as String,
-        skillKey: json['skillKey'] as String,
-        enabled: json['enabled'] as bool,
-        actor: Principal.parse(json['actor'] as String),
-        configuration: _object(json['configuration'], 'configuration'),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-      );
 
   @override
   bool operator ==(Object other) =>

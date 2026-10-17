@@ -45,9 +45,13 @@ class EvaluationVerifierRunner {
       return false;
     }
     final timeout = params['timeoutSeconds'];
-    if (timeout != null && (timeout is! num || timeout <= 0)) return false;
+    if (timeout != null && (timeout is! num || timeout <= 0)) {
+      return false;
+    }
     final oracle = params['oracle'];
-    if (oracle is! Map) return false;
+    if (oracle is! Map) {
+      return false;
+    }
     final kind = oracle['kind'];
     final keys = switch (kind) {
       'python-module-cases' => {'kind', 'path', 'function', 'cases'},
@@ -75,7 +79,9 @@ class EvaluationVerifierRunner {
         !p.split(p.normalize(path)).contains('..') &&
         !p.split(p.normalize(path)).contains('.git') &&
         !p.split(p.normalize(path)).contains('.agents');
-    if (!safePath(oracle['path'])) return false;
+    if (!safePath(oracle['path'])) {
+      return false;
+    }
     if (kind == 'python-module-cases' || kind == 'python-review') {
       final function = oracle['function'];
       final cases = oracle['cases'];
@@ -150,7 +156,9 @@ class EvaluationVerifierRunner {
       // Reject protected mutations before invoking ANY candidate code. The
       // submission-time baseline is enforced separately by the attempt runner.
       for (final verifier in verifiers) {
-        if (verifier.kind != EvaluationVerifierKind.fileUnchanged) continue;
+        if (verifier.kind != EvaluationVerifierKind.fileUnchanged) {
+          continue;
+        }
         final check = await _fileUnchanged(
           verifier,
           workspaceRoot: workspaceRoot,
@@ -176,8 +184,12 @@ class EvaluationVerifierRunner {
       await for (final entity in Directory(
         workspaceRoot,
       ).list(recursive: true, followLinks: false)) {
-        if (entity is Link) throw StateError('symlink in candidate output');
-        if (entity is! File) continue;
+        if (entity is Link) {
+          throw StateError('symlink in candidate output');
+        }
+        if (entity is! File) {
+          continue;
+        }
         final relative = p.relative(entity.path, from: workspaceRoot);
         if (p.split(relative).contains('.agents') ||
             p.split(relative).contains('.git')) {
@@ -295,7 +307,7 @@ class EvaluationVerifierRunner {
       }
       final source = _resolveFile(root, path);
       if (source == null ||
-          await FileSystemEntity.type(source.path, followLinks: false) !=
+          FileSystemEntity.typeSync(source.path, followLinks: false) !=
               FileSystemEntityType.file) {
         throw const FormatException('missing or linked candidate module');
       }
@@ -306,8 +318,9 @@ class EvaluationVerifierRunner {
           throw const FormatException('missing review report');
         }
         final reportFile = _resolveFile(root, reportPath);
-        if (reportFile == null)
+        if (reportFile == null) {
           throw const FormatException('invalid review path');
+        }
         final report = jsonDecode(
           utf8.decode(await readEvaluationArtifact(reportFile, maxScanBytes)),
         );
@@ -388,7 +401,9 @@ class EvaluationVerifierRunner {
         throw const FormatException('invalid artifact oracle');
       }
       final file = _resolveFile(root, path);
-      if (file == null) throw const FormatException('invalid artifact path');
+      if (file == null) {
+        throw const FormatException('invalid artifact path');
+      }
       final actual = jsonDecode(
         utf8.decode(await readEvaluationArtifact(file, maxScanBytes)),
       );
@@ -401,7 +416,7 @@ class EvaluationVerifierRunner {
         for (final name in absent) {
           final target = _resolveFile(root, name as String);
           if (target == null ||
-              await FileSystemEntity.type(target.path, followLinks: false) !=
+              FileSystemEntity.typeSync(target.path, followLinks: false) !=
                   FileSystemEntityType.notFound) {
             passed = false;
           }
@@ -410,7 +425,9 @@ class EvaluationVerifierRunner {
     } else {
       throw const FormatException('unknown oracle kind');
     }
-    if (!await unchanged()) passed = false;
+    if (!await unchanged()) {
+      passed = false;
+    }
     return _result(
       verifier,
       passed: passed,
@@ -462,8 +479,9 @@ class EvaluationVerifierRunner {
   };
 
   static Object? _reviewReference(String kind, Object? input) {
-    if (input is! Map)
+    if (input is! Map) {
       throw const FormatException('review input must be an object');
+    }
     switch (kind) {
       case 'off-by-one':
         final items = input['items'] as List;
@@ -482,7 +500,9 @@ class EvaluationVerifierRunner {
         return items.sublist(from, to < from ? from : to);
       case 'last-wins':
         final events = input['events'] as List;
-        if (events.isEmpty) throw const FormatException('empty event stream');
+        if (events.isEmpty) {
+          throw const FormatException('empty event stream');
+        }
         return (events.last as Map)['value'];
       case 'prefix-auth':
         final root = input['root'] as String;
@@ -495,7 +515,9 @@ class EvaluationVerifierRunner {
         return input['budget'] ?? 100;
       case 'sort-direction':
         final jobs = input['jobs'] as List;
-        if (jobs.isEmpty) throw const FormatException('empty job queue');
+        if (jobs.isEmpty) {
+          throw const FormatException('empty job queue');
+        }
         final priorities = [
           for (final job in jobs) (job as Map)['priority'] as num,
         ];
@@ -520,7 +542,9 @@ class EvaluationVerifierRunner {
                     : redact(entry.value),
             };
           }
-          if (value is List) return [for (final item in value) redact(item)];
+          if (value is List) {
+            return [for (final item in value) redact(item)];
+          }
           return value;
         }
         return redact(input);
@@ -550,9 +574,13 @@ json.dump(getattr(module, sys.argv[2])(json.loads(sys.argv[3])), sys.stdout,
           );
     }
     if (a is List && b is List) {
-      if (a.length != b.length) return false;
+      if (a.length != b.length) {
+        return false;
+      }
       for (var i = 0; i < a.length; i++) {
-        if (!_jsonEqual(a[i], b[i])) return false;
+        if (!_jsonEqual(a[i], b[i])) {
+          return false;
+        }
       }
       return true;
     }
@@ -567,21 +595,33 @@ json.dump(getattr(module, sys.argv[2])(json.loads(sys.argv[3])), sys.stdout,
     await for (final entity in Directory(
       root,
     ).list(recursive: true, followLinks: false)) {
-      if (entity is Directory) continue;
-      if (entity is! File) return false;
+      if (entity is Directory) {
+        continue;
+      }
+      if (entity is! File) {
+        return false;
+      }
       final relative = p.relative(entity.path, from: root);
       final bytes = expected[relative];
-      if (bytes == null || !remaining.remove(relative)) return false;
+      if (bytes == null || !remaining.remove(relative)) {
+        return false;
+      }
       final current = await readEvaluationArtifact(entity, bytes.length);
-      if (!_bytesEqual(current, bytes)) return false;
+      if (!_bytesEqual(current, bytes)) {
+        return false;
+      }
     }
     return remaining.isEmpty;
   }
 
   static bool _bytesEqual(List<int> a, List<int> b) {
-    if (a.length != b.length) return false;
+    if (a.length != b.length) {
+      return false;
+    }
     for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
+      if (a[i] != b[i]) {
+        return false;
+      }
     }
     return true;
   }

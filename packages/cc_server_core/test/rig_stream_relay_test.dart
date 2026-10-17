@@ -84,11 +84,15 @@ void main() {
       audio = StreamController<List<int>>(
         onListen: () => audio.add([0x49, 0x44, 0x33]),
         onCancel: () {
-          if (!cancelled.isCompleted) cancelled.complete();
+          if (!cancelled.isCompleted) {
+            cancelled.complete();
+          }
         },
       );
       addTearDown(() async {
-        if (audio.hasListener && !audio.isClosed) await audio.close();
+        if (audio.hasListener && !audio.isClosed) {
+          await audio.close();
+        }
       });
       publicClient = HttpClient();
       addTearDown(() => publicClient.close(force: true));
@@ -137,10 +141,14 @@ void main() {
         final first = Completer<List<int>>();
         final subscription = response.body.listen(
           (bytes) {
-            if (!first.isCompleted) first.complete(bytes);
+            if (!first.isCompleted) {
+              first.complete(bytes);
+            }
           },
           onError: (Object error) {
-            if (!first.isCompleted) first.completeError(error);
+            if (!first.isCompleted) {
+              first.completeError(error);
+            }
           },
         );
         expect(await first.future.timeout(const Duration(seconds: 5)), [

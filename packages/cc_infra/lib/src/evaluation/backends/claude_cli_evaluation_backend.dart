@@ -419,8 +419,7 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
         if (servedModel != null) 'served model $servedModel',
         if (toolSurfaceSize > 0) 'tool surface $toolSurfaceSize tool(s)',
         if (mcpNote.isNotEmpty) mcpNote,
-        'CLI compaction recovery counts successful post-fold continuations, '
-            'not inferred rereads or provider overflow retries',
+        'CLI compaction recovery counts successful post-fold continuations, not inferred rereads or provider overflow retries',
         if (costUnavailable) 'cost unavailable for at least one turn',
         if (resumedSession) 'native resume used for follow-up turns',
       ].join('; '),

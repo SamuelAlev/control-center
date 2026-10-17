@@ -115,7 +115,9 @@ class _FakeConversations implements ConversationRepository {
     required String workspaceId,
     required String conversationId,
   }) async {
-    if (workspaceId != _workspaceId || conversationId != 'conv-1') return null;
+    if (workspaceId != _workspaceId || conversationId != 'conv-1') {
+      return null;
+    }
     return Conversation(
       id: conversationId,
       workspaceId: workspaceId,
@@ -236,7 +238,9 @@ void main() {
       // posted before answering it.
       for (var i = 0; i < 200; i++) {
         final id = messaging._messages.keys.firstOrNull;
-        if (id != null && foreverService.isPending(id)) break;
+        if (id != null && foreverService.isPending(id)) {
+          break;
+        }
         await Future<void>.delayed(const Duration(milliseconds: 1));
       }
       final question = messaging._messages.values.single;

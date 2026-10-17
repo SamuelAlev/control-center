@@ -206,7 +206,7 @@ void main() {
       await dao.insertAndPrune(
         entry(
           'retained',
-          base.add(Duration(seconds: NotificationFeedDao.retainedRows)),
+          base.add(const Duration(seconds: NotificationFeedDao.retainedRows)),
         ),
       );
       await dao.setItemRead('ws-1', 'user-1', 'retained', base);

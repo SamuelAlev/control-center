@@ -26,12 +26,15 @@ import 'package:cc_domain/features/skills/domain/ports/skill_scan_port.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
-import 'package:cc_infra/src/claude_accounts/claude_account_store.dart';
-import 'package:cc_infra/src/detection/acp_models_service.dart';
-import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
-import 'package:cc_infra/src/evaluation/controlled_skill_evaluation.dart';
-import 'package:cc_infra/src/evaluation/skill_evaluation_snapshot_store.dart';
-import 'package:cc_infra/src/process/binary_resolver.dart';
+import 'package:cc_infra/cc_infra.dart'
+    show
+        AcpModelsService,
+        ClaudeAccountStore,
+        ControlledEvaluationProcess,
+        ControlledSkillEvaluation,
+        SkillEvaluationSnapshotStore,
+        resolveBinaryPath,
+        SkillComparison;
 import 'package:cc_persistence/cc_persistence.dart' show GlobalDatabase;
 import 'package:cc_server_core/src/evals/skill_evaluation_evidence.dart';
 import 'package:cc_server_core/src/evals/skill_evaluation_model_policy.dart';
@@ -96,8 +99,9 @@ SkillEvaluationService buildSkillEvaluationService({
       Permission('evals', write ? PermissionTier.write : PermissionTier.read),
       resource: repoId == null ? null : ResourceRef.repo(repoId),
     );
-    if (!verdict.allowed)
+    if (!verdict.allowed) {
       throw AuthException(verdict.reason ?? 'Evaluation access denied');
+    }
     if (repoId != null &&
         !await workspaces.isRepoLinkedToWorkspace(workspaceId, repoId)) {
       throw const AuthException('Repository is not linked to this workspace');
@@ -141,7 +145,7 @@ SkillEvaluationService buildSkillEvaluationService({
     }
     // Dispatch may borrow caller environment; this evaluator intentionally
     // cannot. Require a credential belonging to this managed account.
-    if (!await File(p.join(active.configDir, '.credentials.json')).exists()) {
+    if (!File(p.join(active.configDir, '.credentials.json')).existsSync()) {
       throw const AuthException(
         'Sign in to the default Claude Code account in Settings → Adapters',
       );
@@ -150,7 +154,9 @@ SkillEvaluationService buildSkillEvaluationService({
       executable: executable,
       configDir: active.configDir,
     );
-    if (reason != null) throw ValidationException(reason);
+    if (reason != null) {
+      throw ValidationException(reason);
+    }
     return (
       executable: executable,
       accountId: active.accountId,
@@ -229,7 +235,7 @@ SkillEvaluationService buildSkillEvaluationService({
           if (codex?.method == HarnessAuthMethod.oauth) 'codex',
         ],
         'unavailableBackends': {
-          if (nativeReason != null) 'claude-cli': nativeReason,
+          'claude-cli': ?nativeReason,
           'fleet':
               'Worker evalBatch jobs do not implement controlled skill execution',
         },
@@ -300,8 +306,9 @@ SkillEvaluationService buildSkillEvaluationService({
                     record.model != campaign.modelId ||
                     (record.outcome != ProviderCallOutcome.success &&
                         record.usage.inputTokens == 0 &&
-                        record.usage.outputTokens == 0))
+                        record.usage.outputTokens == 0)) {
                   return null;
+                }
                 return ProviderCallCost(
                   (price.estimate(
                             inputTokens: record.usage.inputTokens,

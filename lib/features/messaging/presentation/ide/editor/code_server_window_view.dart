@@ -188,7 +188,9 @@ class _CodeServerWindowViewState extends ConsumerState<CodeServerWindowView> {
         reloadToken: _reloadToken,
         codeServerResource: true,
         onError: () {
-          if (mounted) setState(() => _editorResourceFailed = true);
+          if (mounted) {
+            setState(() => _editorResourceFailed = true);
+          }
         },
       );
     }

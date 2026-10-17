@@ -154,8 +154,9 @@ final class CredentialSeal {
       base64Url.decode(base64Url.normalize(value));
   static List<int> _decode32(String value) {
     final bytes = _decode(value);
-    if (bytes.length != 32)
+    if (bytes.length != 32) {
       throw const FormatException('Invalid recipient key');
+    }
     return bytes;
   }
 }

@@ -60,7 +60,9 @@ void main() {
             held++;
             await release.future;
             finished++;
-            if (finished == 32) unwound.complete();
+            if (finished == 32) {
+              unwound.complete();
+            }
           }
           try {
             await response.close();
@@ -71,7 +73,9 @@ void main() {
         handleEditorBridge: (_, _, _) => throw StateError('Unexpected bridge'),
       );
       addTearDown(() async {
-        if (!release.isCompleted) release.complete();
+        if (!release.isCompleted) {
+          release.complete();
+        }
         await host.close();
       });
       final first = await _connect(host, 'device-one', 'bounded-user');

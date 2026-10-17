@@ -48,7 +48,9 @@ void main() {
   test(
     'strict guest cannot read host canary or write immutable assets',
     () async {
-      if (ControlledEvaluationProcess.capabilityReason() != null) return;
+      if (ControlledEvaluationProcess.capabilityReason() != null) {
+        return;
+      }
       final parent = await Directory.systemTemp.createTemp('cc-eval-policy-');
       try {
         final root = await Directory(p.join(parent.path, 'workspace')).create();
@@ -90,7 +92,9 @@ sys.exit(1 if leaked or changed else 0)
     },
   );
   test('cancellation stops an active confined subprocess', () async {
-    if (ControlledEvaluationProcess.capabilityReason() != null) return;
+    if (ControlledEvaluationProcess.capabilityReason() != null) {
+      return;
+    }
     final parent = await Directory.systemTemp.createTemp('cc-eval-stop-');
     final source = CancellationTokenSource();
     try {

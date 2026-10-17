@@ -835,13 +835,11 @@ class EvaluationReportBuilder {
     final expectedPairs = _expectedPairs(plan, tasks);
     final plannedKeys = {
       for (final trial in plannedTrials)
-        '${trial.taskId}\u0000${trial.armId}\u0000${trial.stratum.wire}'
-            '\u0000${trial.repetition}',
+        '${trial.taskId}\u0000${trial.armId}\u0000${trial.stratum.wire}\u0000${trial.repetition}',
     };
     final observedKeys = {
       for (final attempt in attempts)
-        '${attempt.taskId}\u0000${attempt.armId}\u0000${attempt.stratum.wire}'
-            '\u0000${attempt.repetition}',
+        '${attempt.taskId}\u0000${attempt.armId}\u0000${attempt.stratum.wire}\u0000${attempt.repetition}',
     };
     final missingTrials = plannedKeys.difference(observedKeys).length;
     // Coverage means the PLANNED trials ran — not merely "some attempts

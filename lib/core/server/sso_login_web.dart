@@ -73,12 +73,14 @@ Future<SsoPairPayload?> startSsoLoginImpl({
   _mark();
   final popup = web.window.open(loginUrl, '_blank');
   if (popup == null || popup.closed) {
-    web.window.location.assign(provider.loginUrl(
-      origin,
-      relay: 'web',
-      handoffPublicKey: recipient.publicKey,
-      clientOrigin: clientOrigin ?? web.window.location.origin,
-    ));
+    web.window.location.assign(
+      provider.loginUrl(
+        origin,
+        relay: 'web',
+        handoffPublicKey: recipient.publicKey,
+        clientOrigin: clientOrigin ?? web.window.location.origin,
+      ),
+    );
     return Completer<SsoPairPayload?>().future;
   }
   final completer = _pending = Completer<SsoPairPayload?>();
@@ -109,8 +111,12 @@ Future<SsoPairPayload?> startSsoLoginImpl({
         );
         _removeListener();
         _clearMark();
-        if (_pending == completer) _pending = null;
-        if (!completer.isCompleted) completer.complete(payload);
+        if (_pending == completer) {
+          _pending = null;
+        }
+        if (!completer.isCompleted) {
+          completer.complete(payload);
+        }
       } catch (_) {
         // An invalid or wrong-recipient handoff is not a login.
       }
@@ -128,9 +134,13 @@ Future<SsoPairPayload?> startSsoLoginImpl({
 Future<SsoPairPayload?> openSsoWebFragment(Map<String, dynamic> json) async {
   final server = json['s'];
   final envelope = json['box'];
-  if (server is! String || envelope is! Map) return null;
+  if (server is! String || envelope is! Map) {
+    return null;
+  }
   final unsolicited = json['idpInitiated'] == true;
-  if (!unsolicited && !ssoLoginInFlightImpl()) return null;
+  if (!unsolicited && !ssoLoginInFlightImpl()) {
+    return null;
+  }
   try {
     final privateKey = unsolicited
         ? json['recipientPrivateKey']
@@ -138,13 +148,17 @@ Future<SsoPairPayload?> openSsoWebFragment(Map<String, dynamic> json) async {
     final expected = unsolicited
         ? server
         : web.window.sessionStorage.getItem(_serverOrigin);
-    if (privateKey is! String || server != expected) return null;
+    if (privateKey is! String || server != expected) {
+      return null;
+    }
     final result = await _openHandoff(
       server,
       envelope.cast<String, dynamic>(),
       privateKey,
     );
-    if (!unsolicited) _clearMark();
+    if (!unsolicited) {
+      _clearMark();
+    }
     return result;
   } catch (_) {
     return null;
@@ -164,8 +178,10 @@ Future<SsoPairPayload> _openHandoff(
   final deviceId = clear['i'];
   final psk = clear['k'];
   if (clear['s'] != server ||
-      deviceId is! String || deviceId.isEmpty ||
-      psk is! String || psk.isEmpty) {
+      deviceId is! String ||
+      deviceId.isEmpty ||
+      psk is! String ||
+      psk.isEmpty) {
     throw const FormatException('Invalid SSO handoff');
   }
   return SsoPairPayload(server: server, deviceId: deviceId, psk: psk);

@@ -5,22 +5,33 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/observability/presentation/widgets/sections/skill_attempt_timeline.dart';
 import 'package:control_center/features/observability/presentation/widgets/sections/skill_behavior_summary.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/shared/skill_evaluation/skill_campaign_providers.dart';
 import 'package:control_center/shared/skill_evaluation/skill_campaign_error.dart';
+import 'package:control_center/shared/skill_evaluation/skill_campaign_providers.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+part 'skill_campaign_detail_attempts.dart';
+part 'skill_campaign_detail_report.dart';
+
 /// Live campaign evidence; partial and stale runs are never presented as verdicts.
 class SkillCampaignDetail extends ConsumerStatefulWidget {
+  /// Creates a live detail view seeded with the selected campaign snapshot.
   const SkillCampaignDetail({
     required this.workspaceId,
     required this.campaignId,
     required this.initial,
     super.key,
   });
-  final String workspaceId, campaignId;
+
+  /// Workspace whose membership authorizes campaign reads and actions.
+  final String workspaceId;
+
+  /// Campaign whose progress and attempt evidence are displayed.
+  final String campaignId;
+
+  /// Snapshot shown until the live subscription supplies the campaign.
   final SkillCampaignView initial;
   @override
   ConsumerState<SkillCampaignDetail> createState() =>
@@ -43,9 +54,13 @@ class _SkillCampaignDetailState extends ConsumerState<SkillCampaignDetail> {
           .read(skillCampaignClientProvider)
           .cancelCampaign(widget.workspaceId, widget.campaignId);
     } catch (error) {
-      if (mounted) setState(() => _error = error);
+      if (mounted) {
+        setState(() => _error = error);
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
@@ -59,15 +74,20 @@ class _SkillCampaignDetailState extends ConsumerState<SkillCampaignDetail> {
           .read(skillCampaignClientProvider)
           .exportCampaign(widget.workspaceId, widget.campaignId);
       await Clipboard.setData(ClipboardData(text: bundle.content));
-      if (mounted)
+      if (mounted) {
         CcToastScope.maybeOf(context)?.show(
           AppLocalizations.of(context).skillEvalExportCopied(bundle.filename),
           variant: CcToastVariant.success,
         );
+      }
     } catch (error) {
-      if (mounted) setState(() => _error = error);
+      if (mounted) {
+        setState(() => _error = error);
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
@@ -103,9 +123,6 @@ class _SkillCampaignDetailState extends ConsumerState<SkillCampaignDetail> {
       symbol: r'$',
       decimalDigits: 4,
     );
-    final outcomes = _records(report?['taskOutcomes']);
-    final regressions = _records(report?['regressions']);
-    final verdicts = _records(report?['verdicts']);
     final attempts = ref.watch(skillAttemptsProvider(snapshotScope));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -202,282 +219,23 @@ class _SkillCampaignDetailState extends ConsumerState<SkillCampaignDetail> {
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        if (report == null)
-          Text(
-            l.skillEvalNoReport,
-            style: CcTypography.bodySm.copyWith(color: t.textSecondary),
-          )
-        else ...[
-          Text(
-            l.skillEvalReport,
-            style: CcTypography.label.copyWith(color: t.textPrimary),
-          ),
-          Text(
-            settledEvidence ? l.skillEvalCoverageComplete : l.skillEvalPartial,
-            style: CcTypography.caption.copyWith(color: t.textSecondary),
-          ),
-          if (verdicts.isEmpty)
-            Text(
-              '${l.skillEvalVerdict}: ${l.skillEvalUnknown}',
-              style: CcTypography.caption.copyWith(color: t.textSecondary),
-            ),
-          for (final v in verdicts) ...[
-            Text(
-              '${l.skillEvalVerdict}: ${settledEvidence ? _verdict(l, v['verdict']) : l.skillEvalInconclusive} · '
-              '${l.skillEvalUncertainty}: ${_percent(percent, settledEvidence ? v['lowerBound'] : null, l.skillEvalUnknown)} – '
-              '${_percent(percent, settledEvidence ? v['upperBound'] : null, l.skillEvalUnknown)} '
-              '(${_count(number, v['pairs'], l.skillEvalUnknown)}/${_count(number, v['expectedPairs'], l.skillEvalUnknown)})',
-              style: CcTypography.bodySm.copyWith(color: t.textPrimary),
-            ),
-            if (v['effectiveTaskCount'] is num)
-              Text(
-                l.skillEvalTaskClusters(
-                  _count(number, v['effectiveTaskCount'], l.skillEvalUnknown),
-                ),
-                style: CcTypography.caption.copyWith(color: t.textSecondary),
-              ),
-          ],
-          for (final unknown in (report['unknowns'] as List? ?? const []))
-            Text(
-              '${l.skillEvalUnknown}: $unknown',
-              style: CcTypography.caption.copyWith(color: t.textSecondary),
-            ),
-          for (final violation
-              in (report['planViolations'] as List? ?? const []))
-            Text(
-              '${l.skillEvalPlanViolation}: $violation',
-              style: CcTypography.caption.copyWith(color: t.textSecondary),
-            ),
-          if (report['skillBehavior'] is Map)
-            SkillBehaviorSummary(
-              behavior: (report['skillBehavior'] as Map)
-                  .cast<String, dynamic>(),
-            ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            l.skillEvalTasks,
-            style: CcTypography.label.copyWith(color: t.textPrimary),
-          ),
-          if (outcomes.isEmpty) Text(l.skillEvalNoTasks),
-          for (final taskId in {for (final task in outcomes) task['taskId']})
-            _TaskGroup(
-              taskId: '$taskId',
-              outcomes: outcomes
-                  .where((row) => row['taskId'] == taskId)
-                  .toList(),
-              regression: settledEvidence
-                  ? regressions
-                        .where((row) => row['taskId'] == taskId)
-                        .firstOrNull
-                  : null,
-              percent: percent,
-              money: money,
-              number: number,
-              settled: settledEvidence,
-            ),
-        ],
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          l.skillEvalAttempts,
-          style: CcTypography.label.copyWith(color: t.textPrimary),
+        _CampaignReport(
+          report: report,
+          settledEvidence: settledEvidence,
+          percent: percent,
+          number: number,
+          money: money,
         ),
-        attempts.when(
-          loading: () => const CcSpinner(),
-          error: (error, _) => Text(skillCampaignError(l, error)),
-          data: (list) => list.isEmpty
-              ? Text(l.skillEvalNoAttempts)
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Wrap(
-                      spacing: AppSpacing.xs,
-                      runSpacing: AppSpacing.xs,
-                      children: [
-                        for (final a in list)
-                          CcChip(
-                            label: l.skillEvalAttempt(
-                              a.taskId,
-                              a.armId,
-                              a.repetition + 1,
-                            ),
-                            selected: (_attemptId ?? list.first.id) == a.id,
-                            onPressed: () => setState(() => _attemptId = a.id),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    SkillAttemptTimeline(
-                      workspaceId: widget.workspaceId,
-                      campaignId: widget.campaignId,
-                      attemptId: list.any((a) => a.id == _attemptId)
-                          ? _attemptId!
-                          : list.first.id,
-                      refreshEpoch: _refreshEpoch,
-                    ),
-                  ],
-                ),
+        const SizedBox(height: AppSpacing.md),
+        _CampaignAttempts(
+          attempts: attempts,
+          workspaceId: widget.workspaceId,
+          campaignId: widget.campaignId,
+          attemptId: _attemptId,
+          refreshEpoch: _refreshEpoch,
+          onSelectAttempt: (id) => setState(() => _attemptId = id),
         ),
       ],
-    );
-  }
-}
-
-List<Map<String, dynamic>> _records(Object? value) => [
-  for (final row in value is List ? value : const [])
-    if (row is Map) row.cast<String, dynamic>(),
-];
-
-String _percent(NumberFormat format, Object? value, String unknown) =>
-    value is num && value.isFinite ? format.format(value) : unknown;
-String _count(NumberFormat format, Object? value, String unknown) =>
-    value is num && value.isFinite ? format.format(value) : unknown;
-
-String _comparison(AppLocalizations l, SkillCampaignComparison comparison) =>
-    switch (comparison) {
-      SkillCampaignComparison.absent => l.skillEvalAbsent,
-      SkillCampaignComparison.previous => l.skillEvalPrevious,
-      SkillCampaignComparison.forced => l.skillEvalForced,
-      SkillCampaignComparison.composition => l.skillEvalComposition,
-    };
-
-String _campaignStatus(AppLocalizations l, SkillCampaignStatus status) =>
-    switch (status) {
-      SkillCampaignStatus.queued => l.skillEvalQueued,
-      SkillCampaignStatus.running => l.skillEvalRunning,
-      SkillCampaignStatus.cancelling => l.skillEvalCancelling,
-      SkillCampaignStatus.cancelled => l.skillEvalCancelled,
-      SkillCampaignStatus.completed => l.skillEvalCompleted,
-      SkillCampaignStatus.failed => l.skillEvalFailed,
-      SkillCampaignStatus.interrupted => l.skillEvalInterrupted,
-    };
-
-String _verdict(AppLocalizations l, Object? verdict) => switch (verdict) {
-  'superior' => l.skillEvalImproved,
-  'non_inferior' => l.skillEvalPreserved,
-  'inferior' => l.skillEvalRegressed,
-  _ => l.skillEvalInconclusive,
-};
-
-class _TaskGroup extends StatelessWidget {
-  const _TaskGroup({
-    required this.taskId,
-    required this.outcomes,
-    required this.regression,
-    required this.percent,
-    required this.money,
-    required this.number,
-    required this.settled,
-  });
-  final String taskId;
-  final List<Map<String, dynamic>> outcomes;
-  final Map<String, dynamic>? regression;
-  final NumberFormat percent, money, number;
-  final bool settled;
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.xs,
-            children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 320),
-                child: Text(
-                  taskId,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textDirection: ui.TextDirection.ltr,
-                  style: CcTypography.label.copyWith(color: t.textPrimary),
-                ),
-              ),
-              if (regression != null)
-                CcStatusTag(
-                  label: switch (regression!['kind']) {
-                    'quality_loss' => l.skillEvalRegressed,
-                    'cost_regression' => l.skillEvalCostRegression,
-                    'harness_error' => l.skillEvalHarnessError,
-                    _ => l.skillEvalUnknown,
-                  },
-                  tone: CcStatusTone.negative,
-                  dot: false,
-                ),
-            ],
-          ),
-          for (final task in outcomes)
-            _TaskLine(
-              task: task,
-              percent: percent,
-              money: money,
-              number: number,
-              settled: settled,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TaskLine extends StatelessWidget {
-  const _TaskLine({
-    required this.task,
-    required this.percent,
-    required this.money,
-    required this.number,
-    required this.settled,
-  });
-  final Map<String, dynamic> task;
-  final NumberFormat percent, money, number;
-  final bool settled;
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final attempts = task['attempts'] as num?;
-    final passes = task['verifiedSuccesses'] as num?;
-    final rate = settled && attempts != null && attempts > 0 && passes != null
-        ? _percent(percent, passes / attempts, l.skillEvalUnknown)
-        : l.skillEvalUnknown;
-    final cost = task['totalCostMicros'] is num
-        ? money.format((task['totalCostMicros'] as num) / 1000000)
-        : l.skillEvalUnknown;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Wrap(
-        spacing: AppSpacing.sm,
-        runSpacing: AppSpacing.xs,
-        children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 320),
-            child: Text(
-              '${task['armId'] ?? l.skillEvalUnknown}',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textDirection: ui.TextDirection.ltr,
-              style: CcTypography.bodySm.copyWith(color: t.textPrimary),
-            ),
-          ),
-          Text(
-            l.skillEvalTaskEvidence(
-              rate,
-              passes == null || attempts == null
-                  ? l.skillEvalUnknown
-                  : '${_count(number, passes, l.skillEvalUnknown)}/${_count(number, attempts, l.skillEvalUnknown)}',
-              cost,
-            ),
-            style: CcTypography.caption.copyWith(color: t.textSecondary),
-          ),
-          Text(
-            '${l.skillEvalUncertainty}: ${l.skillEvalUnknown}',
-            style: CcTypography.caption.copyWith(color: t.textSecondary),
-          ),
-        ],
-      ),
     );
   }
 }

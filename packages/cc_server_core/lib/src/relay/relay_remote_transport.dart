@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:cc_rpc/src/channel/relay_signaling_channel.dart';
-import 'package:cc_rpc/src/channel/remote_rpc_channel_port.dart';
+import 'package:cc_rpc/cc_rpc.dart'
+    show RelaySignalingChannel, RemoteChannelState, RemoteRpcChannelPort;
 
 /// Raw records for one peer of the server's N-way broker room.
 ///
@@ -121,7 +121,9 @@ class RelayRemoteTransport implements RemoteRpcChannelPort {
   }
 
   void _deliver(Map<String, dynamic> frame) {
-    if (!_open) return;
+    if (!_open) {
+      return;
+    }
     if (_incoming.hasListener) {
       _incoming.add(frame);
     } else if (_pending.length >= 64) {
@@ -145,7 +147,9 @@ class RelayRemoteTransport implements RemoteRpcChannelPort {
     unawaited(_sub?.cancel());
     _state.add(RemoteChannelState.closed);
     unawaited(_state.close());
-    if (abort) _pending.clear();
+    if (abort) {
+      _pending.clear();
+    }
     if (!abort && _pending.isNotEmpty) {
       // Deliver bounded pre-listener records that preceded the peer's EOF.
       _pendingEof = true;

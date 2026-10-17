@@ -278,11 +278,22 @@ class SkillEvalCampaignsTable extends Table {
   @override
   String get tableName => 'skill_eval_campaigns';
 
+  /// Server-assigned campaign identifier.
   TextColumn get id => text()();
+
+  /// Workspace that owns this campaign.
   TextColumn get workspaceId => text()();
+
+  /// Stable skill identity indexed for campaign history.
   TextColumn get skillKey => text()();
+
+  /// Campaign lifecycle state indexed for active campaign queries.
   TextColumn get status => text()();
+
+  /// Campaign creation time used for history ordering.
   DateTimeColumn get createdAt => dateTime()();
+
+  /// Canonical serialized campaign including configuration and results.
   TextColumn get payloadJson => text()();
 
   @override
@@ -298,10 +309,20 @@ class SkillEvalAttemptsTable extends Table {
   @override
   String get tableName => 'skill_eval_attempts';
 
+  /// Server-assigned attempt identifier.
   TextColumn get id => text()();
+
+  /// Workspace that owns this attempt.
   TextColumn get workspaceId => text()();
-  TextColumn get campaignId => text().references(SkillEvalCampaignsTable, #id)();
+
+  /// Parent campaign; the foreign key prevents orphaned attempts.
+  TextColumn get campaignId =>
+      text().references(SkillEvalCampaignsTable, #id)();
+
+  /// Campaign-wide attempt order used for result listing.
   IntColumn get ordinal => integer()();
+
+  /// Canonical serialized attempt and redacted evidence.
   TextColumn get payloadJson => text()();
 
   @override
@@ -317,9 +338,16 @@ class SkillEvalPoliciesTable extends Table {
   @override
   String get tableName => 'skill_eval_policies';
 
+  /// Workspace that opted into this skill's evaluations.
   TextColumn get workspaceId => text()();
+
+  /// Stable skill identity governed by the policy.
   TextColumn get skillKey => text()();
+
+  /// Whether automatic evaluation is enabled for the skill.
   BoolColumn get enabled => boolean()();
+
+  /// Canonical serialized policy configuration and actor.
   TextColumn get payloadJson => text()();
 
   @override

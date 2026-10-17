@@ -211,7 +211,9 @@ class RelayClientChannel implements RemoteRpcChannelPort {
     if (!_state.isClosed) {
       _state.add(RemoteChannelState.closed);
     }
-    if (abort) _pending.clear();
+    if (abort) {
+      _pending.clear();
+    }
     if (!abort && _pending.isNotEmpty) {
       // A pre-listener record remains bounded and available to its first
       // listener, even when the peer leaves in the same socket burst.

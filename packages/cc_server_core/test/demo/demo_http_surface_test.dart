@@ -271,7 +271,7 @@ void main() {
       queryParameters: {
         'u': base64Url.encode(utf8.encode(url)),
         'd': deviceId,
-        if (signature != null) 's': signature,
+        's': ?signature,
       },
     );
 
@@ -364,7 +364,7 @@ void main() {
     final wire = await resp.transform(utf8.decoder).join();
     expect(resp.statusCode, 200);
     expect(resp.headers.value('access-control-allow-origin'), '*');
-    expect(wire, isNot(contains('\"psk\"')));
+    expect(wire, isNot(contains('"psk"')));
     final body = jsonDecode(wire) as Map<String, dynamic>;
     final credential = await CredentialSeal.open(
       recipientPrivateKey: recipient.privateKey,

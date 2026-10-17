@@ -124,7 +124,12 @@ void main() {
         (parsed['attempts'] as List).length + parsed['omittedAttemptCount'],
         57,
       );
-      expect((parsed['attempts'] as List).first['id'], 'attempt-0');
+      expect(
+        (parsed['attempts'] as List<dynamic>)
+            .cast<Map<String, dynamic>>()
+            .first['id'],
+        'attempt-0',
+      );
     },
   );
 
@@ -197,17 +202,21 @@ void main() {
                 }),
               )
               as Map<String, dynamic>;
-      final attempts = exported['attempts'] as List;
+      final attempts = (exported['attempts'] as List<dynamic>)
+          .cast<Map<String, dynamic>>();
       expect(attempts.map((row) => row['id']), [
         for (var i = 0; i < 960; i++) 'attempt-$i',
       ]);
       expect(exported['omittedAttemptCount'], 0);
       expect(exported['summarizedAttemptCount'], greaterThan(0));
       expect(exported['detailsOmitted'], true);
-      expect(attempts.last['evidence']['verifiedSuccess'], false);
-      expect(attempts.last['evidence']['cost']['known'], false);
-      expect(attempts.last['evidence']['cost']['executionMicros'], isNull);
-      expect(attempts.last['evidence']['tokens']['output'], 7);
+      final lastEvidence = attempts.last['evidence'] as Map<String, dynamic>;
+      final lastCost = lastEvidence['cost'] as Map<String, dynamic>;
+      final lastTokens = lastEvidence['tokens'] as Map<String, dynamic>;
+      expect(lastEvidence['verifiedSuccess'], false);
+      expect(lastCost['known'], false);
+      expect(lastCost['executionMicros'], isNull);
+      expect(lastTokens['output'], 7);
       expect(
         utf8.encode(jsonEncode(exported)).length,
         lessThanOrEqualTo(SkillEvaluationEvidence.maxExportBytes),
@@ -259,12 +268,15 @@ void main() {
       expect(exported['omittedAttemptCount'], 0);
       expect(exported['detailsOmitted'], true);
       expect(
-        (exported['campaign'] as Map)['report']['coverageComplete'],
+        ((exported['campaign'] as Map<String, dynamic>)['report']
+            as Map<String, dynamic>)['coverageComplete'],
         false,
       );
-      expect((exported['campaign'] as Map)['report']['unknowns'], [
-        'not observed',
-      ]);
+      expect(
+        ((exported['campaign'] as Map<String, dynamic>)['report']
+            as Map<String, dynamic>)['unknowns'],
+        ['not observed'],
+      );
     },
   );
 }

@@ -76,8 +76,9 @@ class _ClosingResources extends _Resources {
       incoming: incoming.stream,
       protocol: '',
       onSend: (_) async {
-        if (rejectSends)
+        if (rejectSends) {
           throw StateError('Encrypted channel rejected the send');
+        }
       },
       onClose: (code, reason) async {
         closeCalls.add((code, reason));
@@ -152,7 +153,7 @@ class _HtmlResources extends _Resources {
         body: Stream.fromIterable([
           Uint8List.fromList('<html><head><scr'.codeUnits),
           Uint8List.fromList(
-            'ipt nonce=\"SGVhZE5vbmNl\" src=\"/app.js\"></script></head></html>'
+            'ipt nonce="SGVhZE5vbmNl" src="/app.js"></script></head></html>'
                 .codeUnits,
           ),
         ]),
@@ -220,7 +221,9 @@ class _IdleResources extends _Resources {
       },
       body: this.body.stream,
       onClose: () async {
-        if (!closed.isCompleted) closed.complete();
+        if (!closed.isCompleted) {
+          closed.complete();
+        }
         await this.body.close();
       },
     );
@@ -360,6 +363,7 @@ void main() {
             .replace(scheme: 'ws')
             .toString(),
       );
+      addTearDown(socket.close);
       final ended = socket.drain<void>();
       socket.add('keystroke');
       await ended.timeout(const Duration(seconds: 5));
@@ -414,6 +418,7 @@ void main() {
         resources.closeReason = reason;
         final connected = resources.connected.stream.first;
         final socket = await WebSocket.connect(url);
+        addTearDown(socket.close);
         final incoming = await connected;
         await incoming.close();
         await socket.drain<void>();
@@ -461,8 +466,8 @@ void main() {
       expect(
         text,
         contains(
-          '<head><script nonce=\"UHJveHlOb25jZQ==\" '
-          'src=\"${base.path}_cc_native_ws_shim.js\"></script>',
+          '<head><script nonce="UHJveHlOb25jZQ==" '
+          'src="${base.path}_cc_native_ws_shim.js"></script>',
         ),
       );
       expect(html.headers.value('x-frame-options'), isNull);
@@ -506,9 +511,9 @@ void main() {
       expect(
         text,
         contains(
-          '<head><script nonce=\"SGVhZE5vbmNl\" '
-          'src=\"${facade.baseUri.path}_cc_native_ws_shim.js\"></script>'
-          '<script nonce=\"SGVhZE5vbmNl\" src=\"/app.js\">',
+          '<head><script nonce="SGVhZE5vbmNl" '
+          'src="${facade.baseUri.path}_cc_native_ws_shim.js"></script>'
+          '<script nonce="SGVhZE5vbmNl" src="/app.js">',
         ),
       );
       expect(html.headers.value('x-frame-options'), isNull);

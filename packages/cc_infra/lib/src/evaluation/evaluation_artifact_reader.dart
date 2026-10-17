@@ -4,7 +4,7 @@ import 'dart:io';
 /// enforced even if a file grows after the size preflight.
 Future<List<int>> readEvaluationArtifact(File file, int maxBytes) async {
   if (maxBytes < 0 ||
-      await FileSystemEntity.type(file.path, followLinks: false) !=
+      FileSystemEntity.typeSync(file.path, followLinks: false) !=
           FileSystemEntityType.file) {
     throw StateError('evaluation artifact is not a regular file');
   }

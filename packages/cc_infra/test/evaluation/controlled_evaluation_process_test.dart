@@ -57,7 +57,7 @@ print('parent finished')
         // Returning also proves EOF: the child deliberately retains both pipes.
       } finally {
         // Keep a failing-before run from leaving a fixture child behind.
-        if (await pidFile.exists()) {
+        if (pidFile.existsSync()) {
           Process.killPid(
             int.parse(await pidFile.readAsString()),
             ProcessSignal.sigkill,

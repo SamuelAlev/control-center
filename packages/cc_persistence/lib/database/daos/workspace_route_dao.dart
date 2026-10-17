@@ -43,7 +43,9 @@ class WorkspaceRouteDao extends DatabaseAccessor<GlobalDatabase>
       'WHERE route_id = ?',
       variables: [Variable.withString(routeId)],
     ).get();
-    if (rows.isEmpty) return null;
+    if (rows.isEmpty) {
+      return null;
+    }
     return (
       codeHash: rows.single.read<String>('code_hash'),
       workspaceId: rows.single.read<String>('workspace_id'),

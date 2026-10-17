@@ -7,10 +7,10 @@ import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_domain/core/domain/events/rig_events.dart';
 import 'package:cc_domain/core/domain/events/ticketing_events.dart';
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/notification_wire.dart';
-import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 
 /// Durable per-workspace notification feed from domain events (same mapping as live toasts).
 ///
@@ -27,6 +27,7 @@ class NotificationFeedRecorder {
 
   final DomainEventBus _eventBus;
   final DaoNotificationFeedRepository _repository;
+
   /// Called only after the feed row is committed; transient push failures do
   /// not undo the authoritative feed record.
   final void Function(NotificationFeedItem item)? onRecorded;
@@ -166,7 +167,11 @@ class NotificationFeedRecorder {
       return;
     }
     _write('record', () async {
-      final item = await _repository.record(workspaceId, frame.method, frame.params);
+      final item = await _repository.record(
+        workspaceId,
+        frame.method,
+        frame.params,
+      );
       onRecorded?.call(item);
     });
   }

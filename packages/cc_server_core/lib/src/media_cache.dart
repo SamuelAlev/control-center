@@ -135,7 +135,10 @@ final class MediaCacheFailure extends MediaCacheResolution {
 /// consumer leaves *before* the fetch completes; one disconnected consumer
 /// cannot abort work another authorized consumer still needs.
 abstract interface class MediaFetchCancellation {
+  /// Completes when the final waiting consumer abandons the shared fetch.
   Future<void> get cancelled;
+
+  /// Whether the shared fetch has been cancelled by its final consumer.
   bool get isCancelled;
 }
 
@@ -246,22 +249,34 @@ class MediaCache {
     // A stream can serve only the initiating consumer. Its waiters retry as
     // independent initiators once the first flight has settled.
     for (var attempt = 0; attempt < 2; attempt++) {
-      if (abandoned()) return const MediaCacheFailure();
+      if (abandoned()) {
+        return const MediaCacheFailure();
+      }
       final meta = await _readMeta(key);
-      if (abandoned()) return const MediaCacheFailure();
+      if (abandoned()) {
+        return const MediaCacheFailure();
+      }
       if (meta != null &&
           meta.expiresAtMs > _clock().millisecondsSinceEpoch &&
           await _bodyFile(key).exists()) {
-        if (abandoned()) return const MediaCacheFailure();
+        if (abandoned()) {
+          return const MediaCacheFailure();
+        }
         _touch(key);
-        if (attempt == 0) _stats.hit();
+        if (attempt == 0) {
+          _stats.hit();
+        }
         return MediaCacheHit(
           bodyFile: _bodyFile(key),
           contentType: meta.contentType,
         );
       }
-      if (attempt == 0) _stats.miss();
-      if (abandoned()) return const MediaCacheFailure();
+      if (attempt == 0) {
+        _stats.miss();
+      }
+      if (abandoned()) {
+        return const MediaCacheFailure();
+      }
 
       var flight = _inflight[key];
       final initiated = flight == null || flight.isCancelled;
@@ -300,13 +315,15 @@ class MediaCache {
                     }
                     return value;
                   },
-                  onError: (Object _, StackTrace __) {
+                  onError: (Object _, StackTrace _) {
                     active.finished = true;
                     return const MediaFetchFailed();
                   },
                 )
                 .whenComplete(() {
-                  if (identical(_inflight[key], active)) _inflight.remove(key);
+                  if (identical(_inflight[key], active)) {
+                    _inflight.remove(key);
+                  }
                 });
       }
       final active = flight;
@@ -331,7 +348,9 @@ class MediaCache {
         }
       }
       if (abandoned() || outcome == null) {
-        if (initiated) active.cancelOwner();
+        if (initiated) {
+          active.cancelOwner();
+        }
         return const MediaCacheFailure();
       }
 
@@ -342,7 +361,9 @@ class MediaCache {
           }
           // The flight has already persisted the shared result exactly once.
           // If every consumer abandoned it, it was not stored or served.
-          if (abandoned()) return const MediaCacheFailure();
+          if (abandoned()) {
+            return const MediaCacheFailure();
+          }
           return MediaCacheHit(
             bodyFile: _bodyFile(key),
             contentType: contentType,
@@ -350,7 +371,9 @@ class MediaCache {
         case MediaFetchNotModified():
           if (meta != null && await _bodyFile(key).exists()) {
             await _bumpExpiry(key, meta);
-            if (abandoned()) return const MediaCacheFailure();
+            if (abandoned()) {
+              return const MediaCacheFailure();
+            }
             _touch(key);
             return MediaCacheHit(
               bodyFile: _bodyFile(key),
@@ -369,7 +392,9 @@ class MediaCache {
           }
           continue;
         case MediaFetchFailed():
-          if (abandoned()) return const MediaCacheFailure();
+          if (abandoned()) {
+            return const MediaCacheFailure();
+          }
           return _staleOrFailure(key, meta);
       }
     }

@@ -168,19 +168,18 @@ class RemoteAgentRunLogRepository {
     final result = await _client.call('agent_run_log.updateRuntime', {
       'workspace_id': workspaceId,
       'run_id': runId,
-      if (pid != null) 'pid': pid,
+      'pid': ?pid,
       if (markRunning) 'mark_running': true,
-      if (logPath != null) 'log_path': logPath,
-      if (contextSnapshotJson != null)
-        'context_snapshot_json': contextSnapshotJson,
+      'log_path': ?logPath,
+      'context_snapshot_json': ?contextSnapshotJson,
       if (lastOutputAt != null)
         'last_output_at': lastOutputAt.toIso8601String(),
       if (liveness != null) 'liveness': liveness.name,
       if (errorFamily != null) 'error_family': errorFamily.name,
-      if (summary != null) 'summary': summary,
-      if (modelId != null) 'model_id': modelId,
-      if (effort != null) 'effort': effort,
-      if (taskFamily != null) 'task_family': taskFamily,
+      'summary': ?summary,
+      'model_id': ?modelId,
+      'effort': ?effort,
+      'task_family': ?taskFamily,
     });
     return result['updated'] == true;
   }

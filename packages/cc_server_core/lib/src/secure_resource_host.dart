@@ -28,8 +28,14 @@ bool isSecureResourcePath(String path) =>
 
 /// Identity comes from the Noise-authenticated device, not a resource header.
 final class SecureResourcePrincipal {
+  /// Binds the authenticated device and its current account to one resource
+  /// session; HTTP request headers are never trusted as identity.
   const SecureResourcePrincipal({required this.deviceId, required this.userId});
+
+  /// Device identifier established by the secure channel handshake.
   final String deviceId;
+
+  /// Account identifier authorized for workspace resources.
   final String userId;
 }
 
@@ -55,6 +61,8 @@ final class SecureResourceHost {
   final _activeByUser = <String, int>{};
   bool _closed = false;
 
+  /// Starts a loopback-only HTTP handler for capability-bound resource
+  /// transfers and server-launched editor IPC.
   static Future<SecureResourceHost> start({
     required Future<void> Function(
       HttpRequest,
@@ -84,6 +92,8 @@ final class SecureResourceHost {
     path: '/__cc_editor_bridge/$_editorCapability/',
   );
 
+  /// Binds a secure channel to a device and schedules expiration of its
+  /// private resource capability at [expiresAt], if provided.
   void attach(
     SecureRpcChannel channel, {
     required String deviceId,
@@ -185,7 +195,9 @@ final class SecureResourceHost {
         // A canceled transfer may already have closed the response.
       }
     } finally {
-      if (accepted != null) _finishOperation(accepted);
+      if (accepted != null) {
+        _finishOperation(accepted);
+      }
     }
   }
 
@@ -216,7 +228,9 @@ final class SecureResourceHost {
   }
 
   void _finishOperation(_ResourceOperation operation) {
-    if (operation.finished) return;
+    if (operation.finished) {
+      return;
+    }
     operation.finished = true;
     _operations.remove(operation.id);
     final remaining = (_activeByUser[operation.userId] ?? 1) - 1;
@@ -228,7 +242,9 @@ final class SecureResourceHost {
   }
 
   void _finishUnaccepted(_ResourceOperation operation) {
-    if (!operation.accepted) _finishOperation(operation);
+    if (!operation.accepted) {
+      _finishOperation(operation);
+    }
   }
 
   Uri _target(Uri uri, {bool webSocket = false}) {
@@ -277,12 +293,16 @@ final class SecureResourceHost {
       }
       upstream.headers.set(_capabilityHeader, capability);
       upstream.headers.set(_operationHeader, operation.id);
-      if (request.isCancelled) throw const HttpException('Resource canceled');
+      if (request.isCancelled) {
+        throw const HttpException('Resource canceled');
+      }
       await upstream.addStream(request.body);
       final response = await upstream.close();
       final headers = <String, List<String>>{};
       response.headers.forEach((name, values) {
-        if (!_hopByHop(name)) headers[name] = List.of(values);
+        if (!_hopByHop(name)) {
+          headers[name] = List.of(values);
+        }
       });
       if (response.compressionState ==
           HttpClientResponseCompressionState.decompressed) {
@@ -309,7 +329,9 @@ final class SecureResourceHost {
         } catch (_) {
           // Closing a canceled transfer intentionally aborts its private
           // HttpClient. Do not leak that expected teardown error to the zone.
-          if (!request.isCancelled) rethrow;
+          if (!request.isCancelled) {
+            rethrow;
+          }
         } finally {
           client.close(force: true);
         }
@@ -367,7 +389,9 @@ final class SecureResourceHost {
     }
     unawaited(
       request.cancelled.then((_) async {
-        if (request.isCancelled) await socket.close(WebSocketStatus.goingAway);
+        if (request.isCancelled) {
+          await socket.close(WebSocketStatus.goingAway);
+        }
       }),
     );
     return RemoteResourceSocket(
@@ -378,14 +402,18 @@ final class SecureResourceHost {
             : Uint8List.fromList(data as List<int>),
       ),
       onSend: (data) => socket.addStream(Stream<Object>.value(data)),
-      onClose: (code, reason) => socket.close(code, reason),
+      onClose: socket.close,
       readCloseCode: () => socket.closeCode,
       readCloseReason: () => socket.closeReason,
     );
   }
 
+  /// Closes all bound secure sessions and outstanding resource operations,
+  /// then stops the private loopback listener.
   Future<void> close() async {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     _closed = true;
     final bindings = _bindings.values.toList();
     _bindings.clear();

@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:cc_domain/cc_domain.dart' show AuthException;
-import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/entities/user.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
@@ -274,7 +274,10 @@ class SamlService {
         ({String cookieHash, String userId, String label, DateTime expiresAt})
       >{};
 
+  /// Maximum simultaneous browser-bound assertion grants retained in memory.
   static const maxBrowserGrants = 64;
+
+  /// Time allowed to exchange a browser assertion grant for a device session.
   static const browserGrantLifetime = Duration(minutes: 5);
 
   /// Assertion ID → expiry. The caller-side replay cache (the native is

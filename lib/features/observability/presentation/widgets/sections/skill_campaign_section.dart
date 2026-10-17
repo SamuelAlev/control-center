@@ -5,8 +5,8 @@ import 'package:control_center/features/observability/presentation/widgets/secti
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/skill_evaluation/skill_campaign_providers.dart';
 import 'package:control_center/shared/skill_evaluation/skill_campaign_error.dart';
+import 'package:control_center/shared/skill_evaluation/skill_campaign_providers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,13 +14,16 @@ import 'package:intl/intl.dart';
 
 /// Workspace-wide full snapshots; independent from the legacy suite list.
 class SkillCampaignSection extends ConsumerWidget {
+  /// Lists campaigns for the active workspace and follows campaign deep links.
   const SkillCampaignSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final workspace = ref.watch(activeWorkspaceIdProvider);
-    if (workspace == null) return Text(l.skillEvalNoWorkspace);
+    if (workspace == null) {
+      return Text(l.skillEvalNoWorkspace);
+    }
     final scope = (workspaceId: workspace, skillKey: null as String?);
     final campaigns = ref.watch(skillCampaignsProvider(scope));
     final t = context.designSystem ?? DesignSystemTokens.light();
@@ -139,6 +142,7 @@ class _CampaignRowState extends State<_CampaignRow> {
   }
 }
 
+/// Localized lifecycle label, independent of the campaign's evidence verdict.
 String skillCampaignStatusLabel(
   AppLocalizations l,
   SkillCampaignStatus status,
@@ -152,6 +156,7 @@ String skillCampaignStatusLabel(
   SkillCampaignStatus.interrupted => l.skillEvalInterrupted,
 };
 
+/// Visual tone for a run's lifecycle rather than its evaluation quality.
 CcStatusTone skillCampaignStatusTone(SkillCampaignStatus status) =>
     switch (status) {
       SkillCampaignStatus.queued ||

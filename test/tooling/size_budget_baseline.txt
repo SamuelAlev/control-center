@@ -76,7 +76,6 @@ lib/features/observability/presentation/widgets/sections/benchmark_section.dart 
 lib/features/observability/presentation/widgets/sections/fleet_section.dart  555
 lib/features/observability/presentation/widgets/sections/goal_section.dart  349
 lib/features/observability/presentation/widgets/sections/quota_section.dart  445
-lib/features/observability/presentation/widgets/sections/skill_campaign_detail.dart  483
 lib/features/observability/presentation/widgets/usage/usage_trend_chart.dart  339
 lib/features/orchestration/presentation/widgets/orchestration_proposal_bubble.dart  392
 lib/features/pipelines/presentation/screens/pipeline_run_detail_screen.dart  503
@@ -176,7 +175,6 @@ lib/features/settings/presentation/widgets/providers/model_edit_dialog.dart  341
 lib/features/settings/presentation/widgets/providers/provider_model_list.dart  324
 lib/features/settings/presentation/widgets/sections/general/notifications_section.dart  665
 lib/features/settings/presentation/widgets/sections/integrations/server_sharing_section.dart  345
-lib/features/settings/presentation/widgets/sections/skills/skill_evaluation_panel.dart  316
 lib/features/settings/presentation/widgets/sections/skills/skill_scan_widgets.dart  390
 lib/features/settings/presentation/widgets/sections/skills/skill_sources_panel.dart  1131
 lib/features/settings/presentation/widgets/sections/system/audio_input_row.dart  329
@@ -186,7 +184,7 @@ lib/features/settings/presentation/widgets/sections/workspace/activity_formattin
 lib/features/settings/presentation/widgets/sections/workspace/meeting_templates_section.dart  334
 lib/features/settings/presentation/widgets/sections/workspace/members_roster_section.dart  522
 lib/features/settings/presentation/widgets/sections/workspace/workspace_activity_section.dart  577
-lib/features/settings/presentation/widgets/skills_settings.dart  1234
+lib/features/settings/presentation/widgets/skills_settings.dart  1040
 lib/features/shell/presentation/widgets/notification_bell.dart  617
 lib/features/shell/presentation/widgets/server_shutdown_overlay.dart  438
 lib/features/shell/presentation/widgets/title_bar_workspace_chip.dart  363

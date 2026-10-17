@@ -10,7 +10,9 @@ void main() {
   test(
     'controlled tools read, write, edit, find and search real files',
     () async {
-      if (ControlledEvaluationProcess.capabilityReason() != null) return;
+      if (ControlledEvaluationProcess.capabilityReason() != null) {
+        return;
+      }
       final fixture = await _Fixture.create();
       try {
         final write = await fixture.call('write', {
@@ -22,7 +24,7 @@ void main() {
         // A candidate file must not shadow the adapter's stdlib imports.
         await File(
           p.join(fixture.root.path, 'json.py'),
-        ).writeAsString('raise RuntimeError(\"candidate module loaded\")');
+        ).writeAsString('raise RuntimeError("candidate module loaded")');
         final read = await fixture.call('read', {
           'path': 'notes/a.txt',
           'offset': 2,
@@ -58,7 +60,9 @@ void main() {
   test(
     'controlled shell never resolves a model-supplied cwd on the host',
     () async {
-      if (ControlledEvaluationProcess.capabilityReason() != null) return;
+      if (ControlledEvaluationProcess.capabilityReason() != null) {
+        return;
+      }
       final fixture = await _Fixture.create();
       try {
         final result = await fixture.call('bash', {
@@ -75,7 +79,9 @@ void main() {
   );
 
   test('dangling and changed symlinks never create a host target', () async {
-    if (ControlledEvaluationProcess.capabilityReason() != null) return;
+    if (ControlledEvaluationProcess.capabilityReason() != null) {
+      return;
+    }
     final fixture = await _Fixture.create();
     try {
       final host = File(p.join(fixture.parent.path, 'host-target'));
@@ -86,7 +92,7 @@ void main() {
         'content': 'escaped',
       });
       expect(denied.isError, isTrue);
-      expect(await host.exists(), isFalse);
+      expect(host.existsSync(), isFalse);
       await link.delete();
       await File(link.path).writeAsString('safe');
       expect(
@@ -101,7 +107,7 @@ void main() {
         'new_text': 'escaped',
       });
       expect(changed.isError, isTrue);
-      expect(await host.exists(), isFalse);
+      expect(host.existsSync(), isFalse);
       expect(
         (await fixture.call('read', {'path': 'link.txt'})).isError,
         isTrue,
@@ -112,7 +118,9 @@ void main() {
   });
 
   test('sparse and oversized reads and searches stay bounded', () async {
-    if (ControlledEvaluationProcess.capabilityReason() != null) return;
+    if (ControlledEvaluationProcess.capabilityReason() != null) {
+      return;
+    }
     final fixture = await _Fixture.create();
     try {
       final sparse = File(p.join(fixture.root.path, 'sparse.txt'));
@@ -136,7 +144,9 @@ void main() {
   });
 
   test('protected skill package denies direct and aliased writes', () async {
-    if (ControlledEvaluationProcess.capabilityReason() != null) return;
+    if (ControlledEvaluationProcess.capabilityReason() != null) {
+      return;
+    }
     final fixture = await _Fixture.create();
     try {
       final package = await Directory(

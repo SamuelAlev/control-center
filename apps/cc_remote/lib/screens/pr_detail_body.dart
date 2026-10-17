@@ -56,7 +56,7 @@ extension _PrDetailBody on _PrDetailScreenState {
         ...switch (_tab) {
           _PrTab.conversation => _conversation(t, pr),
           _PrTab.files => _files(t, pr),
-          _PrTab.checks => this._checks(t),
+          _PrTab.checks => _checks(t),
         },
       ],
     );
@@ -111,7 +111,7 @@ extension _PrDetailBody on _PrDetailScreenState {
               body: _optimisticComments[c.id] ?? c.body,
               at: c.createdAt,
               commentId: c.id,
-              canEditComment: this._canEditComment(c.user),
+              canEditComment: _canEditComment(c.user),
             ),
         ]..sort((a, b) {
           final epoch = DateTime.fromMillisecondsSinceEpoch(0);
@@ -124,7 +124,7 @@ extension _PrDetailBody on _PrDetailScreenState {
       prAuthor: pr.author,
       prCreatedAt: pr.createdAt,
       entries: entries,
-      onPrBodyCheckboxChanged: this._canEditPrBody(pr)
+      onPrBodyCheckboxChanged: _canEditPrBody(pr)
           ? (index, _) => _togglePrBodyCheckbox(pr, index)
           : null,
       onCommentCheckboxChanged: (commentId, index, _) {

@@ -83,7 +83,9 @@ extension _MediaMethods on LocalRpcServer {
           cancelled: cancellation,
           isCancelled: cancelled,
         );
-        if (cancelled()) return;
+        if (cancelled()) {
+          return;
+        }
         switch (resolution) {
           case MediaCacheHit(:final bodyFile, :final contentType):
             await _serveCachedMediaFile(res, contentType, bodyFile);
@@ -105,11 +107,15 @@ extension _MediaMethods on LocalRpcServer {
             return;
         }
       } catch (e) {
-        if (cancelled()) return;
+        if (cancelled()) {
+          return;
+        }
         _w('Media cache path failed for ${target.host}: $e');
       }
     }
-    if (cancelled()) return;
+    if (cancelled()) {
+      return;
+    }
 
     HttpClient? client;
     try {
@@ -129,7 +135,9 @@ extension _MediaMethods on LocalRpcServer {
         authorization: authorization,
         isCancelled: cancelled,
       );
-      if (cancelled()) return;
+      if (cancelled()) {
+        return;
+      }
       switch (opened) {
         case _UpstreamError(:final statusCode):
           await _closeProxy(res, statusCode);
@@ -158,7 +166,9 @@ extension _MediaMethods on LocalRpcServer {
                 maxBytes,
                 isCancelled: cancelled,
               );
-              if (cancelled()) return;
+              if (cancelled()) {
+                return;
+              }
               if (bytes == null) {
                 await _closeProxy(res, HttpStatus.badGateway);
                 return;
@@ -168,7 +178,9 @@ extension _MediaMethods on LocalRpcServer {
               final resized = maxWidth != null
                   ? await resizeRasterToWidthAsync(source, maxWidth)
                   : null;
-              if (cancelled()) return;
+              if (cancelled()) {
+                return;
+              }
               await _serveBufferedMedia(
                 res,
                 resized?.mimeType ??
@@ -186,13 +198,17 @@ extension _MediaMethods on LocalRpcServer {
                 maxBytes,
                 isCancelled: cancelled,
               );
-              if (cancelled()) return;
+              if (cancelled()) {
+                return;
+              }
               if (raw == null) {
                 await _closeProxy(res, HttpStatus.badGateway);
                 return;
               }
               final resized = await resizeRasterToWidthAsync(raw, maxWidth);
-              if (cancelled()) return;
+              if (cancelled()) {
+                return;
+              }
               await _serveBufferedMedia(
                 res,
                 resized?.mimeType ??
@@ -246,7 +262,9 @@ extension _MediaMethods on LocalRpcServer {
     );
     var transferred = false;
     try {
-      if (isCancelled?.call() ?? false) return const MediaFetchFailed();
+      if (isCancelled?.call() ?? false) {
+        return const MediaFetchFailed();
+      }
       final opened = await _openUpstream(
         client,
         target,
@@ -254,7 +272,9 @@ extension _MediaMethods on LocalRpcServer {
         lastModified: lastModified,
         isCancelled: isCancelled,
       );
-      if (isCancelled?.call() ?? false) return const MediaFetchFailed();
+      if (isCancelled?.call() ?? false) {
+        return const MediaFetchFailed();
+      }
       switch (opened) {
         case _UpstreamError():
           return const MediaFetchFailed();
@@ -313,7 +333,9 @@ extension _MediaMethods on LocalRpcServer {
                 (upstream.headers.contentType?.toString() ??
                     'application/octet-stream');
           }
-          if (isCancelled?.call() ?? false) return const MediaFetchFailed();
+          if (isCancelled?.call() ?? false) {
+            return const MediaFetchFailed();
+          }
           final cacheControl = upstreamCacheControlValue(upstream.headers);
           return MediaFetchBuffered(
             bytes: body,
@@ -354,8 +376,9 @@ extension _MediaMethods on LocalRpcServer {
     var current = target;
     var sendAuth = authorization != null && authorization.isNotEmpty;
     for (var hop = 0; ; hop++) {
-      if (isCancelled?.call() ?? false)
+      if (isCancelled?.call() ?? false) {
         return const _UpstreamError(HttpStatus.badGateway);
+      }
       final req = (await client.getUrl(current))
         ..followRedirects = false
         ..headers.set(HttpHeaders.acceptHeader, '*/*');
@@ -372,8 +395,9 @@ extension _MediaMethods on LocalRpcServer {
         req.headers.set(HttpHeaders.ifModifiedSinceHeader, lastModified);
       }
       final upstream = await req.close().timeout(const Duration(seconds: 20));
-      if (isCancelled?.call() ?? false)
+      if (isCancelled?.call() ?? false) {
         return const _UpstreamError(HttpStatus.badGateway);
+      }
       if (upstream.statusCode == HttpStatus.notModified &&
           (etag != null || lastModified != null)) {
         // A 304 has no useful body; do not wait on a misbehaving host.
@@ -400,8 +424,9 @@ extension _MediaMethods on LocalRpcServer {
         return const _UpstreamError(HttpStatus.badRequest);
       }
       if (isBlockedProxyTarget(next) || await resolvesToBlockedAddress(next)) {
-        if (isCancelled?.call() ?? false)
+        if (isCancelled?.call() ?? false) {
           return const _UpstreamError(HttpStatus.badGateway);
+        }
         _w('Media proxy refusing blocked redirect host: ${next.host}');
         return const _UpstreamError(HttpStatus.forbidden);
       }
@@ -492,7 +517,9 @@ extension _MediaMethods on LocalRpcServer {
       }
       var total = 0;
       await for (final chunk in upstream) {
-        if (isCancelled?.call() ?? false) return;
+        if (isCancelled?.call() ?? false) {
+          return;
+        }
         total += chunk.length;
         if (total > maxBytes) {
           await res.close();
@@ -500,7 +527,9 @@ extension _MediaMethods on LocalRpcServer {
         }
         res.add(chunk);
       }
-      if (isCancelled?.call() ?? false) return;
+      if (isCancelled?.call() ?? false) {
+        return;
+      }
       await res.close();
     } finally {
       client.close(force: true);
@@ -543,11 +572,15 @@ extension _MediaMethods on LocalRpcServer {
     Future<void>? cancelled,
     bool Function()? isCancelled,
   }) {
-    if (isCancelled?.call() ?? false) client.close(force: true);
+    if (isCancelled?.call() ?? false) {
+      client.close(force: true);
+    }
     if (cancelled != null) {
       unawaited(
         cancelled.then((_) {
-          if (isCancelled?.call() ?? false) client.close(force: true);
+          if (isCancelled?.call() ?? false) {
+            client.close(force: true);
+          }
         }),
       );
     }
@@ -560,8 +593,12 @@ extension _MediaMethods on LocalRpcServer {
   }) async {
     final builder = BytesBuilder(copy: false);
     await for (final chunk in resp) {
-      if (isCancelled?.call() ?? false) return null;
-      if (chunk.length > cap - builder.length) return null;
+      if (isCancelled?.call() ?? false) {
+        return null;
+      }
+      if (chunk.length > cap - builder.length) {
+        return null;
+      }
       builder.add(chunk);
     }
     return (isCancelled?.call() ?? false) ? null : builder.takeBytes();

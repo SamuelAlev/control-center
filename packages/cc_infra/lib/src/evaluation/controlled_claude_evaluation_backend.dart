@@ -15,6 +15,7 @@ import 'package:path/path.dart' as p;
 /// Uses Claude Code's own model/tool loop, but delegates every tool to the
 /// controlled guest boundary. Claude and its account stay on the trusted host.
 class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
+  /// Configures an isolated native Claude attempt and its permitted tool surface.
   ControlledClaudeEvaluationBackend({
     required this.executable,
     required this.configDir,
@@ -41,14 +42,31 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
     }
   }
 
+  /// Absolute path to the server-owned Claude executable.
   final String executable;
+
+  /// Server-owned Claude account directory used by the CLI.
   final String configDir;
+
+  /// Cancels the attempt and any in-flight native process.
   final CancellationToken cancellation;
+
+  /// Remaining attempt spending limit in micro-USD.
   final int budgetMicros;
+
+  /// Instructions supplied to each native Claude turn.
   final String systemPrompt;
+
+  /// Digests of skill packages exposed inside the attempt workspace.
   final Map<String, String> visibleSkillHashes;
+
+  /// Files admitted for each visible skill, used to attribute skill events.
   final Map<String, Set<String>> visibleSkillFiles;
+
+  /// Optional server decision applied before controlled shell commands.
   final Future<String?> Function(String command)? commandGuard;
+
+  /// CLI features verified before running the attempt.
   final ClaudeCliCapabilities capabilities;
 
   /// Explicit offline development seam, never wired by production campaigns.
@@ -68,13 +86,13 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
       ? 'native Claude does not implement harness memory or overlapping tools'
       : null;
 
-  static String _pathFor(String executable) => [
+  static String _pathFor(String executable) => {
     p.dirname(executable),
     '/opt/homebrew/bin',
     '/usr/local/bin',
     '/usr/bin',
     '/bin',
-  ].toSet().join(':');
+  }.join(':');
 
   static Future<({int code, String text})> _probe(
     String executable,
@@ -147,7 +165,9 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
         return 'Claude version could not be verified';
       }
       final help = await _probe(executable, configDir, '--help');
-      if (help.code != 0) return 'Claude help could not be verified';
+      if (help.code != 0) {
+        return 'Claude help could not be verified';
+      }
       final text = help.text;
       for (final flag in [
         '--tools',
@@ -164,7 +184,9 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
         '--model',
         '--allowedTools',
       ]) {
-        if (!text.contains(flag)) return 'Claude lacks required $flag';
+        if (!text.contains(flag)) {
+          return 'Claude lacks required $flag';
+        }
       }
       return null;
     } on Object catch (error) {
@@ -302,7 +324,9 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
           request.effective.effortLevel,
           capabilities,
         );
-        if (effort != null) args.addAll(['--effort', effort]);
+        if (effort != null) {
+          args.addAll(['--effort', effort]);
+        }
         var receivedResult = false;
         var receivedInit = false;
         var unsafeSurface = false;
@@ -341,9 +365,12 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
             },
             onText: (text) {
               firstModelMs ??= timer.elapsedMilliseconds;
-              if (text.trim().isNotEmpty)
+              if (text.trim().isNotEmpty) {
                 firstTextMs ??= timer.elapsedMilliseconds;
-              if (trace.length < 128 * 1024) trace.write(text);
+              }
+              if (trace.length < 128 * 1024) {
+                trace.write(text);
+              }
             },
             onThinking: (_) => firstModelMs ??= timer.elapsedMilliseconds,
             onToolCall: (_) => firstModelMs ??= timer.elapsedMilliseconds,
@@ -366,8 +393,9 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
                     cacheRead: accounted.tokenDelta.cacheReadTokens,
                     output: accounted.tokenDelta.outputTokens,
                   );
-              if (usage.subtype != 'success')
+              if (usage.subtype != 'success') {
                 error ??= 'Claude result ${usage.subtype}';
+              }
             },
             onCompactBoundary: (_) => compactions++,
             onApiRetry: (_) => retries++,
@@ -386,10 +414,14 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
           attemptCancellation: attemptCancellation,
           stopAttempt: attemptSource.cancel,
           onInitEvent: (raw) {
-            if (!_isolatedInit(raw)) unsafeSurface = true;
+            if (!_isolatedInit(raw)) {
+              unsafeSurface = true;
+            }
           },
         );
-        if (!receivedResult) costUnknown = true;
+        if (!receivedResult) {
+          costUnknown = true;
+        }
         if (!receivedInit ||
             unsafeSurface ||
             outcome != null ||
@@ -412,7 +444,9 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
     } finally {
       attemptSource.cancel();
       await bridge.close();
-      if (controller != null) await controller.delete(recursive: true);
+      if (controller != null) {
+        await controller.delete(recursive: true);
+      }
       timer.stop();
     }
     return EvaluationAttempt(
@@ -494,7 +528,9 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
     var stopped = false;
     var finished = false;
     void stop() {
-      if (finished || stopped) return;
+      if (finished || stopped) {
+        return;
+      }
       stopped = true;
       stopAttempt();
       process.kill(ProcessSignal.sigkill);
@@ -536,10 +572,11 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
         })
         .asFuture<void>();
     final stderrDone = process.stderr.transform(utf8.decoder).listen((data) {
-      if (stderr.length < 8192)
+      if (stderr.length < 8192) {
         stderr.write(
           data.substring(0, (8192 - stderr.length).clamp(0, data.length)),
         );
+      }
     }).asFuture<void>();
     try {
       process.stdin.write(
@@ -551,9 +588,12 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
       await process.stdin.flush();
       await process.stdin.close();
       final exit = await process.exitCode;
-      if (stopped)
+      if (stopped) {
         return 'Claude cancelled, exceeded time/output limit or invalid stream';
-      if (exit != 0) return 'Claude exited $exit: ${stderr.toString()}';
+      }
+      if (exit != 0) {
+        return 'Claude exited $exit: ${stderr.toString()}';
+      }
       return null;
     } finally {
       finished = true;

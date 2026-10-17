@@ -7,6 +7,8 @@ import 'package:cc_rpc/src/channel/remote_rpc_channel_port.dart';
 /// The encrypted channel is the only transport for these resource frames.
 /// A resource ID belongs to one secure session; it is never rebound on failover.
 abstract interface class RemoteResources {
+  /// Starts an HTTP exchange on this secure session; the caller consumes or
+  /// closes the response to release the transfer and any upload producer.
   Future<RemoteResourceResponse> request(
     String method,
     Uri uri, {
@@ -14,6 +16,8 @@ abstract interface class RemoteResources {
     Stream<List<int>>? body,
   });
 
+  /// Opens a WebSocket tunnel on this secure session. Closing the returned
+  /// socket releases its peer and local stream resources.
   Future<RemoteResourceSocket> connectWebSocket(
     Uri uri, {
     Map<String, List<String>> headers = const {},
@@ -21,16 +25,23 @@ abstract interface class RemoteResources {
   });
 }
 
+/// HTTP response metadata and a streamed body owned by one resource transfer.
 class RemoteResourceResponse {
+  /// Creates a response whose optional close callback aborts its upstream.
   RemoteResourceResponse({
     required this.statusCode,
     required this.headers,
     required this.body,
-    Future<void> Function()? onClose,
-  }) : _onClose = onClose;
+    this._onClose,
+  });
 
+  /// HTTP status returned by the resource handler.
   final int statusCode;
+
+  /// Response headers, preserving multiple values for each name.
   final Map<String, List<String>> headers;
+
+  /// Response bytes; cancelling its listener aborts the transfer.
   final Stream<Uint8List> body;
   final Future<void> Function()? _onClose;
 
@@ -38,24 +49,24 @@ class RemoteResourceResponse {
   Future<void> close() => _onClose?.call() ?? Future<void>.value();
 }
 
+/// A bidirectional WebSocket tunneled over the authenticated resource channel.
 class RemoteResourceSocket {
+  /// Wraps an upstream WebSocket with send, close and peer-close callbacks.
   RemoteResourceSocket({
     required this.incoming,
     required this.protocol,
-    required Future<void> Function(Object) onSend,
-    required Future<void> Function(int, String) onClose,
-    int? closeCode,
-    String? closeReason,
-    int? Function()? readCloseCode,
-    String? Function()? readCloseReason,
-  }) : _onSend = onSend,
-       _onClose = onClose,
-       _closeCode = closeCode,
-       _closeReason = closeReason,
-       _readCloseCode = readCloseCode,
-       _readCloseReason = readCloseReason;
+    required this._onSend,
+    required this._onClose,
+    this._closeCode,
+    this._closeReason,
+    this._readCloseCode,
+    this._readCloseReason,
+  });
 
+  /// Incoming text messages or binary byte sequences.
   final Stream<Object> incoming;
+
+  /// Selected WebSocket subprotocol, or empty when none was negotiated.
   final String protocol;
   final Future<void> Function(Object) _onSend;
   final Future<void> Function(int, String) _onClose;
@@ -72,12 +83,17 @@ class RemoteResourceSocket {
   String? get closeReason => _readCloseReason?.call() ?? _closeReason;
   set closeReason(String? value) => _closeReason = value;
 
+  /// Sends one text or binary message, subject to the tunnel's credit window.
   Future<void> send(Object data) => _onSend(data);
+
+  /// Closes the socket and sends a valid WebSocket close code to its peer.
   Future<void> close([int code = 1000, String reason = '']) =>
       _onClose(code, reason);
 }
 
+/// Handler input for one authenticated, session-scoped resource operation.
 class RemoteResourceRequest {
+  /// Creates the request, binding [cancelled] to its transfer's lifetime.
   RemoteResourceRequest({
     required this.method,
     required this.uri,
@@ -85,19 +101,30 @@ class RemoteResourceRequest {
     required this.body,
     this.protocols = const [],
     required this.cancelled,
-    required bool Function() isCancelled,
-  }) : _isCancelled = isCancelled;
+    required this._isCancelled,
+  });
 
+  /// Uppercase HTTP method, or GET for a WebSocket upgrade.
   final String method;
+
+  /// Absolute resource path, without a scheme or authority.
   final Uri uri;
+
+  /// Request headers, preserving multiple values for each name.
   final Map<String, List<String>> headers;
+
+  /// Request upload bytes; its listener is released when the transfer ends.
   final Stream<Uint8List> body;
+
+  /// WebSocket subprotocols offered by the caller.
   final List<String> protocols;
 
   /// Settles on termination, including normal completion. Check [isCancelled]
   /// before aborting upstream work; settling normally releases listeners.
   final Future<void> cancelled;
   final bool Function() _isCancelled;
+
+  /// Whether this operation was aborted rather than completed normally.
   bool get isCancelled => _isCancelled();
 }
 
@@ -127,13 +154,14 @@ void _validateUri(Uri uri) {
       uri.hasFragment ||
       !uri.path.startsWith('/') ||
       uri.toString().length > 4096) {
-    throw FormatException('Resource URI must be a bounded absolute path');
+    throw const FormatException('Resource URI must be a bounded absolute path');
   }
 }
 
 void _validateHeaders(Map<String, List<String>> headers) {
-  if (headers.length > _maxHeaders)
+  if (headers.length > _maxHeaders) {
     throw const FormatException('Too many resource headers');
+  }
   var length = 0;
   for (final entry in headers.entries) {
     if (entry.value.length > _maxHeaders ||
@@ -154,8 +182,9 @@ void _validateHeaders(Map<String, List<String>> headers) {
       }
     }
   }
-  if (length > _maxMeta)
+  if (length > _maxMeta) {
     throw const FormatException('Resource headers too large');
+  }
 }
 
 Map<String, List<String>> _parseHeaders(Object? raw) {
@@ -203,7 +232,9 @@ class _Slot {
       onListen: () => _grant(_window),
       onResume: _resume,
       onCancel: () {
-        if (!endReceived) owner._cancel(this);
+        if (!endReceived) {
+          owner._cancel(this);
+        }
       },
     );
     messages = StreamController<Object>(
@@ -211,7 +242,9 @@ class _Slot {
       onListen: () => _grant(_window),
       onResume: _resume,
       onCancel: () {
-        if (peerCloseCode == null) owner._cancel(this);
+        if (peerCloseCode == null) {
+          owner._cancel(this);
+        }
       },
     );
   }
@@ -259,8 +292,12 @@ class _Slot {
   void touch() => _resetTimer(_idleTimeout);
 
   void _grant(int count) {
-    if (terminated || count == 0) return;
-    if (!ws && owner is RemoteResourceServer) openTimer.cancel();
+    if (terminated || count == 0) {
+      return;
+    }
+    if (!ws && owner is RemoteResourceServer) {
+      openTimer.cancel();
+    }
     receivedCredit += count;
     owner._send(this, 'credit', {'n': count});
   }
@@ -277,8 +314,9 @@ class _Slot {
     }
     receivedCredit--;
     if (!ws) {
-      if (text != null || last != null)
+      if (text != null || last != null) {
         throw const FormatException('Invalid HTTP fragment');
+      }
       inbound.add(data);
       if (inbound.isPaused) {
         pendingCredit++;
@@ -287,8 +325,9 @@ class _Slot {
       }
       return;
     }
-    if (text == null || last == null)
+    if (text == null || last == null) {
       throw const FormatException('Invalid websocket fragment');
+    }
     if (assembling != null && assemblingText != text) {
       throw const FormatException('Changed websocket message type');
     }
@@ -319,8 +358,9 @@ class _Slot {
       creditWait ??= Completer<void>();
       await creditWait!.future;
     }
-    if (terminated || !owner.channel.isOpen)
+    if (terminated || !owner.channel.isOpen) {
       throw StateError('Resource closed');
+    }
     sendCredit--;
   }
 
@@ -328,16 +368,21 @@ class _Slot {
     if (count <= 0 || count > _window || sendCredit + count > _window) {
       throw const FormatException('Invalid resource credit');
     }
-    if (!ws && hasUpload) openTimer.cancel();
+    if (!ws && hasUpload) {
+      openTimer.cancel();
+    }
     sendCredit += count;
     final waiter = creditWait;
     creditWait = null;
-    if (waiter != null && !waiter.isCompleted) waiter.complete();
+    if (waiter != null && !waiter.isCompleted) {
+      waiter.complete();
+    }
   }
 
   Future<void> sendBytes(List<int> bytes, {bool? text}) async {
-    if (ws && bytes.length > _maxMessage)
+    if (ws && bytes.length > _maxMessage) {
       throw const FormatException('Websocket message too large');
+    }
     if (bytes.isEmpty) {
       if (ws) {
         await waitCredit();
@@ -389,14 +434,20 @@ class _Slot {
   }
 
   void dispose(Object? error) {
-    if (terminated) return;
+    if (terminated) {
+      return;
+    }
     terminated = true;
     openTimer.cancel();
     timer?.cancel();
-    if (!cancelled.isCompleted) cancelled.complete();
+    if (!cancelled.isCompleted) {
+      cancelled.complete();
+    }
     final waiter = creditWait;
     creditWait = null;
-    if (waiter != null && !waiter.isCompleted) waiter.complete();
+    if (waiter != null && !waiter.isCompleted) {
+      waiter.complete();
+    }
     final cleanup = <Future<void>>[];
     void addCleanup(
       Future<void> Function() action, {
@@ -414,10 +465,26 @@ class _Slot {
       }
     }
 
-    if (producer case final subscription?) addCleanup(subscription.cancel);
-    if (wsProducer case final subscription?) addCleanup(subscription.cancel);
-    if (wsConsumer case final subscription?) addCleanup(subscription.cancel);
-    if (response case final resource?) addCleanup(resource.close);
+    if (producer case final subscription?) {
+      addCleanup(subscription.cancel);
+    }
+    if (wsProducer != null) {
+      try {
+        cleanup.add(wsProducer!.cancel());
+      } catch (_) {
+        // Teardown is best-effort after the transfer has been removed.
+      }
+    }
+    if (wsConsumer != null) {
+      try {
+        cleanup.add(wsConsumer!.cancel());
+      } catch (_) {
+        // Teardown is best-effort after the transfer has been removed.
+      }
+    }
+    if (response case final resource?) {
+      addCleanup(resource.close);
+    }
     if (socket case final webSocket?) {
       addCleanup(
         () => webSocket.close(peerCloseCode ?? 1000, peerCloseReason ?? ''),
@@ -429,11 +496,19 @@ class _Slot {
       opened.completeError(error ?? StateError('Resource closed'));
     }
     if (error != null) {
-      if (inbound.hasListener && !inbound.isClosed) inbound.addError(error);
-      if (messages.hasListener && !messages.isClosed) messages.addError(error);
+      if (inbound.hasListener && !inbound.isClosed) {
+        inbound.addError(error);
+      }
+      if (messages.hasListener && !messages.isClosed) {
+        messages.addError(error);
+      }
     }
-    if (!inbound.isClosed) unawaited(inbound.close());
-    if (!messages.isClosed) unawaited(messages.close());
+    if (!inbound.isClosed) {
+      unawaited(inbound.close());
+    }
+    if (!messages.isClosed) {
+      unawaited(messages.close());
+    }
     // Adapter close callbacks were started above, independent of a paused
     // consumer's StreamController.close future.
   }
@@ -443,7 +518,9 @@ abstract class _Tunnel {
   _Tunnel(this.channel) {
     _incoming = channel.incoming.listen(
       (frame) {
-        if (frame['type'] != 'resource') return;
+        if (frame['type'] != 'resource') {
+          return;
+        }
         try {
           _accept(frame);
         } catch (_) {
@@ -457,7 +534,9 @@ abstract class _Tunnel {
       onError: (Object error) => unawaited(close()),
     );
     _state = channel.state.listen((state) {
-      if (state == RemoteChannelState.closed) unawaited(close());
+      if (state == RemoteChannelState.closed) {
+        unawaited(close());
+      }
     });
   }
 
@@ -529,19 +608,23 @@ abstract class _Tunnel {
     }
     final slot = slots[id];
     if (slot == null) {
-      if (finished[id] == true) return; // In-flight frames after cancellation.
+      if (finished[id] == true) {
+        return; // In-flight frames after cancellation.
+      }
       // Credit and cancellation replies may cross the final HTTP end frame.
       if (finished[id] == false &&
           op == 'credit' &&
           frame['n'] is int &&
           (frame['n'] as int) > 0 &&
-          (frame['n'] as int) <= _window)
+          (frame['n'] as int) <= _window) {
         return;
+      }
       if (finished[id] == false &&
           op == 'cancel' &&
           frame['reason'] is String &&
-          (frame['reason'] as String).length <= 256)
+          (frame['reason'] as String).length <= 256) {
         return;
+      }
       throw const FormatException('Unknown resource ID');
     }
     slot.touch();
@@ -567,17 +650,21 @@ abstract class _Tunnel {
         });
       case 'credit':
         final n = frame['n'];
-        if (n is! int) throw const FormatException('Invalid resource credit');
+        if (n is! int) {
+          throw const FormatException('Invalid resource credit');
+        }
         slot.credit(n);
       case 'data':
         final text = frame['text'];
         final last = frame['last'];
-        if (slot.ws && (text is! bool || last is! bool))
+        if (slot.ws && (text is! bool || last is! bool)) {
           throw const FormatException('Invalid websocket fragment');
+        }
         final raw = frame['b'];
         if (slot.ws && raw == '') {
-          if (slot.receivedCredit <= 0 || slot.endReceived || last != true)
+          if (slot.receivedCredit <= 0 || slot.endReceived || last != true) {
             throw const FormatException('Unwindowed websocket message');
+          }
           slot.receivedCredit--;
           slot.messages.add(text == true ? '' : Uint8List(0));
           if (slot.messages.isPaused) {
@@ -593,16 +680,22 @@ abstract class _Tunnel {
           );
         }
       case 'end':
-        if (slot.ws || slot.endReceived)
+        if (slot.ws || slot.endReceived) {
           throw const FormatException('Invalid resource end');
+        }
         slot.endReceived = true;
-        if (!slot.inbound.isClosed) unawaited(slot.inbound.close());
-        if (!slot.messages.isClosed) unawaited(slot.messages.close());
+        if (!slot.inbound.isClosed) {
+          unawaited(slot.inbound.close());
+        }
+        if (!slot.messages.isClosed) {
+          unawaited(slot.messages.close());
+        }
         _maybeFinish(slot);
       case 'cancel':
         final reason = frame['reason'];
-        if (reason is! String || reason.length > 256)
+        if (reason is! String || reason.length > 256) {
           throw const FormatException('Invalid resource cancellation');
+        }
         _terminate(
           slot,
           StateError(reason.isEmpty ? 'Resource cancelled' : reason),
@@ -622,7 +715,9 @@ abstract class _Tunnel {
         slot.peerCloseReason = frame['reason'] as String;
         slot.socket?.closeCode = slot.peerCloseCode;
         slot.socket?.closeReason = slot.peerCloseReason;
-        if (!slot.messages.isClosed) unawaited(slot.messages.close());
+        if (!slot.messages.isClosed) {
+          unawaited(slot.messages.close());
+        }
         _terminate(slot, null, notify: false);
       default:
         throw const FormatException('Unknown resource operation');
@@ -641,7 +736,9 @@ abstract class _Tunnel {
     if ((closed && op != 'cancel') || slot.terminated || !channel.isOpen) {
       throw StateError('Resource channel closed');
     }
-    if (op == 'data') await _acquireData(slot);
+    if (op == 'data') {
+      await _acquireData(slot);
+    }
     try {
       if ((closed && op != 'cancel') || slot.terminated || !channel.isOpen) {
         throw StateError('Resource channel closed');
@@ -655,7 +752,9 @@ abstract class _Tunnel {
         ...extra,
       });
     } finally {
-      if (op == 'data') _releaseData();
+      if (op == 'data') {
+        _releaseData();
+      }
     }
   }
 
@@ -670,14 +769,18 @@ abstract class _Tunnel {
   }
 
   void _maybeFinish(_Slot slot) {
-    if (slot.endSent && slot.endReceived) _terminate(slot, null, notify: false);
+    if (slot.endSent && slot.endReceived) {
+      _terminate(slot, null, notify: false);
+    }
   }
 
   void _cancel(_Slot slot, [Object? error]) =>
       _terminate(slot, error ?? StateError('Resource cancelled'));
 
   void _terminate(_Slot slot, Object? error, {bool notify = true}) {
-    if (slot.terminated) return;
+    if (slot.terminated) {
+      return;
+    }
     slot.aborted =
         slot.ws || error != null || !slot.endSent || !slot.endReceived;
     if (notify && channel.isOpen) {
@@ -690,7 +793,9 @@ abstract class _Tunnel {
     }
     slots.remove(slot.id);
     finished[slot.id] = slot.aborted;
-    while (finished.length > 1024) finished.remove(finished.keys.first);
+    while (finished.length > 1024) {
+      finished.remove(finished.keys.first);
+    }
     slot.dispose(error);
   }
 
@@ -703,7 +808,9 @@ abstract class _Tunnel {
   }
 
   Future<void> close() async {
-    if (closed) return done;
+    if (closed) {
+      return done;
+    }
     closed = true;
     for (final waiter in _dataWaiters) {
       _activeData++; // Every awakened writer releases this reserved permit.
@@ -717,7 +824,9 @@ abstract class _Tunnel {
     await _incoming.cancel();
     await _state.cancel();
     await Future.wait(active.map((slot) => slot.disposal));
-    if (!_done.isCompleted) _done.complete();
+    if (!_done.isCompleted) {
+      _done.complete();
+    }
   }
 }
 
@@ -728,6 +837,7 @@ extension on _Slot {
 /// Client-side streams are owned by a single authenticated channel, not a
 /// reconnecting supervisor. A replacement session must issue new operations.
 class RemoteResourceClient extends _Tunnel implements RemoteResources {
+  /// Binds resource work to [channel]; closing this client does not close it.
   RemoteResourceClient(super.channel);
   int _nextId = 0;
 
@@ -752,8 +862,9 @@ class RemoteResourceClient extends _Tunnel implements RemoteResources {
   }) async {
     _validateUri(uri);
     _validateHeaders(headers);
-    if (!RegExp(r'^[A-Z]+$').hasMatch(method) || method.length > 16)
+    if (!RegExp(r'^[A-Z]+$').hasMatch(method) || method.length > 16) {
       throw const FormatException('Invalid HTTP method');
+    }
     final slot = _create(false);
     slot.hasUpload = body != null;
     try {
@@ -810,21 +921,26 @@ class RemoteResourceClient extends _Tunnel implements RemoteResources {
         'protocols': protocols,
       });
       final metadata = await slot.opened.future;
-      if (metadata['status'] != 101)
+      if (metadata['status'] != 101) {
         throw StateError('Websocket upgrade refused: ${metadata['status']}');
+      }
       final selected = metadata['protocol'] as String;
-      if (selected.isNotEmpty && !protocols.contains(selected))
+      if (selected.isNotEmpty && !protocols.contains(selected)) {
         throw const FormatException('Unexpected websocket protocol');
+      }
       final socket = RemoteResourceSocket(
         incoming: slot.messages.stream,
         protocol: selected,
         onSend: (data) {
-          if (data is! String && data is! List<int>)
+          if (data is! String && data is! List<int>) {
             throw ArgumentError.value(data, 'data', 'Expected String or bytes');
-          if (slot.terminated)
+          }
+          if (slot.terminated) {
             return Future.error(StateError('Websocket closed'));
-          if (slot.queuedMessages >= _window)
+          }
+          if (slot.queuedMessages >= _window) {
             return Future.error(StateError('Websocket send queue full'));
+          }
           if (data is String && data.length > _maxMessage) {
             return Future.error(
               const FormatException('Websocket message too large'),
@@ -836,10 +952,11 @@ class RemoteResourceClient extends _Tunnel implements RemoteResources {
             );
           }
           final bytes = data is String ? utf8.encode(data) : data as List<int>;
-          if (bytes.length > _maxMessage)
+          if (bytes.length > _maxMessage) {
             return Future.error(
               const FormatException('Websocket message too large'),
             );
+          }
           slot.queuedMessages++;
           final result = slot.sendQueue.then(
             (_) => slot.sendBytes(bytes, text: data is String),
@@ -851,7 +968,9 @@ class RemoteResourceClient extends _Tunnel implements RemoteResources {
           return result;
         },
         onClose: (code, reason) async {
-          if (slot.terminated) return;
+          if (slot.terminated) {
+            return;
+          }
           if (!_canSendCloseCode(code) ||
               reason.length > 123 ||
               utf8.encode(reason).length > 123) {
@@ -883,14 +1002,18 @@ class RemoteResourceClient extends _Tunnel implements RemoteResources {
 /// Handles resources on the same authenticated channel as the RPC session.
 /// [cancelAll] revokes active transfers without disabling later requests.
 class RemoteResourceServer extends _Tunnel {
+  /// Binds handlers to the authenticated [channel] without owning its closure.
   RemoteResourceServer(
     super.channel, {
     required this.onRequest,
     required this.onWebSocket,
   });
 
+  /// Serves HTTP resource requests, including streamed uploads.
   final Future<RemoteResourceResponse> Function(RemoteResourceRequest)
   onRequest;
+
+  /// Upgrades and serves WebSocket resource requests.
   final Future<RemoteResourceSocket> Function(RemoteResourceRequest)
   onWebSocket;
   int _lastId = 0;
@@ -909,8 +1032,9 @@ class RemoteResourceServer extends _Tunnel {
     _validateUri(uri);
     final headers = _parseHeaders(frame['headers']);
     final method = frame['method'] as String;
-    if (!RegExp(r'^[A-Z]+$').hasMatch(method) || method.length > 16)
+    if (!RegExp(r'^[A-Z]+$').hasMatch(method) || method.length > 16) {
       throw const FormatException('Invalid HTTP method');
+    }
     final ws = frame['ws'] as bool;
     final rawProtocols = frame['protocols'];
     if (ws &&
@@ -998,10 +1122,14 @@ class RemoteResourceServer extends _Tunnel {
             );
           },
           onDone: () async {
-            if (slot.terminated) return;
+            if (slot.terminated) {
+              return;
+            }
             try {
               await slot.sendQueue;
-              if (slot.terminated) return;
+              if (slot.terminated) {
+                return;
+              }
               await _write(slot, 'wsClose', {
                 'code': socket.closeCode ?? 1000,
                 'reason': socket.closeReason ?? '',

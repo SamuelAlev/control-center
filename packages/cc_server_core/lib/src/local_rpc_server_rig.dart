@@ -1,5 +1,28 @@
 part of 'local_rpc_server.dart';
 
+/// Parses a streaming lane's declared content type into a header value.
+///
+/// `ContentType.parse`, never a split on `/`: a type with a parameter
+/// (`multipart/x-mixed-replace; boundary=…`, `audio/mpeg; rate=…`) put its
+/// whole tail into the SUBTYPE, so the relay advertised a media type no client
+/// has ever heard of. A malformed value degrades to a binary blob rather than
+/// taking the lane down — the bytes are still the bytes, and
+/// `application/octet-stream` is an honest "we do not know".
+ContentType relayContentType(String value) {
+  const fallback = 'octet-stream';
+  try {
+    final parsed = ContentType.parse(value);
+    // `parse` is lenient: a value with no '/' yields an empty subtype and a
+    // `nonsense/` header, which is a malformed type dressed as a valid one.
+    if (parsed.primaryType.isEmpty || parsed.subType.isEmpty) {
+      return ContentType('application', fallback);
+    }
+    return parsed;
+  } on FormatException {
+    return ContentType('application', fallback);
+  }
+}
+
 const int _maxRigTransferBody = 700 * 1024 * 1024;
 const int _maxRigMicrophoneChunk = 128 * 1024;
 

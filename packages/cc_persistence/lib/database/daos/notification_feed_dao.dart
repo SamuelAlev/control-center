@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:cc_domain/cc_domain.dart' show NotFoundException;
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
-import 'package:cc_domain/src/errors/app_exceptions.dart';
 import 'package:cc_persistence/database/tables/notification_feed_table.dart';
 import 'package:cc_persistence/database/tables/notification_item_states_table.dart';
 import 'package:cc_persistence/database/tables/notification_read_marks_table.dart';
@@ -75,9 +75,11 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
       });
 
   Future<void> _requireItem(String workspaceId, String itemId) async {
-    final row = await (select(notificationFeedTable)..where(
-      (t) => t.workspaceId.equals(workspaceId) & t.id.equals(itemId),
-    )).getSingleOrNull();
+    final row =
+        await (select(notificationFeedTable)..where(
+              (t) => t.workspaceId.equals(workspaceId) & t.id.equals(itemId),
+            ))
+            .getSingleOrNull();
     if (row == null) {
       throw const NotFoundException('Notification not found in this workspace');
     }
@@ -184,8 +186,7 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
         readAt: Value(readAt),
       ),
       onConflict: DoUpdate(
-        (old) =>
-            NotificationItemStatesTableCompanion(readAt: Value(readAt)),
+        (old) => NotificationItemStatesTableCompanion(readAt: Value(readAt)),
       ),
     );
   });

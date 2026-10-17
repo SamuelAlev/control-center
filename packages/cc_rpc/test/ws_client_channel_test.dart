@@ -22,10 +22,15 @@ class _SocketServer {
         return;
       }
       final socket = await WebSocketTransformer.upgrade(request);
-      final channel = _ServerSocketChannel(socket);
-      _channels.add(channel);
-      paths.add(request.uri.path);
-      onConnection(channel);
+      try {
+        final channel = _ServerSocketChannel(socket);
+        _channels.add(channel);
+        paths.add(request.uri.path);
+        onConnection(channel);
+        await socket.done;
+      } finally {
+        await socket.close();
+      }
     });
   }
 
@@ -41,7 +46,9 @@ class _SocketServer {
   Uri get uri => Uri.parse('ws://127.0.0.1:${_server.port}/rpc');
 
   Future<void> close() async {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     _closed = true;
     for (final channel in _channels) {
       await channel.close();
@@ -54,11 +61,15 @@ class _ServerSocketChannel implements RemoteRpcChannelPort {
   _ServerSocketChannel(this._socket) {
     _socket.listen(
       (data) {
-        if (data is! String) return;
+        if (data is! String) {
+          return;
+        }
         wireFrames.add(data);
         try {
           final decoded = jsonDecode(data);
-          if (decoded is Map<String, dynamic>) _incoming.add(decoded);
+          if (decoded is Map<String, dynamic>) {
+            _incoming.add(decoded);
+          }
         } on FormatException {
           // This fixture only observes client writes; the client adapter
           // separately rejects malformed records arriving from the server.
@@ -76,7 +87,9 @@ class _ServerSocketChannel implements RemoteRpcChannelPort {
   bool _open = true;
 
   void _markClosed() {
-    if (!_open) return;
+    if (!_open) {
+      return;
+    }
     _open = false;
     _state.add(RemoteChannelState.closed);
   }
@@ -92,7 +105,9 @@ class _ServerSocketChannel implements RemoteRpcChannelPort {
 
   @override
   Future<void> send(Map<String, dynamic> frame) async {
-    if (!_open) throw StateError('Server socket closed');
+    if (!_open) {
+      throw StateError('Server socket closed');
+    }
     _socket.add(jsonEncode(frame));
   }
 
@@ -155,10 +170,12 @@ void main() {
         await channel.send({'jsonrpc': '2.0', 'id': 1, 'method': 'repo/call'});
         await channel.send({'jsonrpc': '2.0', 'id': 2, 'method': 'repo/call'});
 
-        expect((await replies).map((frame) => frame['result']['handled']), [
-          1,
-          2,
-        ]);
+        expect(
+          (await replies).map(
+            (frame) => (frame['result'] as Map<String, dynamic>)['handled'],
+          ),
+          [1, 2],
+        );
         expect(received.map((frame) => frame['id']), [1, 2]);
         expect(server.paths, ['/rpc']);
         expect(channel.isOpen, isTrue);

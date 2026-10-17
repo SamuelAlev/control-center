@@ -1,6 +1,6 @@
-import 'evaluation_attempt.dart';
-import 'evaluation_plan.dart';
-import 'evaluation_task.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
 
 /// Separates observable routing, end-to-end utility and synthetic safety.
 /// Rates never condition utility on success, or treat opaque access as absence.
@@ -16,7 +16,9 @@ Map<String, dynamic> summarizeSkillObservations({
   final utility = <(String, String), Map<String, dynamic>>{};
   for (final attempt in attempts) {
     final task = byId[attempt.taskId];
-    if (task == null) continue;
+    if (task == null) {
+      continue;
+    }
     final family = task.tags
         .where((tag) => tag.startsWith('skill_family:'))
         .map((tag) => tag.substring('skill_family:'.length))

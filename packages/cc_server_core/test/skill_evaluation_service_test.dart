@@ -24,11 +24,9 @@ import 'package:test/test.dart';
 
 const _workspace = 'workspace-one';
 const _other = 'workspace-two';
-final _actor = UserPrincipal('operator');
+const _actor = UserPrincipal('operator');
 final _instant = DateTime.utc(2026, 1, 1);
 const _corpus = 'cc-skill-serialization-trigger-pilot-v1';
-
-typedef _Execution = Future<EvaluationRunResult> Function(SkillEvaluationJob);
 
 class _Repository implements EvalsRepository {
   final campaigns = <String, SkillEvaluationCampaign>{};
@@ -49,8 +47,9 @@ class _Repository implements EvalsRepository {
   }
 
   void _guard(String workspace) {
-    if (!registered)
+    if (!registered) {
       throw StateError('Database for removed workspace was reopened');
+    }
     reads.add(workspace);
   }
 
@@ -61,7 +60,9 @@ class _Repository implements EvalsRepository {
     campaigns[_key(campaign.workspaceId, campaign.id)] = campaign;
     if (campaign.isTerminal) {
       final done = _terminal.putIfAbsent(campaign.id, Completer<void>.new);
-      if (!done.isCompleted) done.complete();
+      if (!done.isCompleted) {
+        done.complete();
+      }
     }
   }
 
@@ -228,20 +229,6 @@ class _Snapshots implements SkillEvaluationSnapshotStore {
 }
 
 class _Harness {
-  final repository = _Repository();
-  final snapshots = _Snapshots();
-  final bus = DomainEventBus();
-  final authorized = <String>[];
-  final models = <String>[];
-  final rejectedModels = <String>{};
-  final availableBackends = <String>{'builtin', 'claude-cli'};
-  late final SkillEvaluationService service;
-  bool registered = true;
-  bool permit = true;
-  _Execution execute = (job) async => _result(job);
-  int nextId = 0;
-  bool _closed = false;
-
   _Harness() {
     service = SkillEvaluationService(
       repository: repository,
@@ -252,8 +239,9 @@ class _Harness {
         if (!permit ||
             workspaceId != _workspace ||
             !registered ||
-            repoId == 'private')
+            repoId == 'private') {
           throw StateError('Access denied');
+        }
       },
       workspaceExists: (workspaceId) async =>
           registered && workspaceId == _workspace,
@@ -264,18 +252,36 @@ class _Harness {
       },
       validateModel: (settings) async {
         models.add('${settings.providerId}:${settings.modelId}');
-        if (rejectedModels.contains(settings.modelId))
+        if (rejectedModels.contains(settings.modelId)) {
           throw StateError('Model unavailable');
+        }
         return {'provider': settings.providerId, 'model': settings.modelId};
       },
       authorizeExecution: (workspaceId, actor, automatic) async {
-        if (!registered || !permit) throw StateError('Execution denied');
+        if (!registered || !permit) {
+          throw StateError('Execution denied');
+        }
       },
       execute: (job) => execute(job),
       now: () => _instant,
       newId: () => 'manual-${++nextId}',
     );
   }
+
+  final repository = _Repository();
+  final snapshots = _Snapshots();
+  final bus = DomainEventBus();
+  final authorized = <String>[];
+  final models = <String>[];
+  final rejectedModels = <String>{};
+  final availableBackends = <String>{'builtin', 'claude-cli'};
+  late final SkillEvaluationService service;
+  bool registered = true;
+  bool permit = true;
+  Future<EvaluationRunResult> Function(SkillEvaluationJob) execute =
+      (job) async => _result(job);
+  int nextId = 0;
+  bool _closed = false;
 
   void revision(String slug) {
     final snapshot = snapshots.revisions[slug]!;
@@ -292,7 +298,9 @@ class _Harness {
   }
 
   Future<void> close() async {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     _closed = true;
     await service.dispose();
     bus.dispose();
@@ -492,7 +500,7 @@ void main() {
         h.service.export(_workspace, _actor, 'private-campaign'),
         throwsStateError,
       );
-      expect((await h.service.watch(_workspace, _actor).first), isEmpty);
+      expect(await h.service.watch(_workspace, _actor).first, isEmpty);
       h.repository.campaigns['$_other\u0000foreign'] =
           SkillEvaluationCampaign.fromJson({
             ..._stored(
@@ -645,7 +653,9 @@ void main() {
       final executed = <String>[];
       h.execute = (job) async {
         executed.add(job.campaign.id);
-        if (!entered.isCompleted) entered.complete();
+        if (!entered.isCompleted) {
+          entered.complete();
+        }
         await release.future;
         return _result(job);
       };
@@ -715,7 +725,9 @@ void main() {
       final captured = Completer<void>();
       final release = Completer<void>();
       addTearDown(() {
-        if (!release.isCompleted) release.complete();
+        if (!release.isCompleted) {
+          release.complete();
+        }
       });
       h.snapshots.beforeCapture = (slug, count) async {
         if (!captured.isCompleted) {
@@ -822,7 +834,9 @@ void main() {
       final entered = Completer<void>();
       final release = Completer<void>();
       addTearDown(() {
-        if (!release.isCompleted) release.complete();
+        if (!release.isCompleted) {
+          release.complete();
+        }
       });
       h.repository.beforePolicyWrite = (policy) async {
         if (policy.enabled && !entered.isCompleted) {

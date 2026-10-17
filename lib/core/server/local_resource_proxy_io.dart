@@ -11,6 +11,7 @@ import 'package:cc_rpc/cc_rpc.dart'
         RemoteResourceResponse,
         RemoteResourceSocket;
 
+/// Opens a capability-scoped loopback facade for the current encrypted session.
 Future<LocalResourceProxy> createLocalResourceProxy(
   RemoteResources Function() resources,
 ) async {
@@ -95,12 +96,16 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
 
   @override
   Future<void> close() async {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     _closed = true;
     await _subscription.cancel();
     await _listener.close(force: true);
     // Detached HTTP responses are no longer owned by HttpServer.close().
-    for (final socket in _httpSockets.toList()) socket.destroy();
+    for (final socket in _httpSockets.toList()) {
+      socket.destroy();
+    }
     await Future.wait([
       for (final response in _responses) response.close(),
       for (final closeSocket in _sockets.values) closeSocket(),
@@ -215,8 +220,9 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
               'trailers',
               'location',
             }.contains(entry.key.toLowerCase()) ||
-            (inject && entry.key.toLowerCase() == 'content-encoding'))
+            (inject && entry.key.toLowerCase() == 'content-encoding')) {
           continue;
+        }
         for (final value in entry.value) {
           request.response.headers.add(entry.key, value);
         }
@@ -228,7 +234,9 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
         // when the app shell and this loopback facade use different ports.
         request.response.headers.removeAll('x-frame-options');
       }
-      if (redirect != null) request.response.headers.set('location', redirect);
+      if (redirect != null) {
+        request.response.headers.set('location', redirect);
+      }
       request.response.headers.set(HttpHeaders.cacheControlHeader, 'no-store');
       final length = upstream.headers.entries
           .where((entry) => entry.key.toLowerCase() == 'content-length')
@@ -237,8 +245,9 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
           .firstOrNull;
       if (!inject && length != null) {
         final parsed = int.tryParse(length);
-        if (parsed != null && parsed >= 0)
+        if (parsed != null && parsed >= 0) {
           request.response.contentLength = parsed;
+        }
       }
       // A detached socket lets us observe the browser's FIN while an upstream
       // body is idle. HttpResponse.done/addStream cannot observe that FIN until
@@ -293,7 +302,9 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
     _httpSockets.add(socket);
     final disconnected = Completer<void>();
     void signalDisconnect() {
-      if (!disconnected.isCompleted) disconnected.complete();
+      if (!disconnected.isCompleted) {
+        disconnected.complete();
+      }
     }
 
     final incoming = socket.listen(
@@ -303,7 +314,9 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
       cancelOnError: true,
     );
     try {
-      if (_closed) return;
+      if (_closed) {
+        return;
+      }
       await Future.any<void>([
         socket.addStream(encoded),
         disconnected.future.then((_) => abortUpstream()),
@@ -321,7 +334,9 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
 
   Stream<List<int>> _chunkedBody(Stream<List<int>> source) async* {
     await for (final chunk in source) {
-      if (chunk.isEmpty) continue;
+      if (chunk.isEmpty) {
+        continue;
+      }
       yield ascii.encode('${chunk.length.toRadixString(16)}\r\n');
       yield chunk;
       yield const [13, 10];
@@ -350,14 +365,16 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
         referer.scheme != 'http' ||
         referer.host != '127.0.0.1' ||
         referer.port != _listener.port ||
-        !referer.path.startsWith('${_prefix}proxy/vscode/'))
+        !referer.path.startsWith('${_prefix}proxy/vscode/')) {
       return null;
+    }
     final session = referer.path
         .substring('${_prefix}proxy/vscode/'.length)
         .split('/')
         .first;
-    if (session.isEmpty || raw.startsWith('//') || raw.contains('#'))
+    if (session.isEmpty || raw.startsWith('//') || raw.contains('#')) {
       return null;
+    }
     final sessionRoot = 'proxy/vscode/$session/';
     if (raw.startsWith('/proxy/vscode/')) {
       return raw.startsWith('/$sessionRoot') ? raw.substring(1) : null;
@@ -367,7 +384,9 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
 
   String? _redirect(String value, Uri requested) {
     final parsed = Uri.tryParse(value);
-    if (parsed == null || parsed.hasScheme || parsed.hasAuthority) return null;
+    if (parsed == null || parsed.hasScheme || parsed.hasAuthority) {
+      return null;
+    }
     if (parsed.path.startsWith('/')) {
       final root = requested.path.startsWith('/proxy/vscode/')
           ? 'proxy/vscode/${requested.pathSegments[2]}/'
@@ -384,7 +403,7 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
           .toString();
     }
     final resolved = baseUri
-        .resolveUri(Uri.parse('${requested.toString().substring(1)}'))
+        .resolveUri(Uri.parse(requested.toString().substring(1)))
         .resolveUri(parsed);
     return resolved.path.startsWith(_prefix) ? resolved.toString() : null;
   }
@@ -405,8 +424,12 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
     String? script;
     String? scriptElement;
     for (final directive in directives) {
-      if (directive.startsWith('script-src-elem ')) scriptElement = directive;
-      if (directive.startsWith('script-src ')) script = directive;
+      if (directive.startsWith('script-src-elem ')) {
+        scriptElement = directive;
+      }
+      if (directive.startsWith('script-src ')) {
+        script = directive;
+      }
     }
     final effective = scriptElement ?? script;
     return effective == null
@@ -442,7 +465,9 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
           r'<head(?:\s[^>]*)?>',
           caseSensitive: false,
         ).firstMatch(html);
-        if (match == null) continue;
+        if (match == null) {
+          continue;
+        }
         final firstScript = RegExp(
           r'<script\b[^>]*>',
           caseSensitive: false,
@@ -451,21 +476,24 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
           r'</head\s*>',
           caseSensitive: false,
         ).firstMatch(html.substring(match.end));
-        if (cspNonce == null && firstScript == null && headEnd == null)
+        if (cspNonce == null && firstScript == null && headEnd == null) {
           continue;
+        }
         final nonce =
             cspNonce ??
             (firstScript == null
                 ? null
                 : _nonceFromHtml(firstScript.group(0)!));
-        final attribute = nonce == null ? '' : ' nonce=\"$nonce\"';
+        final attribute = nonce == null ? '' : ' nonce="$nonce"';
         final offset = utf8.encode(html.substring(0, match.end)).length;
         yield Uint8List.sublistView(bytes, 0, offset);
         yield utf8.encode(
-          '<script$attribute src=\"${_prefix}_cc_native_ws_shim.js\"></script>',
+          '<script$attribute src="${_prefix}_cc_native_ws_shim.js"></script>',
         );
         yield Uint8List.sublistView(bytes, offset);
-        while (await iterator.moveNext()) yield iterator.current;
+        while (await iterator.moveNext()) {
+          yield iterator.current;
+        }
         return;
       }
       throw const FormatException('Code-server HTML has no head');
@@ -558,7 +586,9 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
                 : socket.closeReason ?? '',
           );
         }
-        if (closingRemote != null) await closingRemote;
+        if (closingRemote != null) {
+          await closingRemote;
+        }
         await socket.close(
           transferFailed
               ? WebSocketStatus.internalServerError
@@ -580,7 +610,9 @@ class _LoopbackResourceProxy implements LocalResourceProxy {
     } finally {
       if (remote != null) {
         _sockets.remove(remote);
-        if (local == null) await closeRemote();
+        if (local == null) {
+          await closeRemote();
+        }
       }
     }
   }

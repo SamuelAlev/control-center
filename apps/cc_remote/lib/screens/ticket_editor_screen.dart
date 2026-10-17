@@ -140,7 +140,7 @@ class _TicketEditorScreenState extends ConsumerState<TicketEditorScreen> {
     final workspaceId = workspace.value;
     final role = ref.watch(workspaceRoleProvider);
     final canWrite = !role.isLoading && role.value?.canWrite == true;
-    this._resetForWorkspace(workspaceId);
+    _resetForWorkspace(workspaceId);
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final ticketId = widget.ticketId;
@@ -153,7 +153,7 @@ class _TicketEditorScreenState extends ConsumerState<TicketEditorScreen> {
         : tickets?.asData?.value
               .where((t) => t.id == ticketId && t.workspaceId == workspaceId)
               .firstOrNull;
-    if (currentTicket != null) this._load(currentTicket);
+    if (currentTicket != null) _load(currentTicket);
     final agents = ticketId == null ? ref.watch(agentsProvider) : null;
     return SafeArea(
       child: ColoredBox(

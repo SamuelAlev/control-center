@@ -41,7 +41,8 @@ Future<void> _run(String nativeModel) async {
         await request.response.close();
         return;
       }
-      final messages = body['messages'] as List;
+      final messages = (body['messages'] as List<dynamic>)
+          .cast<Map<String, dynamic>>();
       final results = messages
           .where((message) => message['role'] == 'tool')
           .toList();

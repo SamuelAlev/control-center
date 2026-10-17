@@ -60,29 +60,6 @@ void _i(String m) => CcHostLog.info('LocalRpcServer: $m');
 void _w(String m) => CcHostLog.warning('LocalRpcServer: $m');
 final _unsafeDownloadFilenameChar = RegExp(r'[\x00-\x1f\x7f]');
 
-/// Parses a streaming lane's declared content type into a header value.
-///
-/// `ContentType.parse`, never a split on `/`: a type with a parameter
-/// (`multipart/x-mixed-replace; boundary=…`, `audio/mpeg; rate=…`) put its
-/// whole tail into the SUBTYPE, so the relay advertised a media type no client
-/// has ever heard of. A malformed value degrades to a binary blob rather than
-/// taking the lane down — the bytes are still the bytes, and
-/// `application/octet-stream` is an honest "we do not know".
-ContentType relayContentType(String value) {
-  const fallback = 'octet-stream';
-  try {
-    final parsed = ContentType.parse(value);
-    // `parse` is lenient: a value with no '/' yields an empty subtype and a
-    // `nonsense/` header, which is a malformed type dressed as a valid one.
-    if (parsed.primaryType.isEmpty || parsed.subType.isEmpty) {
-      return ContentType('application', fallback);
-    }
-    return parsed;
-  } on FormatException {
-    return ContentType('application', fallback);
-  }
-}
-
 /// Resolves the on-disk playable audio file for a meeting, validating that it
 /// belongs to [workspaceId]. Returns null when the meeting is unknown, kept no
 /// audio, or its files are gone. Used by [LocalRpcServer]'s `/meeting/audio`
@@ -938,7 +915,9 @@ class LocalRpcServer implements McpHostServer {
     DateTime? expiresAt,
   ) {
     final resources = _resources;
-    if (resources == null) throw StateError('Resource server is not running');
+    if (resources == null) {
+      throw StateError('Resource server is not running');
+    }
     resources.attach(
       channel,
       deviceId: deviceId,
@@ -950,7 +929,9 @@ class LocalRpcServer implements McpHostServer {
   /// Private loopback IPC for server-launched editor extensions, not clients.
   Uri get codeServerBridgeBase {
     final resources = _resources;
-    if (resources == null) throw StateError('Resource server is not running');
+    if (resources == null) {
+      throw StateError('Resource server is not running');
+    }
     return resources.editorBridgeBase;
   }
 

@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:typed_data';
 
-import '../resources/resource_tunnel.dart';
-import 'local_resource_proxy.dart';
+import 'package:cc_rpc/src/resource/local_resource_proxy.dart';
+import 'package:cc_rpc/src/resources/resource_tunnel.dart';
 
 @JS('ccResourceBridge')
 external _ResourceBridge get _bridge;
@@ -17,6 +17,8 @@ extension type _ResourceBridge(JSObject _) implements JSObject {
   external void release(JSObject port);
 }
 
+/// Opens a browser Service Worker facade that resolves [resources] for each
+/// request rather than retaining a disconnected session.
 Future<LocalResourceProxy> createLocalResourceProxy(
   RemoteResources Function() resources,
 ) async {
@@ -61,7 +63,9 @@ class _BrowserResourceProxy implements LocalResourceProxy {
 
   @override
   Future<void> close() async {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     _closed = true;
     _bridge.close(
       _baseUri.pathSegments.where((part) => part.isNotEmpty).last.toJS,
@@ -84,8 +88,9 @@ class _BrowserResourceProxy implements LocalResourceProxy {
 
   Map<String, List<String>> _headers(Map<String, dynamic> meta) {
     final raw = meta['headers'];
-    if (raw is! Map || raw.length > 64)
+    if (raw is! Map || raw.length > 64) {
       throw const FormatException('Invalid headers');
+    }
     return raw.map(
       (key, value) => MapEntry(
         key.toString(),
@@ -101,11 +106,17 @@ class _BrowserResourceProxy implements LocalResourceProxy {
     Completer<void>? credit;
     var stopped = false;
     Future<void> cancel() async {
-      if (stopped) return;
+      if (stopped) {
+        return;
+      }
       stopped = true;
-      if (credit != null && !credit.isCompleted) credit.complete();
+      if (credit != null && !credit.isCompleted) {
+        credit.complete();
+      }
       await output?.cancel();
-      if (upload != null) unawaited(upload.close());
+      if (upload != null) {
+        unawaited(upload.close());
+      }
       await upstream?.close();
       _bridge.release(port);
     }
@@ -117,17 +128,23 @@ class _BrowserResourceProxy implements LocalResourceProxy {
         upload = StreamController<List<int>>(
           sync: true,
           onListen: () {
-            if (!stopped) _send(port, {'kind': 'uploadCredit'});
+            if (!stopped) {
+              _send(port, {'kind': 'uploadCredit'});
+            }
           },
           onResume: () {
-            if (!stopped) _send(port, {'kind': 'uploadCredit'});
+            if (!stopped) {
+              _send(port, {'kind': 'uploadCredit'});
+            }
           },
         );
       }
       _bridge.onPort(
         port,
         ((JSString raw, JSUint8Array? bytes) {
-          if (stopped) return;
+          if (stopped) {
+            return;
+          }
           final frame = jsonDecode(raw.toDart) as Map<String, dynamic>;
           switch (frame['kind']) {
             case 'uploadData':
@@ -140,7 +157,9 @@ class _BrowserResourceProxy implements LocalResourceProxy {
             case 'uploadEnd':
               unawaited(upload?.close() ?? Future<void>.value());
             case 'credit':
-              if (credit != null && !credit.isCompleted) credit.complete();
+              if (credit != null && !credit.isCompleted) {
+                credit.complete();
+              }
             case 'cancel':
               unawaited(cancel());
           }
@@ -165,7 +184,9 @@ class _BrowserResourceProxy implements LocalResourceProxy {
       while (!stopped) {
         credit = Completer<void>();
         await credit.future;
-        if (stopped) break;
+        if (stopped) {
+          break;
+        }
         if (!await output.moveNext()) {
           _send(port, {'kind': 'end'});
           break;
@@ -173,7 +194,9 @@ class _BrowserResourceProxy implements LocalResourceProxy {
         _send(port, {'kind': 'data'}, output.current);
       }
     } catch (_) {
-      if (!stopped) _send(port, {'kind': 'error'});
+      if (!stopped) {
+        _send(port, {'kind': 'error'});
+      }
     } finally {
       await cancel();
       _active.remove(cancel);
@@ -188,12 +211,15 @@ class _BrowserResourceProxy implements LocalResourceProxy {
       String reason = '',
       bool notify = false,
     ]) async {
-      if (stopped) return;
+      if (stopped) {
+        return;
+      }
       stopped = true;
       try {
         await remote?.close(code, reason);
-        if (notify)
+        if (notify) {
           _send(port, {'kind': 'closed', 'code': code, 'reason': reason});
+        }
       } finally {
         _bridge.release(port);
       }
@@ -213,7 +239,9 @@ class _BrowserResourceProxy implements LocalResourceProxy {
       _bridge.onPort(
         port,
         ((JSString raw, JSUint8Array? bytes) {
-          if (stopped) return;
+          if (stopped) {
+            return;
+          }
           final frame = jsonDecode(raw.toDart) as Map<String, dynamic>;
           if (frame['kind'] == 'send') {
             final Object data = bytes?.toDart ?? frame['text'] as String;
@@ -235,22 +263,29 @@ class _BrowserResourceProxy implements LocalResourceProxy {
       );
       _send(port, {'kind': 'open', 'protocol': remote.protocol});
       await for (final message in remote.incoming) {
-        if (stopped) break;
+        if (stopped) {
+          break;
+        }
         if (message is String) {
           _send(port, {'kind': 'message', 'text': message});
         } else if (message is Uint8List) {
           _send(port, {'kind': 'message'}, message);
         }
       }
-      if (!stopped)
+      if (!stopped) {
         _send(port, {
           'kind': 'closed',
           'code': remote.closeCode ?? 1000,
           'reason': remote.closeReason ?? '',
         });
+      }
     } catch (_) {
-      if (!stopped) _send(port, {'kind': 'error'});
-      if (!stopped) _send(port, {'kind': 'closed', 'code': 1011, 'reason': ''});
+      if (!stopped) {
+        _send(port, {'kind': 'error'});
+      }
+      if (!stopped) {
+        _send(port, {'kind': 'closed', 'code': 1011, 'reason': ''});
+      }
     } finally {
       await cancel();
       _active.remove(stop);

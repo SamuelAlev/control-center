@@ -212,7 +212,7 @@ class SkillEvaluationSnapshotStore {
       throw ArgumentError('Invalid baseline hash');
     }
     final file = _file(workspaceId, skillKey, hash);
-    if (!await file.exists()) {
+    if (!file.existsSync()) {
       return null;
     }
     final data =
@@ -315,7 +315,7 @@ class SkillEvaluationSnapshotStore {
       }
       final resolved = await entry.resolveSymbolicLinks();
       if (!p.isWithin(directory, resolved) ||
-          await FileSystemEntity.type(entry.path, followLinks: false) !=
+          FileSystemEntity.typeSync(entry.path, followLinks: false) !=
               FileSystemEntityType.file) {
         throw StateError('Skill file escaped its package');
       }
@@ -412,7 +412,7 @@ class SkillEvaluationSnapshotStore {
     } finally {
       done.complete();
       if (identical(_pendingSaves[key], done.future)) {
-        _pendingSaves.remove(key);
+        unawaited(_pendingSaves.remove(key));
       }
     }
   }
@@ -423,7 +423,7 @@ class SkillEvaluationSnapshotStore {
     AdmittedSkillEvaluationSnapshot snapshot,
   ) async {
     await file.parent.create(recursive: true);
-    if (await file.exists()) {
+    if (file.existsSync()) {
       return;
     }
     final lock = await File('${file.path}.lock').open(mode: FileMode.append);
@@ -433,7 +433,7 @@ class SkillEvaluationSnapshotStore {
       await lock.lock(FileLock.blockingExclusive);
       // Another capture may have installed the same content address while
       // this writer waited. Never overwrite its admitted history.
-      if (await file.exists()) {
+      if (file.existsSync()) {
         return;
       }
       final encoded = jsonEncode({
@@ -452,7 +452,7 @@ class SkillEvaluationSnapshotStore {
         await temporary.writeAsString(encoded, flush: true);
         await temporary.rename(file.path);
       } finally {
-        if (await temporary.exists()) {
+        if (temporary.existsSync()) {
           await temporary.delete();
         }
       }

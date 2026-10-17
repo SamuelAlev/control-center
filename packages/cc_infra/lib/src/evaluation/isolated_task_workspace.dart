@@ -231,12 +231,16 @@ class IsolatedTaskWorkspace {
       final files = await _files();
       final changes = <String, Object?>{};
       for (final name in <String>{...files.keys, ..._baselineFiles.keys}) {
-        if (_bytesEqual(files[name], _baselineFiles[name])) continue;
+        if (_bytesEqual(files[name], _baselineFiles[name])) {
+          continue;
+        }
         changes[name] = files[name] == null ? null : base64Encode(files[name]!);
       }
       return jsonEncode(changes);
     }
-    if (!_isGitRepo) return '';
+    if (!_isGitRepo) {
+      return '';
+    }
     final baseline = _baselineRef;
     if (baseline == null || baseline.isEmpty) {
       return '';
@@ -282,7 +286,9 @@ class IsolatedTaskWorkspace {
       if (_controlled) {
         for (final name in ['$root-home', '$root-setup-home']) {
           final dir = Directory(name);
-          if (dir.existsSync()) dir.deleteSync(recursive: true);
+          if (dir.existsSync()) {
+            dir.deleteSync(recursive: true);
+          }
         }
       }
     } on FileSystemException {
@@ -300,9 +306,13 @@ class IsolatedTaskWorkspace {
       if (entity is Link) {
         throw StateError('symlink is not an evaluation artifact');
       }
-      if (entity is! File) continue;
+      if (entity is! File) {
+        continue;
+      }
       final relative = p.relative(entity.path, from: root);
-      if (p.split(relative).contains('.agents')) continue;
+      if (p.split(relative).contains('.agents')) {
+        continue;
+      }
       if (p.split(relative).contains('.git')) {
         throw StateError('git metadata is not an evaluation artifact');
       }
@@ -320,10 +330,16 @@ class IsolatedTaskWorkspace {
   }
 
   static bool _bytesEqual(List<int>? a, List<int>? b) {
-    if (a == null || b == null) return a == null && b == null;
-    if (a.length != b.length) return false;
+    if (a == null || b == null) {
+      return a == null && b == null;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
     for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
+      if (a[i] != b[i]) {
+        return false;
+      }
     }
     return true;
   }

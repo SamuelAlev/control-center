@@ -56,7 +56,9 @@ final List<EvaluationCorpus> _corpora = List.unmodifiable([
 /// Looks up a shipped pilot corpus by its exact versioned identifier.
 EvaluationCorpus? skillEvaluationCorpusById(String id) {
   for (final corpus in skillEvaluationCorpora) {
-    if (corpus.id == id) return corpus;
+    if (corpus.id == id) {
+      return corpus;
+    }
   }
   return null;
 }

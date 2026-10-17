@@ -5,11 +5,19 @@ import 'package:cc_domain/core/domain/services/redaction/secret_scanner.dart';
 /// Bounded public evidence. Private inputs and artifacts remain server-side;
 /// truncation is signalled separately from the evaluation's coverage verdict.
 class SkillEvaluationEvidence {
+  /// Creates a bounded projector using [secrets] to identify sensitive text.
   const SkillEvaluationEvidence({this.secrets = const SecretScanner()});
 
+  /// Scanner used to redact credentials in public evidence.
   final SecretScanner secrets;
+
+  /// Maximum accepted length, in UTF-16 code units, of one evidence string.
   static const maxStringLength = 8192;
+
+  /// Maximum UTF-8 size of a projected attempt, in bytes.
   static const maxAttemptBytes = 256 * 1024;
+
+  /// Maximum UTF-8 size of a campaign export, in bytes.
   static const maxExportBytes = 16 * 1024 * 1024;
   static const _maxEntries = 64;
   static const _priorityKeys = {
@@ -155,16 +163,19 @@ class SkillEvaluationEvidence {
         ? source.length
         : null;
     final campaign = value['campaign'];
+    final projectedCampaign = campaign is Map<String, dynamic>
+        ? project(campaign)
+        : null;
     final result = <String, dynamic>{
       'format': 'cc-skill-evaluation/1',
-      'campaign': campaign is Map<String, dynamic> ? project(campaign) : null,
+      'campaign': projectedCampaign,
       'attemptCount': totalCount,
-      'attempts': <dynamic>[],
+      'attempts': <Map<String, dynamic>>[],
       'omittedAttemptCount': totalCount,
       'summarizedAttemptCount': 0,
       'detailsOmitted': totalCount == null || totalCount != 0,
     };
-    final attempts = result['attempts'] as List<dynamic>;
+    final attempts = result['attempts'] as List<Map<String, dynamic>>;
     const encoder = JsonEncoder();
     final reservedCount = (totalCount ?? _maxExportAttempts).clamp(
       0,
@@ -180,7 +191,9 @@ class SkillEvaluationEvidence {
     final iterator = source.iterator;
     for (var i = 0; i < _maxExportAttempts && iterator.moveNext(); i++) {
       final item = iterator.current;
-      if (item is! Map<String, dynamic>) break;
+      if (item is! Map<String, dynamic>) {
+        break;
+      }
       Map<String, dynamic>? projected;
       if (includeDetails) {
         final detailed = attempt(item);
@@ -208,6 +221,7 @@ class SkillEvaluationEvidence {
       attempts.add(projected);
     }
     void updateCoverage() {
+      final report = projectedCampaign?['report'];
       result['omittedAttemptCount'] =
           totalCount == null || totalCount < attempts.length
           ? null
@@ -215,13 +229,15 @@ class SkillEvaluationEvidence {
       result['summarizedAttemptCount'] = summarized;
       result['detailsOmitted'] =
           result['omittedAttemptCount'] != 0 ||
-          result['campaign']?['traceTruncated'] == true ||
-          result['campaign']?['report']?['traceTruncated'] == true ||
-          attempts.any(
-            (row) =>
-                row['traceTruncated'] == true ||
-                row['evidence']?['traceTruncated'] == true,
-          );
+          projectedCampaign?['traceTruncated'] == true ||
+          (report is Map<String, dynamic> &&
+              report['traceTruncated'] == true) ||
+          attempts.any((row) {
+            final inner = row['evidence'];
+            return row['traceTruncated'] == true ||
+                (inner is Map<String, dynamic> &&
+                    inner['traceTruncated'] == true);
+          });
     }
 
     updateCoverage();
@@ -240,7 +256,9 @@ class SkillEvaluationEvidence {
     // markers. Only visited leaves are encoded or scanned.
     final budget = _EvidenceBudget(maxBytes ~/ 2);
     final result = _value(value, 0, budget) as Map<String, dynamic>;
-    if (budget.truncated) result['traceTruncated'] = true;
+    if (budget.truncated) {
+      result['traceTruncated'] = true;
+    }
     return result;
   }
 
@@ -255,10 +273,14 @@ class SkillEvaluationEvidence {
       var examined = 0;
       Iterable<MapEntry<dynamic, dynamic>> ordered() sync* {
         for (final key in _priorityKeys) {
-          if (value.containsKey(key)) yield MapEntry(key, value[key]);
+          if (value.containsKey(key)) {
+            yield MapEntry(key, value[key]);
+          }
         }
         for (final entry in value.entries) {
-          if (!_priorityKeys.contains(entry.key)) yield entry;
+          if (!_priorityKeys.contains(entry.key)) {
+            yield entry;
+          }
         }
       }
 
@@ -290,10 +312,14 @@ class SkillEvaluationEvidence {
           continue;
         }
         final keyBytes = utf8.encode(jsonEncode(key)).length + 2;
-        if (!budget.take(keyBytes)) break;
+        if (!budget.take(keyBytes)) {
+          break;
+        }
         result[key] = _value(entry.value, depth + 1, budget);
       }
-      if (value.length > examined) budget.truncated = true;
+      if (value.length > examined) {
+        budget.truncated = true;
+      }
       return result;
     }
     if (value is Iterable) {

@@ -75,7 +75,7 @@ class FileClaudeNativeSessionStore implements ClaudeNativeSessionStore {
     await _awaitWrite(workspaceId, storageKey);
     final file = File(_filePath(workspaceId, storageKey));
     try {
-      if (!await file.exists()) {
+      if (!file.existsSync()) {
         return null;
       }
       final raw = await file.readAsString();
@@ -137,7 +137,7 @@ class FileClaudeNativeSessionStore implements ClaudeNativeSessionStore {
     await _awaitWrite(workspaceId, storageKey);
     final file = File(_filePath(workspaceId, storageKey));
     try {
-      if (await file.exists()) {
+      if (file.existsSync()) {
         await file.delete();
       }
     } on Object catch (e) {

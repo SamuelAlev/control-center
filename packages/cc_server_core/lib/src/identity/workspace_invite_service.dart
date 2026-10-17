@@ -107,7 +107,9 @@ class WorkspaceInviteService {
   /// public *second* digest; the stored hash itself never appears on the wire.
   Future<String?> resolveInvitePsk(String routeId) async {
     final invite = await _invites.getByRouteId(routeId);
-    if (invite == null || !invite.isRedeemableAt(_now())) return null;
+    if (invite == null || !invite.isRedeemableAt(_now())) {
+      return null;
+    }
     return InvitePairingProof.pskFromHash(invite.codeHash);
   }
 

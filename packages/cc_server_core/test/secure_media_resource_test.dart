@@ -10,7 +10,6 @@ import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
 import 'package:cc_persistence/cc_persistence.dart';
-import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/cc_server_core.dart';
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
@@ -87,7 +86,7 @@ void main() {
         'd': d,
         's': signature ?? sign('blob:$ws:$h'),
         if (downloadName != null) 'download': '1',
-        if (downloadName != null) 'name': downloadName,
+        'name': ?downloadName,
       },
     );
 
@@ -217,7 +216,9 @@ void main() {
               uploadedBytes = List.of(bytes);
               uploadedType = mediaType;
               uploadedName = name;
-              if (uploadCatalogFails) throw StateError('catalog write failed');
+              if (uploadCatalogFails) {
+                throw StateError('catalog write failed');
+              }
               uploadedUserId = uploaderUserId;
               return (
                 ref: 'blob:sha256:$hash',
@@ -229,7 +230,9 @@ void main() {
         soundscapeStream:
             ({required String workspaceId, required String mood}) {
               streamLookups++;
-              if (workspaceId != workspace || mood != 'focus') return null;
+              if (workspaceId != workspace || mood != 'focus') {
+                return null;
+              }
               return liveAudio ??
                   Stream<List<int>>.fromIterable([
                     [0x49, 0x44, 0x33],
@@ -243,7 +246,9 @@ void main() {
               required String segmentQuery,
             }) {
               playlistLookups++;
-              if (workspaceId != workspace || mood != 'focus') return null;
+              if (workspaceId != workspace || mood != 'focus') {
+                return null;
+              }
               return '#EXTM3U\n#EXTINF:2,\nseg?$segmentQuery&n=7\n';
             },
         soundscapeSegment:
@@ -744,7 +749,9 @@ void main() {
         proxy.listen((req) async {
           active++;
           opened++;
-          if (active > peak) peak = active;
+          if (active > peak) {
+            peak = active;
+          }
           arrivals.add(null);
           Socket? socket;
           StreamSubscription<List<int>>? incoming;
@@ -756,35 +763,39 @@ void main() {
               ..contentType = ContentType('image', 'png')
               ..chunkedTransferEncoding = false;
             req.response.persistentConnection = false;
-            final peer = await req.response.detachSocket();
-            socket = peer;
+            socket = await req.response.detachSocket();
             final disconnected = Completer<void>();
             void finish() {
-              if (!disconnected.isCompleted) disconnected.complete();
+              if (!disconnected.isCompleted) {
+                disconnected.complete();
+              }
             }
 
-            incoming = peer.listen(
+            incoming = socket.listen(
               (_) {},
               onDone: finish,
               onError: (Object _) => finish(),
             );
-            peer.add(const [0x89, 0x50, 0x4e, 0x47]);
-            await peer.flush();
+            socket.add(const [0x89, 0x50, 0x4e, 0x47]);
+            await socket.flush();
             if (req.uri.path == '/shared.png') {
               await releaseShared.future;
-              peer.add(const [1, 2, 3, 4]);
-              await peer.flush();
+              socket.add(const [1, 2, 3, 4]);
+              await socket.flush();
             } else {
               var flushing = false;
+              final writer = socket;
               final ticker = Timer.periodic(const Duration(milliseconds: 10), (
                 _,
               ) {
-                if (flushing) return;
+                if (flushing) {
+                  return;
+                }
                 flushing = true;
                 try {
-                  peer.add(const [1]);
+                  writer.add(const [1]);
                   unawaited(
-                    peer.flush().then<void>(
+                    writer.flush().then<void>(
                       (_) => flushing = false,
                       onError: (Object _) {
                         flushing = false;
@@ -813,7 +824,9 @@ void main() {
         });
         final overrides = _SlowMediaProxyOverrides(proxy.port, host);
         Future<void> nextArrival(int previous) async {
-          if (opened > previous) return;
+          if (opened > previous) {
+            return;
+          }
           await arrivals.stream.first.timeout(const Duration(seconds: 5));
         }
 
@@ -947,7 +960,9 @@ void main() {
               );
               expect(peak, 1);
             } finally {
-              if (!releaseShared.isCompleted) releaseShared.complete();
+              if (!releaseShared.isCompleted) {
+                releaseShared.complete();
+              }
               await other.close();
               await remote.close();
               await server.stop();
@@ -995,8 +1010,8 @@ void main() {
         final listened = Completer<void>();
         final cancelled = Completer<void>();
         final source = StreamController<List<int>>(
-          onListen: () => listened.complete(),
-          onCancel: () => cancelled.complete(),
+          onListen: listened.complete,
+          onCancel: cancelled.complete,
         );
         liveAudio = source.stream;
         addTearDown(source.close);
@@ -1010,14 +1025,22 @@ void main() {
         final ended = Completer<void>();
         final subscription = response.body.listen(
           (chunk) {
-            if (!first.isCompleted) first.complete(chunk);
+            if (!first.isCompleted) {
+              first.complete(chunk);
+            }
           },
           onError: (Object error) {
-            if (!first.isCompleted) first.completeError(error);
-            if (!ended.isCompleted) ended.complete();
+            if (!first.isCompleted) {
+              first.completeError(error);
+            }
+            if (!ended.isCompleted) {
+              ended.complete();
+            }
           },
           onDone: () {
-            if (!ended.isCompleted) ended.complete();
+            if (!ended.isCompleted) {
+              ended.complete();
+            }
           },
         );
         expect(await first.future.timeout(const Duration(seconds: 5)), [
@@ -1045,8 +1068,8 @@ void main() {
       final listened = Completer<void>();
       final cancelled = Completer<void>();
       final source = StreamController<List<int>>(
-        onListen: () => listened.complete(),
-        onCancel: () => cancelled.complete(),
+        onListen: listened.complete,
+        onCancel: cancelled.complete,
       );
       liveAudio = source.stream;
       addTearDown(source.close);
@@ -1059,14 +1082,22 @@ void main() {
       final ended = Completer<void>();
       final subscription = response.body.listen(
         (_) {
-          if (!first.isCompleted) first.complete();
+          if (!first.isCompleted) {
+            first.complete();
+          }
         },
         onError: (Object error) {
-          if (!first.isCompleted) first.completeError(error);
-          if (!ended.isCompleted) ended.complete();
+          if (!first.isCompleted) {
+            first.completeError(error);
+          }
+          if (!ended.isCompleted) {
+            ended.complete();
+          }
         },
         onDone: () {
-          if (!ended.isCompleted) ended.complete();
+          if (!ended.isCompleted) {
+            ended.complete();
+          }
         },
       );
       await first.future.timeout(const Duration(seconds: 5));
@@ -1122,6 +1153,7 @@ class _Devices implements PairedDeviceDao {
     ]);
   }
 
+  @override
   Future<void> close() => _changes.close();
 
   @override

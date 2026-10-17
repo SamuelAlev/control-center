@@ -66,9 +66,13 @@ class WsClientChannel implements RemoteRpcChannelPort {
         _queuedDecodes++;
         _decodeChain = _decodeChain.then((_) async {
           try {
-            if (_aborted) return;
+            if (_aborted) {
+              return;
+            }
             final frame = await decodeJsonFrame(data);
-            if (_aborted) return;
+            if (_aborted) {
+              return;
+            }
             if (_incoming.hasListener) {
               _incoming.add(frame);
             } else if (_pending.length >= _maxPendingFrames) {
@@ -102,13 +106,17 @@ class WsClientChannel implements RemoteRpcChannelPort {
   }
 
   Future<void> _onRemoteDone() async {
-    if (_aborted || !_open) return;
+    if (_aborted || !_open) {
+      return;
+    }
     _open = false;
     _state.add(RemoteChannelState.closed);
     // The socket's done event follows its data events, but JSON decode can
     // still be in progress. End incoming only after every queued record.
     await _decodeChain;
-    if (_aborted) return;
+    if (_aborted) {
+      return;
+    }
     unawaited(_incoming.close());
     unawaited(_state.close());
   }
@@ -131,13 +139,17 @@ class WsClientChannel implements RemoteRpcChannelPort {
     if (encoded.length > _maxFrameBytes) {
       throw StateError('WsClientChannel record exceeds wire cap');
     }
-    if (!_open) throw StateError('WsClientChannel is not open');
+    if (!_open) {
+      throw StateError('WsClientChannel is not open');
+    }
     _ws.sink.add(encoded);
   }
 
   @override
   Future<void> close() async {
-    if (_aborted) return;
+    if (_aborted) {
+      return;
+    }
     _aborted = true;
     if (_open) {
       _open = false;

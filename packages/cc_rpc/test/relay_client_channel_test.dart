@@ -89,7 +89,9 @@ class _OwnerSide {
     broker.frames.listen((frame) {
       if (frame['type'] == 'signal' && frame['kind'] == 'rpc') {
         final payload = frame['payload'];
-        if (payload is Map<String, dynamic>) incoming.add(payload);
+        if (payload is Map<String, dynamic>) {
+          incoming.add(payload);
+        }
       }
     });
   }
@@ -308,42 +310,45 @@ void main() {
   });
 
   group('RelayClientChannel send/receive', () {
-    test('routes raw records to the owner and back without transforming them', () async {
-      broker = await _Broker.start(
-        onJoin: (frame) async {
-          return const {
-            'type': 'joined',
-            'ownerPresent': true,
-            'ownerPeer': 'owner-peer',
-          };
-        },
-      );
-      final owner = ownerPresentBroker();
+    test(
+      'routes raw records to the owner and back without transforming them',
+      () async {
+        broker = await _Broker.start(
+          onJoin: (frame) async {
+            return const {
+              'type': 'joined',
+              'ownerPresent': true,
+              'ownerPeer': 'owner-peer',
+            };
+          },
+        );
+        final owner = ownerPresentBroker();
 
-      final channel = await RelayClientChannel.connect(
-        signalingUrl: 'ws://127.0.0.1:${broker.port}/',
-        room: _room,
-        deviceId: 'dev-6',
-        psk: _psk,
-      );
-      addTearDown(channel.close);
-      // Encryption belongs to SecureRpcChannel, not this broker adapter.
-      const outbound = {'jsonrpc': '2.0', 'id': 1, 'method': 'ping'};
-      await channel.send(outbound);
-      await _until(() => owner.incoming.isNotEmpty);
-      expect(owner.incoming.single, outbound);
+        final channel = await RelayClientChannel.connect(
+          signalingUrl: 'ws://127.0.0.1:${broker.port}/',
+          room: _room,
+          deviceId: 'dev-6',
+          psk: _psk,
+        );
+        addTearDown(channel.close);
+        // Encryption belongs to SecureRpcChannel, not this broker adapter.
+        const outbound = {'jsonrpc': '2.0', 'id': 1, 'method': 'ping'};
+        await channel.send(outbound);
+        await _until(() => owner.incoming.isNotEmpty);
+        expect(owner.incoming.single, outbound);
 
-      final clientGot = channel.incoming.first.timeout(
-        const Duration(seconds: 5),
-      );
-      const inbound = {
-        'jsonrpc': '2.0',
-        'method': 'notifications/pong',
-        'params': {'ok': true},
-      };
-      owner.send(inbound);
-      expect(await clientGot, inbound);
-    });
+        final clientGot = channel.incoming.first.timeout(
+          const Duration(seconds: 5),
+        );
+        const inbound = {
+          'jsonrpc': '2.0',
+          'method': 'notifications/pong',
+          'params': {'ok': true},
+        };
+        owner.send(inbound);
+        expect(await clientGot, inbound);
+      },
+    );
 
     test('send throws when the channel is not open', () async {
       broker = await _Broker.start(
@@ -366,44 +371,41 @@ void main() {
       await expectLater(channel.send({'x': 1}), throwsA(isA<StateError>()));
     });
 
-    test(
-      'buffers a received record until a listener attaches',
-      () async {
-        broker = await _Broker.start(
-          onJoin: (frame) async {
-            return const {
-              'type': 'joined',
-              'ownerPresent': true,
-              'ownerPeer': 'owner-peer',
-            };
-          },
-        );
-        final channel = await RelayClientChannel.connect(
-          signalingUrl: 'ws://127.0.0.1:${broker.port}/',
-          room: _room,
-          deviceId: 'dev-8',
-          psk: _psk,
-        );
-        addTearDown(channel.close);
-        // Same-socket ordering makes peer-left a barrier: when close arrives,
-        // the earlier owner record has already been buffered without a listener.
-        final closed = channel.state
-            .firstWhere((state) => state == RemoteChannelState.closed)
-            .timeout(const Duration(seconds: 5));
-        broker.sendToLast(const {
-          'type': 'signal',
-          'from': 'owner-peer',
-          'kind': 'rpc',
-          'payload': {'method': 'buffered/hello'},
-        });
-        broker.sendToLast(const {'type': 'peer-left', 'from': 'owner-peer'});
-        await closed;
-        final received = channel.incoming.first.timeout(
-          const Duration(seconds: 5),
-        );
-        expect(await received, {'method': 'buffered/hello'});
-      },
-    );
+    test('buffers a received record until a listener attaches', () async {
+      broker = await _Broker.start(
+        onJoin: (frame) async {
+          return const {
+            'type': 'joined',
+            'ownerPresent': true,
+            'ownerPeer': 'owner-peer',
+          };
+        },
+      );
+      final channel = await RelayClientChannel.connect(
+        signalingUrl: 'ws://127.0.0.1:${broker.port}/',
+        room: _room,
+        deviceId: 'dev-8',
+        psk: _psk,
+      );
+      addTearDown(channel.close);
+      // Same-socket ordering makes peer-left a barrier: when close arrives,
+      // the earlier owner record has already been buffered without a listener.
+      final closed = channel.state
+          .firstWhere((state) => state == RemoteChannelState.closed)
+          .timeout(const Duration(seconds: 5));
+      broker.sendToLast(const {
+        'type': 'signal',
+        'from': 'owner-peer',
+        'kind': 'rpc',
+        'payload': {'method': 'buffered/hello'},
+      });
+      broker.sendToLast(const {'type': 'peer-left', 'from': 'owner-peer'});
+      await closed;
+      final received = channel.incoming.first.timeout(
+        const Duration(seconds: 5),
+      );
+      expect(await received, {'method': 'buffered/hello'});
+    });
   });
 
   group('RelayClientChannel state + close', () {
@@ -458,38 +460,41 @@ void main() {
       expect(channel.isOpen, isFalse);
     });
 
-    test('owner close delivers its last queued record before incoming done', () async {
-      broker = await _Broker.start(
-        onJoin: (_) async => const {
-          'type': 'joined',
-          'ownerPresent': true,
-          'ownerPeer': 'owner-peer',
-        },
-      );
-      final channel = await RelayClientChannel.connect(
-        signalingUrl: 'ws://127.0.0.1:${broker.port}/',
-        room: _room,
-        deviceId: 'dev-final',
-        psk: _psk,
-      );
-      addTearDown(channel.close);
-      final received = channel.incoming.toList();
-      broker.sendToLast(const {
-        'type': 'signal',
-        'from': 'owner-peer',
-        'kind': 'rpc',
-        'payload': {'type': 'secure', 'c': 'final-record'},
-      });
-      broker.sendToLast(const {
-        'type': 'signal',
-        'from': 'owner-peer',
-        'kind': 'close',
-      });
-      expect(await received.timeout(const Duration(seconds: 5)), [
-        {'type': 'secure', 'c': 'final-record'},
-      ]);
-      expect(channel.isOpen, isFalse);
-    });
+    test(
+      'owner close delivers its last queued record before incoming done',
+      () async {
+        broker = await _Broker.start(
+          onJoin: (_) async => const {
+            'type': 'joined',
+            'ownerPresent': true,
+            'ownerPeer': 'owner-peer',
+          },
+        );
+        final channel = await RelayClientChannel.connect(
+          signalingUrl: 'ws://127.0.0.1:${broker.port}/',
+          room: _room,
+          deviceId: 'dev-final',
+          psk: _psk,
+        );
+        addTearDown(channel.close);
+        final received = channel.incoming.toList();
+        broker.sendToLast(const {
+          'type': 'signal',
+          'from': 'owner-peer',
+          'kind': 'rpc',
+          'payload': {'type': 'secure', 'c': 'final-record'},
+        });
+        broker.sendToLast(const {
+          'type': 'signal',
+          'from': 'owner-peer',
+          'kind': 'close',
+        });
+        expect(await received.timeout(const Duration(seconds: 5)), [
+          {'type': 'secure', 'c': 'final-record'},
+        ]);
+        expect(channel.isOpen, isFalse);
+      },
+    );
 
     test('a peer-left from the owner closes the channel', () async {
       broker = await _Broker.start(
@@ -546,7 +551,9 @@ void main() {
       });
       owner.send({'owner': true});
       await _until(() => received.isNotEmpty);
-      expect(received, [{'owner': true}]);
+      expect(received, [
+        {'owner': true},
+      ]);
     });
   });
 

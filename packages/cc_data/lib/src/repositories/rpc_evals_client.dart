@@ -1,5 +1,5 @@
+import 'package:cc_data/src/repositories/skill_campaign_views.dart';
 import 'package:cc_rpc/cc_rpc.dart';
-import 'skill_campaign_views.dart';
 
 DateTime? _date(Object? iso) => iso is String ? DateTime.tryParse(iso) : null;
 
@@ -245,16 +245,17 @@ class RpcEvalsClient {
       'comparison': comparison.name,
       'repetitions': repetitions,
       'budget_micros': budgetMicros,
-      if (baselineHash != null) 'baseline_hash': baselineHash,
-      if (repoId != null) 'repo_id': repoId,
-      if (skillPath != null) 'skill_path': skillPath,
-      if (ambientSkillSlugs != null) 'ambient_skill_slugs': ambientSkillSlugs,
+      'baseline_hash': ?baselineHash,
+      'repo_id': ?repoId,
+      'skill_path': ?skillPath,
+      'ambient_skill_slugs': ?ambientSkillSlugs,
     });
     return SkillCampaignView.fromWire(
       (data['campaign'] as Map).cast<String, dynamic>(),
     );
   }
 
+  /// Requests cancellation and returns the updated server-owned campaign.
   Future<SkillCampaignView> cancelCampaign(
     String workspaceId,
     String campaignId,
@@ -292,7 +293,7 @@ class RpcEvalsClient {
   }) => _client
       .subscribe('evals.watchCampaignsForSkill', {
         'workspace_id': workspaceId,
-        if (skillKey != null) 'skill_key': skillKey,
+        'skill_key': ?skillKey,
       })
       .map(
         (d) => List<SkillCampaignView>.unmodifiable(
@@ -300,6 +301,7 @@ class RpcEvalsClient {
         ),
       );
 
+  /// Fetches one redacted attempt belonging to the specified campaign.
   Future<SkillAttemptView> getAttempt(
     String workspaceId,
     String campaignId,
@@ -315,6 +317,7 @@ class RpcEvalsClient {
     );
   }
 
+  /// Lists redacted attempts belonging to the specified campaign.
   Future<List<SkillAttemptView>> listAttempts(
     String workspaceId,
     String campaignId,
@@ -328,6 +331,7 @@ class RpcEvalsClient {
     );
   }
 
+  /// Downloads the server-produced export for the specified campaign.
   Future<SkillCampaignExport> exportCampaign(
     String workspaceId,
     String campaignId,
@@ -342,6 +346,7 @@ class RpcEvalsClient {
     );
   }
 
+  /// Returns the skill's workspace policy, or null if none has been saved.
   Future<SkillCampaignPolicyView?> skillPolicy(
     String workspaceId,
     String skillKey,
@@ -357,6 +362,7 @@ class RpcEvalsClient {
         : null;
   }
 
+  /// Saves the skill's workspace opt-in and evaluation configuration.
   Future<SkillCampaignPolicyView> setSkillPolicy({
     required String workspaceId,
     required String skillKey,

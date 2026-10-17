@@ -4,6 +4,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
+/// Previews observed and inferred behavior evidence in the light theme.
 @Preview(
   name: 'Behavior evidence — light',
   group: 'Skill evaluation',
@@ -11,6 +12,7 @@ import 'package:flutter/widgets.dart';
 )
 Widget skillBehaviorLightPreview() => const _SkillBehaviorPreview();
 
+/// Exercises the behavior report in narrow Arabic, right-to-left chrome.
 @Preview(
   name: 'Behavior evidence — narrow RTL',
   group: 'Skill evaluation',
@@ -18,6 +20,7 @@ Widget skillBehaviorLightPreview() => const _SkillBehaviorPreview();
 )
 Widget skillBehaviorRtlPreview() => const _SkillBehaviorPreview(rtl: true);
 
+/// Exercises behavior evidence and status contrast in the dark theme.
 @Preview(
   name: 'Behavior evidence — dark',
   group: 'Skill evaluation',
@@ -51,10 +54,10 @@ class _SkillBehaviorPreview extends StatelessWidget {
         ),
         home: ColoredBox(
           color: theme.tokens.bgPrimary,
-          child: SingleChildScrollView(
+          child: const SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: const SkillBehaviorSummary(behavior: _previewEvidence),
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: SkillBehaviorSummary(behavior: _previewEvidence),
             ),
           ),
         ),

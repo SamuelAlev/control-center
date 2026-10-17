@@ -138,7 +138,9 @@ extension _CodeServerMethods on LocalRpcServer {
     _editorCommandSockets.add(socket);
     final done = Completer<void>();
     void finish() {
-      if (!done.isCompleted) done.complete();
+      if (!done.isCompleted) {
+        done.complete();
+      }
     }
 
     final incoming = socket.listen(
@@ -190,7 +192,9 @@ extension _CodeServerMethods on LocalRpcServer {
     if (transfer != null) {
       unawaited(
         transfer.cancelled.then((_) {
-          if (transfer.isCancelled) client.close(force: true);
+          if (transfer.isCancelled) {
+            client.close(force: true);
+          }
         }),
       );
     }
@@ -237,7 +241,9 @@ extension _CodeServerMethods on LocalRpcServer {
         upstream.cast<List<int>>(),
       ).pipe(res);
     } catch (e) {
-      if (transfer?.isCancelled ?? false) return;
+      if (transfer?.isCancelled ?? false) {
+        return;
+      }
       _w('VS Code proxy HTTP forward failed for $target: $e');
       await _closeProxy(res, HttpStatus.badGateway);
     } finally {

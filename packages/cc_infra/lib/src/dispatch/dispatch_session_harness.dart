@@ -492,9 +492,13 @@ extension _DispatchSessionHarness on DispatchSession {
 
       final advisorProviders = <String, LlmProviderPort>{};
       Future<LlmProviderPort> providerForAdvisor(String? model) async {
-        if (model == null || model.isEmpty) return provider;
+        if (model == null || model.isEmpty) {
+          return provider;
+        }
         final cached = advisorProviders[model];
-        if (cached != null) return cached;
+        if (cached != null) {
+          return cached;
+        }
         final factory = deps.harnessProviderFactory;
         final target = factory.parseModel(model, defaultProvider: providerId);
         final targetCredential = await _resolveHarnessCredential(
@@ -664,7 +668,9 @@ extension _DispatchSessionHarness on DispatchSession {
     var usefulWorkStarted = false;
 
     void markUsefulWork() {
-      if (usefulWorkStarted) return;
+      if (usefulWorkStarted) {
+        return;
+      }
       usefulWorkStarted = true;
       addEvent(
         StageTimingEvent(
@@ -689,7 +695,9 @@ extension _DispatchSessionHarness on DispatchSession {
       )) {
         switch (event) {
           case LoopTextDelta(:final text):
-            if (text.trim().isNotEmpty) markUsefulWork();
+            if (text.trim().isNotEmpty) {
+              markUsefulWork();
+            }
             addEvent(TextEvent(content: text));
           case LoopThinkingDelta(:final thinking):
             addEvent(ThinkingEvent(content: thinking));

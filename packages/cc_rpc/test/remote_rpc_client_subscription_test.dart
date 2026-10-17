@@ -30,7 +30,9 @@ class _FakeChannel implements RemoteRpcChannelPort {
   @override
   Future<void> send(Map<String, dynamic> frame) async {
     sent.add(frame);
-    if (sendBarrier case final barrier?) await barrier;
+    if (sendBarrier case final barrier?) {
+      await barrier;
+    }
     // Auto-acknowledge unsubscribes so an awaited `sub.cancel()` (which awaits
     // the `sub/unsubscribe` round-trip) completes, like a real server would.
     if (frame['method'] == RpcMethods.unsubscribe) {
@@ -596,7 +598,9 @@ void main() {
         final channel = _FakeChannel()..sendBarrier = barrier.future;
         final client = RemoteRpcClient(channel)..start();
         addTearDown(() async {
-          if (!barrier.isCompleted) barrier.complete();
+          if (!barrier.isCompleted) {
+            barrier.complete();
+          }
           await client.close();
           await channel.close();
         });
@@ -641,10 +645,9 @@ void main() {
       });
       await first;
       await _flush();
-      expect(
-        channel.sent.map((frame) => (frame['params'] as Map)['op']),
-        ['tickets.list'],
-      );
+      expect(channel.sent.map((frame) => (frame['params'] as Map)['op']), [
+        'tickets.list',
+      ]);
     });
 
     test('a cancelled queued subscription never reaches the server', () async {
@@ -673,10 +676,9 @@ void main() {
       });
       await first;
       await _flush();
-      expect(
-        channel.sent.map((frame) => frame['method']),
-        [RpcMethods.repoCall],
-      );
+      expect(channel.sent.map((frame) => frame['method']), [
+        RpcMethods.repoCall,
+      ]);
     });
 
     test(

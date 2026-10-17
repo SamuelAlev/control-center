@@ -14,7 +14,6 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
-import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_agent_prompt_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';

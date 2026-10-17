@@ -852,7 +852,9 @@ class RemoteRpcClient {
   }
 
   void _onFrame(Map<String, dynamic> frame) {
-    if (frame['type'] == 'resource') return;
+    if (frame['type'] == 'resource') {
+      return;
+    }
     final id = frame['id'];
     if (id is int && _pending.containsKey(id)) {
       _pending.remove(id)!.complete(frame);

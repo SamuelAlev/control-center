@@ -223,7 +223,9 @@ class RemoteRpcSession {
   Future<void> _onFrame(Map<String, dynamic> frame) async {
     // The authenticated channel multiplexes bounded byte streams separately;
     // their IDs are not JSON-RPC IDs and must never reach RPC dispatch.
-    if (frame['type'] == 'resource') return;
+    if (frame['type'] == 'resource') {
+      return;
+    }
     final JsonRpcRequest request;
     try {
       request = JsonRpcRequest.fromJson(frame);
@@ -633,9 +635,7 @@ class RemoteRpcSession {
       // registry is wired into this session, so a client can negotiate `sub/*`
       // instead of falling back to polling `repo/call` reads. Delta encoding is
       // not implemented — each emission is a full snapshot.
-      caps['subscriptions'] = {
-        'snapshot': watchQueries != null,
-      };
+      caps['subscriptions'] = {'snapshot': watchQueries != null};
     }
     result['capabilities'] = caps;
     return base;

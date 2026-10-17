@@ -48,10 +48,7 @@ String? _handoffPrivateKey;
 String? _handoffServerOrigin;
 
 /// Arms one client-held recipient for a single expected SSO round-trip.
-void beginSealedSsoLogin({
-  required String origin,
-  required String privateKey,
-}) {
+void beginSealedSsoLogin({required String origin, required String privateKey}) {
   _handoffServerOrigin = origin;
   _handoffPrivateKey = privateKey;
   markSsoLoginStarted();
@@ -96,15 +93,20 @@ bool isSsoPairLink(String rawUrl) => rawUrl.startsWith('control-center://pair');
 /// carry a browser-generated private key in the URL fragment (never HTTP);
 /// those are unbidden and must require explicit user approval before pairing.
 Future<SsoPairPayload?> decodeSsoPairLink(String rawUrl) async {
-  if (!isSsoPairLink(rawUrl)) return null;
+  if (!isSsoPairLink(rawUrl)) {
+    return null;
+  }
   final fragment = Uri.tryParse(rawUrl)?.fragment ?? '';
-  if (fragment.isEmpty) return null;
+  if (fragment.isEmpty) {
+    return null;
+  }
   try {
     final decoded = jsonDecode(
       utf8.decode(base64Url.decode(base64Url.normalize(fragment))),
     );
-    if (decoded is! Map || decoded['s'] is! String ||
-        decoded['box'] is! Map) return null;
+    if (decoded is! Map || decoded['s'] is! String || decoded['box'] is! Map) {
+      return null;
+    }
     final unsolicited = decoded['idpInitiated'] == true;
     final privateKey = unsolicited
         ? decoded['recipientPrivateKey']
@@ -115,7 +117,9 @@ Future<SsoPairPayload?> decodeSsoPairLink(String rawUrl) async {
     if ((!unsolicited && !isSsoLoginInFlight()) ||
         privateKey is! String ||
         expectedOrigin == null ||
-        decoded['s'] != expectedOrigin) return null;
+        decoded['s'] != expectedOrigin) {
+      return null;
+    }
     final clear = await CredentialSeal.open(
       recipientPrivateKey: privateKey,
       envelope: (decoded['box'] as Map).cast<String, dynamic>(),
@@ -124,9 +128,15 @@ Future<SsoPairPayload?> decodeSsoPairLink(String rawUrl) async {
     final deviceId = clear['i'];
     final psk = clear['k'];
     if (clear['s'] != expectedOrigin ||
-        deviceId is! String || deviceId.isEmpty ||
-        psk is! String || psk.isEmpty) return null;
-    if (!unsolicited) clearSealedSsoLogin();
+        deviceId is! String ||
+        deviceId.isEmpty ||
+        psk is! String ||
+        psk.isEmpty) {
+      return null;
+    }
+    if (!unsolicited) {
+      clearSealedSsoLogin();
+    }
     return SsoPairPayload(
       server: expectedOrigin,
       deviceId: deviceId,
@@ -141,7 +151,9 @@ Future<SsoPairPayload?> decodeSsoPairLink(String rawUrl) async {
 /// The marker is only for routing into the setup confirmation UI. It proves
 /// nothing: the sealed credential is validated by [decodeSsoPairLink].
 bool isIdpInitiatedSsoPairLink(String rawUrl) {
-  if (!isSsoPairLink(rawUrl)) return false;
+  if (!isSsoPairLink(rawUrl)) {
+    return false;
+  }
   try {
     final fragment = Uri.parse(rawUrl).fragment;
     final decoded = jsonDecode(

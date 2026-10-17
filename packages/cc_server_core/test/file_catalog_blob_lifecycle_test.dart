@@ -116,7 +116,7 @@ void main() {
       Uint8List.fromList([7, 8, 9]),
       creatorId: 'agent-1',
     );
-    expect((await catalog.hasPath('ws', screen!.ref)), isTrue);
+    expect(await catalog.hasPath('ws', screen!.ref), isTrue);
     final cache = await blobs.put(
       'ws',
       Uint8List.fromList([11, 11]),

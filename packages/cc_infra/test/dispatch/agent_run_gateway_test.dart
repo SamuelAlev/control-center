@@ -160,7 +160,9 @@ void main() {
       githubBase: Uri.parse('http://127.0.0.1:${upstream.server.port}'),
     );
     host.listen((request) async {
-      if (request.uri.path == '/agent/hooks/pre-tool-use') hookRequests++;
+      if (request.uri.path == '/agent/hooks/pre-tool-use') {
+        hookRequests++;
+      }
       if (hookReply case final reply?) {
         await request.drain<void>();
         request.response.write(reply);

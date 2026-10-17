@@ -9,7 +9,9 @@ extension _AuthMethods on LocalRpcServer {
     final redeem = inviteRedeemer;
     final serverIdentity = identity;
     final raw = WsRemoteTransport(socket, label: remoteIp)..start();
-    if (resolver == null || redeem == null || serverIdentity == null ||
+    if (resolver == null ||
+        redeem == null ||
+        serverIdentity == null ||
         (manualPairingEnabled != null && !await manualPairingEnabled!()) ||
         !_admitInWindow(_inviteRate, remoteIp, 20)) {
       await raw.close();
@@ -20,7 +22,9 @@ extension _AuthMethods on LocalRpcServer {
       session = await acceptSecureChannel(
         channel: raw,
         readPsk: (id) async {
-          if (!id.startsWith('invite:')) return null;
+          if (!id.startsWith('invite:')) {
+            return null;
+          }
           return resolver(id.substring('invite:'.length));
         },
         serverPublicKey: serverIdentity.publicKeyB64,
@@ -138,8 +142,7 @@ extension _AuthMethods on LocalRpcServer {
         throw const FormatException('body must be a JSON object');
       }
       final recipient = decoded['handoff_key'];
-      if (recipient is! String ||
-          !CredentialSeal.isValidPublicKey(recipient)) {
+      if (recipient is! String || !CredentialSeal.isValidPublicKey(recipient)) {
         throw const FormatException('Missing credential recipient');
       }
       final result = await redeem(decoded, remoteIp: ip);
@@ -147,13 +150,15 @@ extension _AuthMethods on LocalRpcServer {
         ..statusCode = HttpStatus.ok
         ..headers.contentType = ContentType.json
         ..headers.set('Cache-Control', 'no-store')
-        ..write(jsonEncode({
-          'box': await CredentialSeal.seal(
-            recipientPublicKey: recipient,
-            credential: result,
-            context: 'cc-public-demo-v1',
-          ),
-        }));
+        ..write(
+          jsonEncode({
+            'box': await CredentialSeal.seal(
+              recipientPublicKey: recipient,
+              credential: result,
+              context: 'cc-public-demo-v1',
+            ),
+          }),
+        );
     } on RedeemCapacityException catch (e) {
       // "We are full" is not "your code is wrong". Answering 403 here told a
       // visitor their link was broken and sent them away for good.
@@ -606,9 +611,11 @@ extension _AuthMethods on LocalRpcServer {
         : origin;
     return browserHandoffPage(
       title: 'Sign-in verified',
-      body: 'Choose where to open Control Center. This sign-in expires in five minutes.',
+      body:
+          'Choose where to open Control Center. This sign-in expires in five minutes.',
       statusLabel: '',
-      extraBody: '''
+      extraBody:
+          '''
 <p><button type="button" id="cc-web">Open web client</button>
 <button type="button" id="cc-desktop">Open desktop app</button></p>
 <p id="cc-error" role="alert"></p>

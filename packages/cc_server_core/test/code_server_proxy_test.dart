@@ -3,14 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/ide/domain/code_server_session.dart';
 import 'package:cc_persistence/cc_persistence.dart' show PairedDevicesTableData;
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_rpc/cc_rpc.dart';
-import 'package:cc_server_core/src/identity/server_identity_store.dart';
 import 'package:cc_server_core/cc_server_core.dart';
+import 'package:cc_server_core/src/identity/server_identity_store.dart';
 import 'package:test/test.dart';
 
 /// Authenticated code-server reverse proxy: capability authorization, prefix
@@ -164,7 +164,9 @@ void main() {
     );
     test('streams upstream bytes before the upstream finishes', () async {
       addTearDown(() {
-        if (!finishStream.isCompleted) finishStream.complete();
+        if (!finishStream.isCompleted) {
+          finishStream.complete();
+        }
       });
       final response = await get('/proxy/vscode/$knownSid/stream');
       expect(response.statusCode, HttpStatus.ok);
@@ -545,11 +547,7 @@ void main() {
         expect(await rawRequest(noCapability), HttpStatus.forbidden);
         final badCapability = privateBase.replace(
           path:
-              privateBase.path.replaceFirst(
-                RegExp(r'[^/]+/$'),
-                '${RemoteControlCrypto.generatePsk()}/',
-              ) +
-              'proxy/vscode/$bridgeSid/__cc_open__',
+              '${privateBase.path.replaceFirst(RegExp(r'[^/]+/$'), '${RemoteControlCrypto.generatePsk()}/')}proxy/vscode/$bridgeSid/__cc_open__',
         );
         expect(await rawRequest(badCapability), HttpStatus.forbidden);
         expect(reports, isEmpty);
@@ -811,7 +809,9 @@ class _StubDevicesDao implements PairedDeviceDao {
 
   @override
   Future<PairedDevicesTableData?> getById(String id) async {
-    if (!psks.containsKey(id)) return null;
+    if (!psks.containsKey(id)) {
+      return null;
+    }
     return PairedDevicesTableData(
       id: id,
       userId: 'user-a',
@@ -846,7 +846,9 @@ class _StubSecrets implements PairedDeviceSecretsPort {
 
 String? _header(RemoteResourceResponse response, String name) {
   for (final header in response.headers.entries) {
-    if (header.key.toLowerCase() == name) return header.value.join(', ');
+    if (header.key.toLowerCase() == name) {
+      return header.value.join(', ');
+    }
   }
   return null;
 }

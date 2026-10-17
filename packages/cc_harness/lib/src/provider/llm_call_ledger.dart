@@ -286,7 +286,7 @@ class ProviderCallRecord {
   @override
   String toString() =>
       'ProviderCallRecord($requestId ${purpose.wire} ${outcome.wire} '
-      '${providerId}/${requestedModelOrServed == model ? model : '$requestedModelOrServed→$model'} '
+      '$providerId/${requestedModelOrServed == model ? model : '$requestedModelOrServed→$model'} '
       'in=${usage.inputTokens} '
       'out=${usage.outputTokens} cacheR=${usage.cacheReadTokens} '
       'cacheW=${usage.cacheWriteTokens} ${durationMs}ms)';
@@ -771,8 +771,8 @@ class _InFlightCall {
   LlmError? error;
   LlmUsage? doneUsage;
   LlmUsage reportedUsage = const LlmUsage();
-  var usageReported = false;
-  var emitted = false;
+  bool usageReported = false;
+  bool emitted = false;
 
   void markFirstModelEvent(int nowMs) =>
       firstModelEventMs ??= nowMs - startedAtMs;

@@ -186,7 +186,9 @@ class CodeServerService implements CodeServerPort {
     String? path,
     String autoSave = 'afterDelay',
   }) async {
-    if (_disposed) throw StateError('Code-server service has been disposed.');
+    if (_disposed) {
+      throw StateError('Code-server service has been disposed.');
+    }
     if (deviceId.isEmpty) {
       throw ArgumentError.value(deviceId, 'deviceId', 'must not be empty');
     }
@@ -226,7 +228,9 @@ class CodeServerService implements CodeServerPort {
     }
 
     final key = '${worktree.workspaceId}\x1f${worktree.path}';
-    if (_disposed) throw StateError('Code-server service has been disposed.');
+    if (_disposed) {
+      throw StateError('Code-server service has been disposed.');
+    }
     final pending = _opening[key];
     if (pending != null) {
       await pending;
@@ -252,7 +256,7 @@ class CodeServerService implements CodeServerPort {
         autoSave: autoSave,
       );
     } finally {
-      _opening.remove(key);
+      unawaited(_opening.remove(key));
       settled.complete();
     }
   }
@@ -395,7 +399,9 @@ class CodeServerService implements CodeServerPort {
     unawaited(
       process.exitCode.then((_) {
         instance.exited = true;
-        if (_instances[bridgeId] == instance) _killAndRemove(bridgeId);
+        if (_instances[bridgeId] == instance) {
+          _killAndRemove(bridgeId);
+        }
       }),
     );
 
@@ -439,7 +445,9 @@ class CodeServerService implements CodeServerPort {
     bool discardIfUnused = false,
   }) async {
     final binding = _bindings[sessionId];
-    if (binding == null) return;
+    if (binding == null) {
+      return;
+    }
     final instance = binding.instance;
     _assertOwned(instance, workspaceId);
     if (binding.deviceId != deviceId || deviceId.isEmpty) {
@@ -452,7 +460,9 @@ class CodeServerService implements CodeServerPort {
     binding.refCount--;
     instance.refCount--;
     instance.lastTouched = _now();
-    if (binding.refCount == 0) _revokeBinding(sessionId);
+    if (binding.refCount == 0) {
+      _revokeBinding(sessionId);
+    }
     if (discardIfUnused && instance.refCount == 0) {
       _killAndRemove(instance.bridgeId);
     }
@@ -461,7 +471,9 @@ class CodeServerService implements CodeServerPort {
   @override
   CodeServerSession? lookup(String sessionId) {
     final binding = _bindings[sessionId];
-    if (binding == null) return null;
+    if (binding == null) {
+      return null;
+    }
     if (!binding.expiresAt.isAfter(_now()) || binding.instance.exited) {
       _revokeBinding(sessionId);
       return null;
@@ -472,11 +484,15 @@ class CodeServerService implements CodeServerPort {
   @override
   bool lookupBridge(String instanceId) {
     final instance = _instances[instanceId];
-    if (instance == null || instance.exited) return false;
+    if (instance == null || instance.exited) {
+      return false;
+    }
     final now = _now();
     for (final id in instance.byDevice.values) {
       final binding = _bindings[id];
-      if (binding != null && binding.expiresAt.isAfter(now)) return true;
+      if (binding != null && binding.expiresAt.isAfter(now)) {
+        return true;
+      }
     }
     return false;
   }
@@ -828,7 +844,9 @@ class CodeServerService implements CodeServerPort {
     String? windowId,
   }) {
     final instance = _instances[sessionId];
-    if (instance == null || !lookupBridge(sessionId)) return;
+    if (instance == null || !lookupBridge(sessionId)) {
+      return;
+    }
     // Confine to the worktree; a report for a path outside it (e.g. an
     // out-of-tree definition target) is ignored rather than opened.
     final normalized = p.normalize(absPath);
@@ -863,7 +881,9 @@ class CodeServerService implements CodeServerPort {
     required bool dirty,
   }) {
     final instance = _instances[sessionId];
-    if (instance == null || !lookupBridge(sessionId)) return;
+    if (instance == null || !lookupBridge(sessionId)) {
+      return;
+    }
     // Confine to the worktree (same guard as [reportOpen]): a report for a path
     // outside it is ignored rather than surfaced.
     final normalized = p.normalize(absPath);
@@ -1030,14 +1050,18 @@ class CodeServerService implements CodeServerPort {
   /// Relative resolution preserves the listener's server-only capability.
   String? _bridgeReportUrl(String bridgeId) {
     final base = resolveBridgeBase?.call();
-    if (base == null) return null;
+    if (base == null) {
+      return null;
+    }
     return base.resolve('proxy/vscode/$bridgeId/__cc_open__').toString();
   }
 
   /// Private listener URL for reverse command SSE from the extension host.
   String? _bridgeCommandsUrl(String bridgeId) {
     final base = resolveBridgeBase?.call();
-    if (base == null) return null;
+    if (base == null) {
+      return null;
+    }
     return base.resolve('proxy/vscode/$bridgeId/__cc_commands__').toString();
   }
 
@@ -1270,7 +1294,9 @@ class CodeServerService implements CodeServerPort {
       final idle =
           instance.refCount == 0 &&
           now.difference(instance.lastTouched) > _idleGrace;
-      if (idle || instance.process.pid <= 0) dead.add(id);
+      if (idle || instance.process.pid <= 0) {
+        dead.add(id);
+      }
     });
     for (final id in dead) {
       _killAndRemove(id);
@@ -1283,7 +1309,9 @@ class CodeServerService implements CodeServerPort {
 
   void _revokeBinding(String capability) {
     final binding = _bindings.remove(capability);
-    if (binding == null) return;
+    if (binding == null) {
+      return;
+    }
     final instance = binding.instance;
     if (instance.byDevice[binding.deviceId] == capability) {
       instance.byDevice.remove(binding.deviceId);
@@ -1294,15 +1322,21 @@ class CodeServerService implements CodeServerPort {
 
   void _killAndRemove(String bridgeId) {
     final instance = _instances.remove(bridgeId);
-    if (instance == null) return;
+    if (instance == null) {
+      return;
+    }
     for (final id in instance.byDevice.values.toList()) {
       _revokeBinding(id);
     }
     final key = '${instance.workspaceId}\x1f${instance.folderPath}';
-    if (_byWorktree[key] == bridgeId) _byWorktree.remove(key);
+    if (_byWorktree[key] == bridgeId) {
+      _byWorktree.remove(key);
+    }
     // Close the reverse command space so any live SSE handler ends cleanly.
     unawaited(instance.commands.close());
-    if (instance.exited) return;
+    if (instance.exited) {
+      return;
+    }
     try {
       instance.process.kill(ProcessSignal.sigterm);
     } catch (_) {
@@ -1310,7 +1344,9 @@ class CodeServerService implements CodeServerPort {
     }
     // Hard-kill shortly after if it hasn't exited.
     Timer(const Duration(seconds: 3), () {
-      if (instance.exited) return;
+      if (instance.exited) {
+        return;
+      }
       try {
         instance.process.kill(ProcessSignal.sigkill);
       } catch (_) {
@@ -1321,7 +1357,9 @@ class CodeServerService implements CodeServerPort {
 
   /// Tears down every live code-server process (host shutdown).
   Future<void> disposeAll() async {
-    if (_disposed) return;
+    if (_disposed) {
+      return;
+    }
     _disposed = true;
     _gcTimer?.cancel();
     _gcTimer = null;

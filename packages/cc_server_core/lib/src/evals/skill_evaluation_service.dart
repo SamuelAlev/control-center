@@ -16,9 +16,8 @@ import 'package:cc_infra/cc_infra.dart'
         EvaluationRunResult,
         SkillEvaluationSnapshotStore,
         skillEvaluationCorpusById;
-import 'package:uuid/uuid.dart';
-
 import 'package:cc_server_core/src/evals/skill_evaluation_evidence.dart';
+import 'package:uuid/uuid.dart';
 
 /// Authority is rechecked for background work, not inherited from an old RPC.
 typedef SkillCampaignAuthorization =
@@ -31,6 +30,7 @@ typedef SkillCampaignAuthorization =
 
 /// An admitted immutable job; only the server composition supplies an executor.
 class SkillEvaluationJob {
+  /// Captures all immutable inputs and the attempt recorder for one job.
   const SkillEvaluationJob({
     required this.campaign,
     required this.corpus,
@@ -40,17 +40,32 @@ class SkillEvaluationJob {
     required this.onAttempt,
     this.previous,
   });
+
+  /// Campaign identity, policy and accounting persisted for this job.
   final SkillEvaluationCampaign campaign;
+
+  /// Trusted task corpus selected at admission.
   final EvaluationCorpus corpus;
+
+  /// Admitted candidate package, unaffected by later source edits.
   final AdmittedSkillEvaluationSnapshot candidate;
+
+  /// Captured baseline for a previous-revision comparison, if selected.
   final AdmittedSkillEvaluationSnapshot? previous;
+
+  /// Other packages held constant during a composition comparison.
   final List<AdmittedSkillEvaluationSnapshot> ambient;
+
+  /// Signals cancellation to the controlled executor.
   final CancellationToken cancellation;
+
+  /// Persists each completed attempt before advancing campaign accounting.
   final Future<void> Function(EvaluationAttempt) onAttempt;
 }
 
 /// One deliberately selected intervention. No mutable model/skill defaults.
 class SkillEvaluationSettings {
+  /// Validates the explicit corpus, model, comparison and spending limit.
   SkillEvaluationSettings({
     required this.skillSlug,
     required this.corpusId,
@@ -106,6 +121,7 @@ class SkillEvaluationSettings {
     }
   }
 
+  /// Reads the wire configuration, accepting snake-case and camel-case keys.
   factory SkillEvaluationSettings.fromJson(Map<String, dynamic> json) {
     dynamic field(String snake, String camel) => json[snake] ?? json[camel];
     final providerId = field('provider_id', 'providerId') as String;
@@ -133,14 +149,26 @@ class SkillEvaluationSettings {
     );
   }
 
+  /// Selected skill and execution backend identifiers.
   final String skillSlug, corpusId, providerId, modelId, adapter;
+
+  /// Intervention used to compare candidate and control attempts.
   final SkillEvaluationComparison comparison;
+
+  /// Number of repeats and maximum charge in millionths of a US dollar.
   final int repetitions, budgetMicros;
+
+  /// Optional baseline revision and repository-scoped skill identity.
   final String? baselineHash, repoId, skillPath;
+
+  /// Fixed neighboring skill slugs for composition comparisons.
   final List<String> ambientSkillSlugs;
+
+  /// Scope-qualified identity used for policy and revision tracking.
   String get skillKey =>
       repoId == null ? 'workspace:$skillSlug' : 'repo:$repoId:$skillPath';
 
+  /// Serializes the pinned settings for campaign storage and hashing.
   Map<String, dynamic> toJson() => {
     'skillSlug': skillSlug,
     'corpusId': corpusId,
@@ -160,6 +188,8 @@ class SkillEvaluationSettings {
 /// Revision-specific campaigns are local server jobs, not fleet git probes.
 /// The queue is serial: one campaign cannot contend with another's enclosure.
 class SkillEvaluationService {
+  /// Creates a serial executor with workspace authorization on every read
+  /// and mutation, including background revision reconciliation.
   SkillEvaluationService({
     required this.repository,
     required this.snapshots,
@@ -179,23 +209,46 @@ class SkillEvaluationService {
   }) : _now = now ?? DateTime.now,
        _newId = newId ?? const Uuid().v4;
 
+  /// Workspace-scoped storage for campaign, policy and attempt records.
   final EvalsRepository repository;
+
+  /// Captures immutable skill revisions at admission.
   final SkillEvaluationSnapshotStore snapshots;
+
+  /// Rechecks actor access, including optional repository scope.
   final SkillCampaignAuthorization authorize;
+
+  /// Checks registration before opening a workspace's storage.
   final Future<bool> Function(String workspaceId) workspaceExists;
+
+  /// Enumerates registered workspaces for recovery and revision watching.
   final Future<List<String>> Function() registeredWorkspaceIds;
+
+  /// Reports controlled execution availability and supported adapters.
   final Future<Map<String, dynamic>> Function() capability;
+
+  /// Validates and pins an explicit provider model and its charge basis.
   final Future<Map<String, dynamic>> Function(SkillEvaluationSettings settings)
   validateModel;
+
+  /// Rechecks whether an actor may launch paid local execution.
   final Future<void> Function(
     String workspaceId,
     Principal actor,
     bool automatic,
   )
   authorizeExecution;
+
+  /// Runs a captured job and returns its outcome and attempt evidence.
   final Future<EvaluationRunResult> Function(SkillEvaluationJob job) execute;
+
+  /// Publishes skill revision events used by background reconciliation.
   final DomainEventBus eventBus;
+
+  /// Bounds and redacts public attempt and report evidence.
   final SkillEvaluationEvidence evidence;
+
+  /// Receives redacted nonfatal reconciliation and persistence failures.
   final void Function(String message)? onWarning;
 
   /// Releases process-scoped execution resources after every job has stopped.
@@ -217,7 +270,9 @@ class SkillEvaluationService {
     // CROSS-WORKSPACE BY DESIGN: boot recovery visits registered workspace IDs,
     // then uses only that workspace's repository. No candidate content is read.
     for (final workspaceId in await registeredWorkspaceIds()) {
-      if (!await workspaceExists(workspaceId)) continue;
+      if (!await workspaceExists(workspaceId)) {
+        continue;
+      }
       for (final campaign in await repository.skillCampaigns(
         workspaceId,
         limit: 100000,
@@ -261,7 +316,9 @@ class SkillEvaluationService {
   }
 
   void _scheduleRevision(Future<void> Function() work) {
-    if (_stopping) return;
+    if (_stopping) {
+      return;
+    }
     _revisionWork = _revisionWork.then((_) => work()).catchError((
       Object error,
     ) {
@@ -271,13 +328,17 @@ class SkillEvaluationService {
     });
   }
 
+  /// Admits and queues a pinned evaluation after rechecking actor, policy,
+  /// model and spending authority; [automatic] requires an enabled policy.
   Future<SkillEvaluationCampaign> launch({
     required String workspaceId,
     required Principal actor,
     required SkillEvaluationSettings settings,
     bool automatic = false,
   }) async {
-    if (_stopping) throw StateError('Evaluation service is stopping');
+    if (_stopping) {
+      throw StateError('Evaluation service is stopping');
+    }
     await authorize(workspaceId, actor, write: true, repoId: settings.repoId);
     final automaticPolicy = automatic
         ? await _checkAutomaticPolicy(workspaceId, settings, actor: actor)
@@ -298,8 +359,9 @@ class SkillEvaluationService {
     }
     final modelPin = await validateModel(settings);
     final corpus = skillEvaluationCorpusById(settings.corpusId);
-    if (corpus == null)
+    if (corpus == null) {
       throw ArgumentError('Unknown trusted skill evaluation corpus');
+    }
     final candidate = await snapshots.capture(
       workspaceId: workspaceId,
       slug: settings.skillSlug,
@@ -346,7 +408,9 @@ class SkillEvaluationService {
         : _newId();
     if (automatic) {
       final existing = await repository.skillCampaignById(workspaceId, id);
-      if (existing != null) return existing;
+      if (existing != null) {
+        return existing;
+      }
     }
     final campaign = SkillEvaluationCampaign(
       id: id,
@@ -372,7 +436,9 @@ class SkillEvaluationService {
       triggeredBy: automatic ? 'skill_update' : 'manual',
       configuration: configuration,
     );
-    if (_stopping) throw StateError('Evaluation service is stopping');
+    if (_stopping) {
+      throw StateError('Evaluation service is stopping');
+    }
     await authorize(workspaceId, actor, write: true, repoId: settings.repoId);
     if (automaticPolicy != null) {
       await _checkAutomaticPolicy(
@@ -415,7 +481,9 @@ class SkillEvaluationService {
   }
 
   void _startQueuedWork() {
-    if (_draining != null || _queue.isEmpty) return;
+    if (_draining != null || _queue.isEmpty) {
+      return;
+    }
     _draining = _drain().whenComplete(() {
       _draining = null;
       // Admission may enqueue between the drain's final check and this callback.
@@ -489,7 +557,9 @@ class SkillEvaluationService {
       } on Object catch (error) {
         try {
           await _change(campaign.workspaceId, campaign.id, (current) {
-            if (current.isTerminal) return current;
+            if (current.isTerminal) {
+              return current;
+            }
             return current.copyWith(
               status: _stopping
                   ? SkillEvaluationCampaignStatus.interrupted
@@ -556,13 +626,16 @@ class SkillEvaluationService {
     });
   }
 
+  /// Cancels a workspace campaign, preserving terminal outcomes.
   Future<SkillEvaluationCampaign> cancel(
     String workspaceId,
     Principal actor,
     String id,
   ) async {
     final current = await get(workspaceId, actor, id, write: true);
-    if (current.isTerminal) return current;
+    if (current.isTerminal) {
+      return current;
+    }
     _sources[id]?.cancel('Operator cancelled campaign');
     return _change(
       workspaceId,
@@ -580,6 +653,8 @@ class SkillEvaluationService {
     );
   }
 
+  /// Returns an authorized workspace campaign, with repository access checked
+  /// after its repository scope is read from storage.
   Future<SkillEvaluationCampaign> get(
     String workspaceId,
     Principal actor,
@@ -588,11 +663,15 @@ class SkillEvaluationService {
   }) async {
     await authorize(workspaceId, actor, write: write);
     final campaign = await repository.skillCampaignById(workspaceId, id);
-    if (campaign == null) throw StateError('Unknown workspace campaign');
+    if (campaign == null) {
+      throw StateError('Unknown workspace campaign');
+    }
     await authorize(workspaceId, actor, write: write, repoId: campaign.repoId);
     return campaign;
   }
 
+  /// Streams campaigns visible to [actor], filtering each repository-scoped
+  /// row against the actor's current grants.
   Stream<List<SkillEvaluationCampaign>> watch(
     String workspaceId,
     Principal actor, {
@@ -606,12 +685,15 @@ class SkillEvaluationService {
       await authorize(workspaceId, actor, write: false);
       final visible = <SkillEvaluationCampaign>[];
       for (final row in rows) {
-        if (await _canRead(row, actor)) visible.add(row);
+        if (await _canRead(row, actor)) {
+          visible.add(row);
+        }
       }
       yield visible;
     }
   }
 
+  /// Streams one campaign, rechecking authorization for every update.
   Stream<SkillEvaluationCampaign?> watchOne(
     String workspaceId,
     Principal actor,
@@ -642,6 +724,7 @@ class SkillEvaluationService {
     }
   }
 
+  /// Lists attempt identities and accounting without their full evidence.
   Future<List<SkillEvaluationAttemptRecord>> attempts(
     String workspaceId,
     Principal actor,
@@ -667,6 +750,7 @@ class SkillEvaluationService {
     ];
   }
 
+  /// Loads a single attempt's bounded evidence after campaign authorization.
   Future<SkillEvaluationAttemptRecord> attempt(
     String workspaceId,
     Principal actor,
@@ -679,10 +763,13 @@ class SkillEvaluationService {
       campaignId,
       id,
     );
-    if (record == null) throw StateError('Unknown campaign attempt');
+    if (record == null) {
+      throw StateError('Unknown campaign attempt');
+    }
     return record;
   }
 
+  /// Exports bounded, redacted campaign and attempt evidence as JSON content.
   Future<Map<String, dynamic>> export(
     String workspaceId,
     Principal actor,
@@ -701,6 +788,7 @@ class SkillEvaluationService {
     };
   }
 
+  /// Returns the policy for an authorized workspace or repository skill.
   Future<SkillEvaluationPolicy?> policy(
     String workspaceId,
     Principal actor,
@@ -715,6 +803,7 @@ class SkillEvaluationService {
     return repository.skillPolicy(workspaceId, skillKey);
   }
 
+  /// Saves opt-in policy configuration without launching a campaign.
   Future<SkillEvaluationPolicy> setPolicy(
     String workspaceId,
     Principal actor,
@@ -729,10 +818,12 @@ class SkillEvaluationService {
       repoId: _repoForKey(skillKey),
     );
     final settings = SkillEvaluationSettings.fromJson(configuration);
-    if (settings.skillKey != skillKey)
+    if (settings.skillKey != skillKey) {
       throw ArgumentError('Policy skill identity mismatch');
-    if (skillEvaluationCorpusById(settings.corpusId) == null)
+    }
+    if (skillEvaluationCorpusById(settings.corpusId) == null) {
       throw ArgumentError('Unknown corpus');
+    }
     final observed = <String, String>{};
     if (enabled) {
       await validateModel(settings);
@@ -782,7 +873,9 @@ class SkillEvaluationService {
       SkillEvaluationSnapshotStore.validateSlug(key.substring(10));
       return null;
     }
-    if (!key.startsWith('repo:')) throw ArgumentError('Invalid skill scope');
+    if (!key.startsWith('repo:')) {
+      throw ArgumentError('Invalid skill scope');
+    }
     final separator = key.indexOf(':', 5);
     if (separator <= 5 || separator == key.length - 1) {
       throw ArgumentError('Invalid skill scope');
@@ -795,7 +888,9 @@ class SkillEvaluationService {
     String skillKey,
     String currentHash,
   ) async {
-    if (!await workspaceExists(workspaceId)) return;
+    if (!await workspaceExists(workspaceId)) {
+      return;
+    }
     final observed = _observedRevisions.putIfAbsent(workspaceId, () => {});
     observed[skillKey] = currentHash;
     for (final campaign in await repository.skillCampaigns(
@@ -803,7 +898,9 @@ class SkillEvaluationService {
       limit: 100000,
     )) {
       final dependencies = _dependencies(campaign);
-      if (!dependencies.containsKey(skillKey)) continue;
+      if (!dependencies.containsKey(skillKey)) {
+        continue;
+      }
       final mismatch = dependencies.entries.any(
         (entry) =>
             observed[entry.key] != null && observed[entry.key] != entry.value,
@@ -829,11 +926,14 @@ class SkillEvaluationService {
       try {
         final settings = SkillEvaluationSettings.fromJson(policy.configuration);
         if (!_scopes(settings).any((scope) => scope.key == skillKey) ||
-            _stopping)
+            _stopping) {
           continue;
+        }
         final checkpoint =
             policy.configuration['observedRevisions'] as Map? ?? const {};
-        if (checkpoint[skillKey] == currentHash) continue;
+        if (checkpoint[skillKey] == currentHash) {
+          continue;
+        }
         // Initial checkpoints do not spend. Only later changes can launch.
         if (checkpoint[skillKey] != null) {
           await launch(
@@ -846,8 +946,9 @@ class SkillEvaluationService {
         await _updatePolicy(workspaceId, policy.skillKey, (current) {
           if (current == null ||
               !current.enabled ||
-              _policyRevision(current) != _policyRevision(policy))
+              _policyRevision(current) != _policyRevision(policy)) {
             return null;
+          }
           return SkillEvaluationPolicy(
             workspaceId: workspaceId,
             skillKey: current.skillKey,
@@ -878,7 +979,9 @@ class SkillEvaluationService {
     // CROSS-WORKSPACE BY DESIGN: explicitly opted-in policies and historical
     // scopes only. This also catches workspace edits missed during admission.
     for (final workspaceId in await registeredWorkspaceIds()) {
-      if (!await workspaceExists(workspaceId)) continue;
+      if (!await workspaceExists(workspaceId)) {
+        continue;
+      }
       final seen = <String>{};
       final campaigns = await repository.skillCampaigns(
         workspaceId,
@@ -892,7 +995,9 @@ class SkillEvaluationService {
       ];
       for (final (actor, config) in specs) {
         for (final scope in _scopes(SkillEvaluationSettings.fromJson(config))) {
-          if (seen.contains(scope.key)) continue;
+          if (seen.contains(scope.key)) {
+            continue;
+          }
           try {
             await authorize(
               workspaceId,
@@ -987,8 +1092,9 @@ class SkillEvaluationService {
           repoId: original.package.repoId,
           skillPath: original.skillPath,
         );
-        if (current.package.packageHash == original.package.packageHash)
+        if (current.package.packageHash == original.package.packageHash) {
           continue;
+        }
       } on Object {
         // Unreadable/quarantined current content cannot certify an old capture.
       }
@@ -1009,11 +1115,13 @@ class SkillEvaluationService {
     String id,
     SkillEvaluationCampaign Function(SkillEvaluationCampaign) update,
   ) => _serializeMutation('$workspaceId\u0000campaign\u0000$id', () async {
-    if (!await workspaceExists(workspaceId))
+    if (!await workspaceExists(workspaceId)) {
       throw StateError('Workspace is no longer registered');
+    }
     final current = await repository.skillCampaignById(workspaceId, id);
-    if (current == null)
+    if (current == null) {
       throw StateError('Campaign disappeared during execution');
+    }
     final next = update(current);
     await repository.upsertSkillCampaign(next);
     return next;
@@ -1024,21 +1132,24 @@ class SkillEvaluationService {
     String skillKey,
     SkillEvaluationPolicy? Function(SkillEvaluationPolicy?) update,
   ) => _serializeMutation('$workspaceId\u0000policy\u0000$skillKey', () async {
-    if (!await workspaceExists(workspaceId))
+    if (!await workspaceExists(workspaceId)) {
       throw StateError('Workspace is no longer registered');
+    }
     final next = update(await repository.skillPolicy(workspaceId, skillKey));
-    if (next != null) await repository.upsertSkillPolicy(next);
+    if (next != null) {
+      await repository.upsertSkillPolicy(next);
+    }
     return next;
   });
 
   Future<T> _serializeMutation<T>(String key, Future<T> Function() work) async {
     final previous = _mutations[key] ?? Future<void>.value();
     final result = previous
-        .then((_) {}, onError: (Object _, StackTrace __) {})
+        .then((_) {}, onError: (Object _, StackTrace _) {})
         .then((_) => work());
     final barrier = result.then<void>(
       (_) {},
-      onError: (Object _, StackTrace __) {},
+      onError: (Object _, StackTrace _) {},
     );
     _mutations[key] = barrier;
     try {
@@ -1053,6 +1164,8 @@ class SkillEvaluationService {
   String _safeError(Object error) =>
       evidence.project({'error': error.toString()})['error'] as String;
 
+  /// Stops watchers, cancels queued and active jobs, then releases executor
+  /// resources once pending mutations and running work have settled.
   Future<void> dispose() async {
     _stopping = true;
     _repoTimer?.cancel();

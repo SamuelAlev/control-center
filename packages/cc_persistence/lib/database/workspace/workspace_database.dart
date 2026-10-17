@@ -780,7 +780,9 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
       variables: [Variable<String>(table.actualTableName)],
     ).get();
-    if (existing.isEmpty) await m.createTable(table);
+    if (existing.isEmpty) {
+      await m.createTable(table);
+    }
   }
 
   /// Creates [index] unless the file already has it.

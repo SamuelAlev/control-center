@@ -143,7 +143,9 @@ void main() {
     var produced = 0;
     var dataFrames = 0;
     final observer = clientChannel.incoming.listen((frame) {
-      if (frame['type'] == 'resource' && frame['op'] == 'data') dataFrames++;
+      if (frame['type'] == 'resource' && frame['op'] == 'data') {
+        dataFrames++;
+      }
     });
     final server = RemoteResourceServer(
       serverChannel,
@@ -166,7 +168,9 @@ void main() {
     final completed = Completer<void>();
     subscription = response.body.listen((_) {
       consumed++;
-      if (consumed == 1) subscription.pause();
+      if (consumed == 1) {
+        subscription.pause();
+      }
     }, onDone: completed.complete);
     await _settle();
     expect(consumed, 1);
@@ -174,6 +178,7 @@ void main() {
     expect(produced, lessThanOrEqualTo(9));
     subscription.resume();
     await completed.future.timeout(const Duration(seconds: 5));
+    await subscription.cancel();
     expect(consumed, 64);
     await observer.cancel();
     await client.close();
@@ -197,7 +202,7 @@ void main() {
             onSend: (message) async {
               serverMessages.add(message);
             },
-            onClose: (_, __) async => serverMessages.close(),
+            onClose: (_, _) async => serverMessages.close(),
           );
         },
       );
@@ -236,7 +241,7 @@ void main() {
         readCloseCode: () => 4001,
         readCloseReason: () => 'workspace removed',
         onSend: (_) async {},
-        onClose: (_, __) async => fromServer.close(),
+        onClose: (_, _) async => fromServer.close(),
       ),
     );
     final client = RemoteResourceClient(clientChannel);
@@ -263,8 +268,9 @@ void main() {
         protocol: '',
         onSend: (_) async {},
         onClose: (code, reason) async {
-          if (!upstreamClosed.isCompleted)
+          if (!upstreamClosed.isCompleted) {
             upstreamClosed.complete((code, reason));
+          }
           await fromServer.close();
         },
       ),
@@ -313,10 +319,14 @@ void main() {
       });
       final socket = await client.connectWebSocket(Uri.parse('/editor'));
       final incoming = socket.incoming.listen((_) {
-        if (!heartbeat.isCompleted) heartbeat.complete();
+        if (!heartbeat.isCompleted) {
+          heartbeat.complete();
+        }
       }, onError: (Object _) {});
       final timer = Timer.periodic(const Duration(milliseconds: 2), (_) {
-        if (credits == 0 || closed.isCompleted) return;
+        if (credits == 0 || closed.isCompleted) {
+          return;
+        }
         credits--;
         unawaited(
           peer.send({

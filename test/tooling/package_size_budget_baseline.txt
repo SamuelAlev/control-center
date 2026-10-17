@@ -28,7 +28,7 @@ packages/cc_domain/lib/features/evals/domain/evaluation/evaluation_plan.dart  15
 packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2227
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2850
 packages/cc_domain/lib/src/dtos/dtos.dart  4024
-packages/cc_harness/lib/src/loop/agent_loop_runner.dart  2196
+packages/cc_harness/lib/src/loop/agent_loop_runner.dart  2195
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1868
 packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2636
 packages/cc_infra/lib/src/dispatch/dispatch_session_claude_cli.dart  1545
@@ -46,7 +46,7 @@ packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2835
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3356
 packages/cc_server_core/lib/src/cc_server_runtime.dart  8233
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
-packages/cc_server_core/lib/src/local_rpc_server.dart  2570
+packages/cc_server_core/lib/src/local_rpc_server.dart  2551
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1715
 packages/cc_server_core/lib/src/remote_rpc_catalog.dart  15963
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2644

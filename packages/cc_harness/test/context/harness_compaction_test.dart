@@ -773,8 +773,8 @@ void main() {
     test('the structural summary does not grow without bound', () async {
       const budget = HarnessEvidenceBudget(totalChars: 2000);
       const compactor = DefaultHarnessCompactor(
-        config: const CompactionConfig(keepTurns: 2, buffer: 100, prune: false),
-        summarizer: const StructuralHarnessSummarizer(budget: budget),
+        config: CompactionConfig(keepTurns: 2, buffer: 100, prune: false),
+        summarizer: StructuralHarnessSummarizer(budget: budget),
       );
       final h = <HarnessMessage>[HarnessMessage.user('the task ' * 50)];
       void grow() {
@@ -864,12 +864,8 @@ void main() {
       () async {
         const budget = HarnessEvidenceBudget(totalChars: 1200);
         const compactor = DefaultHarnessCompactor(
-          config: const CompactionConfig(
-            keepTurns: 2,
-            buffer: 50,
-            prune: false,
-          ),
-          summarizer: const StructuralHarnessSummarizer(budget: budget),
+          config: CompactionConfig(keepTurns: 2, buffer: 50, prune: false),
+          summarizer: StructuralHarnessSummarizer(budget: budget),
         );
         final h = <HarnessMessage>[
           HarnessMessage.user(

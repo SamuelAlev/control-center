@@ -1,6 +1,6 @@
-import 'package:cc_harness/provider.dart' show HarnessAuthMethod;
 import 'package:cc_domain/cc_domain.dart' show ValidationException;
 import 'package:cc_domain/features/model_routing/model_routing.dart';
+import 'package:cc_harness/provider.dart' show HarnessAuthMethod;
 import 'package:cc_server_core/src/evals/skill_evaluation_model_policy.dart';
 import 'package:test/test.dart';
 

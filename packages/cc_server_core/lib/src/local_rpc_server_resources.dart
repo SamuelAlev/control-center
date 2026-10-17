@@ -56,7 +56,9 @@ extension _SecureResourceMethods on LocalRpcServer {
     Stream<List<int>> source,
   ) {
     final transfer = _resourceTransfers[request];
-    if (transfer == null) return source;
+    if (transfer == null) {
+      return source;
+    }
     return Stream<List<int>>.multi((output) {
       final subscription = source.listen(
         output.addSync,
@@ -69,7 +71,9 @@ extension _SecureResourceMethods on LocalRpcServer {
         ..onCancel = subscription.cancel;
       unawaited(
         transfer.cancelled.then((_) async {
-          if (!transfer.isCancelled) return;
+          if (!transfer.isCancelled) {
+            return;
+          }
           try {
             await subscription.cancel();
           } catch (error, stack) {

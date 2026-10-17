@@ -94,18 +94,24 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
     }
     _queuedDecodes++;
     // Register before any await; a later record must never overtake this one.
-    _decodeChain = _decodeChain.then((_) => _deliverFrame(data)).whenComplete(
-      () => _queuedDecodes--,
-    );
+    _decodeChain = _decodeChain
+        .then((_) => _deliverFrame(data))
+        .whenComplete(() => _queuedDecodes--);
   }
 
   Future<void> _deliverFrame(String data) async {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     try {
       final decoded = await decodeJsonFrame(data);
-      if (_closed) return;
+      if (_closed) {
+        return;
+      }
       final controller = _incomingController;
-      if (controller == null || controller.isClosed) return;
+      if (controller == null || controller.isClosed) {
+        return;
+      }
       if (controller.hasListener) {
         controller.add(decoded);
       } else if (_pendingIncoming.length >= _maxPendingFrames) {
@@ -121,10 +127,14 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
   }
 
   Future<void> _onRemoteDone() async {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     _open = false;
     await _decodeChain;
-    if (!_closed) await close();
+    if (!_closed) {
+      await close();
+    }
   }
 
   @override
@@ -204,7 +214,9 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
 
   @override
   Future<void> close() async {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     _closed = true;
     _open = false;
     _pendingIncoming.clear();

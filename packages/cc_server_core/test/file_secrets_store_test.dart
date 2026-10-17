@@ -41,18 +41,23 @@ void main() {
         'psk',
       );
     });
-    test('the temporary inode is restricted before writing a VAPID key', () async {
-      if (Platform.isWindows) return;
-      // A stale temporary inode may have been left by a failed former write.
-      // Restrict it before reusing it, not after exposing the new bytes.
-      final temporary = File('${secretsFile().path}.tmp')
-        ..writeAsStringSync('old');
-      await FileSecretsStore(dataDir: tmp.path)
-          .writePsk('web_push_vapid_v1', 'private-vapid-key');
-      expect(secretsFile().statSync().mode & 0x1ff, 0x180); // 0600
-      expect(temporary.existsSync(), isFalse);
-    });
-
+    test(
+      'the temporary inode is restricted before writing a VAPID key',
+      () async {
+        if (Platform.isWindows) {
+          return;
+        }
+        // A stale temporary inode may have been left by a failed former write.
+        // Restrict it before reusing it, not after exposing the new bytes.
+        final temporary = File('${secretsFile().path}.tmp')
+          ..writeAsStringSync('old');
+        await FileSecretsStore(
+          dataDir: tmp.path,
+        ).writePsk('web_push_vapid_v1', 'private-vapid-key');
+        expect(secretsFile().statSync().mode & 0x1ff, 0x180); // 0600
+        expect(temporary.existsSync(), isFalse);
+      },
+    );
 
     test('a data dir with no secrets file starts empty', () async {
       final store = FileSecretsStore(dataDir: tmp.path);

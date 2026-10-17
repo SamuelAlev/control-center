@@ -57,7 +57,7 @@ void main() {
       uploadUrl: 'https://host.test/blob',
       discardFile: (_, _) async {},
       post: (uri, {headers, body}) async => http.Response(
-        '{\"ref\":\"$_blobA\",\"bytes\":3,\"media_type\":\"text/plain\"}',
+        '{"ref":"$_blobA","bytes":3,"media_type":"text/plain"}',
         200,
       ),
     );

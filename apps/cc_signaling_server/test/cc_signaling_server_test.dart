@@ -677,7 +677,10 @@ void main() {
           (m) => m['type'] == 'signal',
           timeout: const Duration(seconds: 3),
         );
-        expect(delivered['payload']['c'], 'opaque-record');
+        expect(
+          (delivered['payload'] as Map<String, dynamic>)['c'],
+          'opaque-record',
+        );
         await Future<void>.delayed(const Duration(milliseconds: 100));
         expect(
           client.received.where((m) => m['type'] == 'turn-credentials').length,
@@ -728,7 +731,9 @@ void main() {
         final received = <String, List<String>>{'A': [], 'B': []};
         for (var i = 0; i < 24; i++) {
           final frame = await server.next((m) => m['type'] == 'signal');
-          received[frame['from']]!.add(frame['payload']['c'] as String);
+          received[frame['from']]!.add(
+            (frame['payload'] as Map<String, dynamic>)['c'] as String,
+          );
         }
         for (final entry in received.entries) {
           final marker = entry.key == 'A' ? 'x' : 'y';
@@ -791,10 +796,12 @@ void main() {
           received.add(await client.next((frame) => frame['type'] == 'signal'));
         }
         expect(received.map((frame) => frame['kind']), ['rpc', 'rpc', 'close']);
-        expect(received.take(2).map((frame) => frame['payload']['c']), [
-          'first',
-          'final',
-        ]);
+        expect(
+          received
+              .take(2)
+              .map((frame) => (frame['payload'] as Map<String, dynamic>)['c']),
+          ['first', 'final'],
+        );
         await client.close();
         await server.close();
       },
@@ -867,7 +874,10 @@ void main() {
               (m) => m['type'] == 'signal',
               timeout: const Duration(seconds: 55),
             );
-            expect(frame['payload']['c'], '$i:$ciphertext');
+            expect(
+              (frame['payload'] as Map<String, dynamic>)['c'],
+              '$i:$ciphertext',
+            );
           }
         }
         expect(a.isClosed, isFalse);

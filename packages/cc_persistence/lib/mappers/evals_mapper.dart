@@ -193,11 +193,16 @@ class EvalsMapper {
   );
   // ── Skill evaluation campaigns ──
 
-  SkillEvaluationCampaign skillCampaignFromRow(SkillEvalCampaignsTableData row) {
+  /// Decodes a campaign and checks its indexed identity and status against
+  /// the canonical payload before returning it.
+  SkillEvaluationCampaign skillCampaignFromRow(
+    SkillEvalCampaignsTableData row,
+  ) {
     final campaign = SkillEvaluationCampaign.fromJson(
       jsonDecode(row.payloadJson) as Map<String, dynamic>,
     );
-    if (campaign.id != row.id || campaign.workspaceId != row.workspaceId ||
+    if (campaign.id != row.id ||
+        campaign.workspaceId != row.workspaceId ||
         campaign.skillKey != row.skillKey ||
         campaign.status.name != row.status) {
       throw StateError('Skill campaign index and payload disagree');
@@ -205,6 +210,7 @@ class EvalsMapper {
     return campaign;
   }
 
+  /// Stores the canonical campaign payload alongside its queryable index.
   SkillEvalCampaignsTableCompanion skillCampaignToCompanion(
     SkillEvaluationCampaign campaign,
   ) => SkillEvalCampaignsTableCompanion(
@@ -216,17 +222,24 @@ class EvalsMapper {
     payloadJson: Value(jsonEncode(campaign.toJson())),
   );
 
-  SkillEvaluationAttemptRecord skillAttemptFromRow(SkillEvalAttemptsTableData row) {
+  /// Decodes an attempt and checks its indexed ownership and order against
+  /// the canonical payload before returning it.
+  SkillEvaluationAttemptRecord skillAttemptFromRow(
+    SkillEvalAttemptsTableData row,
+  ) {
     final attempt = SkillEvaluationAttemptRecord.fromJson(
       jsonDecode(row.payloadJson) as Map<String, dynamic>,
     );
-    if (attempt.id != row.id || attempt.workspaceId != row.workspaceId ||
-        attempt.campaignId != row.campaignId || attempt.ordinal != row.ordinal) {
+    if (attempt.id != row.id ||
+        attempt.workspaceId != row.workspaceId ||
+        attempt.campaignId != row.campaignId ||
+        attempt.ordinal != row.ordinal) {
       throw StateError('Skill attempt index and payload disagree');
     }
     return attempt;
   }
 
+  /// Stores the canonical attempt payload alongside its queryable index.
   SkillEvalAttemptsTableCompanion skillAttemptToCompanion(
     SkillEvaluationAttemptRecord attempt,
   ) => SkillEvalAttemptsTableCompanion(
@@ -237,17 +250,20 @@ class EvalsMapper {
     payloadJson: Value(jsonEncode(attempt.toJson())),
   );
 
+  /// Decodes a policy and checks its indexed opt-in state against the payload.
   SkillEvaluationPolicy skillPolicyFromRow(SkillEvalPoliciesTableData row) {
     final policy = SkillEvaluationPolicy.fromJson(
       jsonDecode(row.payloadJson) as Map<String, dynamic>,
     );
-    if (policy.workspaceId != row.workspaceId || policy.skillKey != row.skillKey ||
+    if (policy.workspaceId != row.workspaceId ||
+        policy.skillKey != row.skillKey ||
         policy.enabled != row.enabled) {
       throw StateError('Skill policy index and payload disagree');
     }
     return policy;
   }
 
+  /// Stores the canonical policy payload alongside its opt-in index.
   SkillEvalPoliciesTableCompanion skillPolicyToCompanion(
     SkillEvaluationPolicy policy,
   ) => SkillEvalPoliciesTableCompanion(

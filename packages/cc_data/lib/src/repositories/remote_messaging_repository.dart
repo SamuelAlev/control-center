@@ -405,7 +405,7 @@ class RemoteMessagingRepository {
     String? workspaceId,
   }) => _client.subscribeEvents('messaging.watchSpaceTurns', {
     'space_id': spaceId,
-    if (workspaceId != null) 'workspace_id': workspaceId,
+    'workspace_id': ?workspaceId,
   });
 
   /// Live per-space activity signals for [workspaceId] — or for the client's

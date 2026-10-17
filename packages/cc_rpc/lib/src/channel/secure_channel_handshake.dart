@@ -9,14 +9,20 @@ import 'package:cc_rpc/src/crypto/server_identity.dart';
 
 /// An authenticated, forward-secret connection. The caller owns [channel].
 final class SecureChannelConnection {
+  /// Carries the verified device and server identity for a live secure channel.
   const SecureChannelConnection({
     required this.channel,
     required this.deviceId,
     required this.serverFingerprint,
   });
 
+  /// Authenticated channel; the caller closes it when the session ends.
   final SecureRpcChannel channel;
+
+  /// Device identifier admitted by the server for this session.
   final String deviceId;
+
+  /// Fingerprint of the server identity verified during the handshake.
   final String serverFingerprint;
 }
 
@@ -164,7 +170,9 @@ Future<SecureChannelConnection> acceptSecureChannel({
       }
     }
     await (secure ?? channel).close();
-    if (error is SecureHandshakeException) rethrow;
+    if (error is SecureHandshakeException) {
+      rethrow;
+    }
     throw const SecureHandshakeException('Secure handshake failed');
   } finally {
     handshake?.destroy();
@@ -178,10 +186,14 @@ Future<Map<String, dynamic>> _readOne(
   final next = Completer<Map<String, dynamic>>();
   final sub = channel.incoming.listen(
     (frame) {
-      if (!next.isCompleted) next.complete(frame);
+      if (!next.isCompleted) {
+        next.complete(frame);
+      }
     },
     onError: (Object error, StackTrace stack) {
-      if (!next.isCompleted) next.completeError(error, stack);
+      if (!next.isCompleted) {
+        next.completeError(error, stack);
+      }
     },
     onDone: () {
       if (!next.isCompleted) {
@@ -199,7 +211,9 @@ Future<Map<String, dynamic>> _readOne(
 Uint8List _pairingBytes(String psk) {
   try {
     final bytes = base64Url.decode(base64Url.normalize(psk));
-    if (bytes.length == 32) return bytes;
+    if (bytes.length == 32) {
+      return bytes;
+    }
   } catch (_) {
     // FormatException can include its input. Never expose pairing material.
   }
@@ -231,8 +245,13 @@ List<int> _prologue(String deviceId) => utf8.encode(
 String _identityChallenge(List<int> transcript) =>
     'cc-noise-identity-v1|${base64Url.encode(transcript)}';
 
+/// A rejected Noise or signed-identity handshake; the underlying transport is
+/// closed and pairing material is never included in the reported message.
 final class SecureHandshakeException implements Exception {
+  /// Creates a failure safe to expose without pairing or identity secrets.
   const SecureHandshakeException(this.message);
+
+  /// Non-secret reason the secure handshake was rejected.
   final String message;
   @override
   String toString() => 'SecureHandshakeException: $message';

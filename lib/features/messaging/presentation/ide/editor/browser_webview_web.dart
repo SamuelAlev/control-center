@@ -36,6 +36,8 @@ class BrowserWebView extends StatefulWidget {
 
   /// Whether this iframe uses the authenticated code-server resource facade.
   final bool codeServerResource;
+
+  /// Called when the authenticated editor facade fails to load.
   final VoidCallback? onError;
 
   @override
@@ -93,7 +95,9 @@ class _BrowserWebViewState extends State<BrowserWebView> {
         _attachEditor(_iframe, url.toJS).toDart.then((_) {}).catchError((
           Object _,
         ) {
-          if (mounted) widget.onError?.call();
+          if (mounted) {
+            widget.onError?.call();
+          }
         }),
       );
       return;
@@ -113,7 +117,9 @@ class _BrowserWebViewState extends State<BrowserWebView> {
 
   @override
   void dispose() {
-    if (widget.codeServerResource) _detachEditor(_iframe);
+    if (widget.codeServerResource) {
+      _detachEditor(_iframe);
+    }
     _iframe.src = 'about:blank';
     super.dispose();
   }

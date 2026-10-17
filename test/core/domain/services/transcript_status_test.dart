@@ -1,5 +1,5 @@
-import 'package:cc_domain/core/domain/services/transcript_status.dart';
 import 'package:cc_domain/core/domain/services/tool_display_name.dart';
+import 'package:cc_domain/core/domain/services/transcript_status.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:flutter_test/flutter_test.dart';
 

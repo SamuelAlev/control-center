@@ -61,7 +61,7 @@ class ControlledEvaluationProcess implements HarnessCommandRunner {
     _runtimeBin = null;
     _cachedRuntime = null;
     _runtimeDiscovered = false;
-    if (directory != null && await directory.exists()) {
+    if (directory != null && directory.existsSync()) {
       await directory.delete(recursive: true);
     }
   }
@@ -74,8 +74,7 @@ class ControlledEvaluationProcess implements HarnessCommandRunner {
           '-I',
           '-S',
           '-c',
-          'import json,os,sys; print(json.dumps([os.path.realpath(sys.executable),'
-              'os.path.realpath(sys.base_prefix)]))',
+          'import json,os,sys; print(json.dumps([os.path.realpath(sys.executable),os.path.realpath(sys.base_prefix)]))',
         ],
         environment: const {'PATH': '/usr/bin:/bin'},
         includeParentEnvironment: false,
@@ -581,11 +580,8 @@ os.execv(sys.argv[2], sys.argv[2:])
         '(allow file-read-metadata (literal "${quote(dir)}"))',
       '(allow process-fork)',
       '(allow signal (target self))',
-      '(allow sysctl-read (sysctl-name-prefix "hw.") '
-          '(sysctl-name "kern.ostype" "kern.osrelease" "kern.osversion" '
-          '"kern.version" "kern.osvariant_status"))',
-      '(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid '
-          'SYS_posix_spawn SYS_setrlimit))',
+      '(allow sysctl-read (sysctl-name-prefix "hw.") (sysctl-name "kern.ostype" "kern.osrelease" "kern.osversion" "kern.version" "kern.osvariant_status"))',
+      '(deny syscall-unix (syscall-number SYS_setsid SYS_setpgid SYS_posix_spawn SYS_setrlimit))',
       '(deny network*)',
       '(allow file-read* ${subpath(base)})',
       for (final dir in readOnlyRoots) '(allow file-read* ${subpath(dir)})',

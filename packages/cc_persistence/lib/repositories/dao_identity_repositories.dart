@@ -305,14 +305,13 @@ class DaoWorkspaceInviteRepository implements WorkspaceInviteRepository {
 
   @override
   Future<WorkspaceInvite?> getByRouteId(String routeId) async {
-    if (!RegExp(r'^[0-9a-f]{64}$').hasMatch(routeId)) return null;
+    if (!RegExp(r'^[0-9a-f]{64}$').hasMatch(routeId)) {
+      return null;
+    }
     final route = await _routes.resolveSecureInvite(routeId);
     if (route == null ||
         InvitePairingProof.routeIdFromHash(route.codeHash) != routeId ||
-        await _routes.resolve(
-              WorkspaceRouteKind.inviteCode,
-              route.codeHash,
-            ) !=
+        await _routes.resolve(WorkspaceRouteKind.inviteCode, route.codeHash) !=
             route.workspaceId) {
       return null;
     }

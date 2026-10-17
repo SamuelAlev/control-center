@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/cc_domain.dart' show JsonRpcRequest;
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
@@ -17,9 +17,6 @@ import 'helpers/test_database.dart';
 const _deviceId = 'policy-device';
 const _timeout = Duration(seconds: 3);
 final _psk = base64Url.encode(List<int>.generate(32, (i) => i + 1));
-
-typedef _SessionPolicy =
-    Future<({int maxAgeMinutes, int idleTimeoutMinutes})> Function();
 
 class _Secrets implements PairedDeviceSecretsPort {
   int readCount = 0;
@@ -86,7 +83,9 @@ void main() {
     );
   }
 
-  Future<void> deniedBeforePsk(_SessionPolicy policy) async {
+  Future<void> deniedBeforePsk(
+    Future<({int maxAgeMinutes, int idleTimeoutMinutes})> Function() policy,
+  ) async {
     final lastSeen = (await db.pairedDeviceDao.getById(_deviceId))!.lastSeenAt;
     final (server, client) = InProcessRpcChannel.pair();
     final accepted = authenticatePairedPeer(

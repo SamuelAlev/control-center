@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
 import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
 import 'package:cc_infra/src/evaluation/evaluation_verifier_runner.dart';
-import 'package:cc_infra/src/evaluation/skill_evaluation_corpus.dart';
 import 'package:cc_infra/src/evaluation/isolated_task_workspace.dart';
+import 'package:cc_infra/src/evaluation/skill_evaluation_corpus.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -212,8 +212,9 @@ void _referenceArtifact(
   }
   if (task.inlineFiles.containsKey('diagnostic.py')) {
     final evidence = _reviewGold[_caseId(task)];
-    if (evidence == null)
+    if (evidence == null) {
       throw StateError('missing review reference: ${task.id}');
+    }
     final (input, expected, actual) = evidence;
     _write(
       workspace,
@@ -237,8 +238,9 @@ void _referenceArtifact(
       : 'policy.py';
   if (good) {
     final reference = _goodModules[_caseId(task)];
-    if (reference == null)
+    if (reference == null) {
       throw StateError('missing module reference: ${task.id}');
+    }
     _write(workspace, name, reference);
   }
   // The seeded intentionally incorrect implementation is the known-bad artifact.
@@ -513,7 +515,9 @@ void main() {
         await expectLater(workspace.changedFiles(), throwsStateError);
       } finally {
         workspace?.dispose();
-        if (parent.existsSync()) parent.deleteSync(recursive: true);
+        if (parent.existsSync()) {
+          parent.deleteSync(recursive: true);
+        }
       }
     },
   );

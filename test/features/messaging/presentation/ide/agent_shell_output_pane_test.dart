@@ -7,7 +7,6 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_shell_output_pane.dart';
 import 'package:control_center/features/sandboxing/providers/agent_shell_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -15,7 +14,7 @@ import 'package:material_ui/material_ui.dart';
 class _OutputPort implements AgentShellProcessPort {
   final reads = <(String, String, String)>[];
   final pending = <Completer<AgentShellOutput>>[];
-  var kills = 0;
+  int kills = 0;
 
   @override
   Future<List<AgentShellProcess>> list({

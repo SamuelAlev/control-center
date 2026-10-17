@@ -64,7 +64,7 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
         _status.isNotEmpty ||
         _assignee.isNotEmpty ||
         _priority.isNotEmpty;
-    final tickets = this._filteredTickets(
+    final tickets = _filteredTickets(
       async.asData?.value,
       workspaceId,
       agentNames,

@@ -7,8 +7,10 @@ import 'package:intl/intl.dart';
 
 /// Read-only interpretation of the skillBehavior report, including partial runs.
 class SkillBehaviorSummary extends StatelessWidget {
+  /// Creates a summary for a campaign's behavior evidence.
   const SkillBehaviorSummary({required this.behavior, super.key});
 
+  /// The server's `skillBehavior` report section, including partial results.
   final Map<String, dynamic> behavior;
 
   @override
@@ -29,10 +31,9 @@ class SkillBehaviorSummary extends StatelessWidget {
     final utility = _rows(behavior['utilityByFamily']);
     final families = <String, List<Map<String, dynamic>>>{};
     for (final row in utility) {
-      (families.putIfAbsent(
-        '${row['family'] ?? l.skillEvalUnknown}',
-        () => [],
-      )).add(row);
+      families
+          .putIfAbsent('${row['family'] ?? l.skillEvalUnknown}', () => [])
+          .add(row);
     }
 
     return Column(

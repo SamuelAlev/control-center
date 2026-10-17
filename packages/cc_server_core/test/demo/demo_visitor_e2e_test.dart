@@ -68,7 +68,7 @@ void main() {
         fail('redeem failed (${resp.statusCode}): $wire');
       }
       final body = jsonDecode(wire) as Map<String, dynamic>;
-      return CredentialSeal.open(
+      return await CredentialSeal.open(
         recipientPrivateKey: recipient.privateKey,
         envelope: (body['box'] as Map).cast<String, dynamic>(),
         context: 'cc-public-demo-v1',

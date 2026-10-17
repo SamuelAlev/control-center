@@ -28,7 +28,9 @@ final class _Wire implements RemoteRpcChannelPort {
   Future<void> send(Map<String, dynamic> frame) async {
     captured.add(Map<String, dynamic>.of(frame));
     final forwarded = intercept == null ? frame : await intercept!(frame);
-    if (forwarded != null) await raw.send(forwarded);
+    if (forwarded != null) {
+      await raw.send(forwarded);
+    }
   }
 }
 
@@ -86,7 +88,9 @@ void main() {
       final done = Completer<void>();
       final sub = link.server.incoming.listen((frame) {
         received.add(frame);
-        if (received.length == 20) done.complete();
+        if (received.length == 20) {
+          done.complete();
+        }
       });
       addTearDown(sub.cancel);
       await Future.wait([
@@ -135,43 +139,45 @@ void main() {
       });
       addTearDown(connection.cancel);
       final preferences = <String, String>{};
-      final server = link.server.incoming.asyncMap((frame) async {
-        final params = (frame['params'] as Map).cast<String, dynamic>();
-        if (frame['method'] == RpcMethods.subscribe) {
-          final spaceId = (params['args'] as Map)['space_id'] as String;
-          await link.server.send({
-            'jsonrpc': '2.0',
-            'id': frame['id'],
-            'result': {'subscriptionId': spaceId, 'rev': 0},
-          });
-          await link.server.send({
-            'jsonrpc': '2.0',
-            'method': RpcMethods.subSnapshot,
-            'params': {
-              'subscriptionId': spaceId,
-              'data': {'space_id': spaceId, 'status': 'ready'},
-            },
-          });
-        } else if (frame['method'] == RpcMethods.repoCall) {
-          final args = params['args'] as Map;
-          if (params['op'] == 'prefs.set') {
-            preferences[args['key'] as String] = args['value'] as String;
-          }
-          await link.server.send({
-            'jsonrpc': '2.0',
-            'id': frame['id'],
-            'result': {
-              'data': {'prefs': preferences},
-            },
-          });
-        } else if (frame['method'] == RpcMethods.unsubscribe) {
-          await link.server.send({
-            'jsonrpc': '2.0',
-            'id': frame['id'],
-            'result': {'ok': true},
-          });
-        }
-      }).listen((_) {});
+      final server = link.server.incoming
+          .asyncMap((frame) async {
+            final params = (frame['params'] as Map).cast<String, dynamic>();
+            if (frame['method'] == RpcMethods.subscribe) {
+              final spaceId = (params['args'] as Map)['space_id'] as String;
+              await link.server.send({
+                'jsonrpc': '2.0',
+                'id': frame['id'],
+                'result': {'subscriptionId': spaceId, 'rev': 0},
+              });
+              await link.server.send({
+                'jsonrpc': '2.0',
+                'method': RpcMethods.subSnapshot,
+                'params': {
+                  'subscriptionId': spaceId,
+                  'data': {'space_id': spaceId, 'status': 'ready'},
+                },
+              });
+            } else if (frame['method'] == RpcMethods.repoCall) {
+              final args = params['args'] as Map;
+              if (params['op'] == 'prefs.set') {
+                preferences[args['key'] as String] = args['value'] as String;
+              }
+              await link.server.send({
+                'jsonrpc': '2.0',
+                'id': frame['id'],
+                'result': {
+                  'data': {'prefs': preferences},
+                },
+              });
+            } else if (frame['method'] == RpcMethods.unsubscribe) {
+              await link.server.send({
+                'jsonrpc': '2.0',
+                'id': frame['id'],
+                'result': {'ok': true},
+              });
+            }
+          })
+          .listen((_) {});
       addTearDown(server.cancel);
 
       const count = SecureRpcChannel.windowRecords * 2 + 1;
@@ -234,7 +240,9 @@ void main() {
       final sub = link.server.incoming.listen(delivered.add);
       addTearDown(sub.cancel);
       link.clientWire.intercept = (frame) async {
-        if (frame['type'] != 'secure') return frame;
+        if (frame['type'] != 'secure') {
+          return frame;
+        }
         final bytes = base64Url.decode(frame['c'] as String)..[0] ^= 1;
         return {...frame, 'c': base64Url.encode(bytes)};
       };
@@ -325,8 +333,12 @@ void main() {
           .where((f) => f['type'] == 'secure')
           .length;
       link.clientWire.intercept = (frame) async {
-        if (frame['type'] != 'secure') return frame;
-        if (++records == SecureRpcChannel.windowRecords) windowFull.complete();
+        if (frame['type'] != 'secure') {
+          return frame;
+        }
+        if (++records == SecureRpcChannel.windowRecords) {
+          windowFull.complete();
+        }
         return null;
       };
       final pending = link.client.send({
@@ -379,7 +391,9 @@ void main() {
       final received = link.client.incoming.toList();
       var records = 0;
       link.serverWire.intercept = (frame) async {
-        if (frame['type'] == 'secure' && ++records == 2) return null;
+        if (frame['type'] == 'secure' && ++records == 2) {
+          return null;
+        }
         return frame;
       };
       await link.server.send({

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:cc_harness/src/cancellation_token.dart';
 import 'package:cc_harness/src/context/harness_compaction.dart';
-import 'package:cc_harness/src/context/harness_evidence.dart';
 import 'package:cc_harness/src/context/harness_token_accounting.dart';
 import 'package:cc_harness/src/context/provider_image_budget.dart';
 import 'package:cc_harness/src/context/token_estimator.dart';

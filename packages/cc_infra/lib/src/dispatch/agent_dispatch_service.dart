@@ -459,7 +459,9 @@ class AgentDispatchService {
       var loopMarked = false;
       var timingsEmitted = false;
       void emitPreparationTimings(EventSink<AgentProcessEvent> sink) {
-        if (timingsEmitted) return;
+        if (timingsEmitted) {
+          return;
+        }
         timingsEmitted = true;
         sink.add(
           StageTimingEvent(
@@ -964,7 +966,9 @@ class AgentDispatchService {
             writeCost: false,
           ) ??
           false;
-      if (completed) _notifyRunEnded(runLog);
+      if (completed) {
+        _notifyRunEnded(runLog);
+      }
     }
   }
 
@@ -1036,7 +1040,9 @@ class AgentDispatchService {
             writeCost: false,
           ) ??
           false;
-      if (completed) _notifyRunEnded(existing);
+      if (completed) {
+        _notifyRunEnded(existing);
+      }
     }
   }
 }

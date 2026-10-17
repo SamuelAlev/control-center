@@ -7,9 +7,13 @@ import 'package:cc_harness/provider.dart';
 /// refused until the one in-flight request has finished and been accounted.
 class ProviderCallBudgetGuard
     implements LlmProviderPort, LlmDeferredToolSupport {
+  /// Wraps [delegate] and checks [canBegin] before each physical model call.
   ProviderCallBudgetGuard(this.delegate, {required this.canBegin});
 
+  /// Provider receiving calls after the budget and concurrency checks pass.
   final LlmProviderPort delegate;
+
+  /// Whether accounted spend permits another physical provider request.
   final bool Function() canBegin;
   bool _inFlight = false;
 

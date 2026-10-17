@@ -558,7 +558,7 @@ void main() {
       );
 
       expect(
-        () => failing.fetch(),
+        failing.fetch,
         throwsA(
           isA<RhttpStatusCodeException>().having(
             (e) => e.statusCode,
@@ -578,7 +578,7 @@ void main() {
       );
 
       expect(
-        () => failing.fetch(),
+        failing.fetch,
         throwsA(
           isA<RhttpConnectionException>().having(
             (e) => e.message,
@@ -596,7 +596,7 @@ void main() {
         ),
       );
 
-      expect(() => failing.fetch(), throwsA(isA<RhttpTimeoutException>()));
+      expect(failing.fetch, throwsA(isA<RhttpTimeoutException>()));
     });
 
     test('propagates transport exceptions on cancel', () async {
@@ -606,7 +606,7 @@ void main() {
         ),
       );
 
-      expect(() => failing.fetch(), throwsA(isA<RhttpCancelException>()));
+      expect(failing.fetch, throwsA(isA<RhttpCancelException>()));
     });
 
     test('propagates non-transport exceptions', () async {
@@ -617,7 +617,7 @@ void main() {
       );
 
       expect(
-        () => failing.fetch(),
+        failing.fetch,
         throwsA(
           isA<Exception>().having(
             (e) => e.toString(),

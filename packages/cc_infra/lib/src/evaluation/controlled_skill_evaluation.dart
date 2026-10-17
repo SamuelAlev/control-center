@@ -14,9 +14,9 @@ import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/evaluation/backends/builtin_evaluation_backend.dart';
-import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
-import 'package:cc_infra/src/evaluation/controlled_claude_mcp_bridge.dart';
 import 'package:cc_infra/src/evaluation/controlled_claude_evaluation_backend.dart';
+import 'package:cc_infra/src/evaluation/controlled_claude_mcp_bridge.dart';
+import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
 import 'package:cc_infra/src/evaluation/controlled_file_tools.dart';
 import 'package:cc_infra/src/evaluation/evaluation_artifacts.dart';
 import 'package:cc_infra/src/evaluation/evaluation_engine.dart';
@@ -223,9 +223,13 @@ class ControlledSkillEvaluation {
   /// Explicit adapter. No automatic fallback between builtin and Claude Code.
   final String adapter;
 
-  /// Absolute server-managed native Claude executable and account directory.
+  /// Absolute path to the server-managed native Claude executable.
   final String? claudeExecutable;
+
+  /// Server-owned account directory for native Claude execution.
   final String? claudeConfigDir;
+
+  /// Verified native Claude CLI features used to select compatible flags.
   final ClaudeCliCapabilities claudeCapabilities;
 
   bool get _strictReservation =>
@@ -268,7 +272,9 @@ class ControlledSkillEvaluation {
         executable: claudeExecutable!,
         configDir: claudeConfigDir!,
       );
-      if (nativeReason != null) return nativeReason;
+      if (nativeReason != null) {
+        return nativeReason;
+      }
     } else if ((budgetEnforcement != 'reserved_call' &&
             budgetEnforcement != 'stop_after_call') ||
         (budgetEnforcement == 'reserved_call' &&
@@ -512,19 +518,13 @@ class ControlledSkillEvaluation {
             commandGuard: commandGuard,
             systemPrompt: [
               BuiltinEvaluationBackend.defaultSystemPrompt,
-              'The only tools permitted are the cc_controlled MCP tools. '
-                  'All paths refer to your isolated attempt workspace; '
-                  'do not infer other files or skills.',
+              'The only tools permitted are the cc_controlled MCP tools. All paths refer to your isolated attempt workspace; do not infer other files or skills.',
               if (visible.isNotEmpty)
-                'Available skills (metadata only; read '
-                    'SKILL.md and related files with tools when relevant):',
+                'Available skills (metadata only; read SKILL.md and related files with tools when relevant):',
               for (final skill in visible)
-                '- ${_routingDescription(skill)} '
-                    '(.agents/skills/${skill.slug}/SKILL.md)',
+                '- ${_routingDescription(skill)} (.agents/skills/${skill.slug}/SKILL.md)',
               if (exposure == SkillExposure.forced && snapshot != null)
-                'The target skill is explicitly loaded for this diagnostic '
-                    'run. Its full instructions follow:\n'
-                    '${utf8.decode(snapshot.files['SKILL.md']!)}',
+                'The target skill is explicitly loaded for this diagnostic run. Its full instructions follow:\n${utf8.decode(snapshot.files['SKILL.md']!)}',
             ].join('\n'),
           );
         }
@@ -542,15 +542,11 @@ class ControlledSkillEvaluation {
           systemPrompt: [
             BuiltinEvaluationBackend.defaultSystemPrompt,
             if (visible.isNotEmpty)
-              'Available skills (metadata only; read SKILL.md '
-                  'and related files with tools when relevant):',
+              'Available skills (metadata only; read SKILL.md and related files with tools when relevant):',
             for (final skill in visible)
-              '- ${_routingDescription(skill)} '
-                  '(.agents/skills/${skill.slug}/SKILL.md)',
+              '- ${_routingDescription(skill)} (.agents/skills/${skill.slug}/SKILL.md)',
             if (exposure == SkillExposure.forced && snapshot != null)
-              'The target skill is explicitly loaded for this diagnostic run. '
-                  'Its full instructions follow:\n'
-                  '${utf8.decode(snapshot.files['SKILL.md']!)}',
+              'The target skill is explicitly loaded for this diagnostic run. Its full instructions follow:\n${utf8.decode(snapshot.files['SKILL.md']!)}',
           ].join('\n'),
           approvalCallbackFactory: (request) => (tool, arguments) async {
             if (tool.name != 'write' && tool.name != 'edit') {
@@ -760,8 +756,8 @@ class _SkillBackend implements EvaluationBackendPort {
     this.create, {
     required this.ambient,
     required this.targetSlug,
-    required String adapter,
-  }) : _adapter = adapter;
+    required this._adapter,
+  });
   final EvaluationBackendPort Function(EvaluationAttemptRequest) create;
   final List<SkillPackageSnapshot> ambient;
   final String targetSlug;

@@ -247,7 +247,9 @@ class EvaluationEngine {
           await Future<void>.delayed(idle);
         }
         for (final trial in bucket) {
-          if (config.cancelled?.call() ?? false) break;
+          if (config.cancelled?.call() ?? false) {
+            break;
+          }
           final attempt = await _runTrial(
             trial: trial,
             corpus: corpus,
@@ -499,7 +501,9 @@ class EvaluationEngine {
         changed = await workspace.changedFiles();
         diff = await workspace.diff();
       } on Object {
-        if (!config.controlled) rethrow;
+        if (!config.controlled) {
+          rethrow;
+        }
         changed = const [];
         diff = '';
         attempt = attempt.copyWith(

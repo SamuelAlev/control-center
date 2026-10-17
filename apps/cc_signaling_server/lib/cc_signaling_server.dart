@@ -167,11 +167,15 @@ class SignalingBroker {
   /// Data is paced, never silently dropped. Charge the complete outer wire
   /// frame (or the minimum floor for tiny records), never decrypted content.
   final int dataBytesPerWindow;
+
+  /// Aggregate sustained encrypted-record byte budget for one room per window.
   final int roomDataBytesPerWindow;
 
   /// Maximum initial/accumulated burst, independently per peer and room.
   /// Each must accommodate at least one [maxFrameBytes] wire frame.
   final int dataBurstBytes;
+
+  /// Maximum accumulated encrypted-record burst shared by every room peer.
   final int roomDataBurstBytes;
 
   /// A room that never had an owner claim is reaped this long after it was
@@ -323,7 +327,9 @@ class SignalingBroker {
     }
 
     Future<void> drainData() async {
-      if (drainingData) return;
+      if (drainingData) {
+        return;
+      }
       drainingData = true;
       try {
         while (dataQueue.isNotEmpty &&
@@ -342,8 +348,9 @@ class SignalingBroker {
           if (identical(_pendingData[socket], waiter)) {
             _pendingData.remove(socket);
           }
-          if (dataQueue.isEmpty)
+          if (dataQueue.isEmpty) {
             break; // Connection cleanup already released it.
+          }
           dataQueue.removeFirst();
           queuedBytes -= record.bytes;
           _bufferedDataBytes -= record.bytes;
@@ -358,7 +365,9 @@ class SignalingBroker {
         }
       } finally {
         drainingData = false;
-        if (detached || _closingSockets[socket] == true) discardData();
+        if (detached || _closingSockets[socket] == true) {
+          discardData();
+        }
       }
     }
 
@@ -382,7 +391,9 @@ class SignalingBroker {
     late final StreamSubscription<dynamic> subscription;
     subscription = socket.listen(
       (dynamic data) {
-        if (detached || _closingSockets[socket] == true) return;
+        if (detached || _closingSockets[socket] == true) {
+          return;
+        }
         final preJoin = roomCode == null;
         if (preJoin && !withinRate()) {
           _log('pre-join control rate limit exceeded, dropping frame');
@@ -395,7 +406,9 @@ class SignalingBroker {
             : 0;
         final frame = _decode(data, bytes);
         if (frame == null) {
-          if (!preJoin) withinRate();
+          if (!preJoin) {
+            withinRate();
+          }
           return;
         }
         final joinedRoom = roomCode == null ? null : _rooms[roomCode];
@@ -874,7 +887,9 @@ class SignalingBroker {
   /// own room is not a client any more. Same shape as
   /// `WsRemoteTransport.send`.
   void _send(WebSocket socket, Map<String, dynamic> frame) {
-    if (_closingSockets[socket] == true) return;
+    if (_closingSockets[socket] == true) {
+      return;
+    }
     if (socket.readyState != WebSocket.open) {
       return;
     }
@@ -1054,12 +1069,10 @@ class _Room {
     this.code,
     DateTime createdAt, {
     required this.ownerHash,
-    required _ByteBucket dataBucket,
-    required DateTime Function() now,
+    required this._dataBucket,
+    required this._now,
   }) : createdAt = createdAt,
-       lastActivityAt = createdAt,
-       _dataBucket = dataBucket,
-       _now = now;
+       lastActivityAt = createdAt;
 
   /// The room code (the server's relay room id).
   final String code;
@@ -1169,7 +1182,9 @@ class _ByteBucket {
       );
       _updated = now;
     }
-    if (_available >= bytes) return Duration.zero;
+    if (_available >= bytes) {
+      return Duration.zero;
+    }
     final micros =
         ((bytes - _available) * window.inMicroseconds / bytesPerWindow).ceil();
     return Duration(microseconds: max(1000, micros));

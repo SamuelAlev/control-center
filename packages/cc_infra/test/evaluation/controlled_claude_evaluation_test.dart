@@ -56,7 +56,7 @@ void main() {
                 'jsonrpc': '2.0',
                 'id': 1,
                 'method': method,
-                if (params != null) 'params': params,
+                'params': ?params,
               }),
             );
             final response = await request.close();
@@ -209,11 +209,11 @@ print(json.dumps({'type':'result','subtype':'success','total_cost_usd':0.004,
         );
         final attempt = await backend.execute(
           EvaluationAttemptRequest(
-            task: EvaluationTask(
+            task: const EvaluationTask(
               id: 't',
               kind: EvaluationTaskKind.bugfix,
               prompt: 'Read notice',
-              verifiers: const [],
+              verifiers: [],
             ),
             arm: const EvaluationArm(
               id: 'candidate',
@@ -226,19 +226,19 @@ print(json.dumps({'type':'result','subtype':'success','total_cost_usd':0.004,
               modelId: 'claude-sonnet-4-5',
               skillExposure: SkillExposure.available,
             ),
-            manifest: EvaluationManifest(
+            manifest: const EvaluationManifest(
               corpusId: 'c',
               corpusHash: 'hash',
               adapter: 'claude-cli',
               providerId: 'anthropic',
               modelId: 'claude-sonnet-4-5',
-              toolCatalog: const [],
+              toolCatalog: [],
               toolCatalogHash: 'hash',
               skillKey: 'k',
               skillHash: 'h',
-              ambientSkillHashes: const {},
+              ambientSkillHashes: {},
               skillComparison: 'available',
-              skillSnapshotMetadata: const {},
+              skillSnapshotMetadata: {},
               configHash: 'hash',
             ),
             workspaceRoot: root.path,
@@ -429,10 +429,10 @@ time.sleep(30)
               attemptId: 'attempt',
             ),
           );
-      for (var i = 0; i < 250 && !await ready.exists(); i++) {
+      for (var i = 0; i < 250 && !ready.existsSync(); i++) {
         await Future<void>.delayed(const Duration(milliseconds: 20));
       }
-      expect(await ready.exists(), isTrue);
+      expect(ready.existsSync(), isTrue);
       source.cancel();
       final result = await pending.timeout(const Duration(seconds: 5));
       expect(result.completed, isFalse);

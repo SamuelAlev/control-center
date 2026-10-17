@@ -129,10 +129,10 @@ void main() {
       );
       expect(cancelled.spentMicros, isNull);
       expect(
-        (await repo.skillCampaigns('ws-1', skillKey: 'workspace:other')),
+        await repo.skillCampaigns('ws-1', skillKey: 'workspace:other'),
         isEmpty,
       );
-      expect((await repo.skillCampaigns('ws-1', limit: 0)), isEmpty);
+      expect(await repo.skillCampaigns('ws-1', limit: 0), isEmpty);
     },
   );
   test('terminal campaigns cannot restart or lose progress', () async {
@@ -280,7 +280,7 @@ void main() {
       final dir = await Directory.systemTemp.createTemp('skill_evals_reopen_');
       addTearDown(() => dir.delete(recursive: true));
       final file = File('${dir.path}/workspace.db');
-      final mapper = const EvalsMapper();
+      const mapper = EvalsMapper();
       final first = WorkspaceDatabase.forTesting(
         NativeDatabase(file),
         workspaceId: 'ws-1',

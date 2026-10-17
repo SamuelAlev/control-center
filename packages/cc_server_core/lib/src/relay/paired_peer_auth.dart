@@ -2,8 +2,8 @@ import 'package:cc_domain/features/remote_control/domain/services/remote_pairing
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:cc_rpc/cc_rpc.dart';
-import 'package:cc_server_core/src/identity/sso_settings_service.dart';
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
+import 'package:cc_server_core/src/identity/sso_settings_service.dart';
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
 
 /// Device authorization plus the only channel application code may consume.
@@ -21,7 +21,8 @@ Future<PairedPeerAuth?> authenticatePairedPeer(
   required PairedDeviceDao devicesDao,
   required PairedDeviceSecretsPort secrets,
   ServerIdentity? identity,
-  Future<({int maxAgeMinutes, int idleTimeoutMinutes})> Function()? sessionPolicy,
+  Future<({int maxAgeMinutes, int idleTimeoutMinutes})> Function()?
+  sessionPolicy,
   void Function(String message)? warn,
   Duration timeout = const Duration(seconds: 15),
 }) async {

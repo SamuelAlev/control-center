@@ -35,9 +35,13 @@ class _RecordingTransport extends WebPushTransport {
   }) async {
     attempts++;
     enteredPreparation.complete();
-    if (releasePreparation != null) await releasePreparation;
+    if (releasePreparation != null) {
+      await releasePreparation;
+    }
     final authorized = await maySend!();
-    if (authorized) delivered++;
+    if (authorized) {
+      delivered++;
+    }
     reachedSend.complete();
     return authorized ? response : PushDeliveryResult.unavailable;
   }
@@ -140,7 +144,7 @@ void main() {
   test(
     'server-owned subscription can be revoked without another device authority',
     () async {
-      final endpoint = 'https://fcm.googleapis.com/fcm/send/opaque-token';
+      const endpoint = 'https://fcm.googleapis.com/fcm/send/opaque-token';
       await repository.save(
         'device-a',
         const PushSubscriptionRecord(

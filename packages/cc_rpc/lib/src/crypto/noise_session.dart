@@ -17,6 +17,8 @@ SecretKeyData _ownedKey(List<int> bytes) =>
 /// MUST NOT carry application content. The channel handshake uses it only as
 /// an empty PSK proof and requires a post-handshake client confirmation.
 final class NoisePskHandshake {
+  /// Begins an initiator or responder handshake using a 32-byte device [psk].
+  /// The optional ephemeral key pair is owned and destroyed by this handshake.
   NoisePskHandshake({
     required this.initiator,
     required List<int> psk,
@@ -34,6 +36,7 @@ final class NoisePskHandshake {
     _mixHash(prologue);
   }
 
+  /// Whether this side writes the first handshake message.
   final bool initiator;
   final SecretKeyData _psk;
   late SecretKeyData _chainingKey;
@@ -55,13 +58,17 @@ final class NoisePskHandshake {
   /// The responder signs this value with its pinned Ed25519 identity.
   Uint8List get identityBinding => Uint8List.fromList(_identityBinding!);
 
+  /// Emits the next handshake message. The first initiator payload must be
+  /// empty; a responder can build its signed payload from [payloadBuilder].
   Future<Uint8List> writeMessage(
     List<int> payload, {
     Future<List<int>> Function(Uint8List transcript)? payloadBuilder,
   }) async {
     _requireStep(initiator ? 0 : 1);
     try {
-      if (initiator) await _mixPsk();
+      if (initiator) {
+        await _mixPsk();
+      }
       final ephemeral = _ephemeral ??= await _dh.newKeyPair();
       final public = await ephemeral.extractPublicKey();
       _mixHash(public.bytes);
@@ -82,7 +89,9 @@ final class NoisePskHandshake {
         ..setRange(0, 32, public.bytes)
         ..setRange(32, 32 + sealed.length, sealed);
       _step++;
-      if (_step == 2) await _split();
+      if (_step == 2) {
+        await _split();
+      }
       return message;
     } catch (_) {
       destroy();
@@ -90,13 +99,16 @@ final class NoisePskHandshake {
     }
   }
 
+  /// Authenticates and decrypts the peer's next handshake message.
   Future<Uint8List> readMessage(List<int> message) async {
     _requireStep(initiator ? 1 : 0);
     try {
       if (message.length < 48 || message.length > 65535) {
         throw const NoiseProtocolException('Invalid handshake length');
       }
-      if (!initiator) await _mixPsk();
+      if (!initiator) {
+        await _mixPsk();
+      }
       final bytes = message is Uint8List
           ? message
           : Uint8List.fromList(message);
@@ -112,7 +124,9 @@ final class NoisePskHandshake {
       final clear = await _cipher!.decrypt(sealed, associatedData: _hash);
       _mixHash(sealed);
       _step++;
-      if (_step == 2) await _split();
+      if (_step == 2) {
+        await _split();
+      }
       return clear;
     } catch (_) {
       destroy();
@@ -222,8 +236,11 @@ final class NoisePskHandshake {
     }
   }
 
+  /// Releases handshake keys and any session retained by this handshake.
   void destroy() {
-    if (_destroyed) return;
+    if (_destroyed) {
+      return;
+    }
     _destroyed = true;
     _psk.destroy();
     _chainingKey.destroy();
@@ -238,16 +255,23 @@ final class NoisePskHandshake {
 
 /// Directional Noise traffic keys. Ownership belongs to one secure channel.
 final class NoiseSession {
+  /// Owns directional cipher states and their shared handshake transcript.
   NoiseSession({
     required this.outgoing,
     required this.incoming,
     required this.handshakeHash,
   });
 
+  /// Cipher state used for messages sent to the peer.
   final NoiseCipherState outgoing;
+
+  /// Cipher state used for messages received from the peer.
   final NoiseCipherState incoming;
+
+  /// Final handshake transcript hash for session binding.
   final Uint8List handshakeHash;
 
+  /// Destroys both directional traffic keys.
   void destroy() {
     outgoing.destroy();
     incoming.destroy();
@@ -257,18 +281,25 @@ final class NoiseSession {
 /// Noise CipherState with an implicit, strictly ordered nonce. Callers serialize
 /// each direction. A duplicate, gap or direction swap fails authentication.
 final class NoiseCipherState {
+  /// Creates a directional cipher from an owned copy of [key].
   NoiseCipherState(List<int> key) : _key = _ownedKey(key);
 
   static final _aead = Chacha20.poly1305Aead();
+
+  /// Maximum encrypted Noise record length in bytes, including its MAC.
   static const int maxMessageBytes = 65535;
+
+  /// Number of records between traffic-key rotations.
   static const int rekeyInterval = 1 << 20;
   // Below both the JS integer ceiling and the protocol's reserved max nonce.
+  /// Maximum supported nonce count before this direction fails closed.
   static const int maxMessages = 0xffffffff;
   SecretKeyData _key;
   int _nonce = 0;
   int _lastRekey = -1;
   bool _destroyed = false;
 
+  /// Encrypts the next record using this direction's implicit nonce.
   Future<Uint8List> encrypt(
     List<int> plaintext, {
     List<int> associatedData = const [],
@@ -291,6 +322,7 @@ final class NoiseCipherState {
       );
   }
 
+  /// Authenticates and decrypts the next record in this direction.
   Future<Uint8List> decrypt(
     List<int> ciphertext, {
     List<int> associatedData = const [],
@@ -350,15 +382,22 @@ final class NoiseCipherState {
     return bytes;
   }
 
+  /// Erases this direction's traffic key on a best-effort basis.
   void destroy() {
-    if (_destroyed) return;
+    if (_destroyed) {
+      return;
+    }
     _destroyed = true;
     _key.destroy();
   }
 }
 
+/// A protocol failure that makes the current Noise session unusable.
 final class NoiseProtocolException implements Exception {
+  /// Describes the failure without including plaintext or key material.
   const NoiseProtocolException(this.message);
+
+  /// A non-secret description of the protocol failure.
   final String message;
   @override
   String toString() => 'NoiseProtocolException: $message';

@@ -12,12 +12,14 @@ import 'package:cc_rpc/src/crypto/noise_session.dart';
 /// flow-control credits are encrypted too. A malformed, replayed, reflected or
 /// out-of-order record terminates the session; there is no plaintext mode.
 final class SecureRpcChannel implements RemoteRpcChannelPort {
+  /// Takes ownership of the raw transport and Noise session; closing this
+  /// channel closes the transport and destroys both traffic keys.
   SecureRpcChannel(this._raw, this._session) {
     _incoming.onListen = _flushPending;
     _input = _raw.incoming.listen(
       _onRecord,
       onDone: () => unawaited(_drainRemote()),
-      onError: (Object error) => _fail(error),
+      onError: _fail,
     );
     _rawState = _raw.state.listen((state) {
       if (state == RemoteChannelState.closed && !_closed && !_remoteEnded) {
@@ -31,10 +33,19 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
     });
   }
 
+  /// Wire protocol version accepted by this secure channel.
   static const int version = 1;
+
+  /// Maximum plaintext bytes in one application fragment.
   static const int chunkBytes = 16 * 1024;
+
+  /// Maximum decoded application frame size in bytes.
   static const int maxFrameBytes = 128 * 1024 * 1024;
+
+  /// Maximum outstanding records in one send-credit window.
   static const int windowRecords = 64;
+
+  /// Number of received records between credit acknowledgements.
   static const int creditEvery = 16;
   static const int _maxWireChars = ((chunkBytes + 2 + 16 + 2) ~/ 3) * 4;
   static const int _maxPendingBytes = 8 * 1024 * 1024;
@@ -77,7 +88,9 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
 
   @override
   Future<void> send(Map<String, dynamic> frame) {
-    if (!isOpen) return Future.error(StateError('Secure channel closed'));
+    if (!isOpen) {
+      return Future.error(StateError('Secure channel closed'));
+    }
     if (_queuedSends >= windowRecords) {
       final error = StateError('Secure send queue exhausted');
       _fail(error);
@@ -96,7 +109,9 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
   }
 
   Future<void> _sendFrame(Map<String, dynamic> frame) async {
-    if (!isOpen) throw StateError('Secure channel closed');
+    if (!isOpen) {
+      throw StateError('Secure channel closed');
+    }
     final bytes = utf8.encode(await encodeJsonFrame(frame));
     if (bytes.length > maxFrameBytes) {
       throw const NoiseProtocolException('Application frame too large');
@@ -118,16 +133,22 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
       final waiter = _windowWait ??= Completer<void>();
       await waiter.future.timeout(_stallTimeout);
     }
-    if (!isOpen) throw StateError('Secure channel closed');
+    if (!isOpen) {
+      throw StateError('Secure channel closed');
+    }
   }
 
   Future<void> _writeRecord(Uint8List clear, {bool credit = false}) {
     // Credits share the cipher's ordering but never wait behind a data sender
     // blocked on credit; otherwise simultaneous large transfers deadlock.
     final operation = _writeChain.then((_) async {
-      if (!isOpen) throw StateError('Secure channel closed');
+      if (!isOpen) {
+        throw StateError('Secure channel closed');
+      }
       final ciphertext = await _session.outgoing.encrypt(clear);
-      if (!isOpen) throw StateError('Secure channel closed');
+      if (!isOpen) {
+        throw StateError('Secure channel closed');
+      }
       await _raw.send({
         'type': 'secure',
         'v': version,
@@ -137,13 +158,17 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
     _writeChain = operation.catchError((Object error) {
       // A transport that closed during an outgoing credit does not invalidate
       // already received application records waiting in the read chain.
-      if (!credit || isOpen) _fail(error);
+      if (!credit || isOpen) {
+        _fail(error);
+      }
     });
     return operation;
   }
 
   void _onRecord(Map<String, dynamic> frame) {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     final ciphertext = frame['c'];
     if (frame['type'] != 'secure' ||
         frame['v'] != version ||
@@ -157,15 +182,19 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
     _readChain = _readChain
         .then((_) async {
           try {
-            if (_closed) return;
+            if (_closed) {
+              return;
+            }
             final sealed = base64Url.decode(ciphertext);
             final clear = await _session.incoming.decrypt(sealed);
-            if (!_closed) await _accept(clear);
+            if (!_closed) {
+              await _accept(clear);
+            }
           } finally {
             _queuedReads--;
           }
         })
-        .catchError((Object error) => _fail(error));
+        .catchError(_fail);
   }
 
   Future<void> _accept(Uint8List clear) async {
@@ -183,7 +212,9 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
       _credited = credit;
       final waiter = _windowWait;
       _windowWait = null;
-      if (waiter != null && !waiter.isCompleted) waiter.complete();
+      if (waiter != null && !waiter.isCompleted) {
+        waiter.complete();
+      }
       return;
     }
     if (clear[0] != 0 || clear.length < 3 || clear[1] > 3) {
@@ -220,7 +251,9 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
       try {
         await _writeRecord(credit, credit: true);
       } catch (_) {
-        if (isOpen) rethrow;
+        if (isOpen) {
+          rethrow;
+        }
       }
     }
   }
@@ -232,7 +265,9 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
       throw const NoiseProtocolException('Secure receive queue exhausted');
     }
     final frame = await decodeJsonFrame(utf8.decode(clear));
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     if (_incoming.hasListener) {
       _incoming.add(frame);
     } else {
@@ -250,7 +285,9 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
   }
 
   Future<void> _drainRemote() async {
-    if (_closed || _remoteEnded) return;
+    if (_closed || _remoteEnded) {
+      return;
+    }
     _remoteEnded = true;
     _eofTimer?.cancel();
     _eofTimer = null;
@@ -262,7 +299,9 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
       _fail(const NoiseProtocolException('Secure EOF drain timed out'));
       return;
     }
-    if (_closed) return; // Explicit close or authentication failure won.
+    if (_closed) {
+      return; // Explicit close or authentication failure won.
+    }
     if (_assembly != null) {
       _fail(const NoiseProtocolException('Incomplete secure frame'));
       return;
@@ -271,7 +310,9 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
   }
 
   void _fail(Object error) {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     _failure ??= error is NoiseProtocolException
         ? error
         : const NoiseProtocolException('Secure channel authentication failed');
@@ -282,7 +323,9 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
   Future<void> close() => _closing ??= _close();
 
   Future<void> _close() async {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
     _closed = true;
     _eofTimer?.cancel();
     _assemblyTimer?.cancel();
@@ -291,7 +334,9 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
     _session.destroy();
     final waiter = _windowWait;
     _windowWait = null;
-    if (waiter != null && !waiter.isCompleted) waiter.complete();
+    if (waiter != null && !waiter.isCompleted) {
+      waiter.complete();
+    }
     _state.add(RemoteChannelState.closed);
     try {
       await _input?.cancel();

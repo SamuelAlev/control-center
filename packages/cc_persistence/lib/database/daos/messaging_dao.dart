@@ -401,8 +401,8 @@ LIMIT 1
     String workspaceId,
   ) =>
       customSelect(
-        'SELECT ${_messageColumnsSansEmbedding} FROM conversation_messages '
-        "WHERE EXISTS (SELECT 1 FROM spaces WHERE spaces.id = conversation_messages.space_id "
+        'SELECT $_messageColumnsSansEmbedding FROM conversation_messages '
+        'WHERE EXISTS (SELECT 1 FROM spaces WHERE spaces.id = conversation_messages.space_id '
         'AND spaces.workspace_id = ?) AND conversation_messages.reverted = 0 '
         "AND conversation_messages.message_type = 'user_question' "
         "AND COALESCE(json_extract(conversation_messages.metadata, '\$.answered'), 0) != 1 "
@@ -1164,7 +1164,7 @@ LIMIT 1
               t.id.equals(messageId) &
               (meta?.containsKey('answered') == true
                   ? (t.messageType.equals('user_question') &
-                        CustomExpression<bool>(
+                        const CustomExpression<bool>(
                           "COALESCE(json_extract(metadata, '\$.answered'), 0) != 1",
                         ))
                   : const Constant(true)),
@@ -1357,8 +1357,9 @@ LIMIT 1
     return query.watch().map(
       (rows) => {
         for (final row in rows)
-          if (row.readTable(spaceParticipantsTable).lastReadAt case final at?)
-            row.readTable(spaceParticipantsTable).spaceId: at,
+          row.readTable(spaceParticipantsTable).spaceId: ?row
+              .readTable(spaceParticipantsTable)
+              .lastReadAt,
       },
     );
   }

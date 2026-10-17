@@ -3,14 +3,15 @@ import 'dart:ui' as ui;
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/shared/skill_evaluation/skill_campaign_providers.dart';
 import 'package:control_center/shared/skill_evaluation/skill_campaign_error.dart';
+import 'package:control_center/shared/skill_evaluation/skill_campaign_providers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 /// A single selected attempt stays legible on phones and in RTL chrome.
 class SkillAttemptTimeline extends ConsumerWidget {
+  /// Loads the selected campaign attempt and renders its bounded evidence.
   const SkillAttemptTimeline({
     required this.workspaceId,
     required this.campaignId,
@@ -18,7 +19,15 @@ class SkillAttemptTimeline extends ConsumerWidget {
     this.refreshEpoch = 0,
     super.key,
   });
-  final String workspaceId, campaignId, attemptId;
+
+  /// Workspace whose membership authorizes the evidence read.
+  final String workspaceId;
+
+  /// Campaign containing the selected attempt.
+  final String campaignId;
+
+  /// Attempt whose tool, skill-loading and verification events are shown.
+  final String attemptId;
 
   /// Incremented by a manual refresh to fetch an in-progress attempt again.
   final int refreshEpoch;

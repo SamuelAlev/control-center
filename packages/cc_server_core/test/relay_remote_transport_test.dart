@@ -67,7 +67,8 @@ void main() {
 
   Future<
     ({RelaySignalingChannel signaling, Future<RelayRemoteTransport> transport})
-  > serverSide({List<String>? admit}) async {
+  >
+  serverSide({List<String>? admit}) async {
     final signaling = await RelaySignalingChannel.joinAsOwner(
       signalingUrl: url,
       room: room,
@@ -98,7 +99,8 @@ void main() {
       SecureChannelConnection clientSecure,
       SecureChannelConnection serverSecure,
     })
-  > securePair() async {
+  >
+  securePair() async {
     final server = await serverSide();
     final client = await RelayClientChannel.connect(
       signalingUrl: url,
@@ -165,40 +167,51 @@ void main() {
     await client.close();
     await closed;
     expect(transport.isOpen, isFalse);
-    expect(server.signaling.isOpen, isTrue,
-        reason: 'a peer departure must not close the shared owner room');
-  });
-
-  test('peer EOF preserves a bounded record buffered before listening', () async {
-    final server = await serverSide();
-    final client = await RelayClientChannel.connect(
-      signalingUrl: url,
-      room: room,
-      deviceId: deviceId,
-      psk: psk,
+    expect(
+      server.signaling.isOpen,
+      isTrue,
+      reason: 'a peer departure must not close the shared owner room',
     );
-    addTearDown(client.close);
-    final transport = await server.transport;
-    final closed = transport.state
-        .firstWhere((state) => state == RemoteChannelState.closed)
-        .timeout(const Duration(seconds: 5));
-    const record = {'type': 'secure', 'c': 'queued-record'};
-    await client.send(record);
-    await client.close();
-    await closed;
-    expect(await transport.incoming.first.timeout(const Duration(seconds: 5)),
-        record);
   });
 
-  test('relay delivers a final encrypted response before server close', () async {
-    final pair = await securePair();
-    final received = pair.clientSecure.channel.incoming.toList();
-    const response = {'id': 8, 'result': 'final relay reply'};
-    await pair.serverSecure.channel.send(response);
-    await pair.serverSecure.channel.close();
-    expect(await received.timeout(const Duration(seconds: 5)), [response]);
-    expect(pair.clientSecure.channel.failure, isNull);
-  });
+  test(
+    'peer EOF preserves a bounded record buffered before listening',
+    () async {
+      final server = await serverSide();
+      final client = await RelayClientChannel.connect(
+        signalingUrl: url,
+        room: room,
+        deviceId: deviceId,
+        psk: psk,
+      );
+      addTearDown(client.close);
+      final transport = await server.transport;
+      final closed = transport.state
+          .firstWhere((state) => state == RemoteChannelState.closed)
+          .timeout(const Duration(seconds: 5));
+      const record = {'type': 'secure', 'c': 'queued-record'};
+      await client.send(record);
+      await client.close();
+      await closed;
+      expect(
+        await transport.incoming.first.timeout(const Duration(seconds: 5)),
+        record,
+      );
+    },
+  );
+
+  test(
+    'relay delivers a final encrypted response before server close',
+    () async {
+      final pair = await securePair();
+      final received = pair.clientSecure.channel.incoming.toList();
+      const response = {'id': 8, 'result': 'final relay reply'};
+      await pair.serverSecure.channel.send(response);
+      await pair.serverSecure.channel.close();
+      expect(await received.timeout(const Duration(seconds: 5)), [response]);
+      expect(pair.clientSecure.channel.failure, isNull);
+    },
+  );
 
   test('secure handshake seals both directions and fragments large frames '
       'without leaking application text onto the broker wire', () async {
@@ -240,8 +253,10 @@ void main() {
     expect((await largeOnClient)['blob'], blob);
 
     final records = [...pair.clientWire.sent, ...pair.serverWire.sent];
-    expect(records.where((frame) => frame['type'] == 'secure').length,
-        greaterThan(2));
+    expect(
+      records.where((frame) => frame['type'] == 'secure').length,
+      greaterThan(2),
+    );
     for (final record in records) {
       expect(jsonEncode(record), isNot(contains(secret)));
       expect(jsonEncode(record), isNot(contains('"blob":"xxx')));
@@ -298,37 +313,39 @@ void main() {
     expect(transport.isOpen, isFalse);
   });
 
-  test('broker refuses unadmitted peers and revocation evicts a live peer',
-      () async {
-    final server = await serverSide();
-    await expectLater(
-      RelayClientChannel.connect(
+  test(
+    'broker refuses unadmitted peers and revocation evicts a live peer',
+    () async {
+      final server = await serverSide();
+      await expectLater(
+        RelayClientChannel.connect(
+          signalingUrl: url,
+          room: room,
+          deviceId: deviceId,
+          psk: psk2,
+        ),
+        throwsA(isA<RelaySignalingException>()),
+      );
+      final client = await RelayClientChannel.connect(
         signalingUrl: url,
         room: room,
         deviceId: deviceId,
-        psk: psk2,
-      ),
-      throwsA(isA<RelaySignalingException>()),
-    );
-    final client = await RelayClientChannel.connect(
-      signalingUrl: url,
-      room: room,
-      deviceId: deviceId,
-      psk: psk,
-    );
-    addTearDown(client.close);
-    final transport = await server.transport;
-    final closed = client.state
-        .firstWhere((state) => state == RemoteChannelState.closed)
-        .timeout(const Duration(seconds: 5));
-    final serverClosed = transport.state
-        .firstWhere((state) => state == RemoteChannelState.closed)
-        .timeout(const Duration(seconds: 5));
-    server.signaling.admit(remove: [admissionHash(psk)]);
-    await Future.wait([closed, serverClosed]);
-    expect(client.isOpen, isFalse);
-    expect(transport.isOpen, isFalse);
-  });
+        psk: psk,
+      );
+      addTearDown(client.close);
+      final transport = await server.transport;
+      final closed = client.state
+          .firstWhere((state) => state == RemoteChannelState.closed)
+          .timeout(const Duration(seconds: 5));
+      final serverClosed = transport.state
+          .firstWhere((state) => state == RemoteChannelState.closed)
+          .timeout(const Duration(seconds: 5));
+      server.signaling.admit(remove: [admissionHash(psk)]);
+      await Future.wait([closed, serverClosed]);
+      expect(client.isOpen, isFalse);
+      expect(transport.isOpen, isFalse);
+    },
+  );
 
   test('two paired clients have independent authenticated peer-scoped '
       'transports and cannot read each other’s records', () async {
@@ -343,7 +360,9 @@ void main() {
     final first = Completer<RelayRemoteTransport>();
     final second = Completer<RelayRemoteTransport>();
     signaling.incoming.listen((frame) {
-      if (frame['type'] != 'signal' || frame['kind'] != 'hello') return;
+      if (frame['type'] != 'signal' || frame['kind'] != 'hello') {
+        return;
+      }
       final device = (frame['payload'] as Map)['d'];
       final transport = RelayRemoteTransport(
         signaling: signaling,
@@ -357,9 +376,18 @@ void main() {
       }
     });
 
-    Future<({SecureChannelConnection client, SecureChannelConnection server,
-             _WireTap clientWire, _WireTap serverWire})> join(
-      String device, String credential, Future<RelayRemoteTransport> peer,
+    Future<
+      ({
+        SecureChannelConnection client,
+        SecureChannelConnection server,
+        _WireTap clientWire,
+        _WireTap serverWire,
+      })
+    >
+    join(
+      String device,
+      String credential,
+      Future<RelayRemoteTransport> peer,
     ) async {
       final raw = await RelayClientChannel.connect(
         signalingUrl: url,
@@ -387,8 +415,12 @@ void main() {
       final server = await accepted;
       addTearDown(connected.channel.close);
       addTearDown(server.channel.close);
-      return (client: connected, server: server,
-              clientWire: clientWire, serverWire: serverWire);
+      return (
+        client: connected,
+        server: server,
+        clientWire: clientWire,
+        serverWire: serverWire,
+      );
     }
 
     final one = await join(deviceId, psk, first.future);
@@ -399,16 +431,22 @@ void main() {
     );
     await one.server.channel.send({'secret': 'only-for-device-one'});
     expect(await gotOne, {'secret': 'only-for-device-one'});
-    expect(two.clientWire.received.length, twoBeforeFirst,
-        reason: 'the broker must not forward device one’s record to device two');
+    expect(
+      two.clientWire.received.length,
+      twoBeforeFirst,
+      reason: 'the broker must not forward device one’s record to device two',
+    );
     final oneBeforeSecond = one.clientWire.received.length;
     final gotTwo = two.client.channel.incoming.first.timeout(
       const Duration(seconds: 5),
     );
     await two.server.channel.send({'secret': 'only-for-device-two'});
     expect(await gotTwo, {'secret': 'only-for-device-two'});
-    expect(one.clientWire.received.length, oneBeforeSecond,
-        reason: 'the broker must not forward device two’s record to device one');
+    expect(
+      one.clientWire.received.length,
+      oneBeforeSecond,
+      reason: 'the broker must not forward device two’s record to device one',
+    );
 
     final fromTwo = two.server.channel.incoming.first.timeout(
       const Duration(seconds: 5),

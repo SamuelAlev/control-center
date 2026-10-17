@@ -54,6 +54,8 @@ Flutter) shared by desktop, web and phone clients.
   4 MiB, including real code-server extension-host startup frames.
   Closing a client cancels its peer's resource work even when the transport is
   owned separately; the transport owner remains responsible for closing it.
+  Callers must consume or close HTTP responses and close tunneled WebSockets.
+  Releasing a transfer also releases its upload and response-body subscriptions.
 - Trusted browser editors share the app origin and use connection-owned
   resource capabilities. The Service Worker/MessagePort facade carries their
   HTTP/WebSocket traffic through the encrypted session; see

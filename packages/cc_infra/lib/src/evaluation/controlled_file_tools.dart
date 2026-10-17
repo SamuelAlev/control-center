@@ -77,7 +77,9 @@ class _ControlledFileTool extends HarnessTool {
       '32 KiB, reads at most 200 lines/10 KiB, searches at most 2000 files.';
   @override
   Map<String, dynamic> get inputSchema {
-    if (name != 'read') return schema.inputSchema;
+    if (name != 'read') {
+      return schema.inputSchema;
+    }
     final original = schema.inputSchema;
     final props = Map<String, dynamic>.from(original['properties'] as Map);
     props['limit'] = {
@@ -111,7 +113,9 @@ class _ControlledFileTool extends HarnessTool {
         timeout: const Duration(seconds: 15),
         cancel: context.cancel,
       );
-      if (result.timedOut) return HarnessToolResult.error('$name timed out.');
+      if (result.timedOut) {
+        return HarnessToolResult.error('$name timed out.');
+      }
       if (result.exitCode != 0) {
         return HarnessToolResult.error(
           '$name failed inside the enclosure: '

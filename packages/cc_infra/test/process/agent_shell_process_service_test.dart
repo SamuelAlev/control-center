@@ -5,8 +5,8 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/agent_shell_output.dart';
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
-import 'package:cc_infra/src/process/agent_shell_process_service.dart';
 import 'package:cc_infra/src/process/agent_shell_file_output.dart';
+import 'package:cc_infra/src/process/agent_shell_process_service.dart';
 import 'package:test/test.dart';
 
 class _RunLogs implements AgentRunLogRepository {
@@ -314,7 +314,7 @@ void main() {
       expect(snapshot.output, 'before\nafter\n');
       expect(descriptorCalls, 1); // retained fd, not a recycled pid's pathname
       expect(
-        (await svc.list(workspaceId: 'ws', spaceId: 's1')),
+        await svc.list(workspaceId: 'ws', spaceId: 's1'),
         isNot(contains(first)),
       );
       ps = _ps.replaceFirst('  200   101      04:12', '  200   101      00:08');

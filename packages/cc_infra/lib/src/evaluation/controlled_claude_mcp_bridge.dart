@@ -14,6 +14,7 @@ import 'package:path/path.dart' as p;
 /// Private, per-attempt MCP endpoint. Claude owns no native tool authority;
 /// each call crosses the same OS enclosure used by the builtin evaluator.
 class ControlledClaudeMcpBridge {
+  /// Opens a per-attempt bridge over tools restricted to the guest workspace.
   ControlledClaudeMcpBridge({
     required this.root,
     required this.cancellation,
@@ -22,12 +23,25 @@ class ControlledClaudeMcpBridge {
     this.commandGuard,
   });
 
+  /// Isolated attempt workspace containing the admitted skill packages.
   final String root;
+
+  /// Cancellation shared with guest tool execution.
   final CancellationToken cancellation;
+
+  /// Package digests for skills visible to this attempt.
   final Map<String, String> visibleSkillHashes;
+
+  /// Paths admitted for each visible skill when recording exposure events.
   final Map<String, Set<String>> visibleSkillFiles;
+
+  /// Optional server decision applied to controlled shell commands.
   final Future<String?> Function(String command)? commandGuard;
+
+  /// Tool calls recorded for the attempt report.
   final toolEvents = <EvaluationToolEvent>[];
+
+  /// Observed skill file loads and script executions.
   final skillEvents = <EvaluationSkillEvent>[];
   final _random = Random.secure();
   HttpServer? _server;
@@ -50,8 +64,13 @@ class ControlledClaudeMcpBridge {
     ControlledEvaluationBashTool(_process),
   ];
 
+  /// Authenticated loopback MCP endpoint after [start] completes.
   String get url => 'http://127.0.0.1:${_server!.port}/mcp';
+
+  /// Per-attempt bearer token required by the endpoint.
   String get token => _secret;
+
+  /// Advertised tool names and schema digests for surface verification.
   List<List<String>> get toolCatalog => [
     for (final tool in _tools)
       [
@@ -64,6 +83,7 @@ class ControlledClaudeMcpBridge {
       ],
   ]..sort((a, b) => a.first.compareTo(b.first));
 
+  /// Binds the authenticated MCP endpoint to a fresh loopback port.
   Future<void> start() async {
     _server = await HttpServer.bind(
       InternetAddress.loopbackIPv4,
@@ -73,10 +93,13 @@ class ControlledClaudeMcpBridge {
     _server!.listen(_handle);
   }
 
+  /// Closes the endpoint and waits for active tool calls to finish.
   Future<void> close() async {
     await _server?.close(force: true);
     _server = null;
-    if (_activeCalls > 0) await _idle!.future;
+    if (_activeCalls > 0) {
+      await _idle!.future;
+    }
   }
 
   Future<void> _handle(HttpRequest request) async {
@@ -112,8 +135,9 @@ class ControlledClaudeMcpBridge {
       final bytes = <int>[];
       await for (final part in request) {
         bytes.addAll(part);
-        if (bytes.length > 64 * 1024)
+        if (bytes.length > 64 * 1024) {
           throw const FormatException('MCP request too large');
+        }
       }
       final value = jsonDecode(utf8.decode(bytes));
       if (value is! Map<String, dynamic> || value['jsonrpc'] != '2.0') {
@@ -161,7 +185,9 @@ class ControlledClaudeMcpBridge {
           final tool = _tools
               .where((tool) => tool.name == params['name'])
               .firstOrNull;
-          if (tool == null) throw const FormatException('Unknown tool');
+          if (tool == null) {
+            throw const FormatException('Unknown tool');
+          }
           final args = Map<String, dynamic>.from(params['arguments'] as Map);
           final answer = await _call(tool, args);
           result = {
@@ -259,7 +285,9 @@ class ControlledClaudeMcpBridge {
         target: args['path'] is String ? args['path'] as String : null,
       ),
     );
-    if (!answer.isError) _observe(name, args, answer);
+    if (!answer.isError) {
+      _observe(name, args, answer);
+    }
     return answer;
   }
 
@@ -282,19 +310,24 @@ class ControlledClaudeMcpBridge {
       path = match?.group(1);
       kind = 'script_execution';
     }
-    if (path == null) return;
+    if (path == null) {
+      return;
+    }
     final normalized = p
         .normalize(p.isAbsolute(path) ? p.relative(path, from: root) : path)
         .replaceAll(p.separator, '/');
     for (final entry in visibleSkillHashes.entries) {
       final prefix = '.agents/skills/${entry.key}/';
-      if (!normalized.startsWith(prefix)) continue;
+      if (!normalized.startsWith(prefix)) {
+        continue;
+      }
       final relative = normalized.substring(prefix.length);
       if (relative.isEmpty ||
           relative == '.' ||
           relative.startsWith('../') ||
-          !(visibleSkillFiles[entry.key]?.contains(relative) ?? false))
+          !(visibleSkillFiles[entry.key]?.contains(relative) ?? false)) {
         return;
+      }
       skillEvents.add(
         EvaluationSkillEvent(
           kind: kind == 'body_load' && relative != 'SKILL.md'

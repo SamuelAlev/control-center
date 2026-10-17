@@ -299,11 +299,17 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
     final turns = [request.task.prompt, ...request.task.followUps];
 
     bool budgetExceeded() {
-      if (costLimitMicros == null) return false;
+      if (costLimitMicros == null) {
+        return false;
+      }
       final recorded = ledger.records;
-      if (recorded.any((r) => r.costMicros == null)) return true;
+      if (recorded.any((r) => r.costMicros == null)) {
+        return true;
+      }
       final spent = recorded.fold<int>(0, (sum, r) => sum + r.costMicros!);
-      if (stopAfterCall) return spent >= costLimitMicros!;
+      if (stopAfterCall) {
+        return spent >= costLimitMicros!;
+      }
       final reservation = maxCallMicros;
       return reservation == null || spent + reservation > costLimitMicros!;
     }
