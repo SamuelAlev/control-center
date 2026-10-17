@@ -953,6 +953,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nachricht nicht gesendet. Der Entwurf bleibt erhalten.';
 
   @override
+  String get sentAttachmentUnavailable => 'Anhang nicht verfügbar';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Anhang konnte nicht geladen werden';
+
+  @override
   String get mobileActionFailed => 'Aktion fehlgeschlagen';
 
   @override
@@ -1067,6 +1073,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Original';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Zeile zum Kommentieren auswählen';
 
   @override
   String get mobilePrUpdatedSide => 'Aktualisiert';
@@ -2146,6 +2155,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get progressTodos => 'Aufgaben';
 
   @override
+  String get transcriptToolTodos => 'Aufgaben';
+
+  @override
+  String get transcriptToolSearchMemory => 'Gedächtnis durchsuchen';
+
+  @override
+  String get transcriptToolRenderMedia => 'Medien rendern';
+
+  @override
   String get progressNoTodos => 'Noch keine Aufgaben';
 
   @override
@@ -2462,7 +2480,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Benachrichtigungen sind in den Browsereinstellungen blockiert. Zum Fortfahren dort zulassen.';
+      'Der Browser meldet, dass Benachrichtigungen blockiert sind. Berechtigung dieser Website und Benachrichtigungseinstellungen von Browser oder Gerät prüfen, dann aktualisieren.';
 
   @override
   String get pushResubscribe => 'Benachrichtigungen neu verbinden';

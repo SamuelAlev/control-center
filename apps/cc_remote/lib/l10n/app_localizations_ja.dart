@@ -928,6 +928,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get mobileSendFailed => 'メッセージを送信できませんでした。下書きは保持されています。';
 
   @override
+  String get sentAttachmentUnavailable => '添付ファイルは利用できません';
+
+  @override
+  String get sentAttachmentLoadFailed => '添付ファイルを読み込めませんでした';
+
+  @override
   String get mobileActionFailed => '操作に失敗しました';
 
   @override
@@ -1035,6 +1041,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => '元の版';
+
+  @override
+  String get mobilePrSelectCommentLine => 'コメントする行を選択';
 
   @override
   String get mobilePrUpdatedSide => '更新日時';
@@ -2060,6 +2069,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get progressTodos => 'タスク';
 
   @override
+  String get transcriptToolTodos => 'タスク';
+
+  @override
+  String get transcriptToolSearchMemory => 'メモリを検索';
+
+  @override
+  String get transcriptToolRenderMedia => 'メディアを表示';
+
+  @override
   String get progressNoTodos => 'タスクはまだありません';
 
   @override
@@ -2367,7 +2385,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get pushUnsupported => 'このブラウザーはバックグラウンド通知に対応していません。';
 
   @override
-  String get pushDenied => 'ブラウザーの設定で通知がブロックされています。続けるには設定で許可してください。';
+  String get pushDenied =>
+      'ブラウザーは通知がブロックされていると報告しています。このサイトの許可設定とブラウザーまたは端末の通知設定を確認し、更新してください。';
 
   @override
   String get pushResubscribe => '通知を再接続';

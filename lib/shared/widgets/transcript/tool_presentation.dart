@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/services/tool_display_name.dart';
 import 'package:cc_domain/core/domain/services/transcript_status.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -193,7 +194,7 @@ ToolPresentation resolveToolPresentation(ToolSegment seg) {
     default:
       return ToolPresentation(
         icon: _mcpIcon(name),
-        verb: humanizeToolName(seg.toolName),
+        verb: resolveToolDisplayName(seg.toolName),
         category: ToolCategory.other,
         subtitle: _inputsPreview(inputs),
       );
@@ -216,25 +217,6 @@ IconData _mcpIcon(String name) {
     return AppIcons.plus;
   }
   return AppIcons.wrench;
-}
-
-/// Humanizes a tool name for display: strips any `mcp__server__` prefix, splits
-/// snake_case and sentence-cases the result ("create_ticket" → "Create ticket").
-String humanizeToolName(String toolName) {
-  final name = normalizeToolName(toolName);
-  if (name.isEmpty) {
-    return 'Tool';
-  }
-  final words = name
-      .split(RegExp(r'[_\s]+'))
-      .where((w) => w.isNotEmpty)
-      .toList();
-  if (words.isEmpty) {
-    return 'Tool';
-  }
-  final first = words.first;
-  final head = first[0].toUpperCase() + first.substring(1);
-  return [head, ...words.skip(1)].join(' ');
 }
 
 /// Shortens a file path to its last two segments for compact display.

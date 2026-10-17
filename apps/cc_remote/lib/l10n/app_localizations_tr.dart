@@ -942,6 +942,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get mobileSendFailed => 'Mesaj gönderilemedi. Taslağınız hâlâ burada.';
 
   @override
+  String get sentAttachmentUnavailable => 'Ek kullanılamıyor';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Ek yüklenemedi';
+
+  @override
   String get mobileActionFailed => 'İşlem başarısız';
 
   @override
@@ -1053,6 +1059,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Orijinal';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Yorum yapmak için bir satır seçin';
 
   @override
   String get mobilePrUpdatedSide => 'Güncellendi';
@@ -2109,6 +2118,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get progressTodos => 'Görevler';
 
   @override
+  String get transcriptToolTodos => 'Görevler';
+
+  @override
+  String get transcriptToolSearchMemory => 'Bellekte ara';
+
+  @override
+  String get transcriptToolRenderMedia => 'Medyayı göster';
+
+  @override
   String get progressNoTodos => 'Henüz görev yok';
 
   @override
@@ -2424,7 +2442,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Bildirimler tarayıcı ayarlarında engellenmiş. Devam etmek için oradan izin verin.';
+      'Tarayıcı bildirimlerin engellendiğini bildiriyor. Bu sitenin iznini ve tarayıcı veya cihaz bildirim ayarlarını kontrol edip sayfayı yenileyin.';
 
   @override
   String get pushResubscribe => 'Bildirimleri yeniden bağla';

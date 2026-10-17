@@ -52,7 +52,7 @@ String liveStatusLabel(
     TranscriptStatusKind.searching => l10n.transcriptStatusSearching,
     TranscriptStatusKind.responding => l10n.transcriptStatusResponding,
     TranscriptStatusKind.runningTool => l10n.transcriptStatusRunningTool(
-      humanizeToolName(status.toolName ?? ''),
+      resolveToolDisplayName(status.toolName ?? ''),
     ),
   };
 }

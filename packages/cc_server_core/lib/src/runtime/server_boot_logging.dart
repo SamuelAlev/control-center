@@ -19,6 +19,83 @@ const Duration _watchActivityWindow = Duration(days: 7);
 
 RotatingFileLogSink? _fileSink;
 
+void _configureBootLogging(CcServerConfig config) {
+  _logLevel = config.logLevel;
+
+  // A rotating on-disk log under the data dir, so a long-lived headless server
+  // keeps a bounded, persistent record (and a crash trail) beyond ephemeral
+  // stdio (FINDINGS §130/§132). Every log seam below tees into it via _emitLog.
+  _fileSink = RotatingFileLogSink(directory: '${config.dataDir}/logs');
+
+  CcHostLog.sink = (level, message, [error, stackTrace]) {
+    final severity = _hostSeverity(level);
+    if (severity.index < config.logLevel.index) {
+      return;
+    }
+    _emitLog(
+      severity == CcServerLogLevel.error,
+      '[${level.name}] $message',
+      error,
+    );
+  };
+
+  // The Drift-backed repositories log through their own seam; route it to the
+  // same stdout/stderr so server persistence diagnostics are visible.
+  CcPersistenceLog.sink = (level, message, [error, stackTrace]) {
+    final severity = _persistenceSeverity(level);
+    if (severity.index < config.logLevel.index) {
+      return;
+    }
+    _emitLog(
+      severity == CcServerLogLevel.error,
+      '[${level.name}] $message',
+      error,
+    );
+  };
+
+  // Domain services (reconcilers, listeners, the pipeline engine) log through
+  // the shared-kernel seam; route it to the same stdout/stderr.
+  CcDomainLog.sink = (level, message, [error, stackTrace]) {
+    final severity = _domainSeverity(level);
+    if (severity.index < config.logLevel.index) {
+      return;
+    }
+    _emitLog(
+      severity == CcServerLogLevel.error,
+      '[${level.name}] $message',
+      error,
+    );
+  };
+
+  // Route infrastructure diagnostics to stdio and the rotating log file.
+  CcInfraLog.sink = (level, message, [error, stackTrace]) {
+    final severity = _infraSeverity(level);
+    if (severity.index < config.logLevel.index) {
+      return;
+    }
+    _emitLog(
+      severity == CcServerLogLevel.error,
+      '[${level.name}] $message',
+      error,
+    );
+  };
+
+  // Configure infrastructure traces from --log-level / CC_SERVER_LOG_LEVEL.
+  CcInfraLog.level = switch (config.logLevel) {
+    CcServerLogLevel.debug => CcInfraLogLevel.debug,
+    CcServerLogLevel.info => CcInfraLogLevel.info,
+    CcServerLogLevel.warning => CcInfraLogLevel.warning,
+    CcServerLogLevel.error => CcInfraLogLevel.error,
+  };
+
+  // First line the moment the sink is live, so the console shows the server is
+  // alive immediately — the DB open + model/registry wiring below run silently
+  // for a bit and (piped, block-buffered stdout aside) that used to read as a
+  // hung start. Emitted directly, bypassing the level filter (and its `[level]`
+  // prefix): the lifecycle lines always print, whatever `--log-level` says.
+  _emitLog(false, 'cc_server: booting (data: ${config.dataDir})…');
+}
+
 /// Runs a boot phase, announcing it before and timing it after.
 ///
 /// Boot is a long sequence of awaits with logging only at a few landmarks, so a

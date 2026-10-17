@@ -1122,6 +1122,14 @@
   "mobileProgress": "Progress and context",
   "mobileReadFailed": "Could not mark this conversation as read",
   "mobileSendFailed": "Message not sent. Your draft is still here.",
+  "sentAttachmentUnavailable": "Attachment unavailable",
+  "@sentAttachmentUnavailable": {
+    "description": "Fallback for a sent attachment whose file is no longer available."
+  },
+  "sentAttachmentLoadFailed": "Could not load attachment",
+  "@sentAttachmentLoadFailed": {
+    "description": "Fallback when loading a sent attachment fails."
+  },
   "mobileActionFailed": "Action failed",
   "mobileRemove": "Remove",
   "mobileLinkedMessage": "Linked message",
@@ -1167,6 +1175,10 @@
     }
   },
   "mobilePrOriginalSide": "Original",
+  "mobilePrSelectCommentLine": "Choose a line to comment on",
+  "@mobilePrSelectCommentLine": {
+    "description": "Label for choosing a pull request diff line for an inline comment."
+  },
   "mobilePrUpdatedSide": "Updated",
   "mobilePrThreadResolved": "Resolved",
   "mobilePrReplyHint": "Write a reply…",
@@ -1746,6 +1758,18 @@
   "progressClearGoal": "Clear goal",
   "progressGoalRequired": "Enter a goal before saving.",
   "progressTodos": "Tasks",
+  "transcriptToolTodos": "Tasks",
+  "@transcriptToolTodos": {
+    "description": "Short label for the agent task-list tool in conversation transcripts."
+  },
+  "transcriptToolSearchMemory": "Search memory",
+  "@transcriptToolSearchMemory": {
+    "description": "Short label for the agent memory-search tool in conversation transcripts."
+  },
+  "transcriptToolRenderMedia": "Render media",
+  "@transcriptToolRenderMedia": {
+    "description": "Short label for the agent media-rendering tool in conversation transcripts."
+  },
   "progressNoTodos": "No tasks yet",
   "progressNewTodo": "New task",
   "progressAddTodo": "Add task",
@@ -1969,7 +1993,7 @@
   "pushSecureOrigin": "Notifications require HTTPS.",
   "pushInstallIos": "On iPhone or iPad, add this app to the Home Screen and open it there to enable notifications.",
   "pushUnsupported": "This browser does not support background notifications.",
-  "pushDenied": "Notifications are blocked in browser settings. Allow them there to continue.",
+  "pushDenied": "Your browser reports notifications blocked. Check this site's permission and your browser or device notification settings, then refresh.",
   "pushResubscribe": "Reconnect notifications",
   "pushStatusEnabled": "Notifications are on for this device.",
   "pushStatusDisabled": "Notifications are off for this device.",

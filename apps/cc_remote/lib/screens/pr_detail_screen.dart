@@ -23,6 +23,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 part 'pr_detail_body.dart';
+part 'pr_detail_checks.dart';
+part 'pr_detail_permissions.dart';
 
 enum _PrTab { conversation, files, checks }
 
@@ -103,33 +105,6 @@ class _PrDetailScreenState extends ConsumerState<PrDetailScreen> {
         idempotencyKey: 'phone-merge:${widget.repoId}:${widget.number}',
       );
     });
-  }
-
-  bool _hasWriteAccess() {
-    final perm = ref.read(prRepoPermissionProvider(_coords)).value;
-    return perm == 'admin' || perm == 'write';
-  }
-
-  String _viewerLogin() {
-    final repo = ref.read(prRepoProvider(_coords));
-    final logins = ref.read(viewerLoginsProvider).value ?? const {};
-    if (repo == null) {
-      return '';
-    }
-    return logins[repo.forge] ?? '';
-  }
-
-  bool _canEditPrBody(PullRequest pr) {
-    final login = _viewerLogin();
-    final isAuthor =
-        login.isNotEmpty && pr.author?.login.toLowerCase() == login;
-    return isAuthor || _hasWriteAccess();
-  }
-
-  bool _canEditComment(PrUser? author) {
-    final login = _viewerLogin();
-    final isAuthor = login.isNotEmpty && author?.login.toLowerCase() == login;
-    return isAuthor || _hasWriteAccess();
   }
 
   Future<void> _togglePrBodyCheckbox(PullRequest pr, int index) async {

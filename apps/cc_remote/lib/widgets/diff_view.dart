@@ -1,8 +1,11 @@
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+
+part 'diff_view_row.dart';
 
 /// How many diff rows render before the "show the rest" affordance appears.
 ///
@@ -50,7 +53,7 @@ class DiffView extends StatefulWidget {
   /// affordance (the diff is already whole).
   final VoidCallback? onExpand;
 
-  /// Called for an added or deleted row only; line numbers are on that side.
+  /// Called when a changed line is chosen in the touch-sized comment selector.
   final ValueChanged<DiffLine>? onLineSelected;
 
   /// The selected changed row, highlighted until the composer is dismissed.
@@ -64,6 +67,13 @@ class DiffView extends StatefulWidget {
 
 class _DiffViewState extends State<DiffView> {
   late List<DiffLine> _lines = parseUnifiedDiff(widget.patch);
+  final _horizontalScroll = ScrollController();
+
+  @override
+  void dispose() {
+    _horizontalScroll.dispose();
+    super.dispose();
+  }
 
   @override
   void didUpdateWidget(DiffView oldWidget) {
@@ -95,6 +105,13 @@ class _DiffViewState extends State<DiffView> {
         widget.maxRows ?? (widget.expanded ? lines.length : kDiffRowBudget);
     final over = lines.length > budget;
     final shown = over ? lines.take(budget) : lines;
+    final commentLines = [
+      if (widget.onLineSelected != null)
+        for (final line in shown)
+          if ((line.kind == DiffLineKind.addition && (line.newLine ?? 0) > 0) ||
+              (line.kind == DiffLineKind.deletion && (line.oldLine ?? 0) > 0))
+            line,
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -117,51 +134,40 @@ class _DiffViewState extends State<DiffView> {
               // four characters wide — the width it would save is not worth a
               // scroll position that can disagree with itself.
               child: LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: ConstrainedBox(
-                    // At least as wide as the viewport, so a short line still
-                    // paints its tint edge to edge instead of stopping mid-row.
-                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                    child: IntrinsicWidth(
-                      // Required, not decorative. A scroll view hands its child
-                      // an UNBOUNDED width, and `CrossAxisAlignment.stretch`
-                      // resolves against the incoming maxWidth — so without a
-                      // finite width first, every row is asked to lay out at
-                      // infinity and the whole block throws. IntrinsicWidth
-                      // measures the longest row and makes that the Column's
-                      // width, which is also exactly the width the rows should
-                      // share. It costs a second measuring pass over the rows,
-                      // which is one more reason [kDiffRowBudget] exists.
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (final line in shown)
-                            _DiffRow(
-                              line: line,
-                              tokens: t,
-                              numberFormat: numberFormat,
-                              selected:
-                                  identical(line, widget.selectedLine) ||
-                                  (widget.selectedLine != null &&
-                                      line.kind == widget.selectedLine!.kind &&
-                                      line.oldLine ==
-                                          widget.selectedLine!.oldLine &&
-                                      line.newLine ==
-                                          widget.selectedLine!.newLine),
-                              onPressed:
-                                  widget.onLineSelected == null ||
-                                      !((line.kind == DiffLineKind.addition &&
-                                              line.newLine != null &&
-                                              line.newLine! > 0) ||
-                                          (line.kind == DiffLineKind.deletion &&
-                                              line.oldLine != null &&
-                                              line.oldLine! > 0))
-                                  ? null
-                                  : () => widget.onLineSelected!(line),
-                            ),
-                        ],
+                builder: (context, constraints) => CcScrollbar(
+                  controller: _horizontalScroll,
+                  thumbVisibility: true,
+                  scrollbarOrientation: ScrollbarOrientation.bottom,
+                  child: SingleChildScrollView(
+                    controller: _horizontalScroll,
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: constraints.maxWidth,
+                      ),
+                      child: IntrinsicWidth(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (final line in shown)
+                              _DiffRow(
+                                line: line,
+                                tokens: t,
+                                numberFormat: numberFormat,
+                                selected:
+                                    identical(line, widget.selectedLine) ||
+                                    (widget.selectedLine != null &&
+                                        line.kind ==
+                                            widget.selectedLine!.kind &&
+                                        line.oldLine ==
+                                            widget.selectedLine!.oldLine &&
+                                        line.newLine ==
+                                            widget.selectedLine!.newLine),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -170,6 +176,34 @@ class _DiffViewState extends State<DiffView> {
             ),
           ),
         ),
+        if (commentLines.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          // Keep code dense; the separate selector provides a full phone tap
+          // target instead of adding button padding to every source line.
+          SizedBox(
+            height: kMinTouchTarget,
+            child: CcSelect<DiffLine>(
+              value: widget.selectedLine,
+              semanticLabel: l10n.mobilePrSelectCommentLine,
+              hintText: l10n.mobilePrSelectCommentLine,
+              options: [
+                for (final line in commentLines)
+                  CcSelectOption(
+                    value: line,
+                    label: l10n.mobilePrCommentOnLine(
+                      line.kind == DiffLineKind.addition ? '+' : '-',
+                      numberFormat.format(
+                        line.kind == DiffLineKind.addition
+                            ? line.newLine!
+                            : line.oldLine!,
+                      ),
+                    ),
+                  ),
+              ],
+              onChanged: widget.onLineSelected!,
+            ),
+          ),
+        ],
         if (over) ...[
           const SizedBox(height: 8),
           CcButton(
@@ -183,138 +217,4 @@ class _DiffViewState extends State<DiffView> {
       ],
     );
   }
-}
-
-class _DiffRow extends StatelessWidget {
-  const _DiffRow({
-    required this.line,
-    required this.tokens,
-    required this.numberFormat,
-    this.onPressed,
-    this.selected = false,
-  });
-
-  final DiffLine line;
-  final DesignSystemTokens tokens;
-  final NumberFormat numberFormat;
-  final VoidCallback? onPressed;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = tokens;
-
-    if (line.kind == DiffLineKind.expandGap) {
-      // The lines between two hunks that the forge never sent. Fetching them
-      // needs the file body (`pr_review.watchFileContent`) — a separate,
-      // per-file round trip that the desk is the place to spend. Marking the
-      // elision is what stops the next hunk's numbering looking like a bug.
-      final count = (line.gapNewEnd ?? 0) - (line.newLine ?? 0) + 1;
-      return _band(
-        t.bgTertiary,
-        Text(
-          '  ⋯  ${AppLocalizations.of(context).unchangedLines(count)}',
-          style: _mono(t.textTertiary),
-        ),
-      );
-    }
-
-    if (line.kind == DiffLineKind.hunkHeader) {
-      return _band(
-        t.bgTertiary,
-        Text(line.content, style: _mono(t.textTertiary), softWrap: false),
-      );
-    }
-
-    final isAdd = line.kind == DiffLineKind.addition;
-    final isDel = line.kind == DiffLineKind.deletion;
-    final background = isAdd
-        ? t.successSoft
-        : isDel
-        ? t.dangerSoft
-        : null;
-    final marker = isAdd
-        ? '+'
-        : isDel
-        ? '-'
-        : ' ';
-
-    final content = DecoratedBox(
-      decoration: BoxDecoration(
-        color: selected ? t.bgTertiary : background,
-        border: selected
-            ? Border(left: BorderSide(color: t.textPrimary, width: 2))
-            : null,
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: onPressed == null ? 1 : 14),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _gutter(line.oldLine, t),
-            _gutter(line.newLine, t),
-            SizedBox(
-              width: 14,
-              child: Text(
-                marker,
-                textAlign: TextAlign.center,
-                style: _mono(
-                  isAdd
-                      ? t.textSuccessPrimary
-                      : isDel
-                      ? t.textErrorPrimary
-                      : t.fgQuaternary,
-                ),
-              ),
-            ),
-            Text(
-              line.content.replaceAll('\t', '  '),
-              softWrap: false,
-              style: _mono(t.textPrimary),
-            ),
-            const SizedBox(width: 12),
-          ],
-        ),
-      ),
-    );
-    if (onPressed == null) return content;
-    return CcTappable(
-      onPressed: onPressed,
-      semanticLabel: AppLocalizations.of(context).mobilePrCommentOnLine(
-        isAdd ? '+' : '-',
-        numberFormat.format(isAdd ? line.newLine! : line.oldLine!),
-      ),
-      builder: (context, _) => content,
-    );
-  }
-
-  /// A full-width band (hunk header, gap marker) — no gutter, no marker.
-  Widget _band(Color color, Widget child) => DecoratedBox(
-    decoration: BoxDecoration(color: color),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [child]),
-    ),
-  );
-
-  // RTL carve-out: the gutter lives inside the LTR diff block — its numbers
-  // stay right-aligned against the marker column in every locale.
-  Widget _gutter(int? number, DesignSystemTokens t) => SizedBox(
-    width: 34,
-    child: Padding(
-      padding: const EdgeInsets.only(right: 4),
-      child: Text(
-        number == null ? '' : numberFormat.format(number),
-        textAlign: TextAlign.right,
-        style: _mono(t.fgQuaternary),
-      ),
-    ),
-  );
-
-  // Line numbers only line up when digits share a width — `CcFonts.code` is
-  // the seam that supplies tabular figures along with the monospace family.
-  TextStyle _mono(Color color) => CcFonts.code(
-    textStyle: TextStyle(fontSize: 11, height: 1.45, color: color),
-  );
 }

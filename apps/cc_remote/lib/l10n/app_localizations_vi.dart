@@ -946,6 +946,12 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chưa gửi được tin nhắn. Bản nháp của bạn vẫn còn đây.';
 
   @override
+  String get sentAttachmentUnavailable => 'Tệp đính kèm không khả dụng';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Không thể tải tệp đính kèm';
+
+  @override
   String get mobileActionFailed => 'Thao tác thất bại';
 
   @override
@@ -1057,6 +1063,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Bản gốc';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Chọn một dòng để bình luận';
 
   @override
   String get mobilePrUpdatedSide => 'Cập nhật';
@@ -2115,6 +2124,15 @@ class AppLocalizationsVi extends AppLocalizations {
   String get progressTodos => 'Công việc';
 
   @override
+  String get transcriptToolTodos => 'Công việc';
+
+  @override
+  String get transcriptToolSearchMemory => 'Tìm trong bộ nhớ';
+
+  @override
+  String get transcriptToolRenderMedia => 'Hiển thị nội dung đa phương tiện';
+
+  @override
   String get progressNoTodos => 'Chưa có công việc';
 
   @override
@@ -2432,7 +2450,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Thông báo bị chặn trong cài đặt trình duyệt. Cho phép ở đó để tiếp tục.';
+      'Trình duyệt báo thông báo đang bị chặn. Kiểm tra quyền của trang này và cài đặt thông báo của trình duyệt hoặc thiết bị, rồi làm mới trang.';
 
   @override
   String get pushResubscribe => 'Kết nối lại thông báo';

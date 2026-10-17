@@ -949,6 +949,12 @@ class AppLocalizationsIt extends AppLocalizations {
       'Messaggio non inviato. La bozza è ancora qui.';
 
   @override
+  String get sentAttachmentUnavailable => 'Allegato non disponibile';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Impossibile caricare l\'allegato';
+
+  @override
   String get mobileActionFailed => 'Azione non riuscita';
 
   @override
@@ -1064,6 +1070,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Originale';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Scegli una riga da commentare';
 
   @override
   String get mobilePrUpdatedSide => 'Aggiornato';
@@ -2140,6 +2149,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get progressTodos => 'Attività da svolgere';
 
   @override
+  String get transcriptToolTodos => 'Attività da svolgere';
+
+  @override
+  String get transcriptToolSearchMemory => 'Cerca nella memoria';
+
+  @override
+  String get transcriptToolRenderMedia => 'Mostra contenuti multimediali';
+
+  @override
   String get progressNoTodos => 'Ancora nessuna attività da svolgere';
 
   @override
@@ -2458,7 +2476,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Le notifiche sono bloccate nelle impostazioni del browser. Abilitale lì per continuare.';
+      'Il browser segnala che le notifiche sono bloccate. Controlla le autorizzazioni di questo sito e le impostazioni delle notifiche del browser o del dispositivo, poi aggiorna.';
 
   @override
   String get pushResubscribe => 'Riconnetti notifiche';

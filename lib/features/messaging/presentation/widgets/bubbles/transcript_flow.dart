@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/services/tool_display_name.dart';
 import 'package:cc_domain/core/domain/services/transcript_status.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_markdown/cc_markdown.dart';
@@ -14,7 +15,6 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
-import 'package:control_center/shared/widgets/transcript/tool_presentation.dart';
 import 'package:flutter/widgets.dart';
 
 part 'transcript_flow_prose.dart';

@@ -1,11 +1,14 @@
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/services/tool_display_name.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/widgets/phone_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
+
+part 'agent_transcript_details.dart';
 
 /// Renders an agent turn's transcript as one **continuous, inline flow** —
 /// reasoning, tool calls (with inputs/outputs), errors, sandbox violations and
@@ -164,12 +167,19 @@ class _AgentTranscriptState extends State<AgentTranscript> {
 
   Widget _tool(DesignSystemTokens t, ToolSegment s) {
     final open = _expanded.contains(s.toolCallId);
-    // Script tools (bash/eval) send a required per-call description; showing
-    // it instead of the bare tool name keeps this surface scannable too.
+    // Keep per-call summaries as the primary label; protocol names belong in
+    // expanded diagnostics, not the row header.
     final description = s.inputs?['description'];
+    final l10n = AppLocalizations.of(context);
     final label = description is String && description.trim().isNotEmpty
         ? description.trim().split('\n').first
-        : s.toolName;
+        : resolveToolDisplayName(
+            s.toolName,
+            todos: l10n.transcriptToolTodos,
+            searchMemory: l10n.transcriptToolSearchMemory,
+            renderMedia: l10n.transcriptToolRenderMedia,
+          );
+    final showIdentifier = s.toolName.isNotEmpty && s.toolName != label;
     final (icon, color) = switch (s.status) {
       ToolSegmentStatus.running => (AppIcons.loader, t.fgTertiary),
       ToolSegmentStatus.ok => (AppIcons.check, t.fgSuccessPrimary),
@@ -216,8 +226,9 @@ class _AgentTranscriptState extends State<AgentTranscript> {
                       ),
                     ),
                   ),
-                  if (s.outputs.isNotEmpty || s.inputs != null) ...[
-                    const SizedBox(width: 6),
+                  if (showIdentifier ||
+                      s.outputs.isNotEmpty ||
+                      s.inputs != null) ...[
                     Icon(
                       open ? AppIcons.chevronDown : AppIcons.chevronRight,
                       size: 12,
@@ -227,6 +238,26 @@ class _AgentTranscriptState extends State<AgentTranscript> {
                 ],
               ),
               if (open) ...[
+                if (showIdentifier)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: SelectableRegion(
+                        selectionControls: emptyTextSelectionControls,
+                        child: Text(
+                          s.toolName,
+                          style: CcFonts.code(
+                            textStyle: TextStyle(
+                              fontSize: 11,
+                              height: 1.4,
+                              color: t.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 if (s.inputs != null)
                   _detail(
                     t,
@@ -241,53 +272,5 @@ class _AgentTranscriptState extends State<AgentTranscript> {
         ),
       ),
     );
-  }
-
-  Widget _detail(DesignSystemTokens t, String label, String body) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: t.fgTertiary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          // RTL carve-out: tool inputs/outputs are code/JSON — LTR in every
-          // locale.
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: Text(
-              body,
-              maxLines: 8,
-              overflow: TextOverflow.ellipsis,
-              style: CcFonts.code(
-                textStyle: TextStyle(
-                  fontSize: 11,
-                  height: 1.4,
-                  color: t.textSecondary,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _pretty(Map<String, dynamic>? json) {
-    if (json == null) {
-      return '';
-    }
-    try {
-      return const JsonEncoder.withIndent('  ').convert(json);
-    } catch (_) {
-      return json.toString();
-    }
   }
 }

@@ -1,17 +1,19 @@
 import 'dart:ui' show Offset;
 
+import 'package:flutter/widgets.dart' show BuildContext;
+
 /// The web implementation of the [startWindowDrag] seam.
 ///
 /// A browser tab is not a movable OS window, so dragging the title bar / sidebar
 /// strip is a no-op here. Lives behind a conditional import so the web build
 /// never links `nativeapi` (and the desktop window-move code never compiles in).
-void startWindowDrag() {}
+void startWindowDrag(BuildContext context) {}
 
 /// The web implementation of the [toggleWindowMaximize] seam.
 ///
 /// A browser tab has no OS-level maximize state, so double-clicking the title
 /// bar is a no-op here.
-void toggleWindowMaximize() {}
+void toggleWindowMaximize(BuildContext context) {}
 
 /// The web implementation of the [windowCursorPosition] seam.
 ///
@@ -24,4 +26,4 @@ Offset windowCursorPosition() => Offset.zero;
 ///
 /// A browser tab has no frame to reposition, so a manual window move is a
 /// no-op here.
-void moveWindowTo(Offset topLeft) {}
+void moveWindowTo(BuildContext context, Offset topLeft) {}

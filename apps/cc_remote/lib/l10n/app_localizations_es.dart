@@ -953,6 +953,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se envió el mensaje. Tu borrador sigue aquí.';
 
   @override
+  String get sentAttachmentUnavailable => 'Adjunto no disponible';
+
+  @override
+  String get sentAttachmentLoadFailed => 'No se pudo cargar el adjunto';
+
+  @override
   String get mobileActionFailed => 'La acción falló';
 
   @override
@@ -1067,6 +1073,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Original';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Elige una línea para comentar';
 
   @override
   String get mobilePrUpdatedSide => 'Actualizado';
@@ -2142,6 +2151,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get progressTodos => 'Tareas';
 
   @override
+  String get transcriptToolTodos => 'Tareas';
+
+  @override
+  String get transcriptToolSearchMemory => 'Buscar en la memoria';
+
+  @override
+  String get transcriptToolRenderMedia => 'Mostrar contenido multimedia';
+
+  @override
   String get progressNoTodos => 'Todavía no hay tareas';
 
   @override
@@ -2461,7 +2479,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Las notificaciones están bloqueadas en los ajustes del navegador. Permítelas allí para continuar.';
+      'El navegador indica que las notificaciones están bloqueadas. Revisa los permisos de este sitio y los ajustes de notificaciones del navegador o del dispositivo; luego actualiza.';
 
   @override
   String get pushResubscribe => 'Reconectar notificaciones';

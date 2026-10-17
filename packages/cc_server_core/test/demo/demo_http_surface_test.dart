@@ -8,17 +8,14 @@ import 'package:test/test.dart';
 import '../helpers/best_effort_delete.dart';
 import '../helpers/native_staging.dart';
 
-/// The demo's HTTP surface, asserted from outside.
+/// The demo's public HTTP and authenticated resource surfaces.
 ///
-/// Layer 1 of the lockdown works by passing `null` for a port, which makes both
-/// the RPC ops AND the byte routes disappear. `demo_op_lockdown_ratchet_test`
-/// covers the ops; this covers the routes — including the media proxy, which
-/// was the last way a locked-down host could still make an outbound request.
+/// Sensitive bytes require the Noise resource tunnel, even on the demo.
+/// Inside that tunnel, execution and backup ports remain unavailable while
+/// signed media requests still obey their own authorization and SSRF checks.
 ///
-/// It also pins the `/invites/redeem` CORS fix, which is not demo-specific: the
-/// web client sends `Content-Type: application/json`, so a browser preflights
-/// the redeem POST, and that preflight used to hit a bare 405 with no CORS
-/// headers — making cross-origin pairing by invite impossible for anyone.
+/// This also pins `/invites/redeem` CORS: browser pairing preflights the
+/// JSON POST, and a bare 405 used to make cross-origin pairing impossible.
 void main() {
   if (!hostHasServerNatives) {
     test(
@@ -34,6 +31,10 @@ void main() {
   late Directory tmp;
   late CcServer server;
   late HttpClient http;
+  late RemoteRpcClient remote;
+  late String deviceId;
+  late String psk;
+  late String workspaceId;
 
   setUpAll(() async {
     tmp = Directory.systemTemp.createTempSync('cc_demo_http');
@@ -43,9 +44,33 @@ void main() {
       demoBuilder: buildDemoWiring,
     );
     http = HttpClient();
+    final recipient = await CredentialSeal.newRecipient();
+    final req = await http.postUrl(
+      Uri.parse('http://127.0.0.1:${server.rpc.boundPort}/invites/redeem'),
+    );
+    req.headers.contentType = ContentType.json;
+    req.write(jsonEncode({'code': 'demo', 'handoff_key': recipient.publicKey}));
+    final resp = await req.close();
+    final wire = await resp.transform(utf8.decoder).join();
+    expect(resp.statusCode, HttpStatus.ok, reason: wire);
+    final body = jsonDecode(wire) as Map<String, dynamic>;
+    final credential = await CredentialSeal.open(
+      recipientPrivateKey: recipient.privateKey,
+      envelope: (body['box'] as Map).cast<String, dynamic>(),
+      context: 'cc-public-demo-v1',
+    );
+    deviceId = credential['device_id'] as String;
+    psk = credential['psk'] as String;
+    workspaceId = credential['workspace_id'] as String;
+    remote = await connectRemoteRpc(
+      uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
+      deviceId: deviceId,
+      psk: psk,
+    );
   });
 
   tearDownAll(() async {
+    await remote.close();
     http.close(force: true);
     await server.shutdown();
     await deleteDirBestEffort(tmp);
@@ -58,6 +83,27 @@ void main() {
     return req.close();
   }
 
+  Future<int> resourceStatus(Uri uri, {String method = 'GET'}) async {
+    final response = await remote.resources
+        .request(method, uri)
+        .timeout(const Duration(seconds: 10));
+    await response.body.drain<void>().timeout(const Duration(seconds: 10));
+    return response.statusCode;
+  }
+
+  Uri signedResource(
+    String path,
+    String target, [
+    Map<String, String>? query,
+  ]) => Uri(
+    path: path,
+    queryParameters: {
+      ...?query,
+      'd': deviceId,
+      's': RemoteControlCrypto.signProxyTarget(target, psk),
+    },
+  );
+
   /// Redeems the public code to a fresh client-held recipient, optionally
   /// forging an `X-Forwarded-For`.
   Future<int> redeemStatus({String? forwardedFor}) async {
@@ -69,10 +115,7 @@ void main() {
     if (forwardedFor != null) {
       req.headers.set('x-forwarded-for', forwardedFor);
     }
-    req.write(jsonEncode({
-      'code': 'demo',
-      'handoff_key': recipient.publicKey,
-    }));
+    req.write(jsonEncode({'code': 'demo', 'handoff_key': recipient.publicKey}));
     final resp = await req.close();
     await resp.drain<void>();
     return resp.statusCode;
@@ -109,93 +152,162 @@ void main() {
     );
   }, timeout: const Timeout(Duration(minutes: 3)));
 
-  test('every execution and identity route is absent', () async {
-    // Each of these is a byte route whose port the demo passes as null. A 404
-    // here is the same answer a host that never had the capability gives —
-    // the route is not merely refusing, it has nothing behind it.
-    const absent = <String>[
+  test('public byte routes require the encrypted resource channel', () async {
+    for (final path in <String>[
       '/proxy/vscode/session/index.html',
       '/rig/stream/rig-1/frame',
       '/rig/clipboard/rig-1',
-      // The backup byte lane. A demo's databases are shared public fixtures,
-      // and `/backup/workspace` would hand one of them to whoever asked.
+      '/rig/files/rig-1',
       '/backup/workspace',
       '/backup/snapshot',
       '/backup/restore',
-      '/oauth/github/callback',
-      '/oidc/login',
-      '/oidc/callback',
-      '/saml/login',
-      '/scim/v2/Users',
-      '/webhooks/github',
-      '/api/webhooks/tickets/linear',
-      '/mcp',
-      '/sse',
-      '/proxy/font?u=https%3A%2F%2Fexample.invalid%2Ff.woff2',
-    ];
-    for (final path in absent) {
-      // Per-request timeout: a route that HANGS is as much a failure as one
-      // that answers, and without this the whole suite just times out with no
-      // indication which path never closed its response.
-      final resp = await get(path).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => fail('$path did not answer — it must not stream'),
-      );
-      await resp
-          .drain<void>()
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => fail('$path never closed its response'),
-          );
+      '/meeting/audio',
+      '/workspace/logo',
+      '/blob',
+      '/soundscape/stream',
+      '/proxy/font',
+      signedResource('/proxy/media', 'http://127.0.0.1:9/image.png', {
+        'u': base64Url.encode(utf8.encode('http://127.0.0.1:9/image.png')),
+      }).toString(),
+    ]) {
+      final resp = await get(path).timeout(const Duration(seconds: 10));
+      await resp.drain<void>().timeout(const Duration(seconds: 10));
       expect(
         resp.statusCode,
-        anyOf(
-          HttpStatus.notFound,
-          HttpStatus.unauthorized,
-          // The rig byte routes verify their signed URL BEFORE consulting the
-          // port, so an unsigned probe is rejected at the signature.
-          HttpStatus.badRequest,
-          // A POST-only route (the MCP lanes) answers a GET probe at the
-          // method check. Either way nothing behind the route is reachable:
-          // the port is null, so a well-formed request 404s too.
-          HttpStatus.methodNotAllowed,
-        ),
-        reason: '$path must not be served by a demo host',
+        HttpStatus.upgradeRequired,
+        reason: '$path must not expose bytes over public HTTP, even if signed',
       );
     }
   }, timeout: const Timeout(Duration(minutes: 3)));
 
-  test('the media proxy answers but refuses anything unsigned', () async {
-    // Unlike the routes above, `/proxy/media` IS served on a demo host: the
-    // newsfeed reads real feeds and a feed without images is the one surface
-    // nobody wants a screenshot of. What makes that safe is not absence but
-    // the checks it already had — so pin them, because "enabled" is otherwise
-    // indistinguishable from "open relay".
-    for (final path in <String>[
-      // No signature at all.
-      '/proxy/media?u=https%3A%2F%2Fexample.com%2Fi.png',
-      // A signature that cannot verify against any device PSK.
-      '/proxy/media?u=https%3A%2F%2Fexample.com%2Fi.png&d=nope&s=nope',
-      // The SSRF shapes, which must lose before the fetch either way.
-      '/proxy/media?u=http%3A%2F%2F169.254.169.254%2Flatest%2Fmeta-data%2F&d=nope&s=nope',
-      '/proxy/media?u=http%3A%2F%2F127.0.0.1%3A9%2Fx.png&d=nope&s=nope',
-      '/proxy/media?u=file%3A%2F%2F%2Fetc%2Fpasswd&d=nope&s=nope',
-    ]) {
-      final resp = await get(path).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => fail('$path did not answer'),
-      );
-      await resp.drain<void>();
+  test('demo execution and backup bytes stay unavailable over Noise', () async {
+    final rig = signedResource(
+      '/rig/stream/rig-1/frame',
+      'rig:$workspaceId/rig-1',
+      {'w': workspaceId},
+    );
+    final rigTransfer = LocalRpcServer.rigTransferTarget(workspaceId, 'rig-1');
+    final clipboard = signedResource('/rig/clipboard/rig-1', rigTransfer, {
+      'w': workspaceId,
+    });
+    final files = signedResource('/rig/files/rig-1', rigTransfer, {
+      'w': workspaceId,
+    });
+    final backup = signedResource(
+      '/backup/workspace',
+      'backup-workspace:$workspaceId',
+      {'w': workspaceId},
+    );
+    final snapshot = signedResource(
+      '/backup/snapshot',
+      'backup-snapshot:demo-snapshot',
+      {'n': 'demo-snapshot'},
+    );
+    final restore = signedResource(
+      '/backup/restore',
+      'backup-restore:$workspaceId',
+      {'w': workspaceId},
+    );
+
+    expect(
+      await resourceStatus(Uri.parse('/proxy/vscode/session/index.html')),
+      HttpStatus.forbidden,
+      reason: 'an unknown editor capability cannot open a demo proxy',
+    );
+    for (final uri in [rig, clipboard, files, backup]) {
       expect(
-        resp.statusCode,
-        anyOf(
-          HttpStatus.badRequest,
-          HttpStatus.forbidden,
-          HttpStatus.notFound,
-        ),
-        reason: '$path must never be fetched on behalf of a visitor',
+        await resourceStatus(uri),
+        HttpStatus.notFound,
+        reason: '${uri.path} has no executable or export port on a demo',
       );
     }
+    expect(
+      await resourceStatus(snapshot),
+      HttpStatus.forbidden,
+      reason: 'a visitor cannot retrieve install-wide snapshots',
+    );
+    expect(
+      await resourceStatus(restore, method: 'POST'),
+      HttpStatus.forbidden,
+      reason: 'a visitor cannot restore a demo workspace',
+    );
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  test(
+    'unpaired public identity and integration routes still refuse',
+    () async {
+      for (final path in <String>[
+        '/oauth/github/callback',
+        '/oidc/login',
+        '/oidc/callback',
+        '/saml/login',
+        '/scim/v2/Users',
+        '/webhooks/github',
+        '/api/webhooks/tickets/linear',
+        '/mcp',
+        '/sse',
+      ]) {
+        final resp = await get(path).timeout(const Duration(seconds: 10));
+        await resp.drain<void>().timeout(const Duration(seconds: 10));
+        expect(
+          resp.statusCode,
+          anyOf(
+            HttpStatus.notFound,
+            HttpStatus.unauthorized,
+            HttpStatus.forbidden,
+            HttpStatus.badRequest,
+            HttpStatus.methodNotAllowed,
+          ),
+          reason: '$path must not give an anonymous demo visitor access',
+        );
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+
+  test('sealed media refuses unsigned, forged and SSRF targets', () async {
+    Uri image(String url, {String? signature}) => Uri(
+      path: '/proxy/media',
+      queryParameters: {
+        'u': base64Url.encode(utf8.encode(url)),
+        'd': deviceId,
+        if (signature != null) 's': signature,
+      },
+    );
+
+    const safe = 'https://example.com/i.png';
+    expect(await resourceStatus(image(safe)), HttpStatus.badRequest);
+    expect(
+      await resourceStatus(image(safe, signature: 'invalid')),
+      HttpStatus.forbidden,
+    );
+    for (final target in <String>[
+      'http://169.254.169.254/latest/meta-data/',
+      'http://127.0.0.1:9/x.png',
+      'http://[fd00::1]/x.png',
+    ]) {
+      final status = await resourceStatus(
+        image(
+          target,
+          signature: RemoteControlCrypto.signProxyTarget(target, psk),
+        ),
+      );
+      expect(
+        status,
+        HttpStatus.forbidden,
+        reason: '$target must not be fetched',
+      );
+    }
+    const fileUrl = 'file:///etc/passwd';
+    expect(
+      await resourceStatus(
+        image(
+          fileUrl,
+          signature: RemoteControlCrypto.signProxyTarget(fileUrl, psk),
+        ),
+      ),
+      HttpStatus.badRequest,
+    );
   }, timeout: const Timeout(Duration(minutes: 3)));
 
   test('/healthz still answers, unauthenticated and CORS-open', () async {
@@ -231,7 +343,10 @@ void main() {
       reason: 'a 405 here made cross-origin invite pairing impossible',
     );
     expect(resp.headers.value('access-control-allow-origin'), '*');
-    expect(resp.headers.value('access-control-allow-methods'), contains('POST'));
+    expect(
+      resp.headers.value('access-control-allow-methods'),
+      contains('POST'),
+    );
     expect(
       resp.headers.value('access-control-allow-headers')?.toLowerCase(),
       contains('content-type'),
@@ -244,10 +359,7 @@ void main() {
       Uri.parse('http://127.0.0.1:${server.rpc.boundPort}/invites/redeem'),
     );
     req.headers.contentType = ContentType.json;
-    req.write(jsonEncode({
-      'code': 'demo',
-      'handoff_key': recipient.publicKey,
-    }));
+    req.write(jsonEncode({'code': 'demo', 'handoff_key': recipient.publicKey}));
     final resp = await req.close();
     final wire = await resp.transform(utf8.decoder).join();
     expect(resp.statusCode, 200);

@@ -73,20 +73,24 @@ Future<void> enableRemotePush(
   final selection =
       categories ??
       (status.enabled ? status.categories : pushCategoryNames.toSet());
-  final subscription = await const BrowserPush().subscribe(
-    status.vapidPublicKey,
-  );
+  // subscribe() starts the browser permission request synchronously, before
+  // any RPC. Even a rejected prompt must refresh the reported permission.
   try {
-    await client.call('push.register', {
-      'endpoint': subscription.endpoint,
-      'p256dh': subscription.p256dh,
-      'auth': subscription.auth,
-      'categories': selection.toList(),
-      'quiet': quiet ?? status.quiet,
-    });
-  } on Object {
-    if (!status.enabled) await const BrowserPush().unsubscribe();
-    rethrow;
+    final subscription = await const BrowserPush().subscribe(
+      status.vapidPublicKey,
+    );
+    try {
+      await client.call('push.register', {
+        'endpoint': subscription.endpoint,
+        'p256dh': subscription.p256dh,
+        'auth': subscription.auth,
+        'categories': selection.toList(),
+        'quiet': quiet ?? status.quiet,
+      });
+    } on Object {
+      if (!status.enabled) await const BrowserPush().unsubscribe();
+      rethrow;
+    }
   } finally {
     ref.invalidate(remotePushStatusProvider);
   }

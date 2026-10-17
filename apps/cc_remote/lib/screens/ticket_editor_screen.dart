@@ -14,6 +14,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+part 'ticket_editor_state.dart';
 
 /// Creates a ticket or patches only the fields actually edited by the operator.
 class TicketEditorScreen extends ConsumerStatefulWidget {
@@ -50,30 +51,6 @@ class _TicketEditorScreenState extends ConsumerState<TicketEditorScreen> {
     _description.dispose();
     _labels.dispose();
     super.dispose();
-  }
-
-  void _resetForWorkspace(String? workspaceId) {
-    if (_workspaceId == workspaceId) return;
-    _workspaceId = workspaceId;
-    _original = null;
-    _title.clear();
-    _description.clear();
-    _labels.clear();
-    _priority = 'none';
-    _status = 'open';
-    _assignee = null;
-    _saving = false;
-    _titleInvalid = false;
-    _error = null;
-  }
-
-  void _load(TicketDto ticket) {
-    if (_original != null) return;
-    _original = ticket;
-    _title.text = ticket.title;
-    _description.text = ticket.description ?? '';
-    _labels.text = ticket.labels.join('\n');
-    _priority = ticket.priority;
   }
 
   Future<void> _save() async {
@@ -163,7 +140,7 @@ class _TicketEditorScreenState extends ConsumerState<TicketEditorScreen> {
     final workspaceId = workspace.value;
     final role = ref.watch(workspaceRoleProvider);
     final canWrite = !role.isLoading && role.value?.canWrite == true;
-    _resetForWorkspace(workspaceId);
+    this._resetForWorkspace(workspaceId);
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final ticketId = widget.ticketId;
@@ -176,7 +153,7 @@ class _TicketEditorScreenState extends ConsumerState<TicketEditorScreen> {
         : tickets?.asData?.value
               .where((t) => t.id == ticketId && t.workspaceId == workspaceId)
               .firstOrNull;
-    if (currentTicket != null) _load(currentTicket);
+    if (currentTicket != null) this._load(currentTicket);
     final agents = ticketId == null ? ref.watch(agentsProvider) : null;
     return SafeArea(
       child: ColoredBox(

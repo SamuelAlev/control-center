@@ -56,7 +56,7 @@ extension _PrDetailBody on _PrDetailScreenState {
         ...switch (_tab) {
           _PrTab.conversation => _conversation(t, pr),
           _PrTab.files => _files(t, pr),
-          _PrTab.checks => _checks(t),
+          _PrTab.checks => this._checks(t),
         },
       ],
     );
@@ -111,7 +111,7 @@ extension _PrDetailBody on _PrDetailScreenState {
               body: _optimisticComments[c.id] ?? c.body,
               at: c.createdAt,
               commentId: c.id,
-              canEditComment: _canEditComment(c.user),
+              canEditComment: this._canEditComment(c.user),
             ),
         ]..sort((a, b) {
           final epoch = DateTime.fromMillisecondsSinceEpoch(0);
@@ -124,7 +124,7 @@ extension _PrDetailBody on _PrDetailScreenState {
       prAuthor: pr.author,
       prCreatedAt: pr.createdAt,
       entries: entries,
-      onPrBodyCheckboxChanged: _canEditPrBody(pr)
+      onPrBodyCheckboxChanged: this._canEditPrBody(pr)
           ? (index, _) => _togglePrBodyCheckbox(pr, index)
           : null,
       onCommentCheckboxChanged: (commentId, index, _) {
@@ -220,38 +220,6 @@ extension _PrDetailBody on _PrDetailScreenState {
               commentDisabledReason: permissionReason,
             ),
           ),
-    ];
-  }
-
-  List<Widget> _checks(DesignSystemTokens t) {
-    final async = ref.watch(prCheckRunsProvider(_coords));
-    final runs = async.value ?? const <CheckRun>[];
-    if (async.isLoading && runs.isEmpty) {
-      return const [
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: 32),
-          child: Center(child: CcSpinner(size: 20)),
-        ),
-      ];
-    }
-    if (runs.isEmpty) {
-      return [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Text(
-            AppLocalizations.of(context).noChecksReported,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: t.textTertiary),
-          ),
-        ),
-      ];
-    }
-    return [
-      for (final run in runs)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: CheckRow(run: run),
-        ),
     ];
   }
 }

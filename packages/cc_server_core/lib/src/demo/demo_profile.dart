@@ -262,6 +262,10 @@ class DemoProfile {
     'messaging.updateSpaceName',
     'messaging.setSpaceMode',
     'messaging.addParticipant',
+    // Human participants must already belong to this workspace and the
+    // target space must exist here. On a demo, that is the visitor in their
+    // own sandbox; no cross-visitor membership can be created by this op.
+    'messaging.addUserParticipant',
     'messaging.removeParticipant',
     'messaging.clearSpaceMessages',
     'messaging.branchConversationAt',
@@ -531,6 +535,12 @@ class DemoProfile {
     'review_hub.start',
     // Repo wiring: the demo has no repos row at all.
     'messaging.setSpaceRepos',
+    // Push subscriptions are device-global and can trigger outbound Web Push
+    // delivery. A public demo visitor needs neither registration nor removal
+    // of server-held endpoint/key material; the own-device status read remains
+    // available without exposing those secrets.
+    'push.register',
+    'push.remove',
     // ── Families whose READS the demo needs, so they cannot be denied by
     // prefix: the newsfeed shows real articles, the PR surface resolves a repo
     // row, the workspace serves its logo. Every MUTATION in them is named here
@@ -658,6 +668,9 @@ class DemoProfile {
     'activity.watchForEntity',
     'activity.watchForWorkspace',
     'agentGoalRuns.watchForConversation',
+    // Workspace DB stream of durable goals; each emission drops spaces whose
+    // repository grants restrict the subscriber before serializing goal text.
+    'agentGoalRuns.watchForWorkspace',
     'agent_run_log.watchActiveByConversation',
     'agent_run_log.watchActiveBySpace',
     'agent_run_log.watchAll',
@@ -765,6 +778,10 @@ class DemoProfile {
     'prefs.watchOwn',
     'project.watchForWorkspace',
     'provider_policy.watchForWorkspace',
+    // Workspace DB rows of live unanswered questions only. Each emission is
+    // filtered to a live asker and the subscriber's per-space repo grants;
+    // subscribing never resumes or starts an agent.
+    'questions.watchPending',
     'reactions.watchForSpace',
     'repos.watchAll',
     'repos.watchScriptRuns',
@@ -782,6 +799,9 @@ class DemoProfile {
     'terminal.watchPorts',
     'server_settings.watch',
     'space_read.watchUserLastReadAt',
+    // Workspace DB join limits cursors to this subscriber's user and spaces
+    // in this workspace; no other visitor's read history is returned.
+    'space_read.watchUserSpaceReads',
     'team.watchMembersOf',
     'team.watchTeamsForWorkspace',
     'ticket_link.watchForTicket',

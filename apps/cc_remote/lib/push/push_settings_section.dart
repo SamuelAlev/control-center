@@ -13,9 +13,31 @@ class PushSettingsSection extends ConsumerStatefulWidget {
       _PushSettingsSectionState();
 }
 
-class _PushSettingsSectionState extends ConsumerState<PushSettingsSection> {
+class _PushSettingsSectionState extends ConsumerState<PushSettingsSection>
+    with WidgetsBindingObserver {
   bool _busy = false;
   bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Browser/site permissions may have changed while Settings was hidden.
+      // Re-read status only; never request a permission outside a tap.
+      ref.invalidate(remotePushStatusProvider);
+    }
+  }
 
   Future<void> _run(Future<void> Function() action) async {
     setState(() {
@@ -24,8 +46,13 @@ class _PushSettingsSectionState extends ConsumerState<PushSettingsSection> {
     });
     try {
       await action();
-    } on Object {
-      if (mounted) setState(() => _failed = true);
+    } on Object catch (error) {
+      if (mounted) {
+        setState(
+          () => _failed =
+              error is! StateError || error.message != 'push.permissionDenied',
+        );
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -90,12 +117,17 @@ class _PushSettingsSectionState extends ConsumerState<PushSettingsSection> {
     DesignSystemTokens t,
   ) {
     final reason = status.unsupportedReason;
+    final permissionAvailable =
+        status.permission == 'default' || status.permission == 'granted';
     final note = switch (reason) {
       'secure' => l10n.pushSecureOrigin,
       'install' => l10n.pushInstallIos,
       'unsupported' => l10n.pushUnsupported,
       _ when status.permission == 'denied' => l10n.pushDenied,
-      _ when status.enabled && !status.browserSubscribed =>
+      _ when !permissionAvailable => l10n.pushUnsupported,
+      _
+          when status.enabled &&
+              (!status.browserSubscribed || status.permission != 'granted') =>
         l10n.pushResubscribe,
       _ => status.enabled ? l10n.pushStatusEnabled : l10n.pushStatusDisabled,
     };
@@ -127,10 +159,15 @@ class _PushSettingsSectionState extends ConsumerState<PushSettingsSection> {
         const SizedBox(height: 8),
         _button(
           status.enabled ? l10n.pushResubscribe : l10n.pushEnable,
-          reason != null || status.permission == 'denied' || _busy
+          reason != null || !permissionAvailable || _busy
               ? null
               : () => _run(() => enableRemotePush(ref, status)),
         ),
+        if (reason == null && status.permission == 'denied')
+          _button(
+            l10n.refresh,
+            _busy ? null : () => ref.invalidate(remotePushStatusProvider),
+          ),
         if (status.enabled) ...[
           _button(
             l10n.pushDisable,
@@ -142,7 +179,11 @@ class _PushSettingsSectionState extends ConsumerState<PushSettingsSection> {
             child: CcChip(
               label: l10n.pushQuiet,
               selected: status.quiet,
-              onPressed: _busy || !status.browserSubscribed
+              onPressed:
+                  _busy ||
+                      reason != null ||
+                      status.permission != 'granted' ||
+                      !status.browserSubscribed
                   ? null
                   : () => _run(
                       () => enableRemotePush(ref, status, quiet: !status.quiet),
@@ -165,7 +206,11 @@ class _PushSettingsSectionState extends ConsumerState<PushSettingsSection> {
                   child: CcChip(
                     label: label,
                     selected: status.categories.containsAll(keys),
-                    onPressed: _busy || !status.browserSubscribed
+                    onPressed:
+                        _busy ||
+                            reason != null ||
+                            status.permission != 'granted' ||
+                            !status.browserSubscribed
                         ? null
                         : () {
                             final next = {...status.categories};

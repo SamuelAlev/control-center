@@ -950,6 +950,13 @@ class AppLocalizationsEl extends AppLocalizations {
       'Το μήνυμα δεν στάλθηκε. Το πρόχειρο παραμένει εδώ.';
 
   @override
+  String get sentAttachmentUnavailable => 'Το συνημμένο δεν είναι διαθέσιμο';
+
+  @override
+  String get sentAttachmentLoadFailed =>
+      'Δεν ήταν δυνατή η φόρτωση του συνημμένου';
+
+  @override
   String get mobileActionFailed => 'Η ενέργεια απέτυχε';
 
   @override
@@ -1063,6 +1070,9 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Αρχική έκδοση';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Επιλέξτε γραμμή για σχολιασμό';
 
   @override
   String get mobilePrUpdatedSide => 'Ενημερώθηκε';
@@ -2139,6 +2149,15 @@ class AppLocalizationsEl extends AppLocalizations {
   String get progressTodos => 'Εργασίες';
 
   @override
+  String get transcriptToolTodos => 'Εργασίες';
+
+  @override
+  String get transcriptToolSearchMemory => 'Αναζήτηση στη μνήμη';
+
+  @override
+  String get transcriptToolRenderMedia => 'Απόδοση πολυμέσων';
+
+  @override
   String get progressNoTodos => 'Δεν υπάρχουν ακόμη εργασίες';
 
   @override
@@ -2460,7 +2479,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Οι ειδοποιήσεις έχουν αποκλειστεί στις ρυθμίσεις του προγράμματος περιήγησης. Επιτρέψτε τις από εκεί για να συνεχίσετε.';
+      'Το πρόγραμμα περιήγησης αναφέρει ότι οι ειδοποιήσεις αποκλείονται. Ελέγξτε την άδεια του ιστότοπου και τις ρυθμίσεις ειδοποιήσεων του προγράμματος περιήγησης ή της συσκευής και έπειτα ανανεώστε.';
 
   @override
   String get pushResubscribe => 'Επανασύνδεση ειδοποιήσεων';

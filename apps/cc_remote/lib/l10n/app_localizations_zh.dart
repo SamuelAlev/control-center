@@ -916,6 +916,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mobileSendFailed => '消息未发送，草稿仍在此处。';
 
   @override
+  String get sentAttachmentUnavailable => '附件不可用';
+
+  @override
+  String get sentAttachmentLoadFailed => '无法加载附件';
+
+  @override
   String get mobileActionFailed => '操作失败';
 
   @override
@@ -1021,6 +1027,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => '原始版本';
+
+  @override
+  String get mobilePrSelectCommentLine => '选择要评论的行';
 
   @override
   String get mobilePrUpdatedSide => '更新时间';
@@ -2028,6 +2037,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get progressTodos => '任务';
 
   @override
+  String get transcriptToolTodos => '任务';
+
+  @override
+  String get transcriptToolSearchMemory => '搜索记忆';
+
+  @override
+  String get transcriptToolRenderMedia => '呈现媒体';
+
+  @override
   String get progressNoTodos => '暂无任务';
 
   @override
@@ -2330,7 +2348,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pushUnsupported => '此浏览器不支持后台通知。';
 
   @override
-  String get pushDenied => '浏览器设置已阻止通知。请在设置中允许通知后继续。';
+  String get pushDenied => '浏览器报告通知已被阻止。请检查此站点的权限以及浏览器或设备的通知设置，然后刷新页面。';
 
   @override
   String get pushResubscribe => '重新连接通知';
@@ -3395,6 +3413,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get mobileSendFailed => '訊息未傳送，草稿仍在此處。';
 
   @override
+  String get sentAttachmentUnavailable => '附件無法使用';
+
+  @override
+  String get sentAttachmentLoadFailed => '無法載入附件';
+
+  @override
   String get mobileActionFailed => '動作失敗';
 
   @override
@@ -3500,6 +3524,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get mobilePrOriginalSide => '原始版本';
+
+  @override
+  String get mobilePrSelectCommentLine => '選擇要留言的行';
 
   @override
   String get mobilePrUpdatedSide => '更新時間';
@@ -4507,6 +4534,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get progressTodos => '任務';
 
   @override
+  String get transcriptToolTodos => '任務';
+
+  @override
+  String get transcriptToolSearchMemory => '搜尋記憶';
+
+  @override
+  String get transcriptToolRenderMedia => '呈現媒體';
+
+  @override
   String get progressNoTodos => '尚無任務';
 
   @override
@@ -4809,7 +4845,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get pushUnsupported => '此瀏覽器不支援背景通知。';
 
   @override
-  String get pushDenied => '瀏覽器設定已阻止通知。請在設定中允許通知後繼續。';
+  String get pushDenied => '瀏覽器回報通知已遭封鎖。請檢查此網站的權限以及瀏覽器或裝置的通知設定，然後重新整理頁面。';
 
   @override
   String get pushResubscribe => '重新連接通知';

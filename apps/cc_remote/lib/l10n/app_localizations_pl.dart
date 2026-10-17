@@ -948,6 +948,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get mobileSendFailed => 'Nie wysłano wiadomości. Szkic nadal tu jest.';
 
   @override
+  String get sentAttachmentUnavailable => 'Załącznik niedostępny';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Nie udało się wczytać załącznika';
+
+  @override
   String get mobileActionFailed => 'Działanie nie powiodło się';
 
   @override
@@ -1063,6 +1069,9 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Oryginał';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Wybierz wiersz do skomentowania';
 
   @override
   String get mobilePrUpdatedSide => 'Zaktualizowano';
@@ -2132,6 +2141,15 @@ class AppLocalizationsPl extends AppLocalizations {
   String get progressTodos => 'Zadania';
 
   @override
+  String get transcriptToolTodos => 'Zadania';
+
+  @override
+  String get transcriptToolSearchMemory => 'Przeszukaj pamięć';
+
+  @override
+  String get transcriptToolRenderMedia => 'Wyświetl multimedia';
+
+  @override
   String get progressNoTodos => 'Nie ma jeszcze zadań';
 
   @override
@@ -2449,7 +2467,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Powiadomienia są zablokowane w ustawieniach przeglądarki. Zezwól na nie tam, aby kontynuować.';
+      'Przeglądarka zgłasza, że powiadomienia są zablokowane. Sprawdź uprawnienia tej witryny oraz ustawienia powiadomień przeglądarki lub urządzenia, a potem odśwież stronę.';
 
   @override
   String get pushResubscribe => 'Połącz powiadomienia ponownie';

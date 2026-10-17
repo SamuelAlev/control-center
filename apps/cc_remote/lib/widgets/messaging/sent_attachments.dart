@@ -1,30 +1,33 @@
+import 'dart:typed_data';
+
 import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/attachments.dart';
+import 'package:cc_remote/external_link.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/media_proxy.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/touch_target.dart';
+import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// What a message carried, under its text.
-///
-/// Pictures resolve through the host's `/blob` endpoint, signed with the device
-/// PSK and gated on workspace membership — the phone can no more read the
-/// sender's disk than the server can, so there is nowhere else for the bytes to
-/// come from. On a relayed session there is no HTTP origin at all, and the
-/// strip says the picture is unavailable rather than showing an empty frame.
+part 'sent_attachment_chip.dart';
+
+/// What a message carried, under its text. The message's own workspace,
+/// rather than the currently selected workspace, scopes every signed URL.
 class SentAttachments extends ConsumerWidget {
   const SentAttachments({
     super.key,
     required this.attachments,
+    required this.workspaceId,
     required this.alignEnd,
   });
 
   final List<MessageAttachment> attachments;
+  final String workspaceId;
   final bool alignEnd;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (attachments.isEmpty) {
@@ -32,12 +35,16 @@ class SentAttachments extends ConsumerWidget {
     }
     final t = context.designSystem ?? DesignSystemTokens.light();
     final endpoint = ref.watch(mediaEndpointProvider).value;
-    final workspaceId = ref.watch(activeWorkspaceIdProvider).value;
-    String? urlFor(MessageAttachment a) {
-      if (endpoint == null || workspaceId == null || !a.isUploaded) {
+    final client = ref.watch(rpcClientProvider).value;
+    String? downloadUrlFor(MessageAttachment a) {
+      if (endpoint == null || workspaceId.isEmpty || !a.isUploaded) {
         return null;
       }
-      final url = endpoint.blobUrl(workspaceId: workspaceId, ref: a.path);
+      final url = endpoint.blobUrl(
+        workspaceId: workspaceId,
+        ref: a.path,
+        downloadName: a.name,
+      );
       return url.isEmpty ? null : url;
     }
 
@@ -50,8 +57,14 @@ class SentAttachments extends ConsumerWidget {
         children: [
           for (final attachment in attachments)
             _SentAttachment(
+              key: ValueKey(attachment.id),
               attachment: attachment,
-              url: urlFor(attachment),
+              workspaceId: workspaceId,
+              endpoint: endpoint,
+              client: client,
+              downloadUrl: attachment.isImage
+                  ? null
+                  : downloadUrlFor(attachment),
               tokens: t,
             ),
         ],
@@ -60,74 +73,161 @@ class SentAttachments extends ConsumerWidget {
   }
 }
 
-class _SentAttachment extends StatelessWidget {
+class _SentAttachment extends StatefulWidget {
   const _SentAttachment({
+    super.key,
     required this.attachment,
-    required this.url,
+    required this.workspaceId,
+    required this.endpoint,
+    required this.client,
+    required this.downloadUrl,
     required this.tokens,
   });
 
   final MessageAttachment attachment;
-  final String? url;
+  final String workspaceId;
+  final RemoteMediaEndpoint? endpoint;
+  final RemoteRpcClient? client;
+  final String? downloadUrl;
   final DesignSystemTokens tokens;
 
   @override
+  State<_SentAttachment> createState() => _SentAttachmentState();
+}
+
+class _SentAttachmentState extends State<_SentAttachment> {
+  Future<Uint8List>? _image;
+  bool _decodeFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _image = _fetch();
+  }
+
+  Future<Uint8List>? _fetch() {
+    final client = widget.client;
+    final endpoint = widget.endpoint;
+    if (!widget.attachment.isImage ||
+        !widget.attachment.isUploaded ||
+        widget.workspaceId.isEmpty ||
+        client == null ||
+        endpoint == null) {
+      return null;
+    }
+    return fetchAttachmentImage(
+      endpoint: endpoint,
+      resources: client.resources,
+      workspaceId: widget.workspaceId,
+      attachment: widget.attachment,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_SentAttachment oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.client != widget.client ||
+        oldWidget.endpoint != widget.endpoint ||
+        oldWidget.workspaceId != widget.workspaceId ||
+        oldWidget.attachment.path != widget.attachment.path) {
+      _decodeFailed = false;
+      _image = _fetch();
+    }
+  }
+
+  void _retry() {
+    setState(() {
+      _decodeFailed = false;
+      _image = _fetch();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const radius = BorderRadius.all(Radius.circular(8));
-    final resolved = url;
-    if (attachment.isImage && resolved != null) {
-      return ClipRRect(
-        borderRadius: radius,
-        child: Image.network(
-          resolved,
-          height: 140,
-          fit: BoxFit.contain,
-          errorBuilder: (context, _, _) => _chip(unavailable: true),
-          loadingBuilder: (context, child, progress) => progress == null
-              ? child
-              : const SizedBox(
-                  height: 140,
-                  width: 200,
-                  child: Center(child: CcSpinner(size: 14)),
-                ),
+    final attachment = widget.attachment;
+    final l10n = AppLocalizations.of(context);
+    if (!attachment.isImage) {
+      final available = widget.downloadUrl != null;
+      return GestureDetector(
+        onTap: available ? () => openExternal(widget.downloadUrl) : null,
+        child: Semantics(
+          button: available,
+          label: available
+              ? l10n.progressOpenAttachment(attachment.name)
+              : attachment.name,
+          child: _chip(
+            unavailable: !available,
+            status: available ? null : l10n.sentAttachmentUnavailable,
+          ),
         ),
       );
     }
-    return _chip(unavailable: attachment.isImage && resolved == null);
-  }
-
-  Widget _chip({required bool unavailable}) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: tokens.bgSecondary,
-      borderRadius: const BorderRadius.all(Radius.circular(8)),
-      border: Border.all(color: tokens.borderSoft),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            unavailable
-                ? AppIcons.imageOff
-                : (attachment.isImage ? AppIcons.image : AppIcons.file),
-            size: 14,
-            color: tokens.fgTertiary,
-          ),
-          const SizedBox(width: 6),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 180),
-            child: Text(
-              attachment.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: tokens.textPrimary),
+    final image = _image;
+    if (image == null) {
+      return _chip(unavailable: true, status: l10n.sentAttachmentUnavailable);
+    }
+    return FutureBuilder<Uint8List>(
+      future: image,
+      builder: (context, snapshot) {
+        if (snapshot.hasError || _decodeFailed) {
+          return GestureDetector(
+            onTap: _retry,
+            child: Semantics(
+              button: true,
+              label:
+                  '${attachment.name}, ${l10n.sentAttachmentLoadFailed}, ${l10n.retry}',
+              child: _chip(
+                unavailable: true,
+                status: l10n.sentAttachmentLoadFailed,
+                retry: l10n.retry,
+              ),
             ),
+          );
+        }
+        final bytes = snapshot.data;
+        if (bytes == null) {
+          return const SizedBox(
+            height: 140,
+            width: 220,
+            child: Center(child: CcSpinner(size: 14)),
+          );
+        }
+        Widget imageView({required bool thumbnail}) => Image.memory(
+          bytes,
+          width: thumbnail ? 220 : null,
+          height: thumbnail ? 140 : null,
+          fit: BoxFit.contain,
+          errorBuilder: (context, _, _) {
+            if (!_decodeFailed) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _image == image) {
+                  setState(() => _decodeFailed = true);
+                }
+              });
+            }
+            return _chip(
+              unavailable: true,
+              status: l10n.sentAttachmentLoadFailed,
+              retry: l10n.retry,
+            );
+          },
+        );
+        return CcExpandableImage(
+          labels: CcImageViewerLabels(
+            expand: l10n.expand,
+            zoomIn: l10n.zoomIn,
+            zoomOut: l10n.zoomOut,
+            resetZoom: l10n.resetZoom,
+            close: l10n.close,
           ),
-        ],
-      ),
-    ),
-  );
+          title: attachment.name,
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+          viewerBuilder: (_) => imageView(thumbnail: false),
+          child: imageView(thumbnail: true),
+        );
+      },
+    );
+  }
 }
 
 /// A picked-but-not-yet-sent attachment, removable before it goes.

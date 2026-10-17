@@ -59,7 +59,7 @@ bool _declaresPressableRole(SemanticsProperties p) =>
     p.onTap != null ||
     p.onLongPress != null;
 
-/// Drag [child] to move the native window ([startWindowDrag]; no-op on web).
+/// Drag [child] to move its containing native window (no-op on web).
 ///
 /// Sits under raw [Listener]s (they stay in the arena until pan slop). Before
 /// joining, hit-test rejects pressable paths: non-drag cursor, pressable
@@ -187,7 +187,12 @@ class _WindowDragAreaState extends State<WindowDragArea> {
 
   void _startDrag(DragStartDetails details) {
     _grabInWindow = details.globalPosition;
-    (WindowDragArea.debugOnStartDrag ?? startWindowDrag).call();
+    final onStart = WindowDragArea.debugOnStartDrag;
+    if (onStart != null) {
+      onStart();
+    } else {
+      startWindowDrag(context);
+    }
   }
 
   /// Places the window so the grabbed pixel sits under the cursor.
@@ -211,11 +216,22 @@ class _WindowDragAreaState extends State<WindowDragArea> {
     }
     final cursor =
         (WindowDragArea.debugCursorPosition ?? windowCursorPosition)();
-    (WindowDragArea.debugOnMoveTo ?? moveWindowTo)(cursor - grab);
+    final onMove = WindowDragArea.debugOnMoveTo;
+    if (onMove != null) {
+      onMove(cursor - grab);
+    } else {
+      moveWindowTo(context, cursor - grab);
+    }
   }
 
-  void _toggleMaximize() =>
-      (WindowDragArea.debugOnToggleMaximize ?? toggleWindowMaximize).call();
+  void _toggleMaximize() {
+    final onToggle = WindowDragArea.debugOnToggleMaximize;
+    if (onToggle != null) {
+      onToggle();
+    } else {
+      toggleWindowMaximize(context);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -946,6 +946,12 @@ class AppLocalizationsId extends AppLocalizations {
       'Pesan tidak terkirim. Draf Anda masih tersimpan.';
 
   @override
+  String get sentAttachmentUnavailable => 'Lampiran tidak tersedia';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Tidak dapat memuat lampiran';
+
+  @override
   String get mobileActionFailed => 'Tindakan gagal';
 
   @override
@@ -1057,6 +1063,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Asli';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Pilih baris untuk dikomentari';
 
   @override
   String get mobilePrUpdatedSide => 'Diperbarui';
@@ -2115,6 +2124,15 @@ class AppLocalizationsId extends AppLocalizations {
   String get progressTodos => 'Tugas';
 
   @override
+  String get transcriptToolTodos => 'Tugas';
+
+  @override
+  String get transcriptToolSearchMemory => 'Cari di memori';
+
+  @override
+  String get transcriptToolRenderMedia => 'Tampilkan media';
+
+  @override
   String get progressNoTodos => 'Belum ada tugas';
 
   @override
@@ -2431,7 +2449,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Notifikasi diblokir di pengaturan browser. Izinkan di sana untuk melanjutkan.';
+      'Browser melaporkan notifikasi diblokir. Periksa izin situs ini dan pengaturan notifikasi browser atau perangkat, lalu muat ulang.';
 
   @override
   String get pushResubscribe => 'Hubungkan kembali notifikasi';

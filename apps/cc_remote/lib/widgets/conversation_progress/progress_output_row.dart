@@ -3,7 +3,6 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
 import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_remote/conversation_progress_providers.dart';
-import 'package:cc_remote/external_link.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/providers.dart';
@@ -45,7 +44,6 @@ class ProgressOutputRow extends ConsumerWidget {
         ? null
         : ref.watch(workspaceReposProvider).value;
     final text = message.content.trim();
-    final endpoint = ref.watch(mediaEndpointProvider).value;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: DecoratedBox(
@@ -89,20 +87,11 @@ class ProgressOutputRow extends ConsumerWidget {
                   ProgressArtifact(scope: scope, artifactId: artifactId),
               ],
               if (attachments.isNotEmpty) ...[
-                SentAttachments(attachments: attachments, alignEnd: false),
-                for (final attachment in attachments)
-                  if (attachment.isUploaded && endpoint != null)
-                    CcButton(
-                      size: CcButtonSize.lg,
-                      variant: CcButtonVariant.secondary,
-                      onPressed: () => openExternal(
-                        endpoint.blobUrl(
-                          workspaceId: scope.workspaceId,
-                          ref: attachment.path,
-                        ),
-                      ),
-                      child: Text(l.progressOpenAttachment(attachment.name)),
-                    ),
+                SentAttachments(
+                  attachments: attachments,
+                  workspaceId: scope.workspaceId,
+                  alignEnd: false,
+                ),
               ],
               const SizedBox(height: 8),
               Wrap(

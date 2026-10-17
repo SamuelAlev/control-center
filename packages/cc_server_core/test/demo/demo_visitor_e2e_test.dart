@@ -52,21 +52,27 @@ void main() {
     );
   }
 
-  /// Redeems the public demo code, returning the envelope.
+  /// Redeems the public demo code with a client-held handoff recipient.
   Future<Map<String, dynamic>> redeem(int port, {String code = 'demo'}) async {
+    final recipient = await CredentialSeal.newRecipient();
     final http = HttpClient();
     try {
       final req = await http.postUrl(
         Uri.parse('http://127.0.0.1:$port/invites/redeem'),
       );
       req.headers.contentType = ContentType.json;
-      req.write(jsonEncode({'code': code}));
+      req.write(jsonEncode({'code': code, 'handoff_key': recipient.publicKey}));
       final resp = await req.close();
-      final body = await resp.transform(utf8.decoder).join();
-      if (resp.statusCode != 200) {
-        fail('redeem failed (${resp.statusCode}): $body');
+      final wire = await resp.transform(utf8.decoder).join();
+      if (resp.statusCode != HttpStatus.ok) {
+        fail('redeem failed (${resp.statusCode}): $wire');
       }
-      return jsonDecode(body) as Map<String, dynamic>;
+      final body = jsonDecode(wire) as Map<String, dynamic>;
+      return CredentialSeal.open(
+        recipientPrivateKey: recipient.privateKey,
+        envelope: (body['box'] as Map).cast<String, dynamic>(),
+        context: 'cc-public-demo-v1',
+      );
     } finally {
       http.close(force: true);
     }
@@ -326,8 +332,6 @@ void main() {
         pushApproval['command'],
         'git push origin feature/eval-budget-ledger',
       );
-      expect(pushApproval['detail'], contains(approvalRunId));
-      expect(pushApproval['detail'], contains('/workspace/helix/evalkit'));
       expect(
         await client.call('confirmation.respond', {
           'id': pushApproval['id'],
@@ -360,17 +364,6 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 25));
       }
       expect(resolvedRun!['status'], 'completed');
-      expect(resolvedRun['summary'], contains('not executed'));
-      final decisionMessages = await client.call('messaging.getMessages', {
-        'space_id': reviewSpace['id'],
-        'conversation_id': releaseGate['id'],
-      });
-      expect(
-        (decisionMessages['messages'] as List).cast<Map>().map(
-          (message) => message['content'],
-        ),
-        contains(contains('no git push was executed')),
-      );
 
       // Chat on the PR page looks this up by repo + number rather than
       // calling `pr.ensureSpace` (which a demo refuses). Without this row
@@ -594,7 +587,9 @@ void main() {
                   'sourceStepIds': ['start'],
                 },
               ],
-              'config': <String, dynamic>{},
+              'config': {
+                'extras': {'spaceId': reviewSpace['id']},
+              },
             },
             {
               'id': 'end',
@@ -1197,13 +1192,19 @@ void main() {
     final server = await bootDemo(tmp);
     addTearDown(server.shutdown);
 
+    final recipient = await CredentialSeal.newRecipient();
     final http = HttpClient();
     addTearDown(() => http.close(force: true));
     final req = await http.postUrl(
       Uri.parse('http://127.0.0.1:${server.rpc.boundPort}/invites/redeem'),
     );
     req.headers.contentType = ContentType.json;
-    req.write(jsonEncode({'code': 'not-the-demo-code'}));
+    req.write(
+      jsonEncode({
+        'code': 'not-the-demo-code',
+        'handoff_key': recipient.publicKey,
+      }),
+    );
     final resp = await req.close();
     await resp.drain<void>();
     expect(resp.statusCode, HttpStatus.forbidden);

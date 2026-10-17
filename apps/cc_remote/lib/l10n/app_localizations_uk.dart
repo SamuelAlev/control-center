@@ -946,6 +946,12 @@ class AppLocalizationsUk extends AppLocalizations {
       'Повідомлення не надіслано. Чернетку збережено.';
 
   @override
+  String get sentAttachmentUnavailable => 'Вкладення недоступне';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Не вдалося завантажити вкладення';
+
+  @override
   String get mobileActionFailed => 'Не вдалося виконати дію';
 
   @override
@@ -1058,6 +1064,9 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Оригінал';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Виберіть рядок для коментаря';
 
   @override
   String get mobilePrUpdatedSide => 'Оновлено';
@@ -2121,6 +2130,15 @@ class AppLocalizationsUk extends AppLocalizations {
   String get progressTodos => 'Завдання';
 
   @override
+  String get transcriptToolTodos => 'Завдання';
+
+  @override
+  String get transcriptToolSearchMemory => 'Пошук у пам’яті';
+
+  @override
+  String get transcriptToolRenderMedia => 'Показати медіа';
+
+  @override
   String get progressNoTodos => 'Завдань поки немає';
 
   @override
@@ -2437,7 +2455,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Сповіщення заблоковано в налаштуваннях браузера. Дозвольте їх там, щоб продовжити.';
+      'Браузер повідомляє, що сповіщення заблоковано. Перевірте дозвіл для цього сайту й налаштування сповіщень у браузері або на пристрої, а потім оновіть сторінку.';
 
   @override
   String get pushResubscribe => 'Підключити сповіщення знову';

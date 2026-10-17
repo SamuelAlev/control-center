@@ -275,22 +275,24 @@ void main() {
 
   group('isolation', () {
     test(
-      'another conversation\'s handle is unknown here, not denied',
+      'foreign and absent handles are indistinguishable across conversations',
       () async {
-        final reference = await put('conversation one secret');
-        final result = await store.read(
-          const ToolOutputScope(
-            workspaceId: 'ws1',
-            conversationId: 'c2',
-            agentId: 'a1',
-          ),
-          reference.handle,
+        const otherScope = ToolOutputScope(
+          workspaceId: 'ws1',
+          conversationId: 'c2',
+          agentId: 'a1',
         );
+        await put('conversation two output', at: otherScope);
+        final reference = await put('conversation one secret');
+        final result = await store.read(otherScope, reference.handle);
         expect(result.status, ToolOutputReadStatus.notFound);
         expect(result.chunk, isNull);
-        // The failure must not disclose the other scope or its contents.
-        expect(result.message, isNot(contains('c1')));
-        expect(result.message, isNot(contains('secret')));
+        // Knowing a handle must not reveal whether another scope stores it.
+        await store.clearScope(scope);
+        final absent = await store.read(otherScope, reference.handle);
+        expect(absent.status, result.status);
+        expect(absent.chunk, isNull);
+        expect(absent.message, result.message);
       },
     );
 

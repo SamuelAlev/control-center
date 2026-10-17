@@ -926,6 +926,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get mobileSendFailed => '메시지를 보내지 못했습니다. 작성 중인 내용은 그대로 있습니다.';
 
   @override
+  String get sentAttachmentUnavailable => '첨부 파일을 사용할 수 없음';
+
+  @override
+  String get sentAttachmentLoadFailed => '첨부 파일을 불러올 수 없습니다';
+
+  @override
   String get mobileActionFailed => '실행에 실패했습니다';
 
   @override
@@ -1034,6 +1040,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => '원본';
+
+  @override
+  String get mobilePrSelectCommentLine => '댓글을 달 줄 선택';
 
   @override
   String get mobilePrUpdatedSide => '업데이트';
@@ -2064,6 +2073,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get progressTodos => '작업';
 
   @override
+  String get transcriptToolTodos => '작업';
+
+  @override
+  String get transcriptToolSearchMemory => '메모리 검색';
+
+  @override
+  String get transcriptToolRenderMedia => '미디어 표시';
+
+  @override
   String get progressNoTodos => '아직 작업이 없습니다';
 
   @override
@@ -2370,7 +2388,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get pushUnsupported => '이 브라우저는 백그라운드 알림을 지원하지 않습니다.';
 
   @override
-  String get pushDenied => '브라우저 설정에서 알림이 차단되었습니다. 계속하려면 브라우저에서 알림을 허용하세요.';
+  String get pushDenied =>
+      '브라우저에서 알림이 차단된 것으로 보고합니다. 이 사이트의 권한과 브라우저 또는 기기의 알림 설정을 확인한 뒤 새로고침하세요.';
 
   @override
   String get pushResubscribe => '알림 다시 연결';

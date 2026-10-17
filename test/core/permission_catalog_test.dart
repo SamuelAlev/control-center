@@ -46,7 +46,7 @@ void main() {
     'pipeline_run', 'pipeline_template', 'pipeline_trigger', 'plan',
     'playbook', 'pr', 'pr_lifecycle', 'pr_review',
     'prefs', 'presence', 'process', 'project',
-    'providerApps', 'provider_policy', 'providers', 'reactions',
+    'providerApps', 'provider_policy', 'providers', 'push', 'reactions',
     'repos', 'review_hub', 'review_space', 'review_studio',
     'rig', 'sandbox', 'server', 'server_settings',
     'serviceStatus', 'skills', 'soundscape', 'space_read',

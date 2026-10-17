@@ -11,6 +11,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+part 'tickets_screen_filters.dart';
 
 /// Live workspace tickets, searchable and filterable by task state.
 class TicketsScreen extends ConsumerStatefulWidget {
@@ -63,30 +64,12 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
         _status.isNotEmpty ||
         _assignee.isNotEmpty ||
         _priority.isNotEmpty;
-    final tickets =
-        async.asData?.value.where((ticket) {
-          if (ticket.workspaceId != workspaceId ||
-              (_status.isNotEmpty && ticket.status != _status) ||
-              (_assignee == 'assigned' && ticket.assignee == null) ||
-              (_assignee == 'unassigned' && ticket.assignee != null) ||
-              (_assignee.isNotEmpty &&
-                  _assignee != 'assigned' &&
-                  _assignee != 'unassigned' &&
-                  ticket.assignee != _assignee) ||
-              (_priority.isNotEmpty && ticket.priority != _priority)) {
-            return false;
-          }
-          return q.isEmpty ||
-              [
-                ticket.key,
-                ticket.title,
-                ticket.description ?? '',
-                ticket.assignee ?? '',
-                agentNames[ticket.assignee] ?? '',
-                ...ticket.labels,
-              ].any((field) => field.toLowerCase().contains(q));
-        }).toList() ??
-        const <TicketDto>[];
+    final tickets = this._filteredTickets(
+      async.asData?.value,
+      workspaceId,
+      agentNames,
+      q,
+    );
     return ColoredBox(
       color: t.canvas,
       child: Column(

@@ -957,6 +957,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Mesajul nu a fost trimis. Ciorna ta este încă aici.';
 
   @override
+  String get sentAttachmentUnavailable => 'Atașament indisponibil';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Nu s-a putut încărca atașamentul';
+
+  @override
   String get mobileActionFailed => 'Acțiunea a eșuat';
 
   @override
@@ -1072,6 +1078,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Original';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Alege o linie pentru comentariu';
 
   @override
   String get mobilePrUpdatedSide => 'Actualizat';
@@ -2143,6 +2152,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get progressTodos => 'Sarcini';
 
   @override
+  String get transcriptToolTodos => 'Sarcini';
+
+  @override
+  String get transcriptToolSearchMemory => 'Caută în memorie';
+
+  @override
+  String get transcriptToolRenderMedia => 'Afișează conținutul media';
+
+  @override
   String get progressNoTodos => 'Încă nu există sarcini';
 
   @override
@@ -2460,7 +2478,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Notificările sunt blocate în setările browserului. Permite-le acolo pentru a continua.';
+      'Browserul raportează că notificările sunt blocate. Verifică permisiunea acestui site și setările de notificări ale browserului sau dispozitivului, apoi reîmprospătează pagina.';
 
   @override
   String get pushResubscribe => 'Reconectează notificările';

@@ -945,6 +945,12 @@ class AppLocalizationsNb extends AppLocalizations {
       'Meldingen ble ikke sendt. Utkastet ditt er fortsatt her.';
 
   @override
+  String get sentAttachmentUnavailable => 'Vedlegg utilgjengelig';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Kunne ikke laste inn vedlegg';
+
+  @override
   String get mobileActionFailed => 'Handling mislyktes';
 
   @override
@@ -1056,6 +1062,9 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Opprinnelig';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Velg en linje å kommentere';
 
   @override
   String get mobilePrUpdatedSide => 'Oppdatert';
@@ -2119,6 +2128,15 @@ class AppLocalizationsNb extends AppLocalizations {
   String get progressTodos => 'Oppgaver';
 
   @override
+  String get transcriptToolTodos => 'Oppgaver';
+
+  @override
+  String get transcriptToolSearchMemory => 'Søk i minnet';
+
+  @override
+  String get transcriptToolRenderMedia => 'Vis medier';
+
+  @override
   String get progressNoTodos => 'Ingen oppgaver ennå';
 
   @override
@@ -2436,7 +2454,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Varslinger er blokkert i nettleserinnstillingene. Tillat dem der for å fortsette.';
+      'Nettleseren melder at varslinger er blokkert. Kontroller tillatelsen for dette nettstedet og varslingsinnstillingene i nettleseren eller på enheten, og oppdater siden.';
 
   @override
   String get pushResubscribe => 'Koble til varslinger på nytt';

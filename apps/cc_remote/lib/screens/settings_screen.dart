@@ -151,23 +151,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     AppLocalizations l10n,
     String? current,
   ) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        CcChip(
-          label: l10n.languageSystem,
-          selected: current == null,
-          onPressed: () => ref.read(appLocaleProvider.notifier).set(null),
-        ),
-        for (final lang in kRemoteLanguages)
-          CcChip(
-            label: lang.label,
-            selected: current == lang.code,
-            onPressed: () =>
-                ref.read(appLocaleProvider.notifier).set(lang.code),
-          ),
-      ],
+    return SizedBox(
+      height: kMinTouchTarget,
+      child: CcSelect<String>(
+        value: current ?? '',
+        semanticLabel: l10n.language,
+        options: [
+          CcSelectOption(value: '', label: l10n.languageSystem),
+          for (final language in kRemoteLanguages)
+            CcSelectOption(value: language.code, label: language.label),
+        ],
+        onChanged: (value) => ref
+            .read(appLocaleProvider.notifier)
+            .set(value.isEmpty ? null : value),
+      ),
     );
   }
 

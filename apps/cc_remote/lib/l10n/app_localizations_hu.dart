@@ -950,6 +950,12 @@ class AppLocalizationsHu extends AppLocalizations {
       'Az üzenet nem ment el. A piszkozat megmaradt.';
 
   @override
+  String get sentAttachmentUnavailable => 'A melléklet nem elérhető';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Nem sikerült betölteni a mellékletet';
+
+  @override
   String get mobileActionFailed => 'A művelet sikertelen';
 
   @override
@@ -1064,6 +1070,9 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Eredeti';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Válasszon sort a hozzászóláshoz';
 
   @override
   String get mobilePrUpdatedSide => 'Frissítve';
@@ -2129,6 +2138,15 @@ class AppLocalizationsHu extends AppLocalizations {
   String get progressTodos => 'Feladatok';
 
   @override
+  String get transcriptToolTodos => 'Feladatok';
+
+  @override
+  String get transcriptToolSearchMemory => 'Keresés a memóriában';
+
+  @override
+  String get transcriptToolRenderMedia => 'Média megjelenítése';
+
+  @override
   String get progressNoTodos => 'Még nincsenek feladatok';
 
   @override
@@ -2445,7 +2463,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Az értesítések le vannak tiltva a böngésző beállításaiban. A folytatáshoz engedélyezze őket ott.';
+      'A böngésző szerint az értesítések blokkolva vannak. Ellenőrizze a webhely engedélyét és a böngésző vagy az eszköz értesítési beállításait, majd frissítsen.';
 
   @override
   String get pushResubscribe => 'Értesítések újracsatlakoztatása';

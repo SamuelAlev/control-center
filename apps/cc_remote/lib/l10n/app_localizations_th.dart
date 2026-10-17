@@ -937,6 +937,12 @@ class AppLocalizationsTh extends AppLocalizations {
   String get mobileSendFailed => 'ส่งข้อความไม่สำเร็จ ฉบับร่างของคุณยังอยู่';
 
   @override
+  String get sentAttachmentUnavailable => 'ไฟล์แนบไม่พร้อมใช้งาน';
+
+  @override
+  String get sentAttachmentLoadFailed => 'โหลดไฟล์แนบไม่ได้';
+
+  @override
   String get mobileActionFailed => 'การกระทำล้มเหลว';
 
   @override
@@ -1049,6 +1055,10 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'ต้นฉบับ';
+
+  @override
+  String get mobilePrSelectCommentLine =>
+      'เลือกบรรทัดที่ต้องการแสดงความคิดเห็น';
 
   @override
   String get mobilePrUpdatedSide => 'อัปเดตแล้ว';
@@ -2098,6 +2108,15 @@ class AppLocalizationsTh extends AppLocalizations {
   String get progressTodos => 'งาน';
 
   @override
+  String get transcriptToolTodos => 'งาน';
+
+  @override
+  String get transcriptToolSearchMemory => 'ค้นหาในความจำ';
+
+  @override
+  String get transcriptToolRenderMedia => 'แสดงสื่อ';
+
+  @override
   String get progressNoTodos => 'ยังไม่มีงาน';
 
   @override
@@ -2412,7 +2431,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'การแจ้งเตือนถูกบล็อกในการตั้งค่าเบราว์เซอร์ โปรดอนุญาตในการตั้งค่าเพื่อดำเนินการต่อ';
+      'เบราว์เซอร์แจ้งว่าการแจ้งเตือนถูกบล็อก ตรวจสอบสิทธิ์ของเว็บไซต์นี้และการตั้งค่าการแจ้งเตือนของเบราว์เซอร์หรืออุปกรณ์ แล้วรีเฟรชหน้า';
 
   @override
   String get pushResubscribe => 'เชื่อมต่อการแจ้งเตือนอีกครั้ง';

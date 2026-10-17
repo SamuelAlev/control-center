@@ -947,6 +947,12 @@ class AppLocalizationsSv extends AppLocalizations {
       'Meddelandet skickades inte. Ditt utkast finns kvar.';
 
   @override
+  String get sentAttachmentUnavailable => 'Bilagan är inte tillgänglig';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Kunde inte läsa in bilagan';
+
+  @override
   String get mobileActionFailed => 'Åtgärden misslyckades';
 
   @override
@@ -1060,6 +1066,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Ursprunglig';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Välj en rad att kommentera';
 
   @override
   String get mobilePrUpdatedSide => 'Uppdaterad';
@@ -2123,6 +2132,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get progressTodos => 'Uppgifter';
 
   @override
+  String get transcriptToolTodos => 'Uppgifter';
+
+  @override
+  String get transcriptToolSearchMemory => 'Sök i minnet';
+
+  @override
+  String get transcriptToolRenderMedia => 'Visa media';
+
+  @override
   String get progressNoTodos => 'Inga uppgifter ännu';
 
   @override
@@ -2441,7 +2459,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Aviseringar är blockerade i webbläsarens inställningar. Tillåt dem där för att fortsätta.';
+      'Webbläsaren rapporterar att aviseringar är blockerade. Kontrollera webbplatsens behörighet och aviseringsinställningarna i webbläsaren eller på enheten, och uppdatera sedan sidan.';
 
   @override
   String get pushResubscribe => 'Återanslut aviseringar';

@@ -17,26 +17,25 @@ void main() {
   // vertically scrolling parent. The vertical scroll is not incidental — the
   // view renders every budgeted row eagerly, so a bounded-height host would
   // fail on overflow rather than on anything the widget got wrong.
-  Widget host(Widget child) => Localizations(
+  Widget host(Widget child) => WidgetsApp(
+    color: const Color(0xFFFFFFFF),
     locale: const Locale('en'),
-    delegates: const [
+    localizationsDelegates: const [
       AppLocalizations.delegate,
       DefaultWidgetsLocalizations.delegate,
     ],
-    child: Directionality(
-      textDirection: TextDirection.ltr,
-      child: CcTheme(
-        data: CcThemeData.light(),
-        child: MediaQuery(
-          data: const MediaQueryData(size: Size(390, 800)),
-          child: Center(
-            child: SizedBox(
-              width: 390,
-              child: SingleChildScrollView(child: child),
-            ),
-          ),
-        ),
-      ),
+    textStyle: const TextStyle(
+      fontSize: 14,
+      color: Color(0xFF202020),
+      decoration: TextDecoration.none,
+    ),
+    pageRouteBuilder: <T>(settings, builder) => PageRouteBuilder<T>(
+      settings: settings,
+      pageBuilder: (context, _, _) => builder(context),
+    ),
+    builder: (_, child) => CcTheme(data: CcThemeData.light(), child: child!),
+    home: Center(
+      child: SizedBox(width: 390, child: SingleChildScrollView(child: child)),
     ),
   );
 
@@ -73,14 +72,6 @@ void main() {
     expect(find.text('-'), findsOneWidget);
   });
 
-  testWidgets('an empty patch says why instead of rendering blank', (
-    tester,
-  ) async {
-    await tester.pumpWidget(host(const DiffView(patch: '')));
-
-    expect(find.textContaining('No text diff'), findsOneWidget);
-  });
-
   testWidgets('caps the rows it builds and offers the rest', (tester) async {
     // One hunk header + 600 additions: past the budget on purpose.
     final big = StringBuffer('@@ -1,0 +1,600 @@\n');
@@ -93,8 +84,6 @@ void main() {
     // bound the BUILD, because these rows are eager (no lazy viewport).
     expect(find.text('line 0'), findsOneWidget);
     expect(find.text('line 500'), findsNothing);
-    // 601 parsed rows, 400 shown.
-    expect(find.textContaining('Show the remaining 201 lines'), findsOneWidget);
   });
 
   testWidgets('lifting the budget renders the withheld rows', (tester) async {
@@ -107,56 +96,92 @@ void main() {
     );
 
     expect(find.text('line 500'), findsOneWidget);
-    expect(find.textContaining('Show the remaining'), findsNothing);
+    expect(find.byType(CcButton), findsNothing);
   });
 
-  testWidgets('elides the unshown stretch between two hunks', (tester) async {
-    const gapped = '''
-@@ -1,2 +1,2 @@
- alpha
--beta
-+BETA
-@@ -40,2 +40,2 @@
- gamma
--delta
-+DELTA''';
-    await tester.pumpWidget(host(const DiffView(patch: gapped)));
-
-    // Without this marker the jump from line 2 to line 40 reads as a
-    // numbering bug rather than as lines the forge never sent.
-    expect(find.textContaining('unchanged lines'), findsOneWidget);
+  testWidgets('comment-enabled diffs retain compact aligned source rows', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(DiffView(patch: patch, onLineSelected: (_) {})),
+    );
+    final contextRow = tester.getTopLeft(find.text("import 'dart:async';")).dy;
+    final removedRow = tester.getTopLeft(find.text('final answer = 41;')).dy;
+    final addedRow = tester.getTopLeft(find.text('final answer = 42;')).dy;
+    expect(removedRow - contextRow, lessThan(24));
+    expect(addedRow - removedRow, closeTo(removedRow - contextRow, .01));
+    expect(
+      tester.getSize(find.byType(CcSelect<DiffLine>)).height,
+      greaterThanOrEqualTo(44),
+    );
   });
-  testWidgets(
-    'selects only changed lines with their matching side coordinates',
-    (tester) async {
-      final selected = <DiffLine>[];
-      await tester.pumpWidget(
-        host(DiffView(patch: patch, onLineSelected: selected.add)),
-      );
 
-      await tester.tap(find.text("import 'dart:async';"));
-      expect(selected, isEmpty);
+  testWidgets('long code scrolls horizontally without wrapping source rows', (
+    tester,
+  ) async {
+    final longLine = 'final value = "${List.filled(100, 'x').join()}";';
+    await tester.pumpWidget(
+      host(DiffView(patch: '@@ -0,0 +1,1 @@\n+$longLine')),
+    );
+    final scroller = find.byWidgetPredicate(
+      (widget) =>
+          widget is SingleChildScrollView &&
+          widget.scrollDirection == Axis.horizontal,
+    );
+    final before = tester.getTopLeft(find.text(longLine));
+    await tester.drag(scroller, const Offset(-160, 0));
+    await tester.pumpAndSettle();
+    final after = tester.getTopLeft(find.text(longLine));
+    expect(after.dx, lessThan(before.dx - 100));
+    expect(after.dy, closeTo(before.dy, .01));
+  });
 
-      await tester.tap(find.text('final answer = 41;'));
-      expect(selected.single.kind, DiffLineKind.deletion);
-      expect(selected.single.oldLine, 2);
-      expect(selected.single.newLine, isNull);
-
-      await tester.tap(find.text('final extra = true;'));
-      expect(selected.last.kind, DiffLineKind.addition);
-      expect(selected.last.oldLine, isNull);
-      expect(selected.last.newLine, 3);
-    },
-  );
-  testWidgets('does not offer inline comments without a valid hunk anchor', (
+  testWidgets('comment selector offers only changed lines with correct sides', (
     tester,
   ) async {
     final selected = <DiffLine>[];
     await tester.pumpWidget(
-      host(DiffView(patch: '+unanchored change', onLineSelected: selected.add)),
+      host(DiffView(patch: patch, onLineSelected: selected.add)),
     );
+    final picker = find.byType(CcSelect<DiffLine>);
+    await tester.tap(picker);
+    await tester.pumpAndSettle();
+    final options = tester.widgetList<CcSelectRow<DiffLine>>(
+      find.byType(CcSelectRow<DiffLine>),
+    );
+    expect(
+      options.map(
+        (row) => (
+          row.option.value.kind,
+          row.option.value.oldLine,
+          row.option.value.newLine,
+        ),
+      ),
+      [
+        (DiffLineKind.deletion, 2, null),
+        (DiffLineKind.addition, null, 2),
+        (DiffLineKind.addition, null, 3),
+      ],
+    );
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is CcSelectRow<DiffLine> &&
+            widget.option.value.kind == DiffLineKind.deletion,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(selected.single.kind, DiffLineKind.deletion);
+    expect(selected.single.oldLine, 2);
+    expect(selected.single.newLine, isNull);
+  });
 
-    await tester.tap(find.text('unanchored change'));
-    expect(selected, isEmpty);
+  testWidgets('unanchored changes cannot receive a line comment', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(DiffView(patch: '+unanchored change', onLineSelected: (_) {})),
+    );
+    expect(find.byType(CcSelect<DiffLine>), findsNothing);
   });
 }

@@ -179,37 +179,50 @@ void main() {
       expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
     });
 
-    test('rejects missing and foreign-workspace item IDs without phantom states',
-        () async {
-      await dao.insertAndPrune(
-        entry('foreign', DateTime(2026, 8, 15), workspaceId: 'ws-2'),
-      );
-      for (final id in ['absent', 'foreign']) {
-        await expectLater(
-          dao.setItemRead('ws-1', 'user-1', id, DateTime(2026, 8, 16)),
-          throwsA(isA<Exception>()),
+    test(
+      'rejects missing and foreign-workspace item IDs without phantom states',
+      () async {
+        await dao.insertAndPrune(
+          entry('foreign', DateTime(2026, 8, 15), workspaceId: 'ws-2'),
         );
-        await expectLater(
-          dao.dismissItem('ws-1', 'user-1', id, DateTime(2026, 8, 16)),
-          throwsA(isA<Exception>()),
-        );
-      }
-      expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
-    });
+        for (final id in ['absent', 'foreign']) {
+          await expectLater(
+            dao.setItemRead('ws-1', 'user-1', id, DateTime(2026, 8, 16)),
+            throwsA(isA<Exception>()),
+          );
+          await expectLater(
+            dao.dismissItem('ws-1', 'user-1', id, DateTime(2026, 8, 16)),
+            throwsA(isA<Exception>()),
+          );
+        }
+        expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
+      },
+    );
 
     test('insertAndPrune drops states orphaned by pruning', () async {
       final base = DateTime(2026, 8, 16);
       await dao.insertAndPrune(entry('n0', base));
       await dao.setItemRead('ws-1', 'user-1', 'n0', base);
+      await dao.insertAndPrune(
+        entry(
+          'retained',
+          base.add(Duration(seconds: NotificationFeedDao.retainedRows)),
+        ),
+      );
+      await dao.setItemRead('ws-1', 'user-1', 'retained', base);
 
       // Push n0 past the retention window.
-      for (var i = 1; i <= NotificationFeedDao.retainedRows; i++) {
-        await dao.insertAndPrune(entry('n$i', base.add(Duration(seconds: i))));
+      for (var i = 1; i < NotificationFeedDao.retainedRows; i++) {
+        await dao.insertAndPrune(
+          entry('new-$i', base.add(Duration(seconds: i))),
+        );
       }
 
       // The state rows are per user and unbounded otherwise: without this the
       // table grows forever holding opinions about rows nobody can see.
-      expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
+      final states = await dao.watchItemStates('ws-1', 'user-1').first;
+      expect(states.map((state) => state.itemId), ['retained']);
+      expect(states.single.readAt, base);
     });
   });
 

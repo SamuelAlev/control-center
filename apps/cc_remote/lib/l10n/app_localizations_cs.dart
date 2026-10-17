@@ -955,6 +955,12 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zpráva se neodeslala. Koncept tu na vás čeká.';
 
   @override
+  String get sentAttachmentUnavailable => 'Příloha není k dispozici';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Přílohu se nepodařilo načíst';
+
+  @override
   String get mobileActionFailed => 'Akce selhala';
 
   @override
@@ -1067,6 +1073,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Původní';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Vyberte řádek pro komentář';
 
   @override
   String get mobilePrUpdatedSide => 'Aktualizováno';
@@ -2132,6 +2141,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get progressTodos => 'Úkoly';
 
   @override
+  String get transcriptToolTodos => 'Úkoly';
+
+  @override
+  String get transcriptToolSearchMemory => 'Prohledat paměť';
+
+  @override
+  String get transcriptToolRenderMedia => 'Vykreslit média';
+
+  @override
   String get progressNoTodos => 'Zatím žádné úkoly';
 
   @override
@@ -2449,7 +2467,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Oznámení jsou zablokovaná v nastavení prohlížeče. Povolte je tam, abyste mohli pokračovat.';
+      'Prohlížeč hlásí zablokovaná oznámení. Zkontrolujte oprávnění tohoto webu a nastavení oznámení v prohlížeči nebo zařízení a pak stránku obnovte.';
 
   @override
   String get pushResubscribe => 'Znovu připojit oznámení';

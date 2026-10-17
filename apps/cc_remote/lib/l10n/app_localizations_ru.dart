@@ -948,6 +948,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get mobileSendFailed => 'Сообщение не отправлено. Черновик сохранён.';
 
   @override
+  String get sentAttachmentUnavailable => 'Вложение недоступно';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Не удалось загрузить вложение';
+
+  @override
   String get mobileActionFailed => 'Не удалось выполнить действие';
 
   @override
@@ -1061,6 +1067,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Исходный';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Выберите строку для комментария';
 
   @override
   String get mobilePrUpdatedSide => 'Обновлён';
@@ -2128,6 +2137,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get progressTodos => 'Задачи';
 
   @override
+  String get transcriptToolTodos => 'Задачи';
+
+  @override
+  String get transcriptToolSearchMemory => 'Поиск в памяти';
+
+  @override
+  String get transcriptToolRenderMedia => 'Показать медиа';
+
+  @override
   String get progressNoTodos => 'Задач пока нет';
 
   @override
@@ -2444,7 +2462,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Уведомления заблокированы в настройках браузера. Разрешите их там, чтобы продолжить.';
+      'Браузер сообщает, что уведомления заблокированы. Проверьте разрешение для этого сайта и настройки уведомлений в браузере или на устройстве, затем обновите страницу.';
 
   @override
   String get pushResubscribe => 'Переподключить уведомления';

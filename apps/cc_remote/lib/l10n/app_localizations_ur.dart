@@ -945,6 +945,12 @@ class AppLocalizationsUr extends AppLocalizations {
       'پیغام نہیں بھیجا گیا۔ آپ کا مسودہ یہیں محفوظ ہے۔';
 
   @override
+  String get sentAttachmentUnavailable => 'منسلکہ دستیاب نہیں';
+
+  @override
+  String get sentAttachmentLoadFailed => 'منسلکہ لوڈ نہیں ہو سکا';
+
+  @override
   String get mobileActionFailed => 'ایکشن ناکام';
 
   @override
@@ -1057,6 +1063,9 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'اصل';
+
+  @override
+  String get mobilePrSelectCommentLine => 'تبصرے کے لیے ایک لائن منتخب کریں';
 
   @override
   String get mobilePrUpdatedSide => 'اپ ڈیٹ شدہ';
@@ -2109,6 +2118,15 @@ class AppLocalizationsUr extends AppLocalizations {
   String get progressTodos => 'کام';
 
   @override
+  String get transcriptToolTodos => 'کام';
+
+  @override
+  String get transcriptToolSearchMemory => 'یادداشت میں تلاش کریں';
+
+  @override
+  String get transcriptToolRenderMedia => 'میڈیا دکھائیں';
+
+  @override
   String get progressNoTodos => 'ابھی کوئی کام نہیں';
 
   @override
@@ -2425,7 +2443,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'براؤزر کی ترتیبات میں اطلاعات بند ہیں۔ جاری رکھنے کے لیے وہیں اجازت دیں۔';
+      'براؤزر کے مطابق اطلاعات بند ہیں۔ اس سائٹ کی اجازت اور براؤزر یا ڈیوائس کی اطلاع کی ترتیبات چیک کریں، پھر صفحہ تازہ کریں۔';
 
   @override
   String get pushResubscribe => 'اطلاعات دوبارہ جوڑیں';

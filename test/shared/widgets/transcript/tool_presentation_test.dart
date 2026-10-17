@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/services/tool_display_name.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:control_center/shared/widgets/transcript/tool_body.dart';
 import 'package:control_center/shared/widgets/transcript/tool_presentation.dart';
@@ -20,14 +21,14 @@ void main() {
     startedAt: ts,
   );
 
-  group('humanizeToolName', () {
+  group('resolveToolDisplayName', () {
     test('sentence-cases snake_case and strips mcp prefix', () {
-      expect(humanizeToolName('create_ticket'), 'Create ticket');
+      expect(resolveToolDisplayName('create_ticket'), 'Create ticket');
       expect(
-        humanizeToolName('mcp__control-center__search_memory'),
+        resolveToolDisplayName('mcp__control-center__search_memory'),
         'Search memory',
       );
-      expect(humanizeToolName('propose_fact'), 'Propose fact');
+      expect(resolveToolDisplayName('propose_fact'), 'Propose fact');
     });
   });
 

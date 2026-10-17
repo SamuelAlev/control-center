@@ -967,6 +967,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mobileSendFailed => 'لم تُرسل الرسالة. مسودتك لا تزال محفوظة هنا.';
 
   @override
+  String get sentAttachmentUnavailable => 'المرفق غير متاح';
+
+  @override
+  String get sentAttachmentLoadFailed => 'تعذّر تحميل المرفق';
+
+  @override
   String get mobileActionFailed => 'فشل الإجراء';
 
   @override
@@ -1079,6 +1085,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'الأصلي';
+
+  @override
+  String get mobilePrSelectCommentLine => 'اختر سطرًا للتعليق عليه';
 
   @override
   String get mobilePrUpdatedSide => 'آخر تحديث';
@@ -2125,6 +2134,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get progressTodos => 'المهام';
 
   @override
+  String get transcriptToolTodos => 'المهام';
+
+  @override
+  String get transcriptToolSearchMemory => 'البحث في الذاكرة';
+
+  @override
+  String get transcriptToolRenderMedia => 'عرض الوسائط';
+
+  @override
   String get progressNoTodos => 'لا توجد مهام بعد';
 
   @override
@@ -2436,7 +2454,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'الإشعارات محظورة في إعدادات المتصفح. اسمح بها هناك للمتابعة.';
+      'يفيد المتصفح بأن الإشعارات محظورة. تحقّق من إذن هذا الموقع وإعدادات إشعارات المتصفح أو الجهاز، ثم حدّث الصفحة.';
 
   @override
   String get pushResubscribe => 'إعادة اتصال الإشعارات';

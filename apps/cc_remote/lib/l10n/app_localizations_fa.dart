@@ -942,6 +942,12 @@ class AppLocalizationsFa extends AppLocalizations {
   String get mobileSendFailed => 'پیام ارسال نشد. پیش‌نویس شما همچنان اینجاست.';
 
   @override
+  String get sentAttachmentUnavailable => 'پیوست در دسترس نیست';
+
+  @override
+  String get sentAttachmentLoadFailed => 'بارگذاری پیوست ممکن نشد';
+
+  @override
   String get mobileActionFailed => 'کنش ناموفق بود';
 
   @override
@@ -1054,6 +1060,9 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'اصلی';
+
+  @override
+  String get mobilePrSelectCommentLine => 'خطی را برای نظر دادن انتخاب کنید';
 
   @override
   String get mobilePrUpdatedSide => 'به‌روزرسانی‌شده';
@@ -2105,6 +2114,15 @@ class AppLocalizationsFa extends AppLocalizations {
   String get progressTodos => 'کارها';
 
   @override
+  String get transcriptToolTodos => 'کارها';
+
+  @override
+  String get transcriptToolSearchMemory => 'جست‌وجو در حافظه';
+
+  @override
+  String get transcriptToolRenderMedia => 'نمایش رسانه';
+
+  @override
   String get progressNoTodos => 'هنوز کاری نیست';
 
   @override
@@ -2421,7 +2439,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'اعلان‌ها در تنظیمات مرورگر مسدود شده‌اند. برای ادامه، آن‌ها را در همان‌جا مجاز کنید.';
+      'مرورگر گزارش می‌دهد که اعلان‌ها مسدود هستند. مجوز این سایت و تنظیمات اعلان مرورگر یا دستگاه را بررسی کنید، سپس صفحه را تازه‌سازی کنید.';
 
   @override
   String get pushResubscribe => 'اتصال دوبارهٔ اعلان‌ها';

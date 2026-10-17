@@ -954,6 +954,12 @@ class AppLocalizationsHe extends AppLocalizations {
   String get mobileSendFailed => 'ההודעה לא נשלחה. הטיוטה שלך נשמרה.';
 
   @override
+  String get sentAttachmentUnavailable => 'הקובץ המצורף אינו זמין';
+
+  @override
+  String get sentAttachmentLoadFailed => 'לא ניתן לטעון את הקובץ המצורף';
+
+  @override
   String get mobileActionFailed => 'הפעולה נכשלה';
 
   @override
@@ -1064,6 +1070,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'מקורי';
+
+  @override
+  String get mobilePrSelectCommentLine => 'בחרו שורה להוספת תגובה';
 
   @override
   String get mobilePrUpdatedSide => 'עודכן';
@@ -2109,6 +2118,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get progressTodos => 'משימות';
 
   @override
+  String get transcriptToolTodos => 'משימות';
+
+  @override
+  String get transcriptToolSearchMemory => 'חיפוש בזיכרון';
+
+  @override
+  String get transcriptToolRenderMedia => 'הצגת מדיה';
+
+  @override
   String get progressNoTodos => 'אין עדיין משימות';
 
   @override
@@ -2421,7 +2439,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'ההתראות חסומות בהגדרות הדפדפן. יש לאפשר אותן שם כדי להמשיך.';
+      'הדפדפן מדווח שההתראות חסומות. יש לבדוק את ההרשאה לאתר הזה ואת הגדרות ההתראות בדפדפן או במכשיר, ואז לרענן.';
 
   @override
   String get pushResubscribe => 'חיבור מחדש להתראות';

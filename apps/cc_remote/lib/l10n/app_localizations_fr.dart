@@ -954,6 +954,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Message non envoyé. Votre brouillon est conservé.';
 
   @override
+  String get sentAttachmentUnavailable => 'Pièce jointe indisponible';
+
+  @override
+  String get sentAttachmentLoadFailed =>
+      'Impossible de charger la pièce jointe';
+
+  @override
   String get mobileActionFailed => 'Échec de l\'action';
 
   @override
@@ -1068,6 +1075,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Original';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Choisissez une ligne à commenter';
 
   @override
   String get mobilePrUpdatedSide => 'Mis à jour';
@@ -2142,6 +2152,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get progressTodos => 'Tâches';
 
   @override
+  String get transcriptToolTodos => 'Tâches';
+
+  @override
+  String get transcriptToolSearchMemory => 'Rechercher dans la mémoire';
+
+  @override
+  String get transcriptToolRenderMedia => 'Afficher les médias';
+
+  @override
   String get progressNoTodos => 'Aucune tâche pour le moment';
 
   @override
@@ -2459,7 +2478,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Les notifications sont bloquées dans les paramètres du navigateur. Autorisez-les pour continuer.';
+      'Le navigateur indique que les notifications sont bloquées. Vérifiez l’autorisation de ce site et les réglages de notification du navigateur ou de l’appareil, puis actualisez.';
 
   @override
   String get pushResubscribe => 'Reconnecter les notifications';

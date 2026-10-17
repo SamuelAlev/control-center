@@ -944,6 +944,12 @@ class AppLocalizationsMs extends AppLocalizations {
   String get mobileSendFailed => 'Mesej tidak dihantar. Draf anda masih ada.';
 
   @override
+  String get sentAttachmentUnavailable => 'Lampiran tidak tersedia';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Tidak dapat memuatkan lampiran';
+
+  @override
   String get mobileActionFailed => 'Tindakan gagal';
 
   @override
@@ -1057,6 +1063,9 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Asal';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Pilih baris untuk diulas';
 
   @override
   String get mobilePrUpdatedSide => 'Dikemas kini';
@@ -2116,6 +2125,15 @@ class AppLocalizationsMs extends AppLocalizations {
   String get progressTodos => 'Tugas';
 
   @override
+  String get transcriptToolTodos => 'Tugas';
+
+  @override
+  String get transcriptToolSearchMemory => 'Cari dalam ingatan';
+
+  @override
+  String get transcriptToolRenderMedia => 'Paparkan media';
+
+  @override
   String get progressNoTodos => 'Belum ada tugas';
 
   @override
@@ -2432,7 +2450,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Pemberitahuan disekat dalam tetapan pelayar. Benarkan di sana untuk meneruskan.';
+      'Pelayar melaporkan pemberitahuan disekat. Semak kebenaran tapak ini dan tetapan pemberitahuan pelayar atau peranti, kemudian muat semula.';
 
   @override
   String get pushResubscribe => 'Sambung semula pemberitahuan';

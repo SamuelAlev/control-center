@@ -68,7 +68,9 @@ class BrowserPush {
   }
 
   Future<BrowserPushSubscription?> existing() async {
-    if (unsupportedReason != null) return null;
+    if (unsupportedReason != null || web.Notification.permission == 'denied') {
+      return null;
+    }
     // Do not install or request permission merely by displaying Settings.
     final registration = await _ownRegistration();
     final sub = await registration?.pushManager.getSubscription().toDart;
@@ -80,10 +82,15 @@ class BrowserPush {
   Future<BrowserPushSubscription> subscribe(String vapidPublicKey) async {
     final reason = unsupportedReason;
     if (reason != null) throw UnsupportedError('push.$reason');
-    final prompt = web.Notification.permission == 'granted'
-        ? Future.value('granted')
-        : web.Notification.requestPermission().toDart.then((v) => v.toDart);
-    if (await prompt != 'granted') {
+    // A browser-level block (including global/OS policy) can report `denied`
+    // without this site ever having displayed a prompt. Only `default` is
+    // promptable; calling requestPermission on `denied` cannot override it.
+    final permission = web.Notification.permission;
+    if (permission == 'denied') throw StateError('push.permissionDenied');
+    if (permission != 'granted' &&
+        (permission != 'default' ||
+            (await web.Notification.requestPermission().toDart).toDart !=
+                'granted')) {
       throw StateError('push.permissionDenied');
     }
     final key = Uint8List.fromList(

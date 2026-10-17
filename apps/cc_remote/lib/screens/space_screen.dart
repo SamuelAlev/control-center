@@ -27,6 +27,7 @@ import 'package:go_router/go_router.dart';
 part 'space_screen_composer.dart';
 part 'space_screen_follow.dart';
 part 'space_screen_messages.dart';
+part 'space_screen_message_feed.dart';
 
 /// Resolves exact conversation/message identities before opening a composer.
 class SpaceScreen extends ConsumerWidget {

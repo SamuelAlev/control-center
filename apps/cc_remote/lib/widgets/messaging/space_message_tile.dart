@@ -15,6 +15,8 @@ import 'package:cc_remote/widgets/phone_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
+part 'space_message_bubbles.dart';
+
 /// One space message: mine, a teammate's, or a live agent turn.
 ///
 /// List rows no longer carry `segments`. A live turn reads them from [turns];
@@ -25,6 +27,7 @@ class SpaceMessageTile extends StatefulWidget {
   const SpaceMessageTile({
     super.key,
     required this.message,
+    required this.workspaceId,
     required this.myUserId,
     required this.userNames,
     this.turns,
@@ -32,6 +35,9 @@ class SpaceMessageTile extends StatefulWidget {
 
   /// The message to render.
   final MessageDto message;
+
+  /// Workspace that owns this message, supplied by its route/query scope.
+  final String workspaceId;
 
   /// Signed-in user id, used to right-align own messages.
   final String? myUserId;
@@ -242,78 +248,13 @@ class _SpaceMessageTileState extends State<SpaceMessageTile> {
                   attachments: MessageAttachment.attachmentsFromMetadata(
                     meta?.cast<String, dynamic>(),
                   ),
+                  workspaceId: widget.workspaceId,
                   alignEnd: isMine,
                 ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _textBubble(DesignSystemTokens t, String content, bool isMine) {
-    final body = TextStyle(fontSize: 14, height: 1.4, color: t.textPrimary);
-    final refs = findFileRefs(content);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: isMine ? t.accentSoft : t.bgSecondary,
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: refs.isEmpty
-            ? PhoneMarkdown(data: content)
-            : Text.rich(
-                TextSpan(children: _bodySpans(t, content, body, refs)),
-                style: body,
-              ),
-      ),
-    );
-  }
-
-  List<InlineSpan> _bodySpans(
-    DesignSystemTokens t,
-    String content,
-    TextStyle body,
-    List<FileRefMatch> refs,
-  ) {
-    final spans = <InlineSpan>[];
-    var cursor = 0;
-    for (final ref in refs) {
-      if (ref.start > cursor) {
-        spans.add(TextSpan(text: content.substring(cursor, ref.start)));
-      }
-      spans.add(
-        TextSpan(
-          text: ref.name,
-          style: body.copyWith(color: t.accent, fontWeight: FontWeight.w500),
-        ),
-      );
-      cursor = ref.end;
-    }
-    if (cursor < content.length) {
-      spans.add(TextSpan(text: content.substring(cursor)));
-    }
-    return spans;
-  }
-
-  Widget _agentBubble(
-    DesignSystemTokens t,
-    List<TranscriptSegment> segments,
-    bool streamComplete,
-  ) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 320),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: t.bgSecondary,
-          borderRadius: const BorderRadius.all(Radius.circular(12)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: AgentTranscript(segments: segments, isLive: !streamComplete),
-        ),
       ),
     );
   }

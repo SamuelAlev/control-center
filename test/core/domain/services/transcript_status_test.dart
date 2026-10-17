@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/services/transcript_status.dart';
+import 'package:cc_domain/core/domain/services/tool_display_name.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -23,6 +24,59 @@ void main() {
         'create_ticket',
       );
       expect(normalizeToolName('mcp__srv__search_memory'), 'search_memory');
+    });
+  });
+
+  group('resolveToolDisplayName', () {
+    test('uses localized labels only for known Control Center tools', () {
+      const labels = (
+        todos: 'Tasks',
+        searchMemory: 'Search memory',
+        renderMedia: 'Render media',
+      );
+      expect(
+        resolveToolDisplayName(
+          'mcp__control-center__todo_read',
+          todos: labels.todos,
+        ),
+        'Tasks',
+      );
+      expect(
+        resolveToolDisplayName(
+          'mcp__control_center__todo_write',
+          todos: labels.todos,
+        ),
+        'Tasks',
+      );
+      expect(
+        resolveToolDisplayName(
+          'mcp__control-center__search_memory',
+          searchMemory: labels.searchMemory,
+        ),
+        'Search memory',
+      );
+      expect(
+        resolveToolDisplayName(
+          'mcp__control-center__render_media',
+          renderMedia: labels.renderMedia,
+        ),
+        'Render media',
+      );
+      expect(
+        resolveToolDisplayName('mcp__external__todo_read', todos: labels.todos),
+        'Todo read',
+      );
+    });
+
+    test('falls back to readable names for unknown tools', () {
+      expect(
+        resolveToolDisplayName('mcp__github__create_issue'),
+        'Create issue',
+      );
+      expect(
+        resolveToolDisplayName('mcp__control-center__create_ticket'),
+        'Create ticket',
+      );
     });
   });
 

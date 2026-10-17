@@ -15,6 +15,8 @@ class RemoteMediaEndpoint {
     required this.psk,
   });
 
+  static final RegExp _blobHash = RegExp(r'^[0-9a-f]{64}$');
+
   /// Preserve the per-session local URL capability before every signed route.
   Uri resourceUri(String path, {Map<String, String>? queryParameters}) {
     final prefix = httpBase.path.endsWith('/')
@@ -37,17 +39,16 @@ class RemoteMediaEndpoint {
 
   /// The `/workspace/logo` URL for [workspaceId].
   String workspaceLogoUrl(String workspaceId) => resourceUri(
-        '/workspace/logo',
-        queryParameters: {
-          'w': workspaceId,
-          'd': deviceId,
-          's': RemoteControlCrypto.signProxyTarget(
-            'workspace-logo:$workspaceId',
-            psk,
-          ),
-        },
-      )
-      .toString();
+    '/workspace/logo',
+    queryParameters: {
+      'w': workspaceId,
+      'd': deviceId,
+      's': RemoteControlCrypto.signProxyTarget(
+        'workspace-logo:$workspaceId',
+        psk,
+      ),
+    },
+  ).toString();
 
   /// Rewrites [rawUrl] to a same-pairing `/proxy/media` URL, or returns it
   /// unchanged when it is not an absolute `http(s)` URL (a `data:` avatar, an
@@ -69,46 +70,56 @@ class RemoteMediaEndpoint {
     }
     final bucketed = maxWidth == null ? null : _bucketWidth(maxWidth);
     return resourceUri(
-          '/proxy/media',
-          queryParameters: {
-            'u': base64Url.encode(utf8.encode(rawUrl)),
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(rawUrl, psk),
-            if (bucketed != null) 'w': '$bucketed',
-          },
-        )
-        .toString();
+      '/proxy/media',
+      queryParameters: {
+        'u': base64Url.encode(utf8.encode(rawUrl)),
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(rawUrl, psk),
+        if (bucketed != null) 'w': '$bucketed',
+      },
+    ).toString();
   }
 
-  /// The `/blob` URL serving the bytes behind [ref], or an empty string when
-  /// [ref] is not a well-formed `blob:sha256:<hex>` reference.
-  ///
-  /// This is how a screenshot on a message reaches the phone: the row carries
-  /// a content hash, never bytes. The hash is checked here because it becomes a
-  /// filename on the server — anything that is not 64 lowercase hex characters
-  /// is refused rather than signed.
-  String blobUrl({required String workspaceId, required String ref}) {
+  /// Signed canonical `/blob` resource target for the encrypted channel.
+  /// Invalid content references never become paths on the server.
+  Uri? blobResourceUri({required String workspaceId, required String ref}) {
     const prefix = 'blob:sha256:';
-    if (!ref.startsWith(prefix)) {
-      return '';
-    }
+    if (workspaceId.isEmpty || !ref.startsWith(prefix)) return null;
     final hash = ref.substring(prefix.length);
-    if (hash.length != 64 || !RegExp(r'^[0-9a-f]{64}$').hasMatch(hash)) {
-      return '';
+    if (!_blobHash.hasMatch(hash)) {
+      return null;
     }
+    return Uri(
+      path: '/blob',
+      queryParameters: {
+        'w': workspaceId,
+        'h': hash,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(
+          'blob:$workspaceId:$hash',
+          psk,
+        ),
+      },
+    );
+  }
+
+  /// Same signed target via the browser's local resource facade. A filename
+  /// requests attachment disposition without changing the authorized bytes.
+  String blobUrl({
+    required String workspaceId,
+    required String ref,
+    String? downloadName,
+  }) {
+    final target = blobResourceUri(workspaceId: workspaceId, ref: ref);
+    if (target == null) return '';
     return resourceUri(
-          '/blob',
-          queryParameters: {
-            'w': workspaceId,
-            'h': hash,
-            'd': deviceId,
-            's': RemoteControlCrypto.signProxyTarget(
-              'blob:$workspaceId:$hash',
-              psk,
-            ),
-          },
-        )
-        .toString();
+      target.path,
+      queryParameters: {
+        ...target.queryParameters,
+        if (downloadName != null) 'download': '1',
+        'name': ?downloadName,
+      },
+    ).toString();
   }
 
   /// The `POST /blob` URL an attachment's bytes are uploaded to.
@@ -119,17 +130,13 @@ class RemoteMediaEndpoint {
   /// signature only ever buys a write into a workspace this device's user
   /// belongs to.
   String blobUploadUrl({required String workspaceId}) => resourceUri(
-        '/blob',
-        queryParameters: {
-          'w': workspaceId,
-          'd': deviceId,
-          's': RemoteControlCrypto.signProxyTarget(
-            'blob-put:$workspaceId',
-            psk,
-          ),
-        },
-      )
-      .toString();
+    '/blob',
+    queryParameters: {
+      'w': workspaceId,
+      'd': deviceId,
+      's': RemoteControlCrypto.signProxyTarget('blob-put:$workspaceId', psk),
+    },
+  ).toString();
 
   /// The width ladder every proxied raster is bucketed UP to. Kept small and
   /// avatar-weighted: the phone's only proxied images are marks and avatars.

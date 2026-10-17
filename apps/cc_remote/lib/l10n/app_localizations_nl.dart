@@ -947,6 +947,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'Bericht niet verzonden. Je concept is bewaard.';
 
   @override
+  String get sentAttachmentUnavailable => 'Bijlage niet beschikbaar';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Kon bijlage niet laden';
+
+  @override
   String get mobileActionFailed => 'Actie mislukt';
 
   @override
@@ -1059,6 +1065,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Oorspronkelijk';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Kies een regel om op te reageren';
 
   @override
   String get mobilePrUpdatedSide => 'Bijgewerkt';
@@ -2124,6 +2133,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get progressTodos => 'Taken';
 
   @override
+  String get transcriptToolTodos => 'Taken';
+
+  @override
+  String get transcriptToolSearchMemory => 'Geheugen doorzoeken';
+
+  @override
+  String get transcriptToolRenderMedia => 'Media weergeven';
+
+  @override
   String get progressNoTodos => 'Nog geen taken';
 
   @override
@@ -2440,7 +2458,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Meldingen zijn geblokkeerd in de browserinstellingen. Sta ze daar toe om door te gaan.';
+      'De browser meldt dat meldingen geblokkeerd zijn. Controleer de toestemming voor deze site en de meldingsinstellingen van de browser of het apparaat en vernieuw de pagina.';
 
   @override
   String get pushResubscribe => 'Meldingen opnieuw verbinden';

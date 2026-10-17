@@ -941,6 +941,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mobileSendFailed => 'Message not sent. Your draft is still here.';
 
   @override
+  String get sentAttachmentUnavailable => 'Attachment unavailable';
+
+  @override
+  String get sentAttachmentLoadFailed => 'Could not load attachment';
+
+  @override
   String get mobileActionFailed => 'Action failed';
 
   @override
@@ -1053,6 +1059,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mobilePrOriginalSide => 'Original';
+
+  @override
+  String get mobilePrSelectCommentLine => 'Choose a line to comment on';
 
   @override
   String get mobilePrUpdatedSide => 'Updated';
@@ -2107,6 +2116,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get progressTodos => 'Tasks';
 
   @override
+  String get transcriptToolTodos => 'Tasks';
+
+  @override
+  String get transcriptToolSearchMemory => 'Search memory';
+
+  @override
+  String get transcriptToolRenderMedia => 'Render media';
+
+  @override
   String get progressNoTodos => 'No tasks yet';
 
   @override
@@ -2422,7 +2440,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pushDenied =>
-      'Notifications are blocked in browser settings. Allow them there to continue.';
+      'Your browser reports notifications blocked. Check this site\'s permission and your browser or device notification settings, then refresh.';
 
   @override
   String get pushResubscribe => 'Reconnect notifications';

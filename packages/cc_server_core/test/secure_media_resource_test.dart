@@ -1,16 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart' show JsonRpcRequest;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
+import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
-import 'package:cc_persistence/cc_persistence.dart' show PairedDevicesTableData;
+import 'package:cc_infra/src/blobs/blob_store.dart';
+import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/cc_server_core.dart';
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
+import 'package:drift/native.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -24,6 +29,7 @@ void main() {
     late File audio;
     late File blobFile;
     late String psk;
+    BlobStore? realBlobStore;
     late String blobMime;
     late String secondPsk;
     late bool workspaceRegistered;
@@ -140,6 +146,7 @@ void main() {
       await audio.writeAsBytes(meetingBytes);
       await blobFile.writeAsBytes(blobBytes);
       blobMime = 'image/png';
+      realBlobStore = null;
       psk = RemoteControlCrypto.generatePsk();
       secondPsk = RemoteControlCrypto.generatePsk();
       devices = _Devices({device: psk, secondDevice: secondPsk});
@@ -182,6 +189,16 @@ void main() {
             },
         blob: ({required String workspaceId, required String hash}) async {
           blobLookups++;
+          final store = realBlobStore;
+          if (store != null) {
+            final file = store.fileFor(workspaceId, hash);
+            return file == null
+                ? null
+                : (
+                    file: file,
+                    contentType: await store.mediaTypeFor(workspaceId, hash),
+                  );
+          }
           return workspaceId == workspace &&
                   hash ==
                       'a0b1c2d3e4f5060708090a0b0c0d0e0f102030405060708090a0b0c0d0e0f10'
@@ -296,10 +313,90 @@ void main() {
       },
     );
 
+    test(
+      'desktop catalog attachment resolves actual PNG over encrypted resource channel',
+      () async {
+        final global = GlobalDatabase.forTesting(NativeDatabase.memory());
+        final databases = WorkspaceDatabaseManager(
+          dataDir: dataDir.path,
+          global: global,
+          executorFactory: (_) => NativeDatabase.memory(),
+        );
+        addTearDown(() async {
+          await databases.closeAll();
+          await global.close();
+        });
+        final catalog = DaoFileCatalogRepository(databases);
+        final store = BlobStore(
+          workspaceDir: (ws) => p.join(dataDir.path, ws),
+          isProtectedHash: (ws, hash) =>
+              catalog.hasPath(ws, 'blob:sha256:$hash'),
+        );
+        realBlobStore = store;
+        final png = Uint8List.fromList(
+          base64Decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=',
+          ),
+        );
+        final uploaded = await store.putUpload(
+          workspace,
+          png,
+          mediaType: 'image/png',
+          register: (blob, ownedBytes) async => catalog.createUpload(
+            workspaceId: workspace,
+            uploaderUserId: 'member-a',
+            name: 'screen.png',
+            path: blob.ref,
+            mediaType: blob.mediaType,
+            bytes: blob.bytes,
+            ownedBytes: ownedBytes,
+          ),
+        );
+        expect(uploaded, isNotNull);
+        final metadata = {
+          'attachments': [
+            {
+              'id': 'desktop-draft-1',
+              'fileId': uploaded!.id,
+              'path': uploaded.path,
+              'name': uploaded.name,
+              'kind': 'image',
+              'mediaType': uploaded.mediaType,
+              'size': uploaded.bytes,
+              'order': 0,
+            },
+          ],
+        };
+        final attachment = MessageAttachment.attachmentsFromMetadata(
+          metadata,
+        ).single;
+        expect(attachment.fileId, uploaded.id);
+        expect(attachment.isUploaded, isTrue);
+        await catalog.claim(workspace, 'member-a', [
+          (fileId: attachment.fileId!, path: attachment.path),
+        ]);
+        final response = await get(blobUrl(h: attachment.blobHash!));
+        expect(response.statusCode, HttpStatus.ok);
+        expect(
+          response.headers['content-type']?.single,
+          startsWith('image/png'),
+        );
+        expect(await bytes(response), png);
+        expect(
+          await status(blobUrl(ws: 'other', h: attachment.blobHash!)),
+          HttpStatus.forbidden,
+        );
+        expect(await store.read('other', attachment.blobHash!), isNull);
+      },
+    );
+
     test('blob download stays scoped and cannot execute SVG inline', () async {
       blobMime = 'image/svg+xml';
       final inline = await get(blobUrl());
-      expect(inline.headers['content-security-policy']?.single, contains('sandbox'));
+      expect(
+        inline.headers['content-security-policy']?.single,
+        contains('sandbox'),
+      );
       expect(inline.headers['x-content-type-options']?.single, 'nosniff');
       expect(inline.headers['content-disposition'], isNull);
       await inline.body.drain<void>();
@@ -316,10 +413,12 @@ void main() {
       expect(await bytes(download), blobBytes);
 
       expect(
-        await status(blobUrl(
-          downloadName: 'drawing.svg',
-          signature: sign('blob:$workspace:wrong'),
-        )),
+        await status(
+          blobUrl(
+            downloadName: 'drawing.svg',
+            signature: sign('blob:$workspace:wrong'),
+          ),
+        ),
         HttpStatus.forbidden,
       );
       member = false;

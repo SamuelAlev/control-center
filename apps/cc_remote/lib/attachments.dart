@@ -11,6 +11,7 @@ import 'package:cc_domain/core/domain/value_objects/file_reference.dart';
 import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_remote/debug_log.dart';
 import 'package:cc_remote/media_proxy.dart';
+import 'package:cc_rpc/cc_rpc.dart';
 import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
 
@@ -158,6 +159,40 @@ Future<MessageAttachment> uploadAttachment({
     order: order,
     mediaType: picked.mediaType,
   );
+}
+
+/// Reads a sent image through the same signed `/blob` route as a browser URL,
+/// but over the live encrypted resource channel. The route verifies the paired
+/// device and workspace membership before yielding bytes on direct or relay.
+Future<Uint8List> fetchAttachmentImage({
+  required RemoteMediaEndpoint endpoint,
+  required RemoteResources resources,
+  required String workspaceId,
+  required MessageAttachment attachment,
+}) async {
+  final target = endpoint.blobResourceUri(
+    workspaceId: workspaceId,
+    ref: attachment.path,
+  );
+  if (target == null) {
+    throw const FormatException('Attachment has no stored image');
+  }
+  final response = await resources.request('GET', target);
+  try {
+    if (response.statusCode != 200) {
+      throw StateError('Attachment image HTTP ${response.statusCode}');
+    }
+    final bytes = BytesBuilder(copy: false);
+    await for (final chunk in response.body) {
+      if (bytes.length + chunk.length > kMaxAttachmentBytes) {
+        throw const FormatException('Attachment image exceeds size limit');
+      }
+      bytes.add(chunk);
+    }
+    return bytes.takeBytes();
+  } finally {
+    await response.close();
+  }
 }
 
 /// Bounded by the server's blob store, regardless of direct or relay path.

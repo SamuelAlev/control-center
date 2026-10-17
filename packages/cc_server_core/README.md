@@ -35,6 +35,23 @@ binary and the desktop's embedded server both boot.
   — the classic "works in tests, not in the app" footgun; rebuild the binary
   after adding ops).
 
+## Public demo catalog
+
+`DemoProfile` explicitly inventories mutating operations and watch queries.
+Adding an RPC operation also requires reviewing its permission domain in
+`test/core/permission_catalog_test.dart` and its demo admission policy.
+
+Demo visitors may add an existing workspace member to a space; the handler
+checks both the space's workspace and the participant's membership. Device-global
+`push.register` and `push.remove` remain denied because they persist subscriptions
+for outbound delivery. The authenticated device's non-secret `push.status`
+remains readable.
+
+The reviewed `agentGoalRuns.watchForWorkspace`, `questions.watchPending` and
+`space_read.watchUserSpaceReads` streams read workspace-local state. Goal and
+question snapshots retain space/repository visibility filtering; space-read
+cursors are restricted to the authenticated user.
+
 ## Skill evaluation campaigns
 
 The Skills evaluation panel launches a budgeted, revision-pinned campaign; Observability → Quality shows its progress, paired outcomes, loading observations and bounded attempt evidence. `server_skill_evaluation_wiring.dart` constructs the production `SkillEvaluationService`, including workspace/repository authorization, action-policy admission, model pricing and controlled execution.

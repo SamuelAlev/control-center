@@ -1740,6 +1740,18 @@ abstract class AppLocalizations {
   /// **'Message not sent. Your draft is still here.'**
   String get mobileSendFailed;
 
+  /// Fallback for a sent attachment whose file is no longer available.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment unavailable'**
+  String get sentAttachmentUnavailable;
+
+  /// Fallback when loading a sent attachment fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load attachment'**
+  String get sentAttachmentLoadFailed;
+
   /// No description provided for @mobileActionFailed.
   ///
   /// In en, this message translates to:
@@ -1949,6 +1961,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Original'**
   String get mobilePrOriginalSide;
+
+  /// Label for choosing a pull request diff line for an inline comment.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a line to comment on'**
+  String get mobilePrSelectCommentLine;
 
   /// No description provided for @mobilePrUpdatedSide.
   ///
@@ -3815,6 +3833,24 @@ abstract class AppLocalizations {
   /// **'Tasks'**
   String get progressTodos;
 
+  /// Short label for the agent task-list tool in conversation transcripts.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get transcriptToolTodos;
+
+  /// Short label for the agent memory-search tool in conversation transcripts.
+  ///
+  /// In en, this message translates to:
+  /// **'Search memory'**
+  String get transcriptToolSearchMemory;
+
+  /// Short label for the agent media-rendering tool in conversation transcripts.
+  ///
+  /// In en, this message translates to:
+  /// **'Render media'**
+  String get transcriptToolRenderMedia;
+
   /// No description provided for @progressNoTodos.
   ///
   /// In en, this message translates to:
@@ -4358,7 +4394,7 @@ abstract class AppLocalizations {
   /// No description provided for @pushDenied.
   ///
   /// In en, this message translates to:
-  /// **'Notifications are blocked in browser settings. Allow them there to continue.'**
+  /// **'Your browser reports notifications blocked. Check this site\'s permission and your browser or device notification settings, then refresh.'**
   String get pushDenied;
 
   /// No description provided for @pushResubscribe.

@@ -121,6 +121,7 @@ class _HistoryState extends ConsumerState<ConversationHistoryScreen> {
                         children: [
                           SpaceMessageTile(
                             message: message,
+                            workspaceId: workspace ?? '',
                             myUserId: me,
                             userNames: const {},
                             turns: turns,
