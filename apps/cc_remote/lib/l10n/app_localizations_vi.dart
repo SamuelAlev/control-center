@@ -2453,6 +2453,18 @@ class AppLocalizationsVi extends AppLocalizations {
       'Trình duyệt báo thông báo đang bị chặn. Kiểm tra quyền của trang này và cài đặt thông báo của trình duyệt hoặc thiết bị, rồi làm mới trang.';
 
   @override
+  String get pushOsHint =>
+      'Trình duyệt của bạn cũng cần được cấp quyền hiển thị thông báo trong cài đặt hệ thống của thiết bị.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Dịch vụ đẩy của trình duyệt đã từ chối đăng ký. Một số trình duyệt, như Brave, tắt dịch vụ này theo mặc định: hãy tìm tùy chọn tin nhắn đẩy trong cài đặt quyền riêng tư của trình duyệt rồi thử lại.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Không thể khởi động dịch vụ thông báo trong trình duyệt này. Hãy tải lại trang và thử lại.';
+
+  @override
   String get pushResubscribe => 'Kết nối lại thông báo';
 
   @override

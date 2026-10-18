@@ -2461,6 +2461,18 @@ class AppLocalizationsNl extends AppLocalizations {
       'De browser meldt dat meldingen geblokkeerd zijn. Controleer de toestemming voor deze site en de meldingsinstellingen van de browser of het apparaat en vernieuw de pagina.';
 
   @override
+  String get pushOsHint =>
+      'Je browser heeft ook toestemming nodig om meldingen te tonen in de systeeminstellingen van je apparaat.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'De pushservice van de browser heeft het abonnement geweigerd. Sommige browsers, zoals Brave, zetten die standaard uit: zoek in de privacyinstellingen van de browser naar een optie voor pushberichten en probeer het opnieuw.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'De meldingsservice kon niet starten in deze browser. Laad de pagina opnieuw en probeer het nog eens.';
+
+  @override
   String get pushResubscribe => 'Meldingen opnieuw verbinden';
 
   @override

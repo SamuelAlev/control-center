@@ -2481,6 +2481,18 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le navigateur indique que les notifications sont bloquées. Vérifiez l’autorisation de ce site et les réglages de notification du navigateur ou de l’appareil, puis actualisez.';
 
   @override
+  String get pushOsHint =>
+      'Votre navigateur doit aussi être autorisé à afficher des notifications dans les réglages système de votre appareil.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Le service push du navigateur a refusé l’abonnement. Certains navigateurs, comme Brave, le désactivent par défaut : cherchez une option de messages push dans les réglages de confidentialité du navigateur, puis réessayez.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Le service de notifications n’a pas pu démarrer dans ce navigateur. Rechargez la page et réessayez.';
+
+  @override
   String get pushResubscribe => 'Reconnecter les notifications';
 
   @override

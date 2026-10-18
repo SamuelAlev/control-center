@@ -2462,6 +2462,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Webbläsaren rapporterar att aviseringar är blockerade. Kontrollera webbplatsens behörighet och aviseringsinställningarna i webbläsaren eller på enheten, och uppdatera sedan sidan.';
 
   @override
+  String get pushOsHint =>
+      'Webbläsaren behöver också behörighet att visa aviseringar i enhetens systeminställningar.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Webbläsarens pushtjänst avvisade prenumerationen. Vissa webbläsare, som Brave, stänger av den som standard: leta efter ett alternativ för pushmeddelanden i webbläsarens sekretessinställningar och försök igen.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Aviseringstjänsten kunde inte starta i den här webbläsaren. Läs in sidan igen och försök på nytt.';
+
+  @override
   String get pushResubscribe => 'Återanslut aviseringar';
 
   @override

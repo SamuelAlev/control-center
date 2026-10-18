@@ -2453,6 +2453,18 @@ class AppLocalizationsMs extends AppLocalizations {
       'Pelayar melaporkan pemberitahuan disekat. Semak kebenaran tapak ini dan tetapan pemberitahuan pelayar atau peranti, kemudian muat semula.';
 
   @override
+  String get pushOsHint =>
+      'Pelayar anda juga memerlukan kebenaran untuk memaparkan pemberitahuan dalam tetapan sistem peranti.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Perkhidmatan tolak pelayar menolak langganan. Sesetengah pelayar, seperti Brave, mematikannya secara lalai: cari pilihan mesej tolak dalam tetapan privasi pelayar, kemudian cuba lagi.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Perkhidmatan pemberitahuan tidak dapat dimulakan dalam pelayar ini. Muat semula halaman dan cuba lagi.';
+
+  @override
   String get pushResubscribe => 'Sambung semula pemberitahuan';
 
   @override

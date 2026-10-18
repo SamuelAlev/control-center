@@ -4397,6 +4397,24 @@ abstract class AppLocalizations {
   /// **'Your browser reports notifications blocked. Check this site\'s permission and your browser or device notification settings, then refresh.'**
   String get pushDenied;
 
+  /// No description provided for @pushOsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your browser also needs permission to show notifications in your device\'s system settings.'**
+  String get pushOsHint;
+
+  /// No description provided for @pushServiceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Your browser\'s push service refused the subscription. Some browsers, such as Brave, turn it off by default: look for a push messaging option in the browser\'s privacy settings, then try again.'**
+  String get pushServiceUnavailable;
+
+  /// No description provided for @pushWorkerUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The notification service could not start in this browser. Reload the page and try again.'**
+  String get pushWorkerUnavailable;
+
   /// No description provided for @pushResubscribe.
   ///
   /// In en, this message translates to:

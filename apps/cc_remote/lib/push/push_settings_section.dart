@@ -16,7 +16,8 @@ class PushSettingsSection extends ConsumerStatefulWidget {
 class _PushSettingsSectionState extends ConsumerState<PushSettingsSection>
     with WidgetsBindingObserver {
   bool _busy = false;
-  bool _failed = false;
+  // StateError code from the failed step, or '' for any other failure.
+  String? _failure;
 
   @override
   void initState() {
@@ -42,16 +43,15 @@ class _PushSettingsSectionState extends ConsumerState<PushSettingsSection>
   Future<void> _run(Future<void> Function() action) async {
     setState(() {
       _busy = true;
-      _failed = false;
+      _failure = null;
     });
     try {
       await action();
     } on Object catch (error) {
-      if (mounted) {
-        setState(
-          () => _failed =
-              error is! StateError || error.message != 'push.permissionDenied',
-        );
+      // A declined prompt is reported by the refreshed permission status.
+      if (mounted &&
+          (error is! StateError || error.message != 'push.permissionDenied')) {
+        setState(() => _failure = error is StateError ? error.message : '');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -99,13 +99,14 @@ class _PushSettingsSectionState extends ConsumerState<PushSettingsSection>
             style: TextStyle(color: tokens.fgSecondary),
           ),
         },
-        if (_failed)
+        if (_failure case final failure?)
           Padding(
             padding: const EdgeInsetsDirectional.only(top: 8),
-            child: Text(
-              l10n.pushError,
-              style: TextStyle(color: tokens.textErrorPrimary),
-            ),
+            child: Text(switch (failure) {
+              'push.serviceUnavailable' => l10n.pushServiceUnavailable,
+              'push.workerUnavailable' => l10n.pushWorkerUnavailable,
+              _ => l10n.pushError,
+            }, style: TextStyle(color: tokens.textErrorPrimary)),
           ),
       ],
     );
@@ -156,6 +157,13 @@ class _PushSettingsSectionState extends ConsumerState<PushSettingsSection>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(note, style: TextStyle(fontSize: 13, color: t.fgSecondary)),
+        if (reason == null && status.permission != 'granted') ...[
+          const SizedBox(height: 8),
+          Text(
+            l10n.pushOsHint,
+            style: TextStyle(fontSize: 13, color: t.fgSecondary),
+          ),
+        ],
         const SizedBox(height: 8),
         _button(
           status.enabled ? l10n.pushResubscribe : l10n.pushEnable,

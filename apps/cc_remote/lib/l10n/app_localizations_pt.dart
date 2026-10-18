@@ -2474,6 +2474,18 @@ class AppLocalizationsPt extends AppLocalizations {
       'O navegador informa que as notificações estão bloqueadas. Confira a permissão deste site e as configurações de notificações do navegador ou dispositivo e atualize a página.';
 
   @override
+  String get pushOsHint =>
+      'Seu navegador também precisa de permissão para mostrar notificações nas configurações do sistema do dispositivo.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'O serviço de push do navegador recusou a inscrição. Alguns navegadores, como o Brave, o desativam por padrão: procure uma opção de mensagens push nas configurações de privacidade do navegador e tente novamente.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Não foi possível iniciar o serviço de notificações neste navegador. Recarregue a página e tente novamente.';
+
+  @override
   String get pushResubscribe => 'Reconectar notificações';
 
   @override

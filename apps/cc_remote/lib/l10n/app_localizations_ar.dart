@@ -2457,6 +2457,18 @@ class AppLocalizationsAr extends AppLocalizations {
       'يفيد المتصفح بأن الإشعارات محظورة. تحقّق من إذن هذا الموقع وإعدادات إشعارات المتصفح أو الجهاز، ثم حدّث الصفحة.';
 
   @override
+  String get pushOsHint =>
+      'يحتاج المتصفح أيضًا إلى إذن عرض الإشعارات من إعدادات نظام جهازك.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'رفضت خدمة الدفع في المتصفح الاشتراك. بعض المتصفحات، مثل Brave، تعطّلها افتراضيًا: ابحث عن خيار رسائل الدفع في إعدادات الخصوصية بالمتصفح، ثم أعد المحاولة.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'تعذّر تشغيل خدمة الإشعارات في هذا المتصفح. أعد تحميل الصفحة وحاول مرة أخرى.';
+
+  @override
   String get pushResubscribe => 'إعادة اتصال الإشعارات';
 
   @override

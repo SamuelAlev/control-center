@@ -2443,6 +2443,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your browser reports notifications blocked. Check this site\'s permission and your browser or device notification settings, then refresh.';
 
   @override
+  String get pushOsHint =>
+      'Your browser also needs permission to show notifications in your device\'s system settings.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Your browser\'s push service refused the subscription. Some browsers, such as Brave, turn it off by default: look for a push messaging option in the browser\'s privacy settings, then try again.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'The notification service could not start in this browser. Reload the page and try again.';
+
+  @override
   String get pushResubscribe => 'Reconnect notifications';
 
   @override

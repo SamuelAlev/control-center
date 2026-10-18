@@ -2351,6 +2351,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pushDenied => '浏览器报告通知已被阻止。请检查此站点的权限以及浏览器或设备的通知设置，然后刷新页面。';
 
   @override
+  String get pushOsHint => '浏览器本身也需要在设备的系统设置中获得显示通知的权限。';
+
+  @override
+  String get pushServiceUnavailable =>
+      '浏览器的推送服务拒绝了订阅。部分浏览器（如 Brave）默认关闭此服务：请在浏览器的隐私设置中查找推送消息选项，然后重试。';
+
+  @override
+  String get pushWorkerUnavailable => '无法在此浏览器中启动通知服务。请重新加载页面后重试。';
+
+  @override
   String get pushResubscribe => '重新连接通知';
 
   @override
@@ -4846,6 +4856,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get pushDenied => '瀏覽器回報通知已遭封鎖。請檢查此網站的權限以及瀏覽器或裝置的通知設定，然後重新整理頁面。';
+
+  @override
+  String get pushOsHint => '瀏覽器本身也需要在裝置的系統設定中取得顯示通知的權限。';
+
+  @override
+  String get pushServiceUnavailable =>
+      '瀏覽器的推播服務拒絕了訂閱。部分瀏覽器（例如 Brave）預設會關閉此服務：請在瀏覽器的隱私設定中尋找推播訊息選項，然後再試一次。';
+
+  @override
+  String get pushWorkerUnavailable => '無法在此瀏覽器中啟動通知服務。請重新載入頁面後再試一次。';
 
   @override
   String get pushResubscribe => '重新連接通知';

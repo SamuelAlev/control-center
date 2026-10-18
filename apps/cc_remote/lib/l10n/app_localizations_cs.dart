@@ -2470,6 +2470,18 @@ class AppLocalizationsCs extends AppLocalizations {
       'Prohlížeč hlásí zablokovaná oznámení. Zkontrolujte oprávnění tohoto webu a nastavení oznámení v prohlížeči nebo zařízení a pak stránku obnovte.';
 
   @override
+  String get pushOsHint =>
+      'Prohlížeč také potřebuje oprávnění zobrazovat oznámení v systémovém nastavení zařízení.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Služba push v prohlížeči odmítla odběr. Některé prohlížeče, například Brave, ji mají ve výchozím stavu vypnutou: v nastavení soukromí prohlížeče vyhledejte volbu pro push zprávy a zkuste to znovu.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Službu oznámení se v tomto prohlížeči nepodařilo spustit. Načtěte stránku znovu a zkuste to znovu.';
+
+  @override
   String get pushResubscribe => 'Znovu připojit oznámení';
 
   @override

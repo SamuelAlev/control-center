@@ -2445,6 +2445,18 @@ class AppLocalizationsTr extends AppLocalizations {
       'Tarayıcı bildirimlerin engellendiğini bildiriyor. Bu sitenin iznini ve tarayıcı veya cihaz bildirim ayarlarını kontrol edip sayfayı yenileyin.';
 
   @override
+  String get pushOsHint =>
+      'Tarayıcınızın, cihazın sistem ayarlarında da bildirim gösterme izni olması gerekir.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Tarayıcının anlık bildirim hizmeti aboneliği reddetti. Brave gibi bazı tarayıcılar bu hizmeti varsayılan olarak kapatır: tarayıcının gizlilik ayarlarında anlık mesajlarla ilgili bir seçenek arayın ve yeniden deneyin.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Bildirim hizmeti bu tarayıcıda başlatılamadı. Sayfayı yeniden yükleyip tekrar deneyin.';
+
+  @override
   String get pushResubscribe => 'Bildirimleri yeniden bağla';
 
   @override

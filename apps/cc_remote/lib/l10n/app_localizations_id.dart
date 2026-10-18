@@ -2452,6 +2452,18 @@ class AppLocalizationsId extends AppLocalizations {
       'Browser melaporkan notifikasi diblokir. Periksa izin situs ini dan pengaturan notifikasi browser atau perangkat, lalu muat ulang.';
 
   @override
+  String get pushOsHint =>
+      'Browser Anda juga memerlukan izin untuk menampilkan notifikasi di pengaturan sistem perangkat.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Layanan push browser menolak langganan. Beberapa browser, seperti Brave, mematikannya secara default: cari opsi pesan push di pengaturan privasi browser, lalu coba lagi.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Layanan notifikasi tidak dapat dimulai di browser ini. Muat ulang halaman dan coba lagi.';
+
+  @override
   String get pushResubscribe => 'Hubungkan kembali notifikasi';
 
   @override

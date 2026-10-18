@@ -2446,6 +2446,18 @@ class AppLocalizationsUr extends AppLocalizations {
       'براؤزر کے مطابق اطلاعات بند ہیں۔ اس سائٹ کی اجازت اور براؤزر یا ڈیوائس کی اطلاع کی ترتیبات چیک کریں، پھر صفحہ تازہ کریں۔';
 
   @override
+  String get pushOsHint =>
+      'آپ کے براؤزر کو آلے کی سسٹم سیٹنگز میں اطلاعات دکھانے کی اجازت بھی درکار ہے۔';
+
+  @override
+  String get pushServiceUnavailable =>
+      'براؤزر کی پُش سروس نے سبسکرپشن مسترد کر دی۔ کچھ براؤزر، جیسے Brave، اسے بطورِ طے شدہ بند رکھتے ہیں: براؤزر کی رازداری کی سیٹنگز میں پُش پیغامات کا اختیار تلاش کریں، پھر دوبارہ کوشش کریں۔';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'اس براؤزر میں اطلاعات کی سروس شروع نہیں ہو سکی۔ صفحہ دوبارہ لوڈ کریں اور پھر کوشش کریں۔';
+
+  @override
   String get pushResubscribe => 'اطلاعات دوبارہ جوڑیں';
 
   @override

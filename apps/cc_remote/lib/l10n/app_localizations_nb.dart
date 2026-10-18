@@ -2457,6 +2457,18 @@ class AppLocalizationsNb extends AppLocalizations {
       'Nettleseren melder at varslinger er blokkert. Kontroller tillatelsen for dette nettstedet og varslingsinnstillingene i nettleseren eller på enheten, og oppdater siden.';
 
   @override
+  String get pushOsHint =>
+      'Nettleseren trenger også tillatelse til å vise varsler i enhetens systeminnstillinger.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Nettleserens push-tjeneste avviste abonnementet. Enkelte nettlesere, som Brave, slår den av som standard: se etter et valg for push-meldinger i nettleserens personverninnstillinger, og prøv igjen.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Varslingstjenesten kunne ikke starte i denne nettleseren. Last inn siden på nytt og prøv igjen.';
+
+  @override
   String get pushResubscribe => 'Koble til varslinger på nytt';
 
   @override

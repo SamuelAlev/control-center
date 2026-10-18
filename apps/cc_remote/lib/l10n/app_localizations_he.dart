@@ -2442,6 +2442,18 @@ class AppLocalizationsHe extends AppLocalizations {
       'הדפדפן מדווח שההתראות חסומות. יש לבדוק את ההרשאה לאתר הזה ואת הגדרות ההתראות בדפדפן או במכשיר, ואז לרענן.';
 
   @override
+  String get pushOsHint =>
+      'הדפדפן צריך גם הרשאה להציג התראות בהגדרות המערכת של המכשיר.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'שירות ה-push של הדפדפן דחה את המינוי. דפדפנים מסוימים, כמו Brave, מכבים אותו כברירת מחדל: חפשו אפשרות להודעות push בהגדרות הפרטיות של הדפדפן ונסו שוב.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'לא ניתן היה להפעיל את שירות ההתראות בדפדפן הזה. טענו מחדש את הדף ונסו שוב.';
+
+  @override
   String get pushResubscribe => 'חיבור מחדש להתראות';
 
   @override

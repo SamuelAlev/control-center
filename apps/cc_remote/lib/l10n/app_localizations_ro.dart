@@ -2481,6 +2481,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Browserul raportează că notificările sunt blocate. Verifică permisiunea acestui site și setările de notificări ale browserului sau dispozitivului, apoi reîmprospătează pagina.';
 
   @override
+  String get pushOsHint =>
+      'Browserul are nevoie și de permisiunea de a afișa notificări în setările de sistem ale dispozitivului.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Serviciul push al browserului a refuzat abonarea. Unele browsere, precum Brave, îl dezactivează implicit: căutați o opțiune pentru mesaje push în setările de confidențialitate ale browserului, apoi încercați din nou.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Serviciul de notificări nu a putut porni în acest browser. Reîncărcați pagina și încercați din nou.';
+
+  @override
   String get pushResubscribe => 'Reconectează notificările';
 
   @override

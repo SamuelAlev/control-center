@@ -101,6 +101,8 @@ void main() {
   testWidgets('Settings never prompts; blocked permission can be refreshed', (
     tester,
   ) async {
+    const osHint =
+        "Your browser also needs permission to show notifications in your device's system settings.";
     var permission = 'default';
     var reads = 0;
     notification['permission'] = 'default'.toJS;
@@ -148,6 +150,8 @@ void main() {
     );
     expect(requests, 0);
     expect(button('Enable notifications').onPressed, isNotNull);
+    // The browser-level OS permission is invisible to the page; say so.
+    expect(find.text(osHint), findsOneWidget);
     permission = 'denied';
     container.invalidate(remotePushStatusProvider);
     await tester.pumpAndSettle();
@@ -159,6 +163,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(reads, greaterThanOrEqualTo(3));
     expect(button('Enable notifications').onPressed, isNotNull);
+    expect(find.text(osHint), findsNothing);
     expect(requests, 0);
   });
 }

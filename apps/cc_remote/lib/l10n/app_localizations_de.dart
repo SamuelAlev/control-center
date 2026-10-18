@@ -2483,6 +2483,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der Browser meldet, dass Benachrichtigungen blockiert sind. Berechtigung dieser Website und Benachrichtigungseinstellungen von Browser oder Gerät prüfen, dann aktualisieren.';
 
   @override
+  String get pushOsHint =>
+      'Dein Browser braucht außerdem in den Systemeinstellungen deines Geräts die Erlaubnis, Benachrichtigungen anzuzeigen.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Der Push-Dienst des Browsers hat das Abonnement abgelehnt. Manche Browser, etwa Brave, schalten ihn standardmäßig aus: In den Datenschutzeinstellungen des Browsers nach einer Option für Push-Nachrichten suchen, dann erneut versuchen.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Der Benachrichtigungsdienst konnte in diesem Browser nicht starten. Seite neu laden und erneut versuchen.';
+
+  @override
   String get pushResubscribe => 'Benachrichtigungen neu verbinden';
 
   @override

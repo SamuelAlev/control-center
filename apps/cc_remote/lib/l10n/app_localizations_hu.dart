@@ -2466,6 +2466,18 @@ class AppLocalizationsHu extends AppLocalizations {
       'A böngésző szerint az értesítések blokkolva vannak. Ellenőrizze a webhely engedélyét és a böngésző vagy az eszköz értesítési beállításait, majd frissítsen.';
 
   @override
+  String get pushOsHint =>
+      'A böngészőnek az eszköz rendszerbeállításaiban is engedélyre van szüksége az értesítések megjelenítéséhez.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'A böngésző push szolgáltatása elutasította a feliratkozást. Egyes böngészők, például a Brave, alapértelmezés szerint kikapcsolják: keress push üzenetekre vonatkozó beállítást a böngésző adatvédelmi beállításai között, majd próbáld újra.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Az értesítési szolgáltatás nem tudott elindulni ebben a böngészőben. Töltsd újra az oldalt, és próbáld újra.';
+
+  @override
   String get pushResubscribe => 'Értesítések újracsatlakoztatása';
 
   @override

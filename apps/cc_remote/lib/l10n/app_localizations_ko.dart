@@ -2392,6 +2392,17 @@ class AppLocalizationsKo extends AppLocalizations {
       '브라우저에서 알림이 차단된 것으로 보고합니다. 이 사이트의 권한과 브라우저 또는 기기의 알림 설정을 확인한 뒤 새로고침하세요.';
 
   @override
+  String get pushOsHint => '브라우저도 기기의 시스템 설정에서 알림 표시 권한이 있어야 합니다.';
+
+  @override
+  String get pushServiceUnavailable =>
+      '브라우저의 푸시 서비스가 구독을 거부했습니다. Brave 등 일부 브라우저는 기본적으로 이 서비스를 꺼 둡니다. 브라우저의 개인정보 설정에서 푸시 메시지 옵션을 찾은 후 다시 시도하세요.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      '이 브라우저에서 알림 서비스를 시작할 수 없습니다. 페이지를 새로고침한 후 다시 시도하세요.';
+
+  @override
   String get pushResubscribe => '알림 다시 연결';
 
   @override

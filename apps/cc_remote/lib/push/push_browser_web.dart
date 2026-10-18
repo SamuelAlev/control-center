@@ -4,6 +4,7 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:typed_data';
 
+import 'package:cc_remote/debug_log.dart';
 import 'package:web/web.dart' as web;
 
 class BrowserPushSubscription {
@@ -99,7 +100,13 @@ class BrowserPush {
     if (key.length != 65 || key[0] != 4) {
       throw const FormatException('Invalid server VAPID key');
     }
-    final registration = await _registration();
+    final web.ServiceWorkerRegistration registration;
+    try {
+      registration = await _registration();
+    } on Object catch (error, stack) {
+      rlog('push', 'worker registration failed', error: error, stack: stack);
+      throw StateError('push.workerUnavailable');
+    }
     // A newly installed worker may not yet be active. Bounded wait: never
     // wait on navigator.serviceWorker.ready for this separate scoped worker.
     for (
@@ -119,14 +126,22 @@ class BrowserPush {
       }
       await current.unsubscribe().toDart;
     }
-    final next = await registration.pushManager
-        .subscribe(
-          web.PushSubscriptionOptionsInit(
-            userVisibleOnly: true,
-            applicationServerKey: key.toJS,
-          ),
-        )
-        .toDart;
+    final web.PushSubscription next;
+    try {
+      next = await registration.pushManager
+          .subscribe(
+            web.PushSubscriptionOptionsInit(
+              userVisibleOnly: true,
+              applicationServerKey: key.toJS,
+            ),
+          )
+          .toDart;
+    } on Object catch (error, stack) {
+      // Permission is granted here; the browser's push service rejected the
+      // registration (Brave ships with its push service off by default).
+      rlog('push', 'push service subscribe failed', error: error, stack: stack);
+      throw StateError('push.serviceUnavailable');
+    }
     return _serialize(next);
   }
 

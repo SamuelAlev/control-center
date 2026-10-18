@@ -2389,6 +2389,17 @@ class AppLocalizationsJa extends AppLocalizations {
       'ブラウザーは通知がブロックされていると報告しています。このサイトの許可設定とブラウザーまたは端末の通知設定を確認し、更新してください。';
 
   @override
+  String get pushOsHint => 'ブラウザー自体にも、端末のシステム設定で通知を表示する許可が必要です。';
+
+  @override
+  String get pushServiceUnavailable =>
+      'ブラウザーのプッシュサービスが登録を拒否しました。Brave など一部のブラウザーは既定でこのサービスをオフにしています。ブラウザーのプライバシー設定でプッシュメッセージのオプションを確認してから、もう一度お試しください。';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'このブラウザーで通知サービスを開始できませんでした。ページを再読み込みして、もう一度お試しください。';
+
+  @override
   String get pushResubscribe => '通知を再接続';
 
   @override

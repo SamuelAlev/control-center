@@ -2470,6 +2470,18 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przeglądarka zgłasza, że powiadomienia są zablokowane. Sprawdź uprawnienia tej witryny oraz ustawienia powiadomień przeglądarki lub urządzenia, a potem odśwież stronę.';
 
   @override
+  String get pushOsHint =>
+      'Przeglądarka potrzebuje też uprawnienia do wyświetlania powiadomień w ustawieniach systemowych urządzenia.';
+
+  @override
+  String get pushServiceUnavailable =>
+      'Usługa push przeglądarki odrzuciła subskrypcję. Niektóre przeglądarki, np. Brave, domyślnie ją wyłączają: poszukaj opcji wiadomości push w ustawieniach prywatności przeglądarki i spróbuj ponownie.';
+
+  @override
+  String get pushWorkerUnavailable =>
+      'Nie udało się uruchomić usługi powiadomień w tej przeglądarce. Odśwież stronę i spróbuj ponownie.';
+
+  @override
   String get pushResubscribe => 'Połącz powiadomienia ponownie';
 
   @override
