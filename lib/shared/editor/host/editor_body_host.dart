@@ -102,6 +102,43 @@ class EditorBodyHost {
     return content;
   }
 
+  /// Hands each built [outgoing] body to the [incoming] tab with the same kind
+  /// and [EditorTab.dedupKey], so a layout swap that brings the same tab back
+  /// as a new [EditorTab] moves the built element instead of building it
+  /// again. Call before [reconcile] drops the outgoing tabs.
+  ///
+  /// A cold open draws a seeded chat tab, then swaps in the persisted layout
+  /// a round-trip later; without this the conversation's whole feed was built
+  /// a second time in that one frame. Webview kinds keep their own LRU state
+  /// and are left to rebuild.
+  void adoptBodies({
+    required Iterable<EditorTab> outgoing,
+    required Iterable<EditorTab> incoming,
+  }) {
+    final built = <(String, String), EditorTab>{
+      for (final tab in outgoing)
+        if (tab.dedupKey != null &&
+            _visitedTabs.contains(tab) &&
+            !_isWebviewKind(tab.kind))
+          (tab.kind, tab.dedupKey!): tab,
+    };
+    for (final tab in incoming) {
+      final dedupKey = tab.dedupKey;
+      if (dedupKey == null || _bodyKeys.containsKey(tab)) {
+        continue;
+      }
+      final from = built.remove((tab.kind, dedupKey));
+      final key = from == null ? null : _bodyKeys[from];
+      if (key == null) {
+        continue;
+      }
+      // The key moves; the cached content widget does not, since it was built
+      // for the outgoing tab's args.
+      _bodyKeys[tab] = key;
+      _visitedTabs.add(tab);
+    }
+  }
+
   /// Drops keep-alive entries for tabs no longer in [liveTabs] (from
   /// `EditorLayoutController.allTabs()`). The caller is responsible for tearing
   /// down feature-specific per-tab resources for the same removed set.

@@ -3,6 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
 import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/markdown/code_highlighter.dart';
 import 'package:flutter/services.dart';
@@ -596,6 +597,13 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
       // and leave the growing tail plain: stable colors, bounded main-thread
       // cost per frame regardless of grammar weight. The sealed rebuild
       // (cache: true) re-highlights the whole block.
+      // A cold grammar stays plain until it compiles in an idle slot; the
+      // next delta picks up its colors.
+      if (languageId != null &&
+          !CcShikiTokenizer.instance.isCompiled(languageId)) {
+        compileGrammarWhenIdle(languageId);
+        return [TextSpan(text: displayCode)];
+      }
       final budget = syncLineBudget(syntaxWeightFor(languageId));
       if (lineCount <= budget) {
         // Only COMPLETED lines are highlighted; the line still being typed

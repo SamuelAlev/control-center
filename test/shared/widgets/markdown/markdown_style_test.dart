@@ -2,6 +2,7 @@ import 'package:cc_markdown/cc_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,10 @@ Widget _buildTestApp(WidgetBuilder builder, {String? fontFamily}) {
 }
 
 void main() {
+  // The app compiles common grammars in idle slots after startup; a cold one
+  // renders plain until it has (see `shouldHighlightSynchronously`).
+  setUpAll(() => CcShikiTokenizer.instance.compile('dart'));
+
   group('codeBlockHasLanguage', () {
     test('is false for null, empty and whitespace', () {
       expect(codeBlockHasLanguage(null), isFalse);

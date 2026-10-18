@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/anchored_code_block.dart';
+import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -13,6 +14,10 @@ Widget _wrap(Widget child) {
 }
 
 void main() {
+  // The app compiles common grammars in idle slots after startup; a cold one
+  // renders plain until it has (see `shouldHighlightSynchronously`).
+  setUpAll(() => CcShikiTokenizer.instance.compile('dart'));
+
   group('CodeLineRow', () {
     testWidgets('uses the design-system mono font, not raw monospace', (
       tester,

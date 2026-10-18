@@ -29,6 +29,17 @@ bool debugDisableShikiAsync = false;
 /// backtracking grammars choke on. highlight.js had no such guard.
 const int kShikiMaxTokenizedLineLength = 4000;
 
+/// What [CcShikiTokenizer.compile] tokenizes: comments, strings, numbers,
+/// calls and brackets, so the rules most code enters are compiled along with
+/// the grammar's top-level scanner. Not valid in any one language; it only
+/// has to walk the common states.
+const String _kCompileSample = '''
+// line comment
+/* block comment */
+# hash comment
+const value = f("double", 'single', 42, [a, b], {key: true});
+''';
+
 /// The shared main-isolate tokenizer.
 class CcShikiTokenizer {
   CcShikiTokenizer._()
@@ -46,6 +57,18 @@ class CcShikiTokenizer {
   final ShikiHighlighter _highlighter;
   bool _themesReady = false;
   final Set<String> _ensuredLangs = <String>{};
+
+  /// Languages that have tokenized on this isolate; see [isCompiled].
+  final Set<String> _compiledLangs = <String>{};
+
+  /// Whether [langId] has tokenized on this isolate, so its grammar's rules
+  /// are compiled.
+  ///
+  /// A grammar compiles its rules (oniguruma regex parsing) on first use.
+  /// That one-time cost is far larger than tokenizing a short block, and no
+  /// line budget sees it: a first ten-line diff in a TextMate-heavy language
+  /// stalled the UI isolate for hundreds of milliseconds in a debug build.
+  bool isCompiled(String langId) => _compiledLangs.contains(langId);
 
   TokenizeOptions _options(
     String langId, {
@@ -109,6 +132,7 @@ class CcShikiTokenizer {
         code,
         _options(langId, dark: dark, includeExplanation: includeExplanation),
       );
+      _compiledLangs.add(langId);
       return reattachCarriageReturns(code, lines);
     } on Object {
       return null;
@@ -181,5 +205,16 @@ class CcShikiTokenizer {
     for (final id in langIds) {
       _ensureLang(id);
     }
+  }
+
+  /// Compiles [langId]'s grammar on this isolate by tokenizing a short
+  /// sample, so the next synchronous tokenize pays only for its own lines.
+  /// Returns whether the grammar is compiled afterwards.
+  bool compile(String langId) {
+    if (isCompiled(langId)) {
+      return true;
+    }
+    tokenizeSync(_kCompileSample, langId: langId, dark: true);
+    return isCompiled(langId);
   }
 }

@@ -78,4 +78,75 @@ void main() {
       reason: 'visible content stays current and refreshes when revealed',
     );
   });
+
+  group('adoptBodies', () {
+    // Not const: a restored layout decodes fresh EditorTab instances.
+    EditorTab chat(String dedupKey) =>
+        EditorTab(kind: 'chat', label: 'Chat', dedupKey: dedupKey);
+
+    Future<int> mountsAcrossSwap(
+      WidgetTester tester, {
+      required EditorTab seed,
+      required EditorTab restored,
+    }) async {
+      final host = EditorBodyHost(isWebviewKind: (_) => false);
+      var mounts = 0;
+      Widget body(EditorTab tab) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: host.wrap(
+          tab,
+          isVisible: true,
+          background: background,
+          buildContent: () => _MountCounter(onMount: () => mounts++),
+        ),
+      );
+
+      await tester.pumpWidget(body(seed));
+      host
+        ..adoptBodies(outgoing: [seed], incoming: [restored])
+        ..reconcile([restored]);
+      await tester.pumpWidget(body(restored));
+      return mounts;
+    }
+
+    testWidgets('a restored tab keeps the seed tab\'s built body', (
+      tester,
+    ) async {
+      final mounts = await mountsAcrossSwap(
+        tester,
+        seed: chat('chat:space'),
+        restored: chat('chat:space'),
+      );
+      expect(mounts, 1, reason: 'the same tab must not build its body twice');
+    });
+
+    testWidgets('a different tab builds its own body', (tester) async {
+      final mounts = await mountsAcrossSwap(
+        tester,
+        seed: chat('chat:space'),
+        restored: chat('chat:other'),
+      );
+      expect(mounts, 2);
+    });
+  });
+}
+
+class _MountCounter extends StatefulWidget {
+  const _MountCounter({required this.onMount});
+
+  final VoidCallback onMount;
+
+  @override
+  State<_MountCounter> createState() => _MountCounterState();
+}
+
+class _MountCounterState extends State<_MountCounter> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onMount();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
 }

@@ -206,7 +206,6 @@ const Panel = ({ title }: Props) => (
       highlightCodeSpans(code: code, languageId: 'dart', dark: true);
       expect(debugHighlightParseCount, after + 1);
     });
-
   });
 
   group('peek + async', () {
@@ -254,6 +253,9 @@ const Panel = ({ title }: Props) => (
 
   group('shouldHighlightSynchronously', () {
     test('follows the per-weight line budgets', () {
+      for (final lang in const ['dart', 'typescript', 'sql']) {
+        expect(CcShikiTokenizer.instance.compile(lang), isTrue);
+      }
       expect(
         shouldHighlightSynchronously(languageId: 'dart', lineCount: 300),
         isTrue,
@@ -270,6 +272,22 @@ const Panel = ({ title }: Props) => (
         shouldHighlightSynchronously(languageId: null, lineCount: 100000),
         isTrue,
         reason: 'plain text is free',
+      );
+    });
+
+    test('a grammar not yet compiled is never synchronous', () {
+      // Nothing else in this file tokenizes python.
+      expect(CcShikiTokenizer.instance.isCompiled('python'), isFalse);
+      expect(
+        shouldHighlightSynchronously(languageId: 'python', lineCount: 1),
+        isFalse,
+        reason: 'compiling the grammar is the cost, not the line count',
+      );
+
+      expect(CcShikiTokenizer.instance.compile('python'), isTrue);
+      expect(
+        shouldHighlightSynchronously(languageId: 'python', lineCount: 1),
+        isTrue,
       );
     });
   });

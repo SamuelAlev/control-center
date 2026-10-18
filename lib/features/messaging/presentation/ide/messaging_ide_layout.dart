@@ -1045,6 +1045,12 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     // A missing/unrestorable payload keeps the seeded layout; either way the
     // URL's `?tab=` gets the final say on which tab is focused.
     if (restored != null) {
+      // The seed's chat tab is usually the restored chat tab too: keep its
+      // built feed rather than building it again under the sidebar's reveal.
+      _bodyHost.adoptBodies(
+        outgoing: _layout.allTabs(),
+        incoming: restored.allTabs(),
+      );
       setState(() => _setLayout(restored));
     }
     _completeRestore();

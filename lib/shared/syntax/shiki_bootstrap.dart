@@ -1,5 +1,5 @@
-// Configure highlighting before use; warm common grammars only after a frame
-// has painted and the scheduler has no higher-priority interactive work.
+// Configure highlighting before use; compile common grammars only after a
+// frame has painted and the scheduler has no higher-priority interactive work.
 
 import 'dart:async';
 
@@ -9,7 +9,8 @@ import 'package:shiki_flutter/engine.dart';
 
 bool _warmUpScheduled = false;
 
-/// Configures shiki and schedules one idle task per common grammar.
+/// Configures shiki and schedules one idle task per common grammar, each
+/// compiling it on the UI isolate (see [CcShikiTokenizer.compile]).
 /// Repeated bootstrap calls do not queue another warm-up. On-demand tokenizer
 /// initialization remains authoritative if code appears before an idle slot.
 void initializeShikiHighlighting() {
@@ -38,9 +39,9 @@ Future<void> _warmCommonLanguages() async {
     'shellscript',
   ]) {
     await SchedulerBinding.instance.scheduleTask<void>(
-      () => CcShikiTokenizer.instance.warmUp([language]),
+      () => CcShikiTokenizer.instance.compile(language),
       Priority.idle,
-      debugLabel: 'Warm syntax: $language',
+      debugLabel: 'Compile syntax: $language',
     );
   }
 }

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:control_center/shared/syntax/cc_shiki_theme.dart';
 import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
 import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:flutter/painting.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:shiki_flutter/engine.dart' show ThemedToken;
 
 /// Shared span-level highlighter over the shiki tokenizer
@@ -89,12 +91,42 @@ int debugHighlightParseCount = 0;
 /// above the budget should render plain and swap colors in via
 /// [highlightCodeLinesAsync] (rebuilds hit the LRU through
 /// [peekHighlightedLines]).
+///
+/// A grammar not yet compiled on the UI isolate is never within budget,
+/// however short the block: compiling it is the expensive part (see
+/// [CcShikiTokenizer.isCompiled]). The async path compiles its own copy off
+/// the UI thread, then queues the UI isolate's compile for an idle slot.
 bool shouldHighlightSynchronously({
   required String? languageId,
   required int lineCount,
 }) =>
     languageId == null ||
-    lineCount <= syncLineBudget(syntaxWeightFor(languageId));
+    (CcShikiTokenizer.instance.isCompiled(languageId) &&
+        lineCount <= syncLineBudget(syntaxWeightFor(languageId)));
+
+/// Languages whose UI-isolate compile is queued by [compileGrammarWhenIdle].
+final Set<String> _compileQueued = <String>{};
+
+/// Compiles [languageId] on the UI isolate in an idle slot, for a surface
+/// that met it cold and rendered plain or went off-thread. The scheduler
+/// holds idle tasks while anything animates, so the compile never lands
+/// mid-transition, and the next small block of the language renders colored
+/// in its first frame.
+void compileGrammarWhenIdle(String languageId) {
+  if (CcShikiTokenizer.instance.isCompiled(languageId) ||
+      !_compileQueued.add(languageId)) {
+    return;
+  }
+  unawaited(
+    SchedulerBinding.instance
+        .scheduleTask<void>(
+          () => CcShikiTokenizer.instance.compile(languageId),
+          Priority.idle,
+          debugLabel: 'Compile syntax: $languageId',
+        )
+        .whenComplete(() => _compileQueued.remove(languageId)),
+  );
+}
 
 /// Tokenizes [code] with shiki for [languageId] and returns coloured
 /// [TextSpan]s for [dark]. Each span carries only a `color` override; the
@@ -237,6 +269,7 @@ Future<List<InlineSpan>> highlightCodeSpansAsync({
   if (tokenLines == null) {
     return [TextSpan(text: code)];
   }
+  compileGrammarWhenIdle(languageId);
   final spans = _joinLineSpans(_toLineSpans(tokenLines));
   if (cacheable) {
     _spanCache.put(key, spans);
@@ -273,6 +306,7 @@ Future<List<List<InlineSpan>>> highlightCodeLinesAsync({
   if (tokenLines == null) {
     return _plainLines(code);
   }
+  compileGrammarWhenIdle(languageId);
   final lines = _toLineSpans(tokenLines);
   if (cacheable) {
     _lineCache.put(key, lines);
