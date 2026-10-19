@@ -38,6 +38,7 @@ class SpaceMessageComposer extends ConsumerStatefulWidget {
     this.onStop,
     this.onPlanToggle,
     this.attachedTop = false,
+    this.autofocus = false,
   });
 
   /// Space the edited message belongs to.
@@ -85,6 +86,10 @@ class SpaceMessageComposer extends ConsumerStatefulWidget {
   /// Drops the box's top margin so a strip stacked above sits on the border.
   final bool attachedTop;
 
+  /// Whether the field takes focus. Read on mount and on every flip to true,
+  /// so a kept-alive tab that comes back on screen takes focus again.
+  final bool autofocus;
+
   @override
   ConsumerState<SpaceMessageComposer> createState() =>
       _SpaceMessageComposerState();
@@ -101,14 +106,28 @@ class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
     super.initState();
     _focus = FocusNode();
     final pending = ref.read(editingMessageProvider(_key));
-    if (pending != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-        _focus.requestFocus();
-      });
+    if (pending != null || widget.autofocus) {
+      _focusAfterFrame();
     }
+  }
+
+  @override
+  void didUpdateWidget(covariant SpaceMessageComposer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.autofocus && !oldWidget.autofocus) {
+      _focusAfterFrame();
+    }
+  }
+
+  /// Deferred so the request lands after the frame that put the field on
+  /// screen, and after whatever took focus with the tap that got it there.
+  void _focusAfterFrame() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _focus.requestFocus();
+    });
   }
 
   @override

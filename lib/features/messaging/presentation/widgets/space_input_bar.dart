@@ -32,6 +32,7 @@ class SpaceInputBar extends ConsumerStatefulWidget {
     super.key,
     required this.spaceId,
     required this.conversationId,
+    this.autofocus = false,
   });
 
   /// The space ID this bar sends to.
@@ -42,6 +43,9 @@ class SpaceInputBar extends ConsumerStatefulWidget {
   /// send against — the host resolves the standing conversation before this
   /// bar is built.
   final String conversationId;
+
+  /// Whether the composer takes focus; see [SpaceMessageComposer.autofocus].
+  final bool autofocus;
 
   @override
   ConsumerState<SpaceInputBar> createState() => _SpaceInputBarState();
@@ -158,6 +162,7 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
       spaceId: spaceId,
       conversationId: conversationId,
       attachedTop: steeringAttached,
+      autofocus: widget.autofocus,
       draft: draft,
       sources: sources,
       // While agents work, a submit becomes a queued steering card, not a

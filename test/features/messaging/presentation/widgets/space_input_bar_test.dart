@@ -554,6 +554,59 @@ void main() {
       );
     }
 
+    bool fieldHasFocus(WidgetTester tester) => tester
+        .widget<EditableText>(find.byType(EditableText))
+        .focusNode
+        .hasFocus;
+
+    testWidgets('autofocus takes focus on mount and on every flip to true', (
+      tester,
+    ) async {
+      // A kept-alive editor tab never remounts on a switch: only the flag
+      // flips, so the composer must react to the flip, not just to mount.
+      final shown = ValueNotifier(false);
+      addTearDown(shown.dispose);
+      await pumpBar(
+        tester,
+        body: ValueListenableBuilder(
+          valueListenable: shown,
+          builder: (context, show, _) => SpaceInputBar(
+            spaceId: 'ch-1',
+            conversationId: 'conv-1',
+            autofocus: show,
+          ),
+        ),
+      );
+      expect(fieldHasFocus(tester), isFalse);
+
+      shown.value = true;
+      await tester.pump();
+      await tester.pump();
+      expect(fieldHasFocus(tester), isTrue);
+
+      shown.value = false;
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      expect(fieldHasFocus(tester), isFalse);
+
+      shown.value = true;
+      await tester.pump();
+      await tester.pump();
+      expect(fieldHasFocus(tester), isTrue);
+    });
+
+    testWidgets('autofocus on a fresh mount focuses the field', (tester) async {
+      await pumpBar(
+        tester,
+        body: const SpaceInputBar(
+          spaceId: 'ch-1',
+          conversationId: 'conv-1',
+          autofocus: true,
+        ),
+      );
+      expect(fieldHasFocus(tester), isTrue);
+    });
+
     testWidgets('conversation drafts survive target changes and full unmount', (
       tester,
     ) async {

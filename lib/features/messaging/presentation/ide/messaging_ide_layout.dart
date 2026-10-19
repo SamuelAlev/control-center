@@ -1399,6 +1399,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
           spaceId: spaceId,
           conversationId: conversationId,
           onSelectConversation: _conversationOpenerFor(spaceId),
+          autofocusComposer: isVisible,
         );
         if (workspaceId == null) {
           return pane;

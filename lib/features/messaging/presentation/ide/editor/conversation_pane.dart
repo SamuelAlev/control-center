@@ -48,6 +48,7 @@ class ConversationPane extends ConsumerWidget {
     required this.spaceId,
     this.conversationId,
     this.onSelectConversation,
+    this.autofocusComposer = false,
   });
 
   /// The space to render.
@@ -62,6 +63,11 @@ class ConversationPane extends ConsumerWidget {
   /// that conversation's chat tab. Conversations are editor tabs; there is no
   /// in-pane switcher strip.
   final void Function(String conversationId)? onSelectConversation;
+
+  /// Whether the composer takes focus when it mounts or when this flips to
+  /// true. The IDE host passes its tab's visibility, so opening or switching
+  /// to a chat tab lands the caret in the composer.
+  final bool autofocusComposer;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -186,7 +192,11 @@ class ConversationPane extends ConsumerWidget {
                       spaceId: spaceId,
                       maxHeight: constraints.maxHeight * 0.6,
                     ),
-                    SpaceInputBar(spaceId: spaceId, conversationId: convId),
+                    SpaceInputBar(
+                      spaceId: spaceId,
+                      conversationId: convId,
+                      autofocus: autofocusComposer,
+                    ),
                   ],
                 ),
               ),
