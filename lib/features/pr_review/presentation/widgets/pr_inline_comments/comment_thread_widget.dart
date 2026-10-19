@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.dart';
+import 'package:cc_syntax/syntax_languages.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
@@ -20,7 +21,6 @@ import 'package:control_center/features/pr_review/providers/reaction_providers.d
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/grammar_registry.dart';
-import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';

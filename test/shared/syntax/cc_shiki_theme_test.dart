@@ -1,5 +1,5 @@
-import 'package:control_center/shared/syntax/cc_shiki_theme.dart';
-import 'package:control_center/shared/syntax/cc_shiki_theme_json.dart';
+import 'package:cc_syntax/cc_shiki_theme.dart';
+import 'package:cc_syntax/cc_shiki_theme_json.dart';
 import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
 import 'package:control_center/shared/utils/syntax_palette.dart';
 import 'package:flutter_test/flutter_test.dart';

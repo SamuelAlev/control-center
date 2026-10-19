@@ -11,9 +11,9 @@ library;
 import 'dart:convert';
 
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
+import 'package:cc_syntax/cc_shiki_theme.dart';
+import 'package:cc_syntax/token_lines.dart';
 import 'package:control_center/features/pr_review/presentation/utils/word_diff.dart';
-import 'package:control_center/shared/syntax/cc_shiki_theme.dart';
-import 'package:control_center/shared/syntax/token_lines.dart';
 import 'package:control_center/shared/syntax/worker_grammars.dart';
 import 'package:isolate_manager/isolate_manager.dart';
 import 'package:shiki_flutter/engine.dart';

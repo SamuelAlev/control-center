@@ -9,7 +9,7 @@ resolved package).
     python3 tool/gen_grammar_packs.py
 
 The curated set below must stay in sync with
-lib/shared/syntax/curated_grammars.dart — packs carry everything else.
+packages/cc_syntax/lib/curated_grammars.dart — packs carry everything else.
 """
 
 import json

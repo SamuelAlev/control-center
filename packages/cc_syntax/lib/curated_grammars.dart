@@ -1,8 +1,9 @@
 // The curated eager grammar tier: the ~50 languages that cover day-to-day fences, tool
 // bodies and PR diffs.
 // This is the FULL grammar surface on web until a deferred pack loads
-// (grammar_registry_web.dart) and the full surface of the web-compiled diff worker
-// (worker_grammars_web.dart).
+// (the app's grammar_registry_web.dart), the full surface of the web-compiled diff
+// worker (worker_grammars_web.dart) and the whole of the phone client's deferred
+// diff highlighter (apps/cc_remote/lib/syntax/).
 // Uses only the public `CodeLanguages` members, so each reference pulls in exactly that
 // grammar (plus its embedded dependencies) and the other ~200 tree-shake away.
 

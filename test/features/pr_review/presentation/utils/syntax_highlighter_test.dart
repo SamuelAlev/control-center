@@ -1,8 +1,8 @@
-import 'package:control_center/shared/syntax/syntax_languages.dart';
+import 'package:cc_syntax/syntax_languages.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Language resolution for PR diffs now goes through the unified table in
-/// `shared/syntax/syntax_languages.dart` (see its own exhaustive test suite,
+/// `package:cc_syntax/syntax_languages.dart` (see its own exhaustive test suite,
 /// including the registry-resolution guard). This file pins the DIFF-facing
 /// intent: the mappings that were silently broken under highlight 0.7.0.
 void main() {

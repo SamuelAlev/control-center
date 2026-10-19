@@ -200,6 +200,7 @@ class _FileDiffTileState extends ConsumerState<FileDiffTile> {
             else
               DiffView(
                 patch: file.patch,
+                path: file.filename,
                 maxRows: _visibleRows,
                 onExpand: () => setState(() => _visibleRows += kDiffRowBudget),
                 selectedLine: _selected,

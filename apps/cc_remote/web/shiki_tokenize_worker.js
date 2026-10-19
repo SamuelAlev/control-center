@@ -1,0 +1,1 @@
+../../../web/shiki_tokenize_worker.js

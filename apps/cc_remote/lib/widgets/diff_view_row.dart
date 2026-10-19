@@ -3,12 +3,17 @@ part of 'diff_view.dart';
 class _DiffRow extends StatelessWidget {
   const _DiffRow({
     required this.line,
+    this.syntax,
     required this.tokens,
     required this.numberFormat,
     this.selected = false,
   });
 
   final DiffLine line;
+
+  /// Syntax tokens for [line], or null to paint it in the base colour.
+  final List<DiffToken>? syntax;
+
   final DesignSystemTokens tokens;
   final NumberFormat numberFormat;
   final bool selected;
@@ -81,17 +86,41 @@ class _DiffRow extends StatelessWidget {
                 ),
               ),
             ),
-            Text(
-              line.content.replaceAll('\t', '  '),
-              softWrap: false,
-              style: _mono(t.textPrimary),
-            ),
+            _code(t),
             const SizedBox(width: 12),
           ],
         ),
       ),
     );
     return content;
+  }
+
+  /// The row's source text, coloured per token when [syntax] is present.
+  /// Tokens without a colour inherit the base text colour.
+  Widget _code(DesignSystemTokens t) {
+    final syntax = this.syntax;
+    if (syntax == null) {
+      return Text(
+        line.content.replaceAll('\t', '  '),
+        softWrap: false,
+        style: _mono(t.textPrimary),
+      );
+    }
+    return Text.rich(
+      TextSpan(
+        children: [
+          for (final token in syntax)
+            TextSpan(
+              text: token.text.replaceAll('\t', '  '),
+              style: token.colorValue == null
+                  ? null
+                  : TextStyle(color: Color(token.colorValue!)),
+            ),
+        ],
+      ),
+      softWrap: false,
+      style: _mono(t.textPrimary),
+    );
   }
 
   /// A full-width band (hunk header, gap marker) — no gutter, no marker.

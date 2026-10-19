@@ -3,10 +3,10 @@ import 'dart:collection';
 
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
+import 'package:cc_syntax/syntax_languages.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_isolate_worker.dart';
 import 'package:control_center/features/pr_review/presentation/utils/syntax_highlighter.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart';
-import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:flutter/foundation.dart';
 
 /// Owns diff line data for the unified viewer, split into two tiers with very

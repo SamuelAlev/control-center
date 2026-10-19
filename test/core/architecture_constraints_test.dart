@@ -924,13 +924,14 @@ void main() {
           // The shiki tokenizer island the diff worker compiles in
           // (package:shiki_flutter/engine.dart itself is the package's
           // documented Flutter-free entrypoint).
-          'lib/shared/syntax/cc_shiki_theme.dart',
-          'lib/shared/syntax/cc_shiki_theme_json.dart',
-          'lib/shared/syntax/token_lines.dart',
+          'packages/cc_syntax/lib/cc_shiki_theme.dart',
+          'packages/cc_syntax/lib/cc_shiki_theme_json.dart',
+          'packages/cc_syntax/lib/token_lines.dart',
+          'packages/cc_syntax/lib/syntax_languages.dart',
+          'packages/cc_syntax/lib/curated_grammars.dart',
           'lib/shared/syntax/worker_grammars.dart',
           'lib/shared/syntax/worker_grammars_io.dart',
           'lib/shared/syntax/worker_grammars_web.dart',
-          'lib/shared/syntax/curated_grammars.dart',
           'lib/shared/syntax/grammar_registry_io.dart',
         ];
         const forbidden = <String>['package:flutter/', 'dart:ui', 'dart:io'];

@@ -284,6 +284,13 @@ final class NoiseCipherState {
   /// Creates a directional cipher from an owned copy of [key].
   NoiseCipherState(List<int> key) : _key = _ownedKey(key);
 
+  /// Rebuilds a direction released by [handOff], in the isolate that will
+  /// seal or open its records from now on.
+  NoiseCipherState.resume(NoiseCipherHandOff state)
+    : _key = _ownedKey(state.key),
+      _nonce = state.nonce,
+      _lastRekey = state.lastRekey;
+
   static final _aead = Chacha20.poly1305Aead();
 
   /// Maximum encrypted Noise record length in bytes, including its MAC.
@@ -382,6 +389,22 @@ final class NoiseCipherState {
     return bytes;
   }
 
+  /// Releases this direction to another owner: a copy of its key, nonce and
+  /// rekey mark, after which this instance is destroyed and can neither seal
+  /// nor open. The caller sends the copy on and then zeroes it.
+  NoiseCipherHandOff handOff() {
+    if (_destroyed) {
+      throw const NoiseProtocolException('Secure session exhausted or closed');
+    }
+    final state = (
+      key: Uint8List.fromList(_key.bytes),
+      nonce: _nonce,
+      lastRekey: _lastRekey,
+    );
+    destroy();
+    return state;
+  }
+
   /// Erases this direction's traffic key on a best-effort basis.
   void destroy() {
     if (_destroyed) {
@@ -391,6 +414,10 @@ final class NoiseCipherState {
     _key.destroy();
   }
 }
+
+/// One direction's transport state in transit between isolates (see
+/// [NoiseCipherState.handOff]). Its `key` is secret: zero it once sent.
+typedef NoiseCipherHandOff = ({Uint8List key, int nonce, int lastRekey});
 
 /// A protocol failure that makes the current Noise session unusable.
 final class NoiseProtocolException implements Exception {

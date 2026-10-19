@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
+import 'package:cc_syntax/syntax_languages.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
@@ -10,7 +11,6 @@ import 'package:control_center/features/pr_review/presentation/utils/syntax_high
 import 'package:control_center/features/pr_review/presentation/utils/word_diff.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/github_markdown_body.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

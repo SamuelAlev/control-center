@@ -22,6 +22,9 @@ Flutter) shared by desktop, web and phone clients.
   `Noise_NNpsk0_25519_ChaChaPoly_SHA256` above raw direct WebSocket and relay
   adapters. Shared directional counters, bounded fragmentation/credits, fresh
   keys on reconnect, rekeying and fail-closed replay/tamper handling.
+  Records are sealed and opened by `NoiseRecordCipher` in one worker isolate
+  per process (via `isolate_manager`, inline on the web), which holds the
+  traffic keys; the channel never runs ChaCha20-Poly1305 on its own isolate.
 - **`RemoteResources` / `LocalResourceProxy`** — streamed HTTP bodies, Range
   metadata and text/binary WebSockets on that same authenticated channel.
   The browser facade uses Service Workers and MessagePorts without caching

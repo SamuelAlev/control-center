@@ -1,6 +1,6 @@
+import 'package:cc_syntax/syntax_languages.dart';
 import 'package:control_center/shared/syntax/grammar_registry_io.dart'
     as registry;
-import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

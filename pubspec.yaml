@@ -16,6 +16,7 @@ workspace:
   - packages/system_audio_capture
   - packages/cc_ui
   - packages/cc_markdown
+  - packages/cc_syntax
   - packages/cc_natives
   - packages/cc_domain
   - packages/cc_harness
@@ -54,6 +55,9 @@ dependencies:
     path: packages/cc_ui
   cc_markdown:
     path: packages/cc_markdown
+  # Flutter-free syntax core (CC shiki themes, language table, curated grammar tier) shared with the phone client. Workspace member.
+  cc_syntax:
+    path: packages/cc_syntax
   # The web / desktop is now a thin client, desktop can spawn a local `cc_server` (which owns the database) and talks to it over RPC. The app opens no DB.
   # In-repo Dart FFI surface for the runtime-loaded natives (rift/fff/tree-sitter/aec). Bindings + loaders only — builds no native code; the dylibs are produced by scripts/natives/*.sh. Workspace member.
   cc_natives:
@@ -264,6 +268,11 @@ dev_dependencies:
   # Pin the transitive hook builder for the Architecture-key compatibility
   # patch (patches/native_toolchain_cmake@0.2.7.patch).
   native_toolchain_cmake: 0.2.7
+  # Pinned for patches/webcrypto@0.6.1.patch: its BoringSSL source list omits
+  # the fiat P-256 ADX assembly on macOS x86_64, so the x86_64 slice of a
+  # universal (profile/release) macOS build fails to link. Arm64-only debug
+  # builds never compile that slice.
+  webcrypto: 0.6.1
 
   # Code generation — drift + json_serializable.
   #

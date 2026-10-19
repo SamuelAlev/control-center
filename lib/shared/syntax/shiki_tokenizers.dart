@@ -11,13 +11,12 @@
 
 import 'dart:async';
 
-import 'package:control_center/shared/syntax/cc_shiki_theme.dart';
+import 'package:cc_syntax/cc_shiki_theme.dart';
+import 'package:cc_syntax/token_lines.dart';
 import 'package:control_center/shared/syntax/grammar_registry.dart';
-import 'package:control_center/shared/syntax/token_lines.dart';
 import 'package:shiki_flutter/engine.dart';
 
-export 'package:control_center/shared/syntax/token_lines.dart'
-    show reattachCarriageReturns;
+export 'package:cc_syntax/token_lines.dart' show reattachCarriageReturns;
 
 /// Test hook: forces [CcShikiTokenizer.tokenizeAsync] to run synchronously so
 /// widget tests can assert colored output without pumping real isolates.

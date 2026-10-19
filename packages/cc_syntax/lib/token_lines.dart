@@ -1,5 +1,6 @@
 // Token-line helpers shared by the main-isolate tokenizer seam
-// (shiki_tokenizers.dart) and the PR-diff worker core.
+// (the app's shiki_tokenizers.dart), the PR-diff worker core and the phone
+// client's diff highlighter.
 //
 // FLUTTER-FREE ON PURPOSE: compiled into the diff Web Worker by
 // `dart compile js` (enforced by the "Web Worker cores are Flutter-free"

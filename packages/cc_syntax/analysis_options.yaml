@@ -1,0 +1,5 @@
+# Analyzer config for the cc_syntax package. The root rule table applies
+# unchanged; the Flutter-free boundary (every file here compiles into the
+# app's `dart compile js` diff worker) is enforced by
+# test/core/architecture_constraints_test.dart in the app.
+include: ../../analysis_options.yaml

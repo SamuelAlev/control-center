@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_syntax/syntax_languages.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_palette.dart';
 import 'package:control_center/features/pr_review/presentation/utils/syntax_highlighter.dart';
@@ -8,7 +9,6 @@ import 'package:control_center/features/pr_review/providers/comment_composer_mod
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/grammar_registry.dart';
-import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

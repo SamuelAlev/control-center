@@ -1,10 +1,10 @@
 import 'package:cc_markdown/cc_markdown.dart';
+import 'package:cc_syntax/syntax_languages.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
-import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/markdown/code_highlighter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -597,11 +597,11 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
       // and leave the growing tail plain: stable colors, bounded main-thread
       // cost per frame regardless of grammar weight. The sealed rebuild
       // (cache: true) re-highlights the whole block.
-      // A cold grammar stays plain until it compiles in an idle slot; the
-      // next delta picks up its colors.
+      // A grammar not compiled on the UI isolate stays plain while it
+      // streams; compiling it here would stall the stream. The sealed block
+      // highlights off the UI thread (see `shouldHighlightSynchronously`).
       if (languageId != null &&
           !CcShikiTokenizer.instance.isCompiled(languageId)) {
-        compileGrammarWhenIdle(languageId);
         return [TextSpan(text: displayCode)];
       }
       final budget = syncLineBudget(syntaxWeightFor(languageId));

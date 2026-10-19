@@ -1,5 +1,5 @@
+import 'package:cc_syntax/syntax_languages.dart';
 import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
-import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/markdown/code_highlighter.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';

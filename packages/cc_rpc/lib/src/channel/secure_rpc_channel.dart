@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:cc_rpc/src/channel/frame_codec.dart';
 import 'package:cc_rpc/src/channel/remote_rpc_channel_port.dart';
+import 'package:cc_rpc/src/crypto/noise_record_cipher.dart';
 import 'package:cc_rpc/src/crypto/noise_session.dart';
 
 /// Ordered, authenticated application framing shared by direct and relay RPC.
@@ -13,8 +14,11 @@ import 'package:cc_rpc/src/crypto/noise_session.dart';
 /// out-of-order record terminates the session; there is no plaintext mode.
 final class SecureRpcChannel implements RemoteRpcChannelPort {
   /// Takes ownership of the raw transport and Noise session; closing this
-  /// channel closes the transport and destroys both traffic keys.
-  SecureRpcChannel(this._raw, this._session) {
+  /// channel closes the transport and destroys both traffic keys. The keys
+  /// move to the record cipher's worker ([NoiseRecordCipher]), so sealing and
+  /// opening records never runs on the caller's isolate.
+  SecureRpcChannel(this._raw, NoiseSession session)
+    : _cipher = NoiseRecordCipher(session) {
     _incoming.onListen = _flushPending;
     _input = _raw.incoming.listen(
       _onRecord,
@@ -52,7 +56,7 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
   static const Duration _stallTimeout = Duration(seconds: 30);
 
   final RemoteRpcChannelPort _raw;
-  final NoiseSession _session;
+  final NoiseRecordCipher _cipher;
   final _incoming = StreamController<Map<String, dynamic>>.broadcast();
   final _state = StreamController<RemoteChannelState>.broadcast();
   final _pending = <Map<String, dynamic>>[];
@@ -145,15 +149,11 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
       if (!isOpen) {
         throw StateError('Secure channel closed');
       }
-      final ciphertext = await _session.outgoing.encrypt(clear);
+      final sealed = await _cipher.seal(clear);
       if (!isOpen) {
         throw StateError('Secure channel closed');
       }
-      await _raw.send({
-        'type': 'secure',
-        'v': version,
-        'c': base64Url.encode(ciphertext),
-      });
+      await _raw.send({'type': 'secure', 'v': version, 'c': sealed});
     });
     _writeChain = operation.catchError((Object error) {
       // A transport that closed during an outgoing credit does not invalidate
@@ -179,14 +179,18 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
       return;
     }
     _queuedReads++;
+    // Dispatched now, in arrival order, rather than when the read chain gets
+    // to it: the worker opens the next record while this isolate is still
+    // accepting the previous one. Its failure is handled where it is awaited.
+    final opened = _cipher.open(ciphertext);
+    unawaited(opened.then<void>((_) {}, onError: (Object _) {}));
     _readChain = _readChain
         .then((_) async {
           try {
             if (_closed) {
               return;
             }
-            final sealed = base64Url.decode(ciphertext);
-            final clear = await _session.incoming.decrypt(sealed);
+            final clear = await opened;
             if (!_closed) {
               await _accept(clear);
             }
@@ -331,7 +335,7 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
     _assemblyTimer?.cancel();
     _assembly = null;
     _pending.clear();
-    _session.destroy();
+    _cipher.destroy();
     final waiter = _windowWait;
     _windowWait = null;
     if (waiter != null && !waiter.isCompleted) {

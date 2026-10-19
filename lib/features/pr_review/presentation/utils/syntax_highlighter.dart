@@ -1,8 +1,8 @@
 import 'dart:collection';
 
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
+import 'package:cc_syntax/cc_shiki_theme.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_palette.dart';
-import 'package:control_center/shared/syntax/cc_shiki_theme.dart';
 import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shiki_flutter/engine.dart' show ThemedToken;

@@ -1,7 +1,7 @@
 // Web grammar registry: curated tier resident, long tail via deferred packs.
 // See grammar_registry.dart.
 
-import 'package:control_center/shared/syntax/curated_grammars.dart';
+import 'package:cc_syntax/curated_grammars.dart';
 import 'package:control_center/shared/syntax/grammar_packs/grammar_packs.dart';
 import 'package:shiki_flutter/langs.dart';
 

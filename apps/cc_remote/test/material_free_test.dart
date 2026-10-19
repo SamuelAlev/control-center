@@ -59,6 +59,43 @@ void main() {
     );
   });
 
+  test('the syntax highlighter stays a deferred library', () {
+    // The shiki engine, theme JSON and curated grammars are megabytes of
+    // compiled code. They reach the PWA only through the `deferred as` import
+    // in syntax/diff_highlighter.dart; one eager import anywhere else moves
+    // all of it onto the cold load.
+    const engine = 'lib/syntax/diff_highlighter_engine.dart';
+    final heavy = RegExp(
+      r'''^import\s+'package:(shiki_flutter/|cc_syntax/(cc_shiki_theme|cc_shiki_theme_json|curated_grammars|token_lines)\.dart)''',
+      multiLine: true,
+    );
+    final engineImport = RegExp(
+      r'''^import\s+'package:cc_remote/syntax/diff_highlighter_engine\.dart'([^;]*);''',
+      multiLine: true,
+    );
+    final offenders = <String>[];
+    for (final file in _dartSources()) {
+      if (_short(file) == engine) {
+        continue;
+      }
+      final src = file.readAsStringSync();
+      final eager = engineImport
+          .allMatches(src)
+          .any((m) => !m.group(1)!.contains('deferred as'));
+      if (heavy.hasMatch(src) || eager) {
+        offenders.add(_short(file));
+      }
+    }
+    expect(
+      offenders,
+      isEmpty,
+      reason:
+          'Import shiki and the cc_syntax grammars/themes only from '
+          '$engine, and that library only `deferred as`:\n  '
+          '${offenders.join('\n  ')}',
+    );
+  });
+
   test('icon-only controls go through the 44px touch target', () {
     // DESIGN.md's accessibility bar is ">=44px targets on phone". Every
     // icon-only control here was hand-rolled as a CcTappable wrapping an

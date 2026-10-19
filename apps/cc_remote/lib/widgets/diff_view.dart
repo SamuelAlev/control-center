@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/syntax/diff_highlighter.dart';
 import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -22,19 +25,20 @@ const int kDiffRowBudget = 400;
 /// the desktop diff viewer runs, so line numbering, hunk handling and gap
 /// detection cannot drift between the two clients.
 ///
-/// There is deliberately no syntax highlighting. The highlighter is a
-/// ~250-grammar TextMate registry the desktop ships and tokenizes in a worker;
-/// downloading it into the most bandwidth-sensitive tier in the product to
-/// colour a handful of changed lines is a bad trade. What a diff actually
-/// needs to be readable — which side a line is on, and its number — is carried
-/// by the +/− marker, the gutter and the row tint, in that order of
-/// precedence. The marker is a character, not a colour, so the diff still
-/// reads in greyscale or with red/green colour blindness.
+/// Syntax colours come from the desktop's shiki themes and language table
+/// (`cc_syntax`), but the tokenizer is a deferred library: rows paint plain
+/// first and take their colours once it has loaded, and a language outside
+/// the curated tier stays plain. Colour is never what makes the diff
+/// readable — which side a line is on, and its number, is carried by the +/−
+/// marker, the gutter and the row tint, in that order of precedence. The
+/// marker is a character, not a colour, so the diff still reads in greyscale
+/// or with red/green colour blindness.
 class DiffView extends StatefulWidget {
   /// Creates a [DiffView] over a unified-diff [patch].
   const DiffView({
     super.key,
     required this.patch,
+    this.path,
     this.expanded = false,
     this.onExpand,
     this.onLineSelected,
@@ -45,6 +49,10 @@ class DiffView extends StatefulWidget {
   /// The file's unified diff, as GitHub returns it (hunks only, no `---`/`+++`
   /// file headers).
   final String patch;
+
+  /// The file's path, which picks the highlighting grammar. Null renders
+  /// plain.
+  final String? path;
 
   /// Whether the row budget has been lifted for this file.
   final bool expanded;
@@ -69,6 +77,17 @@ class _DiffViewState extends State<DiffView> {
   late List<DiffLine> _lines = parseUnifiedDiff(widget.patch);
   final _horizontalScroll = ScrollController();
 
+  /// Syntax tokens for the first `_tokens.length` rows, or null while plain.
+  List<List<DiffToken>>? _tokens;
+
+  /// What the latest highlight request covered: rows and theme.
+  int _requestedRows = 0;
+  bool? _requestedDark;
+
+  /// Bumped whenever the patch or path changes, so a slower earlier result
+  /// cannot overwrite the current one.
+  int _generation = 0;
+
   @override
   void dispose() {
     _horizontalScroll.dispose();
@@ -76,10 +95,65 @@ class _DiffViewState extends State<DiffView> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    unawaited(_highlight());
+  }
+
+  @override
   void didUpdateWidget(DiffView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.patch != widget.patch) {
-      _lines = parseUnifiedDiff(widget.patch);
+    if (oldWidget.patch != widget.patch || oldWidget.path != widget.path) {
+      if (oldWidget.patch != widget.patch) {
+        _lines = parseUnifiedDiff(widget.patch);
+      }
+      _generation++;
+      _tokens = null;
+      _requestedRows = 0;
+      _requestedDark = null;
+    }
+    unawaited(_highlight());
+  }
+
+  int get _budget =>
+      widget.maxRows ?? (widget.expanded ? _lines.length : kDiffRowBudget);
+
+  /// Tokenizes the rows the budget shows, when they or the theme changed.
+  ///
+  /// Only the shown prefix is tokenized: a generated file arrives as one
+  /// hunk of tens of thousands of lines, and lifting the budget re-requests
+  /// the longer prefix so grammar state still runs from the hunk's start.
+  Future<void> _highlight() async {
+    final language = diffLanguageForPath(widget.path);
+    if (language == null || _lines.isEmpty) {
+      return;
+    }
+    final dark = context.ccTheme?.isDark ?? false;
+    final rows = _budget.clamp(0, _lines.length);
+    if (dark == _requestedDark && rows <= _requestedRows) {
+      return;
+    }
+    _requestedRows = rows;
+    _requestedDark = dark;
+    final generation = _generation;
+    final tokens = await highlightDiffRows(
+      _lines.sublist(0, rows),
+      language,
+      dark: dark,
+    );
+    if (!mounted || generation != _generation || _requestedDark != dark) {
+      return;
+    }
+    if (tokens == null) {
+      // Plain is the steady state for this language; drop a stale theme's
+      // colours rather than keep them.
+      if (_tokens != null) {
+        setState(() => _tokens = null);
+      }
+      return;
+    }
+    if (tokens.length >= (_tokens?.length ?? 0)) {
+      setState(() => _tokens = tokens);
     }
   }
 
@@ -101,8 +175,8 @@ class _DiffViewState extends State<DiffView> {
       );
     }
 
-    final budget =
-        widget.maxRows ?? (widget.expanded ? lines.length : kDiffRowBudget);
+    final budget = _budget;
+    final tokens = _tokens;
     final over = lines.length > budget;
     final shown = over ? lines.take(budget) : lines;
     final commentLines = [
@@ -151,9 +225,12 @@ class _DiffViewState extends State<DiffView> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            for (final line in shown)
+                            for (final (index, line) in shown.indexed)
                               _DiffRow(
                                 line: line,
+                                syntax: tokens != null && index < tokens.length
+                                    ? tokens[index]
+                                    : null,
                                 tokens: t,
                                 numberFormat: numberFormat,
                                 selected:

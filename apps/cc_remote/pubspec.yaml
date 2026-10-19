@@ -45,6 +45,14 @@ dependencies:
   # package. Workspace member.
   cc_markdown:
     path: ../../packages/cc_markdown
+  # Diff syntax highlighting: the desktop's CC shiki themes, language table
+  # and curated grammar tier (Flutter-free, workspace member), plus the shiki
+  # engine itself. Both are reached only through the deferred
+  # `lib/syntax/diff_highlighter_engine.dart`, so the grammars load with the
+  # first highlighted diff, never on the PWA's cold start.
+  cc_syntax:
+    path: ../../packages/cc_syntax
+  shiki_flutter: ^1.1.0
   # Routing. Workspace-pinned version.
   go_router: ^18.0.2
   # State management (mirrors the desktop app).

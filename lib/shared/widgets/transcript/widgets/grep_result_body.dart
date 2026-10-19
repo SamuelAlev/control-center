@@ -1,11 +1,11 @@
 import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
+import 'package:cc_syntax/syntax_languages.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/diff_colors.dart'
     show diffBrightnessOf;
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/markdown/code_highlighter.dart';
 import 'package:control_center/shared/widgets/transcript/util/grep_output_parser.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/split_diff_view.dart';

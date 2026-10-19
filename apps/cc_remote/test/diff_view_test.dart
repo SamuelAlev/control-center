@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/syntax/diff_highlighter_engine.dart' as engine;
 import 'package:cc_remote/widgets/diff_view.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -13,6 +14,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// actually bounds the build, and that the two states which look identical
 /// from the outside (binary file / no diff) say so instead of rendering blank.
 void main() {
+  setUpAll(() => engine.debugTokenizeInline = true);
+
   // Mirrors how the PR screen embeds it: a phone-width column inside a
   // vertically scrolling parent. The vertical scroll is not incidental — the
   // view renders every budgeted row eagerly, so a bounded-height host would
@@ -183,5 +186,89 @@ void main() {
       host(DiffView(patch: '+unanchored change', onLineSelected: (_) {})),
     );
     expect(find.byType(CcSelect<DiffLine>), findsNothing);
+  });
+
+  /// Colours of the spans that render [text] (one Text.rich per row).
+  Set<Color?> spanColors(WidgetTester tester, String text) {
+    final rich = tester.widget<Text>(find.text(text));
+    final colors = <Color?>{};
+    rich.textSpan?.visitChildren((span) {
+      if (span is TextSpan && (span.text ?? '').trim().isNotEmpty) {
+        colors.add(span.style?.color);
+      }
+      return true;
+    });
+    return colors;
+  }
+
+  testWidgets('colours rows in the file\'s language once highlighted', (
+    tester,
+  ) async {
+    await tester.pumpWidget(host(const DiffView(patch: patch, path: 'a.dart')));
+    await tester.pumpAndSettle();
+
+    final row = tester.widget<Text>(find.text('final answer = 42;'));
+    expect(row.textSpan, isNotNull, reason: 'a highlighted row is Text.rich');
+    // `final` (keyword) and `42` (number) take different theme colours.
+    expect(spanColors(tester, 'final answer = 42;').length, greaterThan(1));
+    // The +/− marker and gutter keep their own columns.
+    expect(find.text('+'), findsNWidgets(2));
+  });
+
+  testWidgets('TypeScript diffs are highlighted too', (tester) async {
+    await tester.pumpWidget(
+      host(
+        const DiffView(
+          patch: '@@ -0,0 +1,1 @@\n+export const answer: number = 42;',
+          path: 'src/answer.ts',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      spanColors(tester, 'export const answer: number = 42;').length,
+      greaterThan(1),
+    );
+  });
+
+  testWidgets('unknown languages and pathless diffs stay plain', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(const DiffView(patch: patch, path: 'notes.unknownext')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('final answer = 42;')).textSpan,
+      isNull,
+    );
+
+    await tester.pumpWidget(host(const DiffView(patch: patch)));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('final answer = 42;')).textSpan,
+      isNull,
+    );
+  });
+
+  testWidgets('lifting the budget highlights the newly shown rows', (
+    tester,
+  ) async {
+    final big = StringBuffer('@@ -1,0 +1,600 @@\n');
+    for (var i = 0; i < 600; i++) {
+      big.writeln('+final v$i = $i;');
+    }
+    await tester.pumpWidget(
+      host(DiffView(patch: big.toString(), path: 'a.dart', maxRows: 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(spanColors(tester, 'final v50 = 50;').length, greaterThan(1));
+
+    await tester.pumpWidget(
+      host(DiffView(patch: big.toString(), path: 'a.dart', maxRows: 400)),
+    );
+    await tester.pumpAndSettle();
+    expect(spanColors(tester, 'final v300 = 300;').length, greaterThan(1));
   });
 }

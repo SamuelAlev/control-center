@@ -1,0 +1,15 @@
+name: cc_syntax
+description: "Control Center syntax-highlighting core — the CC shiki themes, the language table and the curated grammar tier, shared by the desktop/web app and the phone client."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.12.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  # Only the Flutter-free entrypoints are imported (`engine.dart`,
+  # `langs.dart`): every file here compiles into the app's `dart compile js`
+  # diff worker.
+  shiki_flutter: ^1.1.0

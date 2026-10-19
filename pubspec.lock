@@ -2012,12 +2012,11 @@ packages:
     source: hosted
     version: "3.0.3"
   webcrypto:
-    dependency: transitive
+    dependency: "direct dev"
     description:
-      name: webcrypto
-      sha256: "9885ed99a846191542dd6ca820c83a098117df56be57453832233a3fef68f3f2"
-      url: "https://pub.dev"
-    source: hosted
+      path: ".dart_tool/patchwork/webcrypto@0.6.1"
+      relative: true
+    source: path
     version: "0.6.1"
   webkit_inspection_protocol:
     dependency: transitive

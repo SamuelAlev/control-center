@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cc_syntax/syntax_languages.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:chewie/chewie.dart';
 import 'package:control_center/core/infrastructure/clipboard/host_file_staging.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:control_center/shared/widgets/attachments/local_media.dart';
 import 'package:control_center/shared/widgets/attachments/web_pdf_preview.dart';

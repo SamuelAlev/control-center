@@ -1,0 +1,13 @@
+diff --git a/third_party/boringssl/sources.cmake b/third_party/boringssl/sources.cmake
+index 90437ae9204e12013d47366987c79ad5e7c99f5c..9688073efcfc1b8f508800667261f1701f948d28 100644
+--- a/third_party/boringssl/sources.cmake
++++ b/third_party/boringssl/sources.cmake
+@@ -321,6 +321,8 @@ set(crypto_sources_apple_x86_64
+   ${BORINGSSL_ROOT}gen/crypto/md5-586-apple.S
+   ${BORINGSSL_ROOT}gen/crypto/md5-x86_64-apple.S
+   ${BORINGSSL_ROOT}gen/test_support/trampoline-x86_64-apple.S
++  ${BORINGSSL_ROOT}third_party/fiat/asm/fiat_p256_adx_mul.S
++  ${BORINGSSL_ROOT}third_party/fiat/asm/fiat_p256_adx_sqr.S
+ )
+ 
+ set(crypto_sources_linux_aarch64

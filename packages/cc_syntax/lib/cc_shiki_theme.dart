@@ -1,13 +1,14 @@
 // The CC shiki themes and the token-color adapter.
 //
 // FLUTTER-FREE ON PURPOSE: this file is imported by the PR-diff worker core,
-// which `dart compile js` compiles into a Web Worker — no `package:flutter/`,
+// which `dart compile js` compiles into a Web Worker, and by the phone
+// client's diff highlighter — no `package:flutter/`,
 // `dart:ui`, or `dart:io` imports here (enforced by the "Web Worker cores are
 // Flutter-free" group in test/core/architecture_constraints_test.dart).
 // Brightness-typed conveniences live at the call sites; this module speaks
 // `{required bool dark}`.
 
-import 'package:control_center/shared/syntax/cc_shiki_theme_json.dart';
+import 'package:cc_syntax/cc_shiki_theme_json.dart';
 import 'package:shiki_flutter/engine.dart';
 
 /// Identity of the CC theme pair. Part of every token cache key
@@ -29,14 +30,16 @@ const String kCcDarkThemeId = 'cc-dark';
 /// hard-coded color.
 const String kCcNeutralForegroundHex = '#010203';
 
-/// The light CC theme (GitHub-style light palette, see syntax_palette.dart).
+/// The light CC theme (GitHub-style light palette, see the app's
+/// lib/shared/utils/syntax_palette.dart).
 const ShikiTheme ccLightTheme = ShikiTheme(
   id: kCcLightThemeId,
   type: 'light',
   json: ccLightThemeJson,
 );
 
-/// The dark CC theme (GitHub-style dark palette, see syntax_palette.dart).
+/// The dark CC theme (GitHub-style dark palette, see the app's
+/// lib/shared/utils/syntax_palette.dart).
 const ShikiTheme ccDarkTheme = ShikiTheme(
   id: kCcDarkThemeId,
   type: 'dark',

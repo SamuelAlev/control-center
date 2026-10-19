@@ -41,7 +41,7 @@ class HighlightedCodeLines extends StatefulWidget {
   /// state (block comments, template literals) carries across lines.
   final String code;
 
-  /// Canonical shiki id, from `shared/syntax/syntax_languages.dart`. Null
+  /// Canonical shiki id, from `package:cc_syntax/syntax_languages.dart`. Null
   /// renders plain.
   final String? languageId;
 

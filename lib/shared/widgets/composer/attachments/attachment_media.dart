@@ -96,7 +96,7 @@ String? mediaTypeForFileName(String name) {
 /// Extensions that hold source code — text, but worth syntax highlighting.
 ///
 /// The list only has to be good enough to pick a RENDERER; the highlighter's
-/// own language table (`shared/syntax/syntax_languages.dart`) decides the
+/// own language table (`package:cc_syntax/syntax_languages.dart`) decides the
 /// grammar from the same filename afterwards, and an entry missing here shows
 /// as plain monospaced text rather than as an unopenable file.
 const Set<String> _codeExtensions = {

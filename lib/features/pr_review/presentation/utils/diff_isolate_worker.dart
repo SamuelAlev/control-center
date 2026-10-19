@@ -4,9 +4,9 @@ import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
+import 'package:cc_syntax/cc_shiki_theme.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_palette.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_worker_core.dart';
-import 'package:control_center/shared/syntax/cc_shiki_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isolate_manager/isolate_manager.dart';
 

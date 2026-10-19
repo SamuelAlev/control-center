@@ -2,10 +2,10 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/services/transcript_status.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_syntax/syntax_languages.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/transcript/util/clamp_text.dart';
 import 'package:control_center/shared/widgets/transcript/util/line_diff.dart';
 import 'package:control_center/shared/widgets/transcript/util/read_output_parser.dart';

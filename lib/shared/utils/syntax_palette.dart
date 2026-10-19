@@ -4,7 +4,7 @@
 ///
 /// Since the shiki migration these maps are no longer looked up at render
 /// time — syntax colors are baked in at tokenize time by the CC TextMate
-/// themes in `lib/shared/syntax/cc_shiki_theme_json.dart`, which are AUTHORED
+/// themes in `package:cc_syntax/cc_shiki_theme_json.dart`, which are AUTHORED
 /// from these values (a drift test pins every value into the theme JSON:
 /// test/shared/syntax/cc_shiki_theme_test.dart). They remain the single
 /// source of truth for the palette and `DiffPalette` still ships a slice of

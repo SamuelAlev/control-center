@@ -1,4 +1,4 @@
-// CC TextMate theme JSON from `syntax_palette.dart` (drift-tested).
+// CC TextMate theme JSON from the app's `syntax_palette.dart` (drift-tested).
 // Bump `kCcThemeRevision` when either changes (cache key).
 //
 // `editor.foreground` = sentinel `#010203` → adapter maps to null (inherit).
