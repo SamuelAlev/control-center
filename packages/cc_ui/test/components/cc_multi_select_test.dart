@@ -53,8 +53,7 @@ void main() {
       // when hovering the close icon of the filterable tag).
       expect(
         find.byWidgetPredicate(
-          (w) =>
-              w is CcTooltip && w.message == 'Clear all selected options',
+          (w) => w is CcTooltip && w.message == 'Clear all selected options',
         ),
         findsOneWidget,
       );
@@ -403,15 +402,66 @@ void main() {
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 50));
 
-      // The panel traps focus in a closed-loop scope so keyboard input is
-      // contained while it is open.
-      expect(FocusManager.instance.primaryFocus, isA<FocusScopeNode>());
+      // The panel's list node owns the keyboard inside a closed-loop scope so
+      // keyboard input is contained while it is open.
+      final focus = FocusManager.instance.primaryFocus;
+      expect(focus?.debugLabel, 'CcMultiSelect list');
+      expect(
+        focus?.ancestors
+            .whereType<FocusScopeNode>()
+            .first
+            .traversalEdgeBehavior,
+        TraversalEdgeBehavior.closedLoop,
+      );
       // Sending arrow/space keys through the scope must not throw.
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.space);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     });
+
+    for (final (name, key) in [
+      ('Enter', LogicalKeyboardKey.enter),
+      ('Space', LogicalKeyboardKey.space),
+    ]) {
+      testWidgets('$name toggles the arrow-highlighted row, not the first', (
+        tester,
+      ) async {
+        var values = <String>{};
+        await tester.pumpWidget(
+          ccTestApp(
+            Center(
+              child: StatefulBuilder(
+                builder: (context, setState) => CcMultiSelect<String>(
+                  options: _options,
+                  values: values,
+                  hintText: 'Pick fruit',
+                  onChanged: (next) => setState(() => values = next),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Pick fruit'));
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+        await tester.sendKeyEvent(key);
+        await tester.pump();
+        expect(values, {'b'});
+
+        // The panel stays open and keeps the keyboard for the next toggle.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+        await tester.sendKeyEvent(key);
+        await tester.pump();
+        expect(values, {'b', 'c'});
+      });
+    }
 
     testWidgets('Escape closes the panel', (tester) async {
       await tester.pumpWidget(

@@ -456,6 +456,18 @@ class ErrorSegment extends TranscriptSegment {
   /// Where the code came from (e.g. `anthropic`, `relay`).
   final String? source;
 
+  /// [code] for a credential that no longer authenticates: the Anthropic API's
+  /// own error type, reported by the built-in harness and the Claude Code lane
+  /// alike.
+  static const authenticationErrorCode = 'authentication_error';
+
+  /// [source] of an error reported by the Claude Code CLI lane, whose fix is
+  /// signing one of its account directories in again.
+  static const claudeCodeSource = 'claude';
+
+  /// Whether the run failed because its credential stopped authenticating.
+  bool get isAuthentication => code == authenticationErrorCode;
+
   @override
   Map<String, dynamic> toJson() => {
     'type': 'error',

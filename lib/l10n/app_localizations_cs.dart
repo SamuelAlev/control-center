@@ -16015,4 +16015,38 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Do jmenovatele užitečnosti se počítají všechny pokusy včetně neúspěšných a nedokončených.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Přihlášení se nezdařilo';
+
+  @override
+  String get claudeSignInDialogTitle => 'Přihlásit se do Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Spusťte každý příkaz v terminálu na serveru. Otevře prohlížeč k dokončení přihlášení a zapíše přihlašovací údaje do adresáře daného účtu.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Žádný spravovaný účet není odhlášen. Pokud tento agent používá vlastní přihlášení Claude Code, spusťte:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Server nemohl poskytnout přihlašovací příkaz pro tento účet.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Přihlášení ke Claude Code vypršelo';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Běh se zastavil, protože jeho účet se už neověřuje. Přihlaste se znovu a pak tah zopakujte.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Přihlášení k poskytovateli vypršelo';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Běh se zastavil, protože přihlašovací údaje poskytovatele už nefungují. Znovu jej připojte v Nastavení → Poskytovatelé a pak tah zopakujte.';
 }

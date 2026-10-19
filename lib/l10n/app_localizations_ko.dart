@@ -15488,4 +15488,35 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       '실패하거나 완료되지 않은 시도를 포함한 모든 시도가 효용의 분모에 포함됩니다.';
+
+  @override
+  String get claudeAccountSignInFailed => '로그인 실패';
+
+  @override
+  String get claudeSignInDialogTitle => 'Claude Code에 로그인';
+
+  @override
+  String get claudeSignInDialogHint =>
+      '각 명령을 서버의 터미널에서 실행하세요. 브라우저가 열려 로그인을 마치고, 자격 증명을 해당 계정의 디렉터리에 기록합니다.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      '로그아웃된 관리 계정이 없습니다. 이 에이전트가 Claude Code 자체 로그인을 사용한다면 다음을 실행하세요:';
+
+  @override
+  String get claudeSignInCommandUnavailable => '서버가 이 계정의 로그인 명령을 제공하지 못했습니다.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle => 'Claude Code 로그인이 만료되었습니다';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      '계정이 더 이상 인증되지 않아 실행이 중지되었습니다. 다시 로그인한 뒤 이 턴을 재시도하세요.';
+
+  @override
+  String get transcriptSignInExpiredTitle => '제공자 로그인이 만료되었습니다';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      '제공자 자격 증명이 더 이상 작동하지 않아 실행이 중지되었습니다. 설정 → 제공자에서 다시 연결한 뒤 이 턴을 재시도하세요.';
 }

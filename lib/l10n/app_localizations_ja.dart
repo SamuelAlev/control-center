@@ -15494,4 +15494,37 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get skillBehaviorUtilityNote => '失敗や未完了を含むすべての試行を有効性の分母に含めます。';
+
+  @override
+  String get claudeAccountSignInFailed => 'サインインに失敗しました';
+
+  @override
+  String get claudeSignInDialogTitle => 'Claude Code にサインイン';
+
+  @override
+  String get claudeSignInDialogHint =>
+      '各コマンドをサーバー上のターミナルで実行してください。ブラウザが開いてログインが完了し、認証情報がそのアカウントのディレクトリに書き込まれます。';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'サインアウトしている管理対象アカウントはありません。このエージェントが Claude Code 自身のログインを使う場合は、次を実行してください：';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'サーバーはこのアカウントのログインコマンドを提供できませんでした。';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Claude Code のサインインの有効期限が切れました';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'アカウントが認証できなくなったため、実行が停止しました。再度サインインしてから、このターンを再試行してください。';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'プロバイダーのサインインの有効期限が切れました';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'プロバイダーの認証情報が使えなくなったため、実行が停止しました。設定 → プロバイダーで再接続してから、このターンを再試行してください。';
 }

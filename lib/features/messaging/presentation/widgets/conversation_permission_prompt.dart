@@ -12,21 +12,27 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// In-conversation permission prompt: pending agent-action approvals for
-/// [spaceId], rendered as a FIFO [AskUserCard] above the composer.
+/// [conversationId], rendered as a FIFO [AskUserCard] above the composer.
 ///
-/// The global overlay hides the same requests while this widget's space is
-/// mounted, so a person looking at the chat is not also staring at a floating
-/// deck in the corner.
+/// A request that names its conversation shows only in that conversation's
+/// pane, never in a sibling tab of the same space; one that names none (a
+/// space-level ask) shows in any conversation of [spaceId]. The global
+/// overlay hides whatever an on-screen pane shows here, so a person looking
+/// at the chat is not also staring at a floating deck in the corner.
 class ConversationPermissionPrompt extends ConsumerStatefulWidget {
   /// Creates a [ConversationPermissionPrompt].
   const ConversationPermissionPrompt({
     super.key,
     required this.spaceId,
+    required this.conversationId,
     this.maxHeight,
   });
 
   /// The space whose blocked actions this prompt answers.
   final String spaceId;
+
+  /// The conversation this prompt sits in.
+  final String conversationId;
 
   /// Height budget from the conversation pane, not the whole app window.
   final double? maxHeight;
@@ -82,7 +88,10 @@ class _ConversationPermissionPromptState
         ref.watch(pendingConfirmationsProvider).asData?.value ?? const [];
     final mine = [
       for (final request in pending)
-        if (request.spaceId == widget.spaceId) request,
+        if (request.conversationId == null || request.conversationId!.isEmpty
+            ? request.spaceId == widget.spaceId
+            : request.conversationId == widget.conversationId)
+          request,
     ];
     if (mine.isEmpty) {
       return const SizedBox.shrink();

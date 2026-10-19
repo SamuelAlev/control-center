@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "Artefaktkontrollene er syntetiske og viser ikke angrepsrater i den virkelige verden; faktiske bieffekter blir ikke målt.",
   "skillBehaviorUtility": "Nytte etter familie",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} verifiserte suksesser",
-  "skillBehaviorUtilityNote": "Alle forsøk inngår i nevneren for nytte, også mislykkede og ufullstendige."
+  "skillBehaviorUtilityNote": "Alle forsøk inngår i nevneren for nytte, også mislykkede og ufullstendige.",
+  "claudeAccountSignInFailed": "Innlogging mislyktes",
+  "claudeSignInDialogTitle": "Logg inn på Claude Code",
+  "claudeSignInDialogHint": "Kjør hver kommando i en terminal på serveren. Den åpner en nettleser for å fullføre innloggingen og skriver legitimasjonen til kontoens katalog.",
+  "claudeSignInNoAccounts": "Ingen administrerte kontoer er logget ut. Hvis denne agenten bruker Claude Codes egen innlogging, kjør:",
+  "claudeSignInCommandUnavailable": "Serveren kunne ikke levere en innloggingskommando for denne kontoen.",
+  "transcriptClaudeSignInExpiredTitle": "Innloggingen til Claude Code har utløpt",
+  "transcriptClaudeSignInExpiredBody": "Kjøringen stoppet fordi kontoen ikke lenger autentiseres. Logg inn på nytt, og prøv turen igjen.",
+  "transcriptSignInExpiredTitle": "Innloggingen til leverandøren har utløpt",
+  "transcriptSignInExpiredBody": "Kjøringen stoppet fordi leverandørens legitimasjon ikke lenger virker. Koble den til på nytt under Innstillinger → Leverandører, og prøv turen igjen."
 }

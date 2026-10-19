@@ -28,6 +28,9 @@ class _RecordingSandbox implements SandboxPort {
   final List<List<String>> execArgs = [];
   final List<Map<String, String>?> execEnvs = [];
 
+  /// Every stdin line each attempt was sent, in order.
+  final List<List<String>> stdinPerAttempt = [];
+
   /// NDJSON lines the CLI "emits" on each successive attempt, so a test can
   /// make the first account hit a usage limit and the second succeed.
   final List<List<String>> stdoutPerAttempt;
@@ -60,6 +63,9 @@ class _RecordingSandbox implements SandboxPort {
     final attempt = execArgs.length;
     execArgs.add(argv);
     execEnvs.add(env);
+    final stdinLines = <String>[];
+    stdinPerAttempt.add(stdinLines);
+    stdinStream?.listen(stdinLines.add);
     onPid?.call(4242);
     if (attempt < stdoutPerAttempt.length) {
       for (final line in stdoutPerAttempt[attempt]) {
@@ -620,6 +626,112 @@ void main() {
       expect(run.log, contains('usage limit reached'));
     });
 
+    // Measured: an 8-minute turn whose OAuth token was revoked mid-way ended
+    // as a raw error with no sign-in dialog, because the park only covered a
+    // turn that had not said anything yet.
+    test(
+      'a sign-in lost mid-turn parks and continues the same session',
+      () async {
+        final a = account('work');
+        final b = account('personal');
+        final gate = _RenewGate(a.configDir);
+        final run = await _dispatchClaude(
+          cwd: temp.path,
+          claudeConfigDir: a.configDir,
+          accounts: [a, b],
+          credentialGate: gate,
+          stdoutPerAttempt: [
+            [
+              _init('sess-1'),
+              _textDelta('partial answer'),
+              _resultError(
+                'Failed to authenticate: OAuth token revoked.',
+                status: 401,
+              ),
+            ],
+            [_init('sess-1'), _textDelta(' and the rest')],
+          ],
+        );
+
+        expect(gate.requests, hasLength(1));
+        expect(gate.requests.single.accountIds, [
+          'work',
+        ], reason: 'only the account holding the session can continue it');
+        expect(run.sandbox.execArgs, hasLength(2));
+        expect(
+          run.sandbox.execEnvs[1]?['CLAUDE_CONFIG_DIR'],
+          a.configDir,
+          reason: 'it stays on the account the work lives on',
+        );
+        final resumeAt = run.sandbox.execArgs[1].indexOf('--resume');
+        expect(resumeAt, isNot(-1));
+        expect(run.sandbox.execArgs[1][resumeAt + 1], 'sess-1');
+        expect(
+          run.sandbox.stdinPerAttempt[1].first,
+          contains('sign-in expired'),
+          reason: 'it continues; the original prompt is not replayed',
+        );
+        expect(run.sandbox.stdinPerAttempt[1].first, isNot(contains('hello')));
+        expect(run.debug, contains('continues where it stopped'));
+        expect(run.authFailed, ['work']);
+        expect(run.log, isEmpty, reason: 'the continued turn succeeded');
+      },
+    );
+
+    test('a mid-turn login on ANOTHER account does not continue', () async {
+      final a = account('work');
+      final b = account('personal');
+      final run = await _dispatchClaude(
+        cwd: temp.path,
+        claudeConfigDir: a.configDir,
+        accounts: [a, b],
+        credentialGate: _RenewGate(b.configDir),
+        stdoutPerAttempt: [
+          [
+            _init('sess-1'),
+            _textDelta('partial answer'),
+            _resultError('OAuth token revoked.', status: 401),
+          ],
+          [_textDelta('should not run')],
+        ],
+      );
+
+      expect(run.sandbox.execArgs, hasLength(1));
+      expect(run.log, contains('OAuth token revoked'));
+    });
+
+    test('a continued turn that fails again is never replayed', () async {
+      final a = account('work');
+      final gate = _RenewGate(a.configDir);
+      final run = await _dispatchClaude(
+        cwd: temp.path,
+        claudeConfigDir: a.configDir,
+        accounts: [a],
+        credentialGate: gate,
+        stdoutPerAttempt: [
+          [
+            _init('sess-1'),
+            _textDelta('partial answer'),
+            _resultError('OAuth token revoked.', status: 401),
+          ],
+          // Dies again before saying anything of its own.
+          [_init('sess-1'), _resultError('OAuth token revoked.', status: 401)],
+          [_init('sess-1'), _textDelta(' and the rest')],
+        ],
+      );
+
+      expect(gate.requests, hasLength(2));
+      expect(run.sandbox.execArgs, hasLength(3));
+      for (final attempt in [1, 2]) {
+        expect(run.sandbox.execArgs[attempt], contains('--resume'));
+        expect(
+          run.sandbox.stdinPerAttempt[attempt].first,
+          isNot(contains('hello')),
+        );
+      }
+      expect(run.log, isEmpty);
+    });
+
     test('the last account reports the limit instead of looping', () async {
       final a = account('work');
       final run = await _dispatchClaude(
@@ -924,7 +1036,10 @@ class _RenewGate implements RunCredentialGatePort {
     required Future<bool> Function() recheck,
   }) async {
     requests.add(request);
-    File('$dir/.credentials.json').writeAsStringSync('signed-in-again');
+    // A different blob per login, so each one counts as a fresh sign-in.
+    File(
+      '$dir/.credentials.json',
+    ).writeAsStringSync('signed-in-again-${requests.length}');
     final renewed = await recheck();
     return renewed
         ? RunCredentialOutcome.resolved

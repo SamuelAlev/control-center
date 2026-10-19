@@ -15943,4 +15943,37 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Tutti i tentativi rientrano nel denominatore dell\'utilità, inclusi quelli falliti e incompleti.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Accesso non riuscito';
+
+  @override
+  String get claudeSignInDialogTitle => 'Accedi a Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Esegui ogni comando in un terminale sul server. Apre un browser per completare l\'accesso e scrive la credenziale nella directory di quell\'account.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Nessun account gestito è disconnesso. Se questo agente usa l\'accesso proprio di Claude Code, esegui:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Il server non ha potuto fornire un comando di accesso per questo account.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Accesso a Claude Code scaduto';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'L\'esecuzione si è interrotta perché il suo account non si autentica più. Accedi di nuovo, poi riprova il turno.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Accesso al provider scaduto';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'L\'esecuzione si è interrotta perché la credenziale del provider non funziona più. Ricollegalo in Impostazioni → Provider, poi riprova il turno.';
 }

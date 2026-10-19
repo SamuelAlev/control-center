@@ -2614,4 +2614,20 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Berhenti memantau';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Log masuk Claude Code telah tamat tempoh';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Larian berhenti kerana akaunnya tidak lagi disahkan. Log masuk semula, kemudian cuba semula giliran ini.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Log masuk penyedia telah tamat tempoh';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Larian berhenti kerana kelayakan penyedianya tidak lagi berfungsi. Sambung semula dalam Tetapan → Penyedia, kemudian cuba semula giliran ini.';
 }

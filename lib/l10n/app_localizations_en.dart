@@ -15792,6 +15792,39 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'All attempts count toward the utility denominator, including failures and incomplete runs.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Sign-in failed';
+
+  @override
+  String get claudeSignInDialogTitle => 'Sign in to Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Run each command in a terminal on the server. It opens a browser to finish the login and writes the credential into that account\'s directory.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'No managed account is signed out. If this agent uses Claude Code\'s own login, run:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'The server could not provide a login command for this account.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Claude Code sign-in expired';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'The run stopped because its account no longer authenticates. Sign in again, then retry the turn.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Provider sign-in expired';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

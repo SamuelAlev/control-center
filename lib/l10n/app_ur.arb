@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "نمونہ جاتی جانچیں مصنوعی ہیں اور حقیقی دنیا میں حملوں کی شرح کو ظاہر نہیں کرتیں؛ حقیقی ضمنی اثرات کی نگرانی نہیں ہوتی۔",
   "skillBehaviorUtility": "خاندان کے لحاظ سے افادیت",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} تصدیق شدہ کامیابیاں",
-  "skillBehaviorUtilityNote": "تمام کوششیں افادیت کے مخرج میں شمار ہوتی ہیں، بشمول ناکام اور نامکمل کوششیں۔"
+  "skillBehaviorUtilityNote": "تمام کوششیں افادیت کے مخرج میں شمار ہوتی ہیں، بشمول ناکام اور نامکمل کوششیں۔",
+  "claudeAccountSignInFailed": "سائن ان ناکام رہا",
+  "claudeSignInDialogTitle": "Claude Code میں سائن ان کریں",
+  "claudeSignInDialogHint": "ہر کمانڈ سرور کے ٹرمینل میں چلائیں۔ یہ لاگ ان مکمل کرنے کے لیے براؤزر کھولتی ہے اور اسناد اس اکاؤنٹ کی ڈائریکٹری میں لکھتی ہے۔",
+  "claudeSignInNoAccounts": "کوئی منظم اکاؤنٹ سائن آؤٹ نہیں ہے۔ اگر یہ ایجنٹ Claude Code کا اپنا لاگ ان استعمال کرتا ہے تو چلائیں:",
+  "claudeSignInCommandUnavailable": "سرور اس اکاؤنٹ کے لیے لاگ ان کمانڈ فراہم نہیں کر سکا۔",
+  "transcriptClaudeSignInExpiredTitle": "Claude Code سائن ان کی میعاد ختم ہو گئی",
+  "transcriptClaudeSignInExpiredBody": "رن رک گیا کیونکہ اس کا اکاؤنٹ اب تصدیق نہیں ہوتا۔ دوبارہ سائن ان کریں، پھر یہ باری دوبارہ آزمائیں۔",
+  "transcriptSignInExpiredTitle": "فراہم کنندہ سائن ان کی میعاد ختم ہو گئی",
+  "transcriptSignInExpiredBody": "رن رک گیا کیونکہ فراہم کنندہ کی اسناد اب کام نہیں کرتیں۔ اسے ترتیبات ← فراہم کنندگان میں دوبارہ جوڑیں، پھر یہ باری دوبارہ آزمائیں۔"
 }

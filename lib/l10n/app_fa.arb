@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "بررسی خروجی‌ها مصنوعی است و نشان‌دهندهٔ نرخ حملات در دنیای واقعی نیست؛ اثرات جانبی واقعی پایش نمی‌شوند.",
   "skillBehaviorUtility": "کارایی بر پایهٔ خانواده",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} موفقیت تأییدشده",
-  "skillBehaviorUtilityNote": "همهٔ تلاش‌ها، حتی ناموفق و ناتمام، در مخرج کارایی حساب می‌شوند."
+  "skillBehaviorUtilityNote": "همهٔ تلاش‌ها، حتی ناموفق و ناتمام، در مخرج کارایی حساب می‌شوند.",
+  "claudeAccountSignInFailed": "ورود ناموفق بود",
+  "claudeSignInDialogTitle": "ورود به Claude Code",
+  "claudeSignInDialogHint": "هر فرمان را در یک ترمینال روی سرور اجرا کنید. مرورگری باز می‌کند تا ورود کامل شود و اعتبارنامه را در پوشهٔ آن حساب می‌نویسد.",
+  "claudeSignInNoAccounts": "هیچ حساب مدیریت‌شده‌ای خارج نشده است. اگر این عامل از ورود خود Claude Code استفاده می‌کند، اجرا کنید:",
+  "claudeSignInCommandUnavailable": "سرور نتوانست فرمان ورود برای این حساب ارائه دهد.",
+  "transcriptClaudeSignInExpiredTitle": "ورود Claude Code منقضی شده است",
+  "transcriptClaudeSignInExpiredBody": "اجرا متوقف شد چون حساب آن دیگر احراز هویت نمی‌شود. دوباره وارد شوید و سپس این نوبت را دوباره امتحان کنید.",
+  "transcriptSignInExpiredTitle": "ورود ارائه‌دهنده منقضی شده است",
+  "transcriptSignInExpiredBody": "اجرا متوقف شد چون اعتبارنامهٔ ارائه‌دهنده دیگر کار نمی‌کند. آن را در تنظیمات ← ارائه‌دهندگان دوباره وصل کنید و سپس این نوبت را دوباره امتحان کنید."
 }

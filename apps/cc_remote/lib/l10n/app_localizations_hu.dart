@@ -2631,4 +2631,20 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Figyelés leállítása';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'A Claude Code-bejelentkezés lejárt';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'A futás leállt, mert a fiókja már nem hitelesít. Jelentkezz be újra, majd próbáld újra a kört.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'A szolgáltatói bejelentkezés lejárt';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'A futás leállt, mert a szolgáltató hitelesítő adata már nem működik. Csatlakoztasd újra a Beállítások → Szolgáltatók alatt, majd próbáld újra a kört.';
 }

@@ -16068,4 +16068,36 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Wszystkie próby wlicza się do mianownika użyteczności, również nieudane i nieukończone.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Logowanie nie powiodło się';
+
+  @override
+  String get claudeSignInDialogTitle => 'Zaloguj się do Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Uruchom każde polecenie w terminalu na serwerze. Otworzy ono przeglądarkę, aby dokończyć logowanie, i zapisze dane uwierzytelniające w katalogu tego konta.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Żadne zarządzane konto nie jest wylogowane. Jeśli ten agent używa własnego logowania Claude Code, uruchom:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Serwer nie mógł podać polecenia logowania dla tego konta.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle => 'Sesja Claude Code wygasła';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Przebieg został zatrzymany, ponieważ jego konto nie uwierzytelnia się już. Zaloguj się ponownie, a następnie ponów turę.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Sesja dostawcy wygasła';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Przebieg został zatrzymany, ponieważ dane uwierzytelniające dostawcy już nie działają. Połącz go ponownie w Ustawienia → Dostawcy, a następnie ponów turę.';
 }

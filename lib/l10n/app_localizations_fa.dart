@@ -15782,4 +15782,37 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'همهٔ تلاش‌ها، حتی ناموفق و ناتمام، در مخرج کارایی حساب می‌شوند.';
+
+  @override
+  String get claudeAccountSignInFailed => 'ورود ناموفق بود';
+
+  @override
+  String get claudeSignInDialogTitle => 'ورود به Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'هر فرمان را در یک ترمینال روی سرور اجرا کنید. مرورگری باز می‌کند تا ورود کامل شود و اعتبارنامه را در پوشهٔ آن حساب می‌نویسد.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'هیچ حساب مدیریت‌شده‌ای خارج نشده است. اگر این عامل از ورود خود Claude Code استفاده می‌کند، اجرا کنید:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'سرور نتوانست فرمان ورود برای این حساب ارائه دهد.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'ورود Claude Code منقضی شده است';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'اجرا متوقف شد چون حساب آن دیگر احراز هویت نمی‌شود. دوباره وارد شوید و سپس این نوبت را دوباره امتحان کنید.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'ورود ارائه‌دهنده منقضی شده است';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'اجرا متوقف شد چون اعتبارنامهٔ ارائه‌دهنده دیگر کار نمی‌کند. آن را در تنظیمات ← ارائه‌دهندگان دوباره وصل کنید و سپس این نوبت را دوباره امتحان کنید.';
 }

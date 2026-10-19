@@ -16012,4 +16012,38 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Toate încercările intră în numitorul utilității, inclusiv cele eșuate și incomplete.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Autentificarea a eșuat';
+
+  @override
+  String get claudeSignInDialogTitle => 'Conectează-te la Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Rulează fiecare comandă într-un terminal pe server. Deschide un browser pentru a finaliza autentificarea și scrie datele de acces în directorul acelui cont.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Niciun cont gestionat nu este deconectat. Dacă acest agent folosește autentificarea proprie Claude Code, rulează:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Serverul nu a putut furniza o comandă de autentificare pentru acest cont.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Autentificarea Claude Code a expirat';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Rularea s-a oprit deoarece contul ei nu se mai autentifică. Conectează-te din nou, apoi reîncearcă tura.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Autentificarea furnizorului a expirat';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Rularea s-a oprit deoarece datele de acces ale furnizorului nu mai funcționează. Reconectează-l în Setări → Furnizori, apoi reîncearcă tura.';
 }

@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "个人访问令牌",
   "credentialsPersonalTokenHint": "粘贴个人访问令牌",
   "credentialsHostManaged": "此连接来自服务器应用或环境。只有服务器所有者能在那里更改；你仍可添加自己的令牌。",
-  "credentialsStopWatching": "停止监测"
+  "credentialsStopWatching": "停止监测",
+  "transcriptClaudeSignInExpiredTitle": "Claude Code 登录已过期",
+  "transcriptClaudeSignInExpiredBody": "运行已停止，因为其账户无法再通过身份验证。请重新登录，然后重试此轮。",
+  "transcriptSignInExpiredTitle": "提供方登录已过期",
+  "transcriptSignInExpiredBody": "运行已停止，因为其提供方凭据已失效。请在 设置 → 提供方 中重新连接，然后重试此轮。"
 }

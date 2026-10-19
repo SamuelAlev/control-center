@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "Verificările artefactelor sunt sintetice și nu reflectă ratele atacurilor din lumea reală; efectele secundare reale nu sunt monitorizate.",
   "skillBehaviorUtility": "Utilitate după familie",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} reușite verificate",
-  "skillBehaviorUtilityNote": "Toate încercările intră în numitorul utilității, inclusiv cele eșuate și incomplete."
+  "skillBehaviorUtilityNote": "Toate încercările intră în numitorul utilității, inclusiv cele eșuate și incomplete.",
+  "claudeAccountSignInFailed": "Autentificarea a eșuat",
+  "claudeSignInDialogTitle": "Conectează-te la Claude Code",
+  "claudeSignInDialogHint": "Rulează fiecare comandă într-un terminal pe server. Deschide un browser pentru a finaliza autentificarea și scrie datele de acces în directorul acelui cont.",
+  "claudeSignInNoAccounts": "Niciun cont gestionat nu este deconectat. Dacă acest agent folosește autentificarea proprie Claude Code, rulează:",
+  "claudeSignInCommandUnavailable": "Serverul nu a putut furniza o comandă de autentificare pentru acest cont.",
+  "transcriptClaudeSignInExpiredTitle": "Autentificarea Claude Code a expirat",
+  "transcriptClaudeSignInExpiredBody": "Rularea s-a oprit deoarece contul ei nu se mai autentifică. Conectează-te din nou, apoi reîncearcă tura.",
+  "transcriptSignInExpiredTitle": "Autentificarea furnizorului a expirat",
+  "transcriptSignInExpiredBody": "Rularea s-a oprit deoarece datele de acces ale furnizorului nu mai funcționează. Reconectează-l în Setări → Furnizori, apoi reîncearcă tura."
 }

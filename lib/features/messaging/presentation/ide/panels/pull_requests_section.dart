@@ -72,10 +72,13 @@ class PullRequestsSection extends StatelessWidget {
                         onOpen: onOpen,
                       )
                     else
-                      _PrRow(
+                      Container(
                         key: ValueKey(chain.single.number),
-                        pr: chain.single,
-                        onOpen: onOpen,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: tokens.borderSecondary),
+                        ),
+                        child: _PrRow(pr: chain.single, onOpen: onOpen),
                       ),
                 ],
               ),
@@ -97,7 +100,7 @@ class _PrStack extends StatefulWidget {
 }
 
 class _PrStackState extends State<_PrStack> {
-  bool _expanded = true;
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {

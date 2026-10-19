@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "Semakan artifak adalah sintetik dan tidak mencerminkan kadar serangan di dunia sebenar; kesan sampingan sebenar tidak dipantau.",
   "skillBehaviorUtility": "Kegunaan mengikut keluarga",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} kejayaan disahkan",
-  "skillBehaviorUtilityNote": "Semua percubaan dikira dalam penyebut kegunaan, termasuk kegagalan dan yang tidak selesai."
+  "skillBehaviorUtilityNote": "Semua percubaan dikira dalam penyebut kegunaan, termasuk kegagalan dan yang tidak selesai.",
+  "claudeAccountSignInFailed": "Log masuk gagal",
+  "claudeSignInDialogTitle": "Log masuk ke Claude Code",
+  "claudeSignInDialogHint": "Jalankan setiap arahan dalam terminal pada pelayan. Ia membuka pelayar untuk menyelesaikan log masuk dan menulis kelayakan ke dalam direktori akaun itu.",
+  "claudeSignInNoAccounts": "Tiada akaun terurus yang dilog keluar. Jika ejen ini menggunakan log masuk Claude Code sendiri, jalankan:",
+  "claudeSignInCommandUnavailable": "Pelayan tidak dapat memberikan arahan log masuk untuk akaun ini.",
+  "transcriptClaudeSignInExpiredTitle": "Log masuk Claude Code telah tamat tempoh",
+  "transcriptClaudeSignInExpiredBody": "Larian berhenti kerana akaunnya tidak lagi disahkan. Log masuk semula, kemudian cuba semula giliran ini.",
+  "transcriptSignInExpiredTitle": "Log masuk penyedia telah tamat tempoh",
+  "transcriptSignInExpiredBody": "Larian berhenti kerana kelayakan penyedianya tidak lagi berfungsi. Sambung semula dalam Tetapan → Penyedia, kemudian cuba semula giliran ini."
 }

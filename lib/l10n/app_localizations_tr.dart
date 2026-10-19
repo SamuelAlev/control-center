@@ -15838,4 +15838,38 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Başarısız ve tamamlanmamış olanlar dahil tüm denemeler yararın paydasına katılır.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Oturum açılamadı';
+
+  @override
+  String get claudeSignInDialogTitle => 'Claude Code\'da oturum aç';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Her komutu sunucudaki bir terminalde çalıştırın. Oturum açmayı tamamlamak için bir tarayıcı açar ve kimlik bilgisini o hesabın dizinine yazar.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Yönetilen hiçbir hesabın oturumu kapalı değil. Bu ajan Claude Code\'un kendi oturumunu kullanıyorsa şunu çalıştırın:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Sunucu bu hesap için bir oturum açma komutu sağlayamadı.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Claude Code oturumunun süresi doldu';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Hesabı artık kimlik doğrulayamadığı için çalışma durdu. Yeniden oturum açın, ardından turu yeniden deneyin.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Sağlayıcı oturumunun süresi doldu';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Sağlayıcının kimlik bilgisi artık çalışmadığı için çalışma durdu. Ayarlar → Sağlayıcılar bölümünden yeniden bağlayın, ardından turu yeniden deneyin.';
 }

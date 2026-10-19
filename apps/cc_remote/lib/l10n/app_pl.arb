@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "Osobisty token dostępu",
   "credentialsPersonalTokenHint": "Wklej osobisty token dostępu",
   "credentialsHostManaged": "To połączenie pochodzi z aplikacji serwera lub jego środowiska. Tylko właściciel serwera może je tam zmienić; nadal możesz dodać własny token.",
-  "credentialsStopWatching": "Przestań obserwować"
+  "credentialsStopWatching": "Przestań obserwować",
+  "transcriptClaudeSignInExpiredTitle": "Sesja Claude Code wygasła",
+  "transcriptClaudeSignInExpiredBody": "Przebieg został zatrzymany, ponieważ jego konto nie uwierzytelnia się już. Zaloguj się ponownie, a następnie ponów turę.",
+  "transcriptSignInExpiredTitle": "Sesja dostawcy wygasła",
+  "transcriptSignInExpiredBody": "Przebieg został zatrzymany, ponieważ dane uwierzytelniające dostawcy już nie działają. Połącz go ponownie w Ustawienia → Dostawcy, a następnie ponów turę."
 }

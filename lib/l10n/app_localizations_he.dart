@@ -15835,4 +15835,37 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'כל הניסיונות נכללים במכנה התועלת, כולל כישלונות וניסיונות שלא הושלמו.';
+
+  @override
+  String get claudeAccountSignInFailed => 'הכניסה נכשלה';
+
+  @override
+  String get claudeSignInDialogTitle => 'כניסה ל-Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'הריצו כל פקודה בטרמינל בשרת. היא פותחת דפדפן להשלמת הכניסה וכותבת את פרטי ההתחברות לתיקייה של אותו חשבון.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'אין חשבון מנוהל שמנותק. אם הסוכן הזה משתמש בכניסה של Claude Code עצמו, הריצו:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'השרת לא הצליח לספק פקודת כניסה לחשבון הזה.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'תוקף הכניסה ל-Claude Code פג';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'הריצה נעצרה כי החשבון שלה כבר לא עובר אימות. היכנסו שוב ואז נסו שוב את התור.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'תוקף הכניסה לספק פג';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'הריצה נעצרה כי פרטי ההתחברות של הספק כבר לא עובדים. חברו אותו מחדש בהגדרות ← ספקים ואז נסו שוב את התור.';
 }

@@ -2608,4 +2608,20 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'İzlemeyi durdur';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Claude Code oturumunun süresi doldu';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Hesabı artık kimlik doğrulayamadığı için çalışma durdu. Yeniden oturum açın, ardından turu yeniden deneyin.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Sağlayıcı oturumunun süresi doldu';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Sağlayıcının kimlik bilgisi artık çalışmadığı için çalışma durdu. Ayarlar → Sağlayıcılar bölümünden yeniden bağlayın, ardından turu yeniden deneyin.';
 }

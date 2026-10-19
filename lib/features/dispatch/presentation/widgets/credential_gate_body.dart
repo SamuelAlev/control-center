@@ -4,6 +4,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/harness_provider_login.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/claude_account_row.dart'
     show claudeShortTime;
+import 'package:control_center/features/settings/presentation/widgets/sections/claude_sign_in_account_list.dart';
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -191,11 +192,19 @@ class _ClaudeFix extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final roster = ref.watch(claudeAccountsProvider).asData?.value;
+    // A sign-in is the fix, so each account comes with the exact command that
+    // signs it back in, not just its name.
+    final signIn =
+        block.reason != RunCredentialReason.planSpent &&
+        block.reason != RunCredentialReason.accountsRemoved;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (block.accountIds.isNotEmpty) ...[
+        if (signIn) ...[
+          ClaudeSignInAccountList(accountIds: block.accountIds),
+          const SizedBox(height: AppSpacing.md),
+        ] else if (block.accountIds.isNotEmpty) ...[
           Text(
             l10n.credentialGateAccountsTried,
             style: TextStyle(
@@ -249,7 +258,7 @@ class _ClaudeFix extends ConsumerWidget {
               decoration: TextDecoration.none,
             ),
           )
-        else if (block.reason != RunCredentialReason.planSpent) ...[
+        else if (signIn) ...[
           Text(
             l10n.credentialGateClaudeSignInHint,
             style: TextStyle(

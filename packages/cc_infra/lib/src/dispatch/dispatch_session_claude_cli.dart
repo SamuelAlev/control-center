@@ -8,6 +8,24 @@ String _claudeUserLine(String text) =>
       'message': {'role': 'user', 'content': text},
     })}\n';
 
+/// What a turn that lost its sign-in mid-way is resumed with once a human has
+/// signed in again. The resumed session already holds the request and the work
+/// done on it; the failed call left no answer behind, so this only has to say
+/// why the turn paused. Model-facing, so never localized.
+const kClaudeContinueAfterSignInPrompt =
+    'Your previous request failed because the Claude sign-in expired. '
+    'It has been renewed. Continue the task from where you left off; '
+    'do not repeat work that is already done.';
+
+/// A Claude Code failure as the transcript records it: the sentence, plus the
+/// structured code a client branches on (a sign-in prompt for an expired
+/// credential) instead of pattern-matching the sentence.
+ErrorEvent _claudeErrorEvent(String detail, {bool auth = false}) => ErrorEvent(
+  content: detail,
+  code: auth ? ErrorSegment.authenticationErrorCode : null,
+  source: ErrorSegment.claudeCodeSource,
+);
+
 String? _claudePermissionMode(Mode mode) {
   switch (mode) {
     case Mode.plan:
@@ -89,7 +107,7 @@ extension _ClaudeCliMethods on DispatchSession {
       // opposite — no account was resolved at all — which is why it is gated
       // one layer up instead.
       if (!await _gateOnClaudeSignIn(detail: detail)) {
-        addEvent(ErrorEvent(content: detail));
+        addEvent(_claudeErrorEvent(detail, auth: true));
         unawaited(_closeRunLog(exitCode: 126));
         addEvent(DoneEvent());
         _completeRun();
@@ -320,6 +338,13 @@ extension _ClaudeCliMethods on DispatchSession {
     // How many times a dead sign-in has already parked this run. Bounded so a
     // credential that 401s again after a login cannot relaunch forever.
     var reauthParks = 0;
+    // The native session a turn that died on its sign-in MID-WAY continues on
+    // after a fresh login. Set only for the one attempt that follows the park.
+    String? continueSessionId;
+    // Whether ANY attempt of this turn produced output. A continued attempt
+    // starts with nothing of its own, yet the turn behind it did work, so a
+    // second failure must never send it back to the replay-the-prompt paths.
+    var turnProducedOutput = false;
     _claudeSubagents = _openClaudeSubagents();
     _claudeSteered.clear();
     _steering.onEnqueued = _scheduleClaudeSteeringPump;
@@ -437,6 +462,14 @@ extension _ClaudeCliMethods on DispatchSession {
         ),
       );
 
+      // A turn that already worked and then lost its sign-in continues in the
+      // session that holds that work, on the account it ran on; it is never
+      // replayed from the top. See the auth branch below.
+      final continuing = continueSessionId;
+      continueSessionId = null;
+      if (continuing != null) {
+        _claudeResumeId = continuing;
+      }
       // Closed by `_closeClaudeStdin`, at the turn's result or after exec.
       // ignore: close_sinks
       final stdin = _openClaudeStdin(
@@ -446,7 +479,9 @@ extension _ClaudeCliMethods on DispatchSession {
         // one failed — sends the full prompt. A delta without `--resume` would
         // silently drop the standing brief and the conversation, so the two
         // always move together.
-        i == 0 && _claudeResumeId != null
+        continuing != null
+            ? kClaudeContinueAfterSignInPrompt
+            : i == 0 && _claudeResumeId != null
             ? _claudeDeltaPrompt ?? prompt
             : prompt,
       );
@@ -468,7 +503,7 @@ extension _ClaudeCliMethods on DispatchSession {
       // does not exist there.
       final attemptArgv = <String>[
         claudePath,
-        ...(i == 0 && _claudeResumeId != null
+        ...((continuing != null || i == 0) && _claudeResumeId != null
             ? ClaudeCliBackend.buildClaudeArgs(
                 modelId: modelId,
                 permissionMode: permissionMode,
@@ -504,6 +539,7 @@ extension _ClaudeCliMethods on DispatchSession {
 
       final failure = terminal;
       final hasNext = i + 1 < attempts.length;
+      turnProducedOutput = turnProducedOutput || producedOutput;
       // Is this failure about the ACCOUNT rather than the run? Two shapes
       // qualify — a spent plan and a credential that no longer authenticates —
       // and only those retry. Any other terminal error (a bad model id, a
@@ -512,7 +548,7 @@ extension _ClaudeCliMethods on DispatchSession {
       // than continued.
       final accountFailure =
           failure != null && (failure.isCapacity || failure.isAuth);
-      if (accountFailure && !producedOutput && hasNext) {
+      if (accountFailure && !turnProducedOutput && hasNext) {
         if (attempt.accountId.isNotEmpty) {
           await _reportClaudeAccountFailure(attempt.accountId, failure);
         }
@@ -552,7 +588,7 @@ extension _ClaudeCliMethods on DispatchSession {
       // than finishing as a blank bubble the operator cannot act on.
       if (failure != null &&
           failure.isAuth &&
-          !producedOutput &&
+          !turnProducedOutput &&
           reauthParks < 2) {
         if (attempt.accountId.isNotEmpty) {
           await _reportClaudeAccountFailure(attempt.accountId, failure);
@@ -595,7 +631,36 @@ extension _ClaudeCliMethods on DispatchSession {
           _claudePersistDisabled = false;
           continue;
         }
-        addEvent(ErrorEvent(content: detail));
+        addEvent(_claudeErrorEvent(detail, auth: true));
+        explained = true;
+        break;
+      }
+      // The sign-in died AFTER the turn did work. Re-running the prompt would
+      // redo (and duplicate) that work, so park for a login on the account it
+      // ran on and then CONTINUE the native session that holds it — what a
+      // person does in Claude Code itself: sign in again, then "continue".
+      final sessionToContinue = _claudeNativeSessionId;
+      if (failure != null &&
+          failure.isAuth &&
+          turnProducedOutput &&
+          reauthParks < 2 &&
+          capabilities.supportsResume &&
+          sessionToContinue != null &&
+          sessionToContinue.isNotEmpty) {
+        if (attempt.accountId.isNotEmpty) {
+          await _reportClaudeAccountFailure(attempt.accountId, failure);
+        }
+        final detail = redactSecrets('[claude] ${failure.message}');
+        if (await _gateOnExpiredClaudeSignIn(
+          detail: detail,
+          midTurn: attempt,
+        )) {
+          reauthParks++;
+          explained = false;
+          continueSessionId = sessionToContinue;
+          continue;
+        }
+        addEvent(_claudeErrorEvent(detail, auth: true));
         explained = true;
         break;
       }
@@ -606,7 +671,10 @@ extension _ClaudeCliMethods on DispatchSession {
           await _reportClaudeAccountFailure(attempt.accountId, failure);
         }
         addEvent(
-          ErrorEvent(content: redactSecrets('[claude] ${failure.message}')),
+          _claudeErrorEvent(
+            redactSecrets('[claude] ${failure.message}'),
+            auth: failure.isAuth,
+          ),
         );
         explained = true;
       }
@@ -1412,29 +1480,47 @@ extension _ClaudeAccountCredentials on DispatchSession {
   /// times out, or when the gate says "resolved" without the credential file
   /// actually changing — that last one is what stops a poll from relaunching
   /// `claude` against the same dead token.
-  Future<bool> _gateOnExpiredClaudeSignIn({required String detail}) async {
+  ///
+  /// [midTurn] names the one account a turn that already did work was running
+  /// on. Only that account can continue it — its session lives in that
+  /// directory — so only its login is asked for and only its credential counts
+  /// as renewed.
+  Future<bool> _gateOnExpiredClaudeSignIn({
+    required String detail,
+    ({String accountId, String configDir})? midTurn,
+  }) async {
     final gate = deps.credentialGate;
     if (gate == null) {
       return false;
     }
     addEvent(
       DebugEvent(
-        content:
-            '[claude] waiting for a fresh sign-in — '
-            'the same prompt continues as soon as one lands.',
+        content: midTurn != null
+            ? '[claude] waiting for a fresh sign-in — '
+                  'the turn continues where it stopped as soon as one lands.'
+            : '[claude] waiting for a fresh sign-in — '
+                  'the same prompt continues as soon as one lands.',
       ),
     );
-    final before = _claudeCredentialBlobs();
+    final all = _claudeCredentialBlobs();
+    final before = midTurn == null
+        ? all
+        : {
+            for (final e in all.entries)
+              if (e.key == midTurn.configDir) e.key: e.value,
+          };
     final outcome = await gate.awaitCredentials(
       RunCredentialBlockRequest(
         lane: RunCredentialLane.claudeCode,
         reason: RunCredentialReason.credentialExpired,
         detail: detail,
         runLogId: runLogId,
-        accountIds: [
-          for (final a in claudeAccounts)
-            if (a.accountId.isNotEmpty) a.accountId,
-        ],
+        accountIds: midTurn != null
+            ? [if (midTurn.accountId.isNotEmpty) midTurn.accountId]
+            : [
+                for (final a in claudeAccounts)
+                  if (a.accountId.isNotEmpty) a.accountId,
+              ],
         workspaceId: workspaceId,
         spaceId: spaceId,
         conversationId: conversationId,
@@ -1466,7 +1552,7 @@ extension _ClaudeAccountCredentials on DispatchSession {
     return {for (final dir in dirs) dir: _readClaudeCredential(dir)};
   }
 
-  /// Whether any account dir now holds a different credential than [before].
+  /// Whether any account dir in [before] now holds a different credential.
   ///
   /// Content, not mtime: a failed refresh and the Keychain mirror can both
   /// rewrite the file without a human signing in, and a 1-second filesystem
@@ -1482,11 +1568,10 @@ extension _ClaudeAccountCredentials on DispatchSession {
         await sync(account.accountId);
       }
     }
-    for (final entry in _claudeCredentialBlobs().entries) {
-      final current = entry.value;
-      if (current != null &&
-          current.isNotEmpty &&
-          current != before[entry.key]) {
+    final now = _claudeCredentialBlobs();
+    for (final dir in before.keys) {
+      final current = now[dir];
+      if (current != null && current.isNotEmpty && current != before[dir]) {
         return true;
       }
     }

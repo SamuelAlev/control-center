@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "Pemeriksaan artefak bersifat sintetis dan tidak mencerminkan tingkat serangan di dunia nyata; efek samping nyata tidak terpantau.",
   "skillBehaviorUtility": "Kegunaan menurut keluarga",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} keberhasilan terverifikasi",
-  "skillBehaviorUtilityNote": "Semua percobaan masuk penyebut kegunaan, termasuk yang gagal dan belum selesai."
+  "skillBehaviorUtilityNote": "Semua percobaan masuk penyebut kegunaan, termasuk yang gagal dan belum selesai.",
+  "claudeAccountSignInFailed": "Gagal masuk",
+  "claudeSignInDialogTitle": "Masuk ke Claude Code",
+  "claudeSignInDialogHint": "Jalankan setiap perintah di terminal pada server. Perintah itu membuka browser untuk menyelesaikan login dan menulis kredensial ke direktori akun tersebut.",
+  "claudeSignInNoAccounts": "Tidak ada akun terkelola yang keluar. Jika agen ini memakai login Claude Code sendiri, jalankan:",
+  "claudeSignInCommandUnavailable": "Server tidak dapat menyediakan perintah login untuk akun ini.",
+  "transcriptClaudeSignInExpiredTitle": "Login Claude Code kedaluwarsa",
+  "transcriptClaudeSignInExpiredBody": "Proses berhenti karena akunnya tidak lagi terautentikasi. Masuk lagi, lalu coba ulang giliran ini.",
+  "transcriptSignInExpiredTitle": "Login penyedia kedaluwarsa",
+  "transcriptSignInExpiredBody": "Proses berhenti karena kredensial penyedianya tidak lagi berfungsi. Hubungkan ulang di Pengaturan → Penyedia, lalu coba ulang giliran ini."
 }

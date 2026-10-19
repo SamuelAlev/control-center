@@ -12,10 +12,12 @@ ConfirmationRequestDto _req(
   int i, {
   String detail = 'Short detail',
   String spaceId = 'space-1',
+  String? conversationId,
   String? command,
 }) => ConfirmationRequestDto(
   id: 'req-$i',
   spaceId: spaceId,
+  conversationId: conversationId,
   title: 'Request $i',
   detail: detail,
   severity: 'warning',
@@ -31,10 +33,19 @@ class _PinnedVisibleSpaces extends VisibleConversationSpaces {
   Set<String> build() => ids;
 }
 
+class _PinnedVisibleConversations extends VisibleConversations {
+  _PinnedVisibleConversations(this.ids);
+  final Set<String> ids;
+
+  @override
+  Set<String> build() => ids;
+}
+
 Future<void> _pumpOverlay(
   WidgetTester tester,
   List<ConfirmationRequestDto> pending, {
   Set<String> visibleSpaces = const {},
+  Set<String> visibleConversations = const {},
 }) async {
   tester.view.physicalSize = const Size(1200, 900);
   tester.view.devicePixelRatio = 1.0;
@@ -51,6 +62,9 @@ Future<void> _pumpOverlay(
         ),
         visibleConversationSpacesProvider.overrideWith(
           () => _PinnedVisibleSpaces(visibleSpaces),
+        ),
+        visibleConversationsProvider.overrideWith(
+          () => _PinnedVisibleConversations(visibleConversations),
         ),
       ],
       child: MaterialApp(
@@ -166,6 +180,24 @@ void main() {
       expect(find.text('Request 0'), findsNothing);
       expect(find.text('Request 1'), findsOneWidget);
       expect(find.text('Approve'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a conversation request floats while only a sibling tab is on screen',
+    (tester) async {
+      await _pumpOverlay(
+        tester,
+        [
+          _req(0, spaceId: 'space-open', conversationId: 'conv-hidden'),
+          _req(1, spaceId: 'space-open', conversationId: 'conv-shown'),
+        ],
+        visibleSpaces: {'space-open'},
+        visibleConversations: {'conv-shown'},
+      );
+
+      expect(find.text('Request 0'), findsOneWidget);
+      expect(find.text('Request 1'), findsNothing);
     },
   );
 }

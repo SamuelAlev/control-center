@@ -16039,4 +16039,37 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'В знаменатель пользы входят все попытки, включая неудачные и незавершённые.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Не удалось войти';
+
+  @override
+  String get claudeSignInDialogTitle => 'Вход в Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Выполните каждую команду в терминале на сервере. Она откроет браузер для завершения входа и запишет учётные данные в каталог этого аккаунта.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Ни один управляемый аккаунт не вышел из системы. Если этот агент использует собственный вход Claude Code, выполните:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Сервер не смог предоставить команду входа для этого аккаунта.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Срок входа в Claude Code истёк';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Запуск остановлен, потому что его аккаунт больше не проходит аутентификацию. Войдите снова, затем повторите ход.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Срок входа к провайдеру истёк';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Запуск остановлен, потому что учётные данные провайдера больше не работают. Переподключите его в Настройки → Провайдеры, затем повторите ход.';
 }

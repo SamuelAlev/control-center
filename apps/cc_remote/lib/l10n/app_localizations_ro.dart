@@ -2647,4 +2647,20 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Oprește monitorizarea';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Autentificarea Claude Code a expirat';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Rularea s-a oprit deoarece contul ei nu se mai autentifică. Conectează-te din nou, apoi reîncearcă tura.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Autentificarea furnizorului a expirat';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Rularea s-a oprit deoarece datele de acces ale furnizorului nu mai funcționează. Reconectează-l în Setări → Furnizori, apoi reîncearcă tura.';
 }

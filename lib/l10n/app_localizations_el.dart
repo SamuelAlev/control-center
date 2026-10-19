@@ -15997,4 +15997,37 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Όλες οι προσπάθειες μετρούν στον παρονομαστή χρησιμότητας, ακόμη και οι αποτυχημένες και οι ημιτελείς.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Η σύνδεση απέτυχε';
+
+  @override
+  String get claudeSignInDialogTitle => 'Σύνδεση στο Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Εκτελέστε κάθε εντολή σε ένα τερματικό στον διακομιστή. Ανοίγει ένα πρόγραμμα περιήγησης για να ολοκληρωθεί η σύνδεση και γράφει τα διαπιστευτήρια στον κατάλογο του λογαριασμού.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Κανένας διαχειριζόμενος λογαριασμός δεν είναι αποσυνδεδεμένος. Αν αυτός ο πράκτορας χρησιμοποιεί τη δική σύνδεση του Claude Code, εκτελέστε:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Ο διακομιστής δεν μπόρεσε να δώσει εντολή σύνδεσης για αυτόν τον λογαριασμό.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Η σύνδεση στο Claude Code έληξε';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Η εκτέλεση σταμάτησε επειδή ο λογαριασμός της δεν πιστοποιείται πλέον. Συνδεθείτε ξανά και επαναλάβετε τον γύρο.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Η σύνδεση στον πάροχο έληξε';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Η εκτέλεση σταμάτησε επειδή τα διαπιστευτήρια του παρόχου δεν λειτουργούν πλέον. Συνδέστε τον ξανά στις Ρυθμίσεις → Πάροχοι και επαναλάβετε τον γύρο.';
 }

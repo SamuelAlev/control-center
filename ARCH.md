@@ -170,7 +170,7 @@ Without an MCP config, the launcher leaves Claude's native tool surface unchange
 
 ### Native Claude sessions and accounting
 
-Managed Claude Code accounts sign in through account-scoped `claude auth login`; creating an account opens those command instructions directly. Settings supports CLI login only, not pasted long-lived setup tokens. Old `.cc-long-lived-token.json` files are ignored; token-only accounts need a normal sign-in. Account rotation and CLI credential refresh continue to use each account's own config directory.
+Managed Claude Code accounts sign in through account-scoped `claude auth login`; creating an account opens those command instructions directly. Settings supports CLI login only, not pasted long-lived setup tokens. Old `.cc-long-lived-token.json` files are ignored; token-only accounts need a normal sign-in. Account rotation and CLI credential refresh continue to use each account's own config directory. On macOS every sandboxed process finds `MacosSandbox.keychainStandIn` first on `PATH`: the profile denies the login keychain, the real `security` takes up to ~3 s to fail there, and Claude Code treats a write timeout (2 s) as transient and skips its `.credentials.json` fallback, dropping a refresh the server already rotated. The stand-in answers login-keychain password calls at once, passes everything else to `/usr/bin/security`, and is write-denied in every profile.
 
 Subscription token renewal is owned by Claude Code, not Control Center. The network-enabled sandbox baseline allows the exact `platform.claude.com` host for OAuth exchange, refresh and revocation, alongside the Anthropic API domains. An expired access token with a usable refresh token stays eligible for a run; network-off sessions still block renewal.
 

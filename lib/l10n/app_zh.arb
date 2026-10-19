@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "产物检查是模拟的，不代表真实环境中的攻击发生率；实际副作用未受到监测。",
   "skillBehaviorUtility": "按任务组统计效用",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} 次经验证的成功",
-  "skillBehaviorUtilityNote": "所有尝试均计入效用分母，包括失败和未完成的尝试。"
+  "skillBehaviorUtilityNote": "所有尝试均计入效用分母，包括失败和未完成的尝试。",
+  "claudeAccountSignInFailed": "登录失败",
+  "claudeSignInDialogTitle": "登录 Claude Code",
+  "claudeSignInDialogHint": "在服务器的终端中运行每条命令。它会打开浏览器完成登录，并将凭据写入该账户的目录。",
+  "claudeSignInNoAccounts": "没有已退出登录的托管账户。如果此代理使用 Claude Code 自身的登录，请运行：",
+  "claudeSignInCommandUnavailable": "服务器无法提供此账户的登录命令。",
+  "transcriptClaudeSignInExpiredTitle": "Claude Code 登录已过期",
+  "transcriptClaudeSignInExpiredBody": "运行已停止，因为其账户无法再通过身份验证。请重新登录，然后重试此轮。",
+  "transcriptSignInExpiredTitle": "提供方登录已过期",
+  "transcriptSignInExpiredBody": "运行已停止，因为其提供方凭据已失效。请在 设置 → 提供方 中重新连接，然后重试此轮。"
 }

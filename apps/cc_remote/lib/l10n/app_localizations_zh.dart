@@ -2499,6 +2499,20 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => '停止监测';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle => 'Claude Code 登录已过期';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      '运行已停止，因为其账户无法再通过身份验证。请重新登录，然后重试此轮。';
+
+  @override
+  String get transcriptSignInExpiredTitle => '提供方登录已过期';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      '运行已停止，因为其提供方凭据已失效。请在 设置 → 提供方 中重新连接，然后重试此轮。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -5005,4 +5019,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get credentialsStopWatching => '停止監看';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle => 'Claude Code 登入已過期';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      '執行已停止，因為其帳號無法再通過驗證。請重新登入，然後重試此回合。';
+
+  @override
+  String get transcriptSignInExpiredTitle => '提供者登入已過期';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      '執行已停止，因為其提供者憑證已失效。請在 設定 → 提供者 中重新連線，然後重試此回合。';
 }

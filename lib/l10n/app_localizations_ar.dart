@@ -16063,4 +16063,38 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'تُحتسب جميع المحاولات في مقام الفائدة، بما فيها الفاشلة وغير المكتملة.';
+
+  @override
+  String get claudeAccountSignInFailed => 'فشل تسجيل الدخول';
+
+  @override
+  String get claudeSignInDialogTitle => 'تسجيل الدخول إلى Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'شغّل كل أمر في طرفية على الخادم. يفتح متصفحًا لإكمال تسجيل الدخول ويكتب بيانات الاعتماد في مجلد ذلك الحساب.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'لا يوجد حساب مُدار مسجَّل الخروج. إذا كان هذا الوكيل يستخدم تسجيل الدخول الخاص بـ Claude Code، فشغّل:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'تعذّر على الخادم توفير أمر تسجيل دخول لهذا الحساب.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'انتهت صلاحية تسجيل الدخول إلى Claude Code';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'توقف التشغيل لأن حسابه لم يعد يجتاز المصادقة. سجّل الدخول مرة أخرى، ثم أعد محاولة الدور.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'انتهت صلاحية تسجيل الدخول إلى المزوّد';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'توقف التشغيل لأن بيانات اعتماد المزوّد لم تعد تعمل. أعد ربطه من الإعدادات ← المزوّدون، ثم أعد محاولة الدور.';
 }

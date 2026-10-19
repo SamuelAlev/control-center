@@ -2602,4 +2602,19 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'הפסקת המעקב';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'תוקף הכניסה ל-Claude Code פג';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'הריצה נעצרה כי החשבון שלה כבר לא עובר אימות. היכנסו שוב ואז נסו שוב את התור.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'תוקף הכניסה לספק פג';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'הריצה נעצרה כי פרטי ההתחברות של הספק כבר לא עובדים. חברו אותו מחדש בהגדרות ← ספקים ואז נסו שוב את התור.';
 }

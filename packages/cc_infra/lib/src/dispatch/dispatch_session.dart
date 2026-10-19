@@ -1791,6 +1791,7 @@ class DispatchSession implements SteeringSessionView {
         final approved = await port.requestApproval(
           ConfirmationRequest(
             spaceId: spaceId ?? '',
+            conversationId: conversationId,
             workspaceId: workspaceId,
             title: copy.title,
             detail: copy.detail,

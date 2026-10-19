@@ -8156,5 +8156,14 @@
   "skillBehaviorSafetyNote": "Artefactcontroles zijn synthetisch en geven geen aanvalscijfers uit de praktijk weer; werkelijke neveneffecten worden niet gemeten.",
   "skillBehaviorUtility": "Nut per familie",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} geverifieerde successen",
-  "skillBehaviorUtilityNote": "Alle pogingen tellen mee in de noemer voor nut, ook mislukte en onvoltooide pogingen."
+  "skillBehaviorUtilityNote": "Alle pogingen tellen mee in de noemer voor nut, ook mislukte en onvoltooide pogingen.",
+  "claudeAccountSignInFailed": "Aanmelden mislukt",
+  "claudeSignInDialogTitle": "Aanmelden bij Claude Code",
+  "claudeSignInDialogHint": "Voer elke opdracht uit in een terminal op de server. Die opent een browser om het aanmelden af te ronden en schrijft de inloggegevens naar de map van dat account.",
+  "claudeSignInNoAccounts": "Geen beheerd account is afgemeld. Als deze agent de eigen aanmelding van Claude Code gebruikt, voer uit:",
+  "claudeSignInCommandUnavailable": "De server kon geen aanmeldopdracht voor dit account leveren.",
+  "transcriptClaudeSignInExpiredTitle": "Aanmelding bij Claude Code verlopen",
+  "transcriptClaudeSignInExpiredBody": "De run is gestopt omdat het account zich niet meer authenticeert. Meld je opnieuw aan en probeer de beurt dan opnieuw.",
+  "transcriptSignInExpiredTitle": "Aanmelding bij provider verlopen",
+  "transcriptSignInExpiredBody": "De run is gestopt omdat de inloggegevens van de provider niet meer werken. Verbind hem opnieuw via Instellingen → Providers en probeer de beurt dan opnieuw."
 }

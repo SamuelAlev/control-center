@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "Token di accesso personale",
   "credentialsPersonalTokenHint": "Incolla un token di accesso personale",
   "credentialsHostManaged": "Questa connessione proviene dall'applicazione server o dall'ambiente. Solo il proprietario del server può modificarla lì; puoi comunque aggiungere un tuo token.",
-  "credentialsStopWatching": "Interrompi l'attesa"
+  "credentialsStopWatching": "Interrompi l'attesa",
+  "transcriptClaudeSignInExpiredTitle": "Accesso a Claude Code scaduto",
+  "transcriptClaudeSignInExpiredBody": "L'esecuzione si è interrotta perché il suo account non si autentica più. Accedi di nuovo, poi riprova il turno.",
+  "transcriptSignInExpiredTitle": "Accesso al provider scaduto",
+  "transcriptSignInExpiredBody": "L'esecuzione si è interrotta perché la credenziale del provider non funziona più. Ricollegalo in Impostazioni → Provider, poi riprova il turno."
 }

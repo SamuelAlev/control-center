@@ -2548,4 +2548,18 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => '상태 확인 중지';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle => 'Claude Code 로그인이 만료되었습니다';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      '계정이 더 이상 인증되지 않아 실행이 중지되었습니다. 다시 로그인한 뒤 이 턴을 재시도하세요.';
+
+  @override
+  String get transcriptSignInExpiredTitle => '제공자 로그인이 만료되었습니다';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      '제공자 자격 증명이 더 이상 작동하지 않아 실행이 중지되었습니다. 설정 → 제공자에서 다시 연결한 뒤 이 턴을 재시도하세요.';
 }

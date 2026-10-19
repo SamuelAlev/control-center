@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "Проверки артефактов синтетические и не отражают частоту атак в реальных условиях; фактические побочные эффекты не отслеживаются.",
   "skillBehaviorUtility": "Польза по семействам",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} подтверждённых успехов",
-  "skillBehaviorUtilityNote": "В знаменатель пользы входят все попытки, включая неудачные и незавершённые."
+  "skillBehaviorUtilityNote": "В знаменатель пользы входят все попытки, включая неудачные и незавершённые.",
+  "claudeAccountSignInFailed": "Не удалось войти",
+  "claudeSignInDialogTitle": "Вход в Claude Code",
+  "claudeSignInDialogHint": "Выполните каждую команду в терминале на сервере. Она откроет браузер для завершения входа и запишет учётные данные в каталог этого аккаунта.",
+  "claudeSignInNoAccounts": "Ни один управляемый аккаунт не вышел из системы. Если этот агент использует собственный вход Claude Code, выполните:",
+  "claudeSignInCommandUnavailable": "Сервер не смог предоставить команду входа для этого аккаунта.",
+  "transcriptClaudeSignInExpiredTitle": "Срок входа в Claude Code истёк",
+  "transcriptClaudeSignInExpiredBody": "Запуск остановлен, потому что его аккаунт больше не проходит аутентификацию. Войдите снова, затем повторите ход.",
+  "transcriptSignInExpiredTitle": "Срок входа к провайдеру истёк",
+  "transcriptSignInExpiredBody": "Запуск остановлен, потому что учётные данные провайдера больше не работают. Переподключите его в Настройки → Провайдеры, затем повторите ход."
 }

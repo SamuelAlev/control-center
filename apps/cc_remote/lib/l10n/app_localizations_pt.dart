@@ -2639,6 +2639,21 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Parar de acompanhar';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Login do Claude Code expirado';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'A execução parou porque a conta dela não autentica mais. Entre novamente e tente o turno outra vez.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Login do provedor expirado';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'A execução parou porque a credencial do provedor não funciona mais. Reconecte-o em Configurações → Provedores e tente o turno outra vez.';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).

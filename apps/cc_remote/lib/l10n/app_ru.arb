@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "Персональный токен доступа",
   "credentialsPersonalTokenHint": "Вставьте персональный токен доступа",
   "credentialsHostManaged": "Это подключение настроено в приложении сервера или его окружении. Изменить его там может только владелец сервера; вы также можете добавить свой токен.",
-  "credentialsStopWatching": "Прекратить отслеживание"
+  "credentialsStopWatching": "Прекратить отслеживание",
+  "transcriptClaudeSignInExpiredTitle": "Срок входа в Claude Code истёк",
+  "transcriptClaudeSignInExpiredBody": "Запуск остановлен, потому что его аккаунт больше не проходит аутентификацию. Войдите снова, затем повторите ход.",
+  "transcriptSignInExpiredTitle": "Срок входа к провайдеру истёк",
+  "transcriptSignInExpiredBody": "Запуск остановлен, потому что учётные данные провайдера больше не работают. Переподключите его в Настройки → Провайдеры, затем повторите ход."
 }

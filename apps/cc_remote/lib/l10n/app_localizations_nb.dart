@@ -2620,4 +2620,20 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Slutt å følge med';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Innloggingen til Claude Code har utløpt';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Kjøringen stoppet fordi kontoen ikke lenger autentiseres. Logg inn på nytt, og prøv turen igjen.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Innloggingen til leverandøren har utløpt';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Kjøringen stoppet fordi leverandørens legitimasjon ikke lenger virker. Koble den til på nytt under Innstillinger → Leverandører, og prøv turen igjen.';
 }

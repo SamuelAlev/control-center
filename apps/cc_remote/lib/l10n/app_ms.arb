@@ -971,5 +971,9 @@
   "credentialsPersonalToken": "Token akses peribadi",
   "credentialsPersonalTokenHint": "Tampal token akses peribadi",
   "credentialsHostManaged": "Sambungan ini datang daripada aplikasi atau persekitaran pelayan. Hanya pemilik pelayan boleh mengubahnya di sana; anda masih boleh menambah token sendiri.",
-  "credentialsStopWatching": "Berhenti memantau"
+  "credentialsStopWatching": "Berhenti memantau",
+  "transcriptClaudeSignInExpiredTitle": "Log masuk Claude Code telah tamat tempoh",
+  "transcriptClaudeSignInExpiredBody": "Larian berhenti kerana akaunnya tidak lagi disahkan. Log masuk semula, kemudian cuba semula giliran ini.",
+  "transcriptSignInExpiredTitle": "Log masuk penyedia telah tamat tempoh",
+  "transcriptSignInExpiredBody": "Larian berhenti kerana kelayakan penyedianya tidak lagi berfungsi. Sambung semula dalam Tetapan → Penyedia, kemudian cuba semula giliran ini."
 }

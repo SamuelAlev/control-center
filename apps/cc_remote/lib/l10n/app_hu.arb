@@ -1034,5 +1034,9 @@
   "credentialsPersonalToken": "Személyes hozzáférési token",
   "credentialsPersonalTokenHint": "Illesszen be egy személyes hozzáférési tokent",
   "credentialsHostManaged": "Ez a kapcsolat a szerveralkalmazásból vagy a környezetből származik. Ott csak a szerver tulajdonosa módosíthatja; saját tokent továbbra is hozzáadhat.",
-  "credentialsStopWatching": "Figyelés leállítása"
+  "credentialsStopWatching": "Figyelés leállítása",
+  "transcriptClaudeSignInExpiredTitle": "A Claude Code-bejelentkezés lejárt",
+  "transcriptClaudeSignInExpiredBody": "A futás leállt, mert a fiókja már nem hitelesít. Jelentkezz be újra, majd próbáld újra a kört.",
+  "transcriptSignInExpiredTitle": "A szolgáltatói bejelentkezés lejárt",
+  "transcriptSignInExpiredBody": "A futás leállt, mert a szolgáltató hitelesítő adata már nem működik. Csatlakoztasd újra a Beállítások → Szolgáltatók alatt, majd próbáld újra a kört."
 }

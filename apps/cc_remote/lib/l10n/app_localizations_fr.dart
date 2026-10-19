@@ -2647,6 +2647,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Arrêter la surveillance';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Connexion à Claude Code expirée';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'L\'exécution s\'est arrêtée car son compte ne s\'authentifie plus. Reconnectez-vous, puis relancez le tour.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Connexion au fournisseur expirée';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'L\'exécution s\'est arrêtée car les identifiants de son fournisseur ne fonctionnent plus. Reconnectez-le dans Paramètres → Fournisseurs, puis relancez le tour.';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

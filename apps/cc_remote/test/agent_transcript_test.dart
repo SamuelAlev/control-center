@@ -12,7 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   Widget host(
-    List<ToolSegment> segments, {
+    List<TranscriptSegment> segments, {
     Locale locale = const Locale('en'),
   }) {
     return WidgetsApp(
@@ -44,6 +44,30 @@ void main() {
         status: ToolSegmentStatus.ok,
         startedAt: DateTime.utc(2026),
       );
+
+  testWidgets('a lost Claude sign-in reads as a notice, not a log line', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host([
+        ErrorSegment(
+          message: '[claude] Failed to authenticate: OAuth token revoked.',
+          code: ErrorSegment.authenticationErrorCode,
+          source: ErrorSegment.claudeCodeSource,
+          startedAt: DateTime.utc(2026),
+        ),
+      ]),
+    );
+    await tester.pump();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.byType(CcAlert), findsOneWidget);
+    expect(find.text(l10n.transcriptClaudeSignInExpiredTitle), findsOneWidget);
+    expect(
+      find.text('Failed to authenticate: OAuth token revoked.'),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('Control Center rows show readable labels, raw IDs in details', (
     tester,

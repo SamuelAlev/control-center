@@ -1034,5 +1034,9 @@
   "credentialsPersonalToken": "Personlig tilgangstoken",
   "credentialsPersonalTokenHint": "Lim inn et personlig tilgangstoken",
   "credentialsHostManaged": "Denne tilkoblingen kommer fra serverappen eller miljøet. Bare servereieren kan endre den der, men du kan fortsatt legge til ditt eget token.",
-  "credentialsStopWatching": "Slutt å følge med"
+  "credentialsStopWatching": "Slutt å følge med",
+  "transcriptClaudeSignInExpiredTitle": "Innloggingen til Claude Code har utløpt",
+  "transcriptClaudeSignInExpiredBody": "Kjøringen stoppet fordi kontoen ikke lenger autentiseres. Logg inn på nytt, og prøv turen igjen.",
+  "transcriptSignInExpiredTitle": "Innloggingen til leverandøren har utløpt",
+  "transcriptSignInExpiredBody": "Kjøringen stoppet fordi leverandørens legitimasjon ikke lenger virker. Koble den til på nytt under Innstillinger → Leverandører, og prøv turen igjen."
 }

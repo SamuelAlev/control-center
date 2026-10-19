@@ -15860,4 +15860,38 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Semua percubaan dikira dalam penyebut kegunaan, termasuk kegagalan dan yang tidak selesai.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Log masuk gagal';
+
+  @override
+  String get claudeSignInDialogTitle => 'Log masuk ke Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Jalankan setiap arahan dalam terminal pada pelayan. Ia membuka pelayar untuk menyelesaikan log masuk dan menulis kelayakan ke dalam direktori akaun itu.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Tiada akaun terurus yang dilog keluar. Jika ejen ini menggunakan log masuk Claude Code sendiri, jalankan:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Pelayan tidak dapat memberikan arahan log masuk untuk akaun ini.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Log masuk Claude Code telah tamat tempoh';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Larian berhenti kerana akaunnya tidak lagi disahkan. Log masuk semula, kemudian cuba semula giliran ini.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Log masuk penyedia telah tamat tempoh';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Larian berhenti kerana kelayakan penyedianya tidak lagi berfungsi. Sambung semula dalam Tetapan → Penyedia, kemudian cuba semula giliran ini.';
 }

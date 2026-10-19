@@ -11,6 +11,7 @@ import 'package:material_ui/material_ui.dart';
 
 ConfirmationRequestDto _req({
   String spaceId = 'space-1',
+  String? conversationId,
   bool rememberable = false,
   String id = 'req-1',
   String title = 'Push to main',
@@ -20,6 +21,7 @@ ConfirmationRequestDto _req({
 }) => ConfirmationRequestDto(
   id: id,
   spaceId: spaceId,
+  conversationId: conversationId,
   title: title,
   detail: detail,
   severity: severity,
@@ -33,6 +35,7 @@ Future<void> _pump(
   WidgetTester tester, {
   required List<ConfirmationRequestDto> pending,
   String spaceId = 'space-1',
+  String conversationId = 'conv-1',
   Size size = const Size(1200, 900),
   TextDirection textDirection = TextDirection.ltr,
   Stream<List<ConfirmationRequestDto>>? pendingChanges,
@@ -61,7 +64,10 @@ Future<void> _pump(
               child: Column(
                 children: [
                   const Expanded(child: SizedBox()),
-                  ConversationPermissionPrompt(spaceId: spaceId),
+                  ConversationPermissionPrompt(
+                    spaceId: spaceId,
+                    conversationId: conversationId,
+                  ),
                   const SizedBox(height: 80),
                 ],
               ),
@@ -81,6 +87,25 @@ void main() {
     await _pump(tester, pending: [_req(spaceId: 'other')]);
     expect(find.text('Push to main'), findsNothing);
     expect(find.text('Deny'), findsNothing);
+  });
+
+  testWidgets('a sibling conversation of the same space does not show it', (
+    tester,
+  ) async {
+    await _pump(tester, pending: [_req(conversationId: 'conv-2')]);
+    expect(find.text('Push to main'), findsNothing);
+  });
+
+  testWidgets('its own conversation shows it', (tester) async {
+    await _pump(tester, pending: [_req(conversationId: 'conv-1')]);
+    expect(find.text('Push to main'), findsOneWidget);
+  });
+
+  testWidgets('a request naming no conversation shows in any of the space', (
+    tester,
+  ) async {
+    await _pump(tester, pending: [_req()]);
+    expect(find.text('Push to main'), findsOneWidget);
   });
 
   testWidgets('a rememberable request offers the standing approval', (

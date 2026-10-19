@@ -2649,4 +2649,19 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Διακοπή παρακολούθησης';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Η σύνδεση στο Claude Code έληξε';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Η εκτέλεση σταμάτησε επειδή ο λογαριασμός της δεν πιστοποιείται πλέον. Συνδεθείτε ξανά και επαναλάβετε τον γύρο.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Η σύνδεση στον πάροχο έληξε';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Η εκτέλεση σταμάτησε επειδή τα διαπιστευτήρια του παρόχου δεν λειτουργούν πλέον. Συνδέστε τον ξανά στις Ρυθμίσεις → Πάροχοι και επαναλάβετε τον γύρο.';
 }

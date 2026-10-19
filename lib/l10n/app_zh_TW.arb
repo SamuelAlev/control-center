@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "產物檢查是模擬的，不代表真實環境中的攻擊發生率；實際副作用未受到監測。",
   "skillBehaviorUtility": "依任務類別統計效用",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} 次經驗證的成功",
-  "skillBehaviorUtilityNote": "所有嘗試均計入效用分母，包括失敗及未完成的嘗試。"
+  "skillBehaviorUtilityNote": "所有嘗試均計入效用分母，包括失敗及未完成的嘗試。",
+  "claudeAccountSignInFailed": "登入失敗",
+  "claudeSignInDialogTitle": "登入 Claude Code",
+  "claudeSignInDialogHint": "在伺服器的終端機中執行每個指令。它會開啟瀏覽器完成登入，並將憑證寫入該帳號的目錄。",
+  "claudeSignInNoAccounts": "沒有已登出的受管帳號。如果此代理程式使用 Claude Code 自身的登入，請執行：",
+  "claudeSignInCommandUnavailable": "伺服器無法提供此帳號的登入指令。",
+  "transcriptClaudeSignInExpiredTitle": "Claude Code 登入已過期",
+  "transcriptClaudeSignInExpiredBody": "執行已停止，因為其帳號無法再通過驗證。請重新登入，然後重試此回合。",
+  "transcriptSignInExpiredTitle": "提供者登入已過期",
+  "transcriptSignInExpiredBody": "執行已停止，因為其提供者憑證已失效。請在 設定 → 提供者 中重新連線，然後重試此回合。"
 }

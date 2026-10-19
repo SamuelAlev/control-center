@@ -2644,4 +2644,19 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Interrompi l\'attesa';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Accesso a Claude Code scaduto';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'L\'esecuzione si è interrotta perché il suo account non si autentica più. Accedi di nuovo, poi riprova il turno.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Accesso al provider scaduto';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'L\'esecuzione si è interrotta perché la credenziale del provider non funziona più. Ricollegalo in Impostazioni → Provider, poi riprova il turno.';
 }

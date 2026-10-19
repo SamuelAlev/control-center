@@ -185,6 +185,23 @@ void main() {
       registry.register(noCommand);
       final wire = pendingConfirmationToWire(registry.snapshot.single);
       expect(wire.containsKey('command'), isFalse);
+      expect(wire.containsKey('conversation_id'), isFalse);
+    });
+
+    test('carries the conversation through to the client DTO', () {
+      final registry = PendingConfirmationRegistry();
+      addTearDown(registry.dispose);
+      registry.register(
+        const ConfirmationRequest(
+          spaceId: 's1',
+          conversationId: 'conv-1',
+          title: 'Push',
+          detail: '',
+        ),
+      );
+      final wire = pendingConfirmationToWire(registry.snapshot.single);
+      expect(wire['conversation_id'], 'conv-1');
+      expect(ConfirmationRequestDto.fromJson(wire).conversationId, 'conv-1');
     });
   });
 

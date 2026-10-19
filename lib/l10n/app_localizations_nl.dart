@@ -15890,4 +15890,37 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Alle pogingen tellen mee in de noemer voor nut, ook mislukte en onvoltooide pogingen.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Aanmelden mislukt';
+
+  @override
+  String get claudeSignInDialogTitle => 'Aanmelden bij Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Voer elke opdracht uit in een terminal op de server. Die opent een browser om het aanmelden af te ronden en schrijft de inloggegevens naar de map van dat account.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Geen beheerd account is afgemeld. Als deze agent de eigen aanmelding van Claude Code gebruikt, voer uit:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'De server kon geen aanmeldopdracht voor dit account leveren.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Aanmelding bij Claude Code verlopen';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'De run is gestopt omdat het account zich niet meer authenticeert. Meld je opnieuw aan en probeer de beurt dan opnieuw.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Aanmelding bij provider verlopen';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'De run is gestopt omdat de inloggegevens van de provider niet meer werken. Verbind hem opnieuw via Instellingen → Providers en probeer de beurt dan opnieuw.';
 }

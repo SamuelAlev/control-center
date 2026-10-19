@@ -2546,4 +2546,19 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => '待機をやめる';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Claude Code のサインインの有効期限が切れました';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'アカウントが認証できなくなったため、実行が停止しました。再度サインインしてから、このターンを再試行してください。';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'プロバイダーのサインインの有効期限が切れました';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'プロバイダーの認証情報が使えなくなったため、実行が停止しました。設定 → プロバイダーで再接続してから、このターンを再試行してください。';
 }

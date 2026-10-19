@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "個人存取權杖",
   "credentialsPersonalTokenHint": "貼上個人存取權杖",
   "credentialsHostManaged": "此連線來自伺服器應用程式或環境。只有伺服器擁有者能在該處變更；你仍可新增自己的權杖。",
-  "credentialsStopWatching": "停止監看"
+  "credentialsStopWatching": "停止監看",
+  "transcriptClaudeSignInExpiredTitle": "Claude Code 登入已過期",
+  "transcriptClaudeSignInExpiredBody": "執行已停止，因為其帳號無法再通過驗證。請重新登入，然後重試此回合。",
+  "transcriptSignInExpiredTitle": "提供者登入已過期",
+  "transcriptSignInExpiredBody": "執行已停止，因為其提供者憑證已失效。請在 設定 → 提供者 中重新連線，然後重試此回合。"
 }

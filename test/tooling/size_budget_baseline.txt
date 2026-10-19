@@ -61,7 +61,7 @@ lib/features/memory/presentation/widgets/knowledge_graph_node_sheet.dart  447
 lib/features/memory/presentation/widgets/knowledge_graph_rendering.dart  327
 lib/features/messaging/presentation/widgets/bubbles/agent_turn.dart  558
 lib/features/messaging/presentation/widgets/bubbles/focusable_bubble.dart  399
-lib/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart  447
+lib/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart  433
 lib/features/messaging/presentation/widgets/context_usage_flyout.dart  304
 lib/features/messaging/presentation/widgets/conversations_sidebar_section.dart  530
 lib/features/messaging/presentation/widgets/message_feed.dart  315

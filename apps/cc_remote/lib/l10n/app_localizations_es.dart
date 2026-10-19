@@ -2646,6 +2646,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Dejar de esperar';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'La sesión de Claude Code ha caducado';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'La ejecución se detuvo porque su cuenta ya no se autentica. Vuelve a iniciar sesión y reintenta el turno.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'La sesión del proveedor ha caducado';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'La ejecución se detuvo porque la credencial de su proveedor ya no funciona. Vuelve a conectarlo en Ajustes → Proveedores y reintenta el turno.';
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

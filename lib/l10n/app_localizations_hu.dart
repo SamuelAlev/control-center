@@ -15902,4 +15902,38 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Minden próbálkozás beleszámít a hasznosság nevezőjébe, a sikertelen és befejezetlen is.';
+
+  @override
+  String get claudeAccountSignInFailed => 'A bejelentkezés sikertelen';
+
+  @override
+  String get claudeSignInDialogTitle => 'Bejelentkezés a Claude Code-ba';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Futtasd az egyes parancsokat egy terminálban a szerveren. Megnyit egy böngészőt a bejelentkezés befejezéséhez, és a hitelesítő adatot a fiók könyvtárába írja.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Egyik kezelt fiók sincs kijelentkezve. Ha ez az ügynök a Claude Code saját bejelentkezését használja, futtasd:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'A szerver nem tudott bejelentkezési parancsot adni ehhez a fiókhoz.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'A Claude Code-bejelentkezés lejárt';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'A futás leállt, mert a fiókja már nem hitelesít. Jelentkezz be újra, majd próbáld újra a kört.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'A szolgáltatói bejelentkezés lejárt';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'A futás leállt, mert a szolgáltató hitelesítő adata már nem működik. Csatlakoztasd újra a Beállítások → Szolgáltatók alatt, majd próbáld újra a kört.';
 }

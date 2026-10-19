@@ -971,5 +971,9 @@
   "credentialsPersonalToken": "אסימון גישה אישי",
   "credentialsPersonalTokenHint": "יש להדביק אסימון גישה אישי",
   "credentialsHostManaged": "החיבור הזה מגיע מאפליקציית השרת או מהסביבה שלו. רק הבעלים של השרת יכולים לשנות אותו שם; עדיין אפשר להוסיף אסימון גישה משלך.",
-  "credentialsStopWatching": "הפסקת המעקב"
+  "credentialsStopWatching": "הפסקת המעקב",
+  "transcriptClaudeSignInExpiredTitle": "תוקף הכניסה ל-Claude Code פג",
+  "transcriptClaudeSignInExpiredBody": "הריצה נעצרה כי החשבון שלה כבר לא עובר אימות. היכנסו שוב ואז נסו שוב את התור.",
+  "transcriptSignInExpiredTitle": "תוקף הכניסה לספק פג",
+  "transcriptSignInExpiredBody": "הריצה נעצרה כי פרטי ההתחברות של הספק כבר לא עובדים. חברו אותו מחדש בהגדרות ← ספקים ואז נסו שוב את התור."
 }

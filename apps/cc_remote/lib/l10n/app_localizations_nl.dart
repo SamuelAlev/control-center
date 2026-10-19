@@ -2623,4 +2623,19 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Stoppen met volgen';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Aanmelding bij Claude Code verlopen';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'De run is gestopt omdat het account zich niet meer authenticeert. Meld je opnieuw aan en probeer de beurt dan opnieuw.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Aanmelding bij provider verlopen';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'De run is gestopt omdat de inloggegevens van de provider niet meer werken. Verbind hem opnieuw via Instellingen → Providers en probeer de beurt dan opnieuw.';
 }

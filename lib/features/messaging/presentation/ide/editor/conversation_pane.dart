@@ -136,6 +136,7 @@ class ConversationPane extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) => VisibleConversationRegistrar(
         spaceId: spaceId,
+        conversationId: convId,
         child: Column(
           children: [
             SpaceHeader(
@@ -190,6 +191,7 @@ class ConversationPane extends ConsumerWidget {
                     SteeringQueueList(spaceId: spaceId, conversationId: convId),
                     ConversationPermissionPrompt(
                       spaceId: spaceId,
+                      conversationId: convId,
                       maxHeight: constraints.maxHeight * 0.6,
                     ),
                     SpaceInputBar(

@@ -15972,6 +15972,39 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Toutes les tentatives comptent dans le dénominateur d\'utilité, même les échecs et les tentatives incomplètes.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Échec de la connexion';
+
+  @override
+  String get claudeSignInDialogTitle => 'Se connecter à Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Exécutez chaque commande dans un terminal sur le serveur. Elle ouvre un navigateur pour terminer la connexion et écrit les identifiants dans le répertoire de ce compte.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Aucun compte géré n\'est déconnecté. Si cet agent utilise la connexion propre à Claude Code, exécutez :';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Le serveur n\'a pas pu fournir de commande de connexion pour ce compte.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Connexion à Claude Code expirée';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'L\'exécution s\'est arrêtée car son compte ne s\'authentifie plus. Reconnectez-vous, puis relancez le tour.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Connexion au fournisseur expirée';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'L\'exécution s\'est arrêtée car les identifiants de son fournisseur ne fonctionnent plus. Reconnectez-le dans Paramètres → Fournisseurs, puis relancez le tour.';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

@@ -2627,4 +2627,19 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Прекратить отслеживание';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Срок входа в Claude Code истёк';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Запуск остановлен, потому что его аккаунт больше не проходит аутентификацию. Войдите снова, затем повторите ход.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Срок входа к провайдеру истёк';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Запуск остановлен, потому что учётные данные провайдера больше не работают. Переподключите его в Настройки → Провайдеры, затем повторите ход.';
 }

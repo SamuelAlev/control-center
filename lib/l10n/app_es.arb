@@ -8150,5 +8150,14 @@
   "skillBehaviorSafetyNote": "Las comprobaciones de artefactos son sintéticas y no representan tasas de ataques en el mundo real; los efectos secundarios reales no se registran.",
   "skillBehaviorUtility": "Utilidad por familia",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} éxitos verificados",
-  "skillBehaviorUtilityNote": "Todos los intentos cuentan en el denominador de utilidad, incluidos los fallidos y los incompletos."
+  "skillBehaviorUtilityNote": "Todos los intentos cuentan en el denominador de utilidad, incluidos los fallidos y los incompletos.",
+  "claudeAccountSignInFailed": "Error al iniciar sesión",
+  "claudeSignInDialogTitle": "Iniciar sesión en Claude Code",
+  "claudeSignInDialogHint": "Ejecuta cada comando en una terminal del servidor. Abre un navegador para completar el inicio de sesión y guarda la credencial en el directorio de esa cuenta.",
+  "claudeSignInNoAccounts": "Ninguna cuenta gestionada tiene la sesión cerrada. Si este agente usa el inicio de sesión propio de Claude Code, ejecuta:",
+  "claudeSignInCommandUnavailable": "El servidor no pudo proporcionar un comando de inicio de sesión para esta cuenta.",
+  "transcriptClaudeSignInExpiredTitle": "La sesión de Claude Code ha caducado",
+  "transcriptClaudeSignInExpiredBody": "La ejecución se detuvo porque su cuenta ya no se autentica. Vuelve a iniciar sesión y reintenta el turno.",
+  "transcriptSignInExpiredTitle": "La sesión del proveedor ha caducado",
+  "transcriptSignInExpiredBody": "La ejecución se detuvo porque la credencial de su proveedor ya no funciona. Vuelve a conectarlo en Ajustes → Proveedores y reintenta el turno."
 }

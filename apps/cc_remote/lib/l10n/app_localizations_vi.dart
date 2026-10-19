@@ -2615,4 +2615,20 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Ngừng theo dõi';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Phiên đăng nhập Claude Code đã hết hạn';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Lần chạy đã dừng vì tài khoản của nó không còn xác thực được. Hãy đăng nhập lại rồi thử lại lượt này.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Phiên đăng nhập nhà cung cấp đã hết hạn';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Lần chạy đã dừng vì thông tin xác thực của nhà cung cấp không còn hoạt động. Hãy kết nối lại trong Cài đặt → Nhà cung cấp rồi thử lại lượt này.';
 }

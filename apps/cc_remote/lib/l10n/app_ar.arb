@@ -970,5 +970,9 @@
   "credentialsPersonalToken": "رمز وصول شخصي",
   "credentialsPersonalTokenHint": "الصق رمز وصول شخصيًا",
   "credentialsHostManaged": "يأتي هذا الاتصال من تطبيق الخادم أو بيئته. لا يستطيع تغييره هناك سوى مالك الخادم؛ لكن يمكنك إضافة رمز الوصول الخاص بك.",
-  "credentialsStopWatching": "إيقاف المتابعة"
+  "credentialsStopWatching": "إيقاف المتابعة",
+  "transcriptClaudeSignInExpiredTitle": "انتهت صلاحية تسجيل الدخول إلى Claude Code",
+  "transcriptClaudeSignInExpiredBody": "توقف التشغيل لأن حسابه لم يعد يجتاز المصادقة. سجّل الدخول مرة أخرى، ثم أعد محاولة الدور.",
+  "transcriptSignInExpiredTitle": "انتهت صلاحية تسجيل الدخول إلى المزوّد",
+  "transcriptSignInExpiredBody": "توقف التشغيل لأن بيانات اعتماد المزوّد لم تعد تعمل. أعد ربطه من الإعدادات ← المزوّدون، ثم أعد محاولة الدور."
 }

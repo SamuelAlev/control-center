@@ -1034,5 +1034,9 @@
   "credentialsPersonalToken": "Personlig åtkomsttoken",
   "credentialsPersonalTokenHint": "Klistra in en personlig åtkomsttoken",
   "credentialsHostManaged": "Anslutningen kommer från serverappen eller serverns miljö. Bara serverägaren kan ändra den där, men du kan lägga till en egen token.",
-  "credentialsStopWatching": "Sluta bevaka"
+  "credentialsStopWatching": "Sluta bevaka",
+  "transcriptClaudeSignInExpiredTitle": "Inloggningen till Claude Code har gått ut",
+  "transcriptClaudeSignInExpiredBody": "Körningen stoppades eftersom kontot inte längre autentiseras. Logga in igen och försök sedan med turen igen.",
+  "transcriptSignInExpiredTitle": "Inloggningen till leverantören har gått ut",
+  "transcriptSignInExpiredBody": "Körningen stoppades eftersom leverantörens inloggningsuppgifter inte längre fungerar. Anslut den igen under Inställningar → Leverantörer och försök sedan med turen igen."
 }

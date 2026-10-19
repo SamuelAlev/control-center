@@ -142,6 +142,13 @@ class ClaudeAccount {
     return at != null && !at.isAfter(now ?? DateTime.now());
   }
 
+  /// Whether only a human running `claude auth login` makes this account
+  /// usable again at [now]: it is signed out, its credential has expired, or a
+  /// run reported it no longer authenticates (a revoked token still looks
+  /// signed in and unexpired).
+  bool needsSignIn([DateTime? now]) =>
+      !loggedIn || isCredentialExpired(now) || authFailedAt != null;
+
   /// A one-line description for a picker row: the plan and the org, when known.
   ///
   /// Deliberately not localized — every part of it is a value the CLI handed

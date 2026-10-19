@@ -49,6 +49,7 @@ class ConfirmationRequest {
     required this.spaceId,
     required this.title,
     required this.detail,
+    this.conversationId,
     this.severity = ConfirmationSeverity.warning,
     this.command,
     this.kind = ConfirmationKind.command,
@@ -65,6 +66,14 @@ class ConfirmationRequest {
   /// on one, so naming it after a conversation only invited the two ids to be
   /// mixed up now that they are different values.
   final String spaceId;
+
+  /// The conversation inside [spaceId] whose run is blocked, when the producer
+  /// knows it. A space hosts several conversations side by side, and the
+  /// inline prompt belongs to the one whose agent asked, not to whichever of
+  /// its siblings happens to be open. Null for space-level asks (MCP calls
+  /// without a run, operator RPCs), which every conversation of the space
+  /// may answer.
+  final String? conversationId;
 
   /// The workspace the action belongs to. Authorizes the remote-approval
   /// surface: `confirmation.respond` requires the responding user to be a
@@ -128,6 +137,7 @@ class ConfirmationRequestDto {
     required this.severity,
     this.command,
     required this.createdAt,
+    this.conversationId,
     this.workspaceId,
     this.rememberScope,
     this.actionClasses = const [],
@@ -138,6 +148,7 @@ class ConfirmationRequestDto {
       ConfirmationRequestDto(
         id: json['id'] as String,
         spaceId: json['space_id'] as String? ?? '',
+        conversationId: json['conversation_id'] as String?,
         workspaceId: json['workspace_id'] as String?,
         title: json['title'] as String? ?? '',
         detail: json['detail'] as String? ?? '',
@@ -156,6 +167,10 @@ class ConfirmationRequestDto {
 
   /// The space the request originated from.
   final String spaceId;
+
+  /// The conversation whose run is blocked, or null when the request is not
+  /// tied to one (see [ConfirmationRequest.conversationId]).
+  final String? conversationId;
 
   /// The workspace the request belongs to, when the host knew one.
   ///

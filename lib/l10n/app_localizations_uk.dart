@@ -16037,4 +16037,37 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'До знаменника користі входять усі спроби, зокрема невдалі й незавершені.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Не вдалося увійти';
+
+  @override
+  String get claudeSignInDialogTitle => 'Вхід у Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Виконайте кожну команду в терміналі на сервері. Вона відкриє браузер для завершення входу й запише облікові дані в каталог цього облікового запису.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Жоден керований обліковий запис не вийшов із системи. Якщо цей агент використовує власний вхід Claude Code, виконайте:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Сервер не зміг надати команду входу для цього облікового запису.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Термін входу в Claude Code минув';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Запуск зупинено, бо його обліковий запис більше не проходить автентифікацію. Увійдіть знову, а потім повторіть хід.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Термін входу до провайдера минув';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Запуск зупинено, бо облікові дані провайдера більше не працюють. Перепідключіть його в Налаштування → Провайдери, а потім повторіть хід.';
 }

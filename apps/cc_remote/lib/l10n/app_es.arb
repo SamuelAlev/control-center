@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "Token de acceso personal",
   "credentialsPersonalTokenHint": "Pega un token de acceso personal",
   "credentialsHostManaged": "Esta conexión procede de la aplicación del servidor o de su entorno. Solo el propietario del servidor puede cambiarla allí; tú puedes añadir tu propio token.",
-  "credentialsStopWatching": "Dejar de esperar"
+  "credentialsStopWatching": "Dejar de esperar",
+  "transcriptClaudeSignInExpiredTitle": "La sesión de Claude Code ha caducado",
+  "transcriptClaudeSignInExpiredBody": "La ejecución se detuvo porque su cuenta ya no se autentica. Vuelve a iniciar sesión y reintenta el turno.",
+  "transcriptSignInExpiredTitle": "La sesión del proveedor ha caducado",
+  "transcriptSignInExpiredBody": "La ejecución se detuvo porque la credencial de su proveedor ya no funciona. Vuelve a conectarlo en Ajustes → Proveedores y reintenta el turno."
 }

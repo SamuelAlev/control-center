@@ -108,6 +108,39 @@ void main() {
       expect(find.textContaining('something went wrong'), findsWidgets);
     });
 
+    testWidgets('a one-line error is printed once, in full', (tester) async {
+      const message =
+          '[claude] model_not_found: the requested model does not exist on '
+          'this account, pick another one in the agent settings (HTTP 404)';
+      await tester.pumpWidget(
+        testWrap(
+          TranscriptSegmentRow(
+            segment: ErrorSegment(message: message, startedAt: ts),
+            codeFont: 'monospace',
+          ),
+        ),
+      );
+      expect(find.textContaining('model_not_found'), findsOneWidget);
+    });
+
+    testWidgets('a multi-line error expands to the lines below it', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testWrap(
+          TranscriptSegmentRow(
+            segment: ErrorSegment(
+              message: 'claude exited with code 1\nstderr: boom',
+              startedAt: ts,
+            ),
+            codeFont: 'monospace',
+          ),
+        ),
+      );
+      expect(find.textContaining('claude exited with code 1'), findsOneWidget);
+      expect(find.textContaining('stderr: boom'), findsOneWidget);
+    });
+
     testWidgets('edit tool is expanded by default with its diff', (
       tester,
     ) async {

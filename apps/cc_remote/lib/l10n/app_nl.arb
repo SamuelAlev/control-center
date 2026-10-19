@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "Persoonlijk toegangstoken",
   "credentialsPersonalTokenHint": "Plak een persoonlijk toegangstoken",
   "credentialsHostManaged": "Deze verbinding komt uit de serverapp of de omgeving. Alleen de servereigenaar kan deze daar wijzigen; je kunt wel je eigen token toevoegen.",
-  "credentialsStopWatching": "Stoppen met volgen"
+  "credentialsStopWatching": "Stoppen met volgen",
+  "transcriptClaudeSignInExpiredTitle": "Aanmelding bij Claude Code verlopen",
+  "transcriptClaudeSignInExpiredBody": "De run is gestopt omdat het account zich niet meer authenticeert. Meld je opnieuw aan en probeer de beurt dan opnieuw.",
+  "transcriptSignInExpiredTitle": "Aanmelding bij provider verlopen",
+  "transcriptSignInExpiredBody": "De run is gestopt omdat de inloggegevens van de provider niet meer werken. Verbind hem opnieuw via Instellingen → Providers en probeer de beurt dan opnieuw."
 }

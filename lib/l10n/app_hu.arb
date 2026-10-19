@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "A műtermék-ellenőrzések szimuláltak, nem a valós támadási arányokat mutatják; a tényleges mellékhatásokat nem figyeljük.",
   "skillBehaviorUtility": "Hasznosság feladatcsaládonként",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} igazolt siker",
-  "skillBehaviorUtilityNote": "Minden próbálkozás beleszámít a hasznosság nevezőjébe, a sikertelen és befejezetlen is."
+  "skillBehaviorUtilityNote": "Minden próbálkozás beleszámít a hasznosság nevezőjébe, a sikertelen és befejezetlen is.",
+  "claudeAccountSignInFailed": "A bejelentkezés sikertelen",
+  "claudeSignInDialogTitle": "Bejelentkezés a Claude Code-ba",
+  "claudeSignInDialogHint": "Futtasd az egyes parancsokat egy terminálban a szerveren. Megnyit egy böngészőt a bejelentkezés befejezéséhez, és a hitelesítő adatot a fiók könyvtárába írja.",
+  "claudeSignInNoAccounts": "Egyik kezelt fiók sincs kijelentkezve. Ha ez az ügynök a Claude Code saját bejelentkezését használja, futtasd:",
+  "claudeSignInCommandUnavailable": "A szerver nem tudott bejelentkezési parancsot adni ehhez a fiókhoz.",
+  "transcriptClaudeSignInExpiredTitle": "A Claude Code-bejelentkezés lejárt",
+  "transcriptClaudeSignInExpiredBody": "A futás leállt, mert a fiókja már nem hitelesít. Jelentkezz be újra, majd próbáld újra a kört.",
+  "transcriptSignInExpiredTitle": "A szolgáltatói bejelentkezés lejárt",
+  "transcriptSignInExpiredBody": "A futás leállt, mert a szolgáltató hitelesítő adata már nem működik. Csatlakoztasd újra a Beállítások → Szolgáltatók alatt, majd próbáld újra a kört."
 }

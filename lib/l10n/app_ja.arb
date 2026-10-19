@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "成果物のチェックは模擬的なもので、現実世界での攻撃率を示すものではありません。実際の副作用は計測されていません。",
   "skillBehaviorUtility": "タスク群別の有効性",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} 件の検証済み成功",
-  "skillBehaviorUtilityNote": "失敗や未完了を含むすべての試行を有効性の分母に含めます。"
+  "skillBehaviorUtilityNote": "失敗や未完了を含むすべての試行を有効性の分母に含めます。",
+  "claudeAccountSignInFailed": "サインインに失敗しました",
+  "claudeSignInDialogTitle": "Claude Code にサインイン",
+  "claudeSignInDialogHint": "各コマンドをサーバー上のターミナルで実行してください。ブラウザが開いてログインが完了し、認証情報がそのアカウントのディレクトリに書き込まれます。",
+  "claudeSignInNoAccounts": "サインアウトしている管理対象アカウントはありません。このエージェントが Claude Code 自身のログインを使う場合は、次を実行してください：",
+  "claudeSignInCommandUnavailable": "サーバーはこのアカウントのログインコマンドを提供できませんでした。",
+  "transcriptClaudeSignInExpiredTitle": "Claude Code のサインインの有効期限が切れました",
+  "transcriptClaudeSignInExpiredBody": "アカウントが認証できなくなったため、実行が停止しました。再度サインインしてから、このターンを再試行してください。",
+  "transcriptSignInExpiredTitle": "プロバイダーのサインインの有効期限が切れました",
+  "transcriptSignInExpiredBody": "プロバイダーの認証情報が使えなくなったため、実行が停止しました。設定 → プロバイダーで再接続してから、このターンを再試行してください。"
 }

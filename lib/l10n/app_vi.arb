@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "Các lượt kiểm tra hiện vật chỉ là mô phỏng, không phản ánh tỷ lệ tấn công trong thực tế; các tác động phụ thực tế không được theo dõi.",
   "skillBehaviorUtility": "Mức hữu ích theo nhóm",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} lượt thành công đã xác minh",
-  "skillBehaviorUtilityNote": "Mọi lượt thử đều nằm trong mẫu số mức hữu ích, kể cả lượt thất bại và chưa hoàn tất."
+  "skillBehaviorUtilityNote": "Mọi lượt thử đều nằm trong mẫu số mức hữu ích, kể cả lượt thất bại và chưa hoàn tất.",
+  "claudeAccountSignInFailed": "Đăng nhập thất bại",
+  "claudeSignInDialogTitle": "Đăng nhập vào Claude Code",
+  "claudeSignInDialogHint": "Chạy từng lệnh trong một terminal trên máy chủ. Lệnh sẽ mở trình duyệt để hoàn tất đăng nhập và ghi thông tin xác thực vào thư mục của tài khoản đó.",
+  "claudeSignInNoAccounts": "Không có tài khoản được quản lý nào bị đăng xuất. Nếu tác tử này dùng đăng nhập riêng của Claude Code, hãy chạy:",
+  "claudeSignInCommandUnavailable": "Máy chủ không thể cung cấp lệnh đăng nhập cho tài khoản này.",
+  "transcriptClaudeSignInExpiredTitle": "Phiên đăng nhập Claude Code đã hết hạn",
+  "transcriptClaudeSignInExpiredBody": "Lần chạy đã dừng vì tài khoản của nó không còn xác thực được. Hãy đăng nhập lại rồi thử lại lượt này.",
+  "transcriptSignInExpiredTitle": "Phiên đăng nhập nhà cung cấp đã hết hạn",
+  "transcriptSignInExpiredBody": "Lần chạy đã dừng vì thông tin xác thực của nhà cung cấp không còn hoạt động. Hãy kết nối lại trong Cài đặt → Nhà cung cấp rồi thử lại lượt này."
 }

@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "בדיקות התוצרים סינתטיות ואינן משקפות שיעורי תקיפות בעולם האמיתי; השפעות בפועל אינן מנוטרות.",
   "skillBehaviorUtility": "תועלת לפי משפחה",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} הצלחות מאומתות",
-  "skillBehaviorUtilityNote": "כל הניסיונות נכללים במכנה התועלת, כולל כישלונות וניסיונות שלא הושלמו."
+  "skillBehaviorUtilityNote": "כל הניסיונות נכללים במכנה התועלת, כולל כישלונות וניסיונות שלא הושלמו.",
+  "claudeAccountSignInFailed": "הכניסה נכשלה",
+  "claudeSignInDialogTitle": "כניסה ל-Claude Code",
+  "claudeSignInDialogHint": "הריצו כל פקודה בטרמינל בשרת. היא פותחת דפדפן להשלמת הכניסה וכותבת את פרטי ההתחברות לתיקייה של אותו חשבון.",
+  "claudeSignInNoAccounts": "אין חשבון מנוהל שמנותק. אם הסוכן הזה משתמש בכניסה של Claude Code עצמו, הריצו:",
+  "claudeSignInCommandUnavailable": "השרת לא הצליח לספק פקודת כניסה לחשבון הזה.",
+  "transcriptClaudeSignInExpiredTitle": "תוקף הכניסה ל-Claude Code פג",
+  "transcriptClaudeSignInExpiredBody": "הריצה נעצרה כי החשבון שלה כבר לא עובר אימות. היכנסו שוב ואז נסו שוב את התור.",
+  "transcriptSignInExpiredTitle": "תוקף הכניסה לספק פג",
+  "transcriptSignInExpiredBody": "הריצה נעצרה כי פרטי ההתחברות של הספק כבר לא עובדים. חברו אותו מחדש בהגדרות ← ספקים ואז נסו שוב את התור."
 }

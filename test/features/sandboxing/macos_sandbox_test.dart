@@ -585,10 +585,20 @@ void main() {
         expect(result.argv[1], result.profilePath);
         expect(result.argv[2], '/bin/bash');
         expect(result.argv[3], '-c');
-        expect(result.argv[4], 'ls -la');
+        // The keychain stand-in goes first on PATH (see keychainStandIn).
+        final toolDir = '${tempDir.resolveSymbolicLinksSync()}/bin';
+        expect(result.argv[4], 'PATH=$toolDir:"\$PATH"; export PATH; ls -la');
         // Profile file was created.
         expect(File(result.profilePath).existsSync(), isTrue);
         expect(result.profilePath, contains('sandbox-s1.sb'));
+        // No session can rewrite the stand-in for the next one, even under a
+        // config that declares no write rules at all.
+        final profile = File(result.profilePath).readAsStringSync();
+        expect(profile, contains('(deny file-write* (subpath "$toolDir"))'));
+        expect(
+          File('$toolDir/security').readAsStringSync(),
+          MacosSandbox.keychainStandIn,
+        );
       } finally {
         tempDir.deleteSync(recursive: true);
       }

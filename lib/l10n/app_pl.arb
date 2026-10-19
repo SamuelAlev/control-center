@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "Kontrole artefaktów są syntetyczne i nie odzwierciedlają częstości rzeczywistych ataków; rzeczywiste skutki uboczne nie są monitorowane.",
   "skillBehaviorUtility": "Użyteczność według rodziny",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} zweryfikowanych sukcesów",
-  "skillBehaviorUtilityNote": "Wszystkie próby wlicza się do mianownika użyteczności, również nieudane i nieukończone."
+  "skillBehaviorUtilityNote": "Wszystkie próby wlicza się do mianownika użyteczności, również nieudane i nieukończone.",
+  "claudeAccountSignInFailed": "Logowanie nie powiodło się",
+  "claudeSignInDialogTitle": "Zaloguj się do Claude Code",
+  "claudeSignInDialogHint": "Uruchom każde polecenie w terminalu na serwerze. Otworzy ono przeglądarkę, aby dokończyć logowanie, i zapisze dane uwierzytelniające w katalogu tego konta.",
+  "claudeSignInNoAccounts": "Żadne zarządzane konto nie jest wylogowane. Jeśli ten agent używa własnego logowania Claude Code, uruchom:",
+  "claudeSignInCommandUnavailable": "Serwer nie mógł podać polecenia logowania dla tego konta.",
+  "transcriptClaudeSignInExpiredTitle": "Sesja Claude Code wygasła",
+  "transcriptClaudeSignInExpiredBody": "Przebieg został zatrzymany, ponieważ jego konto nie uwierzytelnia się już. Zaloguj się ponownie, a następnie ponów turę.",
+  "transcriptSignInExpiredTitle": "Sesja dostawcy wygasła",
+  "transcriptSignInExpiredBody": "Przebieg został zatrzymany, ponieważ dane uwierzytelniające dostawcy już nie działają. Połącz go ponownie w Ustawienia → Dostawcy, a następnie ponów turę."
 }

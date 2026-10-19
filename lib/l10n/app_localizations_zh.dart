@@ -15302,6 +15302,37 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get skillBehaviorUtilityNote => '所有尝试均计入效用分母，包括失败和未完成的尝试。';
+
+  @override
+  String get claudeAccountSignInFailed => '登录失败';
+
+  @override
+  String get claudeSignInDialogTitle => '登录 Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      '在服务器的终端中运行每条命令。它会打开浏览器完成登录，并将凭据写入该账户的目录。';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      '没有已退出登录的托管账户。如果此代理使用 Claude Code 自身的登录，请运行：';
+
+  @override
+  String get claudeSignInCommandUnavailable => '服务器无法提供此账户的登录命令。';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle => 'Claude Code 登录已过期';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      '运行已停止，因为其账户无法再通过身份验证。请重新登录，然后重试此轮。';
+
+  @override
+  String get transcriptSignInExpiredTitle => '提供方登录已过期';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      '运行已停止，因为其提供方凭据已失效。请在 设置 → 提供方 中重新连接，然后重试此轮。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -30768,4 +30799,35 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get skillBehaviorUtilityNote => '所有嘗試均計入效用分母，包括失敗及未完成的嘗試。';
+
+  @override
+  String get claudeAccountSignInFailed => '登入失敗';
+
+  @override
+  String get claudeSignInDialogTitle => '登入 Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      '在伺服器的終端機中執行每個指令。它會開啟瀏覽器完成登入，並將憑證寫入該帳號的目錄。';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      '沒有已登出的受管帳號。如果此代理程式使用 Claude Code 自身的登入，請執行：';
+
+  @override
+  String get claudeSignInCommandUnavailable => '伺服器無法提供此帳號的登入指令。';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle => 'Claude Code 登入已過期';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      '執行已停止，因為其帳號無法再通過驗證。請重新登入，然後重試此回合。';
+
+  @override
+  String get transcriptSignInExpiredTitle => '提供者登入已過期';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      '執行已停止，因為其提供者憑證已失效。請在 設定 → 提供者 中重新連線，然後重試此回合。';
 }

@@ -2635,4 +2635,18 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Przestań obserwować';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle => 'Sesja Claude Code wygasła';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Przebieg został zatrzymany, ponieważ jego konto nie uwierzytelnia się już. Zaloguj się ponownie, a następnie ponów turę.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Sesja dostawcy wygasła';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Przebieg został zatrzymany, ponieważ dane uwierzytelniające dostawcy już nie działają. Połącz go ponownie w Ustawienia → Dostawcy, a następnie ponów turę.';
 }

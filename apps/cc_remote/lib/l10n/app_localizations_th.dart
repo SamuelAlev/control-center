@@ -2595,4 +2595,20 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'หยุดติดตาม';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'การลงชื่อเข้าใช้ Claude Code หมดอายุ';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'การทำงานหยุดลงเพราะบัญชีของมันยืนยันตัวตนไม่ได้อีกต่อไป ลงชื่อเข้าใช้อีกครั้ง แล้วลองรอบนี้ใหม่';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'การลงชื่อเข้าใช้ผู้ให้บริการหมดอายุ';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'การทำงานหยุดลงเพราะข้อมูลรับรองของผู้ให้บริการใช้ไม่ได้อีกต่อไป เชื่อมต่อใหม่ในการตั้งค่า → ผู้ให้บริการ แล้วลองรอบนี้ใหม่';
 }

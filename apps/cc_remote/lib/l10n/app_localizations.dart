@@ -4678,6 +4678,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop watching'**
   String get credentialsStopWatching;
+
+  /// Title of the notice in a turn that failed because its Claude Code account stopped authenticating
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code sign-in expired'**
+  String get transcriptClaudeSignInExpiredTitle;
+
+  /// Body of the notice in a turn that failed because its Claude Code account stopped authenticating
+  ///
+  /// In en, this message translates to:
+  /// **'The run stopped because its account no longer authenticates. Sign in again, then retry the turn.'**
+  String get transcriptClaudeSignInExpiredBody;
+
+  /// Title of the notice in a turn that failed because its model provider credential stopped working
+  ///
+  /// In en, this message translates to:
+  /// **'Provider sign-in expired'**
+  String get transcriptSignInExpiredTitle;
+
+  /// Body of the notice in a turn that failed because its model provider credential stopped working
+  ///
+  /// In en, this message translates to:
+  /// **'The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.'**
+  String get transcriptSignInExpiredBody;
 }
 
 class _AppLocalizationsDelegate

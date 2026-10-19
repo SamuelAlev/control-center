@@ -21,11 +21,15 @@ abstract final class MacosSandbox {
   /// loopback endpoints when network is restricted. [allowedExecutables]
   /// are explicit process-exec allows for the legitimate CLI binary (so
   /// the writable-dir exec block doesn't block the agent's own CLI).
+  /// [readOnlyToolDirs] hold tools the sandbox installs for itself (the
+  /// keychain stand-in); they sit inside writable scratch, so they get a
+  /// write-deny emitted last.
   static String generateSeatbeltProfile(
     SandboxConfig config, {
     int? httpProxyPort,
     int? socksProxyPort,
     List<String> allowedExecutables = const [],
+    List<String> readOnlyToolDirs = const [],
   }) {
     final policy = config.policy;
     final lines = <String>[];
@@ -98,12 +102,19 @@ abstract final class MacosSandbox {
       }
       lines.add('');
     }
+    // The sandbox's own tools live under `/private/var/folders`, which every
+    // session may write. Every later session runs them, so a session that could
+    // rewrite one would plant code in all the others. Denied after every write
+    // allowance, and whether or not the config declares any.
+    for (final dir in readOnlyToolDirs) {
+      lines.add('(deny file-write* (subpath "${_escape(dir)}"))');
+    }
 
     // For every denied path, deny file-write-unlink on the path AND its
     // ancestor directories. This prevents `mv payload ~/.bashrc` from
     // bypassing a write-deny via rename (rename(2) triggers
     // file-write-unlink on the destination).
-    final moveBlocked = <String>{};
+    final moveBlocked = <String>{...readOnlyToolDirs};
     for (final path in config.filesystem.denyWrite) {
       if (!path.contains('*')) {
         moveBlocked.add(path);
@@ -222,6 +233,48 @@ abstract final class MacosSandbox {
     return lines.join('\n');
   }
 
+  /// The `security` every sandboxed process finds first on `PATH`.
+  ///
+  /// The profile denies `~/Library/Keychains`, and the real tool takes
+  /// 0.3–2.7 s to fail against that deny. Claude Code (2.1.x) gives its
+  /// keychain write 2 s and treats a TIMEOUT as transient, which skips its
+  /// `.credentials.json` fallback. A refresh that lands on a slow failure
+  /// therefore drops a token pair the server has already rotated, and the
+  /// account stays signed out until someone logs in again (roughly daily). Answering
+  /// at once, with the codes the CLI reads as "no item" (44) and "write failed,
+  /// use the file" (1), keeps every renewal in the account's config dir.
+  /// Everything that is not a login-keychain password call (certificates,
+  /// trust settings) still reaches the real tool.
+  static const String keychainStandIn = r'''#!/bin/sh
+# Control Center macOS sandbox: the login keychain is denied in here. Answer
+# its password calls at once so callers fall back instead of timing out.
+case "$1" in
+  find-generic-password|delete-generic-password|find-internet-password|delete-internet-password) exit 44 ;;
+  add-generic-password|add-internet-password|show-keychain-info) exit 1 ;;
+  -i) cat >/dev/null; exit 1 ;;
+esac
+exec /usr/bin/security "$@"
+''';
+
+  /// Installs [keychainStandIn] as `<profilesDir>/bin/security` and returns
+  /// that directory, resolved (Seatbelt matches real paths; `/var` is a link).
+  ///
+  /// Rewritten whenever its content differs, through a rename so a concurrent
+  /// spawn never runs a half-written script.
+  static String installKeychainStandIn(Directory profilesDir) {
+    final dir = Directory('${profilesDir.path}/bin')
+      ..createSync(recursive: true);
+    final file = File('${dir.path}/security');
+    final current = file.existsSync() ? file.readAsStringSync() : null;
+    if (current != keychainStandIn) {
+      final tmp = File('${dir.path}/.security.$pid.tmp')
+        ..writeAsStringSync(keychainStandIn, flush: true);
+      Process.runSync('/bin/chmod', ['755', tmp.path]);
+      tmp.renameSync(file.path);
+    }
+    return dir.resolveSymbolicLinksSync();
+  }
+
   /// Builds the argv used to invoke a sandboxed command via `sandbox-exec`.
   /// The profile is written to a temp file under [profilesDir] and its path
   /// is returned alongside the argv so the caller can clean it up.
@@ -237,17 +290,20 @@ abstract final class MacosSandbox {
     if (!profilesDir.existsSync()) {
       profilesDir.createSync(recursive: true);
     }
+    final toolDir = installKeychainStandIn(profilesDir);
     // The legitimate CLI binary gets an explicit exec allow so the
     // writable-dir exec block doesn't block it.
     final allowedExecutables = <String>[
       if (argv.isNotEmpty) argv.first,
       binShell,
+      '$toolDir/security',
     ];
     final profile = generateSeatbeltProfile(
       config,
       httpProxyPort: httpProxyPort,
       socksProxyPort: socksProxyPort,
       allowedExecutables: allowedExecutables,
+      readOnlyToolDirs: [toolDir],
     );
     final profileFile = File(
       '${profilesDir.path}/sandbox-${config.sessionId}.sb',
@@ -255,14 +311,15 @@ abstract final class MacosSandbox {
     profileFile.writeAsStringSync(profile);
 
     final inner = _shellQuote(argv);
+    final cd = workingDirectory == null
+        ? ''
+        : 'cd ${_shellQuote([workingDirectory])} && ';
     final wrapped = <String>[
       '-f',
       profileFile.path,
       binShell,
       '-c',
-      workingDirectory == null
-          ? inner
-          : 'cd ${_shellQuote([workingDirectory])} && $inner',
+      'PATH=${_shellQuote([toolDir])}:"\$PATH"; export PATH; $cd$inner',
     ];
     return MacosWrapResult(
       executable: '/usr/bin/sandbox-exec',

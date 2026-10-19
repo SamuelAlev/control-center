@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "Kişisel erişim token'ı",
   "credentialsPersonalTokenHint": "Kişisel erişim token'ını yapıştırın",
   "credentialsHostManaged": "Bu bağlantı sunucu uygulamasından veya ortamından geliyor. Orada yalnızca sunucu sahibi değişiklik yapabilir; yine de kendi token'ınızı ekleyebilirsiniz.",
-  "credentialsStopWatching": "İzlemeyi durdur"
+  "credentialsStopWatching": "İzlemeyi durdur",
+  "transcriptClaudeSignInExpiredTitle": "Claude Code oturumunun süresi doldu",
+  "transcriptClaudeSignInExpiredBody": "Hesabı artık kimlik doğrulayamadığı için çalışma durdu. Yeniden oturum açın, ardından turu yeniden deneyin.",
+  "transcriptSignInExpiredTitle": "Sağlayıcı oturumunun süresi doldu",
+  "transcriptSignInExpiredBody": "Sağlayıcının kimlik bilgisi artık çalışmadığı için çalışma durdu. Ayarlar → Sağlayıcılar bölümünden yeniden bağlayın, ardından turu yeniden deneyin."
 }

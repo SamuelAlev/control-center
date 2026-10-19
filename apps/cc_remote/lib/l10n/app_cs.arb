@@ -1034,5 +1034,9 @@
   "credentialsPersonalToken": "Osobní přístupový token",
   "credentialsPersonalTokenHint": "Vložte osobní přístupový token",
   "credentialsHostManaged": "Toto připojení pochází ze serverové aplikace nebo jejího prostředí. Změnit ho tam může jen vlastník serveru; vlastní token ale můžete přidat i vy.",
-  "credentialsStopWatching": "Přestat sledovat"
+  "credentialsStopWatching": "Přestat sledovat",
+  "transcriptClaudeSignInExpiredTitle": "Přihlášení ke Claude Code vypršelo",
+  "transcriptClaudeSignInExpiredBody": "Běh se zastavil, protože jeho účet se už neověřuje. Přihlaste se znovu a pak tah zopakujte.",
+  "transcriptSignInExpiredTitle": "Přihlášení k poskytovateli vypršelo",
+  "transcriptSignInExpiredBody": "Běh se zastavil, protože přihlašovací údaje poskytovatele už nefungují. Znovu jej připojte v Nastavení → Poskytovatelé a pak tah zopakujte."
 }

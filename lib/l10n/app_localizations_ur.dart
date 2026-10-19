@@ -15784,4 +15784,38 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'تمام کوششیں افادیت کے مخرج میں شمار ہوتی ہیں، بشمول ناکام اور نامکمل کوششیں۔';
+
+  @override
+  String get claudeAccountSignInFailed => 'سائن ان ناکام رہا';
+
+  @override
+  String get claudeSignInDialogTitle => 'Claude Code میں سائن ان کریں';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'ہر کمانڈ سرور کے ٹرمینل میں چلائیں۔ یہ لاگ ان مکمل کرنے کے لیے براؤزر کھولتی ہے اور اسناد اس اکاؤنٹ کی ڈائریکٹری میں لکھتی ہے۔';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'کوئی منظم اکاؤنٹ سائن آؤٹ نہیں ہے۔ اگر یہ ایجنٹ Claude Code کا اپنا لاگ ان استعمال کرتا ہے تو چلائیں:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'سرور اس اکاؤنٹ کے لیے لاگ ان کمانڈ فراہم نہیں کر سکا۔';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Claude Code سائن ان کی میعاد ختم ہو گئی';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'رن رک گیا کیونکہ اس کا اکاؤنٹ اب تصدیق نہیں ہوتا۔ دوبارہ سائن ان کریں، پھر یہ باری دوبارہ آزمائیں۔';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'فراہم کنندہ سائن ان کی میعاد ختم ہو گئی';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'رن رک گیا کیونکہ فراہم کنندہ کی اسناد اب کام نہیں کرتیں۔ اسے ترتیبات ← فراہم کنندگان میں دوبارہ جوڑیں، پھر یہ باری دوبارہ آزمائیں۔';
 }

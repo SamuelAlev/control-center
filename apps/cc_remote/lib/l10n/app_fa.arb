@@ -970,5 +970,9 @@
   "credentialsPersonalToken": "توکن دسترسی شخصی",
   "credentialsPersonalTokenHint": "توکن دسترسی شخصی را جای‌گذاری کنید",
   "credentialsHostManaged": "این اتصال از برنامه یا محیط سرور می‌آید. فقط مالک سرور می‌تواند آن را در همان‌جا تغییر دهد؛ شما همچنان می‌توانید توکن خودتان را اضافه کنید.",
-  "credentialsStopWatching": "توقف انتظار"
+  "credentialsStopWatching": "توقف انتظار",
+  "transcriptClaudeSignInExpiredTitle": "ورود Claude Code منقضی شده است",
+  "transcriptClaudeSignInExpiredBody": "اجرا متوقف شد چون حساب آن دیگر احراز هویت نمی‌شود. دوباره وارد شوید و سپس این نوبت را دوباره امتحان کنید.",
+  "transcriptSignInExpiredTitle": "ورود ارائه‌دهنده منقضی شده است",
+  "transcriptSignInExpiredBody": "اجرا متوقف شد چون اعتبارنامهٔ ارائه‌دهنده دیگر کار نمی‌کند. آن را در تنظیمات ← ارائه‌دهندگان دوباره وصل کنید و سپس این نوبت را دوباره امتحان کنید."
 }

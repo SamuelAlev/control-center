@@ -517,6 +517,9 @@ void main() {
       await confirm.requested!.future;
       expect(completed, isFalse);
       expect(confirm.asked.single.spaceId, 's1');
+      // The prompt belongs to the run's own conversation, not to every
+      // conversation of the space.
+      expect(confirm.asked.single.conversationId, 'c1');
       confirm.pending!.complete(true);
       expect((await pending).exitCode, 0);
     });

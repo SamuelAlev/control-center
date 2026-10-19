@@ -1034,5 +1034,9 @@
   "credentialsPersonalToken": "Token de acces personal",
   "credentialsPersonalTokenHint": "Lipește un token de acces personal",
   "credentialsHostManaged": "Această conexiune provine din aplicația sau mediul serverului. Doar proprietarul serverului o poate modifica acolo; poți totuși să adaugi propriul token.",
-  "credentialsStopWatching": "Oprește monitorizarea"
+  "credentialsStopWatching": "Oprește monitorizarea",
+  "transcriptClaudeSignInExpiredTitle": "Autentificarea Claude Code a expirat",
+  "transcriptClaudeSignInExpiredBody": "Rularea s-a oprit deoarece contul ei nu se mai autentifică. Conectează-te din nou, apoi reîncearcă tura.",
+  "transcriptSignInExpiredTitle": "Autentificarea furnizorului a expirat",
+  "transcriptSignInExpiredBody": "Rularea s-a oprit deoarece datele de acces ale furnizorului nu mai funcționează. Reconectează-l în Setări → Furnizori, apoi reîncearcă tura."
 }

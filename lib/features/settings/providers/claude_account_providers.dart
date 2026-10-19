@@ -26,3 +26,12 @@ final claudeAccountsProvider = FutureProvider<List<ClaudeAccountView>>(
 final claudeAccountCountProvider = Provider<int>(
   (ref) => ref.watch(claudeAccountsProvider).asData?.value.length ?? 0,
 );
+
+/// The `claude auth login` invocation for one account, as the host builds it
+/// (the account's `CLAUDE_CONFIG_DIR` already set). Null when the host does
+/// not know the account.
+final claudeLoginCommandProvider = FutureProvider.autoDispose
+    .family<({List<String> argv, Map<String, String> environment})?, String>(
+      (ref, accountId) =>
+          ref.watch(claudeAccountsRepositoryProvider).loginCommand(accountId),
+    );

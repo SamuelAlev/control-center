@@ -2613,4 +2613,19 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Berhenti memantau';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Login Claude Code kedaluwarsa';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Proses berhenti karena akunnya tidak lagi terautentikasi. Masuk lagi, lalu coba ulang giliran ini.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Login penyedia kedaluwarsa';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Proses berhenti karena kredensial penyedianya tidak lagi berfungsi. Hubungkan ulang di Pengaturan → Penyedia, lalu coba ulang giliran ini.';
 }

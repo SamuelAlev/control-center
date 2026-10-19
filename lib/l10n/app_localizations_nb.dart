@@ -15846,4 +15846,38 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Alle forsøk inngår i nevneren for nytte, også mislykkede og ufullstendige.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Innlogging mislyktes';
+
+  @override
+  String get claudeSignInDialogTitle => 'Logg inn på Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Kjør hver kommando i en terminal på serveren. Den åpner en nettleser for å fullføre innloggingen og skriver legitimasjonen til kontoens katalog.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Ingen administrerte kontoer er logget ut. Hvis denne agenten bruker Claude Codes egen innlogging, kjør:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Serveren kunne ikke levere en innloggingskommando for denne kontoen.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Innloggingen til Claude Code har utløpt';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Kjøringen stoppet fordi kontoen ikke lenger autentiseres. Logg inn på nytt, og prøv turen igjen.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Innloggingen til leverandøren har utløpt';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Kjøringen stoppet fordi leverandørens legitimasjon ikke lenger virker. Koble den til på nytt under Innstillinger → Leverandører, og prøv turen igjen.';
 }

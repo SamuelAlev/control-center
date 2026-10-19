@@ -2626,4 +2626,20 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Sluta bevaka';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Inloggningen till Claude Code har gått ut';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Körningen stoppades eftersom kontot inte längre autentiseras. Logga in igen och försök sedan med turen igen.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Inloggningen till leverantören har gått ut';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Körningen stoppades eftersom leverantörens inloggningsuppgifter inte längre fungerar. Anslut den igen under Inställningar → Leverantörer och försök sedan med turen igen.';
 }

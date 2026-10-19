@@ -2603,4 +2603,19 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'توقف انتظار';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'ورود Claude Code منقضی شده است';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'اجرا متوقف شد چون حساب آن دیگر احراز هویت نمی‌شود. دوباره وارد شوید و سپس این نوبت را دوباره امتحان کنید.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'ورود ارائه‌دهنده منقضی شده است';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'اجرا متوقف شد چون اعتبارنامهٔ ارائه‌دهنده دیگر کار نمی‌کند. آن را در تنظیمات ← ارائه‌دهندگان دوباره وصل کنید و سپس این نوبت را دوباره امتحان کنید.';
 }

@@ -141,6 +141,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
         },
         command: command,
         spaceId: spaceId,
+        conversationId: conversationId,
         agentId: agentId,
         mode: _mode,
         actionSummary: 'bash: $command',
@@ -182,6 +183,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
         final approved = await port.requestApproval(
           ConfirmationRequest(
             spaceId: spaceId ?? '',
+            conversationId: conversationId,
             workspaceId: workspaceId,
             title: copy.title,
             detail: copy.detail,

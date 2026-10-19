@@ -35,7 +35,8 @@ const int _kScrollsFromOption = 6;
 ///
 /// [filterable]: typed query narrows the list; filter ✕ clears query only.
 /// Closes on Esc, outside click, or tab away. Focus trapped (`closedLoop`);
-/// arrows highlight, Space toggles (Enter when filter focused). [selectAllLabel]
+/// arrows highlight, Space/Enter toggle it (only Enter when filter focused).
+/// Rows never take focus: the list node owns the keyboard. [selectAllLabel]
 /// pins a noun-named select-all row; otherwise "Clear all" while any value is
 /// selected.
 class CcMultiSelect<T> extends StatefulWidget {
@@ -106,6 +107,11 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
   final TextEditingController _filterText = TextEditingController();
   final FocusNode _filterFocus = FocusNode(debugLabel: 'CcMultiSelect filter');
 
+  /// Keyboard owner of a non-filterable open panel. The rows are not
+  /// focusable, so Enter/Space reach [_onKey] and act on the highlighted row
+  /// instead of activating whichever row happened to hold focus.
+  final FocusNode _listFocus = FocusNode(debugLabel: 'CcMultiSelect list');
+
   /// Shared tap-region group for the filterable field and the panel: a tap on
   /// an option row must not read as "outside" the filter's EditableText and
   /// blur it mid-filtering.
@@ -138,6 +144,7 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
     _panelScope.dispose();
     _filterText.dispose();
     _filterFocus.dispose();
+    _listFocus.dispose();
     super.dispose();
   }
 
@@ -280,15 +287,9 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
       setState(() => _highlighted = next);
       _rows.reveal(next, from: cur ?? -1);
       return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.space && !filterTyping) {
-      final cur = _highlighted;
-      if (cur != null && cur < count) {
-        _toggleOption(options[cur]);
-      }
-      return KeyEventResult.handled;
-    } else if ((key == LogicalKeyboardKey.enter ||
-            key == LogicalKeyboardKey.numpadEnter) &&
-        filterTyping) {
+    } else if ((key == LogicalKeyboardKey.space && !filterTyping) ||
+        key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter) {
       final cur = _highlighted;
       if (cur != null && cur < count) {
         _toggleOption(options[cur]);
@@ -377,13 +378,14 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
             ),
             child: SingleChildScrollView(
               child: FocusScope(
-                // Trap Tab inside the panel and autofocus the first row so
-                // keyboard Escape works and the list is reachable without the
-                // mouse. A filterable field keeps text focus instead.
+                // Trap Tab inside the panel and autofocus the list node so
+                // Escape and the arrow keys work without the mouse. A
+                // filterable field keeps text focus instead.
                 node: _panelScope,
-                autofocus: !widget.filterable,
                 child: Focus(
-                  canRequestFocus: false,
+                  focusNode: _listFocus,
+                  autofocus: !widget.filterable,
+                  canRequestFocus: !widget.filterable,
                   onKeyEvent: _onKey,
                   child: Builder(
                     builder: (context) {
@@ -962,6 +964,9 @@ class _CcMultiSelectRow<T> extends StatelessWidget {
       onPressed: onToggle,
       borderRadius: AppRadii.brSm,
       showFocusRing: false,
+      // The list node owns the keyboard; a focusable row would answer
+      // Enter/Space itself and toggle the focused row, not the highlighted one.
+      canRequestFocus: false,
       semanticLabel: option.label,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);

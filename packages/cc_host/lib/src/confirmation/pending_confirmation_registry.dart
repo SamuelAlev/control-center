@@ -31,6 +31,8 @@ class PendingConfirmation {
 Map<String, dynamic> pendingConfirmationToWire(PendingConfirmation p) => {
   'id': p.id,
   'space_id': p.request.spaceId,
+  if (p.request.conversationId != null)
+    'conversation_id': p.request.conversationId,
   if (p.request.workspaceId != null) 'workspace_id': p.request.workspaceId,
   'title': p.request.title,
   'detail': p.request.detail,

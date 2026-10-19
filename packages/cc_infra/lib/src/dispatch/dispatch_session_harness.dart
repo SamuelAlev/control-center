@@ -260,6 +260,7 @@ extension _DispatchSessionHarness on DispatchSession {
         final approved = await port.requestApproval(
           ConfirmationRequest(
             spaceId: spaceId ?? '',
+            conversationId: conversationId,
             workspaceId: workspaceId,
             title: copy.title,
             detail: copy.detail,
@@ -310,6 +311,7 @@ extension _DispatchSessionHarness on DispatchSession {
       final approved = await port.requestApproval(
         ConfirmationRequest(
           spaceId: spaceId ?? '',
+          conversationId: conversationId,
           workspaceId: workspaceId,
           title: copy.title,
           detail: copy.detail,

@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "Особистий токен доступу",
   "credentialsPersonalTokenHint": "Вставте особистий токен доступу",
   "credentialsHostManaged": "Це підключення налаштовано в серверному застосунку або середовищі. Змінити його там може лише власник сервера, але ви можете додати власний токен.",
-  "credentialsStopWatching": "Припинити відстеження"
+  "credentialsStopWatching": "Припинити відстеження",
+  "transcriptClaudeSignInExpiredTitle": "Термін входу в Claude Code минув",
+  "transcriptClaudeSignInExpiredBody": "Запуск зупинено, бо його обліковий запис більше не проходить автентифікацію. Увійдіть знову, а потім повторіть хід.",
+  "transcriptSignInExpiredTitle": "Термін входу до провайдера минув",
+  "transcriptSignInExpiredBody": "Запуск зупинено, бо облікові дані провайдера більше не працюють. Перепідключіть його в Налаштування → Провайдери, а потім повторіть хід."
 }

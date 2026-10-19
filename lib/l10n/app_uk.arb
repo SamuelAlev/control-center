@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "Перевірки артефактів синтетичні й не відображають частоту атак у реальних умовах; фактичні побічні ефекти не відстежуються.",
   "skillBehaviorUtility": "Користь за сімействами",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} підтверджених успіхів",
-  "skillBehaviorUtilityNote": "До знаменника користі входять усі спроби, зокрема невдалі й незавершені."
+  "skillBehaviorUtilityNote": "До знаменника користі входять усі спроби, зокрема невдалі й незавершені.",
+  "claudeAccountSignInFailed": "Не вдалося увійти",
+  "claudeSignInDialogTitle": "Вхід у Claude Code",
+  "claudeSignInDialogHint": "Виконайте кожну команду в терміналі на сервері. Вона відкриє браузер для завершення входу й запише облікові дані в каталог цього облікового запису.",
+  "claudeSignInNoAccounts": "Жоден керований обліковий запис не вийшов із системи. Якщо цей агент використовує власний вхід Claude Code, виконайте:",
+  "claudeSignInCommandUnavailable": "Сервер не зміг надати команду входу для цього облікового запису.",
+  "transcriptClaudeSignInExpiredTitle": "Термін входу в Claude Code минув",
+  "transcriptClaudeSignInExpiredBody": "Запуск зупинено, бо його обліковий запис більше не проходить автентифікацію. Увійдіть знову, а потім повторіть хід.",
+  "transcriptSignInExpiredTitle": "Термін входу до провайдера минув",
+  "transcriptSignInExpiredBody": "Запуск зупинено, бо облікові дані провайдера більше не працюють. Перепідключіть його в Налаштування → Провайдери, а потім повторіть хід."
 }

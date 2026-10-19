@@ -15812,4 +15812,38 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Mọi lượt thử đều nằm trong mẫu số mức hữu ích, kể cả lượt thất bại và chưa hoàn tất.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Đăng nhập thất bại';
+
+  @override
+  String get claudeSignInDialogTitle => 'Đăng nhập vào Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Chạy từng lệnh trong một terminal trên máy chủ. Lệnh sẽ mở trình duyệt để hoàn tất đăng nhập và ghi thông tin xác thực vào thư mục của tài khoản đó.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Không có tài khoản được quản lý nào bị đăng xuất. Nếu tác tử này dùng đăng nhập riêng của Claude Code, hãy chạy:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Máy chủ không thể cung cấp lệnh đăng nhập cho tài khoản này.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Phiên đăng nhập Claude Code đã hết hạn';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Lần chạy đã dừng vì tài khoản của nó không còn xác thực được. Hãy đăng nhập lại rồi thử lại lượt này.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'Phiên đăng nhập nhà cung cấp đã hết hạn';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Lần chạy đã dừng vì thông tin xác thực của nhà cung cấp không còn hoạt động. Hãy kết nối lại trong Cài đặt → Nhà cung cấp rồi thử lại lượt này.';
 }

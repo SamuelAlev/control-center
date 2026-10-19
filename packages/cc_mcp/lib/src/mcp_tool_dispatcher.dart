@@ -450,6 +450,7 @@ class McpToolDispatcher implements RpcDispatcher {
         spaceId: scopeSpaceId != null && scopeSpaceId.isNotEmpty
             ? scopeSpaceId
             : (spaceArg is String && spaceArg.isNotEmpty ? spaceArg : null),
+        conversationId: scope?.conversationId,
         agentId: scope?.agentId ?? (agentArg is String ? agentArg : null),
         mode: conversationMode ?? Mode.chat,
         actionSummary: tool.name,
@@ -528,6 +529,7 @@ class McpToolDispatcher implements RpcDispatcher {
         final approved = await confirmationPort!.requestApproval(
           ConfirmationRequest(
             spaceId: spaceId is String ? spaceId : '',
+            conversationId: scope?.conversationId,
             workspaceId: wsId is String && wsId.isNotEmpty ? wsId : null,
             title: payload.title,
             detail: detail,

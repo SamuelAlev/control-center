@@ -8153,5 +8153,14 @@
   "skillBehaviorSafetyNote": "As verificações de artefatos são sintéticas e não representam taxas de ataques no mundo real; os efeitos colaterais reais não são monitorados.",
   "skillBehaviorUtility": "Utilidade por família",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} sucessos verificados",
-  "skillBehaviorUtilityNote": "Todas as tentativas entram no denominador da utilidade, inclusive as falhas e incompletas."
+  "skillBehaviorUtilityNote": "Todas as tentativas entram no denominador da utilidade, inclusive as falhas e incompletas.",
+  "claudeAccountSignInFailed": "Falha ao entrar",
+  "claudeSignInDialogTitle": "Entrar no Claude Code",
+  "claudeSignInDialogHint": "Execute cada comando em um terminal no servidor. Ele abre um navegador para concluir o login e grava a credencial no diretório dessa conta.",
+  "claudeSignInNoAccounts": "Nenhuma conta gerenciada está desconectada. Se este agente usa o login próprio do Claude Code, execute:",
+  "claudeSignInCommandUnavailable": "O servidor não conseguiu fornecer um comando de login para esta conta.",
+  "transcriptClaudeSignInExpiredTitle": "Login do Claude Code expirado",
+  "transcriptClaudeSignInExpiredBody": "A execução parou porque a conta dela não autentica mais. Entre novamente e tente o turno outra vez.",
+  "transcriptSignInExpiredTitle": "Login do provedor expirado",
+  "transcriptSignInExpiredBody": "A execução parou porque a credencial do provedor não funciona mais. Reconecte-o em Configurações → Provedores e tente o turno outra vez."
 }

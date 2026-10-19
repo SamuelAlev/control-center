@@ -5,7 +5,11 @@ import 'package:cc_markdown/cc_markdown.dart' show CcSelectionScope;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/live_transcript_controller.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_flow.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart';
+import 'package:control_center/features/settings/providers/claude_account_providers.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/test_wrap.dart';
@@ -14,6 +18,79 @@ void main() {
   final ts = DateTime.fromMillisecondsSinceEpoch(1700000000000);
 
   group('TranscriptFlow', () {
+    // A turn whose Claude Code login was revoked mid-way ended as a red mono
+    // row repeating the CLI's sentence twice, with no way to sign back in.
+    testWidgets('a Claude sign-in failure is a notice with a sign-in action', (
+      tester,
+    ) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            claudeAccountsProvider.overrideWith((ref) async => const []),
+          ],
+          child: testWrap(
+            TranscriptFlow(
+              codeFont: 'monospace',
+              segments: [
+                TextSegment(text: 'Working on it.', startedAt: ts),
+                ErrorSegment(
+                  message:
+                      '[claude] Failed to authenticate: OAuth token revoked. '
+                      '(HTTP 401)',
+                  code: ErrorSegment.authenticationErrorCode,
+                  source: ErrorSegment.claudeCodeSource,
+                  startedAt: ts,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CcAlert), findsOneWidget);
+      expect(find.byType(TranscriptSegmentRow), findsNothing);
+      expect(
+        find.text(l10n.transcriptClaudeSignInExpiredTitle),
+        findsOneWidget,
+      );
+      // The upstream sentence stays, once, without the lane prefix.
+      expect(
+        find.text('Failed to authenticate: OAuth token revoked. (HTTP 401)'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text(l10n.claudeAccountSignIn));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.claudeSignInDialogTitle), findsOneWidget);
+      expect(find.text('claude auth login'), findsOneWidget);
+    });
+
+    testWidgets('a provider sign-in failure explains the fix without a '
+        'Claude action', (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await tester.pumpWidget(
+        testWrap(
+          TranscriptFlow(
+            codeFont: 'monospace',
+            segments: [
+              ErrorSegment(
+                message: 'Anthropic API error 401: invalid x-api-key',
+                code: ErrorSegment.authenticationErrorCode,
+                source: 'harness',
+                startedAt: ts,
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.transcriptSignInExpiredTitle), findsOneWidget);
+      expect(find.text(l10n.claudeAccountSignIn), findsNothing);
+    });
+
     testWidgets('renders reasoning, tools and answer inline in order', (
       tester,
     ) async {

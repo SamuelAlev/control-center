@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "Token truy cập cá nhân",
   "credentialsPersonalTokenHint": "Dán token truy cập cá nhân",
   "credentialsHostManaged": "Kết nối này đến từ ứng dụng máy chủ hoặc môi trường. Chỉ chủ máy chủ mới có thể thay đổi ở đó; bạn vẫn có thể thêm token của riêng mình.",
-  "credentialsStopWatching": "Ngừng theo dõi"
+  "credentialsStopWatching": "Ngừng theo dõi",
+  "transcriptClaudeSignInExpiredTitle": "Phiên đăng nhập Claude Code đã hết hạn",
+  "transcriptClaudeSignInExpiredBody": "Lần chạy đã dừng vì tài khoản của nó không còn xác thực được. Hãy đăng nhập lại rồi thử lại lượt này.",
+  "transcriptSignInExpiredTitle": "Phiên đăng nhập nhà cung cấp đã hết hạn",
+  "transcriptSignInExpiredBody": "Lần chạy đã dừng vì thông tin xác thực của nhà cung cấp không còn hoạt động. Hãy kết nối lại trong Cài đặt → Nhà cung cấp rồi thử lại lượt này."
 }

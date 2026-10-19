@@ -8961,5 +8961,14 @@
   "skillBehaviorSafetyNote": "Yapıt denetimleri sentetiktir ve gerçek dünyadaki saldırı oranlarını yansıtmaz; gerçek yan etkiler izlenmez.",
   "skillBehaviorUtility": "Aileye göre yarar",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} doğrulanmış başarı",
-  "skillBehaviorUtilityNote": "Başarısız ve tamamlanmamış olanlar dahil tüm denemeler yararın paydasına katılır."
+  "skillBehaviorUtilityNote": "Başarısız ve tamamlanmamış olanlar dahil tüm denemeler yararın paydasına katılır.",
+  "claudeAccountSignInFailed": "Oturum açılamadı",
+  "claudeSignInDialogTitle": "Claude Code'da oturum aç",
+  "claudeSignInDialogHint": "Her komutu sunucudaki bir terminalde çalıştırın. Oturum açmayı tamamlamak için bir tarayıcı açar ve kimlik bilgisini o hesabın dizinine yazar.",
+  "claudeSignInNoAccounts": "Yönetilen hiçbir hesabın oturumu kapalı değil. Bu ajan Claude Code'un kendi oturumunu kullanıyorsa şunu çalıştırın:",
+  "claudeSignInCommandUnavailable": "Sunucu bu hesap için bir oturum açma komutu sağlayamadı.",
+  "transcriptClaudeSignInExpiredTitle": "Claude Code oturumunun süresi doldu",
+  "transcriptClaudeSignInExpiredBody": "Hesabı artık kimlik doğrulayamadığı için çalışma durdu. Yeniden oturum açın, ardından turu yeniden deneyin.",
+  "transcriptSignInExpiredTitle": "Sağlayıcı oturumunun süresi doldu",
+  "transcriptSignInExpiredBody": "Sağlayıcının kimlik bilgisi artık çalışmadığı için çalışma durdu. Ayarlar → Sağlayıcılar bölümünden yeniden bağlayın, ardından turu yeniden deneyin."
 }

@@ -8150,5 +8150,14 @@
   "skillBehaviorSafetyNote": "Les contrôles d'artefact sont synthétiques et ne représentent pas des taux d'attaque en conditions réelles ; les effets secondaires réels ne sont pas instrumentés.",
   "skillBehaviorUtility": "Utilité par famille",
   "skillBehaviorUtilityCounts": "{verified}/{attempts} réussites vérifiées",
-  "skillBehaviorUtilityNote": "Toutes les tentatives comptent dans le dénominateur d'utilité, même les échecs et les tentatives incomplètes."
+  "skillBehaviorUtilityNote": "Toutes les tentatives comptent dans le dénominateur d'utilité, même les échecs et les tentatives incomplètes.",
+  "claudeAccountSignInFailed": "Échec de la connexion",
+  "claudeSignInDialogTitle": "Se connecter à Claude Code",
+  "claudeSignInDialogHint": "Exécutez chaque commande dans un terminal sur le serveur. Elle ouvre un navigateur pour terminer la connexion et écrit les identifiants dans le répertoire de ce compte.",
+  "claudeSignInNoAccounts": "Aucun compte géré n'est déconnecté. Si cet agent utilise la connexion propre à Claude Code, exécutez :",
+  "claudeSignInCommandUnavailable": "Le serveur n'a pas pu fournir de commande de connexion pour ce compte.",
+  "transcriptClaudeSignInExpiredTitle": "Connexion à Claude Code expirée",
+  "transcriptClaudeSignInExpiredBody": "L'exécution s'est arrêtée car son compte ne s'authentifie plus. Reconnectez-vous, puis relancez le tour.",
+  "transcriptSignInExpiredTitle": "Connexion au fournisseur expirée",
+  "transcriptSignInExpiredBody": "L'exécution s'est arrêtée car les identifiants de son fournisseur ne fonctionnent plus. Reconnectez-le dans Paramètres → Fournisseurs, puis relancez le tour."
 }

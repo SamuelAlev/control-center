@@ -2607,4 +2607,20 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'نگرانی بند کریں';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Claude Code سائن ان کی میعاد ختم ہو گئی';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'رن رک گیا کیونکہ اس کا اکاؤنٹ اب تصدیق نہیں ہوتا۔ دوبارہ سائن ان کریں، پھر یہ باری دوبارہ آزمائیں۔';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'فراہم کنندہ سائن ان کی میعاد ختم ہو گئی';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'رن رک گیا کیونکہ فراہم کنندہ کی اسناد اب کام نہیں کرتیں۔ اسے ترتیبات ← فراہم کنندگان میں دوبارہ جوڑیں، پھر یہ باری دوبارہ آزمائیں۔';
 }

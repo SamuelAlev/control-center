@@ -2618,4 +2618,20 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'إيقاف المتابعة';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'انتهت صلاحية تسجيل الدخول إلى Claude Code';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'توقف التشغيل لأن حسابه لم يعد يجتاز المصادقة. سجّل الدخول مرة أخرى، ثم أعد محاولة الدور.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'انتهت صلاحية تسجيل الدخول إلى المزوّد';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'توقف التشغيل لأن بيانات اعتماد المزوّد لم تعد تعمل. أعد ربطه من الإعدادات ← المزوّدون، ثم أعد محاولة الدور.';
 }

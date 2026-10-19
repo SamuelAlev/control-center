@@ -242,6 +242,7 @@ class ActionGuardService {
     required Set<ActionClass> classes,
     String? command,
     String? spaceId,
+    String? conversationId,
     String? agentId,
     Mode mode = Mode.chat,
     String actionSummary = '',
@@ -352,6 +353,7 @@ class ActionGuardService {
           _buildRequest(
             res,
             spaceId: spaceId,
+            conversationId: conversationId,
             actionSummary: actionSummary,
             workspaceId: workspaceId,
             agentId: agentId,
@@ -381,6 +383,7 @@ class ActionGuardService {
     String? command,
     String? rationale,
     String? spaceId,
+    String? conversationId,
     String actionSummary = '',
     String? workspaceId,
     String? agentId,
@@ -409,6 +412,7 @@ class ActionGuardService {
     final drivingClass = res.driving.actionClass;
     return ConfirmationRequest(
       spaceId: spaceId ?? '',
+      conversationId: conversationId,
       workspaceId: workspaceId,
       title: copy.title,
       detail: copy.detail,

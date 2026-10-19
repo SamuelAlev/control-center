@@ -15855,4 +15855,37 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Semua percobaan masuk penyebut kegunaan, termasuk yang gagal dan belum selesai.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Gagal masuk';
+
+  @override
+  String get claudeSignInDialogTitle => 'Masuk ke Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Jalankan setiap perintah di terminal pada server. Perintah itu membuka browser untuk menyelesaikan login dan menulis kredensial ke direktori akun tersebut.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Tidak ada akun terkelola yang keluar. Jika agen ini memakai login Claude Code sendiri, jalankan:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Server tidak dapat menyediakan perintah login untuk akun ini.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Login Claude Code kedaluwarsa';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Proses berhenti karena akunnya tidak lagi terautentikasi. Masuk lagi, lalu coba ulang giliran ini.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Login penyedia kedaluwarsa';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Proses berhenti karena kredensial penyedianya tidak lagi berfungsi. Hubungkan ulang di Pengaturan → Penyedia, lalu coba ulang giliran ini.';
 }

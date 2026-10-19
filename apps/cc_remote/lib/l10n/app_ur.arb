@@ -970,5 +970,9 @@
   "credentialsPersonalToken": "ذاتی رسائی کا ٹوکن",
   "credentialsPersonalTokenHint": "ذاتی رسائی کا ٹوکن پیسٹ کریں",
   "credentialsHostManaged": "یہ کنکشن سرور ایپ یا ماحول سے آتا ہے۔ اسے وہاں صرف سرور کا مالک بدل سکتا ہے؛ آپ اپنا ٹوکن پھر بھی شامل کر سکتے ہیں۔",
-  "credentialsStopWatching": "نگرانی بند کریں"
+  "credentialsStopWatching": "نگرانی بند کریں",
+  "transcriptClaudeSignInExpiredTitle": "Claude Code سائن ان کی میعاد ختم ہو گئی",
+  "transcriptClaudeSignInExpiredBody": "رن رک گیا کیونکہ اس کا اکاؤنٹ اب تصدیق نہیں ہوتا۔ دوبارہ سائن ان کریں، پھر یہ باری دوبارہ آزمائیں۔",
+  "transcriptSignInExpiredTitle": "فراہم کنندہ سائن ان کی میعاد ختم ہو گئی",
+  "transcriptSignInExpiredBody": "رن رک گیا کیونکہ فراہم کنندہ کی اسناد اب کام نہیں کرتیں۔ اسے ترتیبات ← فراہم کنندگان میں دوبارہ جوڑیں، پھر یہ باری دوبارہ آزمائیں۔"
 }

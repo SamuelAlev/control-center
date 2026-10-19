@@ -2050,5 +2050,13 @@
   "credentialsPersonalToken": "Personal access token",
   "credentialsPersonalTokenHint": "Paste a personal access token",
   "credentialsHostManaged": "This connection comes from the server app or environment. Only the server owner can change it there; you can still add your own token.",
-  "credentialsStopWatching": "Stop watching"
+  "credentialsStopWatching": "Stop watching",
+  "transcriptClaudeSignInExpiredTitle": "Claude Code sign-in expired",
+  "@transcriptClaudeSignInExpiredTitle": {"description": "Title of the notice in a turn that failed because its Claude Code account stopped authenticating"},
+  "transcriptClaudeSignInExpiredBody": "The run stopped because its account no longer authenticates. Sign in again, then retry the turn.",
+  "@transcriptClaudeSignInExpiredBody": {"description": "Body of the notice in a turn that failed because its Claude Code account stopped authenticating"},
+  "transcriptSignInExpiredTitle": "Provider sign-in expired",
+  "@transcriptSignInExpiredTitle": {"description": "Title of the notice in a turn that failed because its model provider credential stopped working"},
+  "transcriptSignInExpiredBody": "The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.",
+  "@transcriptSignInExpiredBody": {"description": "Body of the notice in a turn that failed because its model provider credential stopped working"}
 }

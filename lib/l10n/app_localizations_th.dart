@@ -15694,4 +15694,38 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'นำทุกความพยายามมาคิดเป็นตัวหาร รวมถึงที่ล้มเหลวและยังไม่เสร็จ';
+
+  @override
+  String get claudeAccountSignInFailed => 'ลงชื่อเข้าใช้ไม่สำเร็จ';
+
+  @override
+  String get claudeSignInDialogTitle => 'ลงชื่อเข้าใช้ Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'เรียกใช้แต่ละคำสั่งในเทอร์มินัลบนเซิร์ฟเวอร์ คำสั่งจะเปิดเบราว์เซอร์เพื่อลงชื่อเข้าใช้ให้เสร็จ และเขียนข้อมูลรับรองลงในไดเรกทอรีของบัญชีนั้น';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'ไม่มีบัญชีที่จัดการอยู่ที่ออกจากระบบ หากเอเจนต์นี้ใช้การลงชื่อเข้าใช้ของ Claude Code เอง ให้เรียกใช้:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'เซิร์ฟเวอร์ไม่สามารถให้คำสั่งลงชื่อเข้าใช้สำหรับบัญชีนี้ได้';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'การลงชื่อเข้าใช้ Claude Code หมดอายุ';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'การทำงานหยุดลงเพราะบัญชีของมันยืนยันตัวตนไม่ได้อีกต่อไป ลงชื่อเข้าใช้อีกครั้ง แล้วลองรอบนี้ใหม่';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'การลงชื่อเข้าใช้ผู้ให้บริการหมดอายุ';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'การทำงานหยุดลงเพราะข้อมูลรับรองของผู้ให้บริการใช้ไม่ได้อีกต่อไป เชื่อมต่อใหม่ในการตั้งค่า → ผู้ให้บริการ แล้วลองรอบนี้ใหม่';
 }

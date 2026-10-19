@@ -2621,4 +2621,19 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Припинити відстеження';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Термін входу в Claude Code минув';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Запуск зупинено, бо його обліковий запис більше не проходить автентифікацію. Увійдіть знову, а потім повторіть хід.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Термін входу до провайдера минув';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Запуск зупинено, бо облікові дані провайдера більше не працюють. Перепідключіть його в Налаштування → Провайдери, а потім повторіть хід.';
 }

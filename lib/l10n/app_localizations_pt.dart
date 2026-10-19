@@ -15924,6 +15924,39 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Todas as tentativas entram no denominador da utilidade, inclusive as falhas e incompletas.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Falha ao entrar';
+
+  @override
+  String get claudeSignInDialogTitle => 'Entrar no Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Execute cada comando em um terminal no servidor. Ele abre um navegador para concluir o login e grava a credencial no diretório dessa conta.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Nenhuma conta gerenciada está desconectada. Se este agente usa o login próprio do Claude Code, execute:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'O servidor não conseguiu fornecer um comando de login para esta conta.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Login do Claude Code expirado';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'A execução parou porque a conta dela não autentica mais. Entre novamente e tente o turno outra vez.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Login do provedor expirado';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'A execução parou porque a credencial do provedor não funciona mais. Reconecte-o em Configurações → Provedores e tente o turno outra vez.';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).

@@ -26711,6 +26711,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All attempts count toward the utility denominator, including failures and incomplete runs.'**
   String get skillBehaviorUtilityNote;
+
+  /// Badge on a Claude Code account a run reported as no longer authenticating
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed'**
+  String get claudeAccountSignInFailed;
+
+  /// Title of the dialog listing Claude Code accounts that need signing in
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Claude Code'**
+  String get claudeSignInDialogTitle;
+
+  /// Explains how to use the login commands in the Claude Code sign-in dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Run each command in a terminal on the server. It opens a browser to finish the login and writes the credential into that account\'s directory.'**
+  String get claudeSignInDialogHint;
+
+  /// Shown when no managed Claude Code account needs signing in; followed by the plain login command
+  ///
+  /// In en, this message translates to:
+  /// **'No managed account is signed out. If this agent uses Claude Code\'s own login, run:'**
+  String get claudeSignInNoAccounts;
+
+  /// Shown when the login command for a Claude Code account could not be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'The server could not provide a login command for this account.'**
+  String get claudeSignInCommandUnavailable;
+
+  /// Title of the notice in a turn that failed because its Claude Code account stopped authenticating
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code sign-in expired'**
+  String get transcriptClaudeSignInExpiredTitle;
+
+  /// Body of the notice in a turn that failed because its Claude Code account stopped authenticating
+  ///
+  /// In en, this message translates to:
+  /// **'The run stopped because its account no longer authenticates. Sign in again, then retry the turn.'**
+  String get transcriptClaudeSignInExpiredBody;
+
+  /// Title of the notice in a turn that failed because its model provider credential stopped working
+  ///
+  /// In en, this message translates to:
+  /// **'Provider sign-in expired'**
+  String get transcriptSignInExpiredTitle;
+
+  /// Body of the notice in a turn that failed because its model provider credential stopped working
+  ///
+  /// In en, this message translates to:
+  /// **'The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.'**
+  String get transcriptSignInExpiredBody;
 }
 
 class _AppLocalizationsDelegate

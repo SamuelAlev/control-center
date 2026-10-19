@@ -66,7 +66,18 @@ class _AgentApprovalsSource implements InboxAttentionSource {
           waitingSince: DateTime.tryParse(c.createdAt),
           onAction: () {
             if (workspaceId != null && c.spaceId.isNotEmpty) {
-              router.go(spaceRoute(workspaceId, c.spaceId));
+              // The inline prompt lives in the blocked conversation's own
+              // tab, not whichever one of the space is standing.
+              final conversationId = c.conversationId;
+              router.go(
+                spaceRoute(
+                  workspaceId,
+                  c.spaceId,
+                  tab: conversationId == null || conversationId.isEmpty
+                      ? null
+                      : conversationTabKey(conversationId),
+                ),
+              );
             }
           },
         ),

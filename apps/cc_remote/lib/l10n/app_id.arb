@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "Token akses pribadi",
   "credentialsPersonalTokenHint": "Tempel token akses pribadi",
   "credentialsHostManaged": "Koneksi ini berasal dari aplikasi server atau lingkungannya. Hanya pemilik server yang dapat mengubahnya di sana; Anda tetap dapat menambahkan token sendiri.",
-  "credentialsStopWatching": "Berhenti memantau"
+  "credentialsStopWatching": "Berhenti memantau",
+  "transcriptClaudeSignInExpiredTitle": "Login Claude Code kedaluwarsa",
+  "transcriptClaudeSignInExpiredBody": "Proses berhenti karena akunnya tidak lagi terautentikasi. Masuk lagi, lalu coba ulang giliran ini.",
+  "transcriptSignInExpiredTitle": "Login penyedia kedaluwarsa",
+  "transcriptSignInExpiredBody": "Proses berhenti karena kredensial penyedianya tidak lagi berfungsi. Hubungkan ulang di Pengaturan → Penyedia, lalu coba ulang giliran ini."
 }

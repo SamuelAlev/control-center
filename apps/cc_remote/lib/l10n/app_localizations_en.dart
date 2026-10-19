@@ -2604,6 +2604,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get credentialsStopWatching => 'Stop watching';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Claude Code sign-in expired';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'The run stopped because its account no longer authenticates. Sign in again, then retry the turn.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Provider sign-in expired';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

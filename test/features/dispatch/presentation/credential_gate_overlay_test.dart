@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:cc_domain/cc_domain.dart'
     show RunCredentialBlockDto, RunCredentialLane, RunCredentialReason;
+import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/dispatch/presentation/widgets/credential_gate_overlay.dart';
 import 'package:control_center/features/dispatch/providers/credential_gate_providers.dart';
+import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -114,6 +116,62 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(CcDialog), findsNothing);
+  });
+
+  testWidgets('an expired sign-in hands over each account\'s login command', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          blockedRunsProvider.overrideWith(
+            (ref) => Stream.value([
+              _block(
+                reason: RunCredentialReason.credentialExpired,
+                detail: '[claude] OAuth token revoked.',
+              ),
+            ]),
+          ),
+          claudeAccountsProvider.overrideWith(
+            (ref) async => [
+              ClaudeAccountView(
+                account: ClaudeAccount(
+                  id: 'work',
+                  label: 'Work',
+                  loggedIn: true,
+                  authFailedAt: DateTime.utc(2026, 10, 19),
+                ),
+              ),
+            ],
+          ),
+          claudeLoginCommandProvider.overrideWith(
+            (ref, id) async => (
+              argv: const ['claude', 'auth', 'login'],
+              environment: {'CLAUDE_CONFIG_DIR': '/data/claude-accounts/$id'},
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: CcTheme(
+            data: CcThemeData.light(),
+            child: const Scaffold(body: CredentialGateOverlay()),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text('Work'), findsOneWidget);
+    expect(find.text(l10n.claudeAccountSignInFailed), findsOneWidget);
+    expect(
+      find.text(
+        'CLAUDE_CONFIG_DIR=/data/claude-accounts/work claude auth login',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a pool of removed accounts asks for an edit, not a sign-in', (

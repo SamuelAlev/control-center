@@ -65,10 +65,17 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    final visible = ref.watch(visibleConversationSpacesProvider);
+    final spaces = ref.watch(visibleConversationSpacesProvider);
+    final conversations = ref.watch(visibleConversationsProvider);
     final pending =
         (ref.watch(pendingConfirmationsProvider).asData?.value ?? const [])
-            .where((r) => r.spaceId.isEmpty || !visible.contains(r.spaceId))
+            .where(
+              (r) => !isConfirmationShownInline(
+                r,
+                spaces: spaces,
+                conversations: conversations,
+              ),
+            )
             .toList();
     if (pending.isEmpty) {
       return const SizedBox.shrink();

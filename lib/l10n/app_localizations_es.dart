@@ -15944,6 +15944,40 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Todos los intentos cuentan en el denominador de utilidad, incluidos los fallidos y los incompletos.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Error al iniciar sesión';
+
+  @override
+  String get claudeSignInDialogTitle => 'Iniciar sesión en Claude Code';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Ejecuta cada comando en una terminal del servidor. Abre un navegador para completar el inicio de sesión y guarda la credencial en el directorio de esa cuenta.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Ninguna cuenta gestionada tiene la sesión cerrada. Si este agente usa el inicio de sesión propio de Claude Code, ejecuta:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'El servidor no pudo proporcionar un comando de inicio de sesión para esta cuenta.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'La sesión de Claude Code ha caducado';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'La ejecución se detuvo porque su cuenta ya no se autentica. Vuelve a iniciar sesión y reintenta el turno.';
+
+  @override
+  String get transcriptSignInExpiredTitle =>
+      'La sesión del proveedor ha caducado';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'La ejecución se detuvo porque la credencial de su proveedor ya no funciona. Vuelve a conectarlo en Ajustes → Proveedores y reintenta el turno.';
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

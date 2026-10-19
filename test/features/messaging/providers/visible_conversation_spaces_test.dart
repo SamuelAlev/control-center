@@ -130,5 +130,44 @@ void main() {
       await tester.pump();
       expect(container.read(visibleConversationSpacesProvider), {'space-b'});
     });
+
+    testWidgets('registers the conversation and releases it offstage', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      Widget pane({required bool onScreen}) => host(
+        container,
+        TickerMode(
+          enabled: onScreen,
+          child: const VisibleConversationRegistrar(
+            spaceId: 'space-1',
+            conversationId: 'conv-1',
+            child: SizedBox.shrink(),
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(pane(onScreen: true));
+      await tester.pump();
+      expect(container.read(visibleConversationSpacesProvider), {'space-1'});
+      expect(container.read(visibleConversationsProvider), {'conv-1'});
+
+      // A kept-alive editor tab that is not the active one.
+      await tester.pumpWidget(pane(onScreen: false));
+      expect(tester.takeException(), isNull);
+      await tester.pump();
+      expect(container.read(visibleConversationSpacesProvider), isEmpty);
+      expect(container.read(visibleConversationsProvider), isEmpty);
+
+      await tester.pumpWidget(pane(onScreen: true));
+      await tester.pump();
+      expect(container.read(visibleConversationsProvider), {'conv-1'});
+
+      await tester.pumpWidget(host(container, const SizedBox.shrink()));
+      await tester.pump();
+      expect(container.read(visibleConversationsProvider), isEmpty);
+    });
   });
 }

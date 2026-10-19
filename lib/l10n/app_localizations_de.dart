@@ -15943,4 +15943,37 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get skillBehaviorUtilityNote =>
       'Alle Versuche zählen zum Nenner der Nützlichkeit, auch fehlgeschlagene und unvollständige.';
+
+  @override
+  String get claudeAccountSignInFailed => 'Anmeldung fehlgeschlagen';
+
+  @override
+  String get claudeSignInDialogTitle => 'Bei Claude Code anmelden';
+
+  @override
+  String get claudeSignInDialogHint =>
+      'Führe jeden Befehl in einem Terminal auf dem Server aus. Er öffnet einen Browser, um die Anmeldung abzuschließen, und schreibt die Zugangsdaten in das Verzeichnis dieses Kontos.';
+
+  @override
+  String get claudeSignInNoAccounts =>
+      'Kein verwaltetes Konto ist abgemeldet. Wenn dieser Agent die eigene Anmeldung von Claude Code nutzt, führe aus:';
+
+  @override
+  String get claudeSignInCommandUnavailable =>
+      'Der Server konnte keinen Anmeldebefehl für dieses Konto bereitstellen.';
+
+  @override
+  String get transcriptClaudeSignInExpiredTitle =>
+      'Claude-Code-Anmeldung abgelaufen';
+
+  @override
+  String get transcriptClaudeSignInExpiredBody =>
+      'Der Lauf wurde beendet, weil sich sein Konto nicht mehr authentifiziert. Melde dich erneut an und wiederhole dann den Zug.';
+
+  @override
+  String get transcriptSignInExpiredTitle => 'Anbieter-Anmeldung abgelaufen';
+
+  @override
+  String get transcriptSignInExpiredBody =>
+      'Der Lauf wurde beendet, weil die Zugangsdaten seines Anbieters nicht mehr funktionieren. Verbinde ihn unter Einstellungen → Anbieter neu und wiederhole dann den Zug.';
 }

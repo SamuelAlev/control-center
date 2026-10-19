@@ -14,6 +14,8 @@ import 'package:control_center/shared/widgets/transcript/tool_presentation.dart'
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+part 'transcript_segment_row_text.dart';
+
 /// One row in the transcript process timeline: a reasoning span, tool call,
 /// error, or sandbox violation. Collapsed by default; tools and long prose
 /// expand to a rich body (code, diff, terminal, or JSON).
@@ -103,7 +105,9 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
         Expanded(
           child: Text.rich(
             _summaryText(seg, tokens, t),
-            maxLines: 1,
+            // An error's headline IS the message; clipping it to one line hid
+            // the part that says what to do.
+            maxLines: seg is ErrorSegment || seg is ViolationSegment ? 3 : 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -287,8 +291,8 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
     }
     final text = switch (seg) {
       ReasoningSegment(:final text) => text,
-      ErrorSegment(:final message) => message,
-      ViolationSegment(:final message) => message,
+      ErrorSegment(:final message) => _afterFirstLine(message) ?? message,
+      ViolationSegment(:final message) => _afterFirstLine(message) ?? message,
       TextSegment(:final text) => text,
       ToolSegment() => '',
     };
@@ -420,28 +424,10 @@ bool _hasExpandable(TranscriptSegment seg) => switch (seg) {
         images.isNotEmpty ||
         attachments.isNotEmpty,
   ReasoningSegment(:final text) => text.length > 80,
-  ErrorSegment(:final message) => message.length > 80,
-  ViolationSegment(:final message) => message.length > 80,
+  // The header already wraps the first line of an error in full; only what
+  // follows it is worth an expansion. Expanding a one-line error used to print
+  // the same sentence twice.
+  ErrorSegment(:final message) => _afterFirstLine(message) != null,
+  ViolationSegment(:final message) => _afterFirstLine(message) != null,
   TextSegment(:final text) => text.length > 80,
 };
-
-String? _firstLine(String content) {
-  if (content.isEmpty) {
-    return null;
-  }
-  final i = content.indexOf('\n');
-  final line = (i == -1 ? content : content.substring(0, i)).trim();
-  return line.isEmpty ? null : line;
-}
-
-String _formatDuration(Duration d) {
-  if (d.inMilliseconds < 1000) {
-    return '<1s';
-  }
-  if (d.inSeconds < 60) {
-    return '${d.inSeconds}s';
-  }
-  final m = d.inMinutes;
-  final s = d.inSeconds % 60;
-  return s == 0 ? '${m}m' : '${m}m ${s}s';
-}

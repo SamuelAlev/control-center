@@ -1034,5 +1034,9 @@
   "credentialsPersonalToken": "Προσωπικό token πρόσβασης",
   "credentialsPersonalTokenHint": "Επικολλήστε ένα προσωπικό token πρόσβασης",
   "credentialsHostManaged": "Αυτή η σύνδεση προέρχεται από την εφαρμογή ή το περιβάλλον του διακομιστή. Μόνο ο ιδιοκτήτης του διακομιστή μπορεί να την αλλάξει εκεί. Μπορείτε πάντως να προσθέσετε το δικό σας token.",
-  "credentialsStopWatching": "Διακοπή παρακολούθησης"
+  "credentialsStopWatching": "Διακοπή παρακολούθησης",
+  "transcriptClaudeSignInExpiredTitle": "Η σύνδεση στο Claude Code έληξε",
+  "transcriptClaudeSignInExpiredBody": "Η εκτέλεση σταμάτησε επειδή ο λογαριασμός της δεν πιστοποιείται πλέον. Συνδεθείτε ξανά και επαναλάβετε τον γύρο.",
+  "transcriptSignInExpiredTitle": "Η σύνδεση στον πάροχο έληξε",
+  "transcriptSignInExpiredBody": "Η εκτέλεση σταμάτησε επειδή τα διαπιστευτήρια του παρόχου δεν λειτουργούν πλέον. Συνδέστε τον ξανά στις Ρυθμίσεις → Πάροχοι και επαναλάβετε τον γύρο."
 }

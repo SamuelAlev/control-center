@@ -753,5 +753,9 @@
   "credentialsPersonalToken": "Token de acesso pessoal",
   "credentialsPersonalTokenHint": "Cole um token de acesso pessoal",
   "credentialsHostManaged": "Esta conexão vem do aplicativo ou ambiente do servidor. Somente o proprietário do servidor pode alterá-la lá; você ainda pode adicionar seu próprio token.",
-  "credentialsStopWatching": "Parar de acompanhar"
+  "credentialsStopWatching": "Parar de acompanhar",
+  "transcriptClaudeSignInExpiredTitle": "Login do Claude Code expirado",
+  "transcriptClaudeSignInExpiredBody": "A execução parou porque a conta dela não autentica mais. Entre novamente e tente o turno outra vez.",
+  "transcriptSignInExpiredTitle": "Login do provedor expirado",
+  "transcriptSignInExpiredBody": "A execução parou porque a credencial do provedor não funciona mais. Reconecte-o em Configurações → Provedores e tente o turno outra vez."
 }
