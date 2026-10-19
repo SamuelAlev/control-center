@@ -169,6 +169,32 @@ void main() {
     expect(target.allMatches(prompt.detail), hasLength(1));
   });
 
+  test(
+    'several branches are counted in the title and named in the detail',
+    () async {
+      final approver = _Approver();
+      final guard = ActionGuardService(
+        repository: _Rules(),
+        confirmationPort: approver,
+      );
+      await guard.check(
+        workspaceId: 'ws',
+        classes: {ActionClass.gitPush},
+        request: const ActionRequest(
+          refs: ['space/a--data', 'space/a--ui', 'space/a--page'],
+        ),
+      );
+      final prompt = approver.requests.single;
+      expect(
+        prompt.title,
+        'Agent would like to push to 3 branches. Do you accept?',
+      );
+      for (final branch in ['space/a--data', 'space/a--ui', 'space/a--page']) {
+        expect(prompt.detail, contains(branch));
+      }
+    },
+  );
+
   test('force push and remote branch deletion are both disclosed', () async {
     final approver = _Approver();
     final guard = ActionGuardService(

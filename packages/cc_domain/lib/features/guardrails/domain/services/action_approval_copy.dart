@@ -129,18 +129,22 @@ class ActionApprovalCopy {
       }
     }
     final hosts = request.hosts.where(_safeTarget).toList();
+    // The title counts several branches; the detail always lists their names.
+    String push({required bool brief}) => [
+      if (refs.isNotEmpty)
+        '${forcePush ? 'force-push' : 'push'} to ${brief && refs.length > 1 ? '${refs.length} branches' : refs.join(', ')}',
+      if (deletedRefs.isNotEmpty)
+        brief && deletedRefs.length > 1
+            ? 'delete ${deletedRefs.length} remote branches'
+            : 'delete remote branch ${deletedRefs.join(', ')}',
+      if (unknownPush || (refs.isEmpty && deletedRefs.isEmpty))
+        'possibly push to a Git remote (destination branch not specified)',
+    ].join(' and ');
     final ordered = ActionClass.values.where(effects.contains).toList();
     final all = [
       for (final effect in ordered)
         switch (effect) {
-          ActionClass.gitPush => [
-            if (refs.isNotEmpty)
-              '${forcePush ? 'force-push' : 'push'} to ${refs.join(', ')}',
-            if (deletedRefs.isNotEmpty)
-              'delete remote branch ${deletedRefs.join(', ')}',
-            if (unknownPush || (refs.isEmpty && deletedRefs.isEmpty))
-              'possibly push to a Git remote (destination branch not specified)',
-          ].join(' and '),
+          ActionClass.gitPush => push(brief: false),
           ActionClass.fileDelete =>
             paths.isEmpty
                 ? script != null
@@ -186,7 +190,9 @@ class ActionApprovalCopy {
             effects.contains(ActionClass.gitPush)
         ? ActionClass.gitPush
         : primary;
-    final intent = preferred != null
+    final intent = preferred == ActionClass.gitPush
+        ? push(brief: true)
+        : preferred != null
         ? all[ordered.indexOf(preferred)]
         : script != null
         ? 'run a shell command'
