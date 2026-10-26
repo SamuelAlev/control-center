@@ -89,10 +89,10 @@ part 'dispatch_session_acp.dart';
 part 'dispatch_session_harness.dart';
 part 'dispatch_session_subagent.dart';
 part 'dispatch_session_claude_cli.dart';
+part 'dispatch_session_claude_credentials.dart';
 part 'dispatch_session_gateway.dart';
 part 'dispatch_session_account_pool.dart';
 
-/// A session that dispatches and manages a single sandboxed agent run.
 /// Default per-run priced cost cap, in cents: what one unattended segment of
 /// an autonomous command (/goal, /loop) may burn before the loop's external
 /// budget check stops it mid-run. The goal supervisor threads a goal's
@@ -542,14 +542,6 @@ class DispatchSession implements SteeringSessionView {
   /// names the FIRST account's config directory, so a session id learned on
   /// another account must not be written under it.
   bool _claudePersistDisabled = false;
-
-  /// Closes any Claude subagent still open: its parent process is gone, so
-  /// its spawn call will never return.
-  Future<void> _closeClaudeSubagents() async {
-    final subagents = _claudeSubagents;
-    _claudeSubagents = null;
-    await subagents?.closeAll();
-  }
 
   /// Timestamp of the most recent output from the agent.
   DateTime? lastOutputAt;

@@ -47,3 +47,43 @@ String _pretty(Map<String, dynamic>? json) {
     return json.toString();
   }
 }
+
+/// A turn whose credential stopped authenticating: what happened and the
+/// fix, rather than the CLI's sentence as a log line. The sentence stays
+/// underneath as the evidence.
+Widget _authFailure(
+  BuildContext context,
+  DesignSystemTokens t,
+  ErrorSegment s,
+) {
+  final l10n = AppLocalizations.of(context);
+  final claude = s.source == ErrorSegment.claudeCodeSource;
+  final detail = s.message.replaceFirst(RegExp(r'^\[\w+\]\s*'), '').trim();
+  return CcAlert(
+    variant: CcAlertVariant.warning,
+    icon: CcIcons.keyRound,
+    title: claude
+        ? l10n.transcriptClaudeSignInExpiredTitle
+        : l10n.transcriptSignInExpiredTitle,
+    description: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          claude
+              ? l10n.transcriptClaudeSignInExpiredBody
+              : l10n.transcriptSignInExpiredBody,
+          style: TextStyle(fontSize: 12, color: t.textSecondary),
+        ),
+        if (detail.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            detail,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, color: t.textTertiary),
+          ),
+        ],
+      ],
+    ),
+  );
+}

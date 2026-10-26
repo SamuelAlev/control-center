@@ -91,7 +91,11 @@ class _AgentTranscriptState extends State<AgentTranscript> {
     return switch (seg) {
       final ToolSegment s => _tool(t, s),
       final ReasoningSegment s => _reasoning(t, s),
-      final ErrorSegment s when s.isAuthentication => _authFailure(t, s),
+      final ErrorSegment s when s.isAuthentication => _authFailure(
+        context,
+        t,
+        s,
+      ),
       final ErrorSegment s => _mono(
         t,
         s.message,
@@ -139,42 +143,6 @@ class _AgentTranscriptState extends State<AgentTranscript> {
             color: t.textTertiary,
           ),
         ),
-      ),
-    );
-  }
-
-  /// A turn whose credential stopped authenticating: what happened and the
-  /// fix, rather than the CLI's sentence as a log line. The sentence stays
-  /// underneath as the evidence.
-  Widget _authFailure(DesignSystemTokens t, ErrorSegment s) {
-    final l10n = AppLocalizations.of(context);
-    final claude = s.source == ErrorSegment.claudeCodeSource;
-    final detail = s.message.replaceFirst(RegExp(r'^\[\w+\]\s*'), '').trim();
-    return CcAlert(
-      variant: CcAlertVariant.warning,
-      icon: CcIcons.keyRound,
-      title: claude
-          ? l10n.transcriptClaudeSignInExpiredTitle
-          : l10n.transcriptSignInExpiredTitle,
-      description: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            claude
-                ? l10n.transcriptClaudeSignInExpiredBody
-                : l10n.transcriptSignInExpiredBody,
-            style: TextStyle(fontSize: 12, color: t.textSecondary),
-          ),
-          if (detail.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              detail,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: t.textTertiary),
-            ),
-          ],
-        ],
       ),
     );
   }

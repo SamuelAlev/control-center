@@ -24,14 +24,16 @@
 # record their current line counts so the ratchet retains the tighter floors.
 # Lowered 2026-10-17: calendar DTOs, PR cache state, boot logging and catalog
 # helpers/rig watches moved to focused same-library parts.
+# Lowered 2026-10-20: the Claude account-credential gate moved to
+# dispatch_session_claude_credentials.dart, taking dispatch_session_claude_cli.dart
+# under budget; _closeClaudeSubagents joined its sibling in the Claude CLI part.
 packages/cc_domain/lib/features/evals/domain/evaluation/evaluation_plan.dart  1580
 packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2227
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2850
 packages/cc_domain/lib/src/dtos/dtos.dart  4024
 packages/cc_harness/lib/src/loop/agent_loop_runner.dart  2195
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1868
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2636
-packages/cc_infra/lib/src/dispatch/dispatch_session_claude_cli.dart  1545
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2629
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1696
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1585
 packages/cc_infra/lib/src/network/github_graphql_client.dart  2372
