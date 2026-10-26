@@ -236,6 +236,10 @@ dependency_overrides:
   # these once sqlite_vector allows ^2.
   hooks: ^2.2.0
   code_assets: ^2.1.0
+  # webcrypto 0.6.1 still constrains native_toolchain_cmake to ^0.2.4; 0.3's
+  # only breaking change is Android SDK/NDK resolution, which its hook (a
+  # desktop/server BoringSSL build) does not reach. Drop once webcrypto allows ^0.3.
+  native_toolchain_cmake: 0.3.2
 
 dev_dependencies:
   # Server packages the root *tests* import (catalog, isolation, MCP tools).
@@ -264,10 +268,10 @@ dev_dependencies:
   rhttp: 0.18.0
   # Runtime used by rhttp's generated Rust bridge bindings.
   flutter_rust_bridge: 2.13.0
-  # webcrypto 0.6.1 still constrains native_toolchain_cmake to ^0.2.4.
-  # Pin the transitive hook builder for the Architecture-key compatibility
-  # patch (patches/native_toolchain_cmake@0.2.7.patch).
-  native_toolchain_cmake: 0.2.7
+  # webcrypto's build-hook CMake builder. 0.3 uses non-const Architecture-keyed
+  # maps upstream, so the old 0.2.7 patch is gone; a dependency_overrides entry lifts
+  # webcrypto 0.6.1's ^0.2.4 constraint.
+  native_toolchain_cmake: 0.3.2
   # Pinned for patches/webcrypto@0.6.1.patch: its BoringSSL source list omits
   # the fiat P-256 ADX assembly on macOS x86_64, so the x86_64 slice of a
   # universal (profile/release) macOS build fails to link. Arm64-only debug

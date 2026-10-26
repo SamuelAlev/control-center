@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-#define CC_INFERENCE_ABI_VERSION 1u
+#define CC_INFERENCE_ABI_VERSION 2u
 
 /* The ABI version this library speaks. */
 uint32_t cc_inference_abi_version(void);
@@ -122,8 +122,8 @@ int32_t cc_vad_is_empty(const CcVad* handle);
 
 /* Reads the queued segment's sample range; 1 = read, 0 = queue empty. Only the
  * range crosses the boundary — the caller converts it to milliseconds and never
- * needs the samples themselves. */
-int32_t cc_vad_front(const CcVad* handle, int32_t* out_start, int32_t* out_len);
+ * needs the samples themselves. The start is an absolute 64-bit sample index. */
+int32_t cc_vad_front(const CcVad* handle, int64_t* out_start, int32_t* out_len);
 
 void cc_vad_pop(CcVad* handle);
 void cc_vad_clear(CcVad* handle);

@@ -110,6 +110,10 @@ impl Config {
         raw.hr.dict_dir = e;
         raw.hr.lexicon = e;
         raw.hr.rule_fsts = e;
+        // HLG/FST CTC decoding (sherpa-onnx 2.0): off — an empty graph means
+        // plain CTC. 3000 is the engine's own default for `max_active`.
+        raw.ctc_fst_decoder_config.graph = e;
+        raw.ctc_fst_decoder_config.max_active = 3000;
 
         Self { raw }
     }
@@ -398,6 +402,7 @@ mod tests {
             ("hr.dict_dir", config.raw.hr.dict_dir),
             ("hr.lexicon", config.raw.hr.lexicon),
             ("hr.rule_fsts", config.raw.hr.rule_fsts),
+            ("ctc_fst_decoder_config.graph", config.raw.ctc_fst_decoder_config.graph),
         ] {
             assert!(!ptr.is_null(), "{name} must not be NULL");
         }
@@ -414,6 +419,7 @@ mod tests {
         assert_eq!(config.raw.max_active_paths, 4);
         assert_eq!(config.raw.hotwords_score, 1.5);
         assert_eq!(config.raw.blank_penalty, 0.0);
+        assert_eq!(config.raw.ctc_fst_decoder_config.max_active, 3000);
         assert_eq!(config.raw.model_config.num_threads, 4);
         assert_eq!(config.raw.model_config.debug, 0);
     }

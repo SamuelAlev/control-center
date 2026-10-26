@@ -150,6 +150,8 @@ pub unsafe extern "C" fn cc_vad_is_empty(handle: *const CcVad) -> i32 {
 }
 
 /// Reads the queued segment's sample range into `out_start` / `out_len`.
+/// `out_start` is an absolute sample index in the detector's input stream and
+/// is 64-bit (as in sherpa-onnx 2.0): at 16 kHz an `i32` wraps after ~37 h.
 /// Returns 1 when a segment was read, 0 when the queue is empty.
 ///
 /// # Safety
@@ -157,7 +159,7 @@ pub unsafe extern "C" fn cc_vad_is_empty(handle: *const CcVad) -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn cc_vad_front(
     handle: *const CcVad,
-    out_start: *mut i32,
+    out_start: *mut i64,
     out_len: *mut i32,
 ) -> i32 {
     if handle.is_null() || out_start.is_null() || out_len.is_null() {
@@ -262,7 +264,7 @@ mod tests {
             cc_vad_destroy(ptr::null_mut());
             assert_eq!(cc_vad_is_detected(ptr::null()), 0);
             assert_eq!(cc_vad_is_empty(ptr::null()), 1);
-            let (mut start, mut len) = (0, 0);
+            let (mut start, mut len) = (0i64, 0i32);
             assert_eq!(cc_vad_front(ptr::null(), &mut start, &mut len), 0);
         }
     }

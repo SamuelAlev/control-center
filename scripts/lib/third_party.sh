@@ -47,7 +47,7 @@ CC_THIRD_PARTY=(
   "Manrope (font)|4.505|OFL-1.1|https://github.com/sharanda/manrope|manrope-font-LICENSE.txt|bundled|desktop,server"
   "Fira Code (font)|6.2|OFL-1.1|https://github.com/tonsky/FiraCode|firacode-font-LICENSE.txt|bundled|desktop,server"
   "Phosphor Icons (font)|2.0.8|MIT|https://github.com/phosphor-icons/core|phosphor-font-LICENSE.txt|bundled|desktop"
-  "WebDriverAgent|v16.15.0|BSD-3-Clause|https://github.com/appium/WebDriverAgent|webdriveragent-BSD-3-Clause.txt|bundled|desktop"
+  "WebDriverAgent|v16.15.3|BSD-3-Clause|https://github.com/appium/WebDriverAgent|webdriveragent-BSD-3-Clause.txt|bundled|desktop"
   # Windows ARM64 desktop only (role windows-arm64): media-kit's minimal
   # audio libmpv is x86_64-only, so patches/media_kit_libs_windows_audio@*.patch
   # bundles media-kit's aarch64 build from libmpv-win32-video-cmake (mpv

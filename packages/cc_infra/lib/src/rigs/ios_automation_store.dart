@@ -8,10 +8,10 @@ import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
 /// WebDriverAgent release pinned by Control Center.
-const String kIosAutomationVersion = 'v16.15.0';
+const String kIosAutomationVersion = 'v16.15.3';
 
 /// Source commit corresponding to [kIosAutomationVersion].
-const String kIosAutomationCommit = 'e7e2665a00633dc174d7fc579f7e606bc9ba782a';
+const String kIosAutomationCommit = '02cb92f0e93c8b021443bcbb8eeb80932c113220';
 
 /// A byte source used to test installation without network access.
 typedef IosAutomationSource = Future<Stream<List<int>>> Function(Uri uri);
@@ -41,7 +41,7 @@ const IosAutomationArtifact kIosAutomationArm64 = IosAutomationArtifact(
   url:
       'https://github.com/appium/WebDriverAgent/releases/download/$kIosAutomationVersion/'
       'WebDriverAgentRunner-Build-Sim-arm64.zip',
-  sha256: '447270266d582a5f69b59910ca24a76a821560347e0d77703844a8f9dfb42807',
+  sha256: '02f22b68338bd9c63b30626bb0c639f9e7d6fb260d3b9e30e72c3eb2dd710e1e',
 );
 
 /// Intel WebDriverAgent runner.
@@ -50,7 +50,7 @@ const IosAutomationArtifact kIosAutomationX64 = IosAutomationArtifact(
   url:
       'https://github.com/appium/WebDriverAgent/releases/download/$kIosAutomationVersion/'
       'WebDriverAgentRunner-Build-Sim-x86_64.zip',
-  sha256: '247624a6bfc83a014c2b307b98ce24c6bf0fb4273675398c88df05f326a2a98d',
+  sha256: '3afe526c18fdd3100228af60d8149edfcbb41feb1fd8f8a7e81738aabe54a50c',
 );
 
 /// Validates that a ZIP symlink stays inside the staged archive root.

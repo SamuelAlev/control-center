@@ -7,7 +7,7 @@ third-party components that are **statically linked** into the shipped dylib.
 
 | Component                  | Version | License    | Where it comes from                                               |
 | -------------------------- | ------- | ---------- | ----------------------------------------------------------------- |
-| sherpa-onnx (C API + core) | 1.13.8  | Apache-2.0 | k2-fsa/sherpa-onnx prebuilt `*-static-lib` release archive        |
+| sherpa-onnx (C API + core) | 2.0.0   | Apache-2.0 | k2-fsa/sherpa-onnx prebuilt `*-static-lib` release archive        |
 | ONNX Runtime               | 1.28.2  | MIT        | bundled inside that same sherpa-onnx archive (`libonnxruntime.a`) |
 
 Both arrive in ONE archive, so there is exactly one ONNX Runtime in the process.

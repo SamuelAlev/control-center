@@ -16,7 +16,7 @@ const String inferenceLibraryEnvVar = 'CC_INFERENCE_DYLIB';
 /// The C ABI version this Dart binding speaks. Must equal the native's
 /// `cc_inference_abi_version()`; a mismatch refuses to bind — and therefore
 /// fails loudly — rather than misreading structs.
-const int ccInferenceAbiVersion = 1;
+const int ccInferenceAbiVersion = 2;
 
 /// `cc_spk_compute` / `cc_asr_transcribe` audio is 32-bit float mono at this
 /// rate; PCM16 conversion stays in Dart.
@@ -154,7 +154,7 @@ class CcInferenceBindings {
   /// `cc_vad_front` — 1 = range written, 0 = queue empty.
   final int Function(
     Pointer<Void> handle,
-    Pointer<Int32> outStart,
+    Pointer<Int64> outStart,
     Pointer<Int32> outLen,
   )
   vadFront;
@@ -281,8 +281,8 @@ class CcInferenceBindings {
           'cc_vad_is_empty',
         ),
         vadFront: lib.lookupFunction<
-          Int32 Function(Pointer<Void>, Pointer<Int32>, Pointer<Int32>),
-          int Function(Pointer<Void>, Pointer<Int32>, Pointer<Int32>)
+          Int32 Function(Pointer<Void>, Pointer<Int64>, Pointer<Int32>),
+          int Function(Pointer<Void>, Pointer<Int64>, Pointer<Int32>)
         >('cc_vad_front'),
         vadPop: lib.lookupFunction<Void Function(Pointer<Void>), void Function(Pointer<Void>)>(
           'cc_vad_pop',

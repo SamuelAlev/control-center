@@ -30,7 +30,7 @@ import 'package:path/path.dart' as p;
 /// The digest is the Docker Hub index digest, so one pin serves both arm64
 /// and x64 hosts; smolvm resolves it through its default registry.
 const String kSmolvmExecImage =
-    'ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55';
+    'ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac';
 
 /// The OCI image every browser rig boots, pinned by digest.
 ///
@@ -41,7 +41,7 @@ const String kSmolvmExecImage =
 /// that binary emit sound.
 const String kSmolvmDebianBrowserImage =
     'debian:trixie-slim'
-    '@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f';
+    '@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad';
 
 /// The Debian mirrors each browser guest reaches while its pack warms.
 ///

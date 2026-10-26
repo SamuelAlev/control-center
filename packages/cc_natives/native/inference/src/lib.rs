@@ -24,7 +24,7 @@ use std::ffi::{c_char, CStr, CString};
 /// `CC_INFERENCE_ABI_VERSION` in cc_inference.h and `ccInferenceAbiVersion` in
 /// the Dart bindings. Bump on ANY change to a signature or struct below — the
 /// Dart side refuses to bind on a mismatch rather than misreading memory.
-pub const ABI_VERSION: u32 = 1;
+pub const ABI_VERSION: u32 = 2;
 
 thread_local! {
     static LAST_ERROR: RefCell<Option<CString>> = const { RefCell::new(None) };

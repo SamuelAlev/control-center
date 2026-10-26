@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   prepare:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     outputs:
@@ -34,7 +34,7 @@ jobs:
       tag: ${{ steps.v.outputs.tag }}
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -79,7 +79,7 @@ jobs:
     steps:
       - name: Harden runner
         # block is Linux-only. This job holds the Developer ID certificate.
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: audit
 
@@ -214,7 +214,7 @@ jobs:
         # block is Linux-only. On windows-11-arm (v2.22.1) the action logs
         # "Windows ARM runners are not yet supported" and installs no agent;
         # it does not fail the job, so both legs keep the same first step.
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: audit
 
@@ -351,7 +351,7 @@ jobs:
       # lives on the DE region, so sentry.io plus the region host are both
       # needed for the API redirect).
       - name: Harden runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -502,7 +502,7 @@ jobs:
 
   release:
     needs: [prepare, build-macos, build-windows, build-linux]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: write # create the GitHub Release
     env:
@@ -512,7 +512,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: block
           # download-artifact redirects to Azure blob storage.
@@ -560,7 +560,7 @@ jobs:
   # cc_server archive. Separate from the Cloudflare deploys.
   containers:
     needs: [prepare, build-linux]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       packages: write # push images + attestations
@@ -571,7 +571,7 @@ jobs:
     steps:
       - name: Harden runner
         # audit: base-image pulls hit Docker Hub and GHCR hosts that move.
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: audit
 
@@ -656,7 +656,7 @@ jobs:
       # Login stays after every Flutter build: dependency build hooks run in
       # those steps and must not find a GHCR credential on disk.
       - name: Log in to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
