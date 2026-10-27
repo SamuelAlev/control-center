@@ -7,7 +7,7 @@ library;
 abstract final class BuildInfo {
   /// Release version of this build. Matches the release tag (`vX.Y.Z` →
   /// `X.Y.Z`) on CI builds; the root `pubspec.yaml` version otherwise.
-  static const String buildVersion = '0.0.10';
+  static const String buildVersion = '0.0.11';
 
   /// Short git sha this build was compiled from, or `dev` when unstamped.
   static const String buildGitSha = 'dev';
