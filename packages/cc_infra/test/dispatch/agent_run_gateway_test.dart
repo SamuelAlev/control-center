@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
@@ -11,6 +12,8 @@ import 'package:cc_domain/features/guardrails/domain/value_objects/action_constr
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
+import 'package:cc_infra/src/dispatch/host_commit_signer.dart';
+import 'package:cc_infra/src/sandboxing/macos_sandbox.dart';
 import 'package:test/test.dart';
 
 class _Rules implements ActionPolicyRepository {
@@ -73,6 +76,31 @@ class _Broker implements CredentialBrokerPort {
   Future<void> revoke(String handle) async => revoked.add(handle);
 }
 
+class _Signer implements CommitSigner {
+  final List<List<int>> signed = [];
+  CommitSigningException? failure;
+  Completer<void>? hold;
+  int running = 0;
+  int maxRunning = 0;
+
+  @override
+  Future<String> sign(List<int> payload) async {
+    signed.add(payload);
+    running++;
+    maxRunning = max(maxRunning, running);
+    try {
+      await hold?.future;
+      if (failure case final e?) {
+        throw e;
+      }
+      return '-----BEGIN SSH SIGNATURE-----\nsig\n'
+          '-----END SSH SIGNATURE-----\n';
+    } finally {
+      running--;
+    }
+  }
+}
+
 /// What the fake GitHub saw.
 class _Upstream {
   _Upstream(this.server) {
@@ -132,6 +160,8 @@ void main() {
   late AgentRunLease lease;
   late HttpClient client;
   late List<GuardAudit> audits;
+  late _Signer signer;
+  var owner = true;
   var linked = <String>{};
   String? hookReply;
   var hookRequests = 0;
@@ -142,6 +172,8 @@ void main() {
     broker = _Broker();
     linked = {};
     audits = [];
+    signer = _Signer();
+    owner = true;
     hookReply = null;
     hookRequests = 0;
     upstream = _Upstream(
@@ -158,6 +190,8 @@ void main() {
       loopbackBase: () async => Uri.parse('http://127.0.0.1:${host.port}'),
       repoAllowed: (ws, owner, name) async => linked.contains('$owner/$name'),
       githubBase: Uri.parse('http://127.0.0.1:${upstream.server.port}'),
+      signer: signer,
+      mayUseHostSigner: (_) async => owner,
     );
     host.listen((request) async {
       if (request.uri.path == '/agent/hooks/pre-tool-use') {
@@ -179,6 +213,7 @@ void main() {
         spaceId: 's1',
         repoOwner: 'acme',
         repoName: 'widgets',
+        committerEmail: 'Ada@Example.com',
       ),
     ))!;
     client = HttpClient();
@@ -463,6 +498,235 @@ void main() {
     });
   });
 
+  group('commit signing', () {
+    final tree = 'a' * 40;
+    String commitText({
+      String committer = 'ada@example.com',
+      String extra = '',
+      String message = 'msg\n',
+    }) =>
+        'tree $tree\nparent ${'c' * 40}\n'
+        'author Ada <ada@example.com> 1700000000 +0100\n'
+        'committer Ada <$committer> 1700000000 -0130\n'
+        '$extra\n$message';
+    final commit = utf8.encode(commitText());
+
+    Future<({int status, String body})> sign(Object body) => send(
+      'POST',
+      AgentRunLease.signPath,
+      body: body is String ? utf8.encode(body) : body as List<int>,
+    );
+
+    test('the run\'s own commit is signed by the host signer', () async {
+      final r = await sign(commit);
+
+      expect(r.status, 200, reason: r.body);
+      expect(r.body, startsWith('-----BEGIN SSH SIGNATURE-----'));
+      expect(signer.signed.single, commit);
+      expect(confirm.asked, isEmpty);
+      expect(audits.single.decision, ActionDecision.allow);
+      expect(audits.single.actionClasses, ['gitCommit']);
+      expect(audits.single.actionSummary, 'sign git commit');
+    });
+
+    test('a merge with a mergetag and an encoding is signed', () async {
+      final r = await sign(
+        commitText(
+          extra:
+              'encoding ISO-8859-1\nmergetag object ${'d' * 40}\n'
+              ' type commit\n tag v1\n',
+          // Latin-1 message bytes are the message's business, not the headers'.
+        ),
+      );
+      expect(r.status, 200, reason: r.body);
+    });
+
+    test('a non-UTF-8 message under an encoding header is signed', () async {
+      final bytes = [
+        ...utf8.encode(commitText(extra: 'encoding ISO-8859-1\n', message: '')),
+        0xe9, // é in Latin-1
+        0x0a,
+      ];
+      final r = await sign(bytes);
+      expect(r.status, 200, reason: r.body);
+    });
+
+    test('a tag with a SHA-256 id, tagged as the run, is signed', () async {
+      final r = await sign(
+        'object ${'b' * 64}\ntype commit\ntag v1\n'
+        'tagger Ada <ada@example.com> 1700000000 +0000\n\nrelease\n',
+      );
+      expect(r.status, 200, reason: r.body);
+      expect(audits.single.actionSummary, 'sign git tag');
+    });
+
+    test('only well-formed, unsigned commits and tags are signed', () async {
+      const ident = 'Ada <ada@example.com> 1 +0000';
+      for (final body in [
+        '',
+        'arbitrary bytes',
+        'certificate version 0.1\npusher $ident\n\n',
+        // Starts like a commit, then is not one.
+        'tree $tree\ngarbage\n\n',
+        'tree $tree\nauthor $ident\n\n',
+        'tree $tree\ncommitter $ident\nauthor $ident\n\n',
+        'tree xyz\nauthor $ident\ncommitter $ident\n\n',
+        'tree $tree\nparent nope\nauthor $ident\ncommitter $ident\n\n',
+        'tree $tree\nauthor $ident\ncommitter Ada <ada@example.com>\n\n',
+        // No blank line: not a complete object.
+        'tree $tree\nauthor $ident\ncommitter $ident\n',
+        // Already signed, or carrying headers git never signs.
+        commitText(extra: 'gpgsig -----BEGIN SSH SIGNATURE-----\n x\n'),
+        commitText(extra: 'gpgsig-sha256 x\n'),
+        commitText(extra: 'x-extra 1\n'),
+        commitText(extra: ' orphan continuation\n'),
+        'object $tree\ntype commit\ntag v1\n\n',
+        'object $tree\ntype bogus\ntag v1\ntagger $ident\n\n',
+        'object $tree\ntype commit\ntag \ntagger $ident\n\n',
+      ]) {
+        final r = await sign(body);
+        expect(r.status, HttpStatus.badRequest, reason: body);
+      }
+      final nul = await sign([...commit.take(10), 0, ...commit.skip(10)]);
+      expect(nul.status, HttpStatus.badRequest);
+      expect(signer.signed, isEmpty);
+      expect(audits, isEmpty);
+    });
+
+    test('a commit made as anyone but the run is refused', () async {
+      final r = await sign(commitText(committer: 'mallory@example.com'));
+      expect(r.status, HttpStatus.forbidden);
+      expect(r.body, contains('mallory@example.com'));
+      expect(signer.signed, isEmpty);
+    });
+
+    test('a run without an identity signs nothing', () async {
+      final anonymous = (await gateway.open(
+        const AgentRunGrant(workspaceId: 'w1', conversationId: 'c2'),
+      ))!;
+      final r = await send(
+        'POST',
+        AgentRunLease.signPath,
+        body: commit,
+        secret: anonymous.secret,
+      );
+      expect(r.status, HttpStatus.forbidden);
+      expect(signer.signed, isEmpty);
+    });
+
+    test('a run acting for another member never gets the key', () async {
+      owner = false;
+      final r = await sign(commit);
+      expect(r.status, HttpStatus.forbidden);
+      expect(r.body, contains("machine's owner"));
+      expect(signer.signed, isEmpty);
+    });
+
+    test('a gateway with no owner check signs for nobody', () async {
+      final closed = AgentRunGateway(
+        guard: ActionGuardService(repository: rules, confirmationPort: confirm),
+        broker: broker,
+        loopbackBase: () async => Uri.parse('http://127.0.0.1:${host.port}'),
+        signer: signer,
+      );
+      final other = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      other.listen(closed.handle);
+      final grant = (await closed.open(
+        const AgentRunGrant(
+          workspaceId: 'w1',
+          conversationId: 'c3',
+          committerEmail: 'ada@example.com',
+        ),
+      ))!;
+      try {
+        final request = await client.postUrl(
+          Uri.parse('http://127.0.0.1:${other.port}${AgentRunLease.signPath}'),
+        );
+        request.headers.set(AgentRunLease.tokenHeader, grant.secret);
+        request.add(commit);
+        final response = await request.close();
+        await response.drain<void>();
+        expect(response.statusCode, HttpStatus.forbidden);
+        expect(signer.signed, isEmpty);
+      } finally {
+        await other.close(force: true);
+      }
+    });
+
+    test('a denied commit rule refuses to sign, with the reason', () async {
+      rule(ActionClass.gitCommit, ActionDecision.deny);
+      final r = await sign(commit);
+      expect(r.status, HttpStatus.forbidden);
+      expect(r.body, contains('Control Center policy'));
+      expect(signer.signed, isEmpty);
+      expect(audits.single.decision, ActionDecision.deny);
+    });
+
+    test('an "ask" commit rule does not prompt a second time', () async {
+      rule(ActionClass.gitCommit, ActionDecision.prompt);
+      final r = await sign(commit);
+      expect(r.status, 200, reason: r.body);
+      expect(confirm.asked, isEmpty);
+    });
+
+    test('signatures run one at a time', () async {
+      signer.hold = Completer<void>();
+      final first = sign(commit);
+      final second = sign(commit);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(signer.signed, hasLength(1));
+      signer.hold!.complete();
+      expect((await first).status, 200);
+      expect((await second).status, 200);
+      expect(signer.maxRunning, 1);
+    });
+
+    test('a failed signature does not block the next one', () async {
+      signer.failure = const CommitSigningException('agent locked');
+      final r = await sign(commit);
+      expect(r.status, HttpStatus.badGateway);
+      expect(r.body.trim(), 'agent locked');
+      signer.failure = null;
+      expect((await sign(commit)).status, 200);
+    });
+
+    test('an unknown run cannot sign', () async {
+      final r = await send(
+        'POST',
+        AgentRunLease.signPath,
+        body: commit,
+        secret: 'nope',
+      );
+      expect(r.status, HttpStatus.unauthorized);
+      expect(signer.signed, isEmpty);
+    });
+
+    test('the lease hands a run the gateway its shim posts to', () {
+      final env = lease.environment(const {});
+      expect(env[AgentRunLease.gatewayEnvKey], '${lease.base}');
+      expect(env[AgentRunLease.tokenEnvKey], lease.secret);
+    });
+
+    test('the sandbox shim speaks the gateway\'s contract', () {
+      const shim = MacosSandbox.sshSignShim;
+      expect(shim, contains('\$${AgentRunLease.gatewayEnvKey}'));
+      expect(shim, contains('\$${AgentRunLease.tokenEnvKey}'));
+      expect(shim, contains('${AgentRunLease.tokenHeader}: '));
+      expect(shim, contains('${AgentRunLease.signPath}"'));
+      expect(shim, contains('\${${MacosSandbox.userSshProgramEnvKey}:-'));
+      expect(
+        shim,
+        contains(
+          '--max-time ${AgentRunGateway.signTransportDeadline.inSeconds} ',
+        ),
+      );
+      expect(
+        AgentRunGateway.signTransportDeadline,
+        greaterThan(HostCommitSigner.signTimeout),
+      );
+    });
+  });
+
   group('Claude Code command hook', () {
     Future<({int exitCode, String out, String err})> hook(
       String tool,
@@ -569,6 +833,142 @@ void main() {
         expect(audits.single.decision, ActionDecision.deny);
       });
     }
+
+    test(
+      'one push is one prompt: the shell approval answers the gateway',
+      () async {
+        final shell = await hook('Bash', 'git push -u origin feature/x');
+        expect(shell.exitCode, 0);
+        expect(confirm.asked.single.title, contains('push to feature/x'));
+
+        final push = await send(
+          'POST',
+          pushPath,
+          body: _push(['refs/heads/feature/x']),
+        );
+        expect(push.body, 'upstream-ok');
+        expect(confirm.asked, hasLength(1));
+        expect(audits.last.actionSummary, contains('approved at the shell'));
+
+        // The approval named feature/x; another branch is still asked about.
+        final other = await send(
+          'POST',
+          pushPath,
+          body: _push(['refs/heads/feature/other']),
+        );
+        expect(other.body, 'upstream-ok');
+        expect(confirm.asked, hasLength(2));
+      },
+    );
+
+    test('an unnamed push approval covers only the general ask', () async {
+      rule(
+        ActionClass.gitPush,
+        ActionDecision.prompt,
+        constraint: const ActionConstraint(refs: ['main']),
+      );
+      rule(
+        ActionClass.gitPush,
+        ActionDecision.deny,
+        constraint: const ActionConstraint(refs: ['production']),
+      );
+      expect((await hook('Bash', 'git push')).exitCode, 0);
+      expect(
+        confirm.asked.single.title,
+        contains('destination branch not specified'),
+      );
+
+      final feature = await send(
+        'POST',
+        pushPath,
+        body: _push(['refs/heads/feature/x']),
+      );
+      expect(feature.body, 'upstream-ok');
+      expect(confirm.asked, hasLength(1));
+
+      // A branch-specific ask was never shown that branch.
+      confirm.answer = false;
+      final main = await send(
+        'POST',
+        pushPath,
+        body: _push(['refs/heads/main']),
+      );
+      expect(main.body, contains('ng refs/heads/main'));
+      expect(confirm.asked, hasLength(2));
+
+      // And a deny is never answered by an approval.
+      final prod = await send(
+        'POST',
+        pushPath,
+        body: _push(['refs/heads/production']),
+      );
+      expect(prod.body, contains('ng refs/heads/production'));
+      expect(confirm.asked, hasLength(2));
+    });
+
+    test('a declined push leaves the gateway asking', () async {
+      confirm.answer = false;
+      expect((await hook('Bash', 'git push origin feature/x')).exitCode, 2);
+      final push = await send(
+        'POST',
+        pushPath,
+        body: _push(['refs/heads/feature/x']),
+      );
+      expect(push.body, contains('ng refs/heads/feature/x'));
+      expect(confirm.asked, hasLength(2));
+    });
+
+    test('a named branch is decided by branch rules at the shell', () async {
+      rule(
+        ActionClass.gitPush,
+        ActionDecision.deny,
+        constraint: const ActionConstraint(refs: ['main']),
+      );
+      final result = await hook('Bash', 'git push origin HEAD:main');
+      expect(result.exitCode, 2);
+      expect(confirm.asked, isEmpty);
+    });
+
+    test('remembering a push remembers its branch family only', () async {
+      await hook('Bash', 'git push origin abc123:refs/heads/space/f1ea6d92');
+      final named = confirm.asked.single;
+      expect(named.rememberChoice, isNotNull);
+      expect(
+        ActionConstraint.decode(named.constraintJson),
+        const ActionConstraint(refs: ['space/**']),
+      );
+
+      // Nothing narrow to remember about an unknown destination.
+      await hook('Bash', 'git push');
+      expect(confirm.asked.last.rememberChoice, isNull);
+    });
+
+    test('a remembered branch approval silences both checks', () async {
+      rules.list.add(
+        ActionPolicyRule(
+          id: 'remembered',
+          workspaceId: 'w1',
+          scopeType: ActionScopeType.space,
+          scopeId: 's1',
+          actionClass: ActionClass.gitPush,
+          decision: ActionDecision.allow,
+          provenance: 'remembered',
+          constraint: const ActionConstraint(refs: ['space/**']),
+          expiresAt: DateTime.now().add(const Duration(hours: 8)),
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        ),
+      );
+      final shell = await hook('Bash', 'git push origin space/abc');
+      expect(shell.exitCode, 0);
+      final push = await send(
+        'POST',
+        pushPath,
+        body: _push(['refs/heads/space/abc']),
+      );
+      expect(push.body, 'upstream-ok');
+      expect(confirm.asked, isEmpty);
+    });
 
     test('an ordinary command passes without asking', () async {
       final result = await hook('Bash', 'ls -la');

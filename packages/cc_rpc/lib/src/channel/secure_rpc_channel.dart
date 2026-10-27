@@ -49,6 +49,17 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
   /// Maximum outstanding records in one send-credit window.
   static const int windowRecords = 64;
 
+  /// Maximum application frames queued behind the send chain.
+  ///
+  /// Separate from [windowRecords]: that bounds records in flight on the wire,
+  /// this bounds frames waiting to be sealed. A server session fans out
+  /// fire-and-forget frames (up to 128 subscription emissions, 16 concurrent
+  /// responses, forwarded events) within one event-loop turn; a cap of one
+  /// credit window killed the channel on every such burst and the client's
+  /// reconnect rebuilt the same burst. Overflow stays fatal so a stalled peer
+  /// cannot grow the queue without bound.
+  static const int maxQueuedSends = 1024;
+
   /// Number of received records between credit acknowledgements.
   static const int creditEvery = 16;
   static const int _maxWireChars = ((chunkBytes + 2 + 16 + 2) ~/ 3) * 4;
@@ -95,7 +106,7 @@ final class SecureRpcChannel implements RemoteRpcChannelPort {
     if (!isOpen) {
       return Future.error(StateError('Secure channel closed'));
     }
-    if (_queuedSends >= windowRecords) {
+    if (_queuedSends >= maxQueuedSends) {
       final error = StateError('Secure send queue exhausted');
       _fail(error);
       return Future.error(error);

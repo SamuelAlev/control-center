@@ -47,6 +47,7 @@ export 'src/dispatch/backends/harness_backend.dart';
 export 'src/dispatch/dispatch_session.dart';
 export 'src/dispatch/goal_supervisor.dart';
 export 'src/dispatch/guided_goal_service.dart';
+export 'src/dispatch/host_commit_signer.dart';
 export 'src/dispatch/persona_loader.dart';
 export 'src/dispatch/sandboxed_agent_dispatch_adapter.dart';
 export 'src/edit/file_edit_service.dart';

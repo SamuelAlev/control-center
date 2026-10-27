@@ -48,8 +48,13 @@ void registerOrchestrationBodies(
     final failed = <String>[];
     for (final t in orchestration.proposal.subTickets) {
       final key = 'out_${t.key}';
-      if (ctx.state[key] == null) {
+      final value = ctx.state[key];
+      if (value == null) {
         mutated[key] = {'failed': true, 'key': t.key};
+        failed.add(t.key);
+      } else if (value is Map && value['failed'] == true) {
+        // The engine's continueOnFail marker: already resolvable downstream,
+        // but still a gap the synthesis step must cover.
         failed.add(t.key);
       }
     }

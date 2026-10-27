@@ -104,6 +104,84 @@ class ShellActionClassifier {
     return classes;
   }
 
+  /// Options that change neither where `git push` sends nor what it sends.
+  static const Set<String> _plainPushFlags = {
+    '-u',
+    '--set-upstream',
+    '-f',
+    '--force',
+    '--force-with-lease',
+    '--force-if-includes',
+    '--atomic',
+    '--no-verify',
+    '-q',
+    '--quiet',
+    '-v',
+    '--verbose',
+    '--porcelain',
+    '-d',
+    '--delete',
+  };
+
+  static final RegExp _remoteName = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._-]*$');
+  static final RegExp _refName = RegExp(r'^[A-Za-z0-9._][A-Za-z0-9._/-]*$');
+
+  /// The refs [command] pushes to, as the push gateway names them (a branch
+  /// without `refs/heads/`), or null when any `git push` in it does not name
+  /// its destination outright.
+  ///
+  /// Policy reads this, so it is narrow on purpose: only
+  /// `git [-C dir] push [flags] <remote> <refspec>...` counts, with flags that
+  /// change neither destination nor content. A URL or path remote,
+  /// a global `-c` override, any other option, `HEAD`, a variable, a wildcard
+  /// or an omitted refspec makes the destination unknown, and the caller must
+  /// then treat the push as undescribed.
+  static List<String>? pushRefs(String command) {
+    final refs = <String>{};
+    var pushes = 0;
+    for (final sub in parseShellCommand(command)) {
+      final tokens = normalizeCommandTokens(sub);
+      if (!matchesTokenizedCommandRule(tokens, const ['git', 'push'])) {
+        continue;
+      }
+      pushes++;
+      final push = tokens.length > 3 && tokens[1] == '-C' ? 3 : 1;
+      if (tokens[push] != 'push') {
+        return null;
+      }
+      final positional = <String>[];
+      for (final arg in tokens.skip(push + 1)) {
+        if (_plainPushFlags.contains(arg) ||
+            arg.startsWith('--force-with-lease=')) {
+          continue;
+        }
+        if (arg.startsWith('-')) {
+          return null;
+        }
+        positional.add(arg);
+      }
+      if (positional.length < 2 || !_remoteName.hasMatch(positional.first)) {
+        return null;
+      }
+      for (final refspec in positional.skip(1)) {
+        final spec = refspec.startsWith('+') ? refspec.substring(1) : refspec;
+        final parts = spec.split(':');
+        if (parts.length > 2) {
+          return null;
+        }
+        final dst = parts.last;
+        final ref = dst.startsWith('refs/heads/')
+            ? dst.substring('refs/heads/'.length)
+            : dst;
+        if (ref == 'HEAD' || ref.contains('..') || !_refName.hasMatch(ref)) {
+          return null;
+        }
+        refs.add(ref);
+      }
+    }
+    return pushes == 0 ? null : refs.toList();
+  }
+
   static bool _isDryRunDeletion(List<String> tokens) {
     if (tokens[0] != 'git') {
       return false;

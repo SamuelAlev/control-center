@@ -330,6 +330,31 @@ void main() {
       expect(find.byType(CcImageViewer), findsOneWidget);
     });
 
+    testWidgets('onExpand replaces the lightbox', (tester) async {
+      var expanded = 0;
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: SizedBox(
+              width: 200,
+              height: 120,
+              child: CcExpandableImage(
+                labels: _labels,
+                onExpand: () => expanded++,
+                child: const Text('inline'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('inline'));
+      await tester.pumpAndSettle();
+
+      expect(expanded, 1);
+      expect(find.byType(CcImageViewer), findsNothing);
+    });
+
     testWidgets('the expand chip is hidden until the pointer is over it', (
       tester,
     ) async {

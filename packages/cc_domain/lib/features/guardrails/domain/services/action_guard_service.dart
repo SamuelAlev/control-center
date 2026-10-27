@@ -410,6 +410,18 @@ class ActionGuardService {
       rationale: rationale,
     );
     final drivingClass = res.driving.actionClass;
+    // A push is described by the branch it lands on. The shell hook sees the
+    // command but not the host, the push gateway the host but not the
+    // command, so a standing approval that also pinned either would match at
+    // only one of them and the next push to the same branch would ask again.
+    // A push whose branch is unknown has nothing narrow to remember: an
+    // unconstrained space-scoped allow would outrank a workspace rule
+    // protecting `main`, so it is not offered.
+    final pushOnly =
+        prompting.length == 1 && prompting.single == ActionClass.gitPush.wire;
+    final remembered = pushOnly
+        ? (request.refs.isEmpty ? null : ActionRequest(refs: request.refs))
+        : rememberedRequest;
     return ConfirmationRequest(
       spaceId: spaceId ?? '',
       conversationId: conversationId,
@@ -419,7 +431,9 @@ class ActionGuardService {
       command: script,
       severity: _severityFor(drivingClass),
       kind: _kindFor(drivingClass),
-      rememberChoice: RememberScope.workspace,
+      rememberChoice: pushOnly && remembered == null
+          ? null
+          : RememberScope.workspace,
       // Identity stays tied to the attempted action, not to display wording.
       // Distinct scripts or targets cannot share a remembered answer.
       fingerprint: jsonEncode([
@@ -435,7 +449,9 @@ class ActionGuardService {
       ]),
       actionClasses: prompting,
       agentId: agentId,
-      constraintJson: _rememberConstraintFor(rememberedRequest)?.encode(),
+      constraintJson: remembered == null
+          ? null
+          : _rememberConstraintFor(remembered)?.encode(),
     );
   }
 

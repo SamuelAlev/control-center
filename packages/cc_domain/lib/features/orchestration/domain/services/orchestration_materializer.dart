@@ -61,6 +61,7 @@ class OrchestrationMaterializer {
           ],
           config: _agentConfig(
             label: 'Research',
+            conversationTitle: 'Research: ${_short(p.goal)}',
             agentId: roleAgents[roleKey],
             prompt: '${p.research.prompt}\n\nGoal: ${p.goal}',
             outputKey: 'research',
@@ -95,6 +96,7 @@ class OrchestrationMaterializer {
             triggers: [StepTrigger(sourceStepIds: afterResearch)],
             config: _agentConfig(
               label: 'Discuss: ${role.title}',
+              conversationTitle: 'Discuss: ${role.title}',
               agentId: roleAgents[role.roleKey],
               prompt:
                   '${p.discussion.prompt}\n\nGoal: ${p.goal}\n\n'
@@ -128,7 +130,9 @@ class OrchestrationMaterializer {
     // orchestration's approved set, so determinism holds.
     final subTicketIds = <String>[];
     var sy = 0.0;
+    var stepNumber = 0;
     for (final t in p.subTickets) {
+      stepNumber++;
       final id = 'sub_${t.key}';
       subTicketIds.add(id);
       var upstream = t.dependsOn.isEmpty
@@ -164,6 +168,9 @@ class OrchestrationMaterializer {
           triggers: [StepTrigger(sourceStepIds: upstream)],
           config: _agentConfig(
             label: t.title,
+            // Numbered so two plans in one room with a same-named step do not
+            // resume each other's stream (dispatch reuses a stream by title).
+            conversationTitle: '$stepNumber. ${t.title}',
             agentId: roleAgents[t.roleKey],
             prompt: _subTicketPrompt(p, t),
             outputKey: 'out_${t.key}',
@@ -218,6 +225,7 @@ class OrchestrationMaterializer {
         ],
         config: _agentConfig(
           label: 'Synthesize deliverable',
+          conversationTitle: 'Summary: ${_short(p.goal)}',
           agentId: roleAgents[p.synthesis.roleKey],
           prompt: _synthesisPrompt(p),
           outputKey: 'deliverable',
@@ -282,6 +290,7 @@ class OrchestrationMaterializer {
 
   PipelineNodeConfig _agentConfig({
     required String label,
+    required String conversationTitle,
     required String? agentId,
     required String prompt,
     required String outputKey,
@@ -307,6 +316,11 @@ class OrchestrationMaterializer {
         // steps could not write a single file.
         'mode': mode.name,
         'spaceId': spaceId,
+        // Every agent step works in its OWN conversation inside the room. A
+        // step pointed at a room without a title writes into the room's
+        // standing stream, so a twelve-step plan interleaved every turn into
+        // one thread (and into whatever the operator was chatting about).
+        'conversationTitle': conversationTitle,
         'parent_ticket_id': parentTicketId,
         'project_id': projectId,
         // Generated nodes must never silence unresolved placeholders — the

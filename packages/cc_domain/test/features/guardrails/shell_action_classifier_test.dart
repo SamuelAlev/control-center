@@ -235,4 +235,46 @@ void main() {
       expect(classifier.classify(''), isEmpty);
     });
   });
+
+  group('ShellActionClassifier.pushRefs', () {
+    test('names branches pushed to a plain remote', () {
+      expect(ShellActionClassifier.pushRefs('git push origin feature/x'), [
+        'feature/x',
+      ]);
+      expect(
+        ShellActionClassifier.pushRefs(
+          'cd repo && git -C . push -u --force-with-lease origin '
+          'abc:refs/heads/space/f1 +b:c',
+        ),
+        ['space/f1', 'c'],
+      );
+      expect(ShellActionClassifier.pushRefs('git push origin --delete old'), [
+        'old',
+      ]);
+      expect(ShellActionClassifier.pushRefs('git push origin :old'), ['old']);
+    });
+
+    test('anything that might land elsewhere is unknown', () {
+      for (final command in [
+        'git push',
+        'git push origin',
+        'git push origin HEAD',
+        r'git push origin "$BRANCH"',
+        'git push origin feature/*',
+        'git push https://github.com/acme/w.git main',
+        'git push ../other main',
+        'git -c url.x.pushInsteadOf=y push origin main',
+        'git push --all origin',
+        'git push --repo=evil origin main',
+        'git push origin main && git push',
+      ]) {
+        expect(
+          ShellActionClassifier.pushRefs(command),
+          isNull,
+          reason: command,
+        );
+      }
+      expect(ShellActionClassifier.pushRefs('git status'), isNull);
+    });
+  });
 }

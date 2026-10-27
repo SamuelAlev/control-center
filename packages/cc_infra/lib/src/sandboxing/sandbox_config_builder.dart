@@ -327,10 +327,17 @@ class SandboxConfigBuilder {
     if (home == null || home.isEmpty) {
       return const [];
     }
+    // Git reads its global config from wherever these point, not only from
+    // `$HOME`; the user's (and the host signer's) trust in it is the same.
+    final env = Platform.environment;
+    final xdg = env['XDG_CONFIG_HOME'];
+    final global = env['GIT_CONFIG_GLOBAL'];
     return [
       for (final rel in SandboxPolicyResolver.homeMandatoryDenyRels)
         '$home/$rel',
       for (final rel in SandboxPolicyResolver.homeRcDenyRels) '$home/$rel',
+      if (xdg != null && xdg.startsWith('/')) '$xdg/git',
+      if (global != null && global.startsWith('/')) global,
     ];
   }
 

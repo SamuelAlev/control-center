@@ -11,6 +11,7 @@ import 'package:cc_domain/features/guardrails/domain/services/shell_action_class
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
+import 'package:cc_infra/src/dispatch/host_commit_signer.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 
 /// Who a registered agent run is, as the action policy needs to know it.
@@ -26,6 +27,7 @@ class AgentRunGrant {
     this.runId,
     this.repoOwner,
     this.repoName,
+    this.committerEmail,
   });
 
   /// Workspace the run belongs to — every rule is resolved against it.
@@ -55,6 +57,10 @@ class AgentRunGrant {
 
   /// See [repoOwner].
   final String? repoName;
+
+  /// The run's git committer email (`GIT_COMMITTER_EMAIL`). The host signs
+  /// only objects committed or tagged as this identity; null signs nothing.
+  final String? committerEmail;
 }
 
 /// A registered run's handle on the gateway: what to put in its environment
@@ -67,6 +73,13 @@ class AgentRunLease {
 
   /// Header the gateway authenticates a run by.
   static const String tokenHeader = 'X-CC-Agent-Run';
+
+  /// Env var carrying [base] to the agent process, for the sandbox's signing
+  /// shim (`MacosSandbox.sshSignShim`).
+  static const String gatewayEnvKey = 'CC_AGENT_GATEWAY';
+
+  /// Path a run posts a git object to for the host to sign.
+  static const String signPath = '/agent/git-sign';
 
   /// The per-run secret. Knowing it lets a process ASK the gateway on the
   /// run's behalf — every answer still comes from the action policy.
@@ -96,7 +109,7 @@ class AgentRunLease {
   /// Environment for the agent process: the secret plus [gitConfig] appended
   /// to whatever `GIT_CONFIG_*` entries [env] already carries.
   Map<String, String> environment(Map<String, String> env) {
-    final out = <String, String>{tokenEnvKey: secret};
+    final out = <String, String>{tokenEnvKey: secret, gatewayEnvKey: '$base'};
     var count = int.tryParse(env['GIT_CONFIG_COUNT'] ?? '') ?? 0;
     for (final (key, value) in gitConfig) {
       out['GIT_CONFIG_KEY_$count'] = key;
@@ -157,6 +170,13 @@ exit 2
 /// server-held write credential. A GitHub App read token cannot push directly;
 /// an unnarrowable fallback PAT can, so shell preflight must gate pushes too.
 ///
+/// **Commit signing.** The sandbox cannot reach the user's SSH agent, so its
+/// signing shim posts the commit or tag object here and the host signs it
+/// with the user's own signer ([CommitSigner]). Only the object crosses: the
+/// key, the program and the `git` namespace are the host's choice. The key is
+/// the machine owner's, so only runs acting for the owner may use it, and only
+/// for objects whose committer (or tagger) is the run's own identity.
+///
 /// **Shell commands (soft).** Claude Code runs its own `Bash` tool; the
 /// PreToolUse hook posts each command here, the [ShellActionClassifier] names
 /// the rules it falls under (`gh pr create` → "Open a pull request"), and the
@@ -179,8 +199,11 @@ class AgentRunGateway {
     this._repoAllowed,
     HttpClient Function()? httpClient,
     Uri? githubBase,
+    this._mayUseHostSigner,
+    CommitSigner? signer,
   }) : _httpClient = httpClient ?? HttpClient.new,
-       _githubBase = githubBase ?? Uri.parse('https://github.com');
+       _githubBase = githubBase ?? Uri.parse('https://github.com'),
+       _signer = signer ?? HostCommitSigner();
 
   /// How long Claude Code waits on the hook. Generous, because "ask first"
   /// waits on a human.
@@ -194,12 +217,24 @@ class AgentRunGateway {
   /// times out the command hook (a timeout is not an authorization decision).
   static const Duration hookTransportDeadline = Duration(minutes: 56);
 
+  /// How long an operator's "yes" to a pushing shell command also answers the
+  /// push gateway's own ask for that run, so one push is one prompt. Long
+  /// enough for a command that builds or tests before it pushes.
+  static const Duration shellPushApprovalWindow = Duration(minutes: 15);
+
   /// Cap on the ref-update preamble read before a push is decided. The
   /// commands are a few hundred bytes; anything this large is not a push.
   static const int _maxPreambleBytes = 1024 * 1024;
 
   /// Cap on a hook request body.
   static const int _maxHookBodyBytes = 1024 * 1024;
+
+  /// Cap on a git object posted for signing.
+  static const int _maxSignBodyBytes = 8 * 1024 * 1024;
+
+  /// The signing shim's HTTP deadline: past the signer's own, so a slow
+  /// approval comes back as the signer's reason rather than a cut connection.
+  static const Duration signTransportDeadline = Duration(minutes: 6);
 
   final ActionGuardService _guard;
   final CredentialBrokerPort _broker;
@@ -208,8 +243,20 @@ class AgentRunGateway {
   _repoAllowed;
   final HttpClient Function() _httpClient;
   final Uri _githubBase;
+  final CommitSigner _signer;
+
+  /// Whether a run acting for this member (null: programmatic dispatch) may
+  /// sign with the host's key. Null refuses every run.
+  final Future<bool> Function(String? actingUserId)? _mayUseHostSigner;
+
+  /// Signatures run one at a time: each may wait on a human at the SSH agent,
+  /// and parallel prompts from one machine invite approving the wrong one.
+  Future<void> _signing = Future.value();
 
   final Map<String, AgentRunGrant> _grants = {};
+
+  /// secret → the pushing shell command the operator last approved.
+  final Map<String, _ShellPushApproval> _shellPushApprovals = {};
 
   /// secret → minted write credentials per `owner/name`, revoked on [close].
   final Map<String, Map<String, ScopedCredentials>> _writeTokens = {};
@@ -235,6 +282,7 @@ class AgentRunGateway {
       return;
     }
     _grants.remove(lease.secret);
+    _shellPushApprovals.remove(lease.secret);
     final minted = _writeTokens.remove(lease.secret);
     for (final credentials in minted?.values ?? const <ScopedCredentials>[]) {
       try {
@@ -263,7 +311,10 @@ class AgentRunGateway {
     final path = request.uri.path;
     try {
       if (path == '/agent/hooks/pre-tool-use' && request.method == 'POST') {
-        return await _preToolUse(request, grant);
+        return await _preToolUse(request, grant, secret);
+      }
+      if (path == AgentRunLease.signPath && request.method == 'POST') {
+        return await _sign(request, grant);
       }
       if (path.startsWith('/agent/git/github.com/')) {
         return await _git(request, grant, secret);
@@ -286,7 +337,11 @@ class AgentRunGateway {
   // ---------------------------------------------------------------------------
   // Claude Code PreToolUse hook
 
-  Future<void> _preToolUse(HttpRequest request, AgentRunGrant grant) async {
+  Future<void> _preToolUse(
+    HttpRequest request,
+    AgentRunGrant grant,
+    String secret,
+  ) async {
     final body = await _readCapped(request, _maxHookBodyBytes);
     final decoded = body == null ? null : _tryJson(utf8.decode(body));
     final input = decoded is Map ? decoded['tool_input'] : null;
@@ -318,6 +373,11 @@ class AgentRunGateway {
     }
 
     final classes = const ShellActionClassifier().classify(command);
+    // Named branches let branch rules (and branch-scoped standing approvals)
+    // decide here instead of asking about an unknown destination.
+    final pushRefs = classes.contains(ActionClass.gitPush)
+        ? ShellActionClassifier.pushRefs(command)
+        : null;
     // `processSpawn` is deliberately NOT declared: Claude Code's plan mode is
     // read-only by its own rules and still runs `git diff`, and the read-only
     // mode profiles deny `processSpawn` wholesale. What the command DOES is
@@ -335,13 +395,25 @@ class AgentRunGateway {
           approvalRationale: description,
           onBehalfOfUserId: grant.actingUserId,
           runId: grant.runId,
-          request: ActionRequest(classes: classes, command: command),
+          request: ActionRequest(
+            classes: classes,
+            command: command,
+            refs: pushRefs ?? const [],
+          ),
         )
         .timeout(
           hookDecisionDeadline,
           onTimeout: () =>
               const GuardVerdict.deny('Nobody answered the approval in time.'),
         );
+    if (verdict.allowed &&
+        verdict.prompted &&
+        classes.contains(ActionClass.gitPush)) {
+      _shellPushApprovals[secret] = _ShellPushApproval(
+        refs: pushRefs,
+        until: DateTime.now().add(shellPushApprovalWindow),
+      );
+    }
     return _hookDecision(
       request,
       allowed: verdict.allowed,
@@ -356,6 +428,94 @@ class AgentRunGateway {
     required String reason,
   }) async {
     return _plain(request, HttpStatus.ok, allowed ? 'allow' : reason);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Commit signing
+
+  /// Signs a commit or tag object with the host user's signer.
+  ///
+  /// Refused unless every check passes, before the signer is ever started:
+  /// the body is a well-formed, unsigned commit or tag; the run acts for the
+  /// machine owner; the object is committed (tagged) as the run's own
+  /// identity; and the "Create a commit" rule does not deny (read-only modes
+  /// included). Creating the commit was already governed by the shell hook or
+  /// harness gate, so an "ask" rule is not asked a second time here.
+  Future<void> _sign(HttpRequest request, AgentRunGrant grant) async {
+    final payload = await _readCapped(request, _maxSignBodyBytes);
+    if (payload == null) {
+      return _plain(
+        request,
+        HttpStatus.requestEntityTooLarge,
+        'Control Center: this object is too large to sign.',
+      );
+    }
+    final object = SignableGitObject.parse(payload);
+    if (object == null) {
+      return _plain(
+        request,
+        HttpStatus.badRequest,
+        'Control Center only signs well-formed, unsigned git commits and tags.',
+      );
+    }
+    final mayUse = _mayUseHostSigner;
+    if (mayUse == null || !await mayUse(grant.actingUserId)) {
+      return _plain(
+        request,
+        HttpStatus.forbidden,
+        "Control Center signs only for this machine's owner, and this run acts "
+        'for another member. Commit unsigned (git commit --no-gpg-sign).',
+      );
+    }
+    final expected = grant.committerEmail?.trim().toLowerCase() ?? '';
+    if (expected.isEmpty || object.signerEmail.toLowerCase() != expected) {
+      return _plain(
+        request,
+        HttpStatus.forbidden,
+        'Control Center signs only as this run '
+        '(${grant.committerEmail ?? 'no identity'}); this ${object.kind} '
+        'names ${object.signerEmail}.',
+      );
+    }
+    final classes = {ActionClass.gitCommit};
+    final resolution = await _guard.resolve(
+      workspaceId: grant.workspaceId,
+      classes: classes,
+      spaceId: grant.spaceId,
+      agentId: grant.agentId,
+      mode: grant.mode,
+    );
+    final denied = resolution.decision == ActionDecision.deny;
+    _guard.recordOutcome(
+      workspaceId: grant.workspaceId,
+      resolution: resolution,
+      applied: denied ? ActionDecision.deny : ActionDecision.allow,
+      classes: classes,
+      agentId: grant.agentId,
+      spaceId: grant.spaceId,
+      actionSummary: 'sign git ${object.kind}',
+      onBehalfOfUserId: grant.actingUserId,
+      runId: grant.runId,
+    );
+    if (denied) {
+      return _plain(
+        request,
+        HttpStatus.forbidden,
+        'Control Center policy: ${resolution.driving.reason}',
+      );
+    }
+    final done = Completer<void>();
+    final previous = _signing;
+    _signing = done.future;
+    try {
+      await previous;
+      final signature = await _signer.sign(payload);
+      return await _plain(request, HttpStatus.ok, signature.trimRight());
+    } on CommitSigningException catch (e) {
+      return _plain(request, HttpStatus.badGateway, e.message);
+    } finally {
+      done.complete();
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -488,22 +648,27 @@ class AgentRunGateway {
 
     if (commands.refs.isNotEmpty) {
       final refs = [for (final r in commands.refs) _shortRef(r)];
-      final verdict = await _guard.check(
-        workspaceId: grant.workspaceId,
+      final summary = 'git push to $owner/$name: ${refs.join(', ')}';
+      final pushRequest = ActionRequest(
         classes: const {ActionClass.gitPush},
-        spaceId: grant.spaceId,
-        conversationId: grant.conversationId,
-        agentId: grant.agentId,
-        mode: grant.mode,
-        actionSummary: 'git push to $owner/$name: ${refs.join(', ')}',
-        onBehalfOfUserId: grant.actingUserId,
-        runId: grant.runId,
-        request: ActionRequest(
-          classes: const {ActionClass.gitPush},
-          refs: refs,
-          hosts: [_githubBase.host],
-        ),
+        refs: refs,
+        hosts: [_githubBase.host],
       );
+      final verdict =
+          await _answeredAtShell(grant, secret, refs, pushRequest, summary)
+          ? const GuardVerdict.allow(prompted: true)
+          : await _guard.check(
+              workspaceId: grant.workspaceId,
+              classes: const {ActionClass.gitPush},
+              spaceId: grant.spaceId,
+              conversationId: grant.conversationId,
+              agentId: grant.agentId,
+              mode: grant.mode,
+              actionSummary: summary,
+              onBehalfOfUserId: grant.actingUserId,
+              runId: grant.runId,
+              request: pushRequest,
+            );
       if (!verdict.allowed) {
         // Drain what git is still sending before answering, so it reads the
         // rejection instead of a reset connection.
@@ -536,6 +701,58 @@ class AgentRunGateway {
       body: _replay(preamble.takeBytes(), iterator),
       decodedBody: compressed,
     );
+  }
+
+  /// Whether the operator already answered this push's `ask` at the shell
+  /// prompt for the command running it, so it is not asked twice.
+  ///
+  /// Only an ask is answered: a deny still denies. An approval that named its
+  /// branches covers pushes to exactly those. One that could not name them
+  /// ("destination branch not specified") covers only the general push ask —
+  /// a branch-specific rule (e.g. "ask before pushing to `main`") still asks,
+  /// because the operator never saw that branch.
+  Future<bool> _answeredAtShell(
+    AgentRunGrant grant,
+    String secret,
+    List<String> refs,
+    ActionRequest request,
+    String summary,
+  ) async {
+    final approval = _shellPushApprovals[secret];
+    if (approval == null || !DateTime.now().isBefore(approval.until)) {
+      return false;
+    }
+    final resolution = await _guard.resolve(
+      workspaceId: grant.workspaceId,
+      classes: const {ActionClass.gitPush},
+      spaceId: grant.spaceId,
+      agentId: grant.agentId,
+      mode: grant.mode,
+      request: request,
+    );
+    if (resolution.decision != ActionDecision.prompt) {
+      return false;
+    }
+    final named = approval.refs;
+    final covered = named != null
+        ? refs.every(named.contains)
+        : resolution.prompting.every((r) => r.rule?.constraint == null);
+    if (!covered) {
+      return false;
+    }
+    _guard.recordOutcome(
+      workspaceId: grant.workspaceId,
+      resolution: resolution,
+      applied: ActionDecision.allow,
+      classes: const {ActionClass.gitPush},
+      agentId: grant.agentId,
+      spaceId: grant.spaceId,
+      actionSummary: '$summary (approved at the shell prompt)',
+      prompted: true,
+      onBehalfOfUserId: grant.actingUserId,
+      runId: grant.runId,
+    );
+    return true;
   }
 
   Future<bool> _mayTouchRepo(
@@ -753,7 +970,130 @@ class AgentRunGateway {
   }
 }
 
+/// A commit or tag object the gateway is willing to sign, parsed strictly.
+///
+/// Git hands its signer the object exactly as it will be stored, minus the
+/// signature. Anything else (a push certificate, an already signed object,
+/// bytes that merely start like a commit) is not something the user's key
+/// signs on an agent's behalf.
+class SignableGitObject {
+  const SignableGitObject._(this.kind, this.signerEmail);
+
+  /// `commit` or `tag`.
+  final String kind;
+
+  /// The committer's (commit) or tagger's (tag) email.
+  final String signerEmail;
+
+  static final RegExp _oid = RegExp(r'^(?:[0-9a-f]{40}|[0-9a-f]{64})$');
+
+  // `Name <email> <seconds> <+hhmm>`, as git writes an ident line.
+  static final RegExp _ident = RegExp(r'^[^<>\n]* <([^<>\n]+)> \d+ [+-]\d{4}$');
+
+  static const Set<String> _tagTypes = {'commit', 'tree', 'blob', 'tag'};
+
+  /// Parses [bytes], or returns null when they are not a signable object.
+  static SignableGitObject? parse(List<int> bytes) {
+    var split = -1;
+    for (var i = 0; i + 1 < bytes.length; i++) {
+      if (bytes[i] == 0x0a && bytes[i + 1] == 0x0a) {
+        split = i;
+        break;
+      }
+    }
+    if (split <= 0 || bytes.contains(0)) {
+      return null;
+    }
+    final String headerBlock;
+    try {
+      // Headers are UTF-8; an `encoding` header re-encodes only the message.
+      headerBlock = utf8.decode(bytes.sublist(0, split));
+    } on FormatException {
+      return null;
+    }
+    // Continuation lines (a leading space) belong to the header above them;
+    // only `mergetag` legitimately has them in an object being signed.
+    final headers = <(String, String)>[];
+    for (final line in headerBlock.split('\n')) {
+      if (line.startsWith(' ')) {
+        if (headers.isEmpty || headers.last.$1 != 'mergetag') {
+          return null;
+        }
+        continue;
+      }
+      final space = line.indexOf(' ');
+      if (space <= 0) {
+        return null;
+      }
+      headers.add((line.substring(0, space), line.substring(space + 1)));
+    }
+    return switch (headers.first.$1) {
+      'tree' => _commit(headers),
+      'object' => _tag(headers),
+      _ => null,
+    };
+  }
+
+  // tree, parent*, author, committer, then only encoding/mergetag. A
+  // `gpgsig` header means it is already signed: git strips signatures before
+  // signing, so that is not an object git asked to sign.
+  static SignableGitObject? _commit(List<(String, String)> headers) {
+    var i = 0;
+    if (!_oid.hasMatch(headers[i++].$2)) {
+      return null;
+    }
+    while (i < headers.length && headers[i].$1 == 'parent') {
+      if (!_oid.hasMatch(headers[i++].$2)) {
+        return null;
+      }
+    }
+    if (i + 1 >= headers.length ||
+        headers[i].$1 != 'author' ||
+        headers[i + 1].$1 != 'committer' ||
+        !_ident.hasMatch(headers[i].$2)) {
+      return null;
+    }
+    final committer = _ident.firstMatch(headers[i + 1].$2);
+    if (committer == null) {
+      return null;
+    }
+    for (final (name, _) in headers.skip(i + 2)) {
+      if (name != 'encoding' && name != 'mergetag') {
+        return null;
+      }
+    }
+    return SignableGitObject._('commit', committer.group(1)!);
+  }
+
+  // object, type, tag, tagger: exactly what `git tag -s` writes.
+  static SignableGitObject? _tag(List<(String, String)> headers) {
+    if (headers.length != 4 ||
+        !_oid.hasMatch(headers[0].$2) ||
+        headers[1].$1 != 'type' ||
+        !_tagTypes.contains(headers[1].$2) ||
+        headers[2].$1 != 'tag' ||
+        headers[2].$2.isEmpty ||
+        headers[3].$1 != 'tagger') {
+      return null;
+    }
+    final tagger = _ident.firstMatch(headers[3].$2);
+    return tagger == null ? null : SignableGitObject._('tag', tagger.group(1)!);
+  }
+}
+
 /// The ref updates at the front of a `git-receive-pack` request.
+/// An operator's approval of a pushing shell command, for [AgentRunGateway]'s
+/// push proxy to honor rather than ask again.
+class _ShellPushApproval {
+  const _ShellPushApproval({required this.refs, required this.until});
+
+  /// The branches the approved command named, or null when it did not.
+  final List<String>? refs;
+
+  /// When the approval stops answering the gateway's ask.
+  final DateTime until;
+}
+
 class _PushCommands {
   const _PushCommands(this.refs, this.capabilities);
 

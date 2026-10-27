@@ -616,16 +616,21 @@ class DaoMessagingRepository implements MessagingRepository {
   /// The plan a refinement should update: the newest still-pending plan, or
   /// the newest plan of any status when none are pending.
   ///
-  /// Scoped to the standing conversation, matching [getMessages] called
-  /// without a conversation id. One plan row is loaded, not the conversation.
+  /// Scoped to [conversationId], or the standing conversation when it is
+  /// null, matching [getMessages]. A reply to a plan in a side conversation
+  /// must refine THAT plan, not whatever the standing one last held. One plan
+  /// row is loaded, not the conversation.
   Future<Message?> latestPlanMessage({
     required String workspaceId,
     required String spaceId,
+    String? conversationId,
   }) async {
-    final convId = await _conversations(workspaceId).ensureStandingConversation(
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-    );
+    final convId =
+        conversationId ??
+        await _conversations(workspaceId).ensureStandingConversation(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+        );
     final dao = _dao(workspaceId);
     final id =
         await dao.latestPlanMessageId(convId, pendingOnly: true) ??

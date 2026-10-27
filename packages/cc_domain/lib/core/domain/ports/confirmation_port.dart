@@ -97,9 +97,9 @@ class ConfirmationRequest {
   /// What kind of operation is being confirmed.
   final ConfirmationKind kind;
 
-  /// When non-null, the UI offers a "remember this decision" dropdown
-  /// scoped to this value. Destructive-severity requests never set this
-  /// (the UI hides the dropdown).
+  /// When non-null, the UI offers a time-boxed "remember this decision"
+  /// answer scoped to this value. Null when the action has nothing narrow to
+  /// remember (a push whose destination branch is unknown).
   final RememberScope? rememberChoice;
 
   /// Canonical fingerprint of the matched command (exact token sequence).
@@ -207,10 +207,11 @@ class ConfirmationRequestDto {
 
   /// Whether the responder may turn this into a standing approval.
   ///
-  /// A destructive request never offers it: "don't ask me again" is the wrong
-  /// affordance in front of an irreversible action.
-  bool get isRememberable =>
-      rememberScope != null && actionClasses.isNotEmpty && severity != 'destructive';
+  /// The server decides: it leaves [rememberScope] unset when there is nothing
+  /// narrow to remember. Severity does not veto it, since pushes are
+  /// destructive and asking again for every push to the same branch is the
+  /// friction a time-boxed, branch-scoped approval exists to remove.
+  bool get isRememberable => rememberScope != null && actionClasses.isNotEmpty;
 }
 
 /// Port used by sandbox hooks to interrupt an in-flight agent and ask the

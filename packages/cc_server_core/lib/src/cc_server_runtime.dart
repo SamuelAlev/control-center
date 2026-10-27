@@ -2204,6 +2204,15 @@ Future<CcServer> runCcServer({
             r.remoteName.toLowerCase() == name.toLowerCase(),
       );
     },
+    // The host's SSH signing key is the server owner's. A run acting for
+    // another member must not carry their signature; a null requester is
+    // programmatic dispatch, which commits as the owner. The demo signs nothing.
+    mayUseHostSigner: demo != null
+        ? null
+        : (actingUserId) async =>
+              actingUserId == null ||
+              actingUserId.isEmpty ||
+              actingUserId == ownerUserId,
   );
   mcpControl.agentRoutes = agentRunGateway.handle;
   // Server-owned LLM provider credential store (the "brain"): UI-saved API keys
@@ -4087,6 +4096,7 @@ Future<CcServer> runCcServer({
 
   final planDocumentApproval = PlanDocumentApprovalService(
     plans: planDocumentRepository,
+    conversations: conversationRepository,
     orchestrations: orchestrationRepository,
     revisions: orchestrationRevisionRepository,
     validator: proposalValidator,
@@ -4095,10 +4105,12 @@ Future<CcServer> runCcServer({
     // conversation leaves plan mode — parity with `exit_plan_mode`, which flips
     // the mode after its `plan_exit` approval. Previously the two exits were
     // unlinked and an approved plan's room stayed read-only.
-    onApproved: (plan, orchestrationId) async {
+    onApproved: (plan, spaceId, orchestrationId) async {
+      // Mode lives on the SPACE. Handing it the conversation id updated no row,
+      // so the room silently stayed in plan mode (read-only) after approval.
       await messagingRepository.setSpaceMode(
         plan.workspaceId,
-        plan.conversationId,
+        spaceId,
         Mode.chat,
       );
       // An approved plan IS the conversation's goal — the objective its todos
@@ -4113,18 +4125,19 @@ Future<CcServer> runCcServer({
       );
       // Say so IN the room. Approval used to be silent here: the operator
       // pressed "approve and run" and the conversation showed nothing until the
-      // deliverable landed, with no way to tell "working" from "broken". The
-      // work itself now streams into this same conversation (every generated
-      // node carries its space id), so this line is the seam between the plan
-      // and its execution.
+      // deliverable landed, with no way to tell "working" from "broken". Each
+      // step works in its own conversation of this same space (every
+      // generated node carries the space id and a stream title), so this line
+      // is the seam between the plan and its execution.
       final steps = plan.graph.workNodes.length;
       await messagingRepository.sendMessage(
         workspaceId: plan.workspaceId,
-        spaceId: plan.conversationId,
+        spaceId: spaceId,
         conversationId: plan.conversationId,
         content:
             'Plan approved — executing $steps '
-            '${steps == 1 ? 'step' : 'steps'} in this conversation.',
+            '${steps == 1 ? 'step' : 'steps'}, each in its own conversation '
+            'in this space.',
         senderId: 'system',
         senderType: 'agent',
         messageType: 'system',

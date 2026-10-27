@@ -2400,12 +2400,21 @@ class LocalRpcServer implements McpHostServer {
     } catch (_) {
       // Best effort.
     }
-    // Drive teardown off the transport's close.
-    session.stateSub = transport.state.listen((s) {
-      if (s == RemoteChannelState.closed) {
-        unawaited(_drop(session));
-      }
-    });
+    // Drive teardown off the transport's close. The state stream is a
+    // broadcast: a close during the awaits above was emitted before this
+    // listener existed, so check once more after subscribing. Otherwise the
+    // session, its subscriptions and their watches outlive the socket.
+    session.stateSub = transport.state.listen(
+      (s) {
+        if (s == RemoteChannelState.closed) {
+          unawaited(_drop(session));
+        }
+      },
+      onDone: () => unawaited(_drop(session)),
+    );
+    if (!transport.isOpen) {
+      unawaited(_drop(session));
+    }
     _i('WSS session up for ${auth.row.id}');
   }
 

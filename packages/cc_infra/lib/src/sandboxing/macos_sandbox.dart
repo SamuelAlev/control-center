@@ -256,19 +256,70 @@ esac
 exec /usr/bin/security "$@"
 ''';
 
+  /// File name of [sshSignShim] in the tool dir.
+  static const String sshSignShimName = 'cc-ssh-sign';
+
+  /// Env var carrying the user's own `gpg.ssh.program` to [sshSignShim].
+  static const String userSshProgramEnvKey = 'CC_GIT_SSH_PROGRAM';
+
+  /// The `gpg.ssh.program` of a sandboxed git, when the user signs with SSH.
+  ///
+  /// The profile denies unix sockets, so the user's SSH agent (1Password's
+  /// `op-ssh-sign` included) is out of reach and a signed commit fails with
+  /// "failed to write commit object". Only the `-Y sign` call is rerouted: it
+  /// goes to the agent run gateway (`AgentRunGateway`), which signs on the
+  /// host; the env names, header and path below are the gateway's
+  /// (`AgentRunLease`). Every other call (`-Y verify`, `find-principals`) runs
+  /// the user's own program, exactly as git would have.
+  static const String sshSignShim = r'''#!/bin/sh
+# Control Center macOS sandbox: the SSH agent is unreachable in here. Git's
+# signing calls go to the agent gateway, which signs on the host; everything
+# else runs the user's own gpg.ssh.program.
+if [ "$1" != "-Y" ] || [ "$2" != "sign" ]; then
+  exec "${CC_GIT_SSH_PROGRAM:-ssh-keygen}" "$@"
+fi
+for buffer; do :; done
+if [ -z "$CC_AGENT_GATEWAY" ] || [ -z "$CC_AGENT_RUN_TOKEN" ]; then
+  echo "Control Center: this session cannot sign commits (no agent run)." >&2
+  exit 1
+fi
+if curl --disable --silent --show-error --fail-with-body --noproxy '*' \
+  --connect-timeout 5 --max-time 360 \
+  --header "X-CC-Agent-Run: $CC_AGENT_RUN_TOKEN" \
+  --header 'Content-Type: application/octet-stream' \
+  --data-binary "@$buffer" --output "$buffer.sig" \
+  "$CC_AGENT_GATEWAY/agent/git-sign"; then
+  exit 0
+fi
+cat "$buffer.sig" >&2 2>/dev/null
+rm -f "$buffer.sig"
+exit 1
+''';
+
   /// Installs [keychainStandIn] as `<profilesDir>/bin/security` and returns
   /// that directory, resolved (Seatbelt matches real paths; `/var` is a link).
-  ///
+  static String installKeychainStandIn(Directory profilesDir) =>
+      _installTool(profilesDir, 'security', keychainStandIn);
+
+  /// Installs [sshSignShim] as `<profilesDir>/bin/[sshSignShimName]` and
+  /// returns that directory, resolved.
+  static String installSshSignShim(Directory profilesDir) =>
+      _installTool(profilesDir, sshSignShimName, sshSignShim);
+
   /// Rewritten whenever its content differs, through a rename so a concurrent
   /// spawn never runs a half-written script.
-  static String installKeychainStandIn(Directory profilesDir) {
+  static String _installTool(
+    Directory profilesDir,
+    String name,
+    String content,
+  ) {
     final dir = Directory('${profilesDir.path}/bin')
       ..createSync(recursive: true);
-    final file = File('${dir.path}/security');
+    final file = File('${dir.path}/$name');
     final current = file.existsSync() ? file.readAsStringSync() : null;
-    if (current != keychainStandIn) {
-      final tmp = File('${dir.path}/.security.$pid.tmp')
-        ..writeAsStringSync(keychainStandIn, flush: true);
+    if (current != content) {
+      final tmp = File('${dir.path}/.$name.$pid.tmp')
+        ..writeAsStringSync(content, flush: true);
       Process.runSync('/bin/chmod', ['755', tmp.path]);
       tmp.renameSync(file.path);
     }
@@ -286,17 +337,22 @@ exec /usr/bin/security "$@"
     int? httpProxyPort,
     int? socksProxyPort,
     String binShell = '/bin/bash',
+    String? sshSigningProgram,
   }) {
     if (!profilesDir.existsSync()) {
       profilesDir.createSync(recursive: true);
     }
     final toolDir = installKeychainStandIn(profilesDir);
+    final signer = sshSigningProgram == null
+        ? null
+        : '${installSshSignShim(profilesDir)}/$sshSignShimName';
     // The legitimate CLI binary gets an explicit exec allow so the
     // writable-dir exec block doesn't block it.
     final allowedExecutables = <String>[
       if (argv.isNotEmpty) argv.first,
       binShell,
       '$toolDir/security',
+      ?signer,
     ];
     final profile = generateSeatbeltProfile(
       config,
@@ -314,18 +370,40 @@ exec /usr/bin/security "$@"
     final cd = workingDirectory == null
         ? ''
         : 'cd ${_shellQuote([workingDirectory])} && ';
+    final path = 'PATH=${_shellQuote([toolDir])}:"\$PATH"; export PATH; ';
     final wrapped = <String>[
       '-f',
       profileFile.path,
       binShell,
       '-c',
-      'PATH=${_shellQuote([toolDir])}:"\$PATH"; export PATH; $cd$inner',
+      '$path${_gitSignerConfig(signer, sshSigningProgram)}$cd$inner',
     ];
     return MacosWrapResult(
       executable: '/usr/bin/sandbox-exec',
       argv: wrapped,
       profilePath: profileFile.path,
     );
+  }
+
+  /// Shell that points git's SSH signer at [signer] for this process tree,
+  /// handing the user's own [program] to it for everything but signing.
+  ///
+  /// Nothing is written to any git config file: it is one more `GIT_CONFIG_*`
+  /// entry after those the environment already carries (the gateway's push
+  /// routing), which git applies at command scope. Without SSH signing
+  /// ([signer] null) git's signing config is left exactly as the user has it.
+  /// A non-numeric count is reset rather than evaluated: bash arithmetic on
+  /// an inherited string would run any command substitution inside it.
+  static String _gitSignerConfig(String? signer, String? program) {
+    if (signer == null || program == null) {
+      return '';
+    }
+    return 'export $userSshProgramEnvKey=${_quoteOne(program)}; '
+        r'cc_n=${GIT_CONFIG_COUNT:-0}; '
+        r"case $cc_n in ''|*[!0-9]*) cc_n=0 ;; esac; "
+        r'export GIT_CONFIG_KEY_$cc_n=gpg.ssh.program '
+        'GIT_CONFIG_VALUE_\$cc_n=${_quoteOne(signer)} '
+        r'GIT_CONFIG_COUNT=$((cc_n + 1)); unset cc_n; ';
   }
 
   /// Returns a seatbelt deny rule for a write-denied path. Glob patterns

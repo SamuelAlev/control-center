@@ -6,6 +6,10 @@ import 'package:cc_domain/features/plan_studio/domain/services/plan_document_com
 import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.dart';
 import 'package:test/test.dart';
 
+/// The room the plan's conversation (`chan-plan`) belongs to. Distinct ids on
+/// purpose: a conversation id is never a space id.
+const _space = 'space-plan';
+
 PlanDocument _plan() => PlanDocument(
   id: 'p1',
   workspaceId: 'ws-1',
@@ -38,7 +42,7 @@ PipelineDefinition _generatedPipeline() {
     id: PlanDocumentCompiler.orchestrationIdFor(doc.id),
     workspaceId: doc.workspaceId,
     proposal: proposal,
-    spaceId: doc.conversationId,
+    spaceId: _space,
     orchestratorAgentId: doc.agentId,
     createdAt: DateTime.utc(2026),
     updatedAt: DateTime.utc(2026),
@@ -46,7 +50,7 @@ PipelineDefinition _generatedPipeline() {
   return const OrchestrationMaterializer().buildDefinition(
     orchestration,
     roleAgents: {PlanDocumentCompiler.roleKey: doc.agentId},
-    spaceId: doc.conversationId,
+    spaceId: _space,
     parentTicketId: '',
     projectId: 'proj-1',
   );
@@ -64,16 +68,33 @@ void main() {
   });
 
   group('an approved plan executes visibly and with write access', () {
-    test('every agent step runs in the plan\'s own conversation', () {
+    test('every agent step runs in the space the plan was authored in', () {
       final extras = _generatedExtras();
 
       for (final id in ['sub_a', 'sub_b', 'synthesis']) {
         expect(
           extras[id]?['spaceId'],
-          'chan-plan',
+          _space,
           reason: '$id must run where the operator is watching',
         );
       }
+    });
+
+    test('every agent step opens its own conversation in that space', () {
+      // A step pointed at a room with no title writes into the room's standing
+      // stream, interleaving every step's turns into one thread.
+      final extras = _generatedExtras();
+      final titles = [
+        for (final id in ['sub_a', 'sub_b', 'synthesis'])
+          extras[id]?['conversationTitle'],
+      ];
+
+      expect(
+        titles,
+        everyElement(isA<String>().having((t) => t, 'title', isNotEmpty)),
+      );
+      expect(titles.toSet(), hasLength(titles.length));
+      expect(titles.take(2), ['1. Parse', '2. Import']);
     });
 
     test('every step is dispatched to the authoring agent', () {

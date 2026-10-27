@@ -450,10 +450,19 @@ class RemoteRelayHost {
         unawaited(_endPeer(pending));
       }
     });
+    // A close during the awaits above was broadcast before this listener
+    // existed; without this check the session outlives its channel.
+    if (!auth.channel.isOpen) {
+      unawaited(_endPeer(pending));
+      return;
+    }
     _i('relay session up for device $deviceId (peer $peerId)');
   }
 
   Future<void> _endPeer(_PeerSession peer) async {
+    if (peer.disposed) {
+      return; // Already ending; its traffic is counted once.
+    }
     if (identical(_peers[peer.peerId], peer)) {
       _peers.remove(peer.peerId);
     }
@@ -532,6 +541,9 @@ class _PeerSession {
   RelayRemoteTransport? transport;
   _LiveSession? session;
   bool _disposed = false;
+
+  /// Whether teardown has started.
+  bool get disposed => _disposed;
 
   Future<void> dispose() async {
     if (_disposed) {

@@ -210,6 +210,17 @@ class _FakeRunRepo implements PipelineRunRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Widens the window between a step being scheduled and its row existing, as
+/// a busy database does: the insert lands after a sibling's evaluation has
+/// already read the step rows.
+class _SlowStepInsertRepo extends _FakeRunRepo {
+  @override
+  Future<void> insertStepRun(PipelineStepRun stepRun) async {
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    await super.insertStepRun(stepRun);
+  }
+}
+
 class _FakeTemplateRepo implements PipelineTemplateRepository {
   final Map<String, PipelineDefinition> _templates = {};
 
@@ -4411,5 +4422,112 @@ void main() {
         expect(statusMap.containsKey('t-manual'), isFalse);
       },
     );
+  });
+
+  group('fan-in and soft failures', () {
+    test(
+      'continueOnFail publishes a failure marker under the output key',
+      () async {
+        // Downstream steps template `{{out_a}}`; without the key they failed on
+        // an unresolved placeholder instead of seeing the upstream failure.
+        final def = _linearDefinition(
+          configA: const PipelineNodeConfig(
+            continueOnFail: true,
+            outputKey: 'out_a',
+          ),
+        );
+        templateRepo.seed(def);
+
+        Object? seenByB;
+        bodies.registerBody('pipeline.trigger', (_) async => StepResult.ok());
+        bodies.registerBody(
+          'bodyA',
+          (_) async => StepResult.failed('soft failure'),
+        );
+        bodies.registerBody('bodyB', (ctx) async {
+          seenByB = ctx.state['out_a'];
+          return StepResult.ok();
+        });
+
+        final run = await engine.start('tpl', workspaceId: 'ws');
+        await _waitFor(
+          () => runRepo.runs[run!.id]?.status == PipelineRunStatus.completed,
+        );
+
+        expect(seenByB, {'failed': true, 'error': 'soft failure'});
+      },
+    );
+
+    test('a fan-in step runs once when its sources finish together', () async {
+      final slowRepo = _SlowStepInsertRepo();
+      final slowEngine = PipelineEngine(
+        bodies: bodies,
+        templates: templateRepo,
+        repository: slowRepo,
+        agentRunLogRepository: agentRunLogRepo,
+        stepProcessRegistry: registry,
+        eventBus: eventBus,
+      );
+      templateRepo.seed(
+        PipelineDefinition(
+          templateId: 'tpl',
+          workspaceId: 'ws',
+          name: 'FanIn',
+          steps: [
+            PipelineStepDefinition(
+              id: 'trigger',
+              kind: StepKind.trigger,
+              bodyKey: 'pipeline.trigger',
+            ),
+            for (final id in ['stepA', 'stepB', 'stepC'])
+              PipelineStepDefinition(
+                id: id,
+                kind: StepKind.listen,
+                bodyKey: 'bodyLeaf',
+                triggers: [
+                  const StepTrigger(sourceStepIds: ['trigger']),
+                ],
+              ),
+            PipelineStepDefinition(
+              id: 'join',
+              kind: StepKind.listen,
+              bodyKey: 'bodyJoin',
+              triggers: [
+                const StepTrigger(sourceStepIds: ['stepA', 'stepB', 'stepC']),
+              ],
+            ),
+            PipelineStepDefinition(
+              id: 'end',
+              kind: StepKind.terminal,
+              bodyKey: '_terminal',
+              triggers: [
+                const StepTrigger(sourceStepIds: ['join']),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      var joinRuns = 0;
+      bodies.registerBody('pipeline.trigger', (_) async => StepResult.ok());
+      bodies.registerBody('bodyLeaf', (_) async => StepResult.ok());
+      bodies.registerBody('bodyJoin', (_) async {
+        joinRuns++;
+        return StepResult.ok();
+      });
+
+      final run = await slowEngine.start('tpl', workspaceId: 'ws');
+      await _waitFor(
+        () => slowRepo.runs[run!.id]?.status == PipelineRunStatus.completed,
+      );
+      // Let any duplicate that was scheduled finish too.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(joinRuns, 1);
+      final joinRows = (await slowRepo.stepRunsForPipeline(
+        run!.id,
+      )).where((sr) => sr.stepId == 'join');
+      expect(joinRows, hasLength(1));
+    });
   });
 }

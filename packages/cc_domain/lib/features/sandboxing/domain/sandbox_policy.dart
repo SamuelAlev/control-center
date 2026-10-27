@@ -211,6 +211,11 @@ class SandboxPolicyResolver {
     'Library/Preferences',
     '.config/gh',
     'Library/Keychains',
+    // Git's global config (`config`, `allowed_signers`, ignore/attributes).
+    // The user's own git runs hooks, fsmonitor and signers it names, and the
+    // host signs agent commits with the signer and key it names. `.gitconfig`
+    // is in [homeRcDenyRels].
+    '.config/git',
     // Claude config — rewriting settings.json flips the agent's own
     // permissions; hooks is arbitrary code execution on next launch.
     '.claude/settings.json',

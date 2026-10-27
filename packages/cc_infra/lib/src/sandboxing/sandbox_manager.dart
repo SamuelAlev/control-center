@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/sandboxing/git_global_config.dart';
 import 'package:cc_infra/src/sandboxing/http_proxy.dart';
 import 'package:cc_infra/src/sandboxing/linux_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/macos_sandbox.dart';
@@ -29,7 +30,11 @@ class SandboxManager {
   /// Creates a new manager. Resources (proxies, temp dir) are lazily acquired
   /// on the first call to [wrap]; construction itself is cheap so Riverpod
   /// can keep using a synchronous `Provider`.
-  SandboxManager();
+  ///
+  /// The git environment is the one the user's global git config is read
+  /// in (tests point `GIT_CONFIG_GLOBAL` at a scratch file); null is this
+  /// process's own.
+  SandboxManager({@visibleForTesting this._gitEnvironment});
 
   /// Injectable constructor for tests. Bypasses lazy initialization —
   /// the caller supplies pre-built proxies, monitor and profiles dir.
@@ -39,7 +44,10 @@ class SandboxManager {
     this._socksProxy,
     this._violationMonitor,
     this._profilesDir,
-  }) : _initFuture = Future.value();
+  }) : _initFuture = Future.value(),
+       _gitEnvironment = null;
+
+  final Map<String, String>? _gitEnvironment;
 
   /// Test-injected proxies. In production these stay null: proxies are
   /// per-session (see [wrap]). `SandboxManager.test` keeps them so a test can
@@ -164,6 +172,10 @@ class SandboxManager {
         workingDirectory: workingDirectory,
         httpProxyPort: session.httpProxy?.port,
         socksProxyPort: session.socksProxy?.port,
+        // Read per spawn: the user may turn SSH signing on or off any time.
+        sshSigningProgram: await globalSshSigningProgram(
+          environment: _gitEnvironment,
+        ),
       );
       session.profilePaths.add(result.profilePath);
       return SandboxWrapResult(

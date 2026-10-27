@@ -548,24 +548,36 @@ Future<void> showCcImageViewer({
 /// which layout branch produced the image (see `isExpandableMarkdownImage`) —
 /// "narrower than the column" is not the same question as "is a badge", and
 /// most screenshots are narrower than the column.
+///
+/// A host with a better place to expand INTO — an editor tab beside the
+/// conversation — passes [onExpand] instead of [viewerBuilder]; the affordance
+/// stays identical and only the destination changes.
 class CcExpandableImage extends StatefulWidget {
   /// Creates a [CcExpandableImage].
   const CcExpandableImage({
     super.key,
     required this.child,
-    required this.viewerBuilder,
     required this.labels,
+    this.viewerBuilder,
+    this.onExpand,
     this.title,
     this.actions = const <Widget>[],
     this.borderRadius = BorderRadius.zero,
     this.enabled = true,
-  });
+  }) : assert(
+         (viewerBuilder == null) != (onExpand == null),
+         'Pass exactly one of viewerBuilder or onExpand.',
+       );
 
   /// The inline rendition.
   final Widget child;
 
   /// Builds the full-size rendition shown in the lightbox.
-  final WidgetBuilder viewerBuilder;
+  final WidgetBuilder? viewerBuilder;
+
+  /// Replaces the lightbox: invoked on press instead of opening one. [title]
+  /// and [actions] only apply to the lightbox and are ignored with this.
+  final VoidCallback? onExpand;
 
   /// Strings for the affordance and the viewer it opens.
   final CcImageViewerLabels labels;
@@ -590,13 +602,20 @@ class CcExpandableImage extends StatefulWidget {
 class _CcExpandableImageState extends State<CcExpandableImage> {
   bool _hovering = false;
 
-  Future<void> _open() => showCcImageViewer(
-    context: context,
-    builder: widget.viewerBuilder,
-    labels: widget.labels,
-    title: widget.title,
-    actions: widget.actions,
-  );
+  Future<void> _open() async {
+    final onExpand = widget.onExpand;
+    if (onExpand != null) {
+      onExpand();
+      return;
+    }
+    await showCcImageViewer(
+      context: context,
+      builder: widget.viewerBuilder!,
+      labels: widget.labels,
+      title: widget.title,
+      actions: widget.actions,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -22,6 +22,7 @@ extension _DispatchSessionGateway on DispatchSession {
         runId: dispatchId,
         repoOwner: repoOwner,
         repoName: repoName,
+        committerEmail: _gitIdentityEnv['GIT_COMMITTER_EMAIL'],
       ),
     );
   }

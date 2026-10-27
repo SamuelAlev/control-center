@@ -1386,6 +1386,73 @@ void main() {
       expect(plan.metadata?['planStatus'], 'refining');
     });
 
+    // The bug this guards: a reply to a pending plan was stored by the send,
+    // then stored AGAIN (without its metadata) by the refinement, and the
+    // refinement run got neither the attachments' paths nor the images — the
+    // agent answered that the screenshots it was asked about were unavailable.
+    test(
+      'a reply to a pending plan is stored once and keeps its attachments',
+      () async {
+        final blob = 'blob:sha256:${'b' * 64}';
+        final svc = MessagingService(
+          repo,
+          agentRepo: agentRepo,
+          agentDispatchService: dispatchService,
+          streamRegistry: streamRegistry,
+          streamProcessor: makeStreamProcessor(),
+          resolveDefaultUserId: () async => 'user-1',
+          promptAttachments:
+              ({
+                required workspaceId,
+                required spaceId,
+                required attachments,
+              }) async => {'shot.png': '/space/attach/shot.png'},
+        );
+        final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
+        dispatchPort.emitEvent(TextEvent(content: 'refined plan'));
+        await repo.sendMessage(
+          workspaceId: _ws,
+          spaceId: space.id,
+          content: 'Here is the plan',
+          senderId: 'agent-1',
+          senderType: 'agent',
+          messageType: 'plan',
+          id: 'plan-with-reply',
+          metadata: {'planStatus': 'pending'},
+        );
+
+        await svc.sendAndDispatch(
+          _ws,
+          space.id,
+          'drop the AddRow, see @[file:shot.png]',
+          metadata: {
+            'attachments': [
+              {
+                'id': 'a1',
+                'path': blob,
+                'name': 'shot.png',
+                'kind': 'image',
+                'order': 0,
+              },
+            ],
+          },
+        );
+        await pumpEventQueue();
+
+        final users = (await repo.getMessages(
+          _ws,
+          space.id,
+        )).where((m) => m.isUser).toList();
+        expect(users, hasLength(1));
+        expect(users.single.attachments.single.path, blob);
+        expect(
+          dispatchPort.lastPrompt,
+          contains('drop the AddRow, see /space/attach/shot.png'),
+        );
+        expect(dispatchPort.lastImagePaths, [blob]);
+      },
+    );
+
     test('dispatches with workspaceId', () async {
       final svc = makeServiceWithAgentRepo();
       final space = await service.createSpace(_ws, 'Chat', ['agent-1']);

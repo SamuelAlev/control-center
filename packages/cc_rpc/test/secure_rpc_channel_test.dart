@@ -455,6 +455,28 @@ void main() {
   );
 
   test(
+    'a same-turn burst beyond one credit window stays open and in order',
+    () async {
+      // A server session fans subscription emissions out fire-and-forget: one
+      // change can re-emit every live subscription (up to 128) in one turn.
+      // The send queue used to share the 64-record credit window's bound, so
+      // the burst killed the channel and each reconnect rebuilt it.
+      final link = await _connect();
+      const count = 2 * SecureRpcChannel.windowRecords + 16;
+      final received = link.client.incoming.take(count).toList();
+      final sends = [
+        for (var i = 0; i < count; i++) link.server.send({'id': i}),
+      ];
+      await Future.wait(sends).timeout(_timeout);
+      expect(await received.timeout(_timeout), [
+        for (var i = 0; i < count; i++) {'id': i},
+      ]);
+      expect(link.server.isOpen, isTrue);
+      expect(link.server.failure, isNull);
+    },
+  );
+
+  test(
     'concurrent send queue is bounded rather than growing behind stalled I/O',
     () async {
       final link = await _connect();
@@ -464,7 +486,7 @@ void main() {
           'z' *
           (SecureRpcChannel.chunkBytes * (SecureRpcChannel.windowRecords + 1));
       final pending = <Future<void>>[];
-      for (var i = 0; i < SecureRpcChannel.windowRecords; i++) {
+      for (var i = 0; i < SecureRpcChannel.maxQueuedSends; i++) {
         pending.add(
           link.client.send({'body': body, 'id': i}).catchError((Object _) {}),
         );

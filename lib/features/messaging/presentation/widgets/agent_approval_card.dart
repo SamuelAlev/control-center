@@ -171,9 +171,8 @@ class ApprovalCard extends StatelessWidget {
                     child: Text(l10n.deny),
                   ),
                   // Offered only when the server says this request is
-                  // rememberable — never on a destructive one, where "stop
-                  // asking me" is the wrong affordance in front of something
-                  // irreversible.
+                  // rememberable: it has something narrow to remember, and
+                  // the standing approval expires on its own.
                   if (request.isRememberable) ...[
                     CcTooltip(
                       message: l10n.approveAndRememberTooltip,

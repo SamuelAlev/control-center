@@ -702,9 +702,16 @@ class RemoteRpcSession {
     try {
       await space.send(frame);
     } catch (e) {
-      CcHostLog.warning('Failed to send to $deviceId: $e');
+      // Frames already queued when the channel died all fail with the same
+      // closed error; one line for the session says it, not one per frame.
+      if (space.isOpen || !_sendFailureLogged) {
+        _sendFailureLogged = true;
+        CcHostLog.warning('Failed to send to $deviceId: $e');
+      }
     }
   }
+
+  bool _sendFailureLogged = false;
 
   Map<String, dynamic> _result(dynamic id, Map<String, dynamic> result) => {
     'jsonrpc': '2.0',

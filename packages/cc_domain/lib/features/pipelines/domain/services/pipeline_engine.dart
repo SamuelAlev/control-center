@@ -131,6 +131,18 @@ class PipelineEngine implements PipelineEnginePort {
   /// branch (or both schedule the same ready step). Mirrors [_stateLocks].
   final Map<String, Future<void>> _evalLocks = {};
 
+  /// Steps an evaluation has scheduled whose `_runStep` has not finished yet,
+  /// as `runId -> {stepId}`.
+  ///
+  /// [_evalLocks] serializes evaluations, but scheduling is fire-and-forget:
+  /// `_runStep` awaits the run row (and may flip it to running) BEFORE it
+  /// inserts the step row. A join's second upstream completing in that window
+  /// found no row, read the join as unstarted and scheduled it again — an
+  /// approved plan ran its fan-in steps, the join and synthesis twice. The
+  /// claim stands in for the row until `_runStep` returns, by which point the
+  /// row itself carries the existing-row veto.
+  final Map<String, Set<String>> _scheduledSteps = {};
+
   /// Serializes [start] per `(templateId, workspaceId, dedupKey)` so two
   /// concurrent triggers carrying the same dedup key can't both pass the
   /// active-run check and insert duplicate runs (a check-then-insert TOCTOU).
@@ -1821,7 +1833,19 @@ class PipelineEngine implements PipelineEnginePort {
       ...?(fresh.state[kStepErrorsKey] as Map?)?.cast<String, dynamic>(),
       stepDef.id: error,
     };
-    await _mergeState(run.id, {kStepErrorsKey: errors});
+    // Publish a failure marker under the step's output key. Downstream steps
+    // that template `{{<outputKey>}}` are exactly the ones continueOnFail keeps
+    // alive; without the key they failed on an unresolved placeholder instead
+    // of seeing — and reporting — the upstream failure. Same `{failed: true}`
+    // shape the orchestration join writes for a node that produced nothing.
+    final outputKey = stepDef.config.outputKey;
+    await _mergeState(run.id, {
+      kStepErrorsKey: errors,
+      if (outputKey != null &&
+          outputKey.isNotEmpty &&
+          fresh.state[outputKey] == null)
+        outputKey: {'failed': true, 'error': error},
+    });
     await repository.updateStepRun(
       run.workspaceId,
       stepRunId,
@@ -1928,6 +1952,7 @@ class PipelineEngine implements PipelineEnginePort {
     // row, so the existing-row veto would hide them forever; naming them here
     // lets the planner judge them on readiness like anything else.
     final resumable = _resumableSteps[current.id] ?? const <String, String>{};
+    existing.addAll(_scheduledSteps[current.id] ?? const <String>{});
 
     final plan = planDownstream(
       definition: definition,
@@ -1976,13 +2001,21 @@ class PipelineEngine implements PipelineEnginePort {
       // cannot schedule it a second time, and so the room a previous attempt
       // opened is the one this attempt works in.
       final held = _resumableSteps[current.id]?.remove(stepId);
+      final claims = _scheduledSteps.putIfAbsent(current.id, () => {})
+        ..add(stepId);
       _track(
         _runStep(
           run: current,
           definition: definition,
           stepDef: stepDef,
           existingStepRunId: held,
-        ),
+        ).whenComplete(() {
+          claims.remove(stepId);
+          if (claims.isEmpty &&
+              identical(_scheduledSteps[current.id], claims)) {
+            _scheduledSteps.remove(current.id);
+          }
+        }),
       );
     }
   }

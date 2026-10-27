@@ -83,6 +83,8 @@ class ActionApprovalCopy {
           unknownPush = true;
         }
       }
+      // The request's refs include deletions too; name those only as such.
+      refs.removeAll(deletedRefs);
     }
     final packages = <String>[];
     if (effects.contains(ActionClass.packageInstall)) {

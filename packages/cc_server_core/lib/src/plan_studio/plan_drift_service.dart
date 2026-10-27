@@ -94,10 +94,13 @@ class PlanDriftService {
         if (ref.kind == 'file') ref.ref,
     };
     if (declaredFiles.isNotEmpty && runs.isNotEmpty) {
-      final conversationId = runs.first.conversationId ?? runs.first.spaceId;
-      if (conversationId != null && conversationId.isNotEmpty) {
+      // Worktrees are SPACE-scoped (every conversation in a room shares one
+      // checkout), so the lookup takes the run's space. Preferring the
+      // conversation id matched no worktree and drift never fired.
+      final spaceId = runs.first.spaceId;
+      if (spaceId != null && spaceId.isNotEmpty) {
         try {
-          final files = await _conversationChanges(workspaceId, conversationId);
+          final files = await _conversationChanges(workspaceId, spaceId);
           final outside = [
             for (final f in files)
               if (!declaredFiles.contains(f.filename)) f.filename,

@@ -1154,12 +1154,13 @@ class DispatchSession implements SteeringSessionView {
       );
       credHandle = scoped.handle;
 
-      await _openGatewayLease(repoOwner: repoOwner, repoName: repoName);
-
       // Resolve the per-run Git identity and co-author policy before any
       // transport launches, so every merged env carries them. (After the
-      // mint: callers may fail a stalled mint to abort the run early.)
+      // mint: callers may fail a stalled mint to abort the run early.) Before
+      // the lease too: the gateway signs only as this identity.
       await _prepareRunIdentity();
+
+      await _openGatewayLease(repoOwner: repoOwner, repoName: repoName);
 
       final wsId = workspaceId ?? '';
       final agentKey = (agentId != null && agentId!.isNotEmpty)

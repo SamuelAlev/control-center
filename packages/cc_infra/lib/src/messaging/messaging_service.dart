@@ -77,10 +77,12 @@ class MessagingService implements MessagingPort {
   })?
   _dispatchReplyHints;
 
-  /// The one plan row a refinement updates. Null keeps the full-history scan.
+  /// The one plan row a refinement updates, in `conversationId` (the space's
+  /// standing conversation when null). Null keeps the full-history scan.
   final Future<Message?> Function({
     required String workspaceId,
     required String spaceId,
+    String? conversationId,
   })?
   _latestPlanMessage;
   final AgentRepository? _agentRepo;
@@ -599,16 +601,31 @@ class MessagingService implements MessagingPort {
   }
 
   /// The plan row a refinement updates, or a StateError when there is none.
-  Future<Message> _planToRefine(String workspaceId, String spaceId) async {
+  ///
+  /// [conversationId] scopes the lookup to the conversation the feedback was
+  /// typed in; null means the space's standing conversation.
+  Future<Message> _planToRefine(
+    String workspaceId,
+    String spaceId, {
+    String? conversationId,
+  }) async {
     final load = _latestPlanMessage;
     if (load != null) {
-      final plan = await load(workspaceId: workspaceId, spaceId: spaceId);
+      final plan = await load(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        conversationId: conversationId,
+      );
       if (plan == null) {
         throw StateError('No plan found in space $spaceId');
       }
       return plan;
     }
-    final messages = await _repo.getMessages(workspaceId, spaceId);
+    final messages = await _repo.getMessages(
+      workspaceId,
+      spaceId,
+      conversationId: conversationId,
+    );
     return messages.reversed.firstWhere(
       (m) => m.isPlan && m.planStatus == 'pending',
       orElse: () => messages.reversed.firstWhere(
@@ -652,16 +669,32 @@ class MessagingService implements MessagingPort {
       spaceId: spaceId,
       conversationId: conversationId,
     );
+    final stripped = _mentionParser.stripMentions(content);
+
     if (hints.previousIsPendingPlan) {
-      await refinePlan(
+      // The reply to a pending plan IS the feedback, and it is already stored
+      // (by [sendAndDispatch], or as the steering row the queue converted).
+      // Going through the public [refinePlan] here stored it a second time —
+      // a metadata-less copy chained under the original, which became the
+      // conversation's leaf — and dispatched the refinement without the
+      // message's attachments, so the agent saw a reply that named pictures
+      // it could not open.
+      await _refinePlanWithFeedback(
         workspaceId: workspaceId,
         spaceId: spaceId,
-        feedback: content,
+        conversationId: conversationId,
+        feedback: await withAttachmentPaths(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+          text: stripped.isEmpty ? content : stripped,
+          attachments: attachments,
+        ),
+        requestedByUserId: senderUserId,
+        promptImageRefs: promptImageRefs,
       );
       return;
     }
 
-    final stripped = _mentionParser.stripMentions(content);
     if (stripped.isEmpty) {
       return;
     }
@@ -847,7 +880,49 @@ class MessagingService implements MessagingPort {
     required String spaceId,
     required String feedback,
   }) async {
+    // The explicit refine action carries feedback no message holds yet, so
+    // this is the one place that stores it. The send path, whose message is
+    // already stored, goes straight to [_refinePlanWithFeedback].
     final pendingPlan = await _planToRefine(workspaceId, spaceId);
+    // Keep the refinement turn in the same conversation the plan lives in.
+    await sendUserMessage(
+      workspaceId,
+      spaceId,
+      feedback,
+      conversationId: pendingPlan.conversationId,
+    );
+    await _refinePlanWithFeedback(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      conversationId: pendingPlan.conversationId,
+      feedback: feedback,
+      plan: pendingPlan,
+    );
+  }
+
+  /// Marks the plan being refined as `refining` and dispatches its author
+  /// with [feedback]. Stores NOTHING: the feedback's message must already be
+  /// in the conversation.
+  ///
+  /// [feedback] is prompt text — attachment references already expanded to
+  /// paths — and [promptImageRefs] ride the turn as images, exactly as a
+  /// normal reply's would. [plan] skips the lookup when the caller has it.
+  Future<void> _refinePlanWithFeedback({
+    required String workspaceId,
+    required String spaceId,
+    required String? conversationId,
+    required String feedback,
+    String? requestedByUserId,
+    List<String> promptImageRefs = const [],
+    Message? plan,
+  }) async {
+    final pendingPlan =
+        plan ??
+        await _planToRefine(
+          workspaceId,
+          spaceId,
+          conversationId: conversationId,
+        );
 
     final existingMeta = Map<String, dynamic>.from(pendingPlan.metadata ?? {});
     existingMeta['planStatus'] = 'refining';
@@ -856,15 +931,6 @@ class MessagingService implements MessagingPort {
       pendingPlan.id,
       content: pendingPlan.content,
       metadata: existingMeta,
-    );
-
-    // Keep the refinement turn in the same conversation the plan lives in.
-    final conversationId = pendingPlan.conversationId;
-    await sendUserMessage(
-      workspaceId,
-      spaceId,
-      feedback,
-      conversationId: conversationId,
     );
 
     final agent = await _agentRepo?.getById(workspaceId, pendingPlan.senderId);
@@ -877,7 +943,9 @@ class MessagingService implements MessagingPort {
           prompt:
               'The user provided feedback on your plan: $feedback. '
               'Please refine the plan accordingly and produce an updated plan.',
-          conversationId: conversationId,
+          requestedByUserId: requestedByUserId,
+          conversationId: pendingPlan.conversationId,
+          promptImageRefs: promptImageRefs,
         ),
       );
     }

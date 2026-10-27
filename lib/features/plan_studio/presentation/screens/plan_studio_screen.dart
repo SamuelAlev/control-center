@@ -351,7 +351,11 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
           ),
           PlanApprovalBar(
             total: _total,
-            canApprove: proposed && !ref.watch(isDemoServerProvider),
+            // A failed execution can be approved again: the server rebuilds the
+            // run from the plan instead of retrying the broken one.
+            canApprove:
+                (proposed || execution?.status == OrchestrationStatus.failed) &&
+                !ref.watch(isDemoServerProvider),
             isExecuting: executing,
             hasSelection: selected != null && selected.isWork,
             busy: _busy,
