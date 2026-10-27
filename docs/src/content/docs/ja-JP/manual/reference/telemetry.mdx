@@ -1,0 +1,160 @@
+---
+title: 利用状況の分析
+description: 利用状況の分析がオンのときに Control Center が記録する内容、誰が決めるのか、そして決して送信されないもの。
+slug: ja-JP/マニュアル/リファレンス/利用状況の分析
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center は **仮名化された利用イベント** を [Umami](https://umami.is) のインスタンスに送信できます。利用状況の分析は **サーバーのオペレーターがオンにするまでオフ** です。この設定はサーバーに属し、そのサーバーに接続するすべてのクライアント (デスクトップアプリ、Web アプリ、スマートフォン、そしてサーバー自身) に適用されます。
+
+利用状況の分析は、クラッシュやエラーの診断情報を扱うデバイスごとの設定である **クラッシュレポートを共有** とは別のものです。
+
+## 誰が決めるのか
+
+| スイッチ | 場所 | 効果 |
+| --- | --- | --- |
+| **利用状況の分析を共有** | オンボーディング (サンドボックスのステップ) と **設定 → プライバシー**。変更できるのはサーバーのオペレーターだけで、ほかのメンバーには現在の値が読み取り専用で表示されます | サーバー全体に適用されます。サーバー設定に `telemetry.usage_analytics` として保存されます。`true` に設定しない限りオフです |
+| ビルドの種類 | 自動 | debug ビルドと profile ビルドは送信しません。代わりに各イベントをデバッグログに書き込みます |
+| `CC_ANALYTICS_DEBUG=1` | `cc_server` の環境またはその `.env` | テスト用に、サーバーと、そのサーバーに接続するすべてのクライアントの debug ビルドと profile ビルドから実際に送信できるようにします。この場合も上のスイッチがオンになっている必要があります |
+| `DO_NOT_TRACK=1` | `cc_server` の環境 | スイッチの状態にかかわらず、サーバー自身による送信を止めます。クライアントは引き続きスイッチに従います |
+| デモサーバー | 自動 | 公開デモサーバーはそれ自身としては何も送信しません。訪問者はスイッチを変更できません |
+
+クライアントは設定をサーバーから読み取ります (まず `telemetry.config`、その後は `telemetry.watch` でリアルタイムに)。応答が届くまで、イベントはメモリ上の小さなバッファで待機します。応答が「いいえ」ならバッファは破棄されます。スイッチをオフにすると、キューに残っているものはすべて破棄され、すべてのクライアントで送信がただちに止まります。
+
+## 決して送信されないもの
+
+- メッセージ、チケット、レビュー、ミーティングの内容、タイトル、プロンプト、シェルコマンド、検索クエリ
+- 名前、ログイン名、メールアドレス、アバター、表示名
+- ファイルパス、リポジトリ名、ブランチ名、ホスト名、URL (リポジトリは仮名化された `repo_id` としてのみ、ミーティングのリンクはプロバイダー名としてのみ送信されます)
+- あらゆる種類の生の識別子
+
+すべてのイベントは、プロセスの外に出る前にプロパティポリシーを通過します。テキスト、パス、URL、メールアドレス、ラップされていない ID、そして `email`、`*_name`、`path`、`title`、`prompt`、`content`、`token` などのキーに入った文字列は、送信されずに破棄されます。文字列が送信されるのは、enum の値、バージョン、ロケール、モデル ID のように、閉じた語彙に属する短いトークンである場合だけです。
+
+## 仮名化された ID
+
+ID は送信されますが、仮名としてだけです。ワークスペース、スペース、会話、エージェント、実行、ユーザー、デバイスの各 ID は、そのインストール固有の秘密のソルト (`telemetry.pseudonym_salt`) を使った HMAC-SHA256 に置き換えられ、16 進数 20 文字に切り詰められます。同じワークスペースは常に同じ値を報告するため、イベントを結び付けて数えることはできますが、生の ID がインストールの外に出ることはありません。ソルトはサーバーの初回起動時に作成され、分析プロバイダーに送信されることはありません。サーバーのデータディレクトリを削除すると新しいソルトとインストール ID が作成され、それ以前に記録されたものとの結び付きはすべて切れます。
+
+## すべてのイベントに付くプロパティ
+
+| プロパティ | 例 | 意味 |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`、`web`、`remote` (スマートフォン)、`server` のいずれか。Umami のホスト名としても使われます |
+| `app_version` | `0.0.11` | リリースバージョン |
+| `app_build` | `4baf980` | ビルドの短縮 git コミット |
+| `platform` | `macos` | `macos`、`windows`、`linux`、`web`、またはスマートフォンの OS (`ios`、`android`) |
+| `locale` | `fr_FR` | UI の言語 |
+| `server_mode` | `local` | `local` (デスクトップが自前のサーバーを実行) または `remote` |
+| `server_version` | `0.0.11` | 接続先サーバーのバージョン (判明している場合) |
+| `is_demo` | `false` | クライアントが公開デモに接続しているかどうか |
+| `install_id` | 仮名 | サーバーのインストール |
+| `user_id` | 仮名 | サインイン中のユーザー (判明した時点から) |
+| `device_id` | 仮名 | ペアリング済みのデバイス (判明した時点から)。Umami の distinct ID としても使われます |
+| `launch_id` | 仮名 | アプリの 1 回の起動。セッション内のイベントを順序付けるためのものです |
+| `event_seq` | `12` | その起動の中でのイベントの位置 |
+
+Umami はさらに、リクエストの IP アドレス (アドレス自体は保存せずに国と地域を割り出すために使われます)、User-Agent、画面サイズを受け取ります。
+
+## 画面の表示
+
+ナビゲーションのたびに、URL が **ルートテンプレート** であるページビューが記録されます。たとえば `/workspaces/:workspaceId/spaces/:spaceId` のようなもので、具体的なアドレスが記録されることはありません。画面名はテンプレートのリテラルなセグメントで構成されるため、この例では `workspaces_spaces` になります。`Id` で終わるルートパラメーターは仮名化された `*_id` プロパティとして、数値のパラメーター (PR 番号など) は数値として付加されます。それ以外のパラメーターはすべて破棄されます。
+
+## クライアントのイベント
+
+人が行った操作について、デスクトップアプリ、Web アプリ、スマートフォンが記録します。
+
+| イベント | プロパティ | 記録されるタイミング |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | アプリの起動が完了し、接続したとき |
+| `app_backgrounded` | `foreground_s` | ウィンドウまたはタブが非表示になったとき |
+| `app_foregrounded` | `background_s` | 再び表示されたとき |
+| `server_connected` | `reconnect` | 切断後に接続が復帰したとき |
+| `server_disconnected` | | 接続が切れたとき |
+| `server_switched` | | ユーザーが別のサーバーに切り替えたとき |
+| `device_paired` | | スマートフォンがペアリングを確定したとき |
+| `onboarding_step_viewed` | `step`、`step_index` | オンボーディングのステップが表示されたとき |
+| `onboarding_completed` | `duration_s`、`step_count`、`workspace_id` | オンボーディングが完了したとき |
+| `workspace_switched` | `workspace_id`、`previous_workspace_id` | ユーザーが別のワークスペースを開いたとき |
+| `message_sent` | `workspace_id`、`space_id`、`conversation_id`、`delivery` (`send`、`steer`、`queued`)、`char_count`、`attachment_count`、`agent_mention_count`、`other_mention_count`、`slash_command` | コンポーザーからメッセージが送信されたとき |
+| `slash_command_run` | `command`、`workspace_id`、`space_id` | クライアント側のスラッシュコマンドが実行されたとき。組み込みコマンドは自身の名前を、スキルは `skill` を、リポジトリのコマンドは `custom` を報告します |
+| `approval_decided` | `decision`、`remembered`、`surface`、`action_classes`、`action_class_count`、`severity`、`workspace_id`、`space_id`、`conversation_id` | エージェントの承認リクエストに回答したとき |
+| `command_palette_opened` | | コマンドパレットが開いたとき |
+| `command_executed` | `source` (`palette`、`keybinding`)、`command` | コマンドが実行されたとき。特定の PR、メンバー、会話を対象とするコマンドは種類 (`pr`、`member`、`conversation`) だけを報告します |
+| `review_submitted` | `verdict`、`comment_count`、`workspace_id` | プルリクエストのレビューが送信されたとき |
+| `search_performed` | `scope` (`space_messages`、`repo_content`)、`result_count`、`query_length`、`workspace_id`、`space_id` | 検索が実行されたとき。クエリそのものは決して記録されません |
+| `meeting_recording_started` | `workspace_id`、`meeting_id` | ミーティングの録音が始まったとき |
+| `meeting_recording_stopped` | `duration_s`、`workspace_id`、`meeting_id` | 録音が止まったとき |
+| `setting_changed` | `setting` (`appearance.theme`、`appearance.locale`)、`value` | テーマまたは言語が変更されたとき |
+| `soundscape_started` | `mood`、`source` (`user`、`focus`) | コントロールから、またはフォーカスモードとともにサウンドスケープが始まったとき |
+| `soundscape_stopped` | `mood`、`source`、`listened_s` | 停止したとき |
+| `soundscape_mood_changed` | `from_mood`、`to_mood`、`playing` | ユーザーが別のムードを選んだとき |
+| `focus_mode_started` | `planned_minutes`、`has_goal`、`block_notifications` | フォーカスモードが始まったとき |
+| `focus_mode_ended` | `elapsed_s`、`planned_minutes`、`completed` | フォーカスモードが途中で、または時間切れで終了したとき |
+| `dictation_started` | | コンポーザーでのディクテーションが始まったとき |
+| `dictation_ended` | `outcome` (`completed`、`cancelled`、`failed`)、`duration_s`、`transcript_chars`、`error_kind` | ディクテーションが終了したとき。記録されるのは文字起こしの長さだけです |
+| `pipeline_run_requested` | `workspace_id`、`template_id`、`trigger`、`dry_run`、`started` | アプリがサーバーにパイプラインの実行を依頼したとき |
+| `pipeline_run_retried` | `workspace_id`、`pipeline_run_id` | 失敗した実行が再試行されたとき |
+| `pipeline_run_cancel_requested` | `workspace_id`、`pipeline_run_id` | アプリから実行がキャンセルされたとき |
+| `pipeline_step_killed` | `workspace_id`、`step_run_id` | 実行中のステップが強制終了されたとき |
+| `calendar_connect_finished` | `outcome` (`connected`、`denied`、`expired`、`failed`、`cancelled`)、`builtin_client`、`duration_s` | カレンダーへのサインインの試行が終了したとき |
+| `calendar_disconnected` | `workspace_id` | カレンダーアカウントの接続が解除されたとき |
+| `calendar_rsvp_sent` | `calendar_event_id`、`response`、`previous_response`、`workspace_id` | 招待に返答したとき |
+| `calendar_event_recorded` | `workspace_id`、`calendar_event_id` | カレンダーのイベントから録音を開始したとき |
+| `calendar_meeting_joined` | `provider` (`meet`、`zoom`、`teams`、`webex`、`other`)、`workspace_id`、`calendar_event_id` | ミーティングのリンクを開いたとき (スマートフォン)。リンクから割り出すのはプロバイダーだけです |
+| `notification_action` | `action` (`read`、`unread`、`dismiss`、`mark_all_read`、`clear_all`)、`workspace_id` | 通知センターを使ったとき |
+| `agent_created` | `workspace_id`、`agent_id`、`adapter`、`model` | レジストリからエージェントを作成したとき |
+| `tab_opened` | `kind` (`chat`、`terminal`、`browser`、`rig`、`codeServer`、`file`、…) | スペースで新しいエディタータブが開いたとき |
+| `skill_action` | `action` (`install`、`update`、`uninstall`、`source_added`、`source_removed`)、`skill_id`、`blocked` | ワークスペースのスキルが変更されたとき |
+| `orchestration_decided` | `decision` (`approved`、`cancelled`)、`workspace_id`、`orchestration_id` | オーケストレーションの提案に返答したとき |
+| `plan_decided` | `decision` (`approved`、`rejected`)、`plan_id`、`workspace_id`、`partial`、`node_count` | プランが承認または却下されたとき (スマートフォン) |
+| `goal_started` | `kind` (`goal`、`loop`)、`workspace_id`、`space_id`、`conversation_id`、`agent_id`、`budget_cents`、`accepted` | 監督付きのゴールまたはループを開始したとき (スマートフォン) |
+| `conversation_created` | `workspace_id`、`space_id`、`conversation_id`、`source` (`new`、`fork`) | 会話が作成またはフォークされたとき |
+| `conversation_rewound` | `conversation_id` | 以前のメッセージから会話を続けたとき |
+| `space_archived` | `workspace_id`、`space_id` | スペースがアーカイブされたとき |
+
+## サーバーのイベント
+
+どのクライアントも単独ではちょうど 1 回だけ見ることのない事実について、`cc_server` が記録します。エージェントの実行は、何台のクライアントが見ていても 1 回として数えられます。
+
+| イベント | プロパティ | 記録されるタイミング |
+| --- | --- | --- |
+| `server_started` | `workspace_count`、`startup_ms` | サーバーの起動が完了したとき |
+| `workspace_created` | `workspace_id` | ワークスペースが作成されたとき |
+| `space_created` | `workspace_id`、`space_id` | スペースが作成されたとき |
+| `repo_added` | `workspace_id`、`repo_id` | リポジトリがリンクされたとき |
+| `ticket_created` | `workspace_id`、`ticket_id` | 人またはエージェントがチケットを作成したとき |
+| `agent_run_completed` | `agent_id`、`workspace_id`、`conversation_id`、`run_id`、`status`、`error_family`、`role`、`adapter`、`model`、`effort`、`task_family`、`subagent`、`pipeline`、`resumed_native_session`、`duration_ms`、`time_to_first_token_ms`、`input_tokens`、`output_tokens`、`thought_tokens`、`cache_read_tokens`、`cache_write_tokens`、`output_rejections`、`cost_usd` | エージェントの実行が終了したとき |
+| `agent_awaiting_input` | `kind` (`approval`、`question`、`credential`)、`workspace_id`、`agent_id`、`conversation_id` | エージェントが停止して人を待っているとき |
+| `agent_action_blocked` | `workspace_id`、`agent_id`、`space_id`、`source` | アクションポリシーがエージェントのアクションを拒否したとき |
+| `pipeline_run_finished` | `outcome` (`completed`、`failed`、`cancelled`)、`workspace_id`、`pipeline_run_id`、`template_id`、`trigger`、`duration_ms`、`active_ms`、`attempt_count`、`template_version`、`cost_cents`、`tokens`、`dry_run`、`sub_pipeline` | パイプラインの実行が終了したとき。`trigger` は `manual`、実行を開始したイベントの種類、または名前付きトリガーの場合はその種類 (`webhook`) だけになります |
+| `pull_request_published` | `workspace_id`、`pr_id` | スペースからプルリクエストが公開されたとき |
+| `pull_request_merged` | `workspace_id`、`pr_id`、`agent_id` | エージェントが作成したプルリクエストがマージされたとき |
+| `meeting_recorded` | `workspace_id`、`meeting_id`、`transcript_chars` | ミーティングの録音が保存されたとき |
+| `space_deleted` | `workspace_id`、`space_id` | スペースが削除されたとき |
+| `ticket_status_changed` | `workspace_id`、`ticket_id`、`from_status`、`to_status` | チケットのステータスが変わったとき |
+| `ticket_assigned` | `workspace_id`、`ticket_id`、`assignee_type`、`agent_id`、`team_id` | チケットが割り当てられたとき |
+| `ticket_reassigned` | `workspace_id`、`ticket_id`、`from_agent_id`、`to_agent_id` | チケットが別のエージェントに移ったとき |
+| `ticket_work_finished` | `ticket_id`、`outcome` (`completed`、`failed`、`cancelled`) | チケットで委任された作業が終了したとき |
+| `workspace_member_changed` | `workspace_id`、`member_user_id`、`change` (`added`、`removed`、`role_changed`)、`role` | ワークスペースのメンバー構成が変わったとき |
+| `rig_closed` | `workspace_id`、`rig_id`、`reason`、`reaped`、`agent_id` | リグが閉じられたとき、または回収されたとき |
+| `skill_updated` | `workspace_id`、`skill_id`、`origin`、`scan_verdict` | ワークスペースのスキルがインストール、更新、またはディスク上で変更されたとき |
+| `calendar_auth_expired` | `workspace_id` | カレンダーの接続に再サインインが必要になったとき |
+| `calendar_meeting_starting_soon` | `workspace_id`、`calendar_event_id`、`has_meeting_link`、`lead_s` | カレンダーのイベントがまもなく始まるとき |
+| `budget_threshold_crossed` | `scope_type`、`scope_id`、`spent_cents`、`budget_cents`、`hard_stop` | 支出が予算のしきい値を超えたとき |
+| `pull_request_review_requested` | `workspace_id`、`repo_id` | 追跡中の PR でレビューが依頼されたとき |
+| `pull_request_review_decision_changed` | `workspace_id`、`repo_id`、`decision`、`reviewers_remaining` | 追跡中の PR のレビュー判定が変わったとき |
+| `external_pull_request_merged` | `workspace_id`、`repo_id` | エージェント以外が作成した PR が、リンク済みのリポジトリでマージされたとき |
+
+## 配信
+
+イベントは、最大 200 件を保持するメモリ上のキューから `<host>/api/send` に 1 件ずつ送信されます。ネットワークエラー、タイムアウト、`429`、`5xx` の場合はイベントを保持したまま、1 秒から最大 5 分までの指数バックオフで再試行します。それ以外の `4xx` ではイベントを破棄します。ディスクには何も書き込まれないため、アプリの終了時にキューに残っているイベントは失われます。キューは、アプリがバックグラウンドに移ったときとサーバーがシャットダウンするときにフラッシュされます。
+
+## ビルドの送信先を別のインスタンスに向ける
+
+送信先はビルド時に固定されます。
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+プロバイダーのアダプターは `packages/cc_analytics` にあります。別の分析サービスに対応するには、そこにアダプターを追加します。トラッキングプランとプライバシーのルールは変わりません。

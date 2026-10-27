@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_chrome.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_model_steps.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_adapter_step.dart';
@@ -62,6 +64,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   int _step = 0;
 
+  /// When the flow opened, for `onboarding_completed.duration_s`.
+  final _startedAt = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _trackStep();
+  }
+
+  void _trackStep() => ref.track(
+    AnalyticsEvents.onboardingStepViewed(
+      step: _steps[_step].name,
+      stepIndex: _step,
+    ),
+  );
+
   /// Chooses the steps ONCE, at flow start.
   ///
   /// Snapshotting is the whole discipline here. An earlier version derived
@@ -86,7 +104,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ];
   }
 
-  void _goTo(int step) => setState(() => _step = step);
+  void _goTo(int step) {
+    setState(() => _step = step);
+    _trackStep();
+  }
 
   /// The progress-bar labels, one per step. Every step is named, not just the
   /// current one — the bar has to read as a map of the whole flow.
@@ -157,6 +178,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // member's resolves to the workspace they were added to. The picker is a
     // safety net if none resolved.
     final wsId = ref.read(activeWorkspaceIdProvider);
+    ref.track(
+      AnalyticsEvents.onboardingCompleted(
+        durationS: DateTime.now().difference(_startedAt).inSeconds,
+        stepCount: _steps.length,
+        workspaceId: wsId,
+      ),
+    );
     context.go(wsId == null ? workspaceListRoute : inboxRoute(wsId));
   }
 

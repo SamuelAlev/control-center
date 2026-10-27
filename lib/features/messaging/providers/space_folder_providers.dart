@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,7 +97,11 @@ Future<void> archiveSpaceAndUnlink(
 ) async {
   final service = ref.read(messagingServiceProvider);
   final folders = ref.read(spaceFolderActionsProvider(workspaceId));
+  final analytics = ref.read(analyticsProvider);
   await service.archiveSpace(workspaceId, spaceId);
+  analytics.track(
+    AnalyticsEvents.spaceArchived(workspaceId: workspaceId, spaceId: spaceId),
+  );
   await folders.move(spaceId, null);
 }
 

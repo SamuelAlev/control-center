@@ -1,4 +1,6 @@
+import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:control_center/core/constants/app_constants.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:flutter/widgets.dart';
@@ -33,6 +35,16 @@ class LocaleNotifier extends Notifier<Locale?> {
   /// Only a shipped BCP 47 tag (`fr-FR`) is persisted. A bare language
   /// (`fr`) or any other unrecognised value is treated as follow-system.
   void setLocale(Locale? locale) {
+    _apply(locale);
+    ref.track(
+      AnalyticsEvents.settingChanged(
+        setting: 'appearance.locale',
+        value: state == null ? 'system' : formatLocaleTag(state!),
+      ),
+    );
+  }
+
+  void _apply(Locale? locale) {
     if (locale == null) {
       _prefs.remove(localeKey);
       state = null;

@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/analytics/command_analytics_id.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/github_avatar_url.dart';
@@ -189,6 +192,7 @@ class _CommandPaletteBodyState extends ConsumerState<_CommandPaletteBody> {
     _entries = [];
     _filteredCommands = [];
     _controller.addListener(_onQueryChanged);
+    ref.track(AnalyticsEvents.commandPaletteOpened());
   }
 
   @override
@@ -288,6 +292,12 @@ class _CommandPaletteBodyState extends ConsumerState<_CommandPaletteBody> {
   void _execute(CommandItem cmd) {
     // Remember it so it floats to the top next time (PRD 19 §1 recency).
     ref.read(commandRecencyProvider.notifier).touch(cmd.id);
+    ref.track(
+      AnalyticsEvents.commandExecuted(
+        source: 'palette',
+        command: commandAnalyticsId(cmd.id),
+      ),
+    );
     Navigator.of(context).pop();
     cmd.onExecute();
   }

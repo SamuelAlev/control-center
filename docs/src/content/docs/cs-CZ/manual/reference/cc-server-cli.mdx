@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Všechny příznaky, proměnné prostředí, podpříkazy a cesty v datovém adresáři headless serveru.
 slug: cs-CZ/prirucka/referencni-prirucka/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Každý příznak procesu se zadává příznakem CLI nebo proměnnou prostředí. Vyhraje
@@ -162,6 +162,10 @@ a nastavuje ji aplikace pro počítač, ne ty:
 
 Nastav si ji jen tehdy, když `cc_server` hlídáš jako podřízený proces a chceš
 stejnou záruku.
+
+`DO_NOT_TRACK=1` (jakákoli hodnota kromě prázdné, `0` nebo `false`) zastaví vlastní
+[analytiku používání](/cs-CZ/prirucka/referencni-prirucka/analytika-pouzivani/) serveru, i když je přepínač pro celý server
+zapnutý. Klienti se přepínačem řídí dál.
 
 ## Rozložení datového adresáře
 

@@ -1719,6 +1719,29 @@ class AppLocalizationsDe extends AppLocalizations {
       'Sende Absturz-, Fehler- und Leistungsdiagnosen, damit wir Probleme schneller beheben können (nur in Release-Builds). Du kannst dies jederzeit unter Einstellungen → Datenschutz ändern.';
 
   @override
+  String get usageAnalyticsTitle => 'Nutzungsanalysen teilen';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Alle Clients dieses Servers senden pseudonyme Nutzungsereignisse (Bildschirme, Aktionen, Anzahlen), nur in Release-Builds. Niemals Namen, Nachrichteninhalte, Dateipfade oder E-Mail-Adressen.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Nutzungsanalysen sind aus. Kein Client dieses Servers sendet Nutzungsereignisse.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Die Clients dieses Servers senden pseudonyme Nutzungsereignisse. Nur der Serverbetreiber kann das ändern.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Nutzungsanalysen sind auf diesem Server aus. Nur der Serverbetreiber kann das ändern.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Sende pseudonyme Nutzungsereignisse von allen Clients dieses Servers, damit wir sehen, welche Funktionen helfen (nur in Release-Builds). Niemals Namen, Nachrichteninhalte, Dateipfade oder E-Mail-Adressen. Du kannst dies jederzeit unter Einstellungen → Datenschutz ändern.';
+
+  @override
   String get blocked => 'Blockiert';
 
   @override

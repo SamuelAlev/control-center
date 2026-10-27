@@ -9,6 +9,10 @@ environment:
 resolution: workspace
 
 dependencies:
+  # Analytics provider adapters: the server reports domain facts (runs
+  # finished, workspaces created) through the same sink the clients use.
+  cc_analytics:
+    path: ../cc_analytics
   # Packs a backup snapshot DIRECTORY into the one body an HTTP download can
   # carry (`GET /backup/snapshot`). Already in the workspace lock via cc_infra.
   archive: ^4.5.1

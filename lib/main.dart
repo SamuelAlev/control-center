@@ -1,4 +1,5 @@
 import 'package:control_center/bootstrap/bootstrap.dart';
+import 'package:control_center/core/analytics/client_analytics_context.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
 /// Single entrypoint for both desktop and web.
@@ -8,6 +9,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 /// runs the connect-then-render thin-client bootstrap. Both expose
 /// `bootstrapAndRun`, so this shim is target-agnostic.
 void main() {
+  markAppLaunch();
   // Use clean path-based URLs on web (`/workspaces/<id>/dashboard` instead of
   // `/#/workspaces/<id>/dashboard`). This also frees the URL fragment for the
   // pairing PSK that the connect bootstrap reads (see `_readUrlHints` in

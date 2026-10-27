@@ -1724,6 +1724,29 @@ class AppLocalizationsAr extends AppLocalizations {
       'أرسل تشخيصات الأعطال والأخطاء والأداء لنتمكن من إصلاح المشكلات أسرع (إصدارات النشر فقط). يمكنك تغيير هذا في أي وقت من الإعدادات ← الخصوصية.';
 
   @override
+  String get usageAnalyticsTitle => 'مشاركة تحليلات الاستخدام';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'تُرسل كل عملاء هذا الخادم أحداث استخدام مستعارة الهوية (الشاشات والإجراءات والأعداد)، في إصدارات النشر فقط. لا تُرسل أبدًا الأسماء أو محتوى الرسائل أو مسارات الملفات أو عناوين البريد الإلكتروني.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'تحليلات الاستخدام متوقفة. لا يرسل أي عميل لهذا الخادم أحداث استخدام.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'تُرسل عملاء هذا الخادم أحداث استخدام مستعارة الهوية. يمكن لمشغّل الخادم فقط تغيير ذلك.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'تحليلات الاستخدام متوقفة على هذا الخادم. يمكن لمشغّل الخادم فقط تغيير ذلك.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'أرسل أحداث استخدام مستعارة الهوية من كل عملاء هذا الخادم لنعرف أي الميزات مفيدة (إصدارات النشر فقط). لا تُرسل أبدًا الأسماء أو محتوى الرسائل أو مسارات الملفات أو عناوين البريد الإلكتروني. يمكنك تغيير هذا في أي وقت من الإعدادات ← الخصوصية.';
+
+  @override
   String get blocked => 'محظور';
 
   @override

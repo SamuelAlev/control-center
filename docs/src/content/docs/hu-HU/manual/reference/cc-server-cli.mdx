@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: A headless szerver minden kapcsolója, környezeti változója, alparancsa és adatkönyvtár-útvonala.
 slug: hu-HU/kezikonyv/referencia/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Minden folyamatszintű beállítás megadható parancssori kapcsolóként vagy környezeti
@@ -170,6 +170,10 @@ környezeti változó szabályozza, amelyet nem Ön, hanem az asztali alkalmazá
 
 Csak akkor állítsa be saját maga, ha gyermekfolyamatként felügyeli a `cc_server`-t, és
 ugyanezt a garanciát szeretné.
+
+A `DO_NOT_TRACK=1` (bármely érték, ami nem üres, `0` vagy `false`) leállítja a szerver saját
+[használati statisztikáit](/hu-HU/kezikonyv/referencia/hasznalati-statisztikak/) akkor is, ha a szerverszintű kapcsoló
+be van kapcsolva. A kliensek továbbra is a kapcsolót követik.
 
 ## Az adatkönyvtár felépítése
 

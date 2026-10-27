@@ -1,0 +1,160 @@
+---
+title: Használati statisztikák
+description: Mit rögzít a Control Center, amikor a használati statisztikák be vannak kapcsolva, ki dönt róluk, és mi nem kerül soha elküldésre.
+slug: hu-HU/kezikonyv/referencia/hasznalati-statisztikak
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+A Control Center **álnevesített használati eseményeket** küldhet egy [Umami](https://umami.is)-példánynak. A használati statisztikák **ki vannak kapcsolva, amíg a szerver üzemeltetője be nem kapcsolja őket**. A beállítás a szerverhez tartozik, és minden hozzá csatlakozó kliensre vonatkozik: az asztali alkalmazásra, a webalkalmazásra, a telefonra és magára a szerverre is.
+
+A használati statisztikák függetlenek az **Összeomlásjelentések megosztása** beállítástól, amely eszközönként szabályozza az összeomlások és hibák diagnosztikáját.
+
+## Ki dönt
+
+| Kapcsoló | Hol | Hatás |
+| --- | --- | --- |
+| **Használati statisztikák megosztása** | A bevezetés (a homokozó lépése) és a **Beállítások → Adatvédelem**. Csak a szerver üzemeltetője módosíthatja; a többi tag csak olvasásra látja az aktuális értéket | Az egész szerverre érvényes. A szerverbeállításokban `telemetry.usage_analytics` néven tárolódik. Ki van kapcsolva, hacsak nincs `true` értékre állítva |
+| Build típusa | Automatikus | A debug és profile buildek nem küldenek adatot. Ehelyett minden eseményt a hibakeresési naplóba írnak |
+| `CC_ANALYTICS_DEBUG=1` | A `cc_server` környezete vagy annak `.env` fájlja | Tesztelési célból lehetővé teszi, hogy a szerver és minden hozzá csatlakozó kliens debug és profile buildjei ténylegesen küldjenek adatot. A fenti kapcsolónak ekkor is bekapcsolva kell lennie |
+| `DO_NOT_TRACK=1` | A `cc_server` környezete | Leállítja a szerver saját adatküldését, bármit mutat is a kapcsoló. A kliensek továbbra is a kapcsolót követik |
+| Demószerver | Automatikus | A nyilvános demószerver saját maga semmit nem küld. A látogatók nem módosíthatják a kapcsolót |
+
+A kliensek a szervertől olvassák ki a beállítást (`telemetry.config`, majd élőben a `telemetry.watch` révén). Amíg a válasz meg nem érkezik, az események egy kis memóriabeli pufferben várakoznak. Ha a válasz nem, a puffer törlődik. A kapcsoló kikapcsolása eldobja mindazt, ami még a sorban áll, és azonnal leállítja a küldést minden kliensen.
+
+## Mi nem kerül soha elküldésre
+
+- Üzenetek, jegyek, áttekintések vagy megbeszélések tartalma, címek, promptok, shellparancsok és keresési lekérdezések
+- Nevek, bejelentkezési nevek, e-mail-címek, profilképek és megjelenített nevek
+- Fájlútvonalak, tárolónevek, ágnevek, gépnevek és URL-ek (a tároló csak álnevesített `repo_id`-ként, a megbeszélés hivatkozása pedig csak a szolgáltató neveként kerül elküldésre)
+- Bármilyen nyers azonosító
+
+Minden esemény átmegy egy tulajdonságszabályzaton, mielőtt elhagyná a folyamatot. A szöveg, az útvonalak, az URL-ek, az e-mail-címek, a be nem csomagolt azonosítók, valamint az olyan kulcsok alatti karakterláncok, mint az `email`, `*_name`, `path`, `title`, `prompt`, `content` vagy `token`, elküldés helyett eldobásra kerülnek. Egy karakterlánc csak akkor kerül elküldésre, ha egy zárt szókészletből származó rövid token, például enumérték, verzió, területi beállítás vagy modellazonosító.
+
+## Álnevesített azonosítók
+
+Az azonosítók elküldésre kerülnek, de csak álnévként. Minden munkaterület-, tér-, beszélgetés-, ügynök-, futtatás-, felhasználó- és eszközazonosítót a telepítés saját titkos sójával (`telemetry.pseudonym_salt`) képzett HMAC-SHA256 helyettesít, 20 hexadecimális karakterre csonkítva. Ugyanaz a munkaterület mindig ugyanazt az értéket jelenti, így az események összekapcsolhatók és megszámolhatók, de a nyers azonosító soha nem hagyja el a telepítést. A só a szerver első indításakor jön létre, és soha nem kerül elküldésre a statisztikai szolgáltatónak. A szerver adatkönyvtárának törlése új sót és új telepítési azonosítót hoz létre, ami minden korábban rögzített adattól leválasztja az új adatokat.
+
+## Minden eseményen szereplő tulajdonságok
+
+| Tulajdonság | Példa | Jelentés |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (a telefon) vagy `server`. Az Umami gépneveként is szolgál |
+| `app_version` | `0.0.11` | Kiadási verzió |
+| `app_build` | `4baf980` | A build rövid git-commitja |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` vagy a telefon operációs rendszere (`ios`, `android`) |
+| `locale` | `fr_FR` | A felület nyelve |
+| `server_mode` | `local` | `local` (az asztali alkalmazás a saját szerverét futtatja) vagy `remote` |
+| `server_version` | `0.0.11` | A csatlakoztatott szerver verziója, ha ismert |
+| `is_demo` | `false` | Azt jelzi, hogy a kliens a nyilvános demóhoz csatlakozik-e |
+| `install_id` | álnév | A szervertelepítés |
+| `user_id` | álnév | A bejelentkezett felhasználó, amint ismert |
+| `device_id` | álnév | A párosított eszköz, amint ismert. Egyben az Umami egyedi azonosítója is |
+| `launch_id` | álnév | Az alkalmazás egy indítása, egy munkamenet eseményeinek sorba rendezéséhez |
+| `event_seq` | `12` | Az esemény helye az indításon belül |
+
+Az Umami ezenkívül megkapja a kérés IP-címét, amelyből a cím tárolása nélkül meghatározza az országot és a régiót, valamint a User-Agentet és a képernyőméretet.
+
+## Képernyőmegtekintések
+
+Minden navigáció egy oldalmegtekintést rögzít, amelynek URL-je az **útvonalsablon**, például `/workspaces/:workspaceId/spaces/:spaceId`, és soha nem a konkrét cím. A képernyő neve a sablon literális szegmenseiből áll, így a példában `workspaces_spaces`. Az `Id` végű útvonalparaméterek álnevesített `*_id` tulajdonságként, a numerikusak (például egy PR száma) pedig számként kerülnek az eseményhez. Minden más paraméter eldobásra kerül.
+
+## Kliensesemények
+
+Az asztali alkalmazás, a webalkalmazás és a telefon rögzíti őket, amikor valaki csinál valamit.
+
+| Esemény | Tulajdonságok | Mikor rögzül |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Az alkalmazás befejezte az indulást és csatlakozott |
+| `app_backgrounded` | `foreground_s` | Az ablak vagy a lap el lett rejtve |
+| `app_foregrounded` | `background_s` | Újra megjelent |
+| `server_connected` | `reconnect` | A kapcsolat megszakadás után helyreállt |
+| `server_disconnected` | | A kapcsolat megszakadt |
+| `server_switched` | | A felhasználó másik szerverre váltott |
+| `device_paired` | | A telefon megerősített egy párosítást |
+| `onboarding_step_viewed` | `step`, `step_index` | Megjelent a bevezetés egy lépése |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | A bevezetés befejeződött |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | A felhasználó másik munkaterületet nyitott meg |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Üzenet lett elküldve egy szerkesztőmezőből |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | Lefutott egy kliensoldali perjeles parancs. A beépített parancsok a nevüket jelentik, a készségek `skill`-t, a tároló parancsai pedig `custom`-ot |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | Valaki válaszolt egy ügynök jóváhagyási kérésére |
+| `command_palette_opened` | | Megnyílt a parancspaletta |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Lefutott egy parancs. Az adott PR-re, tagra vagy beszélgetésre vonatkozó parancsok csak a fajtájukat jelentik (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | Beküldtek egy pull request-áttekintést |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Lefutott egy keresés. Magát a lekérdezést soha nem rögzíti |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | Elindult egy megbeszélés felvétele |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | A felvétel leállt |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Megváltozott a téma vagy a nyelv |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Elindult a hangtáj, a vezérlőkről vagy a fókuszmóddal együtt |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Leállt |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | A felhasználó másik hangulatot választott |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Elindult a fókuszmód |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Véget ért a fókuszmód, idő előtt vagy amikor lejárt az ideje |
+| `dictation_started` | | Elindult a diktálás a szerkesztőmezőben |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Véget ért a diktálás. Csak az átirat hossza kerül rögzítésre |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Az alkalmazás egy pipeline futtatását kérte a szervertől |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Egy sikertelen futtatás újrapróbálásra került |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Egy futtatást megszakítottak az alkalmazásból |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Egy futó lépést kényszerítve leállítottak |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Véget ért egy naptárbejelentkezési kísérlet |
+| `calendar_disconnected` | `workspace_id` | Leválasztottak egy naptárfiókot |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Valaki válaszolt egy meghívásra |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Felvétel indult egy naptáreseményből |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Megnyitottak egy megbeszélés-hivatkozást (telefon). A hivatkozásból csak a szolgáltató kerül meghatározásra |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Használták az értesítési központot |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Létrehoztak egy ügynököt a regiszterből |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | Új szerkesztőlap nyílt egy térben |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Megváltoztak a munkaterület készségei |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Valaki válaszolt egy orchestrációs javaslatra |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Egy tervet jóváhagytak vagy elutasítottak (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Elindult egy felügyelt cél vagy ciklus (telefon) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Létrehoztak vagy elágaztattak egy beszélgetést |
+| `conversation_rewound` | `conversation_id` | Egy beszélgetést egy korábbi üzenettől folytattak |
+| `space_archived` | `workspace_id`, `space_id` | Archiváltak egy teret |
+
+## Szerveresemények
+
+Ezeket a `cc_server` rögzíti olyan tényekről, amelyeket egyetlen kliens sem lát pontosan egyszer. Egy ügynök futtatása egyszer számít, akárhány kliens figyeli is.
+
+| Esemény | Tulajdonságok | Mikor rögzül |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | A szerver befejezte az indulást |
+| `workspace_created` | `workspace_id` | Létrejött egy munkaterület |
+| `space_created` | `workspace_id`, `space_id` | Létrejött egy tér |
+| `repo_added` | `workspace_id`, `repo_id` | Egy tároló csatolásra került |
+| `ticket_created` | `workspace_id`, `ticket_id` | Egy személy vagy egy ügynök létrehozott egy jegyet |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Befejeződött egy ügynök futtatása |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Egy ügynök megállt, és egy személyre vár |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | A műveleti szabályzat elutasította egy ügynök műveletét |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Véget ért egy pipeline-futtatás. A `trigger` értéke `manual`, az azt elindító esemény típusa, vagy egy elnevezett eseményindítónak csak a fajtája (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Egy térből közzétettek egy pull requestet |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Beolvasztottak egy ügynök által nyitott pull requestet |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Elmentettek egy megbeszélésfelvételt |
+| `space_deleted` | `workspace_id`, `space_id` | Töröltek egy teret |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Egy jegy állapota megváltozott |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Egy jegyet hozzárendeltek valakihez |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Egy jegy másik ügynökhöz került |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Véget ért egy jegyen végzett delegált munka |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Megváltozott a munkaterület tagsága |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | Egy állomás bezárult, vagy felszámolásra került |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Egy munkaterületi készséget telepítettek, frissítettek, vagy megváltozott a lemezen |
+| `calendar_auth_expired` | `workspace_id` | Egy naptárkapcsolat újbóli bejelentkezést igényel |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Hamarosan kezdődik egy naptáresemény |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | A költés átlépett egy költségkeret-küszöböt |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | Áttekintést kértek egy követett PR-en |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Megváltozott egy követett PR áttekintési döntése |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | Egy nem ügynök által nyitott PR-t beolvasztottak egy csatolt tárolóban |
+
+## Kézbesítés
+
+Az események egyenként kerülnek elküldésre a `<host>/api/send` címre egy legfeljebb 200 eseményt tároló memóriabeli sorból. Hálózati hiba, időtúllépés, `429` vagy `5xx` esetén az esemény megmarad, és exponenciális visszalépéssel újrapróbálkozik, 1 másodperctől legfeljebb 5 percig. Bármely más `4xx` eldobja. Semmi nem kerül lemezre, így az alkalmazás bezárásakor még sorban álló események elvesznek. A sor kiürül, amikor az alkalmazás a háttérbe kerül, és amikor a szerver leáll.
+
+## Build átirányítása másik példányra
+
+A cél fordításkor rögzül:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+A szolgáltatói adapter a `packages/cc_analytics` csomagban található. Más statisztikai szolgáltatás támogatásához ott kell egy adaptert hozzáadni. A követési terv és az adatvédelmi szabályok változatlanok maradnak.

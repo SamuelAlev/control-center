@@ -1,0 +1,160 @@
+---
+title: การวิเคราะห์การใช้งาน
+description: สิ่งที่ Control Center บันทึกเมื่อเปิดการวิเคราะห์การใช้งาน ใครเป็นผู้ตัดสินใจ และสิ่งใดที่ไม่มีวันถูกส่งออกไป
+slug: th-TH/คู่มือ/อ้างอิง/การวิเคราะห์การใช้งาน
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center สามารถส่ง **เหตุการณ์การใช้งานแบบใช้นามแฝง** ไปยังอินสแตนซ์ [Umami](https://umami.is) ได้ การวิเคราะห์การใช้งาน **ปิดอยู่จนกว่าผู้ดูแลเซิร์ฟเวอร์จะเปิด** การตั้งค่านี้เป็นของเซิร์ฟเวอร์และมีผลกับทุกไคลเอนต์ที่เชื่อมต่ออยู่ ได้แก่ แอปเดสก์ท็อป เว็บแอป โทรศัพท์ และตัวเซิร์ฟเวอร์เอง
+
+การวิเคราะห์การใช้งานแยกจาก **แชร์รายงานข้อขัดข้อง** ซึ่งเป็นการตั้งค่ารายอุปกรณ์สำหรับการวินิจฉัยข้อขัดข้องและข้อผิดพลาด
+
+## ใครเป็นผู้ตัดสินใจ
+
+| สวิตช์ | ที่ไหน | ผลลัพธ์ |
+| --- | --- | --- |
+| **แชร์ข้อมูลวิเคราะห์การใช้งาน** | การเริ่มต้นใช้งาน (ขั้นตอนแซนด์บ็อกซ์) และ **การตั้งค่า → ความเป็นส่วนตัว** มีเพียงผู้ดูแลเซิร์ฟเวอร์ที่เปลี่ยนได้ สมาชิกคนอื่นเห็นค่าปัจจุบันแบบอ่านอย่างเดียว | มีผลทั้งเซิร์ฟเวอร์ เก็บเป็น `telemetry.usage_analytics` ในการตั้งค่าเซิร์ฟเวอร์ ปิดอยู่เว้นแต่ตั้งเป็น `true` |
+| ประเภทบิลด์ | อัตโนมัติ | บิลด์ debug และ profile ไม่ส่งข้อมูล แต่จะเขียนแต่ละเหตุการณ์ลงในล็อกดีบักแทน |
+| `CC_ANALYTICS_DEBUG=1` | สภาพแวดล้อมของ `cc_server` หรือไฟล์ `.env` ของมัน | อนุญาตให้บิลด์ debug และ profile ของเซิร์ฟเวอร์ และของทุกไคลเอนต์ที่เชื่อมต่ออยู่ ส่งข้อมูลจริงเพื่อการทดสอบ สวิตช์ด้านบนยังคงต้องเปิดอยู่ |
+| `DO_NOT_TRACK=1` | สภาพแวดล้อมของ `cc_server` | หยุดการรายงานของเซิร์ฟเวอร์เอง ไม่ว่าสวิตช์จะเป็นอย่างไร ไคลเอนต์ยังคงทำตามสวิตช์ |
+| เซิร์ฟเวอร์เดโม | อัตโนมัติ | เซิร์ฟเวอร์เดโมสาธารณะไม่ส่งข้อมูลใดในนามของตัวเอง ผู้เยี่ยมชมเปลี่ยนสวิตช์ไม่ได้ |
+
+ไคลเอนต์อ่านการตั้งค่าจากเซิร์ฟเวอร์ (`telemetry.config` แล้วติดตามแบบสดผ่าน `telemetry.watch`) ระหว่างรอคำตอบ เหตุการณ์จะรออยู่ในบัฟเฟอร์ขนาดเล็กในหน่วยความจำ หากคำตอบคือไม่ บัฟเฟอร์จะถูกทิ้ง การปิดสวิตช์จะทิ้งทุกอย่างที่ยังค้างอยู่ในคิวและหยุดส่งทันทีบนทุกไคลเอนต์
+
+## สิ่งที่ไม่มีวันถูกส่ง
+
+- เนื้อหาของข้อความ ตั๋วงาน รีวิว หรือการประชุม ชื่อเรื่อง พรอมต์ คำสั่งเชลล์ และคำค้นหา
+- ชื่อ ชื่อบัญชีสำหรับเข้าสู่ระบบ ที่อยู่อีเมล อวาตาร์ และชื่อที่แสดง
+- พาธไฟล์ ชื่อรีโพซิทอรี ชื่อแบรนช์ ชื่อโฮสต์ และ URL (รีโพซิทอรีจะถูกส่งเป็น `repo_id` แบบนามแฝงเท่านั้น ลิงก์การประชุมจะถูกส่งเป็นผู้ให้บริการเท่านั้น)
+- ตัวระบุดิบทุกประเภท
+
+ทุกเหตุการณ์ต้องผ่านนโยบายพร็อพเพอร์ตีก่อนออกจากโปรเซส ข้อความ พาธ URL ที่อยู่อีเมล ID ที่ไม่ได้ห่อ และสตริงภายใต้คีย์อย่าง `email`, `*_name`, `path`, `title`, `prompt`, `content` หรือ `token` จะถูกทิ้งแทนที่จะถูกส่ง สตริงจะถูกส่งก็ต่อเมื่อเป็นโทเค็นสั้นจากชุดคำศัพท์ปิด เช่น ค่า enum เวอร์ชัน โลแคล หรือ ID ของโมเดล
+
+## ID แบบนามแฝง
+
+ID ถูกส่งไป แต่ในรูปของนามแฝงเท่านั้น ID ของเวิร์กสเปซ สเปซ บทสนทนา เอเจนต์ การรัน ผู้ใช้ และอุปกรณ์แต่ละรายการจะถูกแทนที่ด้วย HMAC-SHA256 ที่ใช้ salt ลับของการติดตั้งนั้นเอง (`telemetry.pseudonym_salt`) แล้วตัดเหลือ 20 อักขระฐานสิบหก เวิร์กสเปซเดียวกันจะรายงานค่าเดิมเสมอ จึงเชื่อมโยงและนับเหตุการณ์ได้ แต่ ID ดิบจะไม่ออกจากการติดตั้งเลย salt ถูกสร้างตอนเซิร์ฟเวอร์เริ่มทำงานครั้งแรกและไม่เคยถูกส่งให้ผู้ให้บริการวิเคราะห์ การลบไดเรกทอรีข้อมูลของเซิร์ฟเวอร์จะสร้าง salt และ ID การติดตั้งใหม่ ซึ่งตัดความเชื่อมโยงกับทุกอย่างที่บันทึกไว้ก่อนหน้า
+
+## พร็อพเพอร์ตีในทุกเหตุการณ์
+
+| พร็อพเพอร์ตี | ตัวอย่าง | ความหมาย |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (โทรศัพท์) หรือ `server` ใช้เป็นชื่อโฮสต์ใน Umami ด้วย |
+| `app_version` | `0.0.11` | เวอร์ชันรีลีส |
+| `app_build` | `4baf980` | git commit แบบสั้นของบิลด์ |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` หรือระบบปฏิบัติการของโทรศัพท์ (`ios`, `android`) |
+| `locale` | `fr_FR` | ภาษาของ UI |
+| `server_mode` | `local` | `local` (เดสก์ท็อปรันเซิร์ฟเวอร์ของตัวเอง) หรือ `remote` |
+| `server_version` | `0.0.11` | เวอร์ชันของเซิร์ฟเวอร์ที่เชื่อมต่อ เมื่อทราบ |
+| `is_demo` | `false` | ไคลเอนต์เชื่อมต่อกับเดโมสาธารณะหรือไม่ |
+| `install_id` | นามแฝง | การติดตั้งเซิร์ฟเวอร์ |
+| `user_id` | นามแฝง | ผู้ใช้ที่ลงชื่อเข้าใช้ เมื่อทราบ |
+| `device_id` | นามแฝง | อุปกรณ์ที่จับคู่ไว้ เมื่อทราบ เป็น distinct ID ใน Umami ด้วย |
+| `launch_id` | นามแฝง | การเปิดแอปหนึ่งครั้ง สำหรับเรียงลำดับเหตุการณ์ของเซสชัน |
+| `event_seq` | `12` | ตำแหน่งของเหตุการณ์ภายในการเปิดแอปครั้งนั้น |
+
+นอกจากนี้ Umami ยังได้รับที่อยู่ IP ของคำขอ ซึ่งใช้ระบุประเทศและภูมิภาคโดยไม่เก็บที่อยู่ไว้ รวมถึง User-Agent และขนาดหน้าจอ
+
+## การดูหน้าจอ
+
+การนำทางแต่ละครั้งจะบันทึกการดูหน้าที่มี URL เป็น **เทมเพลตเส้นทาง** เช่น `/workspaces/:workspaceId/spaces/:spaceId` ไม่ใช่ที่อยู่จริง ชื่อหน้าจอคือส่วนที่เป็นตัวอักษรตายตัวของเทมเพลต ตัวอย่างนี้จึงเป็น `workspaces_spaces` พารามิเตอร์เส้นทางที่ลงท้ายด้วย `Id` จะแนบเป็นพร็อพเพอร์ตี `*_id` แบบนามแฝง และพารามิเตอร์ที่เป็นตัวเลข (เช่น หมายเลข PR) จะแนบเป็นตัวเลข พารามิเตอร์อื่นทั้งหมดจะถูกทิ้ง
+
+## เหตุการณ์ของไคลเอนต์
+
+บันทึกโดยแอปเดสก์ท็อป เว็บแอป และโทรศัพท์ สำหรับสิ่งที่ผู้ใช้ทำ
+
+| เหตุการณ์ | พร็อพเพอร์ตี | บันทึกเมื่อ |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | แอปเริ่มทำงานเสร็จและเชื่อมต่อแล้ว |
+| `app_backgrounded` | `foreground_s` | หน้าต่างหรือแท็บถูกซ่อน |
+| `app_foregrounded` | `background_s` | กลับมาแสดงอีกครั้ง |
+| `server_connected` | `reconnect` | การเชื่อมต่อกลับมาหลังจากหลุด |
+| `server_disconnected` | | การเชื่อมต่อหลุด |
+| `server_switched` | | ผู้ใช้สลับไปยังเซิร์ฟเวอร์อื่น |
+| `device_paired` | | โทรศัพท์ยืนยันการจับคู่ |
+| `onboarding_step_viewed` | `step`, `step_index` | ขั้นตอนการเริ่มต้นใช้งานถูกแสดง |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | การเริ่มต้นใช้งานเสร็จสิ้น |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | ผู้ใช้เปิดเวิร์กสเปซอื่น |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | มีการส่งข้อความจากช่องเขียนข้อความ |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | คำสั่งสแลชฝั่งไคลเอนต์ทำงาน คำสั่งในตัวรายงานชื่อของมัน สกิลรายงาน `skill` และคำสั่งของรีโพซิทอรีรายงาน `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | คำขออนุมัติของเอเจนต์ได้รับคำตอบ |
+| `command_palette_opened` | | พาเลตคำสั่งเปิดขึ้น |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | คำสั่งทำงาน คำสั่งสำหรับ PR สมาชิก หรือบทสนทนาที่ระบุเจาะจงจะรายงานเพียงประเภทของมัน (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | มีการส่งรีวิว pull request |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | มีการค้นหา ตัวคำค้นหาไม่ถูกบันทึกเลย |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | เริ่มบันทึกการประชุม |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | หยุดบันทึก |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | ธีมหรือภาษาเปลี่ยน |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | ซาวด์สเคปเริ่มเล่น จากตัวควบคุมหรือพร้อมกับโหมดโฟกัส |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | หยุดเล่น |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | ผู้ใช้เลือกอารมณ์เพลงอื่น |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | โหมดโฟกัสเริ่มต้น |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | โหมดโฟกัสสิ้นสุด ก่อนกำหนดหรือเมื่อหมดเวลา |
+| `dictation_started` | | การป้อนด้วยเสียงในช่องเขียนข้อความเริ่มต้น |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | การป้อนด้วยเสียงสิ้นสุด บันทึกเพียงความยาวของข้อความถอดเสียง |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | แอปขอให้เซิร์ฟเวอร์รันไปป์ไลน์ |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | การรันที่ล้มเหลวถูกลองใหม่ |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | การรันถูกยกเลิกจากแอป |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | ขั้นตอนที่กำลังทำงานถูกบังคับหยุด |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | การพยายามลงชื่อเข้าใช้ปฏิทินสิ้นสุด |
+| `calendar_disconnected` | `workspace_id` | บัญชีปฏิทินถูกยกเลิกการเชื่อมต่อ |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | คำเชิญได้รับการตอบกลับ |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | เริ่มบันทึกจากกิจกรรมในปฏิทิน |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | ลิงก์การประชุมถูกเปิด (โทรศัพท์) ระบุเพียงผู้ให้บริการจากลิงก์ |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | มีการใช้ศูนย์การแจ้งเตือน |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | เอเจนต์ถูกสร้างจากรีจิสทรี |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | แท็บเอดิเตอร์ใหม่เปิดขึ้นในสเปซ |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | สกิลของเวิร์กสเปซมีการเปลี่ยนแปลง |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | ข้อเสนอการประสานงานได้รับการตอบกลับ |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | แผนได้รับการอนุมัติหรือถูกปฏิเสธ (โทรศัพท์) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | เป้าหมายหรือลูปที่มีการกำกับดูแลเริ่มต้น (โทรศัพท์) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | บทสนทนาถูกสร้างหรือแตกแขนง |
+| `conversation_rewound` | `conversation_id` | บทสนทนาถูกทำต่อจากข้อความก่อนหน้า |
+| `space_archived` | `workspace_id`, `space_id` | สเปซถูกเก็บถาวร |
+
+## เหตุการณ์ของเซิร์ฟเวอร์
+
+บันทึกโดย `cc_server` สำหรับข้อเท็จจริงที่ไม่มีไคลเอนต์ใดเห็นเพียงครั้งเดียวพอดี การรันของเอเจนต์จะนับครั้งเดียว ไม่ว่าจะมีไคลเอนต์กี่ตัวเฝ้าดูอยู่
+
+| เหตุการณ์ | พร็อพเพอร์ตี | บันทึกเมื่อ |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | เซิร์ฟเวอร์บูตเสร็จ |
+| `workspace_created` | `workspace_id` | มีการสร้างเวิร์กสเปซ |
+| `space_created` | `workspace_id`, `space_id` | มีการสร้างสเปซ |
+| `repo_added` | `workspace_id`, `repo_id` | มีการเชื่อมรีโพซิทอรี |
+| `ticket_created` | `workspace_id`, `ticket_id` | บุคคลหรือเอเจนต์สร้างตั๋วงาน |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | การรันของเอเจนต์เสร็จสิ้น |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | เอเจนต์หยุดเพื่อรอผู้ใช้ |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | นโยบายการกระทำปฏิเสธการกระทำของเอเจนต์ |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | การรันไปป์ไลน์สิ้นสุด `trigger` คือ `manual` ประเภทของเหตุการณ์ที่เริ่มการรัน หรือเพียงชนิดของทริกเกอร์ที่ตั้งชื่อไว้ (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | มีการเผยแพร่ pull request จากสเปซ |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | pull request ที่เอเจนต์เปิดถูก merge |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | บันทึกการประชุมถูกบันทึกไว้ |
+| `space_deleted` | `workspace_id`, `space_id` | สเปซถูกลบ |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | ตั๋วงานเปลี่ยนสถานะ |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | ตั๋วงานถูกมอบหมาย |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | ตั๋วงานถูกย้ายไปยังเอเจนต์อื่น |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | งานที่มอบหมายบนตั๋วงานสิ้นสุด |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | สมาชิกภาพของเวิร์กสเปซเปลี่ยนแปลง |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | ริกถูกปิด หรือถูกเก็บกวาด |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | สกิลของเวิร์กสเปซถูกติดตั้ง อัปเดต หรือเปลี่ยนแปลงบนดิสก์ |
+| `calendar_auth_expired` | `workspace_id` | การเชื่อมต่อปฏิทินต้องลงชื่อเข้าใช้ใหม่ |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | กิจกรรมในปฏิทินกำลังจะเริ่ม |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | การใช้จ่ายข้ามเกณฑ์งบประมาณ |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | มีการขอรีวิวบน PR ที่ติดตามอยู่ |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | ผลการตัดสินรีวิวของ PR ที่ติดตามอยู่เปลี่ยนไป |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | PR ที่ไม่ได้เปิดโดยเอเจนต์ถูก merge ในรีโพซิทอรีที่เชื่อมไว้ |
+
+## การส่งข้อมูล
+
+เหตุการณ์จะถูกส่งทีละรายการไปยัง `<host>/api/send` จากคิวในหน่วยความจำที่จุได้สูงสุด 200 เหตุการณ์ ข้อผิดพลาดเครือข่าย การหมดเวลา `429` หรือ `5xx` จะเก็บเหตุการณ์ไว้และลองใหม่ด้วย exponential backoff ตั้งแต่ 1 วินาทีไปจนถึง 5 นาที ส่วน `4xx` อื่นๆ จะทิ้งเหตุการณ์นั้น ไม่มีสิ่งใดถูกเขียนลงดิสก์ เหตุการณ์ที่ยังค้างอยู่ในคิวตอนปิดแอปจึงสูญหาย คิวจะถูกส่งออกจนหมดเมื่อแอปเข้าสู่เบื้องหลังและเมื่อเซิร์ฟเวอร์ปิดตัว
+
+## ชี้บิลด์ไปยังอินสแตนซ์อื่น
+
+ปลายทางถูกกำหนดตายตัวตอนบิลด์
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+อะแดปเตอร์ของผู้ให้บริการอยู่ใน `packages/cc_analytics` การรองรับบริการวิเคราะห์อื่นหมายถึงการเพิ่มอะแดปเตอร์ไว้ที่นั่น แผนการติดตามและกฎความเป็นส่วนตัวยังคงเหมือนเดิม

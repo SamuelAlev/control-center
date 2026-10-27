@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "نقشهٔ مسیرها",
   "docs.sidebar.referenceCcServerCli": "CLI مربوط به cc_server",
   "docs.sidebar.referenceBackup": "پشتیبان‌گیری، برون‌بری و درون‌بری",
+  "docs.sidebar.referenceTelemetry": "تحلیل‌های استفاده",
   "docs.sidebar.referenceGlossary": "واژه‌نامه"
 }

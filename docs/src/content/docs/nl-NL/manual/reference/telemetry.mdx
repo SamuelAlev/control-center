@@ -1,0 +1,160 @@
+---
+title: Gebruiksstatistieken
+description: Wat Control Center vastlegt als gebruiksstatistieken aan staan, wie dat bepaalt en wat nooit wordt verzonden.
+slug: nl-NL/handleiding/referentie/gebruiksstatistieken
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center kan **gepseudonimiseerde gebruiksgebeurtenissen** naar een [Umami](https://umami.is)-instantie sturen. Gebruiksstatistieken staan **uit totdat de serverbeheerder ze aanzet**. De instelling hoort bij de server en geldt voor elke client die ermee verbonden is: de desktopapp, de webapp, de telefoon en de server zelf.
+
+Gebruiksstatistieken staan los van **Crashrapporten delen**, een instelling per apparaat voor diagnostiek van crashes en fouten.
+
+## Wie bepaalt het
+
+| Schakelaar | Waar | Effect |
+| --- | --- | --- |
+| **Gebruiksstatistieken delen** | Onboarding (de sandboxstap) en **Instellingen → Privacy**. Alleen de serverbeheerder kan hem wijzigen; andere leden zien de huidige waarde alleen-lezen | Voor de hele server. Opgeslagen als `telemetry.usage_analytics` in de serverinstellingen. Uit, tenzij ingesteld op `true` |
+| Buildtype | Automatisch | Debug- en profile-builds verzenden niets. Ze schrijven elke gebeurtenis in plaats daarvan naar het debuglog |
+| `CC_ANALYTICS_DEBUG=1` | Omgeving van `cc_server` of de bijbehorende `.env` | Laat debug- en profile-builds van de server, en van elke client die ermee verbonden is, om te testen echt verzenden. De schakelaar hierboven moet nog steeds aan staan |
+| `DO_NOT_TRACK=1` | Omgeving van `cc_server` | Stopt de rapportage van de server zelf, wat de schakelaar ook zegt. Clients volgen de schakelaar nog steeds |
+| Demoserver | Automatisch | De openbare demoserver verzendt zelf niets. Bezoekers kunnen de schakelaar niet wijzigen |
+
+Clients lezen de instelling van de server (`telemetry.config`, daarna live via `telemetry.watch`). Totdat het antwoord binnen is, wachten gebeurtenissen in een kleine buffer in het geheugen. Is het antwoord nee, dan wordt de buffer weggegooid. Zet je de schakelaar uit, dan wordt alles wat nog in de wachtrij staat weggegooid en stopt het verzenden direct, op elke client.
+
+## Wat nooit wordt verzonden
+
+- De inhoud van berichten, tickets, reviews of vergaderingen, titels, prompts, shellopdrachten en zoekopdrachten
+- Namen, logins, e-mailadressen, avatars en weergavenamen
+- Bestandspaden, repositorynamen, branchnamen, hostnamen en URL's (een repository wordt alleen als gepseudonimiseerde `repo_id` verzonden, een vergaderlink alleen als de naam van de aanbieder)
+- Ruwe identificatoren van welke soort dan ook
+
+Elke gebeurtenis gaat door een eigenschappenbeleid voordat ze het proces verlaat. Tekst, paden, URL's, e-mailadressen, niet-ingepakte ID's en strings onder sleutels als `email`, `*_name`, `path`, `title`, `prompt`, `content` of `token` worden weggegooid in plaats van verzonden. Een string wordt alleen verzonden als het een kort token uit een gesloten vocabulaire is, zoals een enumwaarde, een versie, een locale of een model-ID.
+
+## Gepseudonimiseerde ID's
+
+ID's worden verzonden, maar alleen als pseudoniem. Elk ID van een werkruimte, ruimte, gesprek, agent, run, gebruiker en apparaat wordt vervangen door een HMAC-SHA256 met de eigen geheime salt van de installatie (`telemetry.pseudonym_salt`), ingekort tot 20 hexadecimale tekens. Dezelfde werkruimte geeft altijd dezelfde waarde door, zodat gebeurtenissen gekoppeld en geteld kunnen worden, maar het ruwe ID verlaat de installatie nooit. De salt wordt bij de eerste start van de server aangemaakt en nooit naar de statistiekenleverancier verzonden. Verwijder je de datadirectory van de server, dan ontstaan een nieuwe salt en een nieuw installatie-ID, waardoor alles wat eerder is vastgelegd niet meer te koppelen is.
+
+## Eigenschappen bij elke gebeurtenis
+
+| Eigenschap | Voorbeeld | Betekenis |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (de telefoon) of `server`. Wordt ook als hostnaam in Umami gebruikt |
+| `app_version` | `0.0.11` | Releaseversie |
+| `app_build` | `4baf980` | Korte git-commit van de build |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` of het besturingssysteem van de telefoon (`ios`, `android`) |
+| `locale` | `fr_FR` | Taal van de interface |
+| `server_mode` | `local` | `local` (de desktop draait zijn eigen server) of `remote` |
+| `server_version` | `0.0.11` | Versie van de verbonden server, indien bekend |
+| `is_demo` | `false` | Of de client met de openbare demo verbonden is |
+| `install_id` | pseudoniem | De serverinstallatie |
+| `user_id` | pseudoniem | De aangemelde gebruiker, zodra die bekend is |
+| `device_id` | pseudoniem | Het gekoppelde apparaat, zodra dat bekend is. Ook het distinct ID in Umami |
+| `launch_id` | pseudoniem | Eén start van de app, om de gebeurtenissen van een sessie te ordenen |
+| `event_seq` | `12` | Positie van de gebeurtenis binnen de start |
+
+Umami ontvangt daarnaast het IP-adres van het verzoek, waaruit het land en regio afleidt zonder het adres op te slaan, plus de User-Agent en de schermgrootte.
+
+## Schermweergaven
+
+Elke navigatie legt een paginaweergave vast waarvan de URL het **routesjabloon** is, zoals `/workspaces/:workspaceId/spaces/:spaceId`, nooit het concrete adres. De schermnaam bestaat uit de letterlijke segmenten van het sjabloon, dus in dit voorbeeld is dat `workspaces_spaces`. Routeparameters die op `Id` eindigen, worden als gepseudonimiseerde `*_id`-eigenschappen meegestuurd, en numerieke (zoals een PR-nummer) als getallen. Alle andere parameters worden weggegooid.
+
+## Clientgebeurtenissen
+
+Vastgelegd door de desktopapp, de webapp en de telefoon voor dingen die iemand doet.
+
+| Gebeurtenis | Eigenschappen | Vastgelegd wanneer |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | De app is klaar met opstarten en heeft verbinding |
+| `app_backgrounded` | `foreground_s` | Het venster of tabblad is verborgen |
+| `app_foregrounded` | `background_s` | Het is weer zichtbaar |
+| `server_connected` | `reconnect` | De verbinding is na een onderbreking hersteld |
+| `server_disconnected` | | De verbinding is verbroken |
+| `server_switched` | | De gebruiker is naar een andere server overgestapt |
+| `device_paired` | | De telefoon heeft een koppeling bevestigd |
+| `onboarding_step_viewed` | `step`, `step_index` | Een onboardingstap is getoond |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | De onboarding is afgerond |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | De gebruiker heeft een andere werkruimte geopend |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Er is een bericht vanuit een invoerveld verzonden |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | Er is een slash-opdracht aan de clientzijde uitgevoerd. Ingebouwde opdrachten geven hun naam door, skills geven `skill` door en repository-opdrachten geven `custom` door |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | Er is gereageerd op het goedkeuringsverzoek van een agent |
+| `command_palette_opened` | | Het opdrachtenpalet is geopend |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Er is een opdracht uitgevoerd. Opdrachten voor een specifieke PR, een specifiek lid of een specifiek gesprek geven alleen hun soort door (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | Er is een review van een pull request ingediend |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Er is gezocht. De zoekopdracht zelf wordt nooit vastgelegd |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | Een opname van een vergadering is gestart |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | De opname is gestopt |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Het thema of de taal is gewijzigd |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Het klanklandschap is gestart, via de bediening of met de focusmodus |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Het is gestopt |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | De gebruiker heeft een andere sfeer gekozen |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | De focusmodus is gestart |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | De focusmodus is beëindigd, voortijdig of toen de tijd om was |
+| `dictation_started` | | Dicteren in het invoerveld is gestart |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Het dicteren is beëindigd. Alleen de lengte van de transcriptie wordt vastgelegd |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | De app heeft de server gevraagd een pipeline uit te voeren |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Een mislukte run is opnieuw geprobeerd |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Een run is vanuit de app geannuleerd |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Een lopende stap is geforceerd beëindigd |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Een aanmeldpoging bij een agenda is afgerond |
+| `calendar_disconnected` | `workspace_id` | Een agenda-account is ontkoppeld |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Er is op een uitnodiging gereageerd |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Er is een opname gestart vanuit een agenda-afspraak |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Er is een vergaderlink geopend (telefoon). Uit de link wordt alleen de aanbieder afgeleid |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Het meldingencentrum is gebruikt |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Er is een agent aangemaakt vanuit het register |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | Er is een nieuw editortabblad geopend in een ruimte |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | De skills van de werkruimte zijn gewijzigd |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Er is gereageerd op een orkestratievoorstel |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Een plan is goedgekeurd of afgewezen (telefoon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Er is een begeleid doel of een begeleide lus gestart (telefoon) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Er is een gesprek aangemaakt of afgesplitst |
+| `conversation_rewound` | `conversation_id` | Een gesprek is voortgezet vanaf een eerder bericht |
+| `space_archived` | `workspace_id`, `space_id` | Er is een ruimte gearchiveerd |
+
+## Servergebeurtenissen
+
+Vastgelegd door `cc_server` voor feiten die geen enkele client precies één keer ziet. De run van een agent wordt één keer geteld, hoeveel clients er ook meekijken.
+
+| Gebeurtenis | Eigenschappen | Vastgelegd wanneer |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | De server is klaar met opstarten |
+| `workspace_created` | `workspace_id` | Er is een werkruimte aangemaakt |
+| `space_created` | `workspace_id`, `space_id` | Er is een ruimte aangemaakt |
+| `repo_added` | `workspace_id`, `repo_id` | Er is een repository gekoppeld |
+| `ticket_created` | `workspace_id`, `ticket_id` | Een persoon of agent heeft een ticket aangemaakt |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | De run van een agent is afgelopen |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Een agent is gestopt om op iemand te wachten |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Het actiebeleid heeft een actie van een agent geweigerd |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Een pipelinerun is beëindigd. `trigger` is `manual`, het type gebeurtenis dat de run startte, of alleen de soort van een benoemde trigger (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Er is een pull request vanuit een ruimte gepubliceerd |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Een pull request die een agent heeft geopend, is gemerged |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Een opname van een vergadering is opgeslagen |
+| `space_deleted` | `workspace_id`, `space_id` | Er is een ruimte verwijderd |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | De status van een ticket is gewijzigd |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Er is een ticket toegewezen |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Een ticket is naar een andere agent gegaan |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Gedelegeerd werk aan een ticket is afgerond |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Het lidmaatschap van de werkruimte is gewijzigd |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | Een rig is gesloten of opgeruimd |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Een skill van de werkruimte is geïnstalleerd, bijgewerkt of op schijf gewijzigd |
+| `calendar_auth_expired` | `workspace_id` | Een agendakoppeling vereist opnieuw aanmelden |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Een agenda-afspraak begint binnenkort |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | De uitgaven hebben een budgetdrempel overschreden |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | Er is een review aangevraagd voor een gevolgde PR |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | De reviewbeslissing van een gevolgde PR is gewijzigd |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | Een PR die niet door een agent is geopend, is gemerged in een gekoppelde repository |
+
+## Aflevering
+
+Gebeurtenissen worden één voor één naar `<host>/api/send` verzonden vanuit een wachtrij in het geheugen van maximaal 200 gebeurtenissen. Bij een netwerkfout, een time-out, een `429` of een `5xx` blijft de gebeurtenis bewaard en volgt een nieuwe poging met exponentiële backoff, van 1 seconde tot 5 minuten. Elke andere `4xx` gooit haar weg. Er wordt niets naar schijf geschreven, dus gebeurtenissen die nog in de wachtrij staan wanneer de app afsluit, gaan verloren. De wachtrij wordt geleegd wanneer de app naar de achtergrond gaat en wanneer de server afsluit.
+
+## Een build naar een andere instantie laten wijzen
+
+De bestemming ligt vast bij het builden:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+De adapter voor de leverancier staat in `packages/cc_analytics`. Ondersteuning voor een andere statistiekendienst betekent daar een adapter toevoegen. Het trackingplan en de privacyregels blijven hetzelfde.

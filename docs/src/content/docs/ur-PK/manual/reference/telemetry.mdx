@@ -1,0 +1,160 @@
+---
+title: استعمال کے تجزیات
+description: استعمال کے تجزیات آن ہونے پر Control Center کیا ریکارڈ کرتا ہے، فیصلہ کون کرتا ہے، اور کیا کبھی نہیں بھیجا جاتا۔
+slug: ur-PK/ہدایت-نامہ/حوالہ/استعمال-کے-تجزیات
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center ایک [Umami](https://umami.is) انسٹینس کو **فرضی شناخت والے استعمال کے ایونٹس** بھیج سکتا ہے۔ استعمال کے تجزیات **اُس وقت تک بند رہتے ہیں جب تک سرور آپریٹر انہیں آن نہ کرے**۔ یہ سیٹنگ سرور کی ہے اور اُس سے جڑے ہر کلائنٹ پر لاگو ہوتی ہے: ڈیسک ٹاپ ایپ، ویب ایپ، فون اور خود سرور۔
+
+استعمال کے تجزیات **کریش رپورٹس شیئر کریں** سے الگ ہیں، جو کریش اور خرابی کی تشخیص کے لیے فی ڈیوائس سیٹنگ ہے۔
+
+## فیصلہ کون کرتا ہے
+
+| سوئچ | کہاں | اثر |
+| --- | --- | --- |
+| **استعمال کے تجزیات شیئر کریں** | آن بورڈنگ (سینڈ باکس والا مرحلہ) اور **ترتیبات ← پرائیویسی**۔ اسے صرف سرور آپریٹر بدل سکتا ہے؛ دوسرے ممبرز موجودہ ویلیو صرف پڑھنے کے لیے دیکھتے ہیں | پورے سرور پر۔ سرور سیٹنگز میں `telemetry.usage_analytics` کے طور پر محفوظ ہوتی ہے۔ `true` سیٹ نہ ہو تو بند رہتی ہے |
+| بلڈ کی قسم | خودکار | ڈی بگ اور پروفائل بلڈز کچھ نہیں بھیجتے۔ وہ اس کے بجائے ہر ایونٹ ڈی بگ لاگ میں لکھتے ہیں |
+| `CC_ANALYTICS_DEBUG=1` | `cc_server` کا ماحول یا اس کی `.env` | سرور اور اس سے جڑے ہر کلائنٹ کے ڈی بگ اور پروفائل بلڈز کو ٹیسٹنگ کے لیے واقعی بھیجنے دیتا ہے۔ اوپر والا سوئچ پھر بھی آن ہونا ضروری ہے |
+| `DO_NOT_TRACK=1` | `cc_server` کا ماحول | سوئچ کچھ بھی کہے، سرور کی اپنی رپورٹنگ روک دیتا ہے۔ کلائنٹس پھر بھی سوئچ کی پیروی کرتے ہیں |
+| ڈیمو سرور | خودکار | عوامی ڈیمو سرور اپنی طرف سے کچھ نہیں بھیجتا۔ وزٹرز سوئچ نہیں بدل سکتے |
+
+کلائنٹس یہ سیٹنگ سرور سے پڑھتے ہیں (`telemetry.config`، پھر `telemetry.watch` کے ذریعے لائیو)۔ جواب آنے تک ایونٹس میموری کے ایک چھوٹے بفر میں انتظار کرتے ہیں۔ اگر جواب نہیں ہو تو بفر ضائع کر دیا جاتا ہے۔ سوئچ بند کرنے سے قطار میں موجود سب کچھ ضائع ہو جاتا ہے اور ہر کلائنٹ پر بھیجنا فوراً رک جاتا ہے۔
+
+## کیا کبھی نہیں بھیجا جاتا
+
+- میسج، ٹکٹ، ریویو یا میٹنگ کا مواد، عنوانات، پرامپٹس، شیل کمانڈز اور سرچ کوئریز
+- نام، لاگ اِنز، ای میل ایڈریسز، اوتار اور ڈسپلے نام
+- فائل پاتھس، ریپوزٹری کے نام، برانچ کے نام، ہوسٹ نیمز اور URLs (ریپوزٹری صرف ایک فرضی `repo_id` کے طور پر بھیجی جاتی ہے؛ میٹنگ لنک صرف اس کے فراہم کنندہ کے طور پر)
+- کسی بھی قسم کے خام شناخت کنندگان
+
+ہر ایونٹ پروسیس سے نکلنے سے پہلے ایک پراپرٹی پالیسی سے گزرتا ہے۔ متن، پاتھس، URLs، ای میل ایڈریسز، بغیر لپیٹے IDs، اور `email`، `*_name`، `path`، `title`، `prompt`، `content` یا `token` جیسی کیز کے تحت سٹرنگز بھیجنے کے بجائے ہٹا دی جاتی ہیں۔ کوئی سٹرنگ صرف اُس وقت بھیجی جاتی ہے جب وہ کسی بند ذخیرۂ الفاظ کا مختصر ٹوکن ہو، جیسے enum ویلیو، ورژن، لوکیل یا ماڈل ID۔
+
+## فرضی IDs
+
+IDs بھیجی جاتی ہیں، مگر صرف فرضی ناموں کی صورت میں۔ ہر ورک اسپیس، اسپیس، گفتگو، ایجنٹ، رن، یوزر اور ڈیوائس کی ID کو انسٹال کے اپنے خفیہ سالٹ (`telemetry.pseudonym_salt`) کے ساتھ HMAC-SHA256 سے بدل دیا جاتا ہے، جسے 20 ہیکس حروف تک مختصر کیا جاتا ہے۔ ایک ہی ورک اسپیس ہمیشہ ایک ہی ویلیو رپورٹ کرتی ہے، اس لیے ایونٹس کو جوڑا اور گنا جا سکتا ہے، لیکن خام ID کبھی انسٹال سے باہر نہیں جاتی۔ سالٹ سرور کے پہلی بار شروع ہونے پر بنتا ہے اور کبھی تجزیاتی فراہم کنندہ کو نہیں بھیجا جاتا۔ سرور کی ڈیٹا ڈائریکٹری حذف کرنے سے نیا سالٹ اور نئی انسٹال ID بنتی ہے، جس سے پہلے ریکارڈ ہونے والی ہر چیز کا ربط ٹوٹ جاتا ہے۔
+
+## ہر ایونٹ کی پراپرٹیز
+
+| پراپرٹی | مثال | مطلب |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`، `web`، `remote` (فون) یا `server`۔ Umami میں ہوسٹ نیم کے طور پر بھی استعمال ہوتی ہے |
+| `app_version` | `0.0.11` | ریلیز ورژن |
+| `app_build` | `4baf980` | بلڈ کا مختصر git کمٹ |
+| `platform` | `macos` | `macos`، `windows`، `linux`، `web`، یا فون کا OS (`ios`، `android`) |
+| `locale` | `fr_FR` | UI کی زبان |
+| `server_mode` | `local` | `local` (ڈیسک ٹاپ اپنا سرور چلا رہا ہے) یا `remote` |
+| `server_version` | `0.0.11` | جڑے ہوئے سرور کا ورژن، جب معلوم ہو |
+| `is_demo` | `false` | کیا کلائنٹ عوامی ڈیمو سے جڑا ہے |
+| `install_id` | فرضی نام | سرور انسٹال |
+| `user_id` | فرضی نام | سائن اِن یوزر، جب معلوم ہو |
+| `device_id` | فرضی نام | پیئر کی گئی ڈیوائس، جب معلوم ہو۔ یہی Umami کی منفرد ID بھی ہے |
+| `launch_id` | فرضی نام | ایپ کا ایک لانچ، سیشن کے ایونٹس کو ترتیب دینے کے لیے |
+| `event_seq` | `12` | لانچ کے اندر ایونٹ کی جگہ |
+
+Umami کو اس کے علاوہ درخواست کا IP ایڈریس ملتا ہے، جس سے وہ ایڈریس محفوظ کیے بغیر ملک اور علاقہ اخذ کرتا ہے، نیز User-Agent اور اسکرین کا سائز۔
+
+## اسکرین ویوز
+
+ہر نیویگیشن ایک پیج ویو ریکارڈ کرتی ہے جس کا URL **روٹ ٹیمپلیٹ** ہوتا ہے، جیسے `/workspaces/:workspaceId/spaces/:spaceId`، کبھی اصل ایڈریس نہیں۔ اسکرین کا نام ٹیمپلیٹ کے لفظی حصوں سے بنتا ہے، اس لیے اس مثال میں یہ `workspaces_spaces` ہے۔ `Id` پر ختم ہونے والے روٹ پیرامیٹرز فرضی `*_id` پراپرٹیز کے طور پر لگائے جاتے ہیں، اور عددی پیرامیٹرز (جیسے PR نمبر) اعداد کے طور پر۔ باقی تمام پیرامیٹرز ہٹا دیے جاتے ہیں۔
+
+## کلائنٹ ایونٹس
+
+ڈیسک ٹاپ ایپ، ویب ایپ اور فون اُن کاموں کے لیے ریکارڈ کرتے ہیں جو کوئی شخص کرتا ہے۔
+
+| ایونٹ | پراپرٹیز | کب ریکارڈ ہوتا ہے |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | ایپ شروع ہو کر کنیکٹ ہو گئی |
+| `app_backgrounded` | `foreground_s` | ونڈو یا ٹیب چھپا دی گئی |
+| `app_foregrounded` | `background_s` | وہ دوبارہ دکھائی گئی |
+| `server_connected` | `reconnect` | کنکشن ٹوٹنے کے بعد واپس آیا |
+| `server_disconnected` | | کنکشن ٹوٹ گیا |
+| `server_switched` | | یوزر نے دوسرے سرور پر سوئچ کیا |
+| `device_paired` | | فون نے پیئرنگ کی تصدیق کی |
+| `onboarding_step_viewed` | `step`، `step_index` | آن بورڈنگ کا کوئی مرحلہ دکھایا گیا |
+| `onboarding_completed` | `duration_s`، `step_count`، `workspace_id` | آن بورڈنگ مکمل ہوئی |
+| `workspace_switched` | `workspace_id`، `previous_workspace_id` | یوزر نے دوسری ورک اسپیس کھولی |
+| `message_sent` | `workspace_id`، `space_id`، `conversation_id`، `delivery` (`send`، `steer`، `queued`)، `char_count`، `attachment_count`، `agent_mention_count`، `other_mention_count`، `slash_command` | کسی کمپوزر سے میسج بھیجا گیا |
+| `slash_command_run` | `command`، `workspace_id`، `space_id` | کلائنٹ کی طرف کی کوئی سلیش کمانڈ چلی۔ بلٹ اِن کمانڈز اپنا نام رپورٹ کرتی ہیں، اسکلز `skill`، اور ریپوزٹری کمانڈز `custom` |
+| `approval_decided` | `decision`، `remembered`، `surface`، `action_classes`، `action_class_count`، `severity`، `workspace_id`، `space_id`، `conversation_id` | کسی ایجنٹ کی منظوری کی درخواست کا جواب دیا گیا |
+| `command_palette_opened` | | کمانڈ پیلیٹ کھلا |
+| `command_executed` | `source` (`palette`، `keybinding`)، `command` | کوئی کمانڈ چلی۔ کسی مخصوص PR، ممبر یا گفتگو کی کمانڈز صرف اپنی قسم رپورٹ کرتی ہیں (`pr`، `member`، `conversation`) |
+| `review_submitted` | `verdict`، `comment_count`، `workspace_id` | pull request کا ریویو جمع کرایا گیا |
+| `search_performed` | `scope` (`space_messages`، `repo_content`)، `result_count`، `query_length`، `workspace_id`، `space_id` | سرچ چلی۔ کوئری خود کبھی ریکارڈ نہیں ہوتی |
+| `meeting_recording_started` | `workspace_id`، `meeting_id` | میٹنگ کی ریکارڈنگ شروع ہوئی |
+| `meeting_recording_stopped` | `duration_s`، `workspace_id`، `meeting_id` | وہ رک گئی |
+| `setting_changed` | `setting` (`appearance.theme`، `appearance.locale`)، `value` | تھیم یا زبان بدلی |
+| `soundscape_started` | `mood`، `source` (`user`، `focus`) | ساؤنڈ اسکیپ شروع ہوا، کنٹرولز سے یا فوکس موڈ کے ساتھ |
+| `soundscape_stopped` | `mood`، `source`، `listened_s` | وہ رک گیا |
+| `soundscape_mood_changed` | `from_mood`، `to_mood`، `playing` | یوزر نے کوئی دوسرا موڈ چنا |
+| `focus_mode_started` | `planned_minutes`، `has_goal`، `block_notifications` | فوکس موڈ شروع ہوا |
+| `focus_mode_ended` | `elapsed_s`، `planned_minutes`، `completed` | فوکس موڈ ختم ہوا، وقت سے پہلے یا وقت پورا ہونے پر |
+| `dictation_started` | | کمپوزر میں ڈکٹیشن شروع ہوئی |
+| `dictation_ended` | `outcome` (`completed`، `cancelled`، `failed`)، `duration_s`، `transcript_chars`، `error_kind` | ڈکٹیشن ختم ہوئی۔ صرف ٹرانسکرپٹ کی لمبائی ریکارڈ ہوتی ہے |
+| `pipeline_run_requested` | `workspace_id`، `template_id`، `trigger`، `dry_run`، `started` | ایپ نے سرور سے پائپ لائن چلانے کو کہا |
+| `pipeline_run_retried` | `workspace_id`، `pipeline_run_id` | ناکام رن دوبارہ چلایا گیا |
+| `pipeline_run_cancel_requested` | `workspace_id`، `pipeline_run_id` | ایپ سے کوئی رن منسوخ کیا گیا |
+| `pipeline_step_killed` | `workspace_id`، `step_run_id` | چلتا ہوا کوئی مرحلہ زبردستی روکا گیا |
+| `calendar_connect_finished` | `outcome` (`connected`، `denied`، `expired`، `failed`، `cancelled`)، `builtin_client`، `duration_s` | کیلنڈر میں سائن اِن کی کوشش ختم ہوئی |
+| `calendar_disconnected` | `workspace_id` | کیلنڈر اکاؤنٹ منقطع کیا گیا |
+| `calendar_rsvp_sent` | `calendar_event_id`، `response`، `previous_response`، `workspace_id` | کسی دعوت نامے کا جواب دیا گیا |
+| `calendar_event_recorded` | `workspace_id`، `calendar_event_id` | کیلنڈر ایونٹ سے ریکارڈنگ شروع کی گئی |
+| `calendar_meeting_joined` | `provider` (`meet`، `zoom`، `teams`، `webex`، `other`)، `workspace_id`، `calendar_event_id` | میٹنگ لنک کھولا گیا (فون)۔ لنک سے صرف فراہم کنندہ اخذ کیا جاتا ہے |
+| `notification_action` | `action` (`read`، `unread`، `dismiss`، `mark_all_read`، `clear_all`)، `workspace_id` | نوٹیفکیشن سینٹر استعمال ہوا |
+| `agent_created` | `workspace_id`، `agent_id`، `adapter`، `model` | رجسٹری سے ایجنٹ بنایا گیا |
+| `tab_opened` | `kind` (`chat`، `terminal`، `browser`، `rig`، `codeServer`، `file`، …) | کسی اسپیس میں نیا ایڈیٹر ٹیب کھلا |
+| `skill_action` | `action` (`install`، `update`، `uninstall`، `source_added`، `source_removed`)، `skill_id`، `blocked` | ورک اسپیس کی اسکلز بدلی گئیں |
+| `orchestration_decided` | `decision` (`approved`، `cancelled`)، `workspace_id`، `orchestration_id` | آرکیسٹریشن کی تجویز کا جواب دیا گیا |
+| `plan_decided` | `decision` (`approved`، `rejected`)، `plan_id`، `workspace_id`، `partial`، `node_count` | کوئی پلان منظور یا مسترد کیا گیا (فون) |
+| `goal_started` | `kind` (`goal`، `loop`)، `workspace_id`، `space_id`، `conversation_id`، `agent_id`، `budget_cents`، `accepted` | نگرانی والا کوئی ہدف یا لوپ شروع کیا گیا (فون) |
+| `conversation_created` | `workspace_id`، `space_id`، `conversation_id`، `source` (`new`، `fork`) | گفتگو بنائی گئی یا اس کی شاخ نکالی گئی |
+| `conversation_rewound` | `conversation_id` | گفتگو کو کسی پچھلے میسج سے آگے بڑھایا گیا |
+| `space_archived` | `workspace_id`، `space_id` | اسپیس آرکائیو کی گئی |
+
+## سرور ایونٹس
+
+`cc_server` اُن حقائق کے لیے ریکارڈ کرتا ہے جنہیں کوئی ایک کلائنٹ ٹھیک ایک بار نہیں دیکھتا۔ کسی ایجنٹ کا رن ایک ہی بار گنا جاتا ہے، چاہے کتنے ہی کلائنٹس اسے دیکھ رہے ہوں۔
+
+| ایونٹ | پراپرٹیز | کب ریکارڈ ہوتا ہے |
+| --- | --- | --- |
+| `server_started` | `workspace_count`، `startup_ms` | سرور بوٹ ہو چکا |
+| `workspace_created` | `workspace_id` | ورک اسپیس بنائی گئی |
+| `space_created` | `workspace_id`، `space_id` | اسپیس بنائی گئی |
+| `repo_added` | `workspace_id`، `repo_id` | ریپوزٹری لنک کی گئی |
+| `ticket_created` | `workspace_id`، `ticket_id` | کسی شخص یا ایجنٹ نے ٹکٹ بنایا |
+| `agent_run_completed` | `agent_id`، `workspace_id`، `conversation_id`، `run_id`، `status`، `error_family`، `role`، `adapter`، `model`، `effort`، `task_family`، `subagent`، `pipeline`، `resumed_native_session`، `duration_ms`، `time_to_first_token_ms`، `input_tokens`، `output_tokens`، `thought_tokens`، `cache_read_tokens`، `cache_write_tokens`، `output_rejections`، `cost_usd` | ایجنٹ کا رن مکمل ہوا |
+| `agent_awaiting_input` | `kind` (`approval`، `question`، `credential`)، `workspace_id`، `agent_id`، `conversation_id` | کوئی ایجنٹ کسی شخص کے انتظار میں رکا |
+| `agent_action_blocked` | `workspace_id`، `agent_id`، `space_id`، `source` | ایکشن پالیسی نے کسی ایجنٹ کا ایکشن رد کیا |
+| `pipeline_run_finished` | `outcome` (`completed`، `failed`، `cancelled`)، `workspace_id`، `pipeline_run_id`، `template_id`، `trigger`، `duration_ms`، `active_ms`، `attempt_count`، `template_version`، `cost_cents`، `tokens`، `dry_run`، `sub_pipeline` | پائپ لائن رن ختم ہوا۔ `trigger` یا تو `manual` ہوتا ہے، یا وہ ایونٹ ٹائپ جس نے رن شروع کیا، یا کسی نام والے ٹرگر کی صرف قسم (`webhook`) |
+| `pull_request_published` | `workspace_id`، `pr_id` | کسی اسپیس سے pull request شائع کی گئی |
+| `pull_request_merged` | `workspace_id`، `pr_id`، `agent_id` | کسی ایجنٹ کی کھولی ہوئی pull request مرج ہوئی |
+| `meeting_recorded` | `workspace_id`، `meeting_id`، `transcript_chars` | میٹنگ کی ریکارڈنگ محفوظ ہوئی |
+| `space_deleted` | `workspace_id`، `space_id` | اسپیس حذف کی گئی |
+| `ticket_status_changed` | `workspace_id`، `ticket_id`، `from_status`، `to_status` | ٹکٹ کا اسٹیٹس بدلا |
+| `ticket_assigned` | `workspace_id`، `ticket_id`، `assignee_type`، `agent_id`، `team_id` | ٹکٹ تفویض کیا گیا |
+| `ticket_reassigned` | `workspace_id`، `ticket_id`، `from_agent_id`، `to_agent_id` | ٹکٹ کسی دوسرے ایجنٹ کو منتقل ہوا |
+| `ticket_work_finished` | `ticket_id`، `outcome` (`completed`، `failed`، `cancelled`) | ٹکٹ پر تفویض کردہ کام ختم ہوا |
+| `workspace_member_changed` | `workspace_id`، `member_user_id`، `change` (`added`، `removed`، `role_changed`)، `role` | ورک اسپیس کی ممبرشپ بدلی |
+| `rig_closed` | `workspace_id`، `rig_id`، `reason`، `reaped`، `agent_id` | کوئی رگ بند ہوا، یا خودکار طور پر صاف کیا گیا |
+| `skill_updated` | `workspace_id`، `skill_id`، `origin`، `scan_verdict` | ورک اسپیس کی کوئی اسکل انسٹال، اپڈیٹ یا ڈسک پر تبدیل ہوئی |
+| `calendar_auth_expired` | `workspace_id` | کیلنڈر کنکشن کو دوبارہ سائن اِن کی ضرورت ہے |
+| `calendar_meeting_starting_soon` | `workspace_id`، `calendar_event_id`، `has_meeting_link`، `lead_s` | کوئی کیلنڈر ایونٹ شروع ہونے والا ہے |
+| `budget_threshold_crossed` | `scope_type`، `scope_id`، `spent_cents`، `budget_cents`، `hard_stop` | اخراجات بجٹ کی حد سے آگے نکل گئے |
+| `pull_request_review_requested` | `workspace_id`، `repo_id` | کسی ٹریک کیے گئے PR پر ریویو کی درخواست کی گئی |
+| `pull_request_review_decision_changed` | `workspace_id`، `repo_id`، `decision`، `reviewers_remaining` | کسی ٹریک کیے گئے PR کا ریویو فیصلہ بدلا |
+| `external_pull_request_merged` | `workspace_id`، `repo_id` | لنک کی گئی ریپوزٹری میں ایسی PR مرج ہوئی جو کسی ایجنٹ نے نہیں کھولی تھی |
+
+## ترسیل
+
+ایونٹس زیادہ سے زیادہ 200 ایونٹس کی میموری قطار سے ایک ایک کر کے `<host>/api/send` پر بھیجے جاتے ہیں۔ نیٹ ورک کی خرابی، ٹائم آؤٹ، `429` یا `5xx` پر ایونٹ رکھ لیا جاتا ہے اور 1 سیکنڈ سے 5 منٹ تک ایکسپونینشل بیک آف کے ساتھ دوبارہ کوشش کی جاتی ہے۔ کوئی بھی دوسرا `4xx` اسے ہٹا دیتا ہے۔ ڈسک پر کچھ نہیں لکھا جاتا، اس لیے ایپ بند ہوتے وقت قطار میں موجود ایونٹس ضائع ہو جاتے ہیں۔ ایپ کے بیک گراؤنڈ میں جانے اور سرور کے بند ہونے پر قطار خالی کر دی جاتی ہے۔
+
+## کسی بلڈ کو دوسرے انسٹینس کی طرف موڑنا
+
+منزل بلڈ کے وقت طے ہو جاتی ہے:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+فراہم کنندہ کا اڈاپٹر `packages/cc_analytics` میں ہے۔ کسی دوسری تجزیاتی سروس کی سپورٹ کا مطلب وہاں ایک اڈاپٹر شامل کرنا ہے۔ ٹریکنگ پلان اور پرائیویسی کے اصول وہی رہتے ہیں۔

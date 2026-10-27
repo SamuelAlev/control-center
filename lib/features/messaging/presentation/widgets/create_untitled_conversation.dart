@@ -1,3 +1,5 @@
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,5 +24,13 @@ Future<String?> createUntitledConversation(
   final conv = await ref
       .read(conversationRepositoryProvider)
       .create(workspaceId: workspaceId, spaceId: spaceId, title: '');
+  ref.track(
+    AnalyticsEvents.conversationCreated(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      conversationId: conv.id,
+      source: 'new',
+    ),
+  );
   return conv.id;
 }

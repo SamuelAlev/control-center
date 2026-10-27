@@ -119,6 +119,10 @@ void main() {
       'fleet.workerEvents', 'fleet.workerHeartbeat', 'fleet.workerPoll',
       // Local host utilities (fullClient-capability-gated where mutating).
       'fs.browseDirectory', 'process.kill', 'acp.listModels',
+      // The install's usage-analytics decision: every client must read it to
+      // know whether it may collect. Carries no workspace or user data; the
+      // switch itself (`telemetry.setUsageAnalytics`) is serverOwner.
+      'telemetry.config',
     };
 
     final offenders = <String>[];
@@ -266,6 +270,9 @@ void main() {
       'pairing.watchOwn',
       'pipeline_run.watchAll',
       'prefs.watchOwn',
+      // Not user data at all: the install's usage-analytics decision, which
+      // every client follows (see `telemetry.config` above).
+      'telemetry.watch',
       'users.watchAll',
       'workspace.watchAll',
     };

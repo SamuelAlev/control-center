@@ -1,0 +1,160 @@
+---
+title: 使用情況分析
+description: 開啟使用情況分析後 Control Center 會記錄哪些資料、由誰決定，以及哪些內容永遠不會傳送。
+slug: zh-TW/手冊/參考/使用情況分析
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center 可以將**假名化的使用事件**傳送到一個 [Umami](https://umami.is) 執行個體。使用情況分析**預設關閉，直到伺服器營運者將它開啟**。這項設定屬於伺服器，並套用於連線到它的每一個用戶端：桌面應用程式、Web 應用程式、手機，以及伺服器本身。
+
+使用情況分析與**分享當機報告**彼此獨立；後者是針對單一裝置的當機與錯誤診斷設定。
+
+## 由誰決定
+
+| 開關 | 位置 | 效果 |
+| --- | --- | --- |
+| **分享使用情況分析** | 新手引導（沙箱步驟）與**設定 → 隱私**。只有伺服器營運者可以變更；其他成員只能以唯讀方式看到目前的值 | 套用於整個伺服器。以 `telemetry.usage_analytics` 儲存在伺服器設定中。除非設為 `true`，否則保持關閉 |
+| 組建類型 | 自動 | debug 與 profile 組建不會傳送，而是把每個事件寫入偵錯記錄 |
+| `CC_ANALYTICS_DEBUG=1` | `cc_server` 的環境或其 `.env` 檔案 | 讓伺服器以及每個連線到它的用戶端的 debug 與 profile 組建真正傳送資料，以便測試。上方的開關仍須開啟 |
+| `DO_NOT_TRACK=1` | `cc_server` 的環境 | 不論開關為何，都會停止伺服器本身的回報。用戶端仍會遵循該開關 |
+| 示範伺服器 | 自動 | 公開的示範伺服器不會以自身名義傳送任何內容。訪客無法變更該開關 |
+
+用戶端會從伺服器讀取這項設定（先透過 `telemetry.config`，之後透過 `telemetry.watch` 即時取得）。在收到答覆之前，事件會在一個小型的記憶體緩衝區中等候。若答覆為否，緩衝區就會被捨棄。關閉開關會捨棄所有仍在佇列中的內容，並立即在每個用戶端上停止傳送。
+
+## 永遠不會傳送的內容
+
+- 訊息、工單、審查或會議的內容、標題、提示詞、shell 指令與搜尋查詢
+- 姓名、登入名稱、電子郵件地址、大頭貼與顯示名稱
+- 檔案路徑、儲存庫名稱、分支名稱、主機名稱與 URL（儲存庫只以假名化的 `repo_id` 傳送；會議連結只以其供應商傳送）
+- 任何形式的原始識別碼
+
+每個事件在離開行程之前都會先經過一套屬性政策。文字、路徑、URL、電子郵件地址、未經包裝的 ID，以及 `email`、`*_name`、`path`、`title`、`prompt`、`content` 或 `token` 等鍵底下的字串都會被捨棄，而不是傳送出去。只有來自封閉詞彙表的簡短代號才會以字串傳送，例如列舉值、版本、地區設定或模型 ID。
+
+## 假名化 ID
+
+ID 會被傳送，但只以假名的形式。每一個工作區、空間、對話、代理、執行、使用者與裝置的 ID，都會被替換成以該安裝本身的秘密鹽值（`telemetry.pseudonym_salt`）計算出的 HMAC-SHA256，並截斷為 20 個十六進位字元。同一個工作區一律回報相同的值，因此事件可以彼此關聯並加以計數，但原始 ID 永遠不會離開該安裝。鹽值在伺服器首次啟動時建立，且從不傳送給分析服務供應商。刪除伺服器的資料目錄會產生新的鹽值與安裝 ID，與先前記錄的一切從此失去關聯。
+
+## 每個事件都帶有的屬性
+
+| 屬性 | 範例 | 意義 |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`、`web`、`remote`（手機）或 `server`。也用作 Umami 中的主機名稱 |
+| `app_version` | `0.0.11` | 發行版本 |
+| `app_build` | `4baf980` | 該組建的 git 短提交 |
+| `platform` | `macos` | `macos`、`windows`、`linux`、`web`，或手機的作業系統（`ios`、`android`） |
+| `locale` | `fr_FR` | 介面語言 |
+| `server_mode` | `local` | `local`（桌面版執行自己的伺服器）或 `remote` |
+| `server_version` | `0.0.11` | 已連線伺服器的版本（若已知） |
+| `is_demo` | `false` | 用戶端是否連線到公開示範 |
+| `install_id` | 假名 | 伺服器安裝 |
+| `user_id` | 假名 | 已登入的使用者（得知後） |
+| `device_id` | 假名 | 已配對的裝置（得知後）。也是 Umami 中的唯一 ID |
+| `launch_id` | 假名 | 一次應用程式啟動，用於排序一個工作階段的事件 |
+| `event_seq` | `12` | 事件在這次啟動中的順序 |
+
+此外，Umami 還會收到請求的 IP 位址（它會據此推斷國家與地區，但不儲存位址本身），以及 User-Agent 與螢幕尺寸。
+
+## 畫面瀏覽
+
+每次導覽都會記錄一次頁面瀏覽，其 URL 是**路由範本**，例如 `/workspaces/:workspaceId/spaces/:spaceId`，而不是實際的位址。畫面名稱由範本的字面片段組成，因此上例為 `workspaces_spaces`。以 `Id` 結尾的路由參數會以假名化的 `*_id` 屬性附加，數字參數（例如 PR 編號）則以數字附加。其他參數一律捨棄。
+
+## 用戶端事件
+
+由桌面應用程式、Web 應用程式與手機針對使用者所做的操作記錄。
+
+| 事件 | 屬性 | 記錄時機 |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | 應用程式完成啟動並已連線 |
+| `app_backgrounded` | `foreground_s` | 視窗或分頁被隱藏 |
+| `app_foregrounded` | `background_s` | 再次顯示 |
+| `server_connected` | `reconnect` | 連線中斷後恢復 |
+| `server_disconnected` | | 連線中斷 |
+| `server_switched` | | 使用者切換到另一台伺服器 |
+| `device_paired` | | 手機確認了配對 |
+| `onboarding_step_viewed` | `step`、`step_index` | 顯示了一個新手引導步驟 |
+| `onboarding_completed` | `duration_s`、`step_count`、`workspace_id` | 新手引導完成 |
+| `workspace_switched` | `workspace_id`、`previous_workspace_id` | 使用者開啟了另一個工作區 |
+| `message_sent` | `workspace_id`、`space_id`、`conversation_id`、`delivery`（`send`、`steer`、`queued`）、`char_count`、`attachment_count`、`agent_mention_count`、`other_mention_count`、`slash_command` | 從撰寫框傳送了一則訊息 |
+| `slash_command_run` | `command`、`workspace_id`、`space_id` | 執行了一個用戶端斜線指令。內建指令回報其名稱，技能回報 `skill`，儲存庫指令回報 `custom` |
+| `approval_decided` | `decision`、`remembered`、`surface`、`action_classes`、`action_class_count`、`severity`、`workspace_id`、`space_id`、`conversation_id` | 代理的核准請求獲得答覆 |
+| `command_palette_opened` | | 開啟了命令面板 |
+| `command_executed` | `source`（`palette`、`keybinding`）、`command` | 執行了一個指令。針對特定 PR、成員或對話的指令只回報其類別（`pr`、`member`、`conversation`） |
+| `review_submitted` | `verdict`、`comment_count`、`workspace_id` | 提交了一份 Pull request 審查 |
+| `search_performed` | `scope`（`space_messages`、`repo_content`）、`result_count`、`query_length`、`workspace_id`、`space_id` | 執行了一次搜尋。查詢內容本身永遠不會記錄 |
+| `meeting_recording_started` | `workspace_id`、`meeting_id` | 會議錄製開始 |
+| `meeting_recording_stopped` | `duration_s`、`workspace_id`、`meeting_id` | 錄製停止 |
+| `setting_changed` | `setting`（`appearance.theme`、`appearance.locale`）、`value` | 主題或語言變更 |
+| `soundscape_started` | `mood`、`source`（`user`、`focus`） | 音景開始播放，來自控制項或隨專注模式啟動 |
+| `soundscape_stopped` | `mood`、`source`、`listened_s` | 停止播放 |
+| `soundscape_mood_changed` | `from_mood`、`to_mood`、`playing` | 使用者選了另一種氛圍 |
+| `focus_mode_started` | `planned_minutes`、`has_goal`、`block_notifications` | 專注模式開始 |
+| `focus_mode_ended` | `elapsed_s`、`planned_minutes`、`completed` | 專注模式結束，提前結束或時間用完 |
+| `dictation_started` | | 撰寫框中的聽寫開始 |
+| `dictation_ended` | `outcome`（`completed`、`cancelled`、`failed`）、`duration_s`、`transcript_chars`、`error_kind` | 聽寫結束。只記錄逐字稿的長度 |
+| `pipeline_run_requested` | `workspace_id`、`template_id`、`trigger`、`dry_run`、`started` | 應用程式要求伺服器執行一條管線 |
+| `pipeline_run_retried` | `workspace_id`、`pipeline_run_id` | 重試了一次失敗的執行 |
+| `pipeline_run_cancel_requested` | `workspace_id`、`pipeline_run_id` | 從應用程式取消了一次執行 |
+| `pipeline_step_killed` | `workspace_id`、`step_run_id` | 強制終止了一個執行中的步驟 |
+| `calendar_connect_finished` | `outcome`（`connected`、`denied`、`expired`、`failed`、`cancelled`）、`builtin_client`、`duration_s` | 一次日曆登入嘗試結束 |
+| `calendar_disconnected` | `workspace_id` | 中斷了一個日曆帳號的連線 |
+| `calendar_rsvp_sent` | `calendar_event_id`、`response`、`previous_response`、`workspace_id` | 回覆了一個邀請 |
+| `calendar_event_recorded` | `workspace_id`、`calendar_event_id` | 從日曆活動開始了一次錄製 |
+| `calendar_meeting_joined` | `provider`（`meet`、`zoom`、`teams`、`webex`、`other`）、`workspace_id`、`calendar_event_id` | 開啟了會議連結（手機）。只從連結推斷供應商 |
+| `notification_action` | `action`（`read`、`unread`、`dismiss`、`mark_all_read`、`clear_all`）、`workspace_id` | 使用了通知中心 |
+| `agent_created` | `workspace_id`、`agent_id`、`adapter`、`model` | 從登錄檔建立了一個代理 |
+| `tab_opened` | `kind`（`chat`、`terminal`、`browser`、`rig`、`codeServer`、`file`、…） | 在空間中開啟了一個新的編輯器分頁 |
+| `skill_action` | `action`（`install`、`update`、`uninstall`、`source_added`、`source_removed`）、`skill_id`、`blocked` | 工作區技能有所變更 |
+| `orchestration_decided` | `decision`（`approved`、`cancelled`）、`workspace_id`、`orchestration_id` | 回覆了一個編排提案 |
+| `plan_decided` | `decision`（`approved`、`rejected`）、`plan_id`、`workspace_id`、`partial`、`node_count` | 核准或拒絕了一個計畫（手機） |
+| `goal_started` | `kind`（`goal`、`loop`）、`workspace_id`、`space_id`、`conversation_id`、`agent_id`、`budget_cents`、`accepted` | 啟動了一個受監督的目標或迴圈（手機） |
+| `conversation_created` | `workspace_id`、`space_id`、`conversation_id`、`source`（`new`、`fork`） | 建立或分岔了一個對話 |
+| `conversation_rewound` | `conversation_id` | 從較早的一則訊息繼續了對話 |
+| `space_archived` | `workspace_id`、`space_id` | 封存了一個空間 |
+
+## 伺服器事件
+
+由 `cc_server` 記錄，針對沒有任何單一用戶端會恰好看到一次的事實。代理的一次執行只計算一次，不論有多少用戶端在觀看。
+
+| 事件 | 屬性 | 記錄時機 |
+| --- | --- | --- |
+| `server_started` | `workspace_count`、`startup_ms` | 伺服器完成開機 |
+| `workspace_created` | `workspace_id` | 建立了一個工作區 |
+| `space_created` | `workspace_id`、`space_id` | 建立了一個空間 |
+| `repo_added` | `workspace_id`、`repo_id` | 連結了一個儲存庫 |
+| `ticket_created` | `workspace_id`、`ticket_id` | 有人或代理建立了工單 |
+| `agent_run_completed` | `agent_id`、`workspace_id`、`conversation_id`、`run_id`、`status`、`error_family`、`role`、`adapter`、`model`、`effort`、`task_family`、`subagent`、`pipeline`、`resumed_native_session`、`duration_ms`、`time_to_first_token_ms`、`input_tokens`、`output_tokens`、`thought_tokens`、`cache_read_tokens`、`cache_write_tokens`、`output_rejections`、`cost_usd` | 代理執行結束 |
+| `agent_awaiting_input` | `kind`（`approval`、`question`、`credential`）、`workspace_id`、`agent_id`、`conversation_id` | 代理停下來等候有人處理 |
+| `agent_action_blocked` | `workspace_id`、`agent_id`、`space_id`、`source` | 動作政策拒絕了代理的某個動作 |
+| `pipeline_run_finished` | `outcome`（`completed`、`failed`、`cancelled`）、`workspace_id`、`pipeline_run_id`、`template_id`、`trigger`、`duration_ms`、`active_ms`、`attempt_count`、`template_version`、`cost_cents`、`tokens`、`dry_run`、`sub_pipeline` | 一次管線執行結束。`trigger` 為 `manual`、啟動該執行的事件類型，或僅為具名觸發條件的類別（`webhook`） |
+| `pull_request_published` | `workspace_id`、`pr_id` | 從空間發布了一個 Pull request |
+| `pull_request_merged` | `workspace_id`、`pr_id`、`agent_id` | 代理開啟的 Pull request 已合併 |
+| `meeting_recorded` | `workspace_id`、`meeting_id`、`transcript_chars` | 儲存了一段會議錄製 |
+| `space_deleted` | `workspace_id`、`space_id` | 刪除了一個空間 |
+| `ticket_status_changed` | `workspace_id`、`ticket_id`、`from_status`、`to_status` | 工單狀態變更 |
+| `ticket_assigned` | `workspace_id`、`ticket_id`、`assignee_type`、`agent_id`、`team_id` | 工單已指派 |
+| `ticket_reassigned` | `workspace_id`、`ticket_id`、`from_agent_id`、`to_agent_id` | 工單轉給了另一個代理 |
+| `ticket_work_finished` | `ticket_id`、`outcome`（`completed`、`failed`、`cancelled`） | 工單上委派的工作結束 |
+| `workspace_member_changed` | `workspace_id`、`member_user_id`、`change`（`added`、`removed`、`role_changed`）、`role` | 工作區成員有所變更 |
+| `rig_closed` | `workspace_id`、`rig_id`、`reason`、`reaped`、`agent_id` | 機台已關閉，或已被回收 |
+| `skill_updated` | `workspace_id`、`skill_id`、`origin`、`scan_verdict` | 工作區技能已安裝、更新或在磁碟上變更 |
+| `calendar_auth_expired` | `workspace_id` | 日曆連線需要重新登入 |
+| `calendar_meeting_starting_soon` | `workspace_id`、`calendar_event_id`、`has_meeting_link`、`lead_s` | 日曆活動即將開始 |
+| `budget_threshold_crossed` | `scope_type`、`scope_id`、`spent_cents`、`budget_cents`、`hard_stop` | 支出越過了預算門檻 |
+| `pull_request_review_requested` | `workspace_id`、`repo_id` | 在追蹤中的 PR 上請求了審查 |
+| `pull_request_review_decision_changed` | `workspace_id`、`repo_id`、`decision`、`reviewers_remaining` | 追蹤中 PR 的審查決定變更 |
+| `external_pull_request_merged` | `workspace_id`、`repo_id` | 已連結儲存庫中一個並非由代理開啟的 PR 已合併 |
+
+## 傳送
+
+事件會從一個最多容納 200 個事件的記憶體佇列中逐一傳送到 `<host>/api/send`。遇到網路錯誤、逾時、`429` 或 `5xx` 時會保留事件，並以指數退避重試，間隔從 1 秒逐步增加到 5 分鐘。其他任何 `4xx` 都會捨棄該事件。不會有任何內容寫入磁碟，因此應用程式結束時仍在佇列中的事件會遺失。應用程式轉入背景以及伺服器關閉時，佇列會全數送出。
+
+## 讓組建指向另一個執行個體
+
+目的地在組建時就已固定：
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+供應商轉接器位於 `packages/cc_analytics`。要支援其他分析服務，就是在那裡新增一個轉接器。追蹤計畫與隱私規則維持不變。

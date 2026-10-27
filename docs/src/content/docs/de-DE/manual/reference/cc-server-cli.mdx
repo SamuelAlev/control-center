@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Jedes Flag, jede Umgebungsvariable, jeder Unterbefehl und jeder Pfad im Datenverzeichnis des Headless-Servers.
 slug: de-DE/handbuch/referenz/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Jedes Prozess-Flag lässt sich als CLI-Flag oder als Umgebungsvariable setzen; das
@@ -176,6 +176,10 @@ steuert das, und der Desktop setzt sie, nicht du:
 
 Setze sie nur selbst, wenn du `cc_server` als Kindprozess beaufsichtigst und
 dieselbe Garantie willst.
+
+`DO_NOT_TRACK=1` (jeder Wert außer leer, `0` oder `false`) stoppt die eigenen
+[Nutzungsanalysen](/de-DE/handbuch/referenz/nutzungsanalysen/) des Servers, auch wenn der serverweite
+Schalter an ist. Clients richten sich weiterhin nach dem Schalter.
 
 ## Aufbau des Datenverzeichnisses
 

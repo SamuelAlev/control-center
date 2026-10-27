@@ -1,0 +1,160 @@
+---
+title: Kullanım analizleri
+description: Kullanım analizleri açıkken Control Center'ın neyi kaydettiği, buna kimin karar verdiği ve neyin asla gönderilmediği.
+slug: tr-TR/kilavuz/referans/kullanim-analizleri
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center, bir [Umami](https://umami.is) örneğine **takma adlı kullanım olayları** gönderebilir. Kullanım analizleri **sunucu operatörü açana kadar kapalıdır**. Ayar sunucuya aittir ve ona bağlı her istemci için geçerlidir: masaüstü uygulaması, web uygulaması, telefon ve sunucunun kendisi.
+
+Kullanım analizleri, çökme ve hata tanıları için cihaz başına bir ayar olan **Çökme raporlarını paylaş** ayarından ayrıdır.
+
+## Kim karar verir
+
+| Anahtar | Nerede | Etkisi |
+| --- | --- | --- |
+| **Kullanım analizlerini paylaş** | İlk kurulum (sandbox adımı) ve **Ayarlar → Gizlilik**. Yalnızca sunucu operatörü değiştirebilir; diğer üyeler geçerli değeri salt okunur olarak görür | Sunucu genelinde. Sunucu ayarlarında `telemetry.usage_analytics` olarak saklanır. `true` olarak ayarlanmadıkça kapalıdır |
+| Derleme türü | Otomatik | Debug ve profile derlemeleri gönderim yapmaz. Bunun yerine her olayı hata ayıklama günlüğüne yazar |
+| `CC_ANALYTICS_DEBUG=1` | `cc_server` ortamı veya onun `.env` dosyası | Sunucunun ve ona bağlı her istemcinin debug ve profile derlemelerinin test amacıyla gerçekten gönderim yapmasını sağlar. Yukarıdaki anahtarın yine de açık olması gerekir |
+| `DO_NOT_TRACK=1` | `cc_server` ortamı | Anahtar ne derse desin sunucunun kendi raporlamasını durdurur. İstemciler anahtarı izlemeye devam eder |
+| Demo sunucusu | Otomatik | Herkese açık demo sunucusu kendi adına hiçbir şey göndermez. Ziyaretçiler anahtarı değiştiremez |
+
+İstemciler ayarı sunucudan okur (`telemetry.config`, ardından `telemetry.watch` ile canlı olarak). Yanıt gelene kadar olaylar bellekteki küçük bir arabellekte bekler. Yanıt hayırsa arabellek atılır. Anahtarı kapatmak, kuyrukta kalan her şeyi atar ve gönderimi her istemcide anında durdurur.
+
+## Asla gönderilmeyenler
+
+- Mesaj, bilet, inceleme veya toplantı içeriği, başlıklar, istemler, kabuk komutları ve arama sorguları
+- Adlar, oturum açma adları, e-posta adresleri, avatarlar ve görünen adlar
+- Dosya yolları, depo adları, dal adları, ana makine adları ve URL'ler (bir depo yalnızca takma adlı bir `repo_id` olarak, bir toplantı bağlantısı yalnızca sağlayıcısı olarak gönderilir)
+- Her türden ham tanımlayıcılar
+
+Her olay süreçten çıkmadan önce bir özellik politikasından geçer. Metinler, yollar, URL'ler, e-posta adresleri, sarmalanmamış kimlikler ve `email`, `*_name`, `path`, `title`, `prompt`, `content` veya `token` gibi anahtarların altındaki dizeler gönderilmek yerine atılır. Bir dize yalnızca kapalı bir sözlükten gelen kısa bir belirteçse gönderilir; örneğin bir enum değeri, bir sürüm, bir yerel ayar ya da bir model kimliği.
+
+## Takma adlı kimlikler
+
+Kimlikler gönderilir, ama yalnızca takma ad olarak. Her çalışma alanı, alan, sohbet, ajan, çalıştırma, kullanıcı ve cihaz kimliği, kurulumun kendine ait gizli tuzuyla (`telemetry.pseudonym_salt`) hesaplanan ve 20 onaltılık karaktere kısaltılan bir HMAC-SHA256 ile değiştirilir. Aynı çalışma alanı her zaman aynı değeri bildirir; böylece olaylar birleştirilip sayılabilir, ama ham kimlik kurulumdan asla çıkmaz. Tuz, sunucunun ilk başlatılışında oluşturulur ve analiz sağlayıcısına asla gönderilmez. Sunucunun veri dizinini silmek yeni bir tuz ve kurulum kimliği oluşturur; bu da daha önce kaydedilen her şeyle bağlantıyı koparır.
+
+## Her olaydaki özellikler
+
+| Özellik | Örnek | Anlamı |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (telefon) veya `server`. Umami'de ana makine adı olarak da kullanılır |
+| `app_version` | `0.0.11` | Sürüm numarası |
+| `app_build` | `4baf980` | Derlemenin kısa git commit'i |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` veya telefonun işletim sistemi (`ios`, `android`) |
+| `locale` | `fr_FR` | Arayüz dili |
+| `server_mode` | `local` | `local` (masaüstü kendi sunucusunu çalıştırıyor) veya `remote` |
+| `server_version` | `0.0.11` | Bilindiğinde, bağlı sunucunun sürümü |
+| `is_demo` | `false` | İstemcinin herkese açık demoya bağlı olup olmadığı |
+| `install_id` | takma ad | Sunucu kurulumu |
+| `user_id` | takma ad | Bilindiğinde, oturum açmış kullanıcı |
+| `device_id` | takma ad | Bilindiğinde, eşleştirilmiş cihaz. Umami'deki benzersiz kimlik de budur |
+| `launch_id` | takma ad | Bir oturumun olaylarını sıralamak için tek bir uygulama başlatması |
+| `event_seq` | `12` | Olayın başlatma içindeki sırası |
+
+Umami ayrıca isteğin IP adresini alır; adresi saklamadan ondan ülke ve bölgeyi çıkarır. Bunlara ek olarak User-Agent'ı ve ekran boyutunu da alır.
+
+## Ekran görüntülemeleri
+
+Her gezinme, URL'si somut adres değil **rota şablonu** olan bir sayfa görüntülemesi kaydeder; örneğin `/workspaces/:workspaceId/spaces/:spaceId`. Ekran adı, şablonun sabit kesimlerinden oluşur; bu örnekte `workspaces_spaces` olur. `Id` ile biten rota parametreleri takma adlı `*_id` özellikleri olarak, sayısal olanlar (örneğin bir PR numarası) ise sayı olarak eklenir. Diğer tüm parametreler atılır.
+
+## İstemci olayları
+
+Masaüstü uygulaması, web uygulaması ve telefon tarafından, bir kişinin yaptığı işlemler için kaydedilir.
+
+| Olay | Özellikler | Kaydedildiği an |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Uygulama başlatmayı bitirip bağlandığında |
+| `app_backgrounded` | `foreground_s` | Pencere veya sekme gizlendiğinde |
+| `app_foregrounded` | `background_s` | Yeniden gösterildiğinde |
+| `server_connected` | `reconnect` | Bağlantı koptuktan sonra geri geldiğinde |
+| `server_disconnected` | | Bağlantı koptuğunda |
+| `server_switched` | | Kullanıcı başka bir sunucuya geçtiğinde |
+| `device_paired` | | Telefon bir eşleştirmeyi onayladığında |
+| `onboarding_step_viewed` | `step`, `step_index` | Bir ilk kurulum adımı gösterildiğinde |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | İlk kurulum tamamlandığında |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | Kullanıcı başka bir çalışma alanı açtığında |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Bir mesaj yazma alanından gönderildiğinde |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | İstemci tarafında bir eğik çizgi komutu çalıştığında. Yerleşik komutlar adlarını, beceriler `skill`, depo komutları ise `custom` bildirir |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | Bir ajanın onay isteği yanıtlandığında |
+| `command_palette_opened` | | Komut paleti açıldığında |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Bir komut çalıştığında. Belirli bir PR, üye veya sohbete ait komutlar yalnızca türlerini bildirir (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | Bir pull request incelemesi gönderildiğinde |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Bir arama yapıldığında. Sorgunun kendisi asla kaydedilmez |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | Bir toplantı kaydı başladığında |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | Kayıt durduğunda |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Tema veya dil değiştiğinde |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Ses ortamı, denetimlerden ya da odak moduyla birlikte başladığında |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Durduğunda |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | Kullanıcı başka bir ruh hâli seçtiğinde |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Odak modu başladığında |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Odak modu erken ya da süresi dolduğunda sona erdiğinde |
+| `dictation_started` | | Yazma alanında dikte başladığında |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Dikte sona erdiğinde. Yalnızca transkriptin uzunluğu kaydedilir |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Uygulama sunucudan bir pipeline çalıştırmasını istediğinde |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Başarısız bir çalıştırma yeniden denendiğinde |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Bir çalıştırma uygulamadan iptal edildiğinde |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Çalışan bir adım zorla sonlandırıldığında |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Bir takvim oturum açma denemesi sona erdiğinde |
+| `calendar_disconnected` | `workspace_id` | Bir takvim hesabının bağlantısı kesildiğinde |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Bir davet yanıtlandığında |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Bir takvim etkinliğinden kayıt başlatıldığında |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Bir toplantı bağlantısı açıldığında (telefon). Bağlantıdan yalnızca sağlayıcı çıkarılır |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Bildirim merkezi kullanıldığında |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Kayıt defterinden bir ajan oluşturulduğunda |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | Bir alanda yeni bir düzenleyici sekmesi açıldığında |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Çalışma alanı becerileri değiştirildiğinde |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Bir orkestrasyon önerisi yanıtlandığında |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Bir plan onaylandığında veya reddedildiğinde (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Denetimli bir hedef veya döngü başlatıldığında (telefon) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Bir sohbet oluşturulduğunda veya çatallandığında |
+| `conversation_rewound` | `conversation_id` | Bir sohbet daha önceki bir mesajdan devam ettirildiğinde |
+| `space_archived` | `workspace_id`, `space_id` | Bir alan arşivlendiğinde |
+
+## Sunucu olayları
+
+Hiçbir istemcinin tam olarak bir kez görmediği olgular için `cc_server` tarafından kaydedilir. Bir ajanın çalıştırması, kaç istemci izlerse izlesin bir kez sayılır.
+
+| Olay | Özellikler | Kaydedildiği an |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Sunucu açılışı tamamladığında |
+| `workspace_created` | `workspace_id` | Bir çalışma alanı oluşturulduğunda |
+| `space_created` | `workspace_id`, `space_id` | Bir alan oluşturulduğunda |
+| `repo_added` | `workspace_id`, `repo_id` | Bir depo bağlandığında |
+| `ticket_created` | `workspace_id`, `ticket_id` | Bir kişi veya ajan bir bilet oluşturduğunda |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Bir ajan çalıştırması bittiğinde |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Bir ajan bir kişiyi beklemek için durduğunda |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Eylem politikası bir ajanın eylemini reddettiğinde |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Bir pipeline çalıştırması sona erdiğinde. `trigger`; `manual`, çalıştırmayı başlatan olay türü ya da adlandırılmış bir tetikleyicinin yalnızca türüdür (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Bir alandan pull request yayımlandığında |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Bir ajanın açtığı pull request birleştirildiğinde |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Bir toplantı kaydı kaydedildiğinde |
+| `space_deleted` | `workspace_id`, `space_id` | Bir alan silindiğinde |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Bir biletin durumu değiştiğinde |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Bir bilet atandığında |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Bir bilet başka bir ajana geçtiğinde |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Bir bilet üzerindeki devredilmiş iş sona erdiğinde |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Çalışma alanı üyeliği değiştiğinde |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | Bir rig kapandığında veya temizlendiğinde |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Bir çalışma alanı becerisi kurulduğunda, güncellendiğinde veya diskte değiştiğinde |
+| `calendar_auth_expired` | `workspace_id` | Bir takvim bağlantısı yeniden oturum açmayı gerektirdiğinde |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Bir takvim etkinliği başlamak üzereyken |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Harcama bir bütçe eşiğini aştığında |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | İzlenen bir PR için inceleme istendiğinde |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | İzlenen bir PR'ın inceleme kararı değiştiğinde |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | Bağlı bir depoda bir ajanın açmadığı bir PR birleştirildiğinde |
+
+## Teslimat
+
+Olaylar, en fazla 200 olay tutan bellek içi bir kuyruktan `<host>/api/send` adresine tek tek gönderilir. Ağ hatası, zaman aşımı, `429` veya `5xx` olayı tutar ve 1 saniyeden 5 dakikaya kadar üstel geri çekilmeyle yeniden dener. Diğer tüm `4xx` yanıtları olayı atar. Diske hiçbir şey yazılmaz; bu yüzden uygulama kapandığında hâlâ kuyrukta olan olaylar kaybolur. Kuyruk, uygulama arka plana geçtiğinde ve sunucu kapanırken boşaltılır.
+
+## Bir derlemeyi başka bir örneğe yönlendirme
+
+Hedef derleme sırasında sabitlenir:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+Sağlayıcı bağdaştırıcısı `packages/cc_analytics` içinde bulunur. Başka bir analiz hizmetini desteklemek, oraya bir bağdaştırıcı eklemek demektir. İzleme planı ve gizlilik kuralları aynı kalır.

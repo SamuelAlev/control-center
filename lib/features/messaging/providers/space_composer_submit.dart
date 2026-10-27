@@ -1,8 +1,11 @@
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:cc_harness/slash_command.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/messaging_mention_sources.dart';
+import 'package:control_center/features/messaging/presentation/widgets/composer/messaging_slash_commands.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/space_local_command_dispatch.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/pending_space_sends_provider.dart';
@@ -40,10 +43,35 @@ Future<void> submitSpaceComposer({
     conversationId: conversationId,
     workspaceId: workspaceId,
   );
+  final command = _analyticsCommand(parsedCommand);
   if (dispatched == null) {
+    ref.track(
+      AnalyticsEvents.slashCommandRun(
+        command: command ?? 'none',
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+      ),
+    );
     return;
   }
   final content = dispatched;
+  void trackSent(String delivery) => ref.track(
+    AnalyticsEvents.messageSent(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      conversationId: conversationId,
+      delivery: delivery,
+      charCount: content.length,
+      attachmentCount: submission.attachments.length,
+      agentMentionCount: submission.mentions
+          .where((m) => m.kind == 'agent')
+          .length,
+      otherMentionCount: submission.mentions
+          .where((m) => m.kind != 'agent')
+          .length,
+      slashCommand: command,
+    ),
+  );
 
   // Mid-run steering: if agents are already working in this conversation and
   // the user submits a conversational message (no @agent, no slash command),
@@ -94,6 +122,7 @@ Future<void> submitSpaceComposer({
               )).notifier,
             )
             .set(queued.steerable);
+        trackSent(AnalyticsEvents.messageDeliverySteer);
         return;
       }
       // The run ended between the read above and the enqueue — fall
@@ -125,6 +154,7 @@ Future<void> submitSpaceComposer({
           entityRefs: entityRefs,
           attachments: submission.attachments,
         );
+    trackSent(AnalyticsEvents.messageDeliveryQueued);
     return;
   }
 
@@ -139,6 +169,25 @@ Future<void> submitSpaceComposer({
         entityRefs: entityRefs,
         attachments: submission.attachments,
       );
+  trackSent(AnalyticsEvents.messageDeliverySend);
+}
+
+/// The slash command's analytics name: built-in and composer commands by
+/// name, skills as `skill`, anything else (a repo's own command, whose name
+/// can say what the project is) as `custom`. Null when there is no command.
+String? _analyticsCommand(ParsedSlashCommand parsed) {
+  final name = parsed.command;
+  if (name == null) {
+    return null;
+  }
+  if (name.startsWith(skillCommandPrefix)) {
+    return 'skill';
+  }
+  if (harnessBuiltinCommands.contains(name) ||
+      kMessagingSlashCommands.any((c) => c.name == name)) {
+    return name;
+  }
+  return 'custom';
 }
 
 /// The message text as it is STORED — references intact.

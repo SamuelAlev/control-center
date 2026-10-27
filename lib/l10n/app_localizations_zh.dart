@@ -1637,6 +1637,27 @@ class AppLocalizationsZh extends AppLocalizations {
       '发送崩溃、错误与性能诊断数据，帮助我们更快修复问题（仅发布版本）。你可以随时在“设置 → 隐私”中更改。';
 
   @override
+  String get usageAnalyticsTitle => '分享使用情况分析';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      '此服务器的所有客户端都会发送假名化的使用事件（界面、操作、计数），仅限发布版本。绝不发送姓名、消息内容、文件路径或电子邮件地址。';
+
+  @override
+  String get usageAnalyticsOffSubtitle => '使用情况分析已关闭。此服务器的任何客户端都不会发送使用事件。';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      '此服务器的客户端会发送假名化的使用事件。只有服务器运营者可以更改。';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle => '此服务器已关闭使用情况分析。只有服务器运营者可以更改。';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      '从此服务器的所有客户端发送假名化的使用事件，帮助我们了解哪些功能有用（仅发布版本）。绝不发送姓名、消息内容、文件路径或电子邮件地址。你可以随时在“设置 → 隐私”中更改。';
+
+  @override
   String get blocked => '已阻塞';
 
   @override
@@ -17128,6 +17149,27 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get onboardingDiagnosticsSubtitle =>
       '傳送當機、錯誤與效能診斷資料，以便我們更快修正問題（僅限發行版組建）。可隨時在「設定 → 隱私」變更。';
+
+  @override
+  String get usageAnalyticsTitle => '分享使用情況分析';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      '此伺服器的所有用戶端都會傳送假名化的使用事件（畫面、操作、次數），僅限發行版組建。絕不傳送姓名、訊息內容、檔案路徑或電子郵件地址。';
+
+  @override
+  String get usageAnalyticsOffSubtitle => '使用情況分析已關閉。此伺服器的任何用戶端都不會傳送使用事件。';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      '此伺服器的用戶端會傳送假名化的使用事件。只有伺服器營運者可以變更。';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle => '此伺服器已關閉使用情況分析。只有伺服器營運者可以變更。';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      '從此伺服器的所有用戶端傳送假名化的使用事件，讓我們了解哪些功能有幫助（僅限發行版組建）。絕不傳送姓名、訊息內容、檔案路徑或電子郵件地址。可隨時在「設定 → 隱私」變更。';
 
   @override
   String get blocked => '已封鎖';

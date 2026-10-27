@@ -2,7 +2,7 @@
 title: CLI de cc_server
 description: Todos los flags, las variables de entorno, los subcomandos y las rutas del directorio de datos del servidor headless.
 slug: es-MX/manual/referencia/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Cada flag del proceso se puede dar como flag de CLI o como variable de entorno:
@@ -178,6 +178,10 @@ lugar de ti:
 
 Defínela tú mismo solo si supervisas `cc_server` como proceso hijo y quieres la
 misma garantía.
+
+`DO_NOT_TRACK=1` (cualquier valor que no sea vacío, `0` o `false`) detiene las
+[analíticas de uso](/es-MX/manual/referencia/analiticas-de-uso/) propias del servidor aunque el interruptor
+de todo el servidor esté activado. Los clientes siguen respetando el interruptor.
 
 ## Estructura del directorio de datos
 

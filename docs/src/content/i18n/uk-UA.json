@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "Карта маршрутів",
   "docs.sidebar.referenceCcServerCli": "CLI cc_server",
   "docs.sidebar.referenceBackup": "Резервне копіювання, експорт і імпорт",
+  "docs.sidebar.referenceTelemetry": "Статистика використання",
   "docs.sidebar.referenceGlossary": "Глосарій"
 }

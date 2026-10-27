@@ -1,5 +1,6 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_remote/analytics.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/format.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
@@ -53,6 +54,15 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
       );
       if (!ok) {
         throw StateError(l10n.requestAlreadyResolved);
+      }
+      if (mounted) {
+        trackApprovalDecision(
+          ref,
+          widget.request,
+          approved: approved,
+          remembered: remember,
+          surface: 'inbox',
+        );
       }
     } catch (e) {
       if (mounted) {

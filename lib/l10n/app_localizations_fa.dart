@@ -1692,6 +1692,29 @@ class AppLocalizationsFa extends AppLocalizations {
       'تشخیص خرابی، خطا و عملکرد را بفرستید تا مشکلات سریع‌تر رفع شوند (فقط ساخت‌های انتشار). هر وقت در تنظیمات ← حریم خصوصی می‌توانید عوضش کنید.';
 
   @override
+  String get usageAnalyticsTitle => 'اشتراک تحلیل‌های استفاده';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'همهٔ کلاینت‌های این سرور رویدادهای استفادهٔ مستعار (صفحه‌ها، کنش‌ها، شمارش‌ها) را می‌فرستند، فقط در ساخت‌های انتشار. هرگز نام، محتوای پیام، مسیر فایل یا نشانی ایمیل.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'تحلیل‌های استفاده خاموش است. هیچ کلاینتی از این سرور رویداد استفاده نمی‌فرستد.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'کلاینت‌های این سرور رویدادهای استفادهٔ مستعار می‌فرستند. فقط گردانندهٔ سرور می‌تواند این را تغییر دهد.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'تحلیل‌های استفاده روی این سرور خاموش است. فقط گردانندهٔ سرور می‌تواند این را تغییر دهد.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'رویدادهای استفادهٔ مستعار را از همهٔ کلاینت‌های این سرور بفرستید تا بفهمیم کدام قابلیت‌ها مفیدند (فقط ساخت‌های انتشار). هرگز نام، محتوای پیام، مسیر فایل یا نشانی ایمیل. هر وقت در تنظیمات ← حریم خصوصی می‌توانید عوضش کنید.';
+
+  @override
   String get blocked => 'مسدود';
 
   @override

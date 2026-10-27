@@ -1,8 +1,11 @@
 import 'dart:async';
 
 import 'package:cc_data/cc_data.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/utils/app_log.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The phase of the GUI device-code connect flow.
@@ -104,6 +107,8 @@ class ConnectGoogleCalendarNotifier extends Notifier<CalendarConnectState> {
   }) async {
     _pollTimer?.cancel();
     _handle = null;
+    _attemptStartedAt = DateTime.now();
+    _attemptBuiltin = useBuiltin;
     state = const CalendarConnectState(phase: CalendarConnectPhase.starting);
     try {
       final begin = await _connect.begin(
@@ -125,7 +130,27 @@ class ConnectGoogleCalendarNotifier extends Notifier<CalendarConnectState> {
     } on Object catch (e, st) {
       AppLog.e('GoogleAuth', 'Calendar connect (begin) failed', e, st);
       state = const CalendarConnectState(error: CalendarConnectError.failed);
+      _trackAttempt('failed');
     }
+  }
+
+  /// The current attempt's start and client choice, for analytics.
+  DateTime? _attemptStartedAt;
+  bool _attemptBuiltin = false;
+
+  void _trackAttempt(String outcome) {
+    final startedAt = _attemptStartedAt;
+    if (startedAt == null) {
+      return;
+    }
+    _attemptStartedAt = null;
+    ref.track(
+      AnalyticsEvents.calendarConnectFinished(
+        outcome: outcome,
+        builtinClient: _attemptBuiltin,
+        durationS: DateTime.now().difference(startedAt).inSeconds,
+      ),
+    );
   }
 
   Future<void> _poll() async {
@@ -166,6 +191,13 @@ class ConnectGoogleCalendarNotifier extends Notifier<CalendarConnectState> {
     _pollTimer?.cancel();
     _handle = null;
     state = next;
+    _trackAttempt(switch (next) {
+      CalendarConnectState(phase: CalendarConnectPhase.success) => 'connected',
+      CalendarConnectState(error: CalendarConnectError.denied) => 'denied',
+      CalendarConnectState(error: CalendarConnectError.expired) => 'expired',
+      CalendarConnectState(error: _?) => 'failed',
+      _ => 'cancelled',
+    });
   }
 
   /// Cancels an in-flight connect and returns to the idle form.
@@ -176,6 +208,11 @@ class ConnectGoogleCalendarNotifier extends Notifier<CalendarConnectState> {
   Future<void> disconnect(String accountId) async {
     try {
       await _connect.disconnect(accountId);
+      ref.track(
+        AnalyticsEvents.calendarDisconnected(
+          workspaceId: ref.read(activeWorkspaceIdProvider),
+        ),
+      );
     } on Object catch (e, st) {
       AppLog.e('GoogleAuth', 'Calendar disconnect failed', e, st);
     }

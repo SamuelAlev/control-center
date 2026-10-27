@@ -13,10 +13,12 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_templa
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/node_type_library.dart';
 import 'package:collection/collection.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pipelines/pipeline_bindings.dart';
+import 'package:control_center/features/pipelines/providers/tracked_pipeline_engine.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 export 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
@@ -74,8 +76,14 @@ final nodeTypeLibraryProvider = Provider<NodeTypeLibrary>((ref) {
 /// on web it returns an honest "not available on web" stub for the
 /// start/cancel/retry actions. The pipeline list/run views still read run state
 /// over RPC on both targets.
+///
+/// Wrapped in [TrackedPipelineEngine], so every request a client makes is
+/// recorded the same way whichever engine the seam resolved.
 final pipelineEngineProvider = Provider<PipelineEnginePort>(
-  buildPipelineEngine,
+  (ref) => TrackedPipelineEngine(
+    buildPipelineEngine(ref),
+    ref.watch(analyticsProvider),
+  ),
 );
 
 /// Watches every persisted template in `workspaceId`, built-ins first.

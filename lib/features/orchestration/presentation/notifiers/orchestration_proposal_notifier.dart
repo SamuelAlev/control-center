@@ -1,3 +1,5 @@
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/features/orchestration/providers/orchestration_action_bindings.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,6 +40,7 @@ class OrchestrationProposalNotifier
         orchestrationId: orchestrationId,
       );
       state = const OrchestrationProposalState();
+      _track('approved', workspaceId, orchestrationId);
     } on Object catch (e, st) {
       AppLog.e('OrchestrationProposal', 'approve failed', e, st);
       state = OrchestrationProposalState(error: '$e');
@@ -57,11 +60,21 @@ class OrchestrationProposalNotifier
         orchestrationId: orchestrationId,
       );
       state = const OrchestrationProposalState();
+      _track('cancelled', workspaceId, orchestrationId);
     } on Object catch (e, st) {
       AppLog.e('OrchestrationProposal', 'cancel failed', e, st);
       state = OrchestrationProposalState(error: '$e');
     }
   }
+
+  void _track(String decision, String workspaceId, String orchestrationId) =>
+      ref.track(
+        AnalyticsEvents.orchestrationDecided(
+          decision: decision,
+          workspaceId: workspaceId,
+          orchestrationId: orchestrationId,
+        ),
+      );
 }
 
 /// Provides the [OrchestrationProposalNotifier].

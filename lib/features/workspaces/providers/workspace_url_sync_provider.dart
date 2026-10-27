@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,8 +36,18 @@ final workspaceUrlSyncProvider = Provider<void>((ref) {
     }
     // Leave the active id untouched on routes with no workspace context
     // (splash, onboarding, the picker), so it is remembered on re-entry.
-    if (id != null && id != ref.read(activeWorkspaceIdProvider)) {
+    final previous = ref.read(activeWorkspaceIdProvider);
+    if (id != null && id != previous) {
       ref.read(activeWorkspaceIdProvider.notifier).setActive(id);
+      // A switch, not the first restore of the remembered workspace.
+      if (previous != null) {
+        ref.track(
+          AnalyticsEvents.workspaceSwitched(
+            workspaceId: id,
+            previousWorkspaceId: previous,
+          ),
+        );
+      }
       // Regression guard: `setActive` flips state synchronously (before its
       // async persist), so the mirror MUST now equal the route. The route is
       // the single source of truth — workspace-scoped *writes* read it directly

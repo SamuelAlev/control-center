@@ -1,4 +1,6 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,7 +19,18 @@ final spaceSearchProvider = FutureProvider.autoDispose
       if (query.isEmpty) {
         return const [];
       }
-      return ref
+      final workspaceId = ref.requireWorkspaceId();
+      final results = await ref
           .watch(messagingRepositoryProvider)
-          .searchInSpace(ref.requireWorkspaceId(), arg.spaceId, query);
+          .searchInSpace(workspaceId, arg.spaceId, query);
+      ref.track(
+        AnalyticsEvents.searchPerformed(
+          scope: 'space_messages',
+          resultCount: results.length,
+          queryLength: query.length,
+          workspaceId: workspaceId,
+          spaceId: arg.spaceId,
+        ),
+      );
+      return results;
     });

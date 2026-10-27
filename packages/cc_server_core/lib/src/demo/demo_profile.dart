@@ -481,6 +481,9 @@ class DemoProfile {
   /// process, the host filesystem or server-wide configuration, or they are
   /// internal lanes a visitor has no reason to drive.
   static const Set<String> defaultDeniedMutations = {
+    // The install-wide usage-analytics switch is the operator's; a visitor
+    // must not opt a public host in or out. The client hides the control.
+    'telemetry.setUsageAnalytics',
     // Forge writes. `DemoPrReviewRepository` is structurally offline, but these
     // verbs have no cache write-back, so allowing them would render a button
     // that silently does nothing.
@@ -802,6 +805,9 @@ class DemoProfile {
     // Workspace DB join limits cursors to this subscriber's user and spaces
     // in this workspace; no other visitor's read history is returned.
     'space_read.watchUserSpaceReads',
+    // Install-wide telemetry decision; carries no workspace data and is
+    // read-only on this lane.
+    'telemetry.watch',
     'team.watchMembersOf',
     'team.watchTeamsForWorkspace',
     'ticket_link.watchForTicket',

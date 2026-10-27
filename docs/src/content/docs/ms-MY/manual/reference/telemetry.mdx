@@ -1,0 +1,160 @@
+---
+title: Analitik penggunaan
+description: Perkara yang direkodkan oleh Control Center apabila analitik penggunaan dihidupkan, siapa yang membuat keputusan, dan perkara yang tidak pernah dihantar.
+slug: ms-MY/manual-pengguna/rujukan/analitik-penggunaan
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center boleh menghantar **peristiwa penggunaan berpseudonim** ke tika [Umami](https://umami.is). Analitik penggunaan **dimatikan sehingga pengendali pelayan menghidupkannya**. Tetapan ini milik pelayan dan terpakai kepada setiap klien yang bersambung dengannya: apl desktop, apl web, telefon dan pelayan itu sendiri.
+
+Analitik penggunaan berasingan daripada **Kongsi laporan ranap**, iaitu tetapan bagi setiap peranti untuk diagnostik ranap dan ralat.
+
+## Siapa yang membuat keputusan
+
+| Suis | Lokasi | Kesan |
+| --- | --- | --- |
+| **Kongsi analitik penggunaan** | Onboarding (langkah kotak pasir) dan **Tetapan → Privasi**. Hanya pengendali pelayan yang boleh mengubahnya; ahli lain melihat nilai semasa dalam mod baca sahaja | Untuk seluruh pelayan. Disimpan sebagai `telemetry.usage_analytics` dalam tetapan pelayan. Dimatikan melainkan ditetapkan kepada `true` |
+| Jenis binaan | Automatik | Binaan debug dan profile tidak menghantar apa-apa. Sebaliknya, setiap peristiwa ditulis ke log debug |
+| `CC_ANALYTICS_DEBUG=1` | Persekitaran `cc_server` atau fail `.env`nya | Membenarkan binaan debug dan profile pelayan, serta setiap klien yang bersambung dengannya, menghantar peristiwa secara sebenar untuk tujuan ujian. Suis di atas masih perlu dihidupkan |
+| `DO_NOT_TRACK=1` | Persekitaran `cc_server` | Menghentikan pelaporan pelayan itu sendiri, tidak kira kedudukan suis. Klien masih mengikut suis |
+| Pelayan demo | Automatik | Pelayan demo awam tidak menghantar apa-apa bagi pihaknya sendiri. Pelawat tidak boleh mengubah suis |
+
+Klien membaca tetapan daripada pelayan (`telemetry.config`, kemudian secara langsung melalui `telemetry.watch`). Sehingga jawapan tiba, peristiwa menunggu dalam penimbal kecil dalam memori. Jika jawapannya tidak, penimbal itu dibuang. Mematikan suis akan membuang apa-apa yang masih dalam baris gilir dan serta-merta menghentikan penghantaran pada setiap klien.
+
+## Perkara yang tidak pernah dihantar
+
+- Kandungan mesej, tiket, semakan atau mesyuarat, tajuk, prompt, perintah shell dan pertanyaan carian
+- Nama, log masuk, alamat e-mel, avatar dan nama paparan
+- Laluan fail, nama repositori, nama cabang, nama hos dan URL (repositori hanya dihantar sebagai `repo_id` berpseudonim; pautan mesyuarat hanya sebagai nama pembekalnya)
+- Pengecam mentah dalam apa jua bentuk
+
+Setiap peristiwa melalui dasar sifat sebelum meninggalkan proses. Teks, laluan, URL, alamat e-mel, ID yang tidak dibalut, serta rentetan di bawah kunci seperti `email`, `*_name`, `path`, `title`, `prompt`, `content` atau `token` dibuang dan bukannya dihantar. Sesuatu rentetan hanya dihantar jika ia token pendek daripada perbendaharaan kata tertutup, seperti nilai enum, versi, tempatan atau ID model.
+
+## ID berpseudonim
+
+ID dihantar, tetapi hanya sebagai pseudonim. Setiap ID ruang kerja, ruang, perbualan, ejen, larian, pengguna dan peranti digantikan dengan HMAC-SHA256 menggunakan garam rahsia pemasangan itu sendiri (`telemetry.pseudonym_salt`), dipendekkan kepada 20 aksara heksadesimal. Ruang kerja yang sama sentiasa melaporkan nilai yang sama, jadi peristiwa boleh digabungkan dan dikira, tetapi ID mentah tidak pernah meninggalkan pemasangan. Garam itu dicipta semasa pelayan dimulakan buat kali pertama dan tidak pernah dihantar kepada pembekal analitik. Memadam direktori data pelayan akan mencipta garam dan ID pemasangan baharu, sekali gus memutuskan pautan kepada semua yang direkodkan sebelumnya.
+
+## Sifat pada setiap peristiwa
+
+| Sifat | Contoh | Maksud |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (telefon) atau `server`. Juga digunakan sebagai nama hos Umami |
+| `app_version` | `0.0.11` | Versi keluaran |
+| `app_build` | `4baf980` | Commit git ringkas bagi binaan |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` atau OS telefon (`ios`, `android`) |
+| `locale` | `fr_FR` | Bahasa antara muka |
+| `server_mode` | `local` | `local` (desktop menjalankan pelayannya sendiri) atau `remote` |
+| `server_version` | `0.0.11` | Versi pelayan yang bersambung, jika diketahui |
+| `is_demo` | `false` | Sama ada klien bersambung dengan demo awam |
+| `install_id` | pseudonim | Pemasangan pelayan |
+| `user_id` | pseudonim | Pengguna yang log masuk, sebaik sahaja diketahui |
+| `device_id` | pseudonim | Peranti yang dipasangkan, sebaik sahaja diketahui. Juga ID berbeza (distinct ID) dalam Umami |
+| `launch_id` | pseudonim | Satu pelancaran apl, untuk menyusun peristiwa dalam satu sesi |
+| `event_seq` | `12` | Kedudukan peristiwa dalam pelancaran |
+
+Umami turut menerima alamat IP permintaan, yang digunakannya untuk menentukan negara dan wilayah tanpa menyimpan alamat itu, serta User-Agent dan saiz skrin.
+
+## Paparan skrin
+
+Setiap navigasi merekodkan paparan halaman yang URLnya ialah **templat laluan**, seperti `/workspaces/:workspaceId/spaces/:spaceId`, dan bukan alamat sebenar. Nama skrin ialah segmen literal templat itu, jadi contoh tersebut menjadi `workspaces_spaces`. Parameter laluan yang berakhir dengan `Id` dilampirkan sebagai sifat `*_id` berpseudonim, dan parameter berangka (seperti nombor PR) sebagai nombor. Semua parameter lain dibuang.
+
+## Peristiwa klien
+
+Direkodkan oleh apl desktop, apl web dan telefon bagi perkara yang dilakukan oleh seseorang.
+
+| Peristiwa | Sifat | Direkodkan apabila |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Apl selesai dimulakan dan bersambung |
+| `app_backgrounded` | `foreground_s` | Tetingkap atau tab disembunyikan |
+| `app_foregrounded` | `background_s` | Ia dipaparkan semula |
+| `server_connected` | `reconnect` | Sambungan pulih selepas terputus |
+| `server_disconnected` | | Sambungan terputus |
+| `server_switched` | | Pengguna bertukar ke pelayan lain |
+| `device_paired` | | Telefon mengesahkan pemasangan |
+| `onboarding_step_viewed` | `step`, `step_index` | Satu langkah onboarding dipaparkan |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | Onboarding selesai |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | Pengguna membuka ruang kerja lain |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Mesej dihantar daripada ruang karang |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | Perintah garis condong sebelah klien dijalankan. Perintah terbina dalam melaporkan namanya, skill melaporkan `skill`, dan perintah repositori melaporkan `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | Permintaan kelulusan ejen telah dijawab |
+| `command_palette_opened` | | Palet perintah dibuka |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Perintah dijalankan. Perintah untuk PR, ahli atau perbualan tertentu hanya melaporkan jenisnya (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | Semakan pull request dihantar |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Carian dijalankan. Pertanyaan itu sendiri tidak pernah direkodkan |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | Rakaman mesyuarat bermula |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | Rakaman berhenti |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Tema atau bahasa diubah |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Landskap bunyi dimulakan, daripada kawalan atau bersama modus fokus |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Ia berhenti |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | Pengguna memilih suasana lain |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Modus fokus bermula |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Modus fokus tamat, lebih awal atau apabila masanya habis |
+| `dictation_started` | | Dikte dalam ruang karang bermula |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Dikte tamat. Hanya panjang transkrip yang direkodkan |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Apl meminta pelayan menjalankan pipeline |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Larian yang gagal dicuba semula |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Larian dibatalkan daripada apl |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Langkah yang sedang berjalan dihentikan secara paksa |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Percubaan log masuk kalendar tamat |
+| `calendar_disconnected` | `workspace_id` | Akaun kalendar diputuskan |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Jemputan telah dijawab |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Rakaman dimulakan daripada acara kalendar |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Pautan mesyuarat dibuka (telefon). Hanya pembekal yang diperoleh daripada pautan itu |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Pusat pemberitahuan digunakan |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Ejen dicipta daripada daftar |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | Tab editor baharu dibuka dalam ruang |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Kemahiran ruang kerja diubah |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Cadangan orkestrasi telah dijawab |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Pelan diluluskan atau ditolak (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Matlamat atau gelung yang diselia dimulakan (telefon) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Perbualan dicipta atau dicabangkan |
+| `conversation_rewound` | `conversation_id` | Perbualan diteruskan daripada mesej terdahulu |
+| `space_archived` | `workspace_id`, `space_id` | Ruang diarkibkan |
+
+## Peristiwa pelayan
+
+Direkodkan oleh `cc_server` bagi fakta yang tidak dilihat tepat sekali oleh mana-mana satu klien. Larian ejen dikira sekali sahaja, tidak kira berapa banyak klien yang sedang memerhatikannya.
+
+| Peristiwa | Sifat | Direkodkan apabila |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Pelayan selesai dimulakan |
+| `workspace_created` | `workspace_id` | Ruang kerja dicipta |
+| `space_created` | `workspace_id`, `space_id` | Ruang dicipta |
+| `repo_added` | `workspace_id`, `repo_id` | Repositori dipautkan |
+| `ticket_created` | `workspace_id`, `ticket_id` | Tiket dicipta oleh seseorang atau oleh ejen |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Larian ejen selesai |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Ejen berhenti untuk menunggu seseorang |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Dasar tindakan menolak tindakan ejen |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Larian pipeline berakhir. `trigger` ialah `manual`, jenis peristiwa yang memulakannya, atau hanya jenis bagi pencetus bernama (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Pull request diterbitkan daripada ruang |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Pull request yang dibuka oleh ejen telah digabungkan |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Rakaman mesyuarat disimpan |
+| `space_deleted` | `workspace_id`, `space_id` | Ruang dipadam |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Status tiket berubah |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Tiket ditugaskan |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Tiket berpindah kepada ejen lain |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Kerja yang diwakilkan pada tiket tamat |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Keahlian ruang kerja berubah |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | Stesen ditutup atau dituai |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Kemahiran ruang kerja dipasang, dikemas kini atau berubah pada cakera |
+| `calendar_auth_expired` | `workspace_id` | Sambungan kalendar perlu log masuk semula |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Acara kalendar akan bermula tidak lama lagi |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Perbelanjaan melepasi ambang belanjawan |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | Semakan diminta pada PR yang dijejaki |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Keputusan semakan PR yang dijejaki berubah |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | PR yang tidak dibuka oleh ejen digabungkan dalam repositori yang dipautkan |
+
+## Penghantaran
+
+Peristiwa dihantar satu demi satu ke `<host>/api/send` daripada baris gilir dalam memori yang memuatkan sehingga 200 peristiwa. Ralat rangkaian, tamat masa, `429` atau `5xx` mengekalkan peristiwa itu dan mencuba semula dengan backoff eksponen, daripada 1 saat hingga 5 minit. Mana-mana `4xx` lain membuangnya. Tiada apa-apa yang ditulis ke cakera, jadi peristiwa yang masih dalam baris gilir apabila apl ditutup akan hilang. Baris gilir dikosongkan apabila apl beralih ke latar belakang dan apabila pelayan dimatikan.
+
+## Mengarahkan binaan ke tika lain
+
+Destinasi ditetapkan semasa binaan:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+Penyesuai pembekal terletak dalam `packages/cc_analytics`. Untuk menyokong perkhidmatan analitik lain, tambahkan penyesuai di situ. Pelan penjejakan dan peraturan privasi kekal sama.

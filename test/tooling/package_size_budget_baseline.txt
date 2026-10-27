@@ -49,7 +49,7 @@ packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2088
 packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1722
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2835
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3356
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8246
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8241
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
 packages/cc_server_core/lib/src/local_rpc_server.dart  2560
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1715

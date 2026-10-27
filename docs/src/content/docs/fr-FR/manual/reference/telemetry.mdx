@@ -1,0 +1,160 @@
+---
+title: Statistiques d’utilisation
+description: Ce que Control Center enregistre quand les statistiques d’utilisation sont activées, qui en décide et ce qui n’est jamais envoyé.
+slug: fr-FR/manuel/reference/statistiques-utilisation
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center peut envoyer des **événements d’utilisation pseudonymes** à une instance [Umami](https://umami.is). Les statistiques d’utilisation sont **désactivées tant que l’opérateur du serveur ne les active pas**. Le réglage appartient au serveur et s’applique à tous les clients qui y sont connectés : l’application de bureau, l’application web, le téléphone et le serveur lui-même.
+
+Les statistiques d’utilisation sont distinctes de **Partager les rapports de plantage**, un réglage propre à chaque appareil pour les diagnostics de plantage et d’erreur.
+
+## Qui décide
+
+| Interrupteur | Où | Effet |
+| --- | --- | --- |
+| **Partager les statistiques d'utilisation** | Intégration (étape du bac à sable) et **Réglages → Confidentialité**. Seul l’opérateur du serveur peut le modifier ; les autres membres voient la valeur actuelle en lecture seule | Pour tout le serveur. Stocké sous `telemetry.usage_analytics` dans les réglages du serveur. Désactivé sauf s’il vaut `true` |
+| Type de build | Automatique | Les builds debug et profile n’envoient rien. Ils écrivent chaque événement dans le journal de débogage à la place |
+| `CC_ANALYTICS_DEBUG=1` | Environnement de `cc_server` ou son `.env` | Permet aux builds debug et profile du serveur, et de tous les clients qui y sont connectés, d’envoyer réellement, pour les tests. L’interrupteur ci-dessus doit tout de même être activé |
+| `DO_NOT_TRACK=1` | Environnement de `cc_server` | Arrête les remontées propres au serveur, quelle que soit la position de l’interrupteur. Les clients continuent de suivre l’interrupteur |
+| Serveur de démonstration | Automatique | Le serveur de démonstration public n’envoie rien de lui-même. Les visiteurs ne peuvent pas changer l’interrupteur |
+
+Les clients lisent le réglage auprès du serveur (`telemetry.config`, puis en direct via `telemetry.watch`). En attendant la réponse, les événements patientent dans un petit tampon en mémoire. Si la réponse est non, le tampon est vidé. Désactiver l’interrupteur supprime tout ce qui reste en file d’attente et arrête immédiatement l’envoi, sur tous les clients.
+
+## Ce qui n’est jamais envoyé
+
+- Le contenu des messages, tickets, revues ou réunions, les titres, les prompts, les commandes shell et les requêtes de recherche
+- Les noms, identifiants de connexion, adresses e-mail, avatars et noms d’affichage
+- Les chemins de fichiers, noms de dépôts, noms de branches, noms d’hôte et URL (un dépôt n’est envoyé que sous forme de `repo_id` pseudonyme, et un lien de réunion que sous la forme de son fournisseur)
+- Les identifiants bruts, quels qu’ils soient
+
+Chaque événement passe par une politique de propriétés avant de quitter le processus. Le texte, les chemins, les URL, les adresses e-mail, les ID non pseudonymisés et les chaînes placées sous des clés comme `email`, `*_name`, `path`, `title`, `prompt`, `content` ou `token` sont supprimés au lieu d’être envoyés. Une chaîne n’est envoyée que s’il s’agit d’un jeton court issu d’un vocabulaire fermé, comme une valeur d’énumération, une version, une langue ou un ID de modèle.
+
+## ID pseudonymes
+
+Les ID sont envoyés, mais uniquement sous forme de pseudonymes. Chaque ID d’espace de travail, d’espace, de conversation, d’agent, d’exécution, d’utilisateur et d’appareil est remplacé par un HMAC-SHA256 calculé avec le sel secret propre à l’installation (`telemetry.pseudonym_salt`), tronqué à 20 caractères hexadécimaux. Un même espace de travail renvoie toujours la même valeur, ce qui permet de relier et de compter les événements, mais l’ID brut ne quitte jamais l’installation. Le sel est créé au premier démarrage du serveur et n’est jamais envoyé au fournisseur de statistiques. Supprimer le répertoire de données du serveur crée un nouveau sel et un nouvel ID d’installation, ce qui dissocie tout ce qui a été enregistré auparavant.
+
+## Propriétés présentes sur chaque événement
+
+| Propriété | Exemple | Signification |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (le téléphone) ou `server`. Sert aussi de nom d’hôte dans Umami |
+| `app_version` | `0.0.11` | Version publiée |
+| `app_build` | `4baf980` | Commit git abrégé du build |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` ou le système du téléphone (`ios`, `android`) |
+| `locale` | `fr_FR` | Langue de l’interface |
+| `server_mode` | `local` | `local` (bureau exécutant son propre serveur) ou `remote` |
+| `server_version` | `0.0.11` | Version du serveur connecté, si elle est connue |
+| `is_demo` | `false` | Indique si le client est connecté à la démo publique |
+| `install_id` | pseudonyme | L’installation du serveur |
+| `user_id` | pseudonyme | L’utilisateur connecté, dès qu’il est connu |
+| `device_id` | pseudonyme | L’appareil appairé, dès qu’il est connu. C’est aussi l’ID distinct dans Umami |
+| `launch_id` | pseudonyme | Un lancement de l’application, pour ordonner les événements d’une session |
+| `event_seq` | `12` | Position de l’événement dans le lancement |
+
+Umami reçoit en outre l’adresse IP de la requête, dont il déduit le pays et la région sans conserver l’adresse, ainsi que le User-Agent et la taille de l’écran.
+
+## Vues d’écran
+
+Chaque navigation enregistre une vue de page dont l’URL est le **modèle de route**, par exemple `/workspaces/:workspaceId/spaces/:spaceId`, jamais l’adresse concrète. Le nom de l’écran est formé des segments littéraux du modèle : dans cet exemple, `workspaces_spaces`. Les paramètres de route qui se terminent par `Id` sont joints sous forme de propriétés `*_id` pseudonymes, et les paramètres numériques (comme un numéro de PR) sous forme de nombres. Tous les autres paramètres sont supprimés.
+
+## Événements client
+
+Enregistrés par l’application de bureau, l’application web et le téléphone pour les actions d’une personne.
+
+| Événement | Propriétés | Enregistré quand |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | L’application a fini de démarrer et s’est connectée |
+| `app_backgrounded` | `foreground_s` | La fenêtre ou l’onglet a été masqué |
+| `app_foregrounded` | `background_s` | Il est réapparu |
+| `server_connected` | `reconnect` | La connexion est revenue après une coupure |
+| `server_disconnected` | | La connexion a été coupée |
+| `server_switched` | | L’utilisateur est passé à un autre serveur |
+| `device_paired` | | Le téléphone a confirmé un appairage |
+| `onboarding_step_viewed` | `step`, `step_index` | Une étape de l’intégration s’est affichée |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | L’intégration s’est terminée |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | L’utilisateur a ouvert un autre espace de travail |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Un message a été envoyé depuis une zone de saisie |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | Une commande slash côté client s’est exécutée. Les commandes intégrées indiquent leur nom, les skills indiquent `skill` et les commandes de dépôt `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | Une demande d’approbation d’un agent a reçu une réponse |
+| `command_palette_opened` | | La palette de commandes s’est ouverte |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Une commande s’est exécutée. Les commandes visant une PR, un membre ou une conversation précis n’indiquent que leur type (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | Une revue de pull request a été soumise |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Une recherche a été lancée. La requête elle-même n’est jamais enregistrée |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | L’enregistrement d’une réunion a commencé |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | Il s’est arrêté |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Le thème ou la langue a changé |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Le paysage sonore a démarré, depuis les commandes ou avec le mode concentration |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Il s’est arrêté |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | L’utilisateur a choisi une autre ambiance |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Le mode concentration a démarré |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Le mode concentration s’est terminé, avant l’heure ou à la fin du temps prévu |
+| `dictation_started` |  | La dictée a démarré dans la zone de saisie |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | La dictée s’est terminée. Seule la longueur de la transcription est enregistrée |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | L’application a demandé au serveur de lancer un pipeline |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Une exécution en échec a été relancée |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Une exécution a été annulée depuis l’application |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Une étape en cours a été arrêtée de force |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Une tentative de connexion à un calendrier s’est terminée |
+| `calendar_disconnected` | `workspace_id` | Un compte de calendrier a été déconnecté |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Une invitation a reçu une réponse |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Un enregistrement a été lancé depuis un événement du calendrier |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Un lien de réunion a été ouvert (téléphone). Seul le fournisseur est déduit du lien |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Le centre de notifications a été utilisé |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Un agent a été créé depuis le registre |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | Un nouvel onglet d’éditeur s’est ouvert dans un espace |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Les skills de l’espace de travail ont été modifiés |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Une proposition d’orchestration a reçu une réponse |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Un plan a été approuvé ou rejeté (téléphone) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Un objectif ou une boucle supervisés ont été lancés (téléphone) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Une conversation a été créée ou dupliquée en branche |
+| `conversation_rewound` | `conversation_id` | Une conversation a repris à partir d’un message antérieur |
+| `space_archived` | `workspace_id`, `space_id` | Un espace a été archivé |
+
+## Événements serveur
+
+Enregistrés par `cc_server` pour des faits qu’aucun client ne voit exactement une fois. L’exécution d’un agent n’est comptée qu’une fois, quel que soit le nombre de clients qui la suivent.
+
+| Événement | Propriétés | Enregistré quand |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Le serveur a fini de démarrer |
+| `workspace_created` | `workspace_id` | Un espace de travail a été créé |
+| `space_created` | `workspace_id`, `space_id` | Un espace a été créé |
+| `repo_added` | `workspace_id`, `repo_id` | Un dépôt a été lié |
+| `ticket_created` | `workspace_id`, `ticket_id` | Une personne ou un agent a créé un ticket |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | L’exécution d’un agent s’est terminée |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Un agent s’est arrêté pour attendre une personne |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | La politique d’actions a refusé une action d’un agent |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | L’exécution d’un pipeline s’est terminée. `trigger` vaut `manual`, le type d’événement qui l’a lancée ou, pour un déclencheur nommé, seulement son type (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Une pull request a été publiée depuis un espace |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Une pull request ouverte par un agent a été fusionnée |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | L’enregistrement d’une réunion a été sauvegardé |
+| `space_deleted` | `workspace_id`, `space_id` | Un espace a été supprimé |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Un ticket a changé de statut |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Un ticket a été attribué |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Un ticket est passé à un autre agent |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Le travail délégué sur un ticket s’est terminé |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Les membres d’un espace de travail ont changé |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | Un rig a été fermé ou récupéré |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Un skill de l’espace de travail a été installé, mis à jour ou modifié sur le disque |
+| `calendar_auth_expired` | `workspace_id` | Une connexion de calendrier demande une nouvelle connexion |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Un événement du calendrier est sur le point de commencer |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Les dépenses ont franchi un seuil de budget |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | Une revue a été demandée sur une PR suivie |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | La décision de revue d’une PR suivie a changé |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | Une PR qui n’a pas été ouverte par un agent a été fusionnée dans un dépôt lié |
+
+## Acheminement
+
+Les événements sont envoyés un par un à `<host>/api/send` depuis une file d’attente en mémoire de 200 événements au plus. Une erreur réseau, un dépassement de délai, un `429` ou un `5xx` conserve l’événement et le renvoie avec un délai exponentiel, de 1 seconde jusqu’à 5 minutes. Tout autre `4xx` le supprime. Rien n’est écrit sur le disque : les événements encore en file d’attente quand l’application se ferme sont perdus. La file est vidée quand l’application passe en arrière-plan et quand le serveur s’arrête.
+
+## Diriger un build vers une autre instance
+
+La destination est fixée à la compilation :
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+L’adaptateur du fournisseur se trouve dans `packages/cc_analytics`. Prendre en charge un autre service de statistiques revient à y ajouter un adaptateur. Le plan de marquage et les règles de confidentialité restent les mêmes.

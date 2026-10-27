@@ -1,0 +1,160 @@
+---
+title: Analitik penggunaan
+description: Apa yang dicatat Control Center saat analitik penggunaan aktif, siapa yang memutuskan, dan apa yang tidak pernah dikirim.
+slug: id-ID/panduan-pengguna/referensi/analitik-penggunaan
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center dapat mengirim **event penggunaan berpseudonim** ke instans [Umami](https://umami.is). Analitik penggunaan **nonaktif sampai operator server mengaktifkannya**. Pengaturan ini milik server dan berlaku untuk setiap klien yang terhubung ke server tersebut: aplikasi desktop, aplikasi web, ponsel, dan server itu sendiri.
+
+Analitik penggunaan terpisah dari **Bagikan laporan crash**, yaitu pengaturan per perangkat untuk diagnostik crash dan error.
+
+## Siapa yang memutuskan
+
+| Sakelar | Lokasi | Efek |
+| --- | --- | --- |
+| **Bagikan analitik penggunaan** | Onboarding (langkah sandbox) dan **Pengaturan → Privasi**. Hanya operator server yang dapat mengubahnya; anggota lain melihat nilai saat ini dalam mode baca saja | Berlaku untuk seluruh server. Disimpan sebagai `telemetry.usage_analytics` di pengaturan server. Nonaktif kecuali disetel ke `true` |
+| Jenis build | Otomatis | Build debug dan profile tidak mengirim apa pun. Sebagai gantinya, setiap event ditulis ke log debug |
+| `CC_ANALYTICS_DEBUG=1` | Lingkungan `cc_server` atau file `.env`-nya | Mengizinkan build debug dan profile dari server, serta dari setiap klien yang terhubung ke server itu, benar-benar mengirim event untuk keperluan pengujian. Sakelar di atas tetap harus aktif |
+| `DO_NOT_TRACK=1` | Lingkungan `cc_server` | Menghentikan pelaporan milik server itu sendiri, apa pun posisi sakelarnya. Klien tetap mengikuti sakelar |
+| Server demo | Otomatis | Server demo publik tidak mengirim apa pun atas namanya sendiri. Pengunjung tidak dapat mengubah sakelar |
+
+Klien membaca pengaturan dari server (`telemetry.config`, lalu secara langsung melalui `telemetry.watch`). Sampai jawabannya tiba, event menunggu di buffer kecil dalam memori. Jika jawabannya tidak, buffer dibuang. Menonaktifkan sakelar akan membuang semua yang masih dalam antrean dan langsung menghentikan pengiriman di setiap klien.
+
+## Apa yang tidak pernah dikirim
+
+- Isi pesan, tiket, tinjauan, atau rapat, judul, prompt, perintah shell, dan kueri pencarian
+- Nama, login, alamat email, avatar, dan nama tampilan
+- Path file, nama repositori, nama branch, nama host, dan URL (repositori hanya dikirim sebagai `repo_id` berpseudonim; tautan rapat hanya sebagai nama penyedianya)
+- Pengenal mentah dalam bentuk apa pun
+
+Setiap event melewati kebijakan properti sebelum meninggalkan proses. Teks, path, URL, alamat email, ID yang tidak dibungkus, serta string di bawah kunci seperti `email`, `*_name`, `path`, `title`, `prompt`, `content`, atau `token` dibuang alih-alih dikirim. Sebuah string hanya dikirim jika berupa token pendek dari kosakata tertutup, seperti nilai enum, versi, locale, atau ID model.
+
+## ID berpseudonim
+
+ID tetap dikirim, tetapi hanya sebagai pseudonim. Setiap ID ruang kerja, space, percakapan, agen, run, pengguna, dan perangkat diganti dengan HMAC-SHA256 menggunakan salt rahasia milik instalasi itu sendiri (`telemetry.pseudonym_salt`), dipotong menjadi 20 karakter heksadesimal. Ruang kerja yang sama selalu melaporkan nilai yang sama, sehingga event dapat digabungkan dan dihitung, tetapi ID mentahnya tidak pernah meninggalkan instalasi. Salt dibuat saat server pertama kali dijalankan dan tidak pernah dikirim ke penyedia analitik. Menghapus direktori data server akan membuat salt dan ID instalasi baru, sehingga semua yang tercatat sebelumnya tidak lagi tertaut.
+
+## Properti di setiap event
+
+| Properti | Contoh | Arti |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (ponsel), atau `server`. Juga dipakai sebagai nama host di Umami |
+| `app_version` | `0.0.11` | Versi rilis |
+| `app_build` | `4baf980` | Commit git singkat dari build |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web`, atau OS ponsel (`ios`, `android`) |
+| `locale` | `fr_FR` | Bahasa antarmuka |
+| `server_mode` | `local` | `local` (desktop menjalankan servernya sendiri) atau `remote` |
+| `server_version` | `0.0.11` | Versi server yang terhubung, jika diketahui |
+| `is_demo` | `false` | Apakah klien terhubung ke demo publik |
+| `install_id` | pseudonim | Instalasi server |
+| `user_id` | pseudonim | Pengguna yang sedang masuk, setelah diketahui |
+| `device_id` | pseudonim | Perangkat yang dipasangkan, setelah diketahui. Juga menjadi distinct ID di Umami |
+| `launch_id` | pseudonim | Satu kali peluncuran aplikasi, untuk mengurutkan event dalam satu sesi |
+| `event_seq` | `12` | Posisi event dalam peluncuran tersebut |
+
+Umami juga menerima alamat IP permintaan, yang dipakainya untuk menentukan negara dan wilayah tanpa menyimpan alamat tersebut, ditambah User-Agent dan ukuran layar.
+
+## Tampilan layar
+
+Setiap navigasi mencatat tampilan halaman dengan URL berupa **templat rute**, seperti `/workspaces/:workspaceId/spaces/:spaceId`, bukan alamat konkretnya. Nama layar adalah segmen literal dari templat tersebut, jadi contoh tadi menjadi `workspaces_spaces`. Parameter rute yang berakhiran `Id` dilampirkan sebagai properti `*_id` berpseudonim, dan parameter numerik (seperti nomor PR) sebagai angka. Semua parameter lain dibuang.
+
+## Event klien
+
+Dicatat oleh aplikasi desktop, aplikasi web, dan ponsel untuk tindakan yang dilakukan seseorang.
+
+| Event | Properti | Dicatat saat |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Aplikasi selesai dimulai dan terhubung |
+| `app_backgrounded` | `foreground_s` | Jendela atau tab disembunyikan |
+| `app_foregrounded` | `background_s` | Jendela atau tab ditampilkan lagi |
+| `server_connected` | `reconnect` | Koneksi pulih setelah terputus |
+| `server_disconnected` | | Koneksi terputus |
+| `server_switched` | | Pengguna beralih ke server lain |
+| `device_paired` | | Ponsel mengonfirmasi pemasangan |
+| `onboarding_step_viewed` | `step`, `step_index` | Sebuah langkah onboarding ditampilkan |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | Onboarding selesai |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | Pengguna membuka ruang kerja lain |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Sebuah pesan dikirim dari composer |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | Sebuah perintah garis miring sisi klien dijalankan. Perintah bawaan melaporkan namanya, skill melaporkan `skill`, dan perintah repositori melaporkan `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | Permintaan persetujuan dari agen dijawab |
+| `command_palette_opened` | | Palet perintah dibuka |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Sebuah perintah dijalankan. Perintah untuk PR, anggota, atau percakapan tertentu hanya melaporkan jenisnya (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | Tinjauan pull request dikirim |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Pencarian dijalankan. Kuerinya sendiri tidak pernah dicatat |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | Perekaman rapat dimulai |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | Perekaman berhenti |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Tema atau bahasa diubah |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Soundscape dimulai, dari kontrol atau bersama mode fokus |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Soundscape berhenti |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | Pengguna memilih suasana lain |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Mode fokus dimulai |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Mode fokus berakhir, lebih awal atau saat waktunya habis |
+| `dictation_started` | | Dikte di composer dimulai |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Dikte berakhir. Hanya panjang transkripnya yang dicatat |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Aplikasi meminta server menjalankan pipeline |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Run yang gagal dicoba lagi |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Sebuah run dibatalkan dari aplikasi |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Langkah yang sedang berjalan dihentikan paksa |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Upaya masuk ke kalender berakhir |
+| `calendar_disconnected` | `workspace_id` | Akun kalender diputuskan |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Sebuah undangan dijawab |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Perekaman dimulai dari acara kalender |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Tautan rapat dibuka (ponsel). Hanya penyedianya yang diambil dari tautan |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Pusat notifikasi digunakan |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Agen dibuat dari registri |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | Tab editor baru dibuka di sebuah space |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Skill ruang kerja diubah |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Usulan orkestrasi dijawab |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Rencana disetujui atau ditolak (ponsel) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Tujuan atau loop yang diawasi dimulai (ponsel) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Percakapan dibuat atau di-fork |
+| `conversation_rewound` | `conversation_id` | Percakapan dilanjutkan dari pesan sebelumnya |
+| `space_archived` | `workspace_id`, `space_id` | Sebuah space diarsipkan |
+
+## Event server
+
+Dicatat oleh `cc_server` untuk fakta yang tidak dilihat tepat satu kali oleh satu klien mana pun. Run agen dihitung satu kali, berapa pun banyaknya klien yang sedang memantaunya.
+
+| Event | Properti | Dicatat saat |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Server selesai booting |
+| `workspace_created` | `workspace_id` | Sebuah ruang kerja dibuat |
+| `space_created` | `workspace_id`, `space_id` | Sebuah space dibuat |
+| `repo_added` | `workspace_id`, `repo_id` | Sebuah repositori ditautkan |
+| `ticket_created` | `workspace_id`, `ticket_id` | Sebuah tiket dibuat oleh seseorang atau oleh agen |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Run agen selesai |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Agen berhenti untuk menunggu seseorang |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Kebijakan aksi menolak aksi agen |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Run pipeline berakhir. `trigger` berisi `manual`, jenis event yang memulainya, atau hanya jenis dari trigger bernama (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Pull request dipublikasikan dari sebuah space |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Pull request yang dibuka agen di-merge |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Rekaman rapat disimpan |
+| `space_deleted` | `workspace_id`, `space_id` | Sebuah space dihapus |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Status tiket berubah |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Tiket ditugaskan |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Tiket dipindahkan ke agen lain |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Pekerjaan yang didelegasikan pada tiket berakhir |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Keanggotaan ruang kerja berubah |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | Rig ditutup atau dibersihkan |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Skill ruang kerja diinstal, diperbarui, atau berubah di disk |
+| `calendar_auth_expired` | `workspace_id` | Koneksi kalender perlu masuk ulang |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Acara kalender akan segera dimulai |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Pengeluaran melewati ambang anggaran |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | Tinjauan diminta pada PR yang dilacak |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Keputusan tinjauan PR yang dilacak berubah |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | PR yang tidak dibuka oleh agen di-merge di repositori yang ditautkan |
+
+## Pengiriman
+
+Event dikirim satu per satu ke `<host>/api/send` dari antrean dalam memori yang menampung hingga 200 event. Error jaringan, timeout, `429`, atau `5xx` mempertahankan event dan mencoba lagi dengan backoff eksponensial, mulai dari 1 detik hingga 5 menit. Setiap `4xx` lainnya membuang event tersebut. Tidak ada yang ditulis ke disk, jadi event yang masih dalam antrean saat aplikasi ditutup akan hilang. Antrean dikosongkan saat aplikasi masuk ke latar belakang dan saat server dimatikan.
+
+## Mengarahkan build ke instans lain
+
+Tujuannya ditetapkan saat build:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+Adaptor penyedia berada di `packages/cc_analytics`. Untuk mendukung layanan analitik lain, tambahkan adaptor di sana. Rencana pelacakan dan aturan privasinya tetap sama.

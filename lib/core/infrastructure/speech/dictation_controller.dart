@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cc_domain/features/dictation/domain/dictation_control_port.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/infrastructure/audio/audio_input_settings.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/di/providers.dart';
@@ -134,6 +136,17 @@ class DictationController extends Notifier<DictationState> {
     return DictationState.idle;
   }
 
+  /// When the live session started, for `dictation_ended.duration_s`.
+  DateTime? _startedAt;
+
+  int _secondsSinceStart() {
+    final startedAt = _startedAt;
+    _startedAt = null;
+    return startedAt == null
+        ? 0
+        : DateTime.now().difference(startedAt).inSeconds;
+  }
+
   /// Starts a session. Returns `true` when a NEW session began; `false` when
   /// one is already live or start failed (state carries the error).
   Future<bool> start() async {
@@ -152,6 +165,13 @@ class DictationController extends Notifier<DictationState> {
           phase: DictationPhase.error,
           errorKind: DictationErrorKind.micDenied,
         );
+        ref.track(
+          AnalyticsEvents.dictationEnded(
+            outcome: 'failed',
+            durationS: 0,
+            errorKind: DictationErrorKind.micDenied.name,
+          ),
+        );
         return false;
       }
 
@@ -163,6 +183,8 @@ class DictationController extends Notifier<DictationState> {
       _chain = Future<void>.value();
       _drained = Completer<void>();
       state = const DictationState(phase: DictationPhase.listening);
+      _startedAt = DateTime.now();
+      ref.track(AnalyticsEvents.dictationStarted());
 
       // Watch finalized windows first, so none is missed while the mic opens.
       _partialsSub = control
@@ -188,6 +210,13 @@ class DictationController extends Notifier<DictationState> {
       state = const DictationState(
         phase: DictationPhase.error,
         errorKind: DictationErrorKind.startFailed,
+      );
+      ref.track(
+        AnalyticsEvents.dictationEnded(
+          outcome: 'failed',
+          durationS: _secondsSinceStart(),
+          errorKind: DictationErrorKind.startFailed.name,
+        ),
       );
       return false;
     }
@@ -236,13 +265,29 @@ class DictationController extends Notifier<DictationState> {
     _control = null;
     final finalText = state.transcript;
     state = DictationState.idle;
+    ref.track(
+      AnalyticsEvents.dictationEnded(
+        outcome: 'completed',
+        durationS: _secondsSinceStart(),
+        transcriptChars: finalText.length,
+      ),
+    );
     return finalText;
   }
 
   /// Aborts the session and discards its transcript (no submit path).
   Future<void> cancel() async {
+    final wasListening = _startedAt != null;
     await _teardown();
     state = DictationState.idle;
+    if (wasListening) {
+      ref.track(
+        AnalyticsEvents.dictationEnded(
+          outcome: 'cancelled',
+          durationS: _secondsSinceStart(),
+        ),
+      );
+    }
   }
 
   void _onPartial(DictationPartial partial) {

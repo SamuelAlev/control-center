@@ -157,7 +157,7 @@ lib/features/pr_review/presentation/widgets/pr_worktree_search_panel.dart  917
 lib/features/pr_review/presentation/widgets/reaction_bar.dart  396
 lib/features/pr_review/presentation/widgets/review_accordion_item.dart  500
 lib/features/pr_review/presentation/widgets/review_accordion_list.dart  641
-lib/features/pr_review/presentation/widgets/review_overlay.dart  797
+lib/features/pr_review/presentation/widgets/review_overlay.dart  796
 lib/features/pr_review/presentation/widgets/reviewer_picker_flyout.dart  569
 lib/features/pr_review/presentation/widgets/sticky_header.dart  331
 lib/features/pr_review/presentation/widgets/workflow_job_detail.dart  1074

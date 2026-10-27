@@ -1714,6 +1714,29 @@ class AppLocalizationsEs extends AppLocalizations {
       'Envía diagnósticos de fallos, errores y rendimiento para ayudarnos a solucionar problemas más rápido (solo en versiones de producción). Puedes cambiar esto en cualquier momento en Ajustes → Privacidad.';
 
   @override
+  String get usageAnalyticsTitle => 'Compartir analíticas de uso';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Todos los clientes de este servidor envían eventos de uso seudonimizados (pantallas, acciones, recuentos), solo en versiones de producción. Nunca nombres, contenido de mensajes, rutas de archivos ni direcciones de correo.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Las analíticas de uso están desactivadas. Ningún cliente de este servidor envía eventos de uso.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Los clientes de este servidor envían eventos de uso seudonimizados. Solo el operador del servidor puede cambiarlo.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Las analíticas de uso están desactivadas en este servidor. Solo el operador del servidor puede cambiarlo.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Envía eventos de uso seudonimizados desde todos los clientes de este servidor para que sepamos qué funciones ayudan (solo en versiones de producción). Nunca nombres, contenido de mensajes, rutas de archivos ni direcciones de correo. Puedes cambiar esto en cualquier momento en Ajustes → Privacidad.';
+
+  @override
   String get blocked => 'Bloqueado';
 
   @override

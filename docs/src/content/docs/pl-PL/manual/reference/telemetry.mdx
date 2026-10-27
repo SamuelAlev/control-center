@@ -1,0 +1,160 @@
+---
+title: Analityka użycia
+description: Co Control Center rejestruje, gdy analityka użycia jest włączona, kto o tym decyduje i co nigdy nie jest wysyłane.
+slug: pl-PL/podrecznik/dokumentacja-referencyjna/analityka-uzycia
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center może wysyłać **pseudonimowe zdarzenia użycia** do instancji [Umami](https://umami.is). Analityka użycia jest **wyłączona, dopóki operator serwera jej nie włączy**. Ustawienie należy do serwera i dotyczy każdego połączonego z nim klienta: aplikacji desktopowej, aplikacji webowej, telefonu i samego serwera.
+
+Analityka użycia jest niezależna od ustawienia **Udostępnianie raportów awarii**, które działa na poziomie urządzenia i dotyczy diagnostyki awarii i błędów.
+
+## Kto decyduje
+
+| Przełącznik | Gdzie | Skutek |
+| --- | --- | --- |
+| **Udostępnianie analityki użycia** | Onboarding (krok sandboxa) oraz **Ustawienia → Prywatność**. Zmienić go może tylko operator serwera; pozostali członkowie widzą bieżącą wartość tylko do odczytu | Dla całego serwera. Zapisywany jako `telemetry.usage_analytics` w ustawieniach serwera. Wyłączony, chyba że ustawiono go na `true` |
+| Typ kompilacji | Automatycznie | Kompilacje debug i profile niczego nie wysyłają. Zamiast tego zapisują każde zdarzenie w dzienniku debugowania |
+| `CC_ANALYTICS_DEBUG=1` | Środowisko `cc_server` lub jego plik `.env` | Pozwala kompilacjom debug i profile serwera oraz każdego połączonego z nim klienta naprawdę wysyłać zdarzenia na potrzeby testów. Powyższy przełącznik nadal musi być włączony |
+| `DO_NOT_TRACK=1` | Środowisko `cc_server` | Zatrzymuje raportowanie przez sam serwer, niezależnie od stanu przełącznika. Klienci nadal stosują się do przełącznika |
+| Serwer demonstracyjny | Automatycznie | Publiczny serwer demonstracyjny sam niczego nie wysyła. Odwiedzający nie mogą zmienić przełącznika |
+
+Klienci odczytują ustawienie z serwera (`telemetry.config`, a potem na bieżąco przez `telemetry.watch`). Do czasu otrzymania odpowiedzi zdarzenia czekają w niewielkim buforze w pamięci. Jeśli odpowiedź jest odmowna, bufor zostaje odrzucony. Wyłączenie przełącznika odrzuca wszystko, co wciąż czeka w kolejce, i natychmiast zatrzymuje wysyłanie na każdym kliencie.
+
+## Co nigdy nie jest wysyłane
+
+- Treść wiadomości, zgłoszeń, recenzji i spotkań, tytuły, prompty, polecenia powłoki i zapytania wyszukiwania
+- Imiona i nazwiska, loginy, adresy e-mail, awatary i nazwy wyświetlane
+- Ścieżki plików, nazwy repozytoriów, nazwy gałęzi, nazwy hostów i adresy URL (repozytorium jest wysyłane tylko jako pseudonimowy `repo_id`, a link do spotkania tylko jako nazwa jego dostawcy)
+- Surowe identyfikatory dowolnego rodzaju
+
+Każde zdarzenie przed opuszczeniem procesu przechodzi przez politykę właściwości. Tekst, ścieżki, adresy URL, adresy e-mail, nieopakowane identyfikatory oraz ciągi pod kluczami takimi jak `email`, `*_name`, `path`, `title`, `prompt`, `content` czy `token` są odrzucane zamiast wysyłane. Ciąg jest wysyłany tylko wtedy, gdy jest krótkim tokenem z zamkniętego słownika, na przykład wartością enuma, wersją, ustawieniem regionalnym lub identyfikatorem modelu.
+
+## Pseudonimowe identyfikatory
+
+Identyfikatory są wysyłane, ale tylko jako pseudonimy. Każdy identyfikator obszaru roboczego, przestrzeni, rozmowy, agenta, uruchomienia, użytkownika i urządzenia jest zastępowany przez HMAC-SHA256 z własną tajną solą instalacji (`telemetry.pseudonym_salt`), skrócony do 20 znaków szesnastkowych. Ten sam obszar roboczy zawsze zgłasza tę samą wartość, więc zdarzenia można łączyć i zliczać, ale surowy identyfikator nigdy nie opuszcza instalacji. Sól powstaje przy pierwszym uruchomieniu serwera i nigdy nie trafia do dostawcy analityki. Usunięcie katalogu danych serwera tworzy nową sól i nowy identyfikator instalacji, co odłącza wszystko, co zarejestrowano wcześniej.
+
+## Właściwości każdego zdarzenia
+
+| Właściwość | Przykład | Znaczenie |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (telefon) lub `server`. Używana też jako nazwa hosta w Umami |
+| `app_version` | `0.0.11` | Wersja wydania |
+| `app_build` | `4baf980` | Skrócony commit git kompilacji |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` lub system operacyjny telefonu (`ios`, `android`) |
+| `locale` | `fr_FR` | Język interfejsu |
+| `server_mode` | `local` | `local` (aplikacja desktopowa uruchamia własny serwer) lub `remote` |
+| `server_version` | `0.0.11` | Wersja połączonego serwera, jeśli jest znana |
+| `is_demo` | `false` | Czy klient jest połączony z publicznym demo |
+| `install_id` | pseudonim | Instalacja serwera |
+| `user_id` | pseudonim | Zalogowany użytkownik, gdy jest już znany |
+| `device_id` | pseudonim | Sparowane urządzenie, gdy jest już znane. Również identyfikator distinct ID w Umami |
+| `launch_id` | pseudonim | Jedno uruchomienie aplikacji, do porządkowania zdarzeń sesji |
+| `event_seq` | `12` | Pozycja zdarzenia w ramach uruchomienia |
+
+Umami otrzymuje ponadto adres IP żądania, na podstawie którego ustala kraj i region bez zapisywania adresu, a także User-Agent i rozmiar ekranu.
+
+## Wyświetlenia ekranów
+
+Każda nawigacja rejestruje wyświetlenie strony, którego adresem URL jest **szablon trasy**, na przykład `/workspaces/:workspaceId/spaces/:spaceId`, a nigdy konkretny adres. Nazwa ekranu składa się z dosłownych segmentów szablonu, więc w tym przykładzie brzmi `workspaces_spaces`. Parametry trasy kończące się na `Id` są dołączane jako pseudonimowe właściwości `*_id`, a liczbowe (na przykład numer PR) jako liczby. Wszystkie pozostałe parametry są odrzucane.
+
+## Zdarzenia klientów
+
+Rejestrowane przez aplikację desktopową, aplikację webową i telefon w odpowiedzi na działania użytkownika.
+
+| Zdarzenie | Właściwości | Rejestrowane, gdy |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Aplikacja zakończyła uruchamianie i nawiązała połączenie |
+| `app_backgrounded` | `foreground_s` | Okno lub karta zostały ukryte |
+| `app_foregrounded` | `background_s` | Zostały ponownie pokazane |
+| `server_connected` | `reconnect` | Połączenie wróciło po zerwaniu |
+| `server_disconnected` | | Połączenie zostało zerwane |
+| `server_switched` | | Użytkownik przełączył się na inny serwer |
+| `device_paired` | | Telefon potwierdził parowanie |
+| `onboarding_step_viewed` | `step`, `step_index` | Wyświetlono krok onboardingu |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | Onboarding się zakończył |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | Użytkownik otworzył inny obszar roboczy |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Z pola redagowania wysłano wiadomość |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | Uruchomiono polecenie z ukośnikiem po stronie klienta. Polecenia wbudowane zgłaszają swoją nazwę, skille zgłaszają `skill`, a polecenia repozytorium zgłaszają `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | Udzielono odpowiedzi na prośbę agenta o zatwierdzenie |
+| `command_palette_opened` | | Otwarto paletę poleceń |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Uruchomiono polecenie. Polecenia dotyczące konkretnego PR, członka lub rozmowy zgłaszają tylko swój rodzaj (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | Przesłano recenzję pull requesta |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Wykonano wyszukiwanie. Samo zapytanie nigdy nie jest rejestrowane |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | Rozpoczęło się nagrywanie spotkania |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | Nagrywanie się zakończyło |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Zmieniono motyw lub język |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Pejzaż dźwiękowy został uruchomiony z elementów sterujących lub razem z trybem skupienia |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Został zatrzymany |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | Użytkownik wybrał inny nastrój |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Rozpoczął się tryb skupienia |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Tryb skupienia się zakończył, przedwcześnie lub po upływie czasu |
+| `dictation_started` | | Rozpoczęło się dyktowanie w polu redagowania |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Dyktowanie się zakończyło. Rejestrowana jest tylko długość transkrypcji |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Aplikacja poprosiła serwer o uruchomienie potoku |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Ponowiono nieudane uruchomienie |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Uruchomienie zostało anulowane z aplikacji |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Działający krok został przerwany siłą |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Zakończyła się próba logowania do kalendarza |
+| `calendar_disconnected` | `workspace_id` | Odłączono konto kalendarza |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Udzielono odpowiedzi na zaproszenie |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Rozpoczęto nagrywanie z wydarzenia w kalendarzu |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Otwarto link do spotkania (telefon). Z linku ustalany jest tylko dostawca |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Użyto centrum powiadomień |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Utworzono agenta z rejestru |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | W przestrzeni otwarto nową kartę edytora |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Zmieniono skille obszaru roboczego |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Udzielono odpowiedzi na propozycję orkiestracji |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Plan został zatwierdzony lub odrzucony (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Rozpoczęto nadzorowany cel lub pętlę (telefon) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Utworzono rozmowę lub jej rozwidlenie |
+| `conversation_rewound` | `conversation_id` | Rozmowę kontynuowano od wcześniejszej wiadomości |
+| `space_archived` | `workspace_id`, `space_id` | Zarchiwizowano przestrzeń |
+
+## Zdarzenia serwera
+
+Rejestrowane przez `cc_server` dla faktów, których żaden pojedynczy klient nie widzi dokładnie raz. Uruchomienie agenta jest liczone raz, niezależnie od tego, ilu klientów je obserwuje.
+
+| Zdarzenie | Właściwości | Rejestrowane, gdy |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Serwer zakończył uruchamianie |
+| `workspace_created` | `workspace_id` | Utworzono obszar roboczy |
+| `space_created` | `workspace_id`, `space_id` | Utworzono przestrzeń |
+| `repo_added` | `workspace_id`, `repo_id` | Połączono repozytorium |
+| `ticket_created` | `workspace_id`, `ticket_id` | Osoba lub agent utworzyli zgłoszenie |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Uruchomienie agenta się zakończyło |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Agent zatrzymał się, czekając na człowieka |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Polityka akcji odrzuciła akcję agenta |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Uruchomienie potoku się zakończyło. `trigger` to `manual`, typ zdarzenia, które je rozpoczęło, albo tylko rodzaj nazwanego wyzwalacza (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Opublikowano pull request z przestrzeni |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Scalono pull request otwarty przez agenta |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Zapisano nagranie spotkania |
+| `space_deleted` | `workspace_id`, `space_id` | Usunięto przestrzeń |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Zgłoszenie zmieniło status |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Przypisano zgłoszenie |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Zgłoszenie przeszło do innego agenta |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Zakończyła się delegowana praca nad zgłoszeniem |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Zmieniło się członkostwo w obszarze roboczym |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | Rig został zamknięty lub uprzątnięty |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Skill obszaru roboczego został zainstalowany, zaktualizowany lub zmieniony na dysku |
+| `calendar_auth_expired` | `workspace_id` | Połączenie z kalendarzem wymaga ponownego zalogowania |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Wydarzenie w kalendarzu zaraz się rozpocznie |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Wydatki przekroczyły próg budżetu |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | Poproszono o recenzję śledzonego PR |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Zmieniła się decyzja recenzji śledzonego PR |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | PR otwarty nie przez agenta został scalony w połączonym repozytorium |
+
+## Dostarczanie
+
+Zdarzenia są wysyłane pojedynczo do `<host>/api/send` z kolejki w pamięci mieszczącej do 200 zdarzeń. Błąd sieci, przekroczenie limitu czasu, `429` lub `5xx` zachowują zdarzenie i ponawiają próbę z wykładniczym wycofywaniem, od 1 sekundy do 5 minut. Każdy inny `4xx` je odrzuca. Nic nie jest zapisywane na dysku, więc zdarzenia, które wciąż czekają w kolejce w chwili zamknięcia aplikacji, przepadają. Kolejka jest opróżniana, gdy aplikacja przechodzi w tło i gdy serwer się wyłącza.
+
+## Kierowanie kompilacji do innej instancji
+
+Miejsce docelowe jest ustalane w czasie kompilacji:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+Adapter dostawcy znajduje się w `packages/cc_analytics`. Obsługa innej usługi analitycznej oznacza dodanie tam adaptera. Plan śledzenia i zasady prywatności pozostają bez zmian.

@@ -129,6 +129,14 @@ Only allowlisted push-provider HTTPS endpoints are admitted. Delivery resolves a
 
 Encrypted payloads contain generic alert categories and scoped navigation identifiers, not message previews, approval commands or credentials. The provider still sees endpoint, traffic size and timing. Notification clicks navigate to the first-party origin and do not grant authority; opening content reauthorizes against the server. Quiet/category preferences control delivery, while OS permission and supported PWA installation remain browser requirements.
 
+### Usage analytics
+
+Usage analytics are a separate outbound channel to an Umami instance (`https://analytics.alev.dev/` by default), not part of the first-party tunnel. Collection is **opt-in and server-owned**: `telemetry.usage_analytics` in the server settings must be `true`, which only the server operator can set (`telemetry.setUsageAnalytics`, `ServerAuthority.serverOwner`; refused on the public demo). Every client reads `telemetry.config` / `telemetry.watch` and sends nothing until that config has arrived and allows it. Debug and profile builds send only when the server's environment (or `.env`) sets `CC_ANALYTICS_DEBUG=1`, which travels in the config as `debug_builds_allowed`; it lifts the build gate, never the operator's switch. The server's own reporting also honours `DO_NOT_TRACK=1`, and a demo server does not report at all.
+
+- **No PII by construction.** Events are built only from the `AnalyticsEvents` tracking plan. `AnalyticsPropertyPolicy` then drops any string that is not a short token (free text, paths, URLs, email addresses), any string under a key naming personal or free-form data (`*_name`, `email`, `path`, `title`, `prompt`, `content`, `token`, …) and any ID-shaped string that was not wrapped in `AnalyticsId`. Message bodies, titles, shell commands, search queries, repository and branch names, file paths and logins are never recorded; dynamic command-palette IDs report only their kind.
+- **Pseudonymous IDs.** Entity, user and device IDs are replaced by an HMAC-SHA256 under the install's `telemetry.pseudonym_salt` (truncated to 80 bits). The salt is minted per install and delivered to authenticated clients so all surfaces hash alike. It is never sent to the provider. Wiping the data directory mints a new salt and install ID, which unlinks earlier data.
+- **What the provider still sees.** The requesting IP address (Umami derives country and region and does not store the address), the User-Agent (the browser's own on web; an OS-family/version string on native) and request timing. Nothing in an event authorizes anything.
+
 ## Dependencies
 
 [dependency-audit.yml](.github/workflows/dependency-audit.yml) runs weekly, fails on pub.dev advisories and retracted/discontinued dependencies, and reports outdated packages. Native source/provenance and packaging requirements are documented under [cc_natives](packages/cc_natives/README.md).

@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Elke flag, omgevingsvariabele, subcommando en datadirectorypad van de headless server.
 slug: nl-NL/handleiding/referentie/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Elke procesflag heeft een CLI-flag of een omgevingsvariabele; de flag wint, dan
@@ -172,6 +172,10 @@ dat, en die wordt door de desktop ingesteld, niet door jou:
 
 Stel hem alleen zelf in als je `cc_server` als kindproces aanstuurt en dezelfde
 garantie wilt.
+
+`DO_NOT_TRACK=1` (elke waarde behalve leeg, `0` of `false`) stopt de eigen
+[gebruiksstatistieken](/nl-NL/handleiding/referentie/gebruiksstatistieken/) van de server, ook als de serverbrede schakelaar
+aan staat. Clients volgen de schakelaar nog steeds.
 
 ## Indeling van de datadirectory
 

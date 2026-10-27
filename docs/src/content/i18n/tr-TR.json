@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "Rota haritası",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
   "docs.sidebar.referenceBackup": "Yedekleme, dışa ve içe aktarma",
+  "docs.sidebar.referenceTelemetry": "Kullanım analizleri",
   "docs.sidebar.referenceGlossary": "Sözlük"
 }

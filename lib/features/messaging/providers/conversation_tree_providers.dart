@@ -1,5 +1,7 @@
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,6 +46,9 @@ class ConversationBranchController {
       conversationId: conversationId,
       messageId: messageId,
     );
+    _ref.track(
+      AnalyticsEvents.conversationRewound(conversationId: conversationId),
+    );
     _ref.invalidate(
       conversationTreeProvider((
         workspaceId: workspaceId,
@@ -60,13 +65,22 @@ class ConversationBranchController {
     String? title,
   }) async {
     final workspaceId = _ref.requireWorkspaceId();
-    return _repo.forkConversation(
+    final forkedId = await _repo.forkConversation(
       workspaceId: workspaceId,
       spaceId: spaceId,
       conversationId: conversationId,
       messageId: messageId,
       title: title,
     );
+    _ref.track(
+      AnalyticsEvents.conversationCreated(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        conversationId: forkedId,
+        source: 'fork',
+      ),
+    );
+    return forkedId;
   }
 }
 

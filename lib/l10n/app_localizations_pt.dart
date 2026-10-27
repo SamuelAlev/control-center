@@ -1712,6 +1712,29 @@ class AppLocalizationsPt extends AppLocalizations {
       'Envie diagnósticos de falhas, erros e desempenho para nos ajudar a corrigir problemas mais rápido (apenas em versões de produção). Você pode alterar isso a qualquer momento em Configurações → Privacidade.';
 
   @override
+  String get usageAnalyticsTitle => 'Compartilhar análises de uso';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Todos os clientes deste servidor enviam eventos de uso pseudonimizados (telas, ações, contagens), apenas em versões de produção. Nunca nomes, conteúdo de mensagens, caminhos de arquivos ou endereços de e-mail.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'As análises de uso estão desativadas. Nenhum cliente deste servidor envia eventos de uso.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Os clientes deste servidor enviam eventos de uso pseudonimizados. Apenas o operador do servidor pode alterar isso.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'As análises de uso estão desativadas neste servidor. Apenas o operador do servidor pode alterar isso.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Envie eventos de uso pseudonimizados de todos os clientes deste servidor para sabermos quais recursos ajudam (apenas em versões de produção). Nunca nomes, conteúdo de mensagens, caminhos de arquivos ou endereços de e-mail. Você pode alterar isso a qualquer momento em Configurações → Privacidade.';
+
+  @override
   String get blocked => 'Bloqueado';
 
   @override
@@ -16143,6 +16166,29 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
   @override
   String get onboardingDiagnosticsSubtitle =>
       'Envie diagnósticos de falhas, erros e desempenho para nos ajudar a corrigir problemas mais rápido (apenas em versões de produção). Você pode alterar isso a qualquer momento em Definições → Privacidade.';
+
+  @override
+  String get usageAnalyticsTitle => 'Partilhar análises de utilização';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Todos os clientes deste servidor enviam eventos de utilização pseudonimizados (ecrãs, ações, contagens), apenas em versões de produção. Nunca nomes, conteúdo de mensagens, caminhos de ficheiros ou endereços de e-mail.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'As análises de utilização estão desativadas. Nenhum cliente deste servidor envia eventos de utilização.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Os clientes deste servidor enviam eventos de utilização pseudonimizados. Apenas o operador do servidor pode alterar isto.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'As análises de utilização estão desativadas neste servidor. Apenas o operador do servidor pode alterar isto.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Envie eventos de utilização pseudonimizados de todos os clientes deste servidor para sabermos que funcionalidades ajudam (apenas em versões de produção). Nunca nomes, conteúdo de mensagens, caminhos de ficheiros ou endereços de e-mail. Pode alterar isto a qualquer momento em Definições → Privacidade.';
 
   @override
   String get deletePipelineRun => 'Eliminar execução do pipeline';

@@ -51,7 +51,7 @@ void main() {
     'rig', 'sandbox', 'server', 'server_settings',
     'serviceStatus', 'skills', 'soundscape', 'space_read',
     'sso', 'stack', 'steering', 'subscriptions',
-    'takeover', 'team', 'terminal', 'ticket_link',
+    'takeover', 'team', 'telemetry', 'terminal', 'ticket_link',
     'ticket_sync', 'ticketing', 'tickets', 'todos',
     'usage', 'users', 'voice_profile', 'weather',
     'workProduct', 'workspace', 'workspaceGitHub', 'workspace_settings',

@@ -1,5 +1,7 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:cc_remote/analytics.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/providers.dart';
@@ -43,26 +45,7 @@ class _PhoneGoalCreateState extends ConsumerState<PhoneGoalCreate> {
     super.dispose();
   }
 
-  int? get _budgetCents {
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    final format = NumberFormat.decimalPattern(locale);
-    var text = _budget.text.trim();
-    // Accept the locale's digits/decimal mark and ASCII digits for hardware
-    // keyboards; do not accept grouping or silently round a third cent.
-    for (var digit = 0; digit < 10; digit++) {
-      text = text.replaceAll(format.format(digit), '$digit');
-    }
-    final separator = format.symbols.DECIMAL_SEP;
-    if (separator != '.') text = text.replaceAll(separator, '.');
-    if (!RegExp(r'^\d{1,7}(?:\.\d{1,2})?$').hasMatch(text)) return null;
-    final pieces = text.split('.');
-    final dollars = int.parse(pieces.first);
-    final cents = pieces.length == 1
-        ? 0
-        : int.parse(pieces.last.padRight(2, '0'));
-    final total = dollars * 100 + cents;
-    return total > 0 ? total : null;
-  }
+  int? get _budgetCents => parsePlanBudgetCents(context, _budget.text);
 
   Future<void> _send() async {
     final l10n = AppLocalizations.of(context);
@@ -121,12 +104,24 @@ class _PhoneGoalCreateState extends ConsumerState<PhoneGoalCreate> {
       }
       final budget =
           '${cents ~/ 100}.${(cents % 100).toString().padLeft(2, '0')}';
+      final analytics = ref.read(analyticsProvider);
       final runId = await RemoteMessagingDispatch(client).dispatchAgent(
         workspaceId: widget.workspaceId,
         spaceId: targetSpace,
         agentId: agentId,
         prompt: '${_loop ? '/loop' : '/goal'} $objective --budget $budget',
         conversationId: conversationId,
+      );
+      analytics.track(
+        AnalyticsEvents.goalStarted(
+          kind: _loop ? 'loop' : 'goal',
+          workspaceId: widget.workspaceId,
+          spaceId: targetSpace,
+          conversationId: conversationId,
+          agentId: agentId,
+          budgetCents: cents,
+          accepted: runId != null,
+        ),
       );
       if (mounted) {
         if (runId == null) {

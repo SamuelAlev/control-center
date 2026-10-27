@@ -4,7 +4,9 @@ import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_read_mark.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:control_center/core/notifications/notification_frame_mapper.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/di/notification_providers.dart';
 import 'package:control_center/di/providers.dart';
@@ -225,6 +227,7 @@ class NotificationCenterActions {
     await _ref
         .read(notificationFeedRepositoryProvider)
         .markAllRead(scope.workspaceId, scope.userId);
+    _track('mark_all_read', scope.workspaceId);
   }
 
   /// Hides every current entry ("clear all").
@@ -236,6 +239,7 @@ class NotificationCenterActions {
     await _ref
         .read(notificationFeedRepositoryProvider)
         .clearAll(scope.workspaceId, scope.userId);
+    _track('clear_all', scope.workspaceId);
   }
 
   /// Marks one entry read, or back to unread.
@@ -247,6 +251,7 @@ class NotificationCenterActions {
     await _ref
         .read(notificationFeedRepositoryProvider)
         .setItemRead(scope.workspaceId, scope.userId, itemId, read: read);
+    _track(read ? 'read' : 'unread', scope.workspaceId);
   }
 
   /// Removes one entry from this user's list.
@@ -258,5 +263,13 @@ class NotificationCenterActions {
     await _ref
         .read(notificationFeedRepositoryProvider)
         .dismissItem(scope.workspaceId, scope.userId, itemId);
+    _track('dismiss', scope.workspaceId);
   }
+
+  void _track(String action, String workspaceId) => _ref.track(
+    AnalyticsEvents.notificationAction(
+      action: action,
+      workspaceId: workspaceId,
+    ),
+  );
 }

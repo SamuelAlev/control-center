@@ -1710,6 +1710,29 @@ class AppLocalizationsHu extends AppLocalizations {
       'Küldjön összeomlás-, hiba- és teljesítménydiagnosztikát, hogy gyorsabban javíthassuk a problémákat (csak kiadási buildek). Ezt bármikor módosíthatja: Beállítások → Adatvédelem.';
 
   @override
+  String get usageAnalyticsTitle => 'Használati statisztikák megosztása';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'A szerver összes kliense álnevesített használati eseményeket küld (képernyők, műveletek, darabszámok), csak kiadási buildekben. Soha nem küld neveket, üzenettartalmat, fájlútvonalakat vagy e-mail-címeket.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'A használati statisztikák ki vannak kapcsolva. A szerver egyik kliense sem küld használati eseményeket.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'A szerver kliensei álnevesített használati eseményeket küldenek. Ezt csak a szerver üzemeltetője módosíthatja.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'A használati statisztikák ki vannak kapcsolva ezen a szerveren. Ezt csak a szerver üzemeltetője módosíthatja.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Küldjön álnevesített használati eseményeket a szerver összes kliensétől, hogy lássuk, mely funkciók segítenek (csak kiadási buildek). Soha nem küld neveket, üzenettartalmat, fájlútvonalakat vagy e-mail-címeket. Ezt bármikor módosíthatja: Beállítások → Adatvédelem.';
+
+  @override
   String get blocked => 'Blokkolva';
 
   @override

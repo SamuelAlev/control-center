@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "خريطة المسارات",
   "docs.sidebar.referenceCcServerCli": "واجهة سطر أوامر cc_server",
   "docs.sidebar.referenceBackup": "النسخ الاحتياطي والتصدير والاستيراد",
+  "docs.sidebar.referenceTelemetry": "تحليلات الاستخدام",
   "docs.sidebar.referenceGlossary": "المسرد"
 }

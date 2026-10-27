@@ -1725,6 +1725,29 @@ class AppLocalizationsPl extends AppLocalizations {
       'Wysyłaj diagnostykę awarii, błędów i wydajności, abyśmy mogli szybciej naprawiać problemy (tylko wydania release). Możesz to zmienić w każdej chwili w Ustawienia → Prywatność.';
 
   @override
+  String get usageAnalyticsTitle => 'Udostępnianie analityki użycia';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Wszyscy klienci tego serwera wysyłają pseudonimizowane zdarzenia użycia (ekrany, akcje, liczniki), tylko w wydaniach release. Nigdy imion, treści wiadomości, ścieżek plików ani adresów e-mail.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Analityka użycia jest wyłączona. Żaden klient tego serwera nie wysyła zdarzeń użycia.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Klienci tego serwera wysyłają pseudonimizowane zdarzenia użycia. Zmienić to może tylko operator serwera.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Analityka użycia jest wyłączona na tym serwerze. Zmienić to może tylko operator serwera.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Wysyłaj pseudonimizowane zdarzenia użycia ze wszystkich klientów tego serwera, abyśmy wiedzieli, które funkcje pomagają (tylko wydania release). Nigdy imion, treści wiadomości, ścieżek plików ani adresów e-mail. Możesz to zmienić w każdej chwili w Ustawienia → Prywatność.';
+
+  @override
   String get blocked => 'Zablokowany';
 
   @override

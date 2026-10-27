@@ -1722,6 +1722,29 @@ class AppLocalizationsCs extends AppLocalizations {
       'Odesílejte diagnostiku pádů, chyb a výkonu, abychom problémy opravili rychleji (jen vydané sestavení). Změnit to můžete kdykoli v Nastavení → Soukromí.';
 
   @override
+  String get usageAnalyticsTitle => 'Sdílet analytiku používání';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Všichni klienti tohoto serveru odesílají pseudonymní události používání (obrazovky, akce, počty), jen ve vydaných sestaveních. Nikdy jména, obsah zpráv, cesty k souborům ani e-mailové adresy.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Analytika používání je vypnutá. Žádný klient tohoto serveru neodesílá události používání.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Klienti tohoto serveru odesílají pseudonymní události používání. Změnit to může jen správce serveru.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Analytika používání je na tomto serveru vypnutá. Změnit to může jen správce serveru.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Odesílejte pseudonymní události používání ze všech klientů tohoto serveru, abychom věděli, které funkce pomáhají (jen vydané sestavení). Nikdy jména, obsah zpráv, cesty k souborům ani e-mailové adresy. Změnit to můžete kdykoli v Nastavení → Soukromí.';
+
+  @override
   String get blocked => 'Blokováno';
 
   @override

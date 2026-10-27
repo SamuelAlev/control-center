@@ -1,4 +1,6 @@
+import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:control_center/core/keybindings/keybinding_dispatcher.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:flutter/services.dart' show HardwareKeyboard;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,7 +18,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// active binding, so typing, focus-tree shortcuts and (on web) browser
 /// accelerators are untouched.
 final keybindingDispatcherProvider = Provider<KeybindingDispatcher>((ref) {
-  final dispatcher = KeybindingDispatcher();
+  final dispatcher = KeybindingDispatcher()
+    // Binding IDs are static command names, never entity-bearing.
+    ..onFired = (command) => ref.track(
+      AnalyticsEvents.commandExecuted(source: 'keybinding', command: command),
+    );
   ref.onDispose(dispatcher.dispose);
   return dispatcher;
 });

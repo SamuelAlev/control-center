@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "Routenkarte",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
   "docs.sidebar.referenceBackup": "Backup, Export und Import",
+  "docs.sidebar.referenceTelemetry": "Nutzungsanalysen",
   "docs.sidebar.referenceGlossary": "Glossar"
 }

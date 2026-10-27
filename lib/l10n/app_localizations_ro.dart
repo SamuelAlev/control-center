@@ -1721,6 +1721,29 @@ class AppLocalizationsRo extends AppLocalizations {
       'Trimite diagnosticări de crash, erori și performanță ca să putem rezolva problemele mai rapid (doar build-uri de release). Poți schimba oricând în Setări → Confidențialitate.';
 
   @override
+  String get usageAnalyticsTitle => 'Partajează statisticile de utilizare';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Toți clienții acestui server trimit evenimente de utilizare pseudonimizate (ecrane, acțiuni, numărători), doar în build-uri de release. Niciodată nume, conținutul mesajelor, căi de fișiere sau adrese de e-mail.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Statisticile de utilizare sunt dezactivate. Niciun client al acestui server nu trimite evenimente de utilizare.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Clienții acestui server trimit evenimente de utilizare pseudonimizate. Doar operatorul serverului poate schimba asta.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Statisticile de utilizare sunt dezactivate pe acest server. Doar operatorul serverului poate schimba asta.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Trimite evenimente de utilizare pseudonimizate de la toți clienții acestui server, ca să vedem ce funcții ajută (doar build-uri de release). Niciodată nume, conținutul mesajelor, căi de fișiere sau adrese de e-mail. Poți schimba oricând în Setări → Confidențialitate.';
+
+  @override
   String get blocked => 'Blocat';
 
   @override

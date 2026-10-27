@@ -25,6 +25,7 @@ workspace:
   - packages/cc_host
   - packages/cc_infra
   - packages/cc_data
+  - packages/cc_analytics
   - packages/cc_persistence
   - packages/cc_mcp
   - packages/cc_mcp_client
@@ -80,6 +81,10 @@ dependencies:
   # cc_rpc client. Every client (desktop LOCAL/REMOTE, web, phone) uses these.
   cc_data:
     path: packages/cc_data
+  # Analytics provider adapters (web-safe): the Umami sink behind cc_domain's
+  # Analytics facade. Shared with cc_remote and the server.
+  cc_analytics:
+    path: packages/cc_analytics
   # TextMate-grammar syntax highlighting (pure-Dart Shiki port; replaced the
   # unmaintained `highlight` hljs port). Themed by the custom CC theme and
   # wired through lib/shared/syntax/ — grammars, language table, tokenizer

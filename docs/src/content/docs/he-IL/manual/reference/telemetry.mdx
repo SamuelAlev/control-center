@@ -1,0 +1,160 @@
+---
+title: נתוני שימוש
+description: מה Control Center מתעד כשנתוני השימוש מופעלים, מי מחליט על כך ומה אף פעם לא נשלח.
+slug: he-IL/מדריך-למשתמש/עזר/נתוני-שימוש
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center יכול לשלוח **אירועי שימוש בשמות בדויים** למופע של [Umami](https://umami.is). נתוני השימוש **כבויים עד שמפעיל השרת מדליק אותם**. ההגדרה שייכת לשרת וחלה על כל לקוח שמחובר אליו: אפליקציית המחשב, אפליקציית הרשת, הטלפון והשרת עצמו.
+
+נתוני השימוש נפרדים מ**שתף דוחות קריסה**, שהיא הגדרה לכל מכשיר בנפרד לאבחון קריסות ושגיאות.
+
+## מי מחליט
+
+| מתג | איפה | השפעה |
+| --- | --- | --- |
+| **שתף נתוני שימוש** | ההגדרה הראשונית (שלב ה-sandbox) ו**הגדרות ← פרטיות**. רק מפעיל השרת יכול לשנות אותו; שאר החברים רואים את הערך הנוכחי לקריאה בלבד | לכל השרת. נשמר בתור `telemetry.usage_analytics` בהגדרות השרת. כבוי אלא אם הוגדר ל-`true` |
+| סוג ה-build | אוטומטי | גרסאות debug ו-profile לא שולחות. במקום זאת הן כותבות כל אירוע ליומן הדיבאג |
+| `CC_ANALYTICS_DEBUG=1` | הסביבה של `cc_server` או קובץ ה-`.env` שלו | מאפשר לגרסאות debug ו-profile של השרת, ושל כל לקוח שמחובר אליו, לשלוח באמת לצורכי בדיקה. המתג שלמעלה עדיין חייב להיות מופעל |
+| `DO_NOT_TRACK=1` | הסביבה של `cc_server` | עוצר את הדיווח של השרת עצמו, בלי קשר למצב המתג. הלקוחות ממשיכים לפעול לפי המתג |
+| שרת הדמו | אוטומטי | שרת הדמו הציבורי לא שולח שום דבר משלו. מבקרים לא יכולים לשנות את המתג |
+
+הלקוחות קוראים את ההגדרה מהשרת (`telemetry.config`, ואחר כך בזמן אמת דרך `telemetry.watch`). עד שהתשובה מגיעה, האירועים ממתינים במאגר זמני קטן בזיכרון. אם התשובה שלילית, המאגר נזרק. כיבוי המתג זורק את כל מה שעדיין ממתין בתור ועוצר את השליחה מיד, בכל הלקוחות.
+
+## מה אף פעם לא נשלח
+
+- תוכן של הודעות, כרטיסים, סקירות או פגישות, כותרות, פרומפטים, פקודות shell ושאילתות חיפוש
+- שמות, שמות משתמש להתחברות, כתובות אימייל, אווטארים ושמות תצוגה
+- נתיבי קבצים, שמות מאגרים, שמות ענפים, שמות מארחים וכתובות URL (מאגר נשלח רק כ-`repo_id` בשם בדוי, וקישור לפגישה רק כשם הספק שלו)
+- מזהים גולמיים מכל סוג
+
+כל אירוע עובר דרך מדיניות מאפיינים לפני שהוא יוצא מהתהליך. טקסט, נתיבים, כתובות URL, כתובות אימייל, מזהים שלא הומרו לשם בדוי ומחרוזות תחת מפתחות כמו `email`, `*_name`, `path`, `title`, `prompt`, `content` או `token` נזרקים במקום להישלח. מחרוזת נשלחת רק אם היא אסימון קצר מאוצר מילים סגור, כמו ערך enum, גרסה, אזור שפה או מזהה מודל.
+
+## מזהים בדויים
+
+מזהים נשלחים, אבל רק כשמות בדויים. כל מזהה של סביבת עבודה, מרחב, שיחה, סוכן, הרצה, משתמש ומכשיר מוחלף ב-HMAC-SHA256 עם המלח הסודי של ההתקנה עצמה (`telemetry.pseudonym_salt`), מקוצר ל-20 תווי hex. אותה סביבת עבודה מדווחת תמיד אותו ערך, כך שאפשר לקשר ולספור אירועים, אבל המזהה הגולמי אף פעם לא יוצא מההתקנה. המלח נוצר בהפעלה הראשונה של השרת ואף פעם לא נשלח לספק הניתוח. מחיקת תיקיית הנתונים של השרת יוצרת מלח ומזהה התקנה חדשים, וכך מנתקת את כל מה שתועד קודם.
+
+## מאפיינים בכל אירוע
+
+| מאפיין | דוגמה | משמעות |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (הטלפון) או `server`. משמש גם כשם המארח ב-Umami |
+| `app_version` | `0.0.11` | גרסת השחרור |
+| `app_build` | `4baf980` | ה-commit המקוצר ב-git שממנו נבנתה הגרסה |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` או מערכת ההפעלה של הטלפון (`ios`, `android`) |
+| `locale` | `fr_FR` | שפת הממשק |
+| `server_mode` | `local` | `local` (אפליקציית מחשב שמריצה שרת משלה) או `remote` |
+| `server_version` | `0.0.11` | גרסת השרת המחובר, כשהיא ידועה |
+| `is_demo` | `false` | האם הלקוח מחובר לדמו הציבורי |
+| `install_id` | שם בדוי | התקנת השרת |
+| `user_id` | שם בדוי | המשתמש המחובר, ברגע שהוא ידוע |
+| `device_id` | שם בדוי | המכשיר המצומד, ברגע שהוא ידוע. משמש גם כמזהה הייחודי ב-Umami |
+| `launch_id` | שם בדוי | הפעלה אחת של האפליקציה, לסידור האירועים של סשן |
+| `event_seq` | `12` | מיקום האירוע בתוך ההפעלה |
+
+בנוסף, Umami מקבל את כתובת ה-IP של הבקשה, וגוזר ממנה מדינה ואזור בלי לשמור את הכתובת, וכן את ה-User-Agent ואת גודל המסך.
+
+## צפיות במסכים
+
+כל ניווט מתעד צפייה בדף שכתובת ה-URL שלה היא **תבנית הנתיב**, כמו `/workspaces/:workspaceId/spaces/:spaceId`, ואף פעם לא הכתובת הממשית. שם המסך הוא המקטעים הקבועים של התבנית, כך שבדוגמה הוא `workspaces_spaces`. פרמטרים של הנתיב שמסתיימים ב-`Id` מצורפים כמאפייני `*_id` בשמות בדויים, ופרמטרים מספריים (כמו מספר של בקשת משיכה) כמספרים. כל שאר הפרמטרים נזרקים.
+
+## אירועי לקוח
+
+מתועדים על ידי אפליקציית המחשב, אפליקציית הרשת והטלפון עבור פעולות שאדם מבצע.
+
+| אירוע | מאפיינים | מתי מתועד |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | האפליקציה סיימה לעלות והתחברה |
+| `app_backgrounded` | `foreground_s` | החלון או הכרטיסייה הוסתרו |
+| `app_foregrounded` | `background_s` | הם הוצגו שוב |
+| `server_connected` | `reconnect` | החיבור חזר אחרי ניתוק |
+| `server_disconnected` | | החיבור נותק |
+| `server_switched` | | המשתמש עבר לשרת אחר |
+| `device_paired` | | הטלפון אישר צימוד |
+| `onboarding_step_viewed` | `step`, `step_index` | הוצג שלב בהגדרה הראשונית |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | ההגדרה הראשונית הסתיימה |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | המשתמש פתח סביבת עבודה אחרת |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | נשלחה הודעה מתיבת הכתיבה |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | רצה פקודת לוכסן בצד הלקוח. פקודות מובנות מדווחות את שמן, מיומנויות מדווחות `skill` ופקודות של המאגר מדווחות `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | ניתנה תשובה לבקשת אישור של סוכן |
+| `command_palette_opened` | | לוח הפקודות נפתח |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | רצה פקודה. פקודות עבור בקשת משיכה, חבר או שיחה מסוימים מדווחות רק את הסוג שלהן (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | נשלחה סקירה של בקשת משיכה |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | בוצע חיפוש. השאילתה עצמה אף פעם לא מתועדת |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | התחילה הקלטה של פגישה |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | היא נעצרה |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | ערכת הנושא או השפה השתנו |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | הנוף הצלילי התחיל, מהפקדים או עם מצב ריכוז |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | הוא נעצר |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | המשתמש בחר אווירה אחרת |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | מצב ריכוז התחיל |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | מצב ריכוז הסתיים, מוקדם או כשהזמן שלו נגמר |
+| `dictation_started` |  | התחילה הכתבה בתיבת הכתיבה |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | ההכתבה הסתיימה. מתועד רק אורך התמלול |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | האפליקציה ביקשה מהשרת להריץ פייפליין |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | הרצה שנכשלה נוסתה שוב |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | הרצה בוטלה מהאפליקציה |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | שלב שרץ הופסק בכוח |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | ניסיון התחברות ללוח שנה הסתיים |
+| `calendar_disconnected` | `workspace_id` | חשבון לוח שנה נותק |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | ניתנה תשובה להזמנה |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | הקלטה התחילה מאירוע בלוח השנה |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | נפתח קישור לפגישה (טלפון). מהקישור נגזר רק הספק |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | נעשה שימוש במרכז ההתראות |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | נוצר סוכן מהרישום |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | נפתחה כרטיסיית עורך חדשה במרחב |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | המיומנויות של סביבת העבודה השתנו |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | ניתנה תשובה להצעת תזמור |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | תוכנית אושרה או נדחתה (טלפון) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | התחילו יעד או לולאה בפיקוח (טלפון) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | שיחה נוצרה או פוצלה |
+| `conversation_rewound` | `conversation_id` | שיחה המשיכה מהודעה קודמת |
+| `space_archived` | `workspace_id`, `space_id` | מרחב הועבר לארכיון |
+
+## אירועי שרת
+
+מתועדים על ידי `cc_server` עבור עובדות שאף לקוח בודד לא רואה בדיוק פעם אחת. הרצה של סוכן נספרת פעם אחת, לא משנה כמה לקוחות צופים בה.
+
+| אירוע | מאפיינים | מתי מתועד |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | השרת סיים לעלות |
+| `workspace_created` | `workspace_id` | נוצרה סביבת עבודה |
+| `space_created` | `workspace_id`, `space_id` | נוצר מרחב |
+| `repo_added` | `workspace_id`, `repo_id` | קושר מאגר |
+| `ticket_created` | `workspace_id`, `ticket_id` | אדם או סוכן יצרו כרטיס |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | הרצה של סוכן הסתיימה |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | סוכן עצר כדי להמתין לאדם |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | מדיניות הפעולות דחתה פעולה של סוכן |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | הרצה של פייפליין הסתיימה. `trigger` הוא `manual`, סוג האירוע שהתחיל אותה, או רק הסוג של טריגר בעל שם (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | בקשת משיכה פורסמה ממרחב |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | בקשת משיכה שסוכן פתח מוזגה |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | הקלטה של פגישה נשמרה |
+| `space_deleted` | `workspace_id`, `space_id` | מרחב נמחק |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | כרטיס שינה סטטוס |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | כרטיס הוקצה |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | כרטיס עבר לסוכן אחר |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | עבודה שהואצלה על כרטיס הסתיימה |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | החברות בסביבת עבודה השתנתה |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | תחנה נסגרה, או נאספה |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | מיומנות של סביבת עבודה הותקנה, עודכנה או השתנתה בדיסק |
+| `calendar_auth_expired` | `workspace_id` | חיבור ללוח שנה דורש התחברות מחדש |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | אירוע בלוח השנה עומד להתחיל |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | ההוצאה חצתה סף תקציב |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | התבקשה סקירה בבקשת משיכה במעקב |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | החלטת הסקירה של בקשת משיכה במעקב השתנתה |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | בקשת משיכה שלא נפתחה על ידי סוכן מוזגה במאגר מקושר |
+
+## מסירה
+
+האירועים נשלחים אחד-אחד אל `<host>/api/send` מתור בזיכרון של עד 200 אירועים. שגיאת רשת, חריגה מזמן ההמתנה, `429` או `5xx` משאירים את האירוע ומנסים שוב עם השהיה מעריכית, משנייה אחת ועד 5 דקות. כל `4xx` אחר זורק אותו. שום דבר לא נכתב לדיסק, ולכן אירועים שעדיין בתור כשהאפליקציה נסגרת הולכים לאיבוד. התור מרוקן כשהאפליקציה עוברת לרקע וכשהשרת נכבה.
+
+## הפניית build למופע אחר
+
+היעד נקבע בזמן הבנייה:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+המתאם של הספק נמצא ב-`packages/cc_analytics`. תמיכה בשירות ניתוח אחר פירושה הוספת מתאם שם. תוכנית המעקב וכללי הפרטיות נשארים אותו דבר.

@@ -54,6 +54,7 @@ export 'src/repositories/remote_sandbox_detector.dart';
 export 'src/repositories/remote_sandbox_exec_grant_repository.dart';
 export 'src/repositories/remote_space_read_repository.dart';
 export 'src/repositories/remote_team_repository.dart';
+export 'src/repositories/remote_telemetry_config_repository.dart';
 export 'src/repositories/remote_terminal_repository.dart';
 export 'src/repositories/remote_ticket_link_repository.dart';
 export 'src/repositories/remote_ticket_repository.dart';

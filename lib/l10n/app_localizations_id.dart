@@ -1698,6 +1698,29 @@ class AppLocalizationsId extends AppLocalizations {
       'Kirim diagnostik crash, error, dan performa agar kami bisa memperbaiki masalah lebih cepat (hanya build rilis). Anda dapat mengubah ini kapan saja di Pengaturan → Privasi.';
 
   @override
+  String get usageAnalyticsTitle => 'Bagikan analitik penggunaan';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Semua klien server ini mengirim peristiwa penggunaan berpseudonim (layar, tindakan, jumlah), hanya di build rilis. Tidak pernah nama, isi pesan, path file, atau alamat email.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Analitik penggunaan nonaktif. Tidak ada klien server ini yang mengirim peristiwa penggunaan.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Klien server ini mengirim peristiwa penggunaan berpseudonim. Hanya operator server yang dapat mengubahnya.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Analitik penggunaan nonaktif di server ini. Hanya operator server yang dapat mengubahnya.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Kirim peristiwa penggunaan berpseudonim dari semua klien server ini agar kami tahu fitur mana yang membantu (hanya build rilis). Tidak pernah nama, isi pesan, path file, atau alamat email. Anda dapat mengubah ini kapan saja di Pengaturan → Privasi.';
+
+  @override
   String get blocked => 'Diblokir';
 
   @override

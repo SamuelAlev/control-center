@@ -1,0 +1,160 @@
+---
+title: تحليلات الاستخدام
+description: ما يسجّله Control Center حين تكون تحليلات الاستخدام مفعّلة، ومن يقرّر ذلك، وما لا يُرسَل أبدًا.
+slug: ar-SA/دليل-المستخدم/مرجع/تحليلات-الاستخدام
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+يستطيع Control Center إرسال **أحداث استخدام بأسماء مستعارة** إلى نسخة من [Umami](https://umami.is). تحليلات الاستخدام **معطّلة إلى أن يفعّلها مشغّل الخادم**. يخص هذا الإعداد الخادم وينطبق على كل عميل متصل به: تطبيق الحاسوب وتطبيق الويب والهاتف والخادم نفسه.
+
+تحليلات الاستخدام منفصلة عن **مشاركة تقارير الأعطال**، وهو إعداد خاص بكل جهاز لتشخيصات الأعطال والأخطاء.
+
+## من يقرّر
+
+| المفتاح | المكان | الأثر |
+| --- | --- | --- |
+| **مشاركة تحليلات الاستخدام** | الإعداد الأولي (خطوة sandbox) و**الإعدادات ← الخصوصية**. لا يغيّره إلا مشغّل الخادم، ويرى بقية الأعضاء القيمة الحالية للقراءة فقط | على مستوى الخادم كله. يُخزَّن باسم `telemetry.usage_analytics` في إعدادات الخادم. معطّل ما لم يُضبط على `true` |
+| نوع البناء | تلقائي | لا ترسل إصدارات debug وprofile شيئًا، بل تكتب كل حدث في سجل التصحيح بدلًا من ذلك |
+| `CC_ANALYTICS_DEBUG=1` | بيئة `cc_server` أو ملف `.env` الخاص به | يتيح لإصدارات debug وprofile من الخادم، ومن كل عميل متصل به، أن ترسل فعلًا لأغراض الاختبار. ويجب أن يظل المفتاح أعلاه مفعّلًا |
+| `DO_NOT_TRACK=1` | بيئة `cc_server` | يوقف تقارير الخادم الخاصة به أيًّا كانت حالة المفتاح. يواصل العملاء اتباع المفتاح |
+| خادم العرض التجريبي | تلقائي | لا يرسل خادم العرض التجريبي العام شيئًا من تلقاء نفسه، ولا يستطيع الزوار تغيير المفتاح |
+
+يقرأ العملاء الإعداد من الخادم (`telemetry.config`، ثم مباشرةً عبر `telemetry.watch`). وإلى أن يصل الجواب، تنتظر الأحداث في مخزن مؤقت صغير في الذاكرة. فإن كان الجواب بالرفض، يُتجاهَل المخزن المؤقت. وإيقاف المفتاح يتجاهل كل ما بقي في قائمة الانتظار ويوقف الإرسال فورًا على كل العملاء.
+
+## ما لا يُرسَل أبدًا
+
+- محتوى الرسائل والتذاكر والمراجعات والاجتماعات، والعناوين، والموجّهات، وأوامر الصدفة، واستعلامات البحث
+- الأسماء وأسماء الدخول وعناوين البريد الإلكتروني والصور الرمزية والأسماء المعروضة
+- مسارات الملفات وأسماء المستودعات وأسماء الفروع وأسماء المضيفين وعناوين URL (لا يُرسَل المستودع إلا بمعرّف `repo_id` مستعار، ولا يُرسَل رابط الاجتماع إلا باسم مزوّده)
+- المعرّفات الخام بكل أنواعها
+
+يمر كل حدث عبر سياسة للخصائص قبل أن يغادر العملية. فالنصوص والمسارات وعناوين URL وعناوين البريد الإلكتروني والمعرّفات غير المحوّلة إلى أسماء مستعارة، والسلاسل الواقعة تحت مفاتيح مثل `email` و`*_name` و`path` و`title` و`prompt` و`content` و`token`، تُحذف بدل أن تُرسَل. ولا تُرسَل السلسلة إلا إن كانت رمزًا قصيرًا من مفردات مغلقة، مثل قيمة تعداد أو إصدار أو لغة أو معرّف نموذج.
+
+## المعرّفات المستعارة
+
+تُرسَل المعرّفات، لكن بأسماء مستعارة فقط. يُستبدَل كل معرّف لمساحة عمل أو مساحة أو محادثة أو وكيل أو تشغيل أو مستخدم أو جهاز بقيمة HMAC-SHA256 محسوبة بملح سري خاص بالتثبيت نفسه (`telemetry.pseudonym_salt`)، مقتطَعة إلى 20 محرفًا ست عشريًا. تُبلغ مساحة العمل نفسها دائمًا عن القيمة نفسها، فيمكن ربط الأحداث وعدّها، لكن المعرّف الخام لا يغادر التثبيت أبدًا. يُنشأ الملح عند أول تشغيل للخادم ولا يُرسَل أبدًا إلى مزوّد التحليلات. وحذف دليل بيانات الخادم يُنشئ ملحًا ومعرّف تثبيت جديدين، فينفصل كل ما سُجّل من قبل.
+
+## خصائص كل حدث
+
+| الخاصية | مثال | المعنى |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop` أو `web` أو `remote` (الهاتف) أو `server`. ويُستخدم أيضًا اسمَ المضيف في Umami |
+| `app_version` | `0.0.11` | إصدار النشر |
+| `app_build` | `4baf980` | الإيداع المختصر في git الذي بُني منه |
+| `platform` | `macos` | `macos` أو `windows` أو `linux` أو `web` أو نظام تشغيل الهاتف (`ios` أو `android`) |
+| `locale` | `fr_FR` | لغة الواجهة |
+| `server_mode` | `local` | `local` (تطبيق الحاسوب يشغّل خادمه الخاص) أو `remote` |
+| `server_version` | `0.0.11` | إصدار الخادم المتصل، متى كان معروفًا |
+| `is_demo` | `false` | هل العميل متصل بالعرض التجريبي العام |
+| `install_id` | اسم مستعار | تثبيت الخادم |
+| `user_id` | اسم مستعار | المستخدم الذي سجّل الدخول، حالما يُعرف |
+| `device_id` | اسم مستعار | الجهاز المقترن، حالما يُعرف. وهو أيضًا المعرّف المميّز في Umami |
+| `launch_id` | اسم مستعار | تشغيل واحد للتطبيق، لترتيب أحداث الجلسة |
+| `event_seq` | `12` | موضع الحدث ضمن التشغيل |
+
+ويتلقى Umami فوق ذلك عنوان IP للطلب، فيستنتج منه البلد والمنطقة دون أن يخزّن العنوان، إضافةً إلى User-Agent وحجم الشاشة.
+
+## مشاهدات الشاشات
+
+تسجّل كل عملية تنقّل مشاهدةَ صفحة عنوانها هو **قالب المسار**، مثل `/workspaces/:workspaceId/spaces/:spaceId`، لا العنوان الفعلي أبدًا. واسم الشاشة هو المقاطع الثابتة في القالب، فيكون في هذا المثال `workspaces_spaces`. تُرفَق معاملات المسار المنتهية بـ `Id` خصائصَ `*_id` بأسماء مستعارة، والرقمية منها (كرقم طلب سحب) أرقامًا. وتُحذف كل المعاملات الأخرى.
+
+## أحداث العملاء
+
+يسجّلها تطبيق الحاسوب وتطبيق الويب والهاتف لما يفعله الشخص.
+
+| الحدث | الخصائص | يُسجَّل حين |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | ينتهي التطبيق من الإقلاع ويتصل |
+| `app_backgrounded` | `foreground_s` | تُخفى النافذة أو علامة التبويب |
+| `app_foregrounded` | `background_s` | تظهر من جديد |
+| `server_connected` | `reconnect` | يعود الاتصال بعد انقطاعه |
+| `server_disconnected` | | ينقطع الاتصال |
+| `server_switched` | | ينتقل المستخدم إلى خادم آخر |
+| `device_paired` | | يؤكّد الهاتف الاقتران |
+| `onboarding_step_viewed` | `step`، `step_index` | تُعرض خطوة من الإعداد الأولي |
+| `onboarding_completed` | `duration_s`، `step_count`، `workspace_id` | ينتهي الإعداد الأولي |
+| `workspace_switched` | `workspace_id`، `previous_workspace_id` | يفتح المستخدم مساحة عمل أخرى |
+| `message_sent` | `workspace_id`، `space_id`، `conversation_id`، `delivery` (`send`، `steer`، `queued`)، `char_count`، `attachment_count`، `agent_mention_count`، `other_mention_count`، `slash_command` | تُرسَل رسالة من محرّر الرسائل |
+| `slash_command_run` | `command`، `workspace_id`، `space_id` | يُنفَّذ أمر شرطة مائلة من جهة العميل. تُبلغ الأوامر المدمجة عن اسمها، والمهارات عن `skill`، وأوامر المستودع عن `custom` |
+| `approval_decided` | `decision`، `remembered`، `surface`، `action_classes`، `action_class_count`، `severity`، `workspace_id`، `space_id`، `conversation_id` | يُجاب عن طلب موافقة من وكيل |
+| `command_palette_opened` | | تُفتح لوحة الأوامر |
+| `command_executed` | `source` (`palette`، `keybinding`)، `command` | يُنفَّذ أمر. الأوامر الخاصة بطلب سحب أو عضو أو محادثة بعينها لا تُبلغ إلا عن نوعها (`pr`، `member`، `conversation`) |
+| `review_submitted` | `verdict`، `comment_count`، `workspace_id` | تُرسَل مراجعة لطلب سحب |
+| `search_performed` | `scope` (`space_messages`، `repo_content`)، `result_count`، `query_length`، `workspace_id`، `space_id` | يجري بحث. ولا يُسجَّل الاستعلام نفسه أبدًا |
+| `meeting_recording_started` | `workspace_id`، `meeting_id` | يبدأ تسجيل اجتماع |
+| `meeting_recording_stopped` | `duration_s`، `workspace_id`، `meeting_id` | يتوقف |
+| `setting_changed` | `setting` (`appearance.theme`، `appearance.locale`)، `value` | تتغيّر السمة أو اللغة |
+| `soundscape_started` | `mood`، `source` (`user`، `focus`) | يبدأ المشهد الصوتي، من عناصر التحكم أو مع وضع التركيز |
+| `soundscape_stopped` | `mood`، `source`، `listened_s` | يتوقف |
+| `soundscape_mood_changed` | `from_mood`، `to_mood`، `playing` | يختار المستخدم مزاجًا آخر |
+| `focus_mode_started` | `planned_minutes`، `has_goal`، `block_notifications` | يبدأ وضع التركيز |
+| `focus_mode_ended` | `elapsed_s`، `planned_minutes`، `completed` | ينتهي وضع التركيز، مبكرًا أو عند انقضاء وقته |
+| `dictation_started` |  | يبدأ الإملاء في محرّر الرسائل |
+| `dictation_ended` | `outcome` (`completed`، `cancelled`، `failed`)، `duration_s`، `transcript_chars`، `error_kind` | ينتهي الإملاء. ولا يُسجَّل إلا طول النص المنسوخ |
+| `pipeline_run_requested` | `workspace_id`، `template_id`، `trigger`، `dry_run`، `started` | يطلب التطبيق من الخادم تشغيل خط أنابيب |
+| `pipeline_run_retried` | `workspace_id`، `pipeline_run_id` | تُعاد محاولة تشغيل فشل |
+| `pipeline_run_cancel_requested` | `workspace_id`، `pipeline_run_id` | يُلغى تشغيل من التطبيق |
+| `pipeline_step_killed` | `workspace_id`، `step_run_id` | تُنهى خطوة قيد التشغيل قسرًا |
+| `calendar_connect_finished` | `outcome` (`connected`، `denied`، `expired`، `failed`، `cancelled`)، `builtin_client`، `duration_s` | تنتهي محاولة تسجيل دخول إلى تقويم |
+| `calendar_disconnected` | `workspace_id` | يُفصل حساب تقويم |
+| `calendar_rsvp_sent` | `calendar_event_id`، `response`، `previous_response`، `workspace_id` | يُجاب عن دعوة |
+| `calendar_event_recorded` | `workspace_id`، `calendar_event_id` | يبدأ تسجيل من حدث في التقويم |
+| `calendar_meeting_joined` | `provider` (`meet`، `zoom`، `teams`، `webex`، `other`)، `workspace_id`، `calendar_event_id` | يُفتح رابط اجتماع (الهاتف). ولا يُستخلص من الرابط إلا المزوّد |
+| `notification_action` | `action` (`read`، `unread`، `dismiss`، `mark_all_read`، `clear_all`)، `workspace_id` | يُستخدم مركز الإشعارات |
+| `agent_created` | `workspace_id`، `agent_id`، `adapter`، `model` | يُنشأ وكيل من السجل |
+| `tab_opened` | `kind` (`chat`، `terminal`، `browser`، `rig`، `codeServer`، `file`، …) | تُفتح علامة تبويب جديدة للمحرّر في مساحة |
+| `skill_action` | `action` (`install`، `update`، `uninstall`، `source_added`، `source_removed`)، `skill_id`، `blocked` | تتغيّر مهارات مساحة العمل |
+| `orchestration_decided` | `decision` (`approved`، `cancelled`)، `workspace_id`، `orchestration_id` | يُجاب عن مقترح تنسيق |
+| `plan_decided` | `decision` (`approved`، `rejected`)، `plan_id`، `workspace_id`، `partial`، `node_count` | تُعتمد خطة أو تُرفض (الهاتف) |
+| `goal_started` | `kind` (`goal`، `loop`)، `workspace_id`، `space_id`، `conversation_id`، `agent_id`، `budget_cents`، `accepted` | يبدأ هدف أو حلقة تحت الإشراف (الهاتف) |
+| `conversation_created` | `workspace_id`، `space_id`، `conversation_id`، `source` (`new`، `fork`) | تُنشأ محادثة أو تُتفرّع |
+| `conversation_rewound` | `conversation_id` | تُستأنف محادثة من رسالة سابقة |
+| `space_archived` | `workspace_id`، `space_id` | تُؤرشف مساحة |
+
+## أحداث الخادم
+
+يسجّلها `cc_server` للوقائع التي لا يراها أي عميل منفرد مرة واحدة بالضبط. يُحتسب تشغيل الوكيل مرة واحدة مهما كان عدد العملاء الذين يتابعونه.
+
+| الحدث | الخصائص | يُسجَّل حين |
+| --- | --- | --- |
+| `server_started` | `workspace_count`، `startup_ms` | ينتهي الخادم من الإقلاع |
+| `workspace_created` | `workspace_id` | تُنشأ مساحة عمل |
+| `space_created` | `workspace_id`، `space_id` | تُنشأ مساحة |
+| `repo_added` | `workspace_id`، `repo_id` | يُربط مستودع |
+| `ticket_created` | `workspace_id`، `ticket_id` | ينشئ شخص أو وكيل تذكرة |
+| `agent_run_completed` | `agent_id`، `workspace_id`، `conversation_id`، `run_id`، `status`، `error_family`، `role`، `adapter`، `model`، `effort`، `task_family`، `subagent`، `pipeline`، `resumed_native_session`، `duration_ms`، `time_to_first_token_ms`، `input_tokens`، `output_tokens`، `thought_tokens`، `cache_read_tokens`، `cache_write_tokens`، `output_rejections`، `cost_usd` | ينتهي تشغيل وكيل |
+| `agent_awaiting_input` | `kind` (`approval`، `question`، `credential`)، `workspace_id`، `agent_id`، `conversation_id` | يتوقف وكيل لينتظر شخصًا |
+| `agent_action_blocked` | `workspace_id`، `agent_id`، `space_id`، `source` | ترفض سياسة الإجراءات إجراءً لوكيل |
+| `pipeline_run_finished` | `outcome` (`completed`، `failed`، `cancelled`)، `workspace_id`، `pipeline_run_id`، `template_id`، `trigger`، `duration_ms`، `active_ms`، `attempt_count`، `template_version`، `cost_cents`، `tokens`، `dry_run`، `sub_pipeline` | ينتهي تشغيل خط أنابيب. قيمة `trigger` هي `manual`، أو نوع الحدث الذي بدأه، أو نوع المشغّل المسمّى فقط (`webhook`) |
+| `pull_request_published` | `workspace_id`، `pr_id` | يُنشر طلب سحب من مساحة |
+| `pull_request_merged` | `workspace_id`، `pr_id`، `agent_id` | يُدمج طلب سحب فتحه وكيل |
+| `meeting_recorded` | `workspace_id`، `meeting_id`، `transcript_chars` | يُحفظ تسجيل اجتماع |
+| `space_deleted` | `workspace_id`، `space_id` | تُحذف مساحة |
+| `ticket_status_changed` | `workspace_id`، `ticket_id`، `from_status`، `to_status` | تتغيّر حالة تذكرة |
+| `ticket_assigned` | `workspace_id`، `ticket_id`، `assignee_type`، `agent_id`، `team_id` | تُسند تذكرة |
+| `ticket_reassigned` | `workspace_id`، `ticket_id`، `from_agent_id`، `to_agent_id` | تنتقل تذكرة إلى وكيل آخر |
+| `ticket_work_finished` | `ticket_id`، `outcome` (`completed`، `failed`، `cancelled`) | ينتهي العمل المفوَّض على تذكرة |
+| `workspace_member_changed` | `workspace_id`، `member_user_id`، `change` (`added`، `removed`، `role_changed`)، `role` | تتغيّر عضوية مساحة عمل |
+| `rig_closed` | `workspace_id`، `rig_id`، `reason`، `reaped`، `agent_id` | تُغلق منصة أو تُحصد |
+| `skill_updated` | `workspace_id`، `skill_id`، `origin`، `scan_verdict` | تُثبَّت مهارة مساحة عمل أو تُحدَّث أو تتغيّر على القرص |
+| `calendar_auth_expired` | `workspace_id` | يحتاج اتصال تقويم إلى تسجيل الدخول من جديد |
+| `calendar_meeting_starting_soon` | `workspace_id`، `calendar_event_id`، `has_meeting_link`، `lead_s` | يوشك حدث في التقويم أن يبدأ |
+| `budget_threshold_crossed` | `scope_type`، `scope_id`، `spent_cents`، `budget_cents`، `hard_stop` | يتجاوز الإنفاق عتبة في الميزانية |
+| `pull_request_review_requested` | `workspace_id`، `repo_id` | تُطلب مراجعة على طلب سحب متتبَّع |
+| `pull_request_review_decision_changed` | `workspace_id`، `repo_id`، `decision`، `reviewers_remaining` | يتغيّر قرار المراجعة لطلب سحب متتبَّع |
+| `external_pull_request_merged` | `workspace_id`، `repo_id` | يُدمج في مستودع مرتبط طلب سحب لم يفتحه وكيل |
+
+## التسليم
+
+تُرسَل الأحداث واحدًا تلو الآخر إلى `<host>/api/send` من قائمة انتظار في الذاكرة تتسع لـ 200 حدث. عند خطأ في الشبكة أو انتهاء المهلة أو `429` أو `5xx` يُحتفظ بالحدث وتُعاد محاولته بتراجع أُسّي، من ثانية واحدة حتى 5 دقائق. وأي `4xx` آخر يحذفه. لا يُكتب شيء على القرص، لذا تضيع الأحداث التي بقيت في قائمة الانتظار عند إغلاق التطبيق. تُفرَّغ قائمة الانتظار حين ينتقل التطبيق إلى الخلفية وحين يتوقف الخادم.
+
+## توجيه بناء إلى نسخة أخرى
+
+تُحدَّد الوجهة وقت البناء:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+يوجد محوّل المزوّد في `packages/cc_analytics`. ودعم خدمة تحليلات أخرى يعني إضافة محوّل هناك. وتبقى خطة التتبّع وقواعد الخصوصية كما هي.

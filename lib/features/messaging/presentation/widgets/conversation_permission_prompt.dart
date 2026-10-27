@@ -5,6 +5,7 @@ import 'package:cc_domain/cc_domain.dart' show ConfirmationRequestDto;
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_card.dart';
+import 'package:control_center/features/messaging/providers/approval_analytics.dart';
 import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
@@ -47,10 +48,11 @@ class _ConversationPermissionPromptState
   final Set<String> _responding = {};
 
   Future<void> _respond(
-    String id, {
+    ConfirmationRequestDto request, {
     required bool approved,
     bool remember = false,
   }) async {
+    final id = request.id;
     if (_responding.contains(id)) {
       return;
     }
@@ -63,6 +65,13 @@ class _ConversationPermissionPromptState
             approved: approved,
             rememberForSeconds: remember ? kApprovalRememberSeconds : null,
           );
+      trackApprovalDecision(
+        ref,
+        request,
+        approved: approved,
+        remembered: remember,
+        surface: 'conversation',
+      );
     } finally {
       if (mounted) {
         setState(() => _responding.remove(id));
@@ -74,11 +83,11 @@ class _ConversationPermissionPromptState
     final value = answer.selectedLabels.firstOrNull;
     switch (value) {
       case 'deny':
-        unawaited(_respond(request.id, approved: false));
+        unawaited(_respond(request, approved: false));
       case 'remember':
-        unawaited(_respond(request.id, approved: true, remember: true));
+        unawaited(_respond(request, approved: true, remember: true));
       case 'approve':
-        unawaited(_respond(request.id, approved: true));
+        unawaited(_respond(request, approved: true));
     }
   }
 

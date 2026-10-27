@@ -108,6 +108,12 @@
   "diffSharingOffSubtitle": "Os agentes usam apenas metadados estruturados (caminhos de ficheiros, números de linha, descrição da PR); nenhum código bruto sai da aplicação.",
   "errorReportingTitle": "Partilhar relatórios de falhas",
   "onboardingDiagnosticsSubtitle": "Envie diagnósticos de falhas, erros e desempenho para nos ajudar a corrigir problemas mais rápido (apenas em versões de produção). Você pode alterar isso a qualquer momento em Definições → Privacidade.",
+  "usageAnalyticsTitle": "Partilhar análises de utilização",
+  "usageAnalyticsOnSubtitle": "Todos os clientes deste servidor enviam eventos de utilização pseudonimizados (ecrãs, ações, contagens), apenas em versões de produção. Nunca nomes, conteúdo de mensagens, caminhos de ficheiros ou endereços de e-mail.",
+  "usageAnalyticsOffSubtitle": "As análises de utilização estão desativadas. Nenhum cliente deste servidor envia eventos de utilização.",
+  "usageAnalyticsManagedOnSubtitle": "Os clientes deste servidor enviam eventos de utilização pseudonimizados. Apenas o operador do servidor pode alterar isto.",
+  "usageAnalyticsManagedOffSubtitle": "As análises de utilização estão desativadas neste servidor. Apenas o operador do servidor pode alterar isto.",
+  "onboardingUsageAnalyticsSubtitle": "Envie eventos de utilização pseudonimizados de todos os clientes deste servidor para sabermos que funcionalidades ajudam (apenas em versões de produção). Nunca nomes, conteúdo de mensagens, caminhos de ficheiros ou endereços de e-mail. Pode alterar isto a qualquer momento em Definições → Privacidade.",
   "deletePipelineRun": "Eliminar execução do pipeline",
   "deletePipelineRunConfirm": "Eliminar esta execução de \"{template}\"? Esta ação não pode ser desfeita.",
   "@deletePipelineRunConfirm": {

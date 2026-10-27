@@ -1,20 +1,21 @@
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_remote/analytics.dart';
 import 'package:cc_remote/app_icons.dart';
-import 'package:cc_remote/external_link.dart';
 import 'package:cc_remote/format.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// The card above the agenda: the meeting happening now, or the next one.
-class UpNextCard extends StatelessWidget {
+class UpNextCard extends ConsumerWidget {
   const UpNextCard({super.key, required this.event});
 
   final CalendarEventDto event;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final start = DateTime.tryParse(event.startTime);
@@ -97,7 +98,7 @@ class UpNextCard extends StatelessWidget {
               fullWidth: true,
               size: CcButtonSize.sm,
               icon: AppIcons.video,
-              onPressed: () => openExternal(event.meetingUrl),
+              onPressed: () => joinCalendarMeeting(ref, event),
               child: Text(l10n.join),
             ),
           ],

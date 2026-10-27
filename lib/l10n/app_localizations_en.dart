@@ -1695,6 +1695,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'Send crash, error and performance diagnostics so we can fix problems faster (release builds only). You can change this any time in Settings → Privacy.';
 
   @override
+  String get usageAnalyticsTitle => 'Share usage analytics';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Pseudonymous usage events (screens, actions, counts) are sent from every client of this server, release builds only. Never names, message content, file paths or email addresses.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Usage analytics are off. No client of this server sends usage events.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Pseudonymous usage events are sent from this server\'s clients. Only the server operator can change this.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Usage analytics are off on this server. Only the server operator can change this.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Send pseudonymous usage events from every client of this server so we learn which features help (release builds only). Never names, message content, file paths or email addresses. You can change this any time in Settings → Privacy.';
+
+  @override
   String get blocked => 'Blocked';
 
   @override

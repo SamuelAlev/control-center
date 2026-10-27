@@ -1666,6 +1666,29 @@ class AppLocalizationsJa extends AppLocalizations {
       '問題をより早く修正できるよう、クラッシュ、エラー、パフォーマンスの診断情報を送信します（リリースビルドのみ）。設定 → プライバシーでいつでも変更できます。';
 
   @override
+  String get usageAnalyticsTitle => '利用状況の分析を共有';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'このサーバーのすべてのクライアントが、仮名化された利用イベント（画面、操作、件数）を送信します（リリースビルドのみ）。名前、メッセージの内容、ファイルパス、メールアドレスは一切送信しません。';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      '利用状況の分析はオフです。このサーバーのクライアントは利用イベントを送信しません。';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'このサーバーのクライアントは仮名化された利用イベントを送信します。変更できるのはサーバーの運用者だけです。';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'このサーバーでは利用状況の分析がオフです。変更できるのはサーバーの運用者だけです。';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'どの機能が役立っているかを把握するため、このサーバーのすべてのクライアントから仮名化された利用イベントを送信します（リリースビルドのみ）。名前、メッセージの内容、ファイルパス、メールアドレスは一切送信しません。設定 → プライバシーでいつでも変更できます。';
+
+  @override
   String get blocked => 'ブロック中';
 
   @override

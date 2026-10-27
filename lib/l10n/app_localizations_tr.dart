@@ -1702,6 +1702,29 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sorunları daha hızlı giderebilmemiz için çökme, hata ve performans tanıları gönderin (yalnızca yayın derlemeleri). Bunu istediğiniz zaman Ayarlar → Gizlilik bölümünden değiştirebilirsiniz.';
 
   @override
+  String get usageAnalyticsTitle => 'Kullanım analizlerini paylaş';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Bu sunucunun tüm istemcileri takma adlı kullanım olayları (ekranlar, eylemler, sayımlar) gönderir, yalnızca yayın derlemelerinde. Asla adlar, mesaj içeriği, dosya yolları veya e-posta adresleri gönderilmez.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Kullanım analizleri kapalı. Bu sunucunun hiçbir istemcisi kullanım olayı göndermez.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Bu sunucunun istemcileri takma adlı kullanım olayları gönderir. Bunu yalnızca sunucu operatörü değiştirebilir.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Bu sunucuda kullanım analizleri kapalı. Bunu yalnızca sunucu operatörü değiştirebilir.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Hangi özelliklerin işe yaradığını görebilmemiz için bu sunucunun tüm istemcilerinden takma adlı kullanım olayları gönderin (yalnızca yayın derlemeleri). Asla adlar, mesaj içeriği, dosya yolları veya e-posta adresleri gönderilmez. Bunu istediğiniz zaman Ayarlar → Gizlilik bölümünden değiştirebilirsiniz.';
+
+  @override
   String get blocked => 'Engellendi';
 
   @override

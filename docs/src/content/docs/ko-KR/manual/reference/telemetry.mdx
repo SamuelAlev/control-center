@@ -1,0 +1,160 @@
+---
+title: 사용 분석
+description: 사용 분석이 켜져 있을 때 Control Center가 기록하는 내용, 누가 결정하는지, 그리고 절대 전송되지 않는 항목.
+slug: ko-KR/매뉴얼/레퍼런스/사용-분석
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center는 **가명 처리된 사용 이벤트**를 [Umami](https://umami.is) 인스턴스로 보낼 수 있습니다. 사용 분석은 **서버 운영자가 켜기 전까지 꺼져 있습니다**. 이 설정은 서버에 속하며 서버에 연결된 모든 클라이언트, 즉 데스크톱 앱, 웹 앱, 휴대폰, 그리고 서버 자체에 적용됩니다.
+
+사용 분석은 크래시와 오류 진단을 위한 기기별 설정인 **크래시 리포트 공유**와는 별개입니다.
+
+## 누가 결정하는가
+
+| 스위치 | 위치 | 효과 |
+| --- | --- | --- |
+| **사용 분석 공유** | 온보딩(샌드박스 단계)과 **설정 → 개인정보**. 서버 운영자만 변경할 수 있으며, 다른 멤버에게는 현재 값이 읽기 전용으로 표시됩니다 | 서버 전체에 적용됩니다. 서버 설정에 `telemetry.usage_analytics`로 저장됩니다. `true`로 설정하지 않으면 꺼져 있습니다 |
+| 빌드 유형 | 자동 | debug 및 profile 빌드는 전송하지 않습니다. 대신 각 이벤트를 디버그 로그에 기록합니다 |
+| `CC_ANALYTICS_DEBUG=1` | `cc_server` 환경 또는 그 `.env` | 테스트를 위해 서버와 서버에 연결된 모든 클라이언트의 debug 및 profile 빌드가 실제로 전송하도록 허용합니다. 이 경우에도 위의 스위치가 켜져 있어야 합니다 |
+| `DO_NOT_TRACK=1` | `cc_server` 환경 | 스위치 값과 관계없이 서버 자체의 전송을 중지합니다. 클라이언트는 계속 스위치를 따릅니다 |
+| 데모 서버 | 자동 | 공개 데모 서버는 자체적으로 아무것도 보내지 않습니다. 방문자는 스위치를 변경할 수 없습니다 |
+
+클라이언트는 서버에서 설정을 읽습니다(`telemetry.config`로 읽은 뒤 `telemetry.watch`로 실시간 반영). 응답이 도착할 때까지 이벤트는 작은 메모리 버퍼에서 대기합니다. 응답이 '아니요'이면 버퍼는 폐기됩니다. 스위치를 끄면 아직 대기열에 있는 항목이 모두 폐기되고, 모든 클라이언트에서 전송이 즉시 중지됩니다.
+
+## 절대 전송되지 않는 항목
+
+- 메시지, 티켓, 리뷰, 회의의 내용, 제목, 프롬프트, 셸 명령, 검색어
+- 이름, 로그인, 이메일 주소, 아바타, 표시 이름
+- 파일 경로, 저장소 이름, 브랜치 이름, 호스트 이름, URL(저장소는 가명 처리된 `repo_id`로만, 회의 링크는 제공업체 이름으로만 전송됩니다)
+- 모든 종류의 원시 식별자
+
+모든 이벤트는 프로세스를 벗어나기 전에 속성 정책을 거칩니다. 텍스트, 경로, URL, 이메일 주소, 래핑되지 않은 ID, 그리고 `email`, `*_name`, `path`, `title`, `prompt`, `content`, `token` 같은 키 아래의 문자열은 전송되지 않고 폐기됩니다. 문자열은 enum 값, 버전, 로캘, 모델 ID처럼 닫힌 어휘에 속한 짧은 토큰인 경우에만 전송됩니다.
+
+## 가명 ID
+
+ID는 전송되지만 가명으로만 전송됩니다. 워크스페이스, 스페이스, 대화, 에이전트, 실행, 사용자, 기기의 각 ID는 설치본 고유의 비밀 솔트(`telemetry.pseudonym_salt`)를 사용한 HMAC-SHA256으로 대체되고, 16진수 20자로 잘립니다. 같은 워크스페이스는 항상 같은 값을 보고하므로 이벤트를 연결하고 집계할 수 있지만, 원시 ID는 설치본 밖으로 나가지 않습니다. 솔트는 서버를 처음 시작할 때 생성되며 분석 제공업체로 전송되지 않습니다. 서버의 데이터 디렉터리를 삭제하면 새 솔트와 설치 ID가 생성되어, 이전에 기록된 모든 데이터와의 연결이 끊어집니다.
+
+## 모든 이벤트에 포함되는 속성
+
+| 속성 | 예 | 의미 |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote`(휴대폰) 또는 `server`. Umami 호스트 이름으로도 사용됩니다 |
+| `app_version` | `0.0.11` | 릴리스 버전 |
+| `app_build` | `4baf980` | 빌드의 짧은 git 커밋 |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` 또는 휴대폰 OS(`ios`, `android`) |
+| `locale` | `fr_FR` | UI 언어 |
+| `server_mode` | `local` | `local`(데스크톱이 자체 서버를 실행) 또는 `remote` |
+| `server_version` | `0.0.11` | 연결된 서버의 버전(알려진 경우) |
+| `is_demo` | `false` | 클라이언트가 공개 데모에 연결되어 있는지 여부 |
+| `install_id` | 가명 | 서버 설치본 |
+| `user_id` | 가명 | 로그인한 사용자(확인된 이후) |
+| `device_id` | 가명 | 페어링된 기기(확인된 이후). Umami의 distinct ID로도 사용됩니다 |
+| `launch_id` | 가명 | 앱의 한 번의 실행으로, 세션의 이벤트 순서를 정하는 데 쓰입니다 |
+| `event_seq` | `12` | 해당 실행 내에서 이벤트의 순번 |
+
+Umami는 이 밖에도 요청의 IP 주소(주소를 저장하지 않고 국가와 지역을 파악하는 데 사용), User-Agent, 화면 크기를 받습니다.
+
+## 화면 조회
+
+탐색할 때마다 URL이 **경로 템플릿**인 페이지 조회가 기록됩니다. 예를 들어 `/workspaces/:workspaceId/spaces/:spaceId`처럼 기록되며, 구체적인 주소는 기록되지 않습니다. 화면 이름은 템플릿의 리터럴 세그먼트로 구성되므로 이 예에서는 `workspaces_spaces`입니다. `Id`로 끝나는 경로 매개변수는 가명 처리된 `*_id` 속성으로, 숫자 매개변수(PR 번호 등)는 숫자로 첨부됩니다. 그 밖의 매개변수는 모두 폐기됩니다.
+
+## 클라이언트 이벤트
+
+사람이 한 일에 대해 데스크톱 앱, 웹 앱, 휴대폰이 기록합니다.
+
+| 이벤트 | 속성 | 기록 시점 |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | 앱이 시작을 마치고 연결되었을 때 |
+| `app_backgrounded` | `foreground_s` | 창이나 탭이 숨겨졌을 때 |
+| `app_foregrounded` | `background_s` | 다시 표시되었을 때 |
+| `server_connected` | `reconnect` | 끊긴 뒤 연결이 복구되었을 때 |
+| `server_disconnected` | | 연결이 끊겼을 때 |
+| `server_switched` | | 사용자가 다른 서버로 전환했을 때 |
+| `device_paired` | | 휴대폰이 페어링을 확인했을 때 |
+| `onboarding_step_viewed` | `step`, `step_index` | 온보딩 단계가 표시되었을 때 |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | 온보딩을 마쳤을 때 |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | 사용자가 다른 워크스페이스를 열었을 때 |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | 작성기에서 메시지를 보냈을 때 |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | 클라이언트 측 슬래시 명령이 실행되었을 때. 기본 제공 명령은 자신의 이름을, 스킬은 `skill`을, 저장소 명령은 `custom`을 보고합니다 |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | 에이전트의 승인 요청에 응답했을 때 |
+| `command_palette_opened` | | 명령 팔레트가 열렸을 때 |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | 명령이 실행되었을 때. 특정 PR, 멤버, 대화를 대상으로 하는 명령은 종류(`pr`, `member`, `conversation`)만 보고합니다 |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | 풀 리퀘스트 리뷰를 제출했을 때 |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | 검색을 실행했을 때. 검색어 자체는 기록되지 않습니다 |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | 회의 녹음이 시작되었을 때 |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | 녹음이 중지되었을 때 |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | 테마나 언어가 변경되었을 때 |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | 컨트롤에서 또는 포커스 모드와 함께 사운드스케이프가 시작되었을 때 |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | 중지되었을 때 |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | 사용자가 다른 분위기를 골랐을 때 |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | 포커스 모드가 시작되었을 때 |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | 포커스 모드가 일찍 또는 시간이 다 되어 끝났을 때 |
+| `dictation_started` | | 작성기에서 받아쓰기가 시작되었을 때 |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | 받아쓰기가 끝났을 때. 전사본의 길이만 기록됩니다 |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | 앱이 서버에 파이프라인 실행을 요청했을 때 |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | 실패한 실행을 다시 시도했을 때 |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | 앱에서 실행을 취소했을 때 |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | 실행 중인 단계를 강제 종료했을 때 |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | 캘린더 로그인 시도가 끝났을 때 |
+| `calendar_disconnected` | `workspace_id` | 캘린더 계정의 연결을 해제했을 때 |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | 초대에 응답했을 때 |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | 캘린더 이벤트에서 녹음을 시작했을 때 |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | 회의 링크를 열었을 때(휴대폰). 링크에서는 제공업체만 추출합니다 |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | 알림 센터를 사용했을 때 |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | 레지스트리에서 에이전트를 만들었을 때 |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | 스페이스에서 새 편집기 탭이 열렸을 때 |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | 워크스페이스 스킬이 변경되었을 때 |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | 오케스트레이션 제안에 응답했을 때 |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | 계획이 승인되거나 거부되었을 때(휴대폰) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | 감독되는 목표나 루프를 시작했을 때(휴대폰) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | 대화가 생성되거나 포크되었을 때 |
+| `conversation_rewound` | `conversation_id` | 이전 메시지에서 대화를 이어 갔을 때 |
+| `space_archived` | `workspace_id`, `space_id` | 스페이스가 보관되었을 때 |
+
+## 서버 이벤트
+
+어느 한 클라이언트도 정확히 한 번만 보지는 않는 사실에 대해 `cc_server`가 기록합니다. 에이전트 실행은 지켜보는 클라이언트가 몇 개이든 한 번만 집계됩니다.
+
+| 이벤트 | 속성 | 기록 시점 |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | 서버 부팅이 끝났을 때 |
+| `workspace_created` | `workspace_id` | 워크스페이스가 생성되었을 때 |
+| `space_created` | `workspace_id`, `space_id` | 스페이스가 생성되었을 때 |
+| `repo_added` | `workspace_id`, `repo_id` | 저장소가 연결되었을 때 |
+| `ticket_created` | `workspace_id`, `ticket_id` | 사람이나 에이전트가 티켓을 생성했을 때 |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | 에이전트 실행이 끝났을 때 |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | 에이전트가 멈추고 사람을 기다릴 때 |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | 액션 정책이 에이전트의 작업을 거부했을 때 |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | 파이프라인 실행이 끝났을 때. `trigger`는 `manual`, 실행을 시작한 이벤트 유형, 또는 이름 있는 트리거의 경우 그 종류(`webhook`)만 담습니다 |
+| `pull_request_published` | `workspace_id`, `pr_id` | 스페이스에서 풀 리퀘스트를 게시했을 때 |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | 에이전트가 연 풀 리퀘스트가 병합되었을 때 |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | 회의 녹음이 저장되었을 때 |
+| `space_deleted` | `workspace_id`, `space_id` | 스페이스가 삭제되었을 때 |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | 티켓 상태가 바뀌었을 때 |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | 티켓이 할당되었을 때 |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | 티켓이 다른 에이전트로 옮겨졌을 때 |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | 티켓에 위임된 작업이 끝났을 때 |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | 워크스페이스 멤버 구성이 바뀌었을 때 |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | 리그가 닫히거나 회수되었을 때 |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | 워크스페이스 스킬이 설치, 업데이트되거나 디스크에서 변경되었을 때 |
+| `calendar_auth_expired` | `workspace_id` | 캘린더 연결에 다시 로그인해야 할 때 |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | 캘린더 이벤트가 곧 시작될 때 |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | 지출이 예산 임계값을 넘었을 때 |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | 추적 중인 PR에 리뷰가 요청되었을 때 |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | 추적 중인 PR의 리뷰 결정이 바뀌었을 때 |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | 에이전트가 열지 않은 PR이 연결된 저장소에서 병합되었을 때 |
+
+## 전송
+
+이벤트는 최대 200개를 담는 메모리 내 대기열에서 `<host>/api/send`로 한 번에 하나씩 전송됩니다. 네트워크 오류, 타임아웃, `429` 또는 `5xx`가 발생하면 이벤트를 유지한 채 1초부터 최대 5분까지 지수 백오프로 재시도합니다. 그 밖의 `4xx`는 이벤트를 폐기합니다. 디스크에는 아무것도 기록하지 않으므로, 앱이 종료될 때 대기열에 남아 있던 이벤트는 사라집니다. 대기열은 앱이 백그라운드로 전환될 때와 서버가 종료될 때 비워집니다.
+
+## 빌드가 다른 인스턴스를 가리키게 하기
+
+전송 대상은 빌드 시점에 고정됩니다.
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+제공업체 어댑터는 `packages/cc_analytics`에 있습니다. 다른 분석 서비스를 지원하려면 그곳에 어댑터를 추가하면 됩니다. 추적 계획과 개인정보 보호 규칙은 그대로 유지됩니다.

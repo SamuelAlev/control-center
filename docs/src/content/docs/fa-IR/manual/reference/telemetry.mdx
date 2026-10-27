@@ -1,0 +1,160 @@
+---
+title: تحلیل‌های استفاده
+description: وقتی تحلیل‌های استفاده روشن است Control Center چه چیزی را ثبت می‌کند، چه کسی تصمیم می‌گیرد و چه چیزی هرگز ارسال نمی‌شود.
+slug: fa-IR/راهنمای-کاربر/مرجع/تحلیل-استفاده
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center می‌تواند **رویدادهای استفادهٔ مستعار** را به یک نمونهٔ [Umami](https://umami.is) بفرستد. تحلیل‌های استفاده **تا وقتی گردانندهٔ سرور روشنشان نکند خاموش‌اند**. این تنظیم متعلق به سرور است و برای همهٔ کلاینت‌های متصل به آن اعمال می‌شود: اپ دسکتاپ، اپ وب، تلفن و خود سرور.
+
+تحلیل‌های استفاده از **اشتراک گزارش‌های خرابی** جدا هستند؛ آن یکی تنظیمی برای هر دستگاه است و به تشخیص خرابی‌ها و خطاها مربوط می‌شود.
+
+## چه کسی تصمیم می‌گیرد
+
+| کلید | کجا | اثر |
+| --- | --- | --- |
+| **اشتراک تحلیل‌های استفاده** | راه‌اندازی اولیه (مرحلهٔ سندباکس) و **تنظیمات ← حریم خصوصی**. فقط گردانندهٔ سرور می‌تواند آن را تغییر دهد؛ بقیهٔ اعضا مقدار فعلی را فقط‌خواندنی می‌بینند | برای کل سرور. با نام `telemetry.usage_analytics` در تنظیمات سرور ذخیره می‌شود. خاموش است مگر اینکه روی `true` تنظیم شود |
+| نوع ساخت | خودکار | ساخت‌های debug و profile چیزی نمی‌فرستند و به‌جای آن هر رویداد را در لاگ دیباگ می‌نویسند |
+| `CC_ANALYTICS_DEBUG=1` | محیط `cc_server` یا فایل `.env` آن | به ساخت‌های debug و profile سرور و همهٔ کلاینت‌های متصل به آن اجازه می‌دهد برای آزمایش واقعاً ارسال کنند. کلید بالا همچنان باید روشن باشد |
+| `DO_NOT_TRACK=1` | محیط `cc_server` | گزارش‌دهی خود سرور را متوقف می‌کند، فارغ از وضعیت کلید. کلاینت‌ها همچنان از کلید پیروی می‌کنند |
+| سرور نمایشی | خودکار | سرور نمایشی عمومی از طرف خودش چیزی نمی‌فرستد. بازدیدکنندگان نمی‌توانند کلید را تغییر دهند |
+
+کلاینت‌ها تنظیم را از سرور می‌خوانند (`telemetry.config` و سپس به‌صورت زنده از طریق `telemetry.watch`). تا پاسخ برسد، رویدادها در یک بافر کوچک در حافظه منتظر می‌مانند. اگر پاسخ منفی باشد، بافر دور ریخته می‌شود. خاموش کردن کلید هر چیزی را که هنوز در صف است دور می‌ریزد و ارسال را بی‌درنگ در همهٔ کلاینت‌ها متوقف می‌کند.
+
+## چه چیزی هرگز ارسال نمی‌شود
+
+- محتوای پیام‌ها، تیکت‌ها، بازبینی‌ها یا جلسه‌ها، عنوان‌ها، پرامپت‌ها، فرمان‌های شل و عبارت‌های جستجو
+- نام‌ها، نام‌های کاربری ورود، نشانی‌های ایمیل، آواتارها و نام‌های نمایشی
+- مسیر فایل‌ها، نام مخزن‌ها، نام شاخه‌ها، نام میزبان‌ها و URLها (مخزن فقط به‌صورت `repo_id` مستعار و پیوند جلسه فقط به‌صورت نام ارائه‌دهنده‌اش ارسال می‌شود)
+- هر نوع شناسهٔ خام
+
+هر رویداد پیش از خروج از فرایند از یک سیاست ویژگی‌ها می‌گذرد. متن، مسیرها، URLها، نشانی‌های ایمیل، شناسه‌هایی که مستعار نشده‌اند و رشته‌هایی که زیر کلیدهایی مانند `email`، `*_name`، `path`، `title`، `prompt`، `content` یا `token` قرار دارند، به‌جای ارسال حذف می‌شوند. یک رشته فقط وقتی ارسال می‌شود که توکنی کوتاه از یک واژگان بسته باشد، مانند مقدار یک enum، یک نسخه، یک زبان محلی یا شناسهٔ یک مدل.
+
+## شناسه‌های مستعار
+
+شناسه‌ها ارسال می‌شوند، اما فقط به‌صورت مستعار. هر شناسهٔ فضای کاری، فضا، گفتگو، عامل، اجرا، کاربر و دستگاه با یک HMAC-SHA256 با نمک مخفی خود نصب (`telemetry.pseudonym_salt`) جایگزین و به ۲۰ نویسهٔ هگز کوتاه می‌شود. یک فضای کاری همیشه همان مقدار را گزارش می‌دهد، پس رویدادها را می‌توان به هم پیوند داد و شمرد، اما شناسهٔ خام هرگز از نصب بیرون نمی‌رود. نمک در نخستین راه‌اندازی سرور ساخته می‌شود و هرگز به ارائه‌دهندهٔ تحلیل فرستاده نمی‌شود. حذف پوشهٔ دادهٔ سرور نمک و شناسهٔ نصب تازه‌ای می‌سازد و همهٔ آنچه پیش‌تر ثبت شده بود را از آن جدا می‌کند.
+
+## ویژگی‌های هر رویداد
+
+| ویژگی | نمونه | معنا |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`، `web`، `remote` (تلفن) یا `server`. همچنین به‌عنوان نام میزبان در Umami به کار می‌رود |
+| `app_version` | `0.0.11` | نسخهٔ انتشار |
+| `app_build` | `4baf980` | کامیت کوتاه git ساخت |
+| `platform` | `macos` | `macos`، `windows`، `linux`، `web` یا سیستم‌عامل تلفن (`ios`، `android`) |
+| `locale` | `fr_FR` | زبان رابط کاربری |
+| `server_mode` | `local` | `local` (دسکتاپی که سرور خودش را اجرا می‌کند) یا `remote` |
+| `server_version` | `0.0.11` | نسخهٔ سرور متصل، اگر معلوم باشد |
+| `is_demo` | `false` | اینکه کلاینت به نسخهٔ نمایشی عمومی وصل است یا نه |
+| `install_id` | مستعار | نصب سرور |
+| `user_id` | مستعار | کاربر واردشده، به‌محض معلوم شدن |
+| `device_id` | مستعار | دستگاه جفت‌شده، به‌محض معلوم شدن. همچنین شناسهٔ متمایز در Umami |
+| `launch_id` | مستعار | یک بار اجرای اپ، برای مرتب کردن رویدادهای یک نشست |
+| `event_seq` | `12` | جایگاه رویداد در همان اجرا |
+
+Umami افزون بر این، نشانی IP درخواست را دریافت می‌کند و بی‌آنکه نشانی را ذخیره کند کشور و منطقه را از آن به دست می‌آورد؛ User-Agent و اندازهٔ صفحه را هم می‌گیرد.
+
+## بازدید صفحه‌ها
+
+هر جابه‌جایی یک بازدید صفحه ثبت می‌کند که URL آن **الگوی مسیر** است، مانند `/workspaces/:workspaceId/spaces/:spaceId`، و هرگز نشانی واقعی نیست. نام صفحه از بخش‌های ثابت الگو ساخته می‌شود، پس در این مثال `workspaces_spaces` است. پارامترهای مسیر که به `Id` ختم می‌شوند به‌صورت ویژگی‌های مستعار `*_id` و پارامترهای عددی (مثل شمارهٔ یک PR) به‌صورت عدد پیوست می‌شوند. همهٔ پارامترهای دیگر حذف می‌شوند.
+
+## رویدادهای کلاینت
+
+اپ دسکتاپ، اپ وب و تلفن این رویدادها را برای کارهایی که یک شخص انجام می‌دهد ثبت می‌کنند.
+
+| رویداد | ویژگی‌ها | زمان ثبت |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | اپ راه‌اندازی را تمام کرد و وصل شد |
+| `app_backgrounded` | `foreground_s` | پنجره یا زبانه پنهان شد |
+| `app_foregrounded` | `background_s` | دوباره نمایان شد |
+| `server_connected` | `reconnect` | اتصال پس از قطع شدن برگشت |
+| `server_disconnected` | | اتصال قطع شد |
+| `server_switched` | | کاربر به سرور دیگری رفت |
+| `device_paired` | | تلفن جفت‌سازی را تأیید کرد |
+| `onboarding_step_viewed` | `step`، `step_index` | یکی از مراحل راه‌اندازی اولیه نمایش داده شد |
+| `onboarding_completed` | `duration_s`، `step_count`، `workspace_id` | راه‌اندازی اولیه تمام شد |
+| `workspace_switched` | `workspace_id`، `previous_workspace_id` | کاربر فضای کاری دیگری را باز کرد |
+| `message_sent` | `workspace_id`، `space_id`، `conversation_id`، `delivery` (`send`، `steer`، `queued`)، `char_count`، `attachment_count`، `agent_mention_count`، `other_mention_count`، `slash_command` | پیامی از کادر نوشتن ارسال شد |
+| `slash_command_run` | `command`، `workspace_id`، `space_id` | یک فرمان اسلش سمت کلاینت اجرا شد. فرمان‌های داخلی نام خود را گزارش می‌دهند، مهارت‌ها `skill` و فرمان‌های مخزن `custom` |
+| `approval_decided` | `decision`، `remembered`، `surface`، `action_classes`، `action_class_count`، `severity`، `workspace_id`، `space_id`، `conversation_id` | به درخواست تأیید یک عامل پاسخ داده شد |
+| `command_palette_opened` | | پالت فرمان باز شد |
+| `command_executed` | `source` (`palette`، `keybinding`)، `command` | فرمانی اجرا شد. فرمان‌هایی که به یک PR، عضو یا گفتگوی مشخص مربوط‌اند فقط نوع خود را گزارش می‌دهند (`pr`، `member`، `conversation`) |
+| `review_submitted` | `verdict`، `comment_count`، `workspace_id` | بازبینی یک pull request ثبت شد |
+| `search_performed` | `scope` (`space_messages`، `repo_content`)، `result_count`، `query_length`، `workspace_id`، `space_id` | جستجویی انجام شد. خود عبارت جستجو هرگز ثبت نمی‌شود |
+| `meeting_recording_started` | `workspace_id`، `meeting_id` | ضبط یک جلسه شروع شد |
+| `meeting_recording_stopped` | `duration_s`، `workspace_id`، `meeting_id` | متوقف شد |
+| `setting_changed` | `setting` (`appearance.theme`، `appearance.locale`)، `value` | پوسته یا زبان تغییر کرد |
+| `soundscape_started` | `mood`، `source` (`user`، `focus`) | منظر صوتی شروع شد، از کنترل‌ها یا همراه با حالت تمرکز |
+| `soundscape_stopped` | `mood`، `source`، `listened_s` | متوقف شد |
+| `soundscape_mood_changed` | `from_mood`، `to_mood`، `playing` | کاربر حال‌وهوای دیگری انتخاب کرد |
+| `focus_mode_started` | `planned_minutes`، `has_goal`، `block_notifications` | حالت تمرکز شروع شد |
+| `focus_mode_ended` | `elapsed_s`، `planned_minutes`، `completed` | حالت تمرکز تمام شد، زودتر یا وقتی زمانش به سر رسید |
+| `dictation_started` |  | دیکته در کادر نوشتن شروع شد |
+| `dictation_ended` | `outcome` (`completed`، `cancelled`، `failed`)، `duration_s`، `transcript_chars`، `error_kind` | دیکته تمام شد. فقط طول متن رونویسی ثبت می‌شود |
+| `pipeline_run_requested` | `workspace_id`، `template_id`، `trigger`، `dry_run`، `started` | اپ از سرور خواست یک پایپ‌لاین را اجرا کند |
+| `pipeline_run_retried` | `workspace_id`، `pipeline_run_id` | اجرای ناموفقی دوباره امتحان شد |
+| `pipeline_run_cancel_requested` | `workspace_id`، `pipeline_run_id` | اجرایی از داخل اپ لغو شد |
+| `pipeline_step_killed` | `workspace_id`، `step_run_id` | یک مرحلهٔ در حال اجرا به‌اجبار متوقف شد |
+| `calendar_connect_finished` | `outcome` (`connected`، `denied`، `expired`، `failed`، `cancelled`)، `builtin_client`، `duration_s` | تلاشی برای ورود به یک تقویم تمام شد |
+| `calendar_disconnected` | `workspace_id` | یک حساب تقویم قطع شد |
+| `calendar_rsvp_sent` | `calendar_event_id`، `response`، `previous_response`، `workspace_id` | به یک دعوت پاسخ داده شد |
+| `calendar_event_recorded` | `workspace_id`، `calendar_event_id` | ضبطی از یک رویداد تقویم شروع شد |
+| `calendar_meeting_joined` | `provider` (`meet`، `zoom`، `teams`، `webex`، `other`)، `workspace_id`، `calendar_event_id` | پیوند یک جلسه باز شد (تلفن). از پیوند فقط ارائه‌دهنده استخراج می‌شود |
+| `notification_action` | `action` (`read`، `unread`، `dismiss`، `mark_all_read`، `clear_all`)، `workspace_id` | مرکز اعلان‌ها استفاده شد |
+| `agent_created` | `workspace_id`، `agent_id`، `adapter`، `model` | عاملی از رجیستری ساخته شد |
+| `tab_opened` | `kind` (`chat`، `terminal`، `browser`، `rig`، `codeServer`، `file`، …) | زبانهٔ ویرایشگر تازه‌ای در یک فضا باز شد |
+| `skill_action` | `action` (`install`، `update`، `uninstall`، `source_added`، `source_removed`)، `skill_id`، `blocked` | مهارت‌های فضای کاری تغییر کرد |
+| `orchestration_decided` | `decision` (`approved`، `cancelled`)، `workspace_id`، `orchestration_id` | به یک پیشنهاد ارکستراسیون پاسخ داده شد |
+| `plan_decided` | `decision` (`approved`، `rejected`)، `plan_id`، `workspace_id`، `partial`، `node_count` | برنامه‌ای تأیید یا رد شد (تلفن) |
+| `goal_started` | `kind` (`goal`، `loop`)، `workspace_id`، `space_id`، `conversation_id`، `agent_id`، `budget_cents`، `accepted` | یک هدف یا حلقهٔ تحت نظارت شروع شد (تلفن) |
+| `conversation_created` | `workspace_id`، `space_id`، `conversation_id`، `source` (`new`، `fork`) | گفتگویی ساخته یا منشعب شد |
+| `conversation_rewound` | `conversation_id` | گفتگویی از یک پیام قبلی ادامه یافت |
+| `space_archived` | `workspace_id`، `space_id` | یک فضا بایگانی شد |
+
+## رویدادهای سرور
+
+`cc_server` این رویدادها را برای واقعیت‌هایی ثبت می‌کند که هیچ کلاینتی به‌تنهایی دقیقاً یک بار نمی‌بیند. اجرای یک عامل فقط یک بار شمرده می‌شود، هر چند کلاینت که آن را دنبال کنند.
+
+| رویداد | ویژگی‌ها | زمان ثبت |
+| --- | --- | --- |
+| `server_started` | `workspace_count`، `startup_ms` | سرور راه‌اندازی را تمام کرد |
+| `workspace_created` | `workspace_id` | یک فضای کاری ساخته شد |
+| `space_created` | `workspace_id`، `space_id` | یک فضا ساخته شد |
+| `repo_added` | `workspace_id`، `repo_id` | یک مخزن پیوند داده شد |
+| `ticket_created` | `workspace_id`، `ticket_id` | یک شخص یا یک عامل تیکتی ساخت |
+| `agent_run_completed` | `agent_id`، `workspace_id`، `conversation_id`، `run_id`، `status`، `error_family`، `role`، `adapter`، `model`، `effort`، `task_family`، `subagent`، `pipeline`، `resumed_native_session`، `duration_ms`، `time_to_first_token_ms`، `input_tokens`، `output_tokens`، `thought_tokens`، `cache_read_tokens`، `cache_write_tokens`، `output_rejections`، `cost_usd` | اجرای یک عامل تمام شد |
+| `agent_awaiting_input` | `kind` (`approval`، `question`، `credential`)، `workspace_id`، `agent_id`، `conversation_id` | عاملی برای منتظر ماندن برای یک شخص متوقف شد |
+| `agent_action_blocked` | `workspace_id`، `agent_id`، `space_id`، `source` | سیاست اقدام، اقدامی از یک عامل را رد کرد |
+| `pipeline_run_finished` | `outcome` (`completed`، `failed`، `cancelled`)، `workspace_id`، `pipeline_run_id`، `template_id`، `trigger`، `duration_ms`، `active_ms`، `attempt_count`، `template_version`، `cost_cents`، `tokens`، `dry_run`، `sub_pipeline` | اجرای یک پایپ‌لاین پایان یافت. `trigger` برابر `manual`، نوع رویدادی که آن را شروع کرد، یا فقط نوعِ یک تریگر نام‌دار (`webhook`) است |
+| `pull_request_published` | `workspace_id`، `pr_id` | یک pull request از یک فضا منتشر شد |
+| `pull_request_merged` | `workspace_id`، `pr_id`، `agent_id` | یک pull request که عاملی باز کرده بود ادغام شد |
+| `meeting_recorded` | `workspace_id`، `meeting_id`، `transcript_chars` | ضبط یک جلسه ذخیره شد |
+| `space_deleted` | `workspace_id`، `space_id` | یک فضا حذف شد |
+| `ticket_status_changed` | `workspace_id`، `ticket_id`، `from_status`، `to_status` | وضعیت یک تیکت تغییر کرد |
+| `ticket_assigned` | `workspace_id`، `ticket_id`، `assignee_type`، `agent_id`، `team_id` | یک تیکت واگذار شد |
+| `ticket_reassigned` | `workspace_id`، `ticket_id`، `from_agent_id`، `to_agent_id` | یک تیکت به عامل دیگری منتقل شد |
+| `ticket_work_finished` | `ticket_id`، `outcome` (`completed`، `failed`، `cancelled`) | کار واگذارشده روی یک تیکت تمام شد |
+| `workspace_member_changed` | `workspace_id`، `member_user_id`، `change` (`added`، `removed`، `role_changed`)، `role` | عضویت فضای کاری تغییر کرد |
+| `rig_closed` | `workspace_id`، `rig_id`، `reason`، `reaped`، `agent_id` | یک ریگ بسته یا جمع‌آوری شد |
+| `skill_updated` | `workspace_id`، `skill_id`، `origin`، `scan_verdict` | یک مهارت فضای کاری نصب، به‌روز یا روی دیسک تغییر داده شد |
+| `calendar_auth_expired` | `workspace_id` | اتصال یک تقویم به ورود دوباره نیاز دارد |
+| `calendar_meeting_starting_soon` | `workspace_id`، `calendar_event_id`، `has_meeting_link`، `lead_s` | یک رویداد تقویم به‌زودی شروع می‌شود |
+| `budget_threshold_crossed` | `scope_type`، `scope_id`، `spent_cents`، `budget_cents`، `hard_stop` | هزینه از آستانهٔ بودجه گذشت |
+| `pull_request_review_requested` | `workspace_id`، `repo_id` | برای یک PR ردیابی‌شده بازبینی درخواست شد |
+| `pull_request_review_decision_changed` | `workspace_id`، `repo_id`، `decision`، `reviewers_remaining` | تصمیم بازبینی یک PR ردیابی‌شده تغییر کرد |
+| `external_pull_request_merged` | `workspace_id`، `repo_id` | در یک مخزن پیوندشده PRی که عاملی باز نکرده بود ادغام شد |
+
+## تحویل
+
+رویدادها یکی‌یکی از صفی در حافظه با گنجایش حداکثر ۲۰۰ رویداد به `<host>/api/send` فرستاده می‌شوند. خطای شبکه، پایان مهلت، `429` یا `5xx` رویداد را نگه می‌دارد و با عقب‌نشینی نمایی، از ۱ ثانیه تا ۵ دقیقه، دوباره تلاش می‌کند. هر `4xx` دیگری آن را حذف می‌کند. هیچ چیز روی دیسک نوشته نمی‌شود، پس رویدادهایی که هنگام بستن اپ هنوز در صف‌اند از دست می‌روند. صف وقتی اپ به پس‌زمینه می‌رود و وقتی سرور خاموش می‌شود تخلیه می‌شود.
+
+## فرستادن یک ساخت به نمونه‌ای دیگر
+
+مقصد هنگام ساخت تعیین می‌شود:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+آداپتور ارائه‌دهنده در `packages/cc_analytics` است. پشتیبانی از یک سرویس تحلیل دیگر یعنی افزودن یک آداپتور در همان‌جا. طرح ردیابی و قواعد حریم خصوصی همان می‌مانند.

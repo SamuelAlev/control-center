@@ -1,4 +1,6 @@
 import 'package:cc_domain/features/focus_mode/domain/focus_mode_state.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -80,6 +82,13 @@ class FocusModeNotifier extends Notifier<FocusModeState> {
       clearGoal: goal == null,
       blockNotifications: blockNotifications,
     );
+    ref.track(
+      AnalyticsEvents.focusModeStarted(
+        plannedMinutes: durationMinutes,
+        hasGoal: goal != null && goal.isNotEmpty,
+        blockNotifications: blockNotifications,
+      ),
+    );
     await _storage.savePreferences(
       durationMinutes: durationMinutes,
       blockNotifications: blockNotifications,
@@ -88,6 +97,20 @@ class FocusModeNotifier extends Notifier<FocusModeState> {
 
   /// Deactivates focus mode and removes the pill.
   Future<void> deactivate() async {
+    final startedAt = state.sessionStartedAt;
+    if (state.active && startedAt != null) {
+      final elapsedS = DateTime.now().difference(startedAt).inSeconds;
+      final planned = state.sessionDurationMinutes;
+      ref.track(
+        AnalyticsEvents.focusModeEnded(
+          elapsedS: elapsedS,
+          plannedMinutes: planned,
+          // The pill ends the session itself when the time runs out; a
+          // few seconds of slack covers the timer tick.
+          completed: elapsedS >= planned * 60 - 5,
+        ),
+      );
+    }
     state = state.copyWith(
       active: false,
       clearStartedAt: true,

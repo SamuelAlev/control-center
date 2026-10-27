@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Mọi cờ, biến môi trường, lệnh con và đường dẫn thư mục dữ liệu của máy chủ không giao diện.
 slug: vi-VN/so-tay/tham-chieu/cli-cc-server
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Mọi cờ của tiến trình nhận một cờ CLI hoặc một biến môi trường; cờ thắng, rồi đến
@@ -169,6 +169,10 @@ chi phối điều đó, và nó được ứng dụng máy tính đặt chứ k
 
 Chỉ tự đặt nó nếu bạn đang giám sát `cc_server` như một tiến trình con và muốn có cùng
 bảo đảm đó.
+
+`DO_NOT_TRACK=1` (bất kỳ giá trị nào ngoài rỗng, `0` hoặc `false`) dừng
+[phân tích sử dụng](/vi-VN/so-tay/tham-chieu/phan-tich-su-dung/) của chính máy chủ ngay cả khi công tắc toàn máy chủ
+đang bật. Máy khách vẫn tuân theo công tắc.
 
 ## Bố cục thư mục dữ liệu
 

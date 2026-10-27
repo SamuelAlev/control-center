@@ -53,6 +53,25 @@ void main() {
       'package:cc_server_core',
       'package:control_center',
     ],
+    // Web-safe analytics provider adapters (cc_domain + package:http). Linked
+    // into the desktop/web client, the phone PWA and the Flutter-free server,
+    // so it may reach none of their platform layers.
+    'cc_analytics': [
+      'package:flutter',
+      'dart:ui',
+      'dart:io',
+      'dart:ffi',
+      'package:drift',
+      'package:sqlite3',
+      'package:rhttp',
+      'package:cc_natives',
+      'package:cc_infra',
+      'package:cc_persistence',
+      'package:cc_host',
+      'package:cc_mcp',
+      'package:cc_server_core',
+      'package:control_center',
+    ],
     // RPC kernel ONLY (cc_domain + cc_rpc + dart:io + meta). No infra deps, no
     // Flutter, no FFI — it links into the Flutter-free server binary. Forbid
     // every higher server package so the kernel can never back-edge.

@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Varje flagga, miljövariabel, underkommando och datakatalogsökväg hos headless-servern.
 slug: sv-SE/handbok/referens/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Varje processflagga styrs av en CLI-flagga eller en miljövariabel; flaggan vinner,
@@ -168,6 +168,10 @@ sätts av skrivbordsappen snarare än av dig:
 
 Sätt den själv bara om du övervakar `cc_server` som en barnprocess och vill ha samma
 garanti.
+
+`DO_NOT_TRACK=1` (vilket värde som helst utom tomt, `0` eller `false`) stoppar serverns egen
+[användningsstatistik](/sv-SE/handbok/referens/anvandningsstatistik/) även när det serveromfattande reglaget är
+på. Klienterna följer fortfarande reglaget.
 
 ## Datakatalogens layout
 

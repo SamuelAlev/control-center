@@ -2,8 +2,8 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_step_layout.dart';
+import 'package:control_center/features/sandboxing/presentation/onboarding_privacy_consents.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
-import 'package:control_center/features/settings/providers/privacy_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -126,7 +126,7 @@ class _OnboardingStepSandboxState extends ConsumerState<OnboardingStepSandbox> {
                         .withValues(alpha: 0.12),
               ),
               const SizedBox(height: 16),
-              const _DiagnosticsConsentRow(),
+              const OnboardingPrivacyConsents(),
             ],
           ),
           footer: Row(
@@ -276,66 +276,6 @@ class _StatusRow extends StatelessWidget {
               ],
             ],
           ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Diagnostics opt-out surfaced on the sandbox/security onboarding step.
-///
-/// Defaults to enabled; toggling it writes the same preference used by
-/// Settings → Privacy (via [errorReportingEnabledProvider]) and only affects
-/// release builds, where crash/error diagnostics would otherwise be sent.
-class _DiagnosticsConsentRow extends ConsumerWidget {
-  const _DiagnosticsConsentRow();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final enabled = ref.watch(errorReportingEnabledProvider);
-    final tokens = context.designSystem;
-    final l10n = AppLocalizations.of(context);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          AppIcons.activity,
-          size: 20,
-          color: enabled ? tokens?.fgBrandPrimary : tokens?.fgTertiary,
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.onboardingDiagnosticsTitle,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.45,
-                  fontWeight: FontWeight.w500,
-                  color: tokens?.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.onboardingDiagnosticsSubtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.5,
-                  color: tokens?.textTertiary,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        CcSwitch(
-          value: enabled,
-          onChanged: (v) => ref
-              .read(errorReportingEnabledProvider.notifier)
-              .setEnabled(value: v),
         ),
       ],
     );

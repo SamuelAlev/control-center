@@ -18,6 +18,7 @@ import 'package:control_center/features/shell/presentation/widgets/server_shutdo
 import 'package:control_center/features/shell/presentation/widgets/title_bar_workspace_chip.dart';
 import 'package:control_center/features/shell/providers/command_palette_providers.dart';
 import 'package:control_center/features/shell/providers/shell_route_providers.dart';
+import 'package:control_center/features/telemetry/providers/analytics_session_provider.dart';
 import 'package:control_center/features/workspaces/providers/rpc_client_workspace_sync_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_url_sync_provider.dart';
@@ -79,6 +80,10 @@ class ControlCenterApp extends ConsumerWidget {
     // flushed it *during* its own build — marking other subtrees
     // dirty mid-build.
     ref.watch(workspaceDisplayCacheProvider);
+    // Usage analytics for this session: context (identity, server mode,
+    // locale), screen views, foreground/background and connection drops.
+    // Sends nothing unless the server's telemetry switch allows it.
+    ref.watch(analyticsSessionProvider);
     final themeMode = ref.watch(themeModeProvider);
     final localeOverride = ref.watch(localeProvider);
     final fontSettings = ref.watch(fontSettingsProvider);

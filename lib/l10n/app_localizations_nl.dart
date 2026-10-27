@@ -1706,6 +1706,29 @@ class AppLocalizationsNl extends AppLocalizations {
       'Verzend crash-, fout- en prestatiediagnostiek zodat we problemen sneller kunnen oplossen (alleen in release-builds). Je kunt dit altijd wijzigen in Instellingen → Privacy.';
 
   @override
+  String get usageAnalyticsTitle => 'Gebruiksstatistieken delen';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Alle clients van deze server versturen gepseudonimiseerde gebruiksgebeurtenissen (schermen, acties, aantallen), alleen in release-builds. Nooit namen, berichtinhoud, bestandspaden of e-mailadressen.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Gebruiksstatistieken staan uit. Geen enkele client van deze server verstuurt gebruiksgebeurtenissen.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'De clients van deze server versturen gepseudonimiseerde gebruiksgebeurtenissen. Alleen de serverbeheerder kan dit wijzigen.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Gebruiksstatistieken staan uit op deze server. Alleen de serverbeheerder kan dit wijzigen.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Verstuur gepseudonimiseerde gebruiksgebeurtenissen vanaf alle clients van deze server, zodat we zien welke functies helpen (alleen in release-builds). Nooit namen, berichtinhoud, bestandspaden of e-mailadressen. Je kunt dit altijd wijzigen in Instellingen → Privacy.';
+
+  @override
   String get blocked => 'Geblokkeerd';
 
   @override

@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:cc_domain/features/soundscape/domain/entities/soundscape_context.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:cc_domain/features/weather/domain/entities/weather_snapshot.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
@@ -167,12 +169,23 @@ class SoundscapeController extends Notifier<SoundscapeState> {
     );
   }
 
-  /// Starts playback (idempotent).
-  void play() {
+  /// When playback last started, and who started it, for
+  /// `soundscape_stopped.listened_s`.
+  DateTime? _playingSince;
+  String _playSource = 'focus';
+
+  /// Starts playback (idempotent). [source] is `focus` for the focus-mode
+  /// auto-start and `user` for the controls.
+  void play({String source = 'focus'}) {
     if (state.playing) {
       return;
     }
     state = state.copyWith(playing: true);
+    _playingSince = DateTime.now();
+    _playSource = source;
+    ref.track(
+      AnalyticsEvents.soundscapeStarted(mood: state.mood.name, source: source),
+    );
     // A fresh server session starts at the neutral tune; re-assert ours.
     unawaited(_pushTune());
   }
@@ -183,14 +196,25 @@ class SoundscapeController extends Notifier<SoundscapeState> {
       return;
     }
     state = state.copyWith(playing: false);
+    final since = _playingSince;
+    ref.track(
+      AnalyticsEvents.soundscapeStopped(
+        mood: state.mood.name,
+        source: _playSource,
+        listenedS: since == null
+            ? 0
+            : DateTime.now().difference(since).inSeconds,
+      ),
+    );
+    _playingSince = null;
   }
 
-  /// Toggles playback.
+  /// Toggles playback from the user's controls.
   void toggle() {
     if (state.playing) {
       stop();
     } else {
-      play();
+      play(source: 'user');
     }
   }
 
@@ -202,6 +226,13 @@ class SoundscapeController extends Notifier<SoundscapeState> {
     if (mood == state.mood) {
       return;
     }
+    ref.track(
+      AnalyticsEvents.soundscapeMoodChanged(
+        from: state.mood.name,
+        to: mood.name,
+        playing: state.playing,
+      ),
+    );
     state = state.copyWith(
       mood: mood,
       tuneEnergy: _storage.tuneEnergy(mood),

@@ -1699,6 +1699,29 @@ class AppLocalizationsVi extends AppLocalizations {
       'Gửi dữ liệu chẩn đoán sự cố, lỗi và hiệu năng để chúng tôi sửa vấn đề nhanh hơn (chỉ bản phát hành). Bạn có thể thay đổi bất cứ lúc nào trong Cài đặt → Quyền riêng tư.';
 
   @override
+  String get usageAnalyticsTitle => 'Chia sẻ phân tích sử dụng';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Mọi client của máy chủ này gửi sự kiện sử dụng được gán bí danh (màn hình, thao tác, số lượng), chỉ ở bản phát hành. Không bao giờ gửi tên, nội dung tin nhắn, đường dẫn tệp hay địa chỉ email.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Phân tích sử dụng đang tắt. Không client nào của máy chủ này gửi sự kiện sử dụng.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Các client của máy chủ này gửi sự kiện sử dụng được gán bí danh. Chỉ người vận hành máy chủ mới có thể thay đổi.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Phân tích sử dụng đang tắt trên máy chủ này. Chỉ người vận hành máy chủ mới có thể thay đổi.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Gửi sự kiện sử dụng được gán bí danh từ mọi client của máy chủ này để chúng tôi biết tính năng nào hữu ích (chỉ bản phát hành). Không bao giờ gửi tên, nội dung tin nhắn, đường dẫn tệp hay địa chỉ email. Bạn có thể thay đổi bất cứ lúc nào trong Cài đặt → Quyền riêng tư.';
+
+  @override
   String get blocked => 'Bị chặn';
 
   @override

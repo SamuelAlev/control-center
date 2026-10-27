@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "Χάρτης διαδρομών",
   "docs.sidebar.referenceCcServerCli": "CLI του cc_server",
   "docs.sidebar.referenceBackup": "Αντίγραφο ασφαλείας, εξαγωγή και εισαγωγή",
+  "docs.sidebar.referenceTelemetry": "Αναλυτικά χρήσης",
   "docs.sidebar.referenceGlossary": "Γλωσσάρι"
 }

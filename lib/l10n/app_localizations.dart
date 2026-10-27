@@ -3102,6 +3102,42 @@ abstract class AppLocalizations {
   /// **'Send crash, error and performance diagnostics so we can fix problems faster (release builds only). You can change this any time in Settings → Privacy.'**
   String get onboardingDiagnosticsSubtitle;
 
+  /// No description provided for @usageAnalyticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share usage analytics'**
+  String get usageAnalyticsTitle;
+
+  /// No description provided for @usageAnalyticsOnSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pseudonymous usage events (screens, actions, counts) are sent from every client of this server, release builds only. Never names, message content, file paths or email addresses.'**
+  String get usageAnalyticsOnSubtitle;
+
+  /// No description provided for @usageAnalyticsOffSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage analytics are off. No client of this server sends usage events.'**
+  String get usageAnalyticsOffSubtitle;
+
+  /// No description provided for @usageAnalyticsManagedOnSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pseudonymous usage events are sent from this server\'s clients. Only the server operator can change this.'**
+  String get usageAnalyticsManagedOnSubtitle;
+
+  /// No description provided for @usageAnalyticsManagedOffSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage analytics are off on this server. Only the server operator can change this.'**
+  String get usageAnalyticsManagedOffSubtitle;
+
+  /// No description provided for @onboardingUsageAnalyticsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send pseudonymous usage events from every client of this server so we learn which features help (release builds only). Never names, message content, file paths or email addresses. You can change this any time in Settings → Privacy.'**
+  String get onboardingUsageAnalyticsSubtitle;
+
   /// No description provided for @blocked.
   ///
   /// In en, this message translates to:

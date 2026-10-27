@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_remote/analytics.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/messaging/ask_user_card.dart';
@@ -57,6 +58,15 @@ class _PendingApprovalsState extends ConsumerState<PendingApprovals> {
       );
       if (!ok) {
         throw StateError(l10n.requestAlreadyResolved);
+      }
+      if (mounted) {
+        trackApprovalDecision(
+          ref,
+          request,
+          approved: approved,
+          remembered: remember,
+          surface: 'conversation',
+        );
       }
     } catch (e) {
       if (mounted) setState(() => _errors[request.id] = '$e');

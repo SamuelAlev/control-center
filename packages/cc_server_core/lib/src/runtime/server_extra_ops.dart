@@ -6,6 +6,8 @@ import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.
 import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
 import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
 import 'package:cc_domain/features/model_routing/domain/ports/models_dev_source.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart'
+    show TelemetryConfigRepository;
 import 'package:cc_host/cc_host.dart' show RepoOp, WatchQuery;
 import 'package:cc_infra/cc_infra.dart'
     show
@@ -39,6 +41,7 @@ import 'package:cc_server_core/src/model_routing/models_dev_rpc.dart';
 import 'package:cc_server_core/src/newsfeed/filter_list_rpc.dart';
 import 'package:cc_server_core/src/pr_review/pr_merge_conflict_service.dart';
 import 'package:cc_server_core/src/soundscape/soundscape_rpc.dart';
+import 'package:cc_server_core/src/telemetry/telemetry_ops.dart';
 import 'package:cc_server_core/src/weather/weather_rpc.dart';
 import 'package:cc_server_core/src/workspaces/workspace_create_rpc.dart';
 
@@ -78,6 +81,7 @@ ExtraOpsResult buildServerExtraOps({
   required DatabaseBackupPort? databaseBackup,
   required ConversationTitlePort? conversationTitles,
   required WorkspaceSettingsRepository? workspaceSettings,
+  required TelemetryConfigRepository telemetryConfig,
 }) {
   final ops = <RepoOp>[
     ...fleetOps,
@@ -121,6 +125,7 @@ ExtraOpsResult buildServerExtraOps({
     ...buildBackupOps(databaseBackup: databaseBackup),
     ...buildConversationTitleOps(conversationTitles),
     ...buildAccountPoolOps(workspaceSettings),
+    ...buildTelemetryOps(config: telemetryConfig, isServerOwner: isServerOwner),
   ];
 
   final watches = <WatchQuery>[
@@ -128,6 +133,7 @@ ExtraOpsResult buildServerExtraOps({
     ...buildWeatherWatchQueries(weatherService),
     ...buildSoundscapeWatchQueries(soundscapeHub),
     ...buildChatWatchQueries(connector: chatConnector, users: userRepository),
+    ...buildTelemetryWatchQueries(telemetryConfig),
   ];
 
   return (ops: ops, watches: watches);

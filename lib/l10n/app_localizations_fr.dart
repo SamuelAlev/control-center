@@ -1714,6 +1714,29 @@ class AppLocalizationsFr extends AppLocalizations {
       'Envoyez des diagnostics de plantage, d\'erreur et de performance pour nous aider à corriger les problèmes plus vite (versions de production uniquement). Vous pouvez modifier ce choix à tout moment dans Réglages → Confidentialité.';
 
   @override
+  String get usageAnalyticsTitle => 'Partager les statistiques d\'utilisation';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Tous les clients de ce serveur envoient des événements d\'utilisation pseudonymisés (écrans, actions, décomptes), en versions de production uniquement. Jamais de noms, de contenu de messages, de chemins de fichiers ni d\'adresses e-mail.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Les statistiques d\'utilisation sont désactivées. Aucun client de ce serveur n\'envoie d\'événements d\'utilisation.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Les clients de ce serveur envoient des événements d\'utilisation pseudonymisés. Seul l\'opérateur du serveur peut modifier ce réglage.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Les statistiques d\'utilisation sont désactivées sur ce serveur. Seul l\'opérateur du serveur peut modifier ce réglage.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Envoyez des événements d\'utilisation pseudonymisés depuis tous les clients de ce serveur pour que nous sachions quelles fonctionnalités sont utiles (versions de production uniquement). Jamais de noms, de contenu de messages, de chemins de fichiers ni d\'adresses e-mail. Vous pouvez modifier ce choix à tout moment dans Réglages → Confidentialité.';
+
+  @override
   String get blocked => 'Bloqué';
 
   @override

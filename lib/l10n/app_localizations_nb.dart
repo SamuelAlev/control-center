@@ -1704,6 +1704,29 @@ class AppLocalizationsNb extends AppLocalizations {
       'Send krasj-, feil- og ytelsesdiagnostikk slik at vi kan rette problemer raskere (kun utgivelsesbygg). Du kan endre dette når som helst i Innstillinger → Personvern.';
 
   @override
+  String get usageAnalyticsTitle => 'Del bruksanalyse';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Alle klienter av denne serveren sender pseudonymiserte brukshendelser (skjermer, handlinger, antall), kun i utgivelsesbygg. Aldri navn, meldingsinnhold, filstier eller e-postadresser.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Bruksanalyse er av. Ingen klienter av denne serveren sender brukshendelser.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Klientene av denne serveren sender pseudonymiserte brukshendelser. Bare serveroperatøren kan endre dette.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Bruksanalyse er av på denne serveren. Bare serveroperatøren kan endre dette.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Send pseudonymiserte brukshendelser fra alle klienter av denne serveren slik at vi ser hvilke funksjoner som hjelper (kun utgivelsesbygg). Aldri navn, meldingsinnhold, filstier eller e-postadresser. Du kan endre dette når som helst i Innstillinger → Personvern.';
+
+  @override
   String get blocked => 'Blokkert';
 
   @override

@@ -158,6 +158,10 @@ that, and it is set by the desktop rather than by you:
 Set it yourself only if you are supervising `cc_server` as a child process and want
 the same guarantee.
 
+`DO_NOT_TRACK=1` (any value other than empty, `0` or `false`) stops the server's own
+[usage analytics](/manual/reference/telemetry/) even when the server-wide switch is
+on. Clients still follow the switch.
+
 ## Data directory layout
 
 The default data dir is `~/Library/Application Support/control-center` on macOS,

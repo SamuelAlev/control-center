@@ -1,4 +1,6 @@
+import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:control_center/core/constants/app_constants.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,5 +26,11 @@ class ThemeNotifier extends Notifier<ThemeMode> {
   void setThemeMode(ThemeMode mode) {
     _prefs.setString(themeModeKey, mode.name);
     state = mode;
+    ref.track(
+      AnalyticsEvents.settingChanged(
+        setting: 'appearance.theme',
+        value: mode.name,
+      ),
+    );
   }
 }

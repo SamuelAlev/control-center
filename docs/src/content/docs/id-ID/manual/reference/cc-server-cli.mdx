@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Setiap flag, variabel lingkungan, subperintah, dan jalur direktori data server headless.
 slug: id-ID/panduan-pengguna/referensi/cli-cc-server
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Setiap flag proses diisi lewat flag CLI atau variabel lingkungan; flag menang,
@@ -165,6 +165,10 @@ mengaturnya, dan variabel itu disetel oleh desktop, bukan oleh Anda:
 
 Setel sendiri hanya jika Anda mengawasi `cc_server` sebagai proses anak dan
 menginginkan jaminan yang sama.
+
+`DO_NOT_TRACK=1` (nilai apa pun selain kosong, `0` atau `false`) menghentikan
+[analitik penggunaan](/id-ID/panduan-pengguna/referensi/analitik-penggunaan/) milik server itu sendiri meskipun sakelar tingkat server
+aktif. Klien tetap mengikuti sakelar tersebut.
 
 ## Tata letak direktori data
 

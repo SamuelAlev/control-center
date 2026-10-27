@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Alle flagg, miljøvariabler, underkommandoer og stier i datamappen til headless-serveren.
 slug: nb-NO/handbok/referanse/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Hvert prosessflagg tar et CLI-flagg eller en miljøvariabel; flagget vinner,
@@ -169,6 +169,10 @@ og den settes av skrivebordsappen og ikke av deg:
 
 Sett den bare selv hvis du overvåker `cc_server` som en barneprosess og vil ha den
 samme garantien.
+
+`DO_NOT_TRACK=1` (enhver verdi unntatt tom, `0` eller `false`) stopper serverens egen
+[bruksanalyse](/nb-NO/handbok/referanse/bruksanalyse/) selv når den serveromfattende bryteren er
+på. Klientene følger fortsatt bryteren.
 
 ## Oppbygning av datamappen
 

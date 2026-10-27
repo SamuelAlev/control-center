@@ -1,0 +1,160 @@
+---
+title: Αναλυτικά χρήσης
+description: Τι καταγράφει το Control Center όταν τα αναλυτικά χρήσης είναι ενεργά, ποιος αποφασίζει και τι δεν αποστέλλεται ποτέ.
+slug: el-GR/εγχειρίδιο/αναφορά/αναλυτικά-χρήσης
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Το Control Center μπορεί να στέλνει **ψευδωνυμοποιημένα συμβάντα χρήσης** σε μια εγκατάσταση του [Umami](https://umami.is). Τα αναλυτικά χρήσης είναι **απενεργοποιημένα μέχρι να τα ενεργοποιήσει ο διαχειριστής του διακομιστή**. Η ρύθμιση ανήκει στον διακομιστή και ισχύει για κάθε πρόγραμμα-πελάτη που συνδέεται σε αυτόν: την εφαρμογή υπολογιστή, την εφαρμογή web, το τηλέφωνο και τον ίδιο τον διακομιστή.
+
+Τα αναλυτικά χρήσης είναι ξεχωριστά από την **Κοινή χρήση αναφορών σφαλμάτων**, μια ρύθμιση ανά συσκευή για διαγνωστικά καταρρεύσεων και σφαλμάτων.
+
+## Ποιος αποφασίζει
+
+| Διακόπτης | Πού | Αποτέλεσμα |
+| --- | --- | --- |
+| **Κοινή χρήση αναλυτικών χρήσης** | Αρχική ρύθμιση (βήμα sandbox) και **Ρυθμίσεις → Απόρρητο**. Μόνο ο διαχειριστής του διακομιστή μπορεί να τον αλλάξει· τα άλλα μέλη βλέπουν την τρέχουσα τιμή μόνο για ανάγνωση | Για όλο τον διακομιστή. Αποθηκεύεται ως `telemetry.usage_analytics` στις ρυθμίσεις του διακομιστή. Ανενεργός αν δεν οριστεί σε `true` |
+| Τύπος build | Αυτόματα | Τα build debug και profile δεν στέλνουν. Αντί γι’ αυτό γράφουν κάθε συμβάν στο αρχείο καταγραφής debug |
+| `CC_ANALYTICS_DEBUG=1` | Περιβάλλον του `cc_server` ή το `.env` του | Επιτρέπει στα build debug και profile του διακομιστή, και κάθε προγράμματος-πελάτη που συνδέεται σε αυτόν, να στέλνουν πραγματικά, για δοκιμές. Ο παραπάνω διακόπτης πρέπει και πάλι να είναι ενεργός |
+| `DO_NOT_TRACK=1` | Περιβάλλον του `cc_server` | Σταματά τις αναφορές του ίδιου του διακομιστή, ό,τι κι αν δείχνει ο διακόπτης. Τα προγράμματα-πελάτες εξακολουθούν να ακολουθούν τον διακόπτη |
+| Διακομιστής επίδειξης | Αυτόματα | Ο δημόσιος διακομιστής επίδειξης δεν στέλνει τίποτα δικό του. Οι επισκέπτες δεν μπορούν να αλλάξουν τον διακόπτη |
+
+Τα προγράμματα-πελάτες διαβάζουν τη ρύθμιση από τον διακομιστή (`telemetry.config` και στη συνέχεια σε πραγματικό χρόνο μέσω `telemetry.watch`). Μέχρι να έρθει η απάντηση, τα συμβάντα περιμένουν σε μια μικρή προσωρινή μνήμη. Αν η απάντηση είναι αρνητική, η προσωρινή μνήμη απορρίπτεται. Όταν απενεργοποιείται ο διακόπτης, ό,τι βρίσκεται ακόμη σε αναμονή απορρίπτεται και η αποστολή σταματά αμέσως, σε κάθε πρόγραμμα-πελάτη.
+
+## Τι δεν αποστέλλεται ποτέ
+
+- Περιεχόμενο μηνυμάτων, εισιτηρίων, αξιολογήσεων ή συσκέψεων, τίτλοι, prompt, εντολές shell και ερωτήματα αναζήτησης
+- Ονόματα, ονόματα σύνδεσης, διευθύνσεις email, avatar και εμφανιζόμενα ονόματα
+- Διαδρομές αρχείων, ονόματα αποθετηρίων, ονόματα κλάδων, ονόματα κεντρικών υπολογιστών και URL (ένα αποθετήριο στέλνεται μόνο ως ψευδωνυμοποιημένο `repo_id` και ένας σύνδεσμος σύσκεψης μόνο ως ο πάροχός του)
+- Ακατέργαστα αναγνωριστικά κάθε είδους
+
+Κάθε συμβάν περνά από μια πολιτική ιδιοτήτων πριν φύγει από τη διεργασία. Κείμενο, διαδρομές, URL, διευθύνσεις email, μη ψευδωνυμοποιημένα ID και συμβολοσειρές κάτω από κλειδιά όπως `email`, `*_name`, `path`, `title`, `prompt`, `content` ή `token` απορρίπτονται αντί να σταλούν. Μια συμβολοσειρά στέλνεται μόνο αν είναι ένα σύντομο token από κλειστό λεξιλόγιο, όπως μια τιμή enum, μια έκδοση, μια τοπική ρύθμιση ή ένα ID μοντέλου.
+
+## Ψευδωνυμοποιημένα ID
+
+Τα ID στέλνονται, αλλά μόνο ως ψευδώνυμα. Κάθε ID χώρου εργασίας, χώρου, συνομιλίας, πράκτορα, εκτέλεσης, χρήστη και συσκευής αντικαθίσταται από ένα HMAC-SHA256 με το μυστικό αλάτι της ίδιας της εγκατάστασης (`telemetry.pseudonym_salt`), περικομμένο στους 20 δεκαεξαδικούς χαρακτήρες. Ο ίδιος χώρος εργασίας αναφέρει πάντα την ίδια τιμή, ώστε τα συμβάντα να μπορούν να συσχετιστούν και να μετρηθούν, αλλά το ακατέργαστο ID δεν φεύγει ποτέ από την εγκατάσταση. Το αλάτι δημιουργείται στην πρώτη εκκίνηση του διακομιστή και δεν στέλνεται ποτέ στον πάροχο αναλυτικών. Η διαγραφή του καταλόγου δεδομένων του διακομιστή δημιουργεί νέο αλάτι και νέο ID εγκατάστασης, κάτι που αποσυνδέει ό,τι είχε καταγραφεί πριν.
+
+## Ιδιότητες σε κάθε συμβάν
+
+| Ιδιότητα | Παράδειγμα | Σημασία |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (το τηλέφωνο) ή `server`. Χρησιμοποιείται επίσης ως hostname στο Umami |
+| `app_version` | `0.0.11` | Έκδοση κυκλοφορίας |
+| `app_build` | `4baf980` | Σύντομο git commit του build |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` ή το λειτουργικό σύστημα του τηλεφώνου (`ios`, `android`) |
+| `locale` | `fr_FR` | Γλώσσα διεπαφής |
+| `server_mode` | `local` | `local` (εφαρμογή υπολογιστή με δικό της διακομιστή) ή `remote` |
+| `server_version` | `0.0.11` | Η έκδοση του συνδεδεμένου διακομιστή, όταν είναι γνωστή |
+| `is_demo` | `false` | Αν το πρόγραμμα-πελάτης είναι συνδεδεμένο στη δημόσια επίδειξη |
+| `install_id` | ψευδώνυμο | Η εγκατάσταση του διακομιστή |
+| `user_id` | ψευδώνυμο | Ο συνδεδεμένος χρήστης, μόλις γίνει γνωστός |
+| `device_id` | ψευδώνυμο | Η συζευγμένη συσκευή, μόλις γίνει γνωστή. Επίσης το distinct ID στο Umami |
+| `launch_id` | ψευδώνυμο | Μία εκκίνηση της εφαρμογής, για τη σειρά των συμβάντων μιας συνεδρίας |
+| `event_seq` | `12` | Η θέση του συμβάντος μέσα στην εκκίνηση |
+
+Το Umami λαμβάνει επιπλέον τη διεύθυνση IP του αιτήματος, από την οποία συνάγει χώρα και περιοχή χωρίς να αποθηκεύει τη διεύθυνση, καθώς και το User-Agent και το μέγεθος της οθόνης.
+
+## Προβολές οθονών
+
+Κάθε πλοήγηση καταγράφει μια προβολή σελίδας με URL το **πρότυπο διαδρομής**, όπως `/workspaces/:workspaceId/spaces/:spaceId`, ποτέ τη συγκεκριμένη διεύθυνση. Το όνομα της οθόνης είναι τα σταθερά τμήματα του προτύπου, οπότε στο παράδειγμα είναι `workspaces_spaces`. Οι παράμετροι διαδρομής που τελειώνουν σε `Id` επισυνάπτονται ως ψευδωνυμοποιημένες ιδιότητες `*_id` και οι αριθμητικές (όπως ένας αριθμός PR) ως αριθμοί. Όλες οι άλλες παράμετροι απορρίπτονται.
+
+## Συμβάντα προγραμμάτων-πελατών
+
+Καταγράφονται από την εφαρμογή υπολογιστή, την εφαρμογή web και το τηλέφωνο για ενέργειες ενός ατόμου.
+
+| Συμβάν | Ιδιότητες | Καταγράφεται όταν |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Η εφαρμογή ολοκλήρωσε την εκκίνηση και συνδέθηκε |
+| `app_backgrounded` | `foreground_s` | Το παράθυρο ή η καρτέλα αποκρύφθηκε |
+| `app_foregrounded` | `background_s` | Εμφανίστηκε ξανά |
+| `server_connected` | `reconnect` | Η σύνδεση αποκαταστάθηκε μετά από διακοπή |
+| `server_disconnected` | | Η σύνδεση διακόπηκε |
+| `server_switched` | | Ο χρήστης άλλαξε σε άλλον διακομιστή |
+| `device_paired` | | Το τηλέφωνο επιβεβαίωσε μια σύζευξη |
+| `onboarding_step_viewed` | `step`, `step_index` | Εμφανίστηκε ένα βήμα της αρχικής ρύθμισης |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | Η αρχική ρύθμιση ολοκληρώθηκε |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | Ο χρήστης άνοιξε άλλον χώρο εργασίας |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Στάλθηκε μήνυμα από ένα πεδίο σύνταξης |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | Εκτελέστηκε μια εντολή καθέτου στο πρόγραμμα-πελάτη. Οι ενσωματωμένες εντολές αναφέρουν το όνομά τους, οι δεξιότητες αναφέρουν `skill` και οι εντολές αποθετηρίου `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | Απαντήθηκε ένα αίτημα έγκρισης πράκτορα |
+| `command_palette_opened` | | Άνοιξε η παλέτα εντολών |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Εκτελέστηκε μια εντολή. Οι εντολές για συγκεκριμένο PR, μέλος ή συνομιλία αναφέρουν μόνο το είδος τους (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | Υποβλήθηκε αξιολόγηση pull request |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Εκτελέστηκε αναζήτηση. Το ίδιο το ερώτημα δεν καταγράφεται ποτέ |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | Ξεκίνησε η καταγραφή μιας σύσκεψης |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | Σταμάτησε |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Άλλαξε το θέμα ή η γλώσσα |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Ξεκίνησε το ηχητικό περιβάλλον, από τα χειριστήρια ή με τη λειτουργία εστίασης |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Σταμάτησε |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | Ο χρήστης διάλεξε άλλη διάθεση |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Ξεκίνησε η λειτουργία εστίασης |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Τελείωσε η λειτουργία εστίασης, νωρίτερα ή όταν έληξε ο χρόνος της |
+| `dictation_started` |  | Ξεκίνησε υπαγόρευση στο πεδίο σύνταξης |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Τελείωσε η υπαγόρευση. Καταγράφεται μόνο το μήκος της μεταγραφής |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Η εφαρμογή ζήτησε από τον διακομιστή να εκτελέσει ένα pipeline |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Επαναλήφθηκε μια αποτυχημένη εκτέλεση |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Ακυρώθηκε μια εκτέλεση από την εφαρμογή |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Τερματίστηκε βίαια ένα βήμα σε εξέλιξη |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Τελείωσε μια απόπειρα σύνδεσης σε ημερολόγιο |
+| `calendar_disconnected` | `workspace_id` | Αποσυνδέθηκε ένας λογαριασμός ημερολογίου |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Απαντήθηκε μια πρόσκληση |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Ξεκίνησε καταγραφή από ένα συμβάν ημερολογίου |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Άνοιξε ένας σύνδεσμος σύσκεψης (τηλέφωνο). Από τον σύνδεσμο προκύπτει μόνο ο πάροχος |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Χρησιμοποιήθηκε το κέντρο ειδοποιήσεων |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Δημιουργήθηκε πράκτορας από το μητρώο |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | Άνοιξε νέα καρτέλα επεξεργαστή σε έναν χώρο |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Άλλαξαν οι δεξιότητες του χώρου εργασίας |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Απαντήθηκε μια πρόταση ενορχήστρωσης |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Εγκρίθηκε ή απορρίφθηκε ένα σχέδιο (τηλέφωνο) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Ξεκίνησε ένας εποπτευόμενος στόχος ή βρόχος (τηλέφωνο) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Δημιουργήθηκε ή διακλαδώθηκε μια συνομιλία |
+| `conversation_rewound` | `conversation_id` | Μια συνομιλία συνεχίστηκε από προηγούμενο μήνυμα |
+| `space_archived` | `workspace_id`, `space_id` | Αρχειοθετήθηκε ένας χώρος |
+
+## Συμβάντα διακομιστή
+
+Καταγράφονται από τον `cc_server` για γεγονότα που κανένα μεμονωμένο πρόγραμμα-πελάτης δεν βλέπει ακριβώς μία φορά. Η εκτέλεση ενός πράκτορα μετράται μία φορά, όσα προγράμματα-πελάτες κι αν την παρακολουθούν.
+
+| Συμβάν | Ιδιότητες | Καταγράφεται όταν |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Ο διακομιστής ολοκλήρωσε την εκκίνηση |
+| `workspace_created` | `workspace_id` | Δημιουργήθηκε χώρος εργασίας |
+| `space_created` | `workspace_id`, `space_id` | Δημιουργήθηκε χώρος |
+| `repo_added` | `workspace_id`, `repo_id` | Συνδέθηκε αποθετήριο |
+| `ticket_created` | `workspace_id`, `ticket_id` | Ένα άτομο ή ένας πράκτορας δημιούργησε εισιτήριο |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Ολοκληρώθηκε μια εκτέλεση πράκτορα |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Ένας πράκτορας σταμάτησε για να περιμένει ένα άτομο |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Η πολιτική ενεργειών απέρριψε μια ενέργεια πράκτορα |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Τελείωσε μια εκτέλεση pipeline. Το `trigger` είναι `manual`, ο τύπος του συμβάντος που την ξεκίνησε ή, για έναν επώνυμο trigger, μόνο το είδος του (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Δημοσιεύτηκε pull request από έναν χώρο |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Συγχωνεύτηκε ένα pull request που άνοιξε πράκτορας |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Αποθηκεύτηκε η καταγραφή μιας σύσκεψης |
+| `space_deleted` | `workspace_id`, `space_id` | Διαγράφηκε ένας χώρος |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Ένα εισιτήριο άλλαξε κατάσταση |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Ανατέθηκε ένα εισιτήριο |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Ένα εισιτήριο πέρασε σε άλλον πράκτορα |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Τελείωσε η ανατεθειμένη εργασία σε ένα εισιτήριο |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Άλλαξαν τα μέλη ενός χώρου εργασίας |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | Ένας σταθμός έκλεισε ή εκκαθαρίστηκε |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Μια δεξιότητα χώρου εργασίας εγκαταστάθηκε, ενημερώθηκε ή άλλαξε στον δίσκο |
+| `calendar_auth_expired` | `workspace_id` | Μια σύνδεση ημερολογίου χρειάζεται εκ νέου είσοδο |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Ένα συμβάν ημερολογίου πρόκειται να ξεκινήσει |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Οι δαπάνες ξεπέρασαν ένα όριο προϋπολογισμού |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | Ζητήθηκε αξιολόγηση σε ένα παρακολουθούμενο PR |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Άλλαξε η απόφαση αξιολόγησης ενός παρακολουθούμενου PR |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | Συγχωνεύτηκε σε συνδεδεμένο αποθετήριο ένα PR που δεν άνοιξε πράκτορας |
+
+## Παράδοση
+
+Τα συμβάντα στέλνονται ένα-ένα στο `<host>/api/send` από μια ουρά στη μνήμη έως 200 συμβάντων. Σφάλμα δικτύου, λήξη χρονικού ορίου, `429` ή `5xx` κρατούν το συμβάν και το ξαναδοκιμάζουν με εκθετική καθυστέρηση, από 1 δευτερόλεπτο έως 5 λεπτά. Οποιοδήποτε άλλο `4xx` το απορρίπτει. Τίποτα δεν γράφεται στον δίσκο, οπότε τα συμβάντα που βρίσκονται ακόμη στην ουρά όταν κλείνει η εφαρμογή χάνονται. Η ουρά αδειάζει όταν η εφαρμογή περνά στο παρασκήνιο και όταν ο διακομιστής τερματίζεται.
+
+## Στόχευση ενός build σε άλλη εγκατάσταση
+
+Ο προορισμός ορίζεται κατά το build:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+Ο προσαρμογέας παρόχου βρίσκεται στο `packages/cc_analytics`. Η υποστήριξη άλλης υπηρεσίας αναλυτικών σημαίνει προσθήκη ενός προσαρμογέα εκεί. Το σχέδιο παρακολούθησης και οι κανόνες απορρήτου παραμένουν ίδιοι.

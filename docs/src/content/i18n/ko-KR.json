@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "라우트 맵",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
   "docs.sidebar.referenceBackup": "백업, 내보내기, 가져오기",
+  "docs.sidebar.referenceTelemetry": "사용 분석",
   "docs.sidebar.referenceGlossary": "용어집"
 }

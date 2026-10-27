@@ -1,0 +1,160 @@
+---
+title: Usage analytics
+description: What Control Center records when usage analytics are switched on, who decides, and what is never sent.
+slug: en-GB/manual/reference/telemetry
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center can send **pseudonymised usage events** to an [Umami](https://umami.is) instance. Usage analytics are **off until the server operator switches them on**. The setting belongs to the server and applies to every client connected to it: the desktop app, the web app, the phone and the server itself.
+
+Usage analytics are separate from **Share crash reports**, which is a per-device setting for crash and error diagnostics.
+
+## Who decides
+
+| Switch | Where | Effect |
+| --- | --- | --- |
+| **Share usage analytics** | Onboarding (sandbox step) and **Settings → Privacy**. Only the server operator can change it; other members see the current value read-only | Server-wide. Stored as `telemetry.usage_analytics` in the server settings. Off unless set to `true` |
+| Build type | Automatic | Debug and profile builds don't send. They write each event to the debug log instead |
+| `CC_ANALYTICS_DEBUG=1` | `cc_server` environment or its `.env` | Lets debug and profile builds of the server, and of every client connected to it, send for real, for testing. The switch above must still be on |
+| `DO_NOT_TRACK=1` | `cc_server` environment | Stops the server's own reporting, whatever the switch says. Clients still follow the switch |
+| Demo server | Automatic | The public demo server sends nothing of its own. Visitors cannot change the switch |
+
+Clients read the setting from the server (`telemetry.config`, then live through `telemetry.watch`). Until the answer arrives, events wait in a small in-memory buffer. If the answer is no, the buffer is discarded. Switching analytics off discards anything still queued and stops sending at once, on every client.
+
+## What is never sent
+
+- Message, ticket, review or meeting content, titles, prompts, shell commands and search queries
+- Names, logins, email addresses, avatars and display names
+- File paths, repository names, branch names, hostnames and URLs (a repository is sent only as a pseudonymised `repo_id`; a meeting link only as its provider)
+- Raw identifiers of any kind
+
+Every event goes through a property policy before it leaves the process. Text, paths, URLs, email addresses, IDs that have not been pseudonymised, and strings under keys such as `email`, `*_name`, `path`, `title`, `prompt`, `content` or `token` are dropped rather than sent. A string is sent only if it is a short token from a closed vocabulary, such as an enum value, a version, a locale or a model ID.
+
+## Pseudonymised IDs
+
+IDs are sent, but only as pseudonyms. Every workspace, space, conversation, agent, run, user and device ID is replaced by an HMAC-SHA256 under the install's own secret salt (`telemetry.pseudonym_salt`), truncated to 20 hex characters. The same workspace always reports the same value, so events can be linked and counted, but the raw ID never leaves the install. The salt is created on the server's first start and is never sent to the analytics provider. Deleting the server's data directory creates a new salt and install ID, which unlinks everything recorded before.
+
+## Properties on every event
+
+| Property | Example | Meaning |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (the phone) or `server`. Also used as the Umami hostname |
+| `app_version` | `0.0.11` | Release version |
+| `app_build` | `4baf980` | Short git commit of the build |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web`, or the phone's OS (`ios`, `android`) |
+| `locale` | `fr_FR` | UI language |
+| `server_mode` | `local` | `local` (desktop running its own server) or `remote` |
+| `server_version` | `0.0.11` | Connected server's version, when known |
+| `is_demo` | `false` | Whether the client is connected to the public demo |
+| `install_id` | pseudonym | The server install |
+| `user_id` | pseudonym | The signed-in user, once known |
+| `device_id` | pseudonym | The paired device, once known. Also the Umami distinct ID |
+| `launch_id` | pseudonym | One app launch, for ordering a session's events |
+| `event_seq` | `12` | Position of the event within the launch |
+
+Umami additionally receives the request's IP address, from which it derives country and region without storing the address, plus the User-Agent and the screen size.
+
+## Screen views
+
+Each navigation records a page view whose URL is the **route template**, such as `/workspaces/:workspaceId/spaces/:spaceId`, never the concrete address. The screen name is the template's literal segments, so that example is `workspaces_spaces`. Route parameters ending in `Id` are attached as pseudonymised `*_id` properties, and numeric ones (such as a PR number) as numbers. All other parameters are dropped.
+
+## Client events
+
+Recorded by the desktop app, the web app and the phone for actions a person takes.
+
+| Event | Properties | Recorded when |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | The app finished starting and connected |
+| `app_backgrounded` | `foreground_s` | The window or tab was hidden |
+| `app_foregrounded` | `background_s` | It was shown again |
+| `server_connected` | `reconnect` | The connection was restored after a drop |
+| `server_disconnected` | | The connection dropped |
+| `server_switched` | | The user switched to another server |
+| `device_paired` | | The phone confirmed a pairing |
+| `onboarding_step_viewed` | `step`, `step_index` | An onboarding step was shown |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | Onboarding finished |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | The user opened another workspace |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | A message was sent from a composer |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | A client-side slash command was run. Built-in commands report their name, skills report `skill`, and repository commands report `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | An agent's approval request was answered |
+| `command_palette_opened` | | The command palette opened |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | A command was run. Commands for a specific PR, member or conversation report only their kind (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | A pull-request review was submitted |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | A search was run. The query itself is never recorded |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | A meeting recording started |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | It stopped |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Theme or language changed |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | The soundscape started, from the controls or with focus mode |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | It stopped |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | The user picked another mood |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Focus mode started |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Focus mode ended, early or when its time ran out |
+| `dictation_started` |  | Composer dictation started |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Dictation ended. Only the transcript's length is recorded |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | The app asked the server to run a pipeline |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | A failed run was retried |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | A run was cancelled from the app |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | A running step was killed |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | A calendar sign-in attempt ended |
+| `calendar_disconnected` | `workspace_id` | A calendar account was disconnected |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | An invitation was answered |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | A recording was started from a calendar event |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | A meeting link was opened (phone). Only the provider is derived from the link |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | The notification centre was used |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | An agent was created from the registry |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | A new editor tab was opened in a space |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Workspace skills were changed |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | An orchestration proposal was answered |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | A plan was approved or rejected (phone) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | A supervised goal or loop was started (phone) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | A conversation was created or forked |
+| `conversation_rewound` | `conversation_id` | A conversation was continued from an earlier message |
+| `space_archived` | `workspace_id`, `space_id` | A space was archived |
+
+## Server events
+
+Recorded by `cc_server` for facts that no single client sees exactly once. An agent's run is counted once however many clients are watching it.
+
+| Event | Properties | Recorded when |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | The server finished booting |
+| `workspace_created` | `workspace_id` | A workspace was created |
+| `space_created` | `workspace_id`, `space_id` | A space was created |
+| `repo_added` | `workspace_id`, `repo_id` | A repository was linked |
+| `ticket_created` | `workspace_id`, `ticket_id` | A ticket was created by a person or an agent |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | An agent run finished |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | An agent stopped to wait for a person |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Action policy refused an agent's action |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | A pipeline run ended. `trigger` is `manual`, the event type that started it, or only the kind of a named trigger (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | A pull request was published from a space |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | A pull request an agent opened was merged |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | A meeting recording was saved |
+| `space_deleted` | `workspace_id`, `space_id` | A space was deleted |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | A ticket changed status |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | A ticket was assigned |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | A ticket moved to another agent |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Delegated work on a ticket ended |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Workspace membership changed |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | A rig closed, or was reaped |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | A workspace skill was installed, updated or changed on disk |
+| `calendar_auth_expired` | `workspace_id` | A calendar connection needs signing in again |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | A calendar event is about to start |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Spending crossed a budget threshold |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | A review was requested on a tracked PR |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | A tracked PR's review decision changed |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | A PR not opened by an agent was merged in a linked repository |
+
+## Delivery
+
+Events are sent one at a time to `<host>/api/send` from an in-memory queue of up to 200 events. A network error, timeout, `429` or `5xx` keeps the event and retries with exponential backoff, from 1 second up to 5 minutes. Any other `4xx` drops it. Nothing is written to disk, so events still queued when the app quits are lost. The queue is flushed when the app goes to the background and when the server shuts down.
+
+## Pointing a build at another instance
+
+The destination is set at build time:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+The provider adapter lives in `packages/cc_analytics`. Supporting another analytics service means adding an adapter there. The tracking plan and privacy rules stay the same.

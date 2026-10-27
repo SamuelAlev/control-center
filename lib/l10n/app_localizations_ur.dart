@@ -1692,6 +1692,29 @@ class AppLocalizationsUr extends AppLocalizations {
       'کریش، خرابی اور پرفارمنس تشخیص بھیجیں تاکہ مسائل تیزی سے ٹھیک ہوں (صرف ریلیز بلڈز)۔ آپ یہ کسی بھی وقت ترتیبات ← پرائیویسی میں بدل سکتے ہیں۔';
 
   @override
+  String get usageAnalyticsTitle => 'استعمال کے تجزیات شیئر کریں';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'اس سرور کے تمام کلائنٹس فرضی شناخت والے استعمال کے واقعات (اسکرینز، کارروائیاں، گنتیاں) بھیجتے ہیں، صرف ریلیز بلڈز میں۔ نام، پیغام کا مواد، فائل پاتھ یا ای میل پتے کبھی نہیں بھیجے جاتے۔';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'استعمال کے تجزیات بند ہیں۔ اس سرور کا کوئی کلائنٹ استعمال کے واقعات نہیں بھیجتا۔';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'اس سرور کے کلائنٹس فرضی شناخت والے استعمال کے واقعات بھیجتے ہیں۔ اسے صرف سرور آپریٹر بدل سکتا ہے۔';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'اس سرور پر استعمال کے تجزیات بند ہیں۔ اسے صرف سرور آپریٹر بدل سکتا ہے۔';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'اس سرور کے تمام کلائنٹس سے فرضی شناخت والے استعمال کے واقعات بھیجیں تاکہ ہم جان سکیں کہ کون سی خصوصیات مددگار ہیں (صرف ریلیز بلڈز)۔ نام، پیغام کا مواد، فائل پاتھ یا ای میل پتے کبھی نہیں بھیجے جاتے۔ آپ یہ کسی بھی وقت ترتیبات ← پرائیویسی میں بدل سکتے ہیں۔';
+
+  @override
   String get blocked => 'بلاک';
 
   @override

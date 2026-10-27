@@ -1697,6 +1697,29 @@ class AppLocalizationsHe extends AppLocalizations {
       'שלח נתוני אבחון של קריסות, שגיאות וביצועים כדי שנוכל לתקן בעיות מהר יותר (גרסאות שחרור בלבד). ניתן לשנות זאת בכל עת בהגדרות ← פרטיות.';
 
   @override
+  String get usageAnalyticsTitle => 'שתף נתוני שימוש';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'כל הלקוחות של שרת זה שולחים אירועי שימוש בכינוי בדוי (מסכים, פעולות, ספירות), בגרסאות שחרור בלבד. לעולם לא שמות, תוכן הודעות, נתיבי קבצים או כתובות דוא״ל.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'נתוני השימוש כבויים. אף לקוח של שרת זה אינו שולח אירועי שימוש.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'הלקוחות של שרת זה שולחים אירועי שימוש בכינוי בדוי. רק מפעיל השרת יכול לשנות זאת.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'נתוני השימוש כבויים בשרת זה. רק מפעיל השרת יכול לשנות זאת.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'שלח אירועי שימוש בכינוי בדוי מכל הלקוחות של שרת זה כדי שנדע אילו תכונות עוזרות (גרסאות שחרור בלבד). לעולם לא שמות, תוכן הודעות, נתיבי קבצים או כתובות דוא״ל. ניתן לשנות זאת בכל עת בהגדרות ← פרטיות.';
+
+  @override
   String get blocked => 'חסום';
 
   @override

@@ -235,3 +235,25 @@ class PhonePlanDocumentBody extends StatelessWidget {
     );
   }
 }
+
+/// A whole-cent budget typed into [raw], or null when it is not a positive
+/// amount. Accepts the locale's digits and decimal mark plus ASCII digits for
+/// hardware keyboards; rejects grouping and never rounds a third cent.
+int? parsePlanBudgetCents(BuildContext context, String raw) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final format = NumberFormat.decimalPattern(locale);
+  var text = raw.trim();
+  for (var digit = 0; digit < 10; digit++) {
+    text = text.replaceAll(format.format(digit), '$digit');
+  }
+  final separator = format.symbols.DECIMAL_SEP;
+  if (separator != '.') text = text.replaceAll(separator, '.');
+  if (!RegExp(r'^\d{1,7}(?:\.\d{1,2})?$').hasMatch(text)) return null;
+  final pieces = text.split('.');
+  final dollars = int.parse(pieces.first);
+  final cents = pieces.length == 1
+      ? 0
+      : int.parse(pieces.last.padRight(2, '0'));
+  final total = dollars * 100 + cents;
+  return total > 0 ? total : null;
+}

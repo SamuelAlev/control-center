@@ -1705,6 +1705,29 @@ class AppLocalizationsMs extends AppLocalizations {
       'Hantar diagnostik ranap, ralat dan prestasi supaya kami dapat membetulkan masalah lebih cepat (binaan keluaran sahaja). Anda boleh mengubah ini pada bila-bila masa dalam Tetapan → Privasi.';
 
   @override
+  String get usageAnalyticsTitle => 'Kongsi analitik penggunaan';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Semua klien pelayan ini menghantar peristiwa penggunaan berpseudonim (skrin, tindakan, kiraan), binaan keluaran sahaja. Tidak sekali-kali nama, kandungan mesej, laluan fail atau alamat e-mel.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Analitik penggunaan dimatikan. Tiada klien pelayan ini menghantar peristiwa penggunaan.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Klien pelayan ini menghantar peristiwa penggunaan berpseudonim. Hanya pengendali pelayan boleh mengubahnya.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Analitik penggunaan dimatikan pada pelayan ini. Hanya pengendali pelayan boleh mengubahnya.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Hantar peristiwa penggunaan berpseudonim daripada semua klien pelayan ini supaya kami tahu ciri yang membantu (binaan keluaran sahaja). Tidak sekali-kali nama, kandungan mesej, laluan fail atau alamat e-mel. Anda boleh mengubah ini pada bila-bila masa dalam Tetapan → Privasi.';
+
+  @override
   String get blocked => 'Disekat';
 
   @override

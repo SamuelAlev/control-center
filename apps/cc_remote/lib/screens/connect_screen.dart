@@ -1,3 +1,5 @@
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:cc_remote/analytics.dart';
 import 'package:cc_remote/app_connection.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/connect/connect_status_views.dart';
@@ -59,9 +61,14 @@ class ConnectScreen extends ConsumerWidget {
                           .pendingPairingRecord
                           ?.descriptor
                           .serverName,
-                      onConfirm: () => ref
-                          .read(remoteSessionProvider)
-                          .confirmPendingPairing(),
+                      onConfirm: () async {
+                        // Read now: confirming swaps this screen out.
+                        final analytics = ref.read(analyticsProvider);
+                        await ref
+                            .read(remoteSessionProvider)
+                            .confirmPendingPairing();
+                        analytics.track(AnalyticsEvents.devicePaired());
+                      },
                       onDecline: () => ref
                           .read(remoteSessionProvider)
                           .declinePendingPairing(),

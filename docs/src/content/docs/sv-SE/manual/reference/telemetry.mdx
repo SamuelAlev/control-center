@@ -1,0 +1,160 @@
+---
+title: Användningsstatistik
+description: Vad Control Center registrerar när användningsstatistiken är på, vem som bestämmer och vad som aldrig skickas.
+slug: sv-SE/handbok/referens/anvandningsstatistik
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center kan skicka **pseudonymiserade användningshändelser** till en [Umami](https://umami.is)-instans. Användningsstatistiken är **avstängd tills serveroperatören slår på den**. Inställningen tillhör servern och gäller alla klienter som är anslutna till den: skrivbordsappen, webbappen, telefonen och själva servern.
+
+Användningsstatistiken är skild från **Dela kraschrapporter**, som är en inställning per enhet för diagnostik av krascher och fel.
+
+## Vem bestämmer
+
+| Reglage | Var | Effekt |
+| --- | --- | --- |
+| **Dela användningsstatistik** | Introduktionen (sandlådesteget) och **Inställningar → Integritet**. Bara serveroperatören kan ändra det; andra medlemmar ser det aktuella värdet skrivskyddat | Gäller hela servern. Lagras som `telemetry.usage_analytics` i serverinställningarna. Av om det inte är satt till `true` |
+| Byggtyp | Automatiskt | Debug- och profile-byggen skickar inget. De skriver i stället varje händelse till felsökningsloggen |
+| `CC_ANALYTICS_DEBUG=1` | Miljön för `cc_server` eller dess `.env` | Låter debug- och profile-byggen av servern, och av alla klienter som är anslutna till den, skicka på riktigt, för testning. Reglaget ovan måste fortfarande vara på |
+| `DO_NOT_TRACK=1` | Miljön för `cc_server` | Stoppar serverns egen rapportering, oavsett vad reglaget säger. Klienterna följer fortfarande reglaget |
+| Demoservern | Automatiskt | Den publika demoservern skickar inget eget. Besökare kan inte ändra reglaget |
+
+Klienterna läser inställningen från servern (`telemetry.config`, sedan löpande via `telemetry.watch`). Tills svaret kommer väntar händelserna i en liten buffert i minnet. Om svaret är nej kastas bufferten. Att slå av reglaget kastar allt som fortfarande står i kö och stoppar sändningen direkt, på alla klienter.
+
+## Vad som aldrig skickas
+
+- Innehåll i meddelanden, ärenden, granskningar eller möten, titlar, prompter, skalkommandon och sökfrågor
+- Namn, inloggningar, e-postadresser, avatarer och visningsnamn
+- Filsökvägar, namn på kodförråd och grenar, värdnamn och URL:er (ett kodförråd skickas bara som ett pseudonymiserat `repo_id`, en möteslänk bara som dess leverantör)
+- Råa identifierare av alla slag
+
+Varje händelse passerar en egenskapspolicy innan den lämnar processen. Text, sökvägar, URL:er, e-postadresser, oinkapslade ID:n och strängar under nycklar som `email`, `*_name`, `path`, `title`, `prompt`, `content` eller `token` tas bort i stället för att skickas. En sträng skickas bara om den är en kort token ur ett slutet ordförråd, till exempel ett enum-värde, en version, en språkinställning eller ett modell-ID.
+
+## Pseudonymiserade ID:n
+
+ID:n skickas, men bara som pseudonymer. Varje ID för arbetsyta, yta, konversation, agent, körning, användare och enhet ersätts med en HMAC-SHA256 med installationens eget hemliga salt (`telemetry.pseudonym_salt`), avkortad till 20 hexadecimala tecken. Samma arbetsyta rapporterar alltid samma värde, så händelser kan kopplas ihop och räknas, men det råa ID:t lämnar aldrig installationen. Saltet skapas när servern startar första gången och skickas aldrig till analysleverantören. Om du raderar serverns datakatalog skapas ett nytt salt och ett nytt installations-ID, vilket bryter kopplingen till allt som registrerats tidigare.
+
+## Egenskaper på varje händelse
+
+| Egenskap | Exempel | Betydelse |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (telefonen) eller `server`. Används också som värdnamn i Umami |
+| `app_version` | `0.0.11` | Releaseversion |
+| `app_build` | `4baf980` | Byggets korta git-commit |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` eller telefonens operativsystem (`ios`, `android`) |
+| `locale` | `fr_FR` | Gränssnittsspråk |
+| `server_mode` | `local` | `local` (skrivbordsappen kör sin egen server) eller `remote` |
+| `server_version` | `0.0.11` | Den anslutna serverns version, när den är känd |
+| `is_demo` | `false` | Om klienten är ansluten till den publika demon |
+| `install_id` | pseudonym | Serverinstallationen |
+| `user_id` | pseudonym | Den inloggade användaren, när den är känd |
+| `device_id` | pseudonym | Den parkopplade enheten, när den är känd. Även det unika ID:t i Umami |
+| `launch_id` | pseudonym | En start av appen, för att ordna en sessions händelser |
+| `event_seq` | `12` | Händelsens position inom starten |
+
+Umami tar dessutom emot begärans IP-adress, som den härleder land och region ur utan att lagra adressen, samt User-Agent och skärmstorlek.
+
+## Skärmvisningar
+
+Varje navigering registrerar en sidvisning vars URL är **ruttmallen**, till exempel `/workspaces/:workspaceId/spaces/:spaceId`, aldrig den konkreta adressen. Skärmnamnet är mallens bokstavliga segment, så exemplet ger `workspaces_spaces`. Ruttparametrar som slutar på `Id` bifogas som pseudonymiserade `*_id`-egenskaper och numeriska (till exempel ett PR-nummer) som tal. Alla andra parametrar tas bort.
+
+## Klienthändelser
+
+Registreras av skrivbordsappen, webbappen och telefonen för sådant en person gör.
+
+| Händelse | Egenskaper | Registreras när |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Appen har startat klart och anslutit |
+| `app_backgrounded` | `foreground_s` | Fönstret eller fliken doldes |
+| `app_foregrounded` | `background_s` | Det visades igen |
+| `server_connected` | `reconnect` | Anslutningen kom tillbaka efter ett avbrott |
+| `server_disconnected` | | Anslutningen bröts |
+| `server_switched` | | Användaren bytte till en annan server |
+| `device_paired` | | Telefonen bekräftade en parkoppling |
+| `onboarding_step_viewed` | `step`, `step_index` | Ett introduktionssteg visades |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | Introduktionen slutfördes |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | Användaren öppnade en annan arbetsyta |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Ett meddelande skickades från en meddelanderuta |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | Ett snedstreckskommando på klientsidan kördes. Inbyggda kommandon rapporterar sitt namn, färdigheter rapporterar `skill` och kommandon från kodförrådet rapporterar `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | En agents begäran om godkännande besvarades |
+| `command_palette_opened` | | Kommandopaletten öppnades |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Ett kommando kördes. Kommandon för en viss PR, medlem eller konversation rapporterar bara sin sort (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | En granskning av en pull request skickades |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | En sökning kördes. Själva sökfrågan registreras aldrig |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | En mötesinspelning startade |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | Den stoppades |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Tema eller språk ändrades |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Ljudlandskapet startade, från kontrollerna eller med fokusläget |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Det stoppades |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | Användaren valde en annan stämning |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Fokusläget startade |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Fokusläget avslutades, i förtid eller när tiden tog slut |
+| `dictation_started` | | Diktering i meddelanderutan startade |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Dikteringen avslutades. Bara transkriptionens längd registreras |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Appen bad servern att köra en pipeline |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | En misslyckad körning gjordes om |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | En körning avbröts från appen |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Ett pågående steg dödades |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Ett inloggningsförsök till en kalender avslutades |
+| `calendar_disconnected` | `workspace_id` | Ett kalenderkonto kopplades från |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | En inbjudan besvarades |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | En inspelning startades från en kalenderhändelse |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | En möteslänk öppnades (telefon). Bara leverantören härleds från länken |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Aviseringscentret användes |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | En agent skapades från registret |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | En ny redigeringsflik öppnades i en yta |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Arbetsytans färdigheter ändrades |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Ett orkestreringsförslag besvarades |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | En plan godkändes eller avvisades (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Ett övervakat mål eller en loop startades (telefon) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | En konversation skapades eller förgrenades |
+| `conversation_rewound` | `conversation_id` | En konversation fortsattes från ett tidigare meddelande |
+| `space_archived` | `workspace_id`, `space_id` | En yta arkiverades |
+
+## Serverhändelser
+
+Registreras av `cc_server` för fakta som ingen enskild klient ser exakt en gång. En agents körning räknas en gång, hur många klienter som än tittar på den.
+
+| Händelse | Egenskaper | Registreras när |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Servern har startat klart |
+| `workspace_created` | `workspace_id` | En arbetsyta skapades |
+| `space_created` | `workspace_id`, `space_id` | En yta skapades |
+| `repo_added` | `workspace_id`, `repo_id` | Ett kodförråd länkades |
+| `ticket_created` | `workspace_id`, `ticket_id` | Ett ärende skapades av en person eller en agent |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | En agentkörning avslutades |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | En agent stannade för att vänta på en person |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Åtgärdspolicyn nekade en agents åtgärd |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | En pipelinekörning avslutades. `trigger` är `manual`, typen av händelse som startade den, eller bara sorten av en namngiven utlösare (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | En pull request publicerades från en yta |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | En pull request som en agent öppnat slogs ihop |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | En mötesinspelning sparades |
+| `space_deleted` | `workspace_id`, `space_id` | En yta raderades |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Ett ärende bytte status |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Ett ärende tilldelades |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Ett ärende flyttades till en annan agent |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Delegerat arbete på ett ärende avslutades |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Medlemskapet i arbetsytan ändrades |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | En station stängdes eller städades bort |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | En färdighet i arbetsytan installerades, uppdaterades eller ändrades på disk |
+| `calendar_auth_expired` | `workspace_id` | En kalenderanslutning kräver ny inloggning |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | En kalenderhändelse ska snart börja |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Utgifterna passerade en budgetgräns |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | En granskning begärdes på en bevakad PR |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Granskningsbeslutet för en bevakad PR ändrades |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | En PR som inte öppnats av en agent slogs ihop i ett länkat kodförråd |
+
+## Leverans
+
+Händelser skickas en i taget till `<host>/api/send` från en kö i minnet med plats för upp till 200 händelser. Ett nätverksfel, en timeout, `429` eller `5xx` behåller händelsen och försöker igen med exponentiell backoff, från 1 sekund upp till 5 minuter. Alla andra `4xx` kastar den. Inget skrivs till disk, så händelser som fortfarande står i kö när appen avslutas går förlorade. Kön töms när appen går till bakgrunden och när servern stängs av.
+
+## Peka ett bygge mot en annan instans
+
+Destinationen bestäms när appen byggs:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+Leverantörsadaptern finns i `packages/cc_analytics`. Att stödja en annan analystjänst innebär att lägga till en adapter där. Spårningsplanen och integritetsreglerna är desamma.

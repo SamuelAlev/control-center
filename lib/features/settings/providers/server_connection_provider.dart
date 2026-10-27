@@ -1,3 +1,5 @@
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/server_switch_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
@@ -101,6 +103,7 @@ class ServerListNotifier extends Notifier<ServerListState> {
       // The pairing connection was only the verification vehicle; the switch
       // builds the app's real session.
       await connection.dispose();
+      ref.track(AnalyticsEvents.serverSwitched());
       await ref.read(serverSwitchHandlerProvider)(serverId);
       _refreshIfAlive();
     } finally {
@@ -117,6 +120,10 @@ class ServerListNotifier extends Notifier<ServerListState> {
       // both flip the stored mode / active server as part of connecting.
       // Writing it again here would run AFTER the switch has already replaced
       // this provider tree, on a container that no longer exists.
+      //
+      // Recorded before the switch: it replaces this container, and with it
+      // the analytics session, whose disposal flushes this event.
+      ref.track(AnalyticsEvents.serverSwitched());
       await ref.read(serverSwitchHandlerProvider)(serverId);
       _refreshIfAlive();
     } finally {

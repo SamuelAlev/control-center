@@ -21,6 +21,7 @@ The root [pubspec.yaml](pubspec.yaml) defines the native Dart pub workspace; all
 | [packages/cc_rpc](packages/cc_rpc/README.md) | Web-safe JSON-RPC client and transports |
 | [packages/cc_host](packages/cc_host/README.md) | Server sessions, dispatcher, subscriptions, rate limiting, presence and WSS |
 | [packages/cc_data](packages/cc_data/README.md) | Web-safe RPC repository adapters |
+| [packages/cc_analytics](packages/cc_analytics/README.md) | Web-safe analytics provider adapters (Umami) behind `cc_domain`'s `Analytics` facade |
 | `packages/cc_persistence` | Server-only Drift/SQLite, global and per-workspace databases |
 | `packages/cc_infra` | VM adapters: git/process, rhttp integrations, dispatch, sandboxes, rigs, fleet, tunnels and CC-specific harness bridges |
 | `packages/cc_mcp` | Typed server MCP tools and dispatcher; no Riverpod `Ref` |
@@ -354,6 +355,12 @@ Running agent commands in the messaging IDE's General → Terminals section open
 - Global error boundaries are `PlatformDispatcher.instance.onError` and `ErrorWidget.builder`.
 - `macos/Runner/SurfaceCacheGuard.swift` patches the engine-private `FlutterBackBufferCache`, which can hand a frame a wrong-size surface after an A → B → A resize or display replug while a platform view is on screen; Impeller then dereferences a null color texture on the raster thread ([flutter#185394](https://github.com/flutter/flutter/issues/185394)). It installs before the engine runs, verifies every private class/selector/type encoding and stays inert if they change (`log stream --predicate 'category == "SurfaceCacheGuard"'`). On a `.fvmrc` bump, delete it once `removeSurfaceForSize:` checks the returned surface's size.
 - `macos/Runner/WindowCloseGuard.swift` patches the engine-private `-[FlutterWindowController closeAllWindows]`, which on hot restart disposes each view controller and closes its window without clearing the window's delegate; closing the key window then sends `windowDidResignKey:` to a `FlutterWindowOwner` that reads the disposed controller's `viewIdentifier` and aborts ("This view controller is not attached."). The guard detaches every owner first, as `destroyWindow:` does, with the same verify-or-stay-inert checks (`log stream --predicate 'category == "WindowCloseGuard"'`). On a `.fvmrc` bump, delete it once `closeAllWindows` clears `window.delegate` before `close`.
+
+### Usage analytics
+
+One `Analytics` facade per process (`packages/cc_domain/lib/features/telemetry/`): desktop/web (`analyticsProvider`, `lib/core/providers/analytics_providers.dart`), the phone (`apps/cc_remote/lib/analytics.dart`) and the server (`ServerAnalytics`, `packages/cc_server_core/lib/src/telemetry/`). Call sites record only events from the `AnalyticsEvents` tracking plan. The facade gates collection on the server's `TelemetryConfig`, which is opt-in. Records made before the config arrives wait in a bounded buffer and are dropped if it says no. Collection is also gated on the build (`kReleaseMode` on clients, `dart.vm.product` on the server; other builds log through `LoggingAnalyticsSink` unless the server's `CC_ANALYTICS_DEBUG=1` sets `TelemetryConfig.debugBuildsAllowed`). The facade merges the context (`app_type` desktop/web/remote/server, version, platform, server mode, locale), applies `AnalyticsPropertyPolicy` and pseudonymizes IDs, then hands an `AnalyticsEnvelope` to the `AnalyticsSink` port. `AnalyticsDestination.createSink` in `cc_analytics` is the single provider switch; `UmamiAnalyticsSink` owns queueing, backoff and delivery.
+
+Clients record UI interactions: screen views from the router's route template, sends, approvals, commands, searches, settings and the session lifecycle. The server records domain facts from the `DomainEventBus` (runs finished, workspaces, spaces, tickets, pipelines, PRs), so agent work is counted once however many clients watch. Do not record a server fact from a client. Adding an event means a factory in `AnalyticsEvents`, its call site, and a row in the manual's telemetry reference. Privacy rules are in [SECURITY.md](SECURITY.md#usage-analytics).
 
 ### Client read snapshots
 

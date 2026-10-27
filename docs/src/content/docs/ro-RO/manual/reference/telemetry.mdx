@@ -1,0 +1,160 @@
+---
+title: Statistici de utilizare
+description: Ce înregistrează Control Center când statisticile de utilizare sunt pornite, cine decide și ce nu se trimite niciodată.
+slug: ro-RO/manual/referinta/statistici-de-utilizare
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center poate trimite **evenimente de utilizare pseudonimizate** către o instanță [Umami](https://umami.is). Statisticile de utilizare sunt **oprite până când operatorul serverului le pornește**. Setarea aparține serverului și se aplică fiecărui client conectat la el: aplicația desktop, aplicația web, telefonul și serverul însuși.
+
+Statisticile de utilizare sunt separate de **Partajează rapoartele de crash**, o setare per dispozitiv pentru diagnosticarea crash-urilor și a erorilor.
+
+## Cine decide
+
+| Comutator | Unde | Efect |
+| --- | --- | --- |
+| **Partajează statisticile de utilizare** | Configurarea inițială (pasul sandbox) și **Setări → Confidențialitate**. Doar operatorul serverului o poate schimba; ceilalți membri văd valoarea curentă doar în citire | La nivelul întregului server. Stocată ca `telemetry.usage_analytics` în setările serverului. Oprită dacă nu este setată la `true` |
+| Tipul build-ului | Automat | Build-urile debug și profile nu trimit nimic. Scriu în schimb fiecare eveniment în jurnalul de depanare |
+| `CC_ANALYTICS_DEBUG=1` | Mediul `cc_server` sau fișierul său `.env` | Permite build-urilor debug și profile ale serverului, și ale fiecărui client conectat la el, să trimită date reale, pentru testare. Comutatorul de mai sus trebuie să fie în continuare pornit |
+| `DO_NOT_TRACK=1` | Mediul `cc_server` | Oprește raportarea proprie a serverului, indiferent de comutator. Clienții urmează în continuare comutatorul |
+| Serverul demo | Automat | Serverul demo public nu trimite nimic în nume propriu. Vizitatorii nu pot schimba comutatorul |
+
+Clienții citesc setarea de la server (`telemetry.config`, apoi în timp real prin `telemetry.watch`). Până sosește răspunsul, evenimentele așteaptă într-un mic buffer în memorie. Dacă răspunsul este nu, buffer-ul este eliminat. Oprirea comutatorului elimină tot ce mai este în coadă și oprește imediat trimiterea, pe fiecare client.
+
+## Ce nu se trimite niciodată
+
+- Conținutul mesajelor, tichetelor, recenziilor sau întâlnirilor, titluri, prompturi, comenzi shell și interogări de căutare
+- Nume, conturi de autentificare, adrese de email, avatare și nume afișate
+- Căi de fișiere, nume de depozite, nume de ramuri, nume de gazdă și URL-uri (un depozit este trimis doar ca `repo_id` pseudonimizat; un link de întâlnire doar ca furnizorul său)
+- Identificatori bruți de orice fel
+
+Fiecare eveniment trece printr-o politică de proprietăți înainte să părăsească procesul. Textul, căile, URL-urile, adresele de email, ID-urile neîmpachetate și șirurile de sub chei precum `email`, `*_name`, `path`, `title`, `prompt`, `content` sau `token` sunt eliminate în loc să fie trimise. Un șir este trimis doar dacă este un token scurt dintr-un vocabular închis, cum ar fi o valoare enum, o versiune, o setare regională sau un ID de model.
+
+## ID-uri pseudonimizate
+
+ID-urile sunt trimise, dar numai ca pseudonime. Fiecare ID de spațiu de lucru, spațiu, conversație, agent, rulare, utilizator și dispozitiv este înlocuit cu un HMAC-SHA256 calculat cu sarea secretă proprie a instalării (`telemetry.pseudonym_salt`), trunchiat la 20 de caractere hexazecimale. Același spațiu de lucru raportează mereu aceeași valoare, astfel încât evenimentele pot fi corelate și numărate, dar ID-ul brut nu părăsește niciodată instalarea. Sarea este creată la prima pornire a serverului și nu este trimisă niciodată furnizorului de statistici. Ștergerea directorului de date al serverului creează o sare și un ID de instalare noi, ceea ce rupe legătura cu tot ce s-a înregistrat înainte.
+
+## Proprietăți pe fiecare eveniment
+
+| Proprietate | Exemplu | Semnificație |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (telefonul) sau `server`. Folosită și ca nume de gazdă în Umami |
+| `app_version` | `0.0.11` | Versiunea release-ului |
+| `app_build` | `4baf980` | Commit-ul git scurt al build-ului |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` sau sistemul de operare al telefonului (`ios`, `android`) |
+| `locale` | `fr_FR` | Limba interfeței |
+| `server_mode` | `local` | `local` (aplicația desktop își rulează propriul server) sau `remote` |
+| `server_version` | `0.0.11` | Versiunea serverului conectat, când este cunoscută |
+| `is_demo` | `false` | Dacă clientul este conectat la demo-ul public |
+| `install_id` | pseudonim | Instalarea serverului |
+| `user_id` | pseudonim | Utilizatorul autentificat, odată ce este cunoscut |
+| `device_id` | pseudonim | Dispozitivul asociat, odată ce este cunoscut. Este și ID-ul distinct din Umami |
+| `launch_id` | pseudonim | O lansare a aplicației, pentru ordonarea evenimentelor unei sesiuni |
+| `event_seq` | `12` | Poziția evenimentului în cadrul lansării |
+
+Umami mai primește adresa IP a cererii, din care deduce țara și regiunea fără să stocheze adresa, plus User-Agent-ul și dimensiunea ecranului.
+
+## Vizualizări de ecran
+
+Fiecare navigare înregistrează o vizualizare de pagină al cărei URL este **șablonul rutei**, de exemplu `/workspaces/:workspaceId/spaces/:spaceId`, niciodată adresa concretă. Numele ecranului este format din segmentele literale ale șablonului, deci pentru acest exemplu este `workspaces_spaces`. Parametrii de rută care se termină în `Id` sunt atașați ca proprietăți `*_id` pseudonimizate, iar cei numerici (de exemplu, un număr de PR) ca numere. Toți ceilalți parametri sunt eliminați.
+
+## Evenimente ale clienților
+
+Înregistrate de aplicația desktop, aplicația web și telefon pentru acțiunile unei persoane.
+
+| Eveniment | Proprietăți | Înregistrat când |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Aplicația a terminat pornirea și s-a conectat |
+| `app_backgrounded` | `foreground_s` | Fereastra sau fila a fost ascunsă |
+| `app_foregrounded` | `background_s` | A fost afișată din nou |
+| `server_connected` | `reconnect` | Conexiunea a revenit după o întrerupere |
+| `server_disconnected` | | Conexiunea s-a întrerupt |
+| `server_switched` | | Utilizatorul a trecut la alt server |
+| `device_paired` | | Telefonul a confirmat o asociere |
+| `onboarding_step_viewed` | `step`, `step_index` | A fost afișat un pas al configurării inițiale |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | Configurarea inițială s-a încheiat |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | Utilizatorul a deschis alt spațiu de lucru |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Un mesaj a fost trimis dintr-un compozitor |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | A rulat o comandă slash pe partea de client. Comenzile integrate își raportează numele, abilitățile raportează `skill`, iar comenzile din depozit raportează `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | S-a răspuns la cererea de aprobare a unui agent |
+| `command_palette_opened` | | Paleta de comenzi s-a deschis |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | A rulat o comandă. Comenzile pentru un anumit PR, membru sau conversație raportează doar tipul lor (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | A fost trimisă o recenzie de pull request |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | A rulat o căutare. Interogarea în sine nu este înregistrată niciodată |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | A pornit înregistrarea unei întâlniri |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | S-a oprit |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | S-a schimbat tema sau limba |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Soundscape-ul a pornit, din comenzi sau odată cu modul focus |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | S-a oprit |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | Utilizatorul a ales altă atmosferă |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Modul focus a pornit |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Modul focus s-a încheiat, mai devreme sau când i-a expirat timpul |
+| `dictation_started` | | A pornit dictarea în compozitor |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Dictarea s-a încheiat. Se înregistrează doar lungimea transcrierii |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Aplicația a cerut serverului să ruleze un pipeline |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | O rulare eșuată a fost reîncercată |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | O rulare a fost anulată din aplicație |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Un pas aflat în execuție a fost oprit forțat |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | O încercare de autentificare în calendar s-a încheiat |
+| `calendar_disconnected` | `workspace_id` | Un cont de calendar a fost deconectat |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | S-a răspuns la o invitație |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | A pornit o înregistrare dintr-un eveniment din calendar |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | A fost deschis un link de întâlnire (telefon). Din link se deduce doar furnizorul |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | A fost folosit centrul de notificări |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Un agent a fost creat din registru |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | S-a deschis o filă nouă de editor într-un spațiu |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Abilitățile spațiului de lucru au fost modificate |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | S-a răspuns la o propunere de orchestrare |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Un plan a fost aprobat sau respins (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | A pornit un obiectiv sau o buclă supravegheată (telefon) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | O conversație a fost creată sau ramificată |
+| `conversation_rewound` | `conversation_id` | O conversație a fost continuată de la un mesaj anterior |
+| `space_archived` | `workspace_id`, `space_id` | Un spațiu a fost arhivat |
+
+## Evenimente ale serverului
+
+Înregistrate de `cc_server` pentru fapte pe care niciun client nu le vede exact o singură dată. Rularea unui agent este numărată o singură dată, oricâți clienți ar urmări-o.
+
+| Eveniment | Proprietăți | Înregistrat când |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Serverul a terminat pornirea |
+| `workspace_created` | `workspace_id` | A fost creat un spațiu de lucru |
+| `space_created` | `workspace_id`, `space_id` | A fost creat un spațiu |
+| `repo_added` | `workspace_id`, `repo_id` | A fost conectat un depozit |
+| `ticket_created` | `workspace_id`, `ticket_id` | Un tichet a fost creat de o persoană sau de un agent |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Rularea unui agent s-a încheiat |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Un agent s-a oprit ca să aștepte o persoană |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Politica de acțiuni a refuzat o acțiune a unui agent |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | O rulare de pipeline s-a încheiat. `trigger` este `manual`, tipul evenimentului care a pornit-o sau doar tipul unui declanșator cu nume (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Un pull request a fost publicat dintr-un spațiu |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | A fost îmbinat un pull request deschis de un agent |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | A fost salvată înregistrarea unei întâlniri |
+| `space_deleted` | `workspace_id`, `space_id` | Un spațiu a fost șters |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Un tichet și-a schimbat starea |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Un tichet a fost atribuit |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Un tichet a trecut la alt agent |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Munca delegată pe un tichet s-a încheiat |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Componența spațiului de lucru s-a schimbat |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | O stație s-a închis sau a fost recuperată |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | O abilitate a spațiului de lucru a fost instalată, actualizată sau modificată pe disc |
+| `calendar_auth_expired` | `workspace_id` | O conexiune de calendar necesită o nouă autentificare |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Un eveniment din calendar este pe cale să înceapă |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Cheltuielile au depășit un prag de buget |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | A fost cerută o recenzie pe un PR urmărit |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Decizia de recenzie a unui PR urmărit s-a schimbat |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | Un PR care nu a fost deschis de un agent a fost îmbinat într-un depozit conectat |
+
+## Livrare
+
+Evenimentele sunt trimise unul câte unul către `<host>/api/send` dintr-o coadă în memorie de cel mult 200 de evenimente. O eroare de rețea, un timeout, `429` sau `5xx` păstrează evenimentul și reîncearcă cu backoff exponențial, de la 1 secundă până la 5 minute. Orice alt `4xx` îl elimină. Nimic nu se scrie pe disc, așa că evenimentele aflate încă în coadă când aplicația se închide se pierd. Coada este golită când aplicația trece în fundal și când serverul se oprește.
+
+## Direcționarea unui build către altă instanță
+
+Destinația este fixată la momentul build-ului:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+Adaptorul furnizorului se află în `packages/cc_analytics`. Suportul pentru un alt serviciu de statistici înseamnă adăugarea unui adaptor acolo. Planul de urmărire și regulile de confidențialitate rămân aceleași.

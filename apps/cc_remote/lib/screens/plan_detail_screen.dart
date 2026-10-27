@@ -1,5 +1,6 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/features/plan_studio/domain/entities/plan_document.dart';
+import 'package:cc_remote/analytics.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/plan_goal_providers.dart';
@@ -86,6 +87,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
           : l10n.mobilePlanApproveAll,
     );
     if (!ok || !mounted || !_stillAuthorized(workspaceId)) return;
+    final analytics = ref.read(analyticsProvider);
     await _act(() async {
       // Never execute a plan whose revision changed while the confirmation was open.
       final current = await RemotePlanStudioRepository(
@@ -95,11 +97,15 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
           current?.status != PlanDocumentStatus.proposed) {
         throw StateError(l10n.mobilePlanChanged);
       }
-      final executionId = await RemotePlanStudioRepository(client).approvePlan(
-        plan.id,
-        workspaceId: workspaceId,
-        approvedNodeKeys: partial ? approvedKeys : null,
-        maxCostCents: ceiling,
+      final executionId = await recordPlanDecision(
+        analytics,
+        RemotePlanStudioRepository(client).approvePlan(
+          plan.id,
+          workspaceId: workspaceId,
+          approvedNodeKeys: partial ? approvedKeys : null,
+          maxCostCents: ceiling,
+        ),
+        ('approved', plan.id, workspaceId, partial),
       );
       if (mounted) setState(() => _approvedExecutionId = executionId);
     });
@@ -119,12 +125,17 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     }
     if (!mounted || !_stillAuthorized(workspaceId)) return;
     await _act(
-      () => RemotePlanStudioRepository(ref.read(rpcClientProvider).requireValue)
-          .updatePlanStatus(
-            plan.id,
-            PlanDocumentStatus.rejected,
-            workspaceId: workspaceId,
-          ),
+      () => recordPlanDecision(
+        ref.read(analyticsProvider),
+        RemotePlanStudioRepository(
+          ref.read(rpcClientProvider).requireValue,
+        ).updatePlanStatus(
+          plan.id,
+          PlanDocumentStatus.rejected,
+          workspaceId: workspaceId,
+        ),
+        ('rejected', plan.id, workspaceId, null),
+      ),
     );
   }
 

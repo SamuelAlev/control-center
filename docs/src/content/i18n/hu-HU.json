@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "Útvonaltérkép",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
   "docs.sidebar.referenceBackup": "Mentés, exportálás és importálás",
+  "docs.sidebar.referenceTelemetry": "Használati statisztikák",
   "docs.sidebar.referenceGlossary": "Szójegyzék"
 }

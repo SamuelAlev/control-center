@@ -404,3 +404,24 @@ Future<void> Function(String lane) _accountPoolCredentialsSweep({
     ),
   );
 };
+
+/// Auto-discovers MCP servers the user already configured for other tools
+/// (Claude/Codex/Cursor/Gemini/VS Code/Windsurf/OpenCode + standalone
+/// `.mcp.json`) and connects the enabled ones, bridging their tools into the
+/// registry. Run fire-and-forget after boot so a slow/dead server never blocks
+/// startup; best-effort — a discovery failure is logged, never fatal.
+Future<void> _discoverExternalMcpServers(McpClientService service) async {
+  try {
+    final home =
+        Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
+    if (home == null || home.isEmpty) {
+      return;
+    }
+    final discovered = await service.discoverAndStart(homeDir: home);
+    CcHostLog.info(
+      'cc_server: discovered ${discovered.length} external MCP server(s)',
+    );
+  } on Object catch (e) {
+    CcHostLog.warning('cc_server: external MCP discovery failed: $e');
+  }
+}

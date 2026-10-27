@@ -246,6 +246,7 @@ import 'package:cc_server_core/src/skill_quarantine_guard.dart';
 import 'package:cc_server_core/src/skill_reverify_service.dart';
 import 'package:cc_server_core/src/space_provisioning_service.dart';
 import 'package:cc_server_core/src/space_stack_service.dart';
+import 'package:cc_server_core/src/telemetry/server_analytics.dart';
 import 'package:cc_server_core/src/ticket_sync_webhook_handler.dart';
 import 'package:cc_server_core/src/webhook_delivery_service.dart';
 import 'package:cc_server_core/src/write_ledger_adapter.dart';
@@ -854,6 +855,15 @@ Future<CcServer> runCcServer({
   final pipelineRunRepository = PipelineRunRepositoryImpl(
     workspaceDbs,
     globalDb.workspaceRouteDao,
+  );
+  // Usage-analytics switch + the server's own reporting, before any publish.
+  final telemetry = startServerTelemetry(
+    settings: serverSettingsRepository,
+    eventBus: eventBus,
+    runLogs: agentRunLogRepository,
+    pipelineRuns: pipelineRunRepository,
+    environment: serverEnv,
+    isDemo: demoBuilder != null,
   );
   final pipelineTemplateRepository = PipelineTemplateRepositoryImpl(
     workspaceDbs,
@@ -5570,6 +5580,7 @@ Future<CcServer> runCcServer({
   final serverExtraOps = buildServerExtraOps(
     fleetOps: fleetOps,
     fleetWatchQueries: fleetWatchQueries,
+    telemetryConfig: telemetry.config,
     agentRepository: agentRepository,
     workspaceFilesystem: workspaceFilesystem,
     workspaceRepository: workspaceRepository,
@@ -7974,6 +7985,7 @@ Future<CcServer> runCcServer({
     .._transcriptRetention = transcriptRetention
     .._debugSupervisor = debugSupervisor
     .._astParsers = astParsers
+    .._serverAnalytics = telemetry.analytics
     .._eventListenerStops.add(activityLogPersister.dispose)
     .._eventListenerStops.add(agentRunTaskCompleter.dispose)
     .._eventListenerStops.add(budgetEvaluationListener.dispose)
@@ -7986,26 +7998,9 @@ Future<CcServer> runCcServer({
     .._eventListenerStops.add(teamRoutingService.dispose)
     .._chatConnector = chatConnector;
 
-  // Auto-discover MCP servers the user already configured for other tools
-  // (Claude/Codex/Cursor/Gemini/VS Code/Windsurf/OpenCode + standalone
-  // `.mcp.json`) and connect the enabled ones, bridging their tools into the
-  // registry. Fire-and-forget after boot so a slow/dead server never blocks
-  // startup; best-effort — a discovery failure is logged, never fatal.
-  unawaited(() async {
-    try {
-      final home =
-          Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
-      if (home == null || home.isEmpty) {
-        return;
-      }
-      final discovered = await mcpClientService.discoverAndStart(homeDir: home);
-      CcHostLog.info(
-        'cc_server: discovered ${discovered.length} external MCP server(s)',
-      );
-    } on Object catch (e) {
-      CcHostLog.warning('cc_server: external MCP discovery failed: $e');
-    }
-  }());
+  telemetry.analytics?.reportStarted(workspaceRepository);
+  // Bridge MCP servers configured for other tools; never blocks boot.
+  unawaited(_discoverExternalMcpServers(mcpClientService));
 
   // The open-PR poller sweeps every workspace's linked repos: cheap conditional
   // (ETag) probes on a fast cadence for watched workspaces, a slow baseline for

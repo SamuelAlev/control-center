@@ -1706,6 +1706,29 @@ class AppLocalizationsSv extends AppLocalizations {
       'Skicka diagnostik för krasch, fel och prestanda så att vi kan rätta problem snabbare (endast releasebyggen). Du kan ändra det när som helst under Inställningar → Integritet.';
 
   @override
+  String get usageAnalyticsTitle => 'Dela användningsstatistik';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      'Alla klienter till den här servern skickar pseudonymiserade användningshändelser (skärmar, åtgärder, antal), endast i releasebyggen. Aldrig namn, meddelandeinnehåll, filsökvägar eller e-postadresser.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      'Användningsstatistik är av. Ingen klient till den här servern skickar användningshändelser.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      'Klienterna till den här servern skickar pseudonymiserade användningshändelser. Bara serverns operatör kan ändra det.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      'Användningsstatistik är av på den här servern. Bara serverns operatör kan ändra det.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      'Skicka pseudonymiserade användningshändelser från alla klienter till den här servern så att vi ser vilka funktioner som hjälper (endast releasebyggen). Aldrig namn, meddelandeinnehåll, filsökvägar eller e-postadresser. Du kan ändra det när som helst under Inställningar → Integritet.';
+
+  @override
   String get blocked => 'Blockerad';
 
   @override

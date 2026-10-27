@@ -1,13 +1,14 @@
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_remote/analytics.dart';
 import 'package:cc_remote/app_icons.dart';
-import 'package:cc_remote/external_link.dart';
 import 'package:cc_remote/format.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Facts, join button, attendees, and description for one calendar event.
-class EventDetailBody extends StatelessWidget {
+class EventDetailBody extends ConsumerWidget {
   /// Creates an [EventDetailBody].
   const EventDetailBody({super.key, required this.event});
 
@@ -15,7 +16,7 @@ class EventDetailBody extends StatelessWidget {
   final CalendarEventDto event;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final start = DateTime.tryParse(event.startTime);
@@ -47,7 +48,7 @@ class EventDetailBody extends StatelessWidget {
           CcButton(
             fullWidth: true,
             icon: AppIcons.video,
-            onPressed: () => openExternal(event.meetingUrl),
+            onPressed: () => joinCalendarMeeting(ref, event),
             child: Text(l10n.joinMeeting),
           ),
         ],

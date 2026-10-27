@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "แผนที่เส้นทาง",
   "docs.sidebar.referenceCcServerCli": "CLI ของ cc_server",
   "docs.sidebar.referenceBackup": "สำรอง นำออก และนำเข้า",
+  "docs.sidebar.referenceTelemetry": "การวิเคราะห์การใช้งาน",
   "docs.sidebar.referenceGlossary": "อภิธานศัพท์"
 }

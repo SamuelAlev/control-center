@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Every flag, environment variable, subcommand and data-directory path of the headless server.
 slug: en-GB/manual/reference/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Every process flag takes a CLI flag or an environment variable; the flag wins,
@@ -159,6 +159,10 @@ that, and it is set by the desktop rather than by you:
 
 Set it yourself only if you are supervising `cc_server` as a child process and want
 the same guarantee.
+
+`DO_NOT_TRACK=1` (any value other than empty, `0` or `false`) stops the server's own
+[usage analytics](/en-GB/manual/reference/telemetry/) even when the server-wide switch is
+on. Clients still follow the switch.
 
 ## Data directory layout
 

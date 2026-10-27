@@ -48,6 +48,10 @@ class CcServer {
   /// explicitly on [shutdown].
   AstParserProvider? _astParsers;
 
+  /// The server's own usage analytics. Disposed on [shutdown], which gives
+  /// queued records one bounded delivery attempt.
+  ServerAnalytics? _serverAnalytics;
+
   /// Every domain-event listener started at boot, in start order.
   ///
   /// Each holds a `StreamSubscription` on the process-wide `DomainEventBus`
@@ -302,6 +306,7 @@ class CcServer {
     // Flush whatever is buffered before the process goes away. The rows are
     // durable locally either way; this just avoids a gap in the SIEM.
     await step('auditStream', () async => _auditStream?.stop());
+    await guard('analytics', () async => _serverAnalytics?.dispose());
     await step('backgroundJobs', () async {
       _newsfeedRefreshTimer?.cancel();
       _runtimeStateGcSweepTimer?.cancel();

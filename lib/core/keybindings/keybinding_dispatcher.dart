@@ -77,6 +77,10 @@ class KeybindingDispatcher with WidgetsBindingObserver {
     _reconcile();
   }
 
+
+  /// Called with the binding's command ID after a keybinding ran its
+  /// handler; the usage-analytics hook.
+  ValueChanged<String>? onFired;
   final List<Keybinding> _bindings;
   final TargetPlatform _platform;
   final bool _observeFocus;
@@ -376,7 +380,12 @@ class KeybindingDispatcher with WidgetsBindingObserver {
   }
 
   void _fire(Keybinding binding) {
-    _handlers[binding.id]?.call();
+    final handler = _handlers[binding.id];
+    if (handler == null) {
+      return;
+    }
+    handler();
+    onFired?.call(binding.id);
   }
 
   void _beginPending(KeyStroke prefix, List<Keybinding> prefixBindings) {

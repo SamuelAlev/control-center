@@ -2,7 +2,7 @@
 title: CLI di cc_server
 description: Ogni flag, variabile d'ambiente, sottocomando e percorso della directory dei dati del server headless.
 slug: it-IT/manuale/riferimento/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Ogni parametro del processo accetta un flag CLI o una variabile d'ambiente; vince
@@ -175,6 +175,10 @@ aggiuntiva lo governa, ed è impostata dal desktop, non da te:
 
 Impostala da solo solo se supervisioni `cc_server` come processo figlio e vuoi
 la stessa garanzia.
+
+`DO_NOT_TRACK=1` (qualsiasi valore diverso da vuoto, `0` o `false`) interrompe le
+[statistiche di utilizzo](/it-IT/manuale/riferimento/statistiche-di-utilizzo/) del server stesso anche quando l'interruttore
+a livello di server è attivo. I client continuano a seguire l'interruttore.
 
 ## Struttura della directory dei dati
 

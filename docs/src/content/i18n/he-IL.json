@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "מפת נתיבים",
   "docs.sidebar.referenceCcServerCli": "CLI של cc_server",
   "docs.sidebar.referenceBackup": "גיבוי, ייצוא וייבוא",
+  "docs.sidebar.referenceTelemetry": "נתוני שימוש",
   "docs.sidebar.referenceGlossary": "מילון מונחים"
 }

@@ -1,0 +1,3 @@
+# See the root `dart_test.yaml`: a hung test must fail as a named test, not as
+# a job that ran out of wall clock with nothing to point at.
+timeout: 30s

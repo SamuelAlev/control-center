@@ -1,0 +1,160 @@
+---
+title: Phân tích sử dụng
+description: Control Center ghi lại những gì khi bật phân tích sử dụng, ai là người quyết định và những gì không bao giờ được gửi đi.
+slug: vi-VN/so-tay/tham-chieu/phan-tich-su-dung
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center có thể gửi **sự kiện sử dụng ở dạng bí danh** đến một phiên bản [Umami](https://umami.is). Phân tích sử dụng **tắt cho đến khi người vận hành máy chủ bật lên**. Thiết lập này thuộc về máy chủ và áp dụng cho mọi máy khách kết nối với nó: ứng dụng máy tính, ứng dụng web, điện thoại và chính máy chủ.
+
+Phân tích sử dụng tách biệt với **Chia sẻ báo cáo sự cố**, một thiết lập theo từng thiết bị dành cho chẩn đoán sự cố và lỗi.
+
+## Ai quyết định
+
+| Công tắc | Ở đâu | Tác dụng |
+| --- | --- | --- |
+| **Chia sẻ phân tích sử dụng** | Bước làm quen (bước sandbox) và **Cài đặt → Quyền riêng tư**. Chỉ người vận hành máy chủ mới thay đổi được; các thành viên khác chỉ xem được giá trị hiện tại | Toàn máy chủ. Lưu dưới dạng `telemetry.usage_analytics` trong thiết lập máy chủ. Tắt trừ khi được đặt thành `true` |
+| Loại bản dựng | Tự động | Bản dựng debug và profile không gửi. Thay vào đó, chúng ghi từng sự kiện vào nhật ký gỡ lỗi |
+| `CC_ANALYTICS_DEBUG=1` | Môi trường của `cc_server` hoặc tệp `.env` của nó | Cho phép bản dựng debug và profile của máy chủ, và của mọi máy khách kết nối với nó, gửi thật để kiểm thử. Công tắc ở trên vẫn phải được bật |
+| `DO_NOT_TRACK=1` | Môi trường của `cc_server` | Dừng việc báo cáo của chính máy chủ, bất kể công tắc ra sao. Máy khách vẫn tuân theo công tắc |
+| Máy chủ demo | Tự động | Máy chủ demo công khai không tự gửi gì. Khách truy cập không thể thay đổi công tắc |
+
+Máy khách đọc thiết lập từ máy chủ (`telemetry.config`, sau đó theo dõi trực tiếp qua `telemetry.watch`). Trong lúc chờ câu trả lời, sự kiện nằm trong một bộ đệm nhỏ trong bộ nhớ. Nếu câu trả lời là không, bộ đệm bị hủy. Tắt công tắc sẽ hủy mọi thứ còn trong hàng đợi và dừng gửi ngay lập tức trên mọi máy khách.
+
+## Những gì không bao giờ được gửi
+
+- Nội dung tin nhắn, phiếu, bài xem xét hay cuộc họp, tiêu đề, prompt, lệnh shell và truy vấn tìm kiếm
+- Tên, tên đăng nhập, địa chỉ email, ảnh đại diện và tên hiển thị
+- Đường dẫn tệp, tên kho mã, tên nhánh, tên máy chủ và URL (kho mã chỉ được gửi dưới dạng `repo_id` bí danh; liên kết cuộc họp chỉ dưới dạng nhà cung cấp của nó)
+- Mọi loại định danh thô
+
+Mỗi sự kiện đi qua một chính sách thuộc tính trước khi rời tiến trình. Văn bản, đường dẫn, URL, địa chỉ email, ID chưa được bọc và các chuỗi nằm dưới những khóa như `email`, `*_name`, `path`, `title`, `prompt`, `content` hoặc `token` đều bị loại bỏ thay vì được gửi. Một chuỗi chỉ được gửi nếu đó là một token ngắn thuộc bộ từ vựng đóng, chẳng hạn giá trị enum, phiên bản, ngôn ngữ vùng hoặc ID mô hình.
+
+## ID bí danh
+
+ID có được gửi, nhưng chỉ dưới dạng bí danh. Mỗi ID của không gian làm việc, space, cuộc trò chuyện, agent, lần chạy, người dùng và thiết bị được thay bằng một HMAC-SHA256 dùng muối bí mật riêng của bản cài đặt (`telemetry.pseudonym_salt`), cắt còn 20 ký tự thập lục phân. Cùng một không gian làm việc luôn báo cùng một giá trị, nên có thể nối và đếm sự kiện, nhưng ID thô không bao giờ rời khỏi bản cài đặt. Muối được tạo khi máy chủ khởi động lần đầu và không bao giờ được gửi cho nhà cung cấp phân tích. Xóa thư mục dữ liệu của máy chủ sẽ tạo muối và ID cài đặt mới, cắt đứt liên kết với mọi thứ đã ghi trước đó.
+
+## Thuộc tính trên mọi sự kiện
+
+| Thuộc tính | Ví dụ | Ý nghĩa |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (điện thoại) hoặc `server`. Cũng được dùng làm tên máy chủ trong Umami |
+| `app_version` | `0.0.11` | Phiên bản phát hành |
+| `app_build` | `4baf980` | Commit git rút gọn của bản dựng |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web`, hoặc hệ điều hành của điện thoại (`ios`, `android`) |
+| `locale` | `fr_FR` | Ngôn ngữ giao diện |
+| `server_mode` | `local` | `local` (ứng dụng máy tính chạy máy chủ riêng) hoặc `remote` |
+| `server_version` | `0.0.11` | Phiên bản của máy chủ đang kết nối, nếu biết |
+| `is_demo` | `false` | Máy khách có đang kết nối với bản demo công khai hay không |
+| `install_id` | bí danh | Bản cài đặt máy chủ |
+| `user_id` | bí danh | Người dùng đã đăng nhập, khi đã biết |
+| `device_id` | bí danh | Thiết bị đã ghép nối, khi đã biết. Đồng thời là distinct ID trong Umami |
+| `launch_id` | bí danh | Một lần mở ứng dụng, dùng để sắp thứ tự sự kiện của một phiên |
+| `event_seq` | `12` | Vị trí của sự kiện trong lần mở đó |
+
+Umami còn nhận địa chỉ IP của yêu cầu, từ đó suy ra quốc gia và khu vực mà không lưu địa chỉ, cùng với User-Agent và kích thước màn hình.
+
+## Lượt xem màn hình
+
+Mỗi lần điều hướng ghi một lượt xem trang có URL là **mẫu tuyến đường**, chẳng hạn `/workspaces/:workspaceId/spaces/:spaceId`, không bao giờ là địa chỉ cụ thể. Tên màn hình là các đoạn cố định của mẫu, nên ví dụ trên là `workspaces_spaces`. Tham số tuyến đường kết thúc bằng `Id` được gắn thành thuộc tính `*_id` dạng bí danh, còn tham số dạng số (chẳng hạn số PR) được gắn dưới dạng số. Mọi tham số khác bị loại bỏ.
+
+## Sự kiện máy khách
+
+Được ghi bởi ứng dụng máy tính, ứng dụng web và điện thoại cho những việc một người thực hiện.
+
+| Sự kiện | Thuộc tính | Ghi khi |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Ứng dụng khởi động xong và đã kết nối |
+| `app_backgrounded` | `foreground_s` | Cửa sổ hoặc tab bị ẩn |
+| `app_foregrounded` | `background_s` | Nó được hiển thị lại |
+| `server_connected` | `reconnect` | Kết nối được khôi phục sau khi rớt |
+| `server_disconnected` | | Kết nối bị rớt |
+| `server_switched` | | Người dùng chuyển sang máy chủ khác |
+| `device_paired` | | Điện thoại xác nhận ghép nối |
+| `onboarding_step_viewed` | `step`, `step_index` | Một bước làm quen được hiển thị |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | Hoàn tất làm quen |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | Người dùng mở một không gian làm việc khác |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Một tin nhắn được gửi từ ô soạn thảo |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | Một lệnh gạch chéo phía máy khách đã chạy. Lệnh tích hợp báo tên của nó, skill báo `skill`, còn lệnh của kho mã báo `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | Yêu cầu phê duyệt của một agent đã được trả lời |
+| `command_palette_opened` | | Bảng lệnh được mở |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Một lệnh đã chạy. Lệnh dành cho một PR, thành viên hoặc cuộc trò chuyện cụ thể chỉ báo loại của nó (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | Một bài xem xét pull request được gửi |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Một lượt tìm kiếm đã chạy. Bản thân truy vấn không bao giờ được ghi |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | Bắt đầu ghi âm cuộc họp |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | Dừng ghi âm |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Giao diện hoặc ngôn ngữ thay đổi |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Cảnh âm thanh bắt đầu, từ bảng điều khiển hoặc cùng chế độ tập trung |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Nó dừng lại |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | Người dùng chọn tâm trạng khác |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Chế độ tập trung bắt đầu |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Chế độ tập trung kết thúc, sớm hoặc khi hết thời gian |
+| `dictation_started` | | Bắt đầu đọc chính tả trong ô soạn thảo |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Đọc chính tả kết thúc. Chỉ độ dài của bản chép lời được ghi lại |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Ứng dụng yêu cầu máy chủ chạy một quy trình |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Một lần chạy thất bại được thử lại |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Một lần chạy bị hủy từ ứng dụng |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Một bước đang chạy bị buộc dừng |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Một lần thử đăng nhập lịch kết thúc |
+| `calendar_disconnected` | `workspace_id` | Một tài khoản lịch bị ngắt kết nối |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Một lời mời được trả lời |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Một bản ghi được bắt đầu từ sự kiện lịch |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Một liên kết cuộc họp được mở (điện thoại). Chỉ nhà cung cấp được suy ra từ liên kết |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Trung tâm thông báo được sử dụng |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Một agent được tạo từ registry |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | Một tab trình soạn thảo mới được mở trong một space |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Skill của không gian làm việc được thay đổi |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Một đề xuất điều phối được trả lời |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Một kế hoạch được phê duyệt hoặc từ chối (điện thoại) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Một mục tiêu hoặc vòng lặp có giám sát được bắt đầu (điện thoại) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Một cuộc trò chuyện được tạo hoặc rẽ nhánh |
+| `conversation_rewound` | `conversation_id` | Một cuộc trò chuyện được tiếp tục từ một tin nhắn trước đó |
+| `space_archived` | `workspace_id`, `space_id` | Một space được lưu trữ |
+
+## Sự kiện máy chủ
+
+Được `cc_server` ghi cho những sự việc mà không máy khách riêng lẻ nào thấy đúng một lần. Lần chạy của một agent chỉ được đếm một lần, dù có bao nhiêu máy khách đang theo dõi.
+
+| Sự kiện | Thuộc tính | Ghi khi |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Máy chủ khởi động xong |
+| `workspace_created` | `workspace_id` | Một không gian làm việc được tạo |
+| `space_created` | `workspace_id`, `space_id` | Một space được tạo |
+| `repo_added` | `workspace_id`, `repo_id` | Một kho mã được liên kết |
+| `ticket_created` | `workspace_id`, `ticket_id` | Một người hoặc một agent tạo phiếu |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Một lần chạy agent kết thúc |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Một agent dừng lại để chờ người |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Chính sách hành động từ chối một hành động của agent |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Một lần chạy quy trình kết thúc. `trigger` là `manual`, loại sự kiện đã khởi động nó, hoặc chỉ loại của một trình kích hoạt có tên (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Một pull request được xuất bản từ một space |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Một pull request do agent mở đã được merge |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Bản ghi cuộc họp được lưu |
+| `space_deleted` | `workspace_id`, `space_id` | Một space bị xóa |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Một phiếu thay đổi trạng thái |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Một phiếu được giao |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Một phiếu được chuyển sang agent khác |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Công việc được ủy thác trên một phiếu kết thúc |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Thành viên của không gian làm việc thay đổi |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | Một rig được đóng hoặc bị thu hồi |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Một skill của không gian làm việc được cài đặt, cập nhật hoặc thay đổi trên đĩa |
+| `calendar_auth_expired` | `workspace_id` | Một kết nối lịch cần đăng nhập lại |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Một sự kiện lịch sắp bắt đầu |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Chi tiêu vượt qua một ngưỡng ngân sách |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | Một yêu cầu xem xét được gửi cho một PR đang theo dõi |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Quyết định xem xét của một PR đang theo dõi thay đổi |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | Một PR không do agent mở được merge trong một kho mã đã liên kết |
+
+## Gửi đi
+
+Sự kiện được gửi lần lượt từng cái đến `<host>/api/send` từ một hàng đợi trong bộ nhớ chứa tối đa 200 sự kiện. Lỗi mạng, hết thời gian chờ, `429` hoặc `5xx` sẽ giữ sự kiện lại và thử lại với độ trễ tăng theo cấp số nhân, từ 1 giây đến 5 phút. Mọi `4xx` khác sẽ loại bỏ nó. Không có gì được ghi xuống đĩa, nên sự kiện còn trong hàng đợi khi ứng dụng thoát sẽ bị mất. Hàng đợi được đẩy hết đi khi ứng dụng chuyển xuống nền và khi máy chủ tắt.
+
+## Trỏ một bản dựng đến phiên bản khác
+
+Đích đến được cố định lúc dựng:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+Bộ điều hợp nhà cung cấp nằm trong `packages/cc_analytics`. Hỗ trợ một dịch vụ phân tích khác nghĩa là thêm một bộ điều hợp ở đó. Kế hoạch theo dõi và các quy tắc quyền riêng tư vẫn giữ nguyên.

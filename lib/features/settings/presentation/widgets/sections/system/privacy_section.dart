@@ -2,6 +2,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/settings_shared.dart';
 import 'package:control_center/features/settings/providers/privacy_providers.dart';
+import 'package:control_center/features/telemetry/providers/usage_analytics_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
@@ -28,8 +29,10 @@ class _LlmDiffSharingNotifier extends Notifier<bool> {
 
 /// Privacy settings section exposed in General Settings.
 ///
-/// Controls whether raw diff content may be forwarded to the agent LLM adapter.
-/// Default on; turning it off limits agents to structured metadata only.
+/// Controls whether raw diff content may be forwarded to the agent LLM adapter
+/// (default on; off limits agents to structured metadata), whether this
+/// device shares crash reports, and the server-wide usage-analytics switch,
+/// which only the server operator can change.
 class PrivacySection extends ConsumerWidget {
   /// Creates a [PrivacySection].
   const PrivacySection({super.key});
@@ -38,6 +41,8 @@ class PrivacySection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final diffSharingEnabled = ref.watch(_llmDiffSharingProvider);
     final errorReportingEnabled = ref.watch(errorReportingEnabledProvider);
+    final usageAnalytics = ref.watch(usageAnalyticsProvider);
+    final canManageUsageAnalytics = ref.watch(canManageUsageAnalyticsProvider);
     final l10n = AppLocalizations.of(context);
 
     return SectionCard(
@@ -67,6 +72,27 @@ class PrivacySection extends ConsumerWidget {
               onChanged: (v) => ref
                   .read(errorReportingEnabledProvider.notifier)
                   .setEnabled(value: v),
+            ),
+          ),
+          SettingsRow(
+            icon: AppIcons.barChart2,
+            title: l10n.usageAnalyticsTitle,
+            subtitle: switch ((
+              usageAnalytics ?? false,
+              canManageUsageAnalytics,
+            )) {
+              (true, true) => l10n.usageAnalyticsOnSubtitle,
+              (false, true) => l10n.usageAnalyticsOffSubtitle,
+              (true, false) => l10n.usageAnalyticsManagedOnSubtitle,
+              (false, false) => l10n.usageAnalyticsManagedOffSubtitle,
+            },
+            trailing: CcSwitch(
+              value: usageAnalytics ?? false,
+              onChanged: usageAnalytics == null || !canManageUsageAnalytics
+                  ? null
+                  : (v) => ref
+                        .read(usageAnalyticsProvider.notifier)
+                        .setEnabled(value: v),
             ),
           ),
         ],

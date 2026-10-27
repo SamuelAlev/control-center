@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "Rutekart",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
   "docs.sidebar.referenceBackup": "Sikkerhetskopi, eksport og import",
+  "docs.sidebar.referenceTelemetry": "Bruksanalyse",
   "docs.sidebar.referenceGlossary": "Ordliste"
 }

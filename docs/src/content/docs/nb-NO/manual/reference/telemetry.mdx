@@ -1,0 +1,160 @@
+---
+title: Bruksanalyse
+description: Hva Control Center registrerer når bruksanalyse er slått på, hvem som bestemmer, og hva som aldri sendes.
+slug: nb-NO/handbok/referanse/bruksanalyse
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center kan sende **pseudonyme brukshendelser** til en [Umami](https://umami.is)-instans. Bruksanalyse er **av til serveroperatøren slår den på**. Innstillingen hører til serveren og gjelder for alle klienter som er koblet til den: skrivebordsappen, nettappen, telefonen og selve serveren.
+
+Bruksanalyse er atskilt fra **Del krasjrapporter**, som er en innstilling per enhet for diagnostikk av krasj og feil.
+
+## Hvem bestemmer
+
+| Bryter | Hvor | Virkning |
+| --- | --- | --- |
+| **Del bruksanalyse** | Onboarding (sandkassetrinnet) og **Innstillinger → Personvern**. Bare serveroperatøren kan endre den; andre medlemmer ser gjeldende verdi skrivebeskyttet | Gjelder hele serveren. Lagres som `telemetry.usage_analytics` i serverinnstillingene. Av med mindre den er satt til `true` |
+| Byggtype | Automatisk | Debug- og profile-bygg sender ikke noe. De skriver i stedet hver hendelse til feilsøkingsloggen |
+| `CC_ANALYTICS_DEBUG=1` | Miljøet til `cc_server` eller `.env`-filen dens | Lar debug- og profile-bygg av serveren, og av alle klienter som er koblet til den, sende på ekte for testing. Bryteren over må fortsatt være på |
+| `DO_NOT_TRACK=1` | Miljøet til `cc_server` | Stopper serverens egen rapportering, uansett hva bryteren står på. Klientene følger fortsatt bryteren |
+| Demoserver | Automatisk | Den offentlige demoserveren sender ingenting selv. Besøkende kan ikke endre bryteren |
+
+Klientene leser innstillingen fra serveren (`telemetry.config`, deretter fortløpende gjennom `telemetry.watch`). Til svaret kommer, venter hendelsene i en liten buffer i minnet. Er svaret nei, forkastes bufferen. Slår du av bryteren, forkastes alt som fortsatt står i kø, og sendingen stopper umiddelbart, på alle klienter.
+
+## Hva som aldri sendes
+
+- Innholdet i meldinger, saker, gjennomganger eller møter, titler, prompter, skallkommandoer og søk
+- Navn, pålogginger, e-postadresser, avatarer og visningsnavn
+- Filstier, repositorynavn, grennavn, vertsnavn og URL-er (et repository sendes bare som en pseudonym `repo_id`, en møtelenke bare som navnet på leverandøren)
+- Rå identifikatorer av noe slag
+
+Hver hendelse går gjennom en egenskapspolicy før den forlater prosessen. Tekst, stier, URL-er, e-postadresser, uinnpakkede ID-er og strenger under nøkler som `email`, `*_name`, `path`, `title`, `prompt`, `content` eller `token` forkastes i stedet for å sendes. En streng sendes bare hvis den er et kort token fra et lukket vokabular, for eksempel en enum-verdi, en versjon, en språkkode eller en modell-ID.
+
+## Pseudonyme ID-er
+
+ID-er sendes, men bare som pseudonymer. Hver ID for arbeidsområde, rom, samtale, agent, kjøring, bruker og enhet erstattes av en HMAC-SHA256 med installasjonens eget hemmelige salt (`telemetry.pseudonym_salt`), avkortet til 20 heksadesimale tegn. Det samme arbeidsområdet rapporterer alltid den samme verdien, slik at hendelser kan kobles og telles, men den rå ID-en forlater aldri installasjonen. Saltet opprettes første gang serveren starter, og sendes aldri til analyseleverandøren. Sletter du serverens datamappe, opprettes et nytt salt og en ny installasjons-ID, noe som kobler fra alt som er registrert tidligere.
+
+## Egenskaper på hver hendelse
+
+| Egenskap | Eksempel | Betydning |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (telefonen) eller `server`. Brukes også som vertsnavn i Umami |
+| `app_version` | `0.0.11` | Utgivelsesversjon |
+| `app_build` | `4baf980` | Kort git-commit for bygget |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` eller telefonens operativsystem (`ios`, `android`) |
+| `locale` | `fr_FR` | Språket i grensesnittet |
+| `server_mode` | `local` | `local` (skrivebordsappen kjører sin egen server) eller `remote` |
+| `server_version` | `0.0.11` | Versjonen til den tilkoblede serveren, når den er kjent |
+| `is_demo` | `false` | Om klienten er koblet til den offentlige demoen |
+| `install_id` | pseudonym | Serverinstallasjonen |
+| `user_id` | pseudonym | Den påloggede brukeren, når den er kjent |
+| `device_id` | pseudonym | Den sammenkoblede enheten, når den er kjent. Også den distinkte ID-en i Umami |
+| `launch_id` | pseudonym | Én oppstart av appen, for å ordne hendelsene i en økt |
+| `event_seq` | `12` | Hendelsens plass innenfor oppstarten |
+
+Umami mottar i tillegg forespørselens IP-adresse, som den utleder land og region fra uten å lagre adressen, samt User-Agent og skjermstørrelsen.
+
+## Skjermvisninger
+
+Hver navigering registrerer en sidevisning der URL-en er **rutemalen**, for eksempel `/workspaces/:workspaceId/spaces/:spaceId`, aldri den konkrete adressen. Skjermnavnet er malens faste segmenter, så i eksempelet blir det `workspaces_spaces`. Ruteparametere som slutter på `Id`, legges ved som pseudonyme `*_id`-egenskaper, og numeriske (som et PR-nummer) som tall. Alle andre parametere forkastes.
+
+## Klienthendelser
+
+Registreres av skrivebordsappen, nettappen og telefonen for ting en person gjør.
+
+| Hendelse | Egenskaper | Registreres når |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Appen er ferdig med oppstarten og har koblet til |
+| `app_backgrounded` | `foreground_s` | Vinduet eller fanen ble skjult |
+| `app_foregrounded` | `background_s` | Det ble vist igjen |
+| `server_connected` | `reconnect` | Tilkoblingen kom tilbake etter et brudd |
+| `server_disconnected` | | Tilkoblingen ble brutt |
+| `server_switched` | | Brukeren byttet til en annen server |
+| `device_paired` | | Telefonen bekreftet en sammenkobling |
+| `onboarding_step_viewed` | `step`, `step_index` | Et onboardingtrinn ble vist |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | Onboardingen ble fullført |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | Brukeren åpnet et annet arbeidsområde |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | En melding ble sendt fra et skrivefelt |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | En skråstrekkommando på klientsiden ble kjørt. Innebygde kommandoer rapporterer navnet sitt, ferdigheter rapporterer `skill`, og repositorykommandoer rapporterer `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | En agents godkjenningsforespørsel ble besvart |
+| `command_palette_opened` | | Kommandopaletten ble åpnet |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | En kommando ble kjørt. Kommandoer for en bestemt PR, et bestemt medlem eller en bestemt samtale rapporterer bare typen (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | En gjennomgang av en pull request ble sendt inn |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Et søk ble utført. Selve søket registreres aldri |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | Et møteopptak startet |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | Opptaket stoppet |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Tema eller språk ble endret |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Lydlandskapet startet, fra kontrollene eller med fokusmodus |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Det stoppet |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | Brukeren valgte en annen stemning |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Fokusmodus startet |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Fokusmodus ble avsluttet, tidlig eller da tiden var ute |
+| `dictation_started` | | Diktering i skrivefeltet startet |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Dikteringen ble avsluttet. Bare lengden på transkripsjonen registreres |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Appen ba serveren om å kjøre en pipeline |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | En mislykket kjøring ble forsøkt på nytt |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | En kjøring ble avbrutt fra appen |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Et kjørende trinn ble tvangsavsluttet |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Et påloggingsforsøk mot en kalender ble avsluttet |
+| `calendar_disconnected` | `workspace_id` | En kalenderkonto ble koblet fra |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | En invitasjon ble besvart |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Et opptak ble startet fra en kalenderhendelse |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | En møtelenke ble åpnet (telefon). Bare leverandøren utledes fra lenken |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Varslingssenteret ble brukt |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | En agent ble opprettet fra registeret |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | En ny redigeringsfane ble åpnet i et rom |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Arbeidsområdets skills ble endret |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Et orkestreringsforslag ble besvart |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | En plan ble godkjent eller avvist (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Et overvåket mål eller en overvåket løkke ble startet (telefon) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | En samtale ble opprettet eller forgrenet |
+| `conversation_rewound` | `conversation_id` | En samtale ble videreført fra en tidligere melding |
+| `space_archived` | `workspace_id`, `space_id` | Et rom ble arkivert |
+
+## Serverhendelser
+
+Registreres av `cc_server` for hendelser som ingen enkelt klient ser nøyaktig én gang. En agentkjøring telles én gang, uansett hvor mange klienter som følger med på den.
+
+| Hendelse | Egenskaper | Registreres når |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Serveren er ferdig med oppstarten |
+| `workspace_created` | `workspace_id` | Et arbeidsområde ble opprettet |
+| `space_created` | `workspace_id`, `space_id` | Et rom ble opprettet |
+| `repo_added` | `workspace_id`, `repo_id` | Et repository ble koblet til |
+| `ticket_created` | `workspace_id`, `ticket_id` | En sak ble opprettet av en person eller en agent |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | En agentkjøring ble avsluttet |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | En agent stoppet for å vente på en person |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Handlingspolicyen avviste en handling fra en agent |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | En pipelinekjøring ble avsluttet. `trigger` er `manual`, hendelsestypen som startet den, eller bare typen til en navngitt utløser (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | En pull request ble publisert fra et rom |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | En pull request som en agent åpnet, ble flettet |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Et møteopptak ble lagret |
+| `space_deleted` | `workspace_id`, `space_id` | Et rom ble slettet |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | En sak endret status |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | En sak ble tildelt |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | En sak ble flyttet til en annen agent |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Delegert arbeid på en sak ble avsluttet |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Medlemskapet i arbeidsområdet ble endret |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | En stasjon ble lukket eller ryddet bort |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | En skill i arbeidsområdet ble installert, oppdatert eller endret på disk |
+| `calendar_auth_expired` | `workspace_id` | En kalendertilkobling krever ny pålogging |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | En kalenderhendelse er i ferd med å starte |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Forbruket passerte en budsjettgrense |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | En gjennomgang ble bedt om på en fulgt PR |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Gjennomgangsbeslutningen for en fulgt PR endret seg |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | En PR som ikke ble åpnet av en agent, ble flettet i et tilkoblet repository |
+
+## Levering
+
+Hendelsene sendes én om gangen til `<host>/api/send` fra en kø i minnet med plass til opptil 200 hendelser. En nettverksfeil, et tidsavbrudd, `429` eller `5xx` beholder hendelsen og prøver på nytt med eksponentiell backoff, fra 1 sekund opptil 5 minutter. Alle andre `4xx` forkaster den. Ingenting skrives til disk, så hendelser som fortsatt står i kø når appen avsluttes, går tapt. Køen tømmes når appen går i bakgrunnen og når serveren slås av.
+
+## Peke et bygg mot en annen instans
+
+Målet bestemmes når bygget lages:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+Leverandøradapteren ligger i `packages/cc_analytics`. Støtte for en annen analysetjeneste betyr å legge til en adapter der. Sporingsplanen og personvernreglene forblir de samme.

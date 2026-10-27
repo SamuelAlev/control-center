@@ -43,6 +43,11 @@ class EditorTab {
 /// Held by the layout controller so the tab set survives pane rebuilds; this is
 /// ephemeral UI state, NOT Riverpod-managed.
 class EditorTabGroupController extends ChangeNotifier {
+  /// Told the [EditorTab.kind] of every NEW tab [openTab] adds (a refocused
+  /// duplicate, a restored layout or a drag-move is not an open). The
+  /// usage-analytics hook: set by the app's analytics session, null otherwise.
+  static void Function(String kind)? onTabOpened;
+
   final List<EditorTab> _tabs = [];
   int _selectedIndex = 0;
 
@@ -123,6 +128,7 @@ class EditorTabGroupController extends ChangeNotifier {
     _selectedIndex = _tabs.length - 1;
     _visit(_selectedIndex);
     notifyListeners();
+    onTabOpened?.call(tab.kind);
   }
 
   /// Inserts [tab] at [index] (clamped) and selects it. Used by drag-move /

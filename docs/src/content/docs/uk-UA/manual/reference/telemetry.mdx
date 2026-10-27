@@ -1,0 +1,160 @@
+---
+title: Статистика використання
+description: Що Control Center записує, коли статистику використання ввімкнено, хто це вирішує і що ніколи не надсилається.
+slug: uk-UA/керівництво/довідка/статистика-використання
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center може надсилати **псевдонімізовані події використання** до екземпляра [Umami](https://umami.is). Статистика використання **вимкнена, доки її не ввімкне оператор сервера**. Цей параметр належить серверу й діє для кожного підключеного до нього клієнта: настільного застосунку, вебзастосунку, телефона і самого сервера.
+
+Статистика використання не пов'язана з параметром **Надсилати звіти про збої** — це налаштування окремого пристрою для діагностики збоїв і помилок.
+
+## Хто вирішує
+
+| Перемикач | Де | Дія |
+| --- | --- | --- |
+| **Надсилати статистику використання** | Початкове налаштування (крок пісочниці) і **Налаштування → Приватність**. Змінити його може лише оператор сервера; інші учасники бачать поточне значення лише для читання | Для всього сервера. Зберігається як `telemetry.usage_analytics` у налаштуваннях сервера. Вимкнений, якщо не задано `true` |
+| Тип збірки | Автоматично | Налагоджувальні та профілювальні збірки нічого не надсилають. Натомість вони записують кожну подію в журнал налагодження |
+| `CC_ANALYTICS_DEBUG=1` | Середовище `cc_server` або його файл `.env` | Дозволяє налагоджувальним і профілювальним збіркам сервера та кожного підключеного до нього клієнта надсилати дані насправді, для тестування. Перемикач вище все одно має бути ввімкнений |
+| `DO_NOT_TRACK=1` | Середовище `cc_server` | Вимикає власне звітування сервера, хай що показує перемикач. Клієнти й далі дотримуються перемикача |
+| Демосервер | Автоматично | Публічний демосервер нічого не надсилає від свого імені. Відвідувачі не можуть змінити перемикач |
+
+Клієнти отримують значення параметра від сервера (`telemetry.config`, а потім наживо через `telemetry.watch`). Доки відповідь не надійшла, події чекають у невеликому буфері в пам'яті. Якщо відповідь заперечна, буфер відкидається. Вимкнення перемикача відкидає все, що ще стоїть у черзі, і одразу припиняє надсилання на кожному клієнті.
+
+## Що ніколи не надсилається
+
+- Вміст повідомлень, тікетів, рецензій і зустрічей, заголовки, промпти, команди оболонки та пошукові запити
+- Імена, логіни, адреси електронної пошти, аватари та відображувані імена
+- Шляхи до файлів, назви репозиторіїв і гілок, імена хостів та URL (репозиторій надсилається лише як псевдонімізований `repo_id`, посилання на зустріч — лише як її провайдер)
+- Вихідні ідентифікатори будь-якого виду
+
+Кожна подія, перш ніж залишити процес, проходить через політику властивостей. Текст, шляхи, URL, адреси електронної пошти, необгорнуті ID і рядки під такими ключами, як `email`, `*_name`, `path`, `title`, `prompt`, `content` або `token`, відкидаються, а не надсилаються. Рядок надсилається, лише якщо це короткий токен із закритого словника: значення переліку, версія, локаль або ID моделі.
+
+## Псевдонімізовані ID
+
+ID надсилаються, але лише як псевдоніми. Кожен ID робочого простору, простору, розмови, агента, запуску, користувача та пристрою замінюється на HMAC-SHA256 із власною секретною сіллю інсталяції (`telemetry.pseudonym_salt`), скорочений до 20 шістнадцяткових символів. Той самий робочий простір завжди повідомляє те саме значення, тож події можна пов'язувати й підраховувати, але вихідний ID ніколи не залишає інсталяцію. Сіль створюється під час першого запуску сервера й ніколи не передається постачальникові аналітики. Видалення каталогу даних сервера створює нову сіль і новий ID інсталяції, і зв'язок з усім записаним раніше зникає.
+
+## Властивості кожної події
+
+| Властивість | Приклад | Значення |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (телефон) або `server`. Також використовується як ім'я хоста в Umami |
+| `app_version` | `0.0.11` | Версія релізу |
+| `app_build` | `4baf980` | Короткий git-коміт збірки |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` або ОС телефона (`ios`, `android`) |
+| `locale` | `fr_FR` | Мова інтерфейсу |
+| `server_mode` | `local` | `local` (настільний застосунок запускає власний сервер) або `remote` |
+| `server_version` | `0.0.11` | Версія підключеного сервера, якщо відома |
+| `is_demo` | `false` | Чи підключений клієнт до публічного демо |
+| `install_id` | псевдонім | Інсталяція сервера |
+| `user_id` | псевдонім | Користувач, який увійшов, коли він відомий |
+| `device_id` | псевдонім | Сполучений пристрій, коли він відомий. Також є унікальним ID в Umami |
+| `launch_id` | псевдонім | Один запуск застосунку, для впорядкування подій сеансу |
+| `event_seq` | `12` | Позиція події в межах запуску |
+
+Крім того, Umami отримує IP-адресу запиту, з якої визначає країну та регіон, не зберігаючи саму адресу, а також User-Agent і розмір екрана.
+
+## Перегляди екранів
+
+Кожен перехід записує перегляд сторінки, URL якої — **шаблон маршруту**, наприклад `/workspaces/:workspaceId/spaces/:spaceId`, а не конкретна адреса. Назва екрана складається з літеральних сегментів шаблону, тож для цього прикладу це `workspaces_spaces`. Параметри маршруту, що закінчуються на `Id`, додаються як псевдонімізовані властивості `*_id`, а числові (наприклад, номер PR) — як числа. Усі інші параметри відкидаються.
+
+## Події клієнтів
+
+Записуються настільним застосунком, вебзастосунком і телефоном для дій людини.
+
+| Подія | Властивості | Коли записується |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Застосунок завершив запуск і підключився |
+| `app_backgrounded` | `foreground_s` | Вікно або вкладку приховано |
+| `app_foregrounded` | `background_s` | Їх знову показано |
+| `server_connected` | `reconnect` | З'єднання відновилося після розриву |
+| `server_disconnected` | | З'єднання розірвалося |
+| `server_switched` | | Користувач перейшов на інший сервер |
+| `device_paired` | | Телефон підтвердив сполучення |
+| `onboarding_step_viewed` | `step`, `step_index` | Показано крок початкового налаштування |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | Початкове налаштування завершено |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | Користувач відкрив інший робочий простір |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Повідомлення надіслано з поля введення |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | Виконано клієнтську слеш-команду. Вбудовані команди повідомляють свою назву, навички — `skill`, а команди репозиторію — `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | На запит агента про схвалення надано відповідь |
+| `command_palette_opened` | | Відкрито палітру команд |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Виконано команду. Команди для конкретного PR, учасника або розмови повідомляють лише свій вид (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | Надіслано рецензію pull request |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Виконано пошук. Сам запит ніколи не записується |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | Почався запис зустрічі |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | Запис зупинено |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Змінено тему або мову |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Звуковий ландшафт запущено з елементів керування або разом із режимом фокусування |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Його зупинено |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | Користувач вибрав інший настрій |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Режим фокусування запущено |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Режим фокусування завершився достроково або після спливання часу |
+| `dictation_started` | | Почалося диктування в полі введення |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Диктування завершено. Записується лише довжина розшифровки |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Застосунок попросив сервер запустити конвеєр |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Невдалий запуск повторено |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Запуск скасовано із застосунку |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Крок, що виконувався, примусово зупинено |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Спроба входу в календар завершилася |
+| `calendar_disconnected` | `workspace_id` | Обліковий запис календаря від'єднано |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | На запрошення надано відповідь |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Запис почато з події календаря |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Відкрито посилання на зустріч (телефон). Із посилання визначається лише провайдер |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Використано центр сповіщень |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Агента створено з реєстру |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | У просторі відкрито нову вкладку редактора |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Навички робочого простору змінено |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | На пропозицію оркестрації надано відповідь |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | План схвалено або відхилено (телефон) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Запущено контрольовану ціль або цикл (телефон) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Розмову створено або відгалужено |
+| `conversation_rewound` | `conversation_id` | Розмову продовжено з попереднього повідомлення |
+| `space_archived` | `workspace_id`, `space_id` | Простір архівовано |
+
+## Події сервера
+
+Записуються `cc_server` для фактів, які жоден окремий клієнт не бачить рівно один раз. Запуск агента враховується один раз, хоч скільки клієнтів за ним спостерігає.
+
+| Подія | Властивості | Коли записується |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Сервер завершив завантаження |
+| `workspace_created` | `workspace_id` | Створено робочий простір |
+| `space_created` | `workspace_id`, `space_id` | Створено простір |
+| `repo_added` | `workspace_id`, `repo_id` | Підключено репозиторій |
+| `ticket_created` | `workspace_id`, `ticket_id` | Людина або агент створили тікет |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Запуск агента завершено |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Агент зупинився, щоб дочекатися людини |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Політика дій відхилила дію агента |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Запуск конвеєра завершився. `trigger` — це `manual`, тип події, що його запустила, або лише вид іменованого тригера (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Pull request опубліковано з простору |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Злито pull request, відкритий агентом |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Запис зустрічі збережено |
+| `space_deleted` | `workspace_id`, `space_id` | Простір видалено |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Тікет змінив статус |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Тікет призначено |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Тікет передано іншому агентові |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Делеговану роботу над тікетом завершено |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Склад учасників робочого простору змінився |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | Rig закрито або прибрано автоматично |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Навичку робочого простору встановлено, оновлено або змінено на диску |
+| `calendar_auth_expired` | `workspace_id` | Підключення до календаря потребує повторного входу |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Подія календаря от-от почнеться |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Витрати перетнули поріг бюджету |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | Запитано рецензію для відстежуваного PR |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Рішення рецензії для відстежуваного PR змінилося |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | У пов'язаному репозиторії злито PR, відкритий не агентом |
+
+## Доставлення
+
+Події надсилаються по одній на `<host>/api/send` із черги в пам'яті розміром до 200 подій. Мережева помилка, тайм-аут, `429` або `5xx` зберігають подію й повторюють спробу з експоненційною затримкою від 1 секунди до 5 хвилин. Будь-який інший `4xx` відкидає її. На диск нічого не записується, тому події, що лишаються в черзі під час закриття застосунку, втрачаються. Черга спорожнюється, коли застосунок переходить у фон і коли сервер завершує роботу.
+
+## Спрямувати збірку на інший екземпляр
+
+Адресат фіксується під час збирання:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+Адаптер постачальника міститься в `packages/cc_analytics`. Щоб підтримати інший сервіс аналітики, додайте туди адаптер. План відстеження та правила приватності залишаються незмінними.

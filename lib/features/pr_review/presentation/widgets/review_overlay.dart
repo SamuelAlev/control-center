@@ -6,11 +6,13 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submissio
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
+import 'package:control_center/features/pr_review/providers/review_submission.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/emoji_parser.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -308,6 +310,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
     final repo = _repo;
     final ctl = _inlineComments;
     final queued = ctl.pendingReviewThreads.length;
+    final analytics = ref.read(analyticsProvider);
     // GitHub rejects a comment-only review with neither a body nor comments.
     if (event == 'COMMENT' && comment.isEmpty && queued == 0) {
       toaster.show(l10n.reviewNeedsABody, variant: CcToastVariant.warning);
@@ -318,20 +321,16 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
     }
     _close(saveDraft: false);
     try {
-      if (ctl.canPost) {
-        await ctl.submitPendingReview(
-          event: event,
-          body: comment.isEmpty ? null : comment,
-        );
-      } else {
-        if (repo == null) {
-          return;
-        }
-        await repo.submitReview(
-          prNumber: prRef.number,
-          event: event,
-          body: comment.isEmpty ? null : comment,
-        );
+      final submitted = await submitPrReview(
+        prRef: prRef,
+        comments: ctl,
+        repo: repo,
+        analytics: analytics,
+        event: event,
+        body: comment.isEmpty ? null : comment,
+      );
+      if (!submitted) {
+        return;
       }
       if (draftCtrl.text == originalText) {
         if (identical(_commentCtrl, draftCtrl)) {

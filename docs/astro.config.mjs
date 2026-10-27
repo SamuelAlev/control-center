@@ -714,6 +714,10 @@ export default defineConfig({
               label: "docs.sidebar.referenceBackup",
               slug: "manual/reference/backup",
             },
+            {
+              label: "docs.sidebar.referenceTelemetry",
+              slug: "manual/reference/telemetry",
+            },
             { label: "docs.sidebar.referenceGlossary", slug: "manual/reference/glossary" },
           ],
         },

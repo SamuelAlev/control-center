@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "路由图",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
   "docs.sidebar.referenceBackup": "备份、导出与导入",
+  "docs.sidebar.referenceTelemetry": "使用情况分析",
   "docs.sidebar.referenceGlossary": "术语表"
 }

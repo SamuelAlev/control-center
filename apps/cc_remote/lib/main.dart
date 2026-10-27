@@ -1,3 +1,4 @@
+import 'package:cc_remote/analytics.dart';
 import 'package:cc_remote/app_router.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/l10n/phone_widgets_localizations.dart';
@@ -20,6 +21,7 @@ import 'package:web/web.dart' as web;
 /// `fvm flutter build web --release --wasm` and deploy to
 /// Cloudflare Pages (see `wrangler.jsonc`).
 Future<void> main() async {
+  markAppLaunch();
   // Grab the pairing payload from the URL fragment FIRST. The router navigates
   // during the first build (not-paired → /connect), which drops the fragment
   // from the URL — so capturing it here, before runApp, is what survives it.
@@ -100,6 +102,9 @@ class _CcRemoteAppState extends ConsumerState<CcRemoteApp>
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
     final localeCode = ref.watch(appLocaleProvider);
+    // Usage analytics for this session; sends nothing unless the paired
+    // server's telemetry switch allows it.
+    ref.watch(analyticsSessionProvider);
     return WidgetsApp.router(
       routerConfig: router,
       debugShowCheckedModeBanner: false,

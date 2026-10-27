@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Setiap flag, pemboleh ubah persekitaran, subperintah dan laluan direktori data bagi pelayan tanpa kepala.
 slug: ms-MY/manual-pengguna/rujukan/cli-cc-server
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Setiap flag proses menerima flag CLI atau pemboleh ubah persekitaran; flag diutamakan,
@@ -166,6 +166,10 @@ tambahan mengawalnya, dan ia ditetapkan oleh desktop dan bukan oleh anda:
 
 Tetapkannya sendiri hanya jika anda menyelia `cc_server` sebagai proses anak dan
 mahukan jaminan yang sama.
+
+`DO_NOT_TRACK=1` (sebarang nilai selain kosong, `0` atau `false`) menghentikan
+[analitik penggunaan](/ms-MY/manual-pengguna/rujukan/analitik-penggunaan/) pelayan itu sendiri walaupun suis seluruh pelayan
+dihidupkan. Klien masih mengikut suis tersebut.
 
 ## Susun atur direktori data
 

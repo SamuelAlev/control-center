@@ -1,0 +1,160 @@
+---
+title: Analytika používání
+description: Co Control Center zaznamenává, když je analytika používání zapnutá, kdo o tom rozhoduje a co se nikdy neodesílá.
+slug: cs-CZ/prirucka/referencni-prirucka/analytika-pouzivani
+sourceHash: 65f646a4bc5a36de90630deccc20c8bb6847eca0
+---
+
+Control Center umí odesílat **pseudonymní události o používání** do instance [Umami](https://umami.is). Analytika používání je **vypnutá, dokud ji provozovatel serveru nezapne**. Nastavení patří serveru a platí pro každého klienta, který je k němu připojený: desktopovou aplikaci, webovou aplikaci, telefon i samotný server.
+
+Analytika používání je oddělená od **Sdílet hlášení pádů**, což je nastavení pro každé zařízení zvlášť a týká se diagnostiky pádů a chyb.
+
+## Kdo rozhoduje
+
+| Přepínač | Kde | Účinek |
+| --- | --- | --- |
+| **Sdílet analytiku používání** | Úvodní nastavení (krok sandboxu) a **Nastavení → Soukromí**. Změnit ho může jen provozovatel serveru; ostatní členové vidí aktuální hodnotu jen pro čtení | Pro celý server. Uloženo jako `telemetry.usage_analytics` v nastavení serveru. Vypnuto, dokud není nastaveno na `true` |
+| Typ sestavení | Automaticky | Sestavení debug a profile nic neodesílají. Každou událost místo toho zapíšou do debug logu |
+| `CC_ANALYTICS_DEBUG=1` | Prostředí `cc_server` nebo jeho `.env` | Kvůli testování umožní sestavením debug a profile serveru i všech k němu připojených klientů skutečně odesílat. Přepínač výše musí být i tak zapnutý |
+| `DO_NOT_TRACK=1` | Prostředí `cc_server` | Zastaví vlastní hlášení serveru bez ohledu na přepínač. Klienti se přepínačem řídí dál |
+| Demo server | Automaticky | Veřejný demo server sám nic neodesílá. Návštěvníci přepínač změnit nemůžou |
+
+Klienti čtou nastavení ze serveru (`telemetry.config`, potom průběžně přes `telemetry.watch`). Než odpověď dorazí, čekají události v malé vyrovnávací paměti v RAM. Pokud je odpověď záporná, vyrovnávací paměť se zahodí. Vypnutí přepínače okamžitě na všech klientech zahodí vše, co ještě čeká ve frontě, a odesílání zastaví.
+
+## Co se nikdy neodesílá
+
+- Obsah zpráv, ticketů, review a schůzek, názvy, prompty, příkazy shellu a vyhledávací dotazy
+- Jména, loginy, e-mailové adresy, avatary a zobrazovaná jména
+- Cesty k souborům, názvy repozitářů, názvy větví, názvy hostitelů a URL (repozitář se odesílá jen jako pseudonymní `repo_id`, odkaz na schůzku jen jako jeho poskytovatel)
+- Nezpracované identifikátory jakéhokoli druhu
+
+Každá událost před opuštěním procesu projde politikou vlastností. Text, cesty, URL, e-mailové adresy, nepseudonymizovaná ID a řetězce pod klíči jako `email`, `*_name`, `path`, `title`, `prompt`, `content` nebo `token` se místo odeslání zahodí. Řetězec se odešle jen tehdy, když je to krátký token z uzavřeného slovníku, například hodnota výčtu, verze, národní prostředí nebo ID modelu.
+
+## Pseudonymní ID
+
+ID se odesílají, ale jen jako pseudonymy. Každé ID pracovního prostoru, prostoru, konverzace, agenta, běhu, uživatele a zařízení se nahradí hodnotou HMAC-SHA256 s vlastní tajnou solí instalace (`telemetry.pseudonym_salt`), zkrácenou na 20 hexadecimálních znaků. Stejný pracovní prostor hlásí vždy stejnou hodnotu, takže jde události spojovat a počítat, ale nezpracované ID instalaci nikdy neopustí. Sůl vzniká při prvním spuštění serveru a poskytovateli analytiky se nikdy neodesílá. Smazáním datového adresáře serveru vznikne nová sůl i nové ID instalace, čímž se odpojí vše, co bylo zaznamenáno dřív.
+
+## Vlastnosti každé události
+
+| Vlastnost | Příklad | Význam |
+| --- | --- | --- |
+| `app_type` | `desktop` | `desktop`, `web`, `remote` (telefon) nebo `server`. Slouží také jako hostname v Umami |
+| `app_version` | `0.0.11` | Verze vydání |
+| `app_build` | `4baf980` | Zkrácený git commit sestavení |
+| `platform` | `macos` | `macos`, `windows`, `linux`, `web` nebo OS telefonu (`ios`, `android`) |
+| `locale` | `fr_FR` | Jazyk rozhraní |
+| `server_mode` | `local` | `local` (desktop s vlastním serverem) nebo `remote` |
+| `server_version` | `0.0.11` | Verze připojeného serveru, pokud je známá |
+| `is_demo` | `false` | Jestli je klient připojený k veřejnému demu |
+| `install_id` | pseudonym | Instalace serveru |
+| `user_id` | pseudonym | Přihlášený uživatel, jakmile je známý |
+| `device_id` | pseudonym | Spárované zařízení, jakmile je známé. Zároveň distinct ID v Umami |
+| `launch_id` | pseudonym | Jedno spuštění aplikace, podle kterého se řadí události relace |
+| `event_seq` | `12` | Pořadí události v rámci spuštění |
+
+Umami navíc dostává IP adresu požadavku, ze které odvodí zemi a region, aniž by adresu ukládalo, a také User-Agent a velikost obrazovky.
+
+## Zobrazení obrazovek
+
+Každá navigace zaznamená zobrazení stránky, jehož URL je **šablona trasy**, například `/workspaces/:workspaceId/spaces/:spaceId`, nikdy konkrétní adresa. Název obrazovky tvoří pevné segmenty šablony, takže v příkladu je to `workspaces_spaces`. Parametry trasy končící na `Id` se připojí jako pseudonymní vlastnosti `*_id` a číselné (třeba číslo PR) jako čísla. Všechny ostatní parametry se zahodí.
+
+## Události klientů
+
+Zaznamenává je desktopová aplikace, webová aplikace a telefon u věcí, které dělá člověk.
+
+| Událost | Vlastnosti | Kdy se zaznamená |
+| --- | --- | --- |
+| `app_opened` | `startup_ms` | Aplikace dokončila start a připojila se |
+| `app_backgrounded` | `foreground_s` | Okno nebo karta se skryly |
+| `app_foregrounded` | `background_s` | Znovu se zobrazily |
+| `server_connected` | `reconnect` | Spojení se po výpadku obnovilo |
+| `server_disconnected` | | Spojení vypadlo |
+| `server_switched` | | Uživatel přepnul na jiný server |
+| `device_paired` | | Telefon potvrdil spárování |
+| `onboarding_step_viewed` | `step`, `step_index` | Zobrazil se krok úvodního nastavení |
+| `onboarding_completed` | `duration_s`, `step_count`, `workspace_id` | Úvodní nastavení skončilo |
+| `workspace_switched` | `workspace_id`, `previous_workspace_id` | Uživatel otevřel jiný pracovní prostor |
+| `message_sent` | `workspace_id`, `space_id`, `conversation_id`, `delivery` (`send`, `steer`, `queued`), `char_count`, `attachment_count`, `agent_mention_count`, `other_mention_count`, `slash_command` | Z editoru zpráv se odeslala zpráva |
+| `slash_command_run` | `command`, `workspace_id`, `space_id` | Proběhl klientský lomítkový příkaz. Vestavěné příkazy hlásí svůj název, skilly hlásí `skill` a příkazy z repozitáře `custom` |
+| `approval_decided` | `decision`, `remembered`, `surface`, `action_classes`, `action_class_count`, `severity`, `workspace_id`, `space_id`, `conversation_id` | Na žádost agenta o schválení přišla odpověď |
+| `command_palette_opened` | | Otevřela se paleta příkazů |
+| `command_executed` | `source` (`palette`, `keybinding`), `command` | Proběhl příkaz. Příkazy pro konkrétní PR, člena nebo konverzaci hlásí jen svůj druh (`pr`, `member`, `conversation`) |
+| `review_submitted` | `verdict`, `comment_count`, `workspace_id` | Odeslalo se review pull requestu |
+| `search_performed` | `scope` (`space_messages`, `repo_content`), `result_count`, `query_length`, `workspace_id`, `space_id` | Proběhlo vyhledávání. Samotný dotaz se nikdy nezaznamenává |
+| `meeting_recording_started` | `workspace_id`, `meeting_id` | Začalo nahrávání schůzky |
+| `meeting_recording_stopped` | `duration_s`, `workspace_id`, `meeting_id` | Skončilo |
+| `setting_changed` | `setting` (`appearance.theme`, `appearance.locale`), `value` | Změnil se motiv nebo jazyk |
+| `soundscape_started` | `mood`, `source` (`user`, `focus`) | Spustil se soundscape, z ovládacích prvků nebo s režimem soustředění |
+| `soundscape_stopped` | `mood`, `source`, `listened_s` | Zastavil se |
+| `soundscape_mood_changed` | `from_mood`, `to_mood`, `playing` | Uživatel vybral jinou náladu |
+| `focus_mode_started` | `planned_minutes`, `has_goal`, `block_notifications` | Spustil se režim soustředění |
+| `focus_mode_ended` | `elapsed_s`, `planned_minutes`, `completed` | Režim soustředění skončil, předčasně nebo po vypršení času |
+| `dictation_started` |  | Spustilo se diktování v editoru zpráv |
+| `dictation_ended` | `outcome` (`completed`, `cancelled`, `failed`), `duration_s`, `transcript_chars`, `error_kind` | Diktování skončilo. Zaznamená se jen délka přepisu |
+| `pipeline_run_requested` | `workspace_id`, `template_id`, `trigger`, `dry_run`, `started` | Aplikace požádala server o spuštění pipeline |
+| `pipeline_run_retried` | `workspace_id`, `pipeline_run_id` | Neúspěšný běh se zkusil znovu |
+| `pipeline_run_cancel_requested` | `workspace_id`, `pipeline_run_id` | Běh se zrušil z aplikace |
+| `pipeline_step_killed` | `workspace_id`, `step_run_id` | Běžící krok se násilně ukončil |
+| `calendar_connect_finished` | `outcome` (`connected`, `denied`, `expired`, `failed`, `cancelled`), `builtin_client`, `duration_s` | Skončil pokus o přihlášení ke kalendáři |
+| `calendar_disconnected` | `workspace_id` | Odpojil se kalendářový účet |
+| `calendar_rsvp_sent` | `calendar_event_id`, `response`, `previous_response`, `workspace_id` | Na pozvánku přišla odpověď |
+| `calendar_event_recorded` | `workspace_id`, `calendar_event_id` | Z události v kalendáři se spustilo nahrávání |
+| `calendar_meeting_joined` | `provider` (`meet`, `zoom`, `teams`, `webex`, `other`), `workspace_id`, `calendar_event_id` | Otevřel se odkaz na schůzku (telefon). Z odkazu se odvodí jen poskytovatel |
+| `notification_action` | `action` (`read`, `unread`, `dismiss`, `mark_all_read`, `clear_all`), `workspace_id` | Použilo se centrum oznámení |
+| `agent_created` | `workspace_id`, `agent_id`, `adapter`, `model` | Z registru vznikl agent |
+| `tab_opened` | `kind` (`chat`, `terminal`, `browser`, `rig`, `codeServer`, `file`, …) | V prostoru se otevřela nová karta editoru |
+| `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Změnily se skilly pracovního prostoru |
+| `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Na návrh orchestace přišla odpověď |
+| `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Plán se schválil nebo zamítl (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Spustil se dohlížený cíl nebo smyčka (telefon) |
+| `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Konverzace vznikla nebo se rozvětvila |
+| `conversation_rewound` | `conversation_id` | Konverzace pokračovala od dřívější zprávy |
+| `space_archived` | `workspace_id`, `space_id` | Prostor se archivoval |
+
+## Události serveru
+
+Zaznamenává je `cc_server` u skutečností, které žádný jednotlivý klient nevidí právě jednou. Běh agenta se započítá jednou bez ohledu na to, kolik klientů ho sleduje.
+
+| Událost | Vlastnosti | Kdy se zaznamená |
+| --- | --- | --- |
+| `server_started` | `workspace_count`, `startup_ms` | Server dokončil start |
+| `workspace_created` | `workspace_id` | Vznikl pracovní prostor |
+| `space_created` | `workspace_id`, `space_id` | Vznikl prostor |
+| `repo_added` | `workspace_id`, `repo_id` | Propojil se repozitář |
+| `ticket_created` | `workspace_id`, `ticket_id` | Člověk nebo agent vytvořil ticket |
+| `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Skončil běh agenta |
+| `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Agent se zastavil a čeká na člověka |
+| `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Politika akcí odmítla akci agenta |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Skončil běh pipeline. `trigger` je `manual`, typ události, která ho spustila, nebo u pojmenovaného spouštěče jen jeho druh (`webhook`) |
+| `pull_request_published` | `workspace_id`, `pr_id` | Z prostoru se publikoval pull request |
+| `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Sloučil se pull request, který otevřel agent |
+| `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Uložil se záznam schůzky |
+| `space_deleted` | `workspace_id`, `space_id` | Smazal se prostor |
+| `ticket_status_changed` | `workspace_id`, `ticket_id`, `from_status`, `to_status` | Ticket změnil stav |
+| `ticket_assigned` | `workspace_id`, `ticket_id`, `assignee_type`, `agent_id`, `team_id` | Ticket se přiřadil |
+| `ticket_reassigned` | `workspace_id`, `ticket_id`, `from_agent_id`, `to_agent_id` | Ticket přešel na jiného agenta |
+| `ticket_work_finished` | `ticket_id`, `outcome` (`completed`, `failed`, `cancelled`) | Skončila delegovaná práce na ticketu |
+| `workspace_member_changed` | `workspace_id`, `member_user_id`, `change` (`added`, `removed`, `role_changed`), `role` | Změnilo se členství v pracovním prostoru |
+| `rig_closed` | `workspace_id`, `rig_id`, `reason`, `reaped`, `agent_id` | Stanice se zavřela nebo se uklidila |
+| `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Skill pracovního prostoru se nainstaloval, aktualizoval nebo změnil na disku |
+| `calendar_auth_expired` | `workspace_id` | Připojení kalendáře vyžaduje nové přihlášení |
+| `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Událost v kalendáři brzy začne |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Útrata překročila práh rozpočtu |
+| `pull_request_review_requested` | `workspace_id`, `repo_id` | U sledovaného PR se vyžádalo review |
+| `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Změnilo se rozhodnutí o review sledovaného PR |
+| `external_pull_request_merged` | `workspace_id`, `repo_id` | V propojeném repozitáři se sloučil PR, který neotevřel agent |
+
+## Doručování
+
+Události se odesílají po jedné na `<host>/api/send` z fronty v paměti s kapacitou až 200 událostí. Při chybě sítě, vypršení časového limitu, `429` nebo `5xx` se událost ponechá a zkouší se znovu s exponenciálním odstupem od 1 sekundy až po 5 minut. Jakákoli jiná odpověď `4xx` ji zahodí. Nic se nezapisuje na disk, takže události, které jsou při ukončení aplikace ještě ve frontě, se ztratí. Fronta se vyprázdní, když aplikace přejde na pozadí a když se server vypíná.
+
+## Nasměrování sestavení na jinou instanci
+
+Cíl se pevně určuje při sestavení:
+
+```bash
+--dart-define=CC_ANALYTICS_HOST=https://analytics.example.com/
+--dart-define=CC_ANALYTICS_WEBSITE_ID=<website uuid>
+```
+
+Adaptér poskytovatele je v `packages/cc_analytics`. Podpora jiné analytické služby znamená přidat tam adaptér. Plán sledování i pravidla ochrany soukromí zůstávají stejné.

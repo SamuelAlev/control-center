@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Chaque drapeau, variable d’environnement, sous-commande et chemin du répertoire de données du serveur sans interface.
 slug: fr-FR/manuel/reference/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Chaque réglage du processus accepte un drapeau de ligne de commande ou une variable
@@ -174,6 +174,10 @@ supplémentaire régit ce comportement, et c’est le bureau qui la définit, pa
 
 Ne la définissez vous-même que si vous supervisez `cc_server` comme processus enfant et
 souhaitez la même garantie.
+
+`DO_NOT_TRACK=1` (toute valeur autre que vide, `0` ou `false`) arrête les
+[statistiques d’utilisation](/fr-FR/manuel/reference/statistiques-utilisation/) propres au serveur, même
+lorsque l’interrupteur global du serveur est activé. Les clients continuent de suivre l’interrupteur.
 
 ## Organisation du répertoire de données
 

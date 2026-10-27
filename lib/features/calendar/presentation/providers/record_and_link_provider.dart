@@ -1,4 +1,6 @@
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/calendar/domain/usecases/link_meeting_to_event_use_case.dart';
 import 'package:control_center/features/calendar/presentation/providers/calendar_recording_bindings.dart';
@@ -49,6 +51,12 @@ class CalendarRecordAndLinkUseCase {
           meetingId: meetingId,
           calendarEventId: event.id,
         );
+    _ref.track(
+      AnalyticsEvents.calendarEventRecorded(
+        workspaceId: event.workspaceId,
+        calendarEventId: event.id,
+      ),
+    );
     return result;
   }
 }

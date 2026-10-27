@@ -89,6 +89,7 @@ extension _SpaceComposer on _SpaceScreenState {
       draft.changed();
       return;
     }
+    final analytics = ref.read(analyticsProvider);
     draft.sending = true;
     draft.error = null;
     _attachError = null;
@@ -135,6 +136,20 @@ extension _SpaceComposer on _SpaceScreenState {
           idempotencyKey: '$intent:send',
         );
       }
+      analytics.track(
+        AnalyticsEvents.messageSent(
+          workspaceId: scope.workspaceId,
+          spaceId: scope.spaceId,
+          conversationId: scope.conversationId,
+          delivery: queued == null
+              ? AnalyticsEvents.messageDeliverySend
+              : AnalyticsEvents.messageDeliverySteer,
+          charCount: text.length,
+          attachmentCount: stored.length,
+          agentMentionCount: 0,
+          otherMentionCount: 0,
+        ),
+      );
       draft.sent();
     } catch (error) {
       // Text, successful uploads and the logical action key survive a failure.

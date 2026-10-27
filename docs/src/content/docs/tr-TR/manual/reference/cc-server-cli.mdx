@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Headless sunucunun her bayrağı, ortam değişkeni, alt komutu ve veri dizini yolu.
 slug: tr-TR/kilavuz/referans/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Her süreç bayrağı bir CLI bayrağı ya da bir ortam değişkeni alır; önce bayrak,
@@ -172,6 +172,10 @@ ortam değişkeni vardır ve bunu siz değil masaüstü ayarlar:
 
 Bunu yalnızca `cc_server`'ı bir alt süreç olarak yönetiyorsanız ve aynı garantiyi
 istiyorsanız kendiniz ayarlayın.
+
+`DO_NOT_TRACK=1` (boş, `0` veya `false` dışındaki herhangi bir değer), sunucu genelindeki anahtar
+açık olsa bile sunucunun kendi [kullanım analizlerini](/tr-TR/kilavuz/referans/kullanim-analizleri/) durdurur.
+İstemciler anahtarı izlemeye devam eder.
 
 ## Veri dizini düzeni
 

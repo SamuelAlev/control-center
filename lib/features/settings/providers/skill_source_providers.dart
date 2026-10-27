@@ -1,6 +1,8 @@
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/features/skills/domain/scanner/skill_scan_types.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -38,8 +40,7 @@ class SkillSourceDto {
     defaultBranch: json['default_branch'] as String? ?? '',
     starCount: (json['star_count'] as num?)?.toInt() ?? 0,
     skillCount: (json['skill_count'] as num?)?.toInt() ?? 0,
-    lastSyncedAt:
-        json['last_synced_at'] == null
+    lastSyncedAt: json['last_synced_at'] == null
         ? null
         : DateTime.tryParse(json['last_synced_at'] as String),
     lastError: json['last_error'] as String?,
@@ -232,12 +233,11 @@ class SkillInstallResultDto {
         slug: json['slug'] as String? ?? '',
         ref: json['ref'] as String?,
         computedHash: json['computed_hash'] as String?,
-        verdict:
-            (json['scan_verdict'] ?? json['verdict']) is String
-                ? SkillScanVerdict.fromWire(
-                    (json['scan_verdict'] ?? json['verdict']) as String,
-                  )
-                : null,
+        verdict: (json['scan_verdict'] ?? json['verdict']) is String
+            ? SkillScanVerdict.fromWire(
+                (json['scan_verdict'] ?? json['verdict']) as String,
+              )
+            : null,
         llmReviewed: json['llm_reviewed'] as bool? ?? false,
         findings: [
           for (final f in (json['findings'] as List?) ?? const [])
@@ -306,10 +306,21 @@ class SkillUpdateInfoDto {
 /// drive the installed skills' update/uninstall lifecycle. Lib-only (no
 /// cc_data repository) — mirrors `skill_security_providers.dart`.
 class RpcSkillSourceControl {
-  /// Creates a control over the given client.
-  RpcSkillSourceControl(this._client);
+  /// Creates a control over the given client; changes are recorded through
+  /// `_analytics` when given.
+  RpcSkillSourceControl(this._client, [this._analytics]);
 
   final RemoteRpcClient _client;
+  final Analytics? _analytics;
+
+  void _track(String action, {String? slug, bool? blocked}) =>
+      _analytics?.track(
+        AnalyticsEvents.skillAction(
+          action: action,
+          skillSlug: slug,
+          blocked: blocked,
+        ),
+      );
 
   /// The workspace's registered sources. Resolves to an empty list when the
   /// host predates the sources surface (`opUnknown`) — the panel reads that
@@ -334,10 +345,9 @@ class RpcSkillSourceControl {
   /// source and whether it was already registered.
   Future<(SkillSourceDto, bool)> addSource(String url) async {
     final data = await _client.call('skills.sourcesAdd', {'url': url});
+    _track('source_added');
     return (
-      SkillSourceDto.fromJson(
-        (data['source'] as Map).cast<String, dynamic>(),
-      ),
+      SkillSourceDto.fromJson((data['source'] as Map).cast<String, dynamic>()),
       data['already_exists'] == true,
     );
   }
@@ -345,6 +355,7 @@ class RpcSkillSourceControl {
   /// Removes a source (installed skills stay installed).
   Future<void> removeSource(String sourceId) async {
     await _client.call('skills.sourcesRemove', {'source_id': sourceId});
+    _track('source_removed');
   }
 
   /// Lists a source's skill catalog, annotated with installed/update state.
@@ -381,12 +392,15 @@ class RpcSkillSourceControl {
       'path': path,
       if (allowQuarantineOverride) 'allow_quarantine_override': true,
     });
-    return SkillInstallResultDto.fromJson(data);
+    final result = SkillInstallResultDto.fromJson(data);
+    _track('install', slug: result.slug, blocked: result.status == 'blocked');
+    return result;
   }
 
   /// Uninstalls a skill: deletes its directory and its lock pin.
   Future<void> uninstall(String slug) async {
     await _client.call('skills.uninstall', {'skill_slug': slug});
+    _track('uninstall', slug: slug);
   }
 
   /// Checks every GitHub-pinned skill for an upstream update.
@@ -416,14 +430,19 @@ class RpcSkillSourceControl {
       'skill_slug': slug,
       if (allowQuarantineOverride) 'allow_quarantine_override': true,
     });
-    return SkillInstallResultDto.fromJson(data);
+    final result = SkillInstallResultDto.fromJson(data);
+    _track('update', slug: slug, blocked: result.status == 'blocked');
+    return result;
   }
 }
 
 /// The control the sources panel drives — RPC-backed, talking to the connected
 /// host.
 final skillSourceControlProvider = Provider<RpcSkillSourceControl>(
-  (ref) => RpcSkillSourceControl(ref.watch(rpcClientProvider)),
+  (ref) => RpcSkillSourceControl(
+    ref.watch(rpcClientProvider),
+    ref.watch(analyticsProvider),
+  ),
 );
 
 /// The workspace's registered skill sources.
@@ -434,10 +453,7 @@ final skillSourcesProvider =
 
 /// A source's skill catalog, annotated with installed/update state.
 final skillSourceListingsProvider =
-    FutureProvider.family<List<SourceSkillDto>, String>((
-      ref,
-      sourceId,
-    ) async {
+    FutureProvider.family<List<SourceSkillDto>, String>((ref, sourceId) async {
       try {
         return await ref.watch(skillSourceControlProvider).listings(sourceId);
       } on RemoteRpcException catch (e) {
@@ -450,10 +466,10 @@ final skillSourceListingsProvider =
 
 /// One source skill's README + scan preview.
 final skillSourceDetailProvider =
-    FutureProvider.family<SourceSkillDetailDto, ({String sourceId, String path})>((
-      ref,
-      key,
-    ) {
+    FutureProvider.family<
+      SourceSkillDetailDto,
+      ({String sourceId, String path})
+    >((ref, key) {
       return ref
           .watch(skillSourceControlProvider)
           .detail(key.sourceId, key.path);

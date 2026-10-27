@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "ルートマップ",
   "docs.sidebar.referenceCcServerCli": "cc_server CLI",
   "docs.sidebar.referenceBackup": "バックアップ、エクスポート、インポート",
+  "docs.sidebar.referenceTelemetry": "利用状況の分析",
   "docs.sidebar.referenceGlossary": "用語集"
 }

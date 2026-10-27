@@ -1,0 +1,18 @@
+name: cc_analytics
+description: "Analytics provider adapters for Control Center — the AnalyticsSink implementations behind cc_domain's Analytics facade (Umami today). Pure Dart and web-safe (cc_domain + package:http), shared by the desktop/web client, the phone PWA and the server."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.12.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  cc_domain:
+    path: ../cc_domain
+  http: ^1.6.0
+
+dev_dependencies:
+  test: any
+  lints: any

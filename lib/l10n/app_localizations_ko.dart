@@ -1670,6 +1670,29 @@ class AppLocalizationsKo extends AppLocalizations {
       '더 빠른 문제 해결을 위해 크래시, 오류, 성능 진단을 보내주세요 (릴리스 빌드만). 설정 → 개인정보에서 언제든 변경할 수 있습니다.';
 
   @override
+  String get usageAnalyticsTitle => '사용 분석 공유';
+
+  @override
+  String get usageAnalyticsOnSubtitle =>
+      '이 서버의 모든 클라이언트가 가명 처리된 사용 이벤트(화면, 동작, 횟수)를 보냅니다(릴리스 빌드만). 이름, 메시지 내용, 파일 경로, 이메일 주소는 절대 보내지 않습니다.';
+
+  @override
+  String get usageAnalyticsOffSubtitle =>
+      '사용 분석이 꺼져 있습니다. 이 서버의 어떤 클라이언트도 사용 이벤트를 보내지 않습니다.';
+
+  @override
+  String get usageAnalyticsManagedOnSubtitle =>
+      '이 서버의 클라이언트가 가명 처리된 사용 이벤트를 보냅니다. 서버 운영자만 변경할 수 있습니다.';
+
+  @override
+  String get usageAnalyticsManagedOffSubtitle =>
+      '이 서버에서는 사용 분석이 꺼져 있습니다. 서버 운영자만 변경할 수 있습니다.';
+
+  @override
+  String get onboardingUsageAnalyticsSubtitle =>
+      '어떤 기능이 도움이 되는지 알 수 있도록 이 서버의 모든 클라이언트에서 가명 처리된 사용 이벤트를 보내주세요 (릴리스 빌드만). 이름, 메시지 내용, 파일 경로, 이메일 주소는 절대 보내지 않습니다. 설정 → 개인정보에서 언제든 변경할 수 있습니다.';
+
+  @override
   String get blocked => '차단됨';
 
   @override

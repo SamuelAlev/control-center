@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:cc_domain/cc_domain.dart' show ConfirmationRequestDto;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/agent_approval_card.dart';
+import 'package:control_center/features/messaging/providers/approval_analytics.dart';
 import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
 import 'package:control_center/features/messaging/providers/visible_conversation_spaces.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -40,10 +42,11 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
   final Set<String> _responding = {};
 
   Future<void> _respond(
-    String id, {
+    ConfirmationRequestDto request, {
     required bool approved,
     bool remember = false,
   }) async {
+    final id = request.id;
     if (_responding.contains(id)) {
       return;
     }
@@ -56,6 +59,13 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
             approved: approved,
             rememberForSeconds: remember ? kApprovalRememberSeconds : null,
           );
+      trackApprovalDecision(
+        ref,
+        request,
+        approved: approved,
+        remembered: remember,
+        surface: 'overlay',
+      );
     } finally {
       if (mounted) {
         setState(() => _responding.remove(id));
@@ -139,10 +149,10 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
                         key: ValueKey(front.id),
                         request: front,
                         busy: _responding.contains(front.id),
-                        onApprove: () => _respond(front.id, approved: true),
+                        onApprove: () => _respond(front, approved: true),
                         onApproveAndRemember: () =>
-                            _respond(front.id, approved: true, remember: true),
-                        onDeny: () => _respond(front.id, approved: false),
+                            _respond(front, approved: true, remember: true),
+                        onDeny: () => _respond(front, approved: false),
                       ),
                     ],
                   ),

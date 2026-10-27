@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Każda flaga, zmienna środowiskowa, podpolecenie i ścieżka katalogu danych serwera headless.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/cc-server-cli
-sourceHash: 91c84d3361f1be97ac69474ae3dd80afbf9e1923
+sourceHash: f18330f8028244afe533d32fe595b7167b925804
 ---
 
 Każde ustawienie procesu można podać flagą CLI albo zmienną środowiskową;
@@ -171,6 +171,10 @@ podając wyjaśnienie, a nie błąd:
 
 Ustaw ją samodzielnie tylko wtedy, gdy nadzorujesz `cc_server` jako proces potomny
 i chcesz mieć tę samą gwarancję.
+
+`DO_NOT_TRACK=1` (dowolna wartość inna niż pusta, `0` lub `false`) wyłącza własną
+[analitykę użycia](/pl-PL/podrecznik/dokumentacja-referencyjna/analityka-uzycia/) serwera, nawet gdy przełącznik dla całego serwera
+jest włączony. Klienci nadal stosują się do przełącznika.
 
 ## Układ katalogu danych
 

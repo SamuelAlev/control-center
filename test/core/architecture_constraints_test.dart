@@ -859,6 +859,7 @@ void main() {
         'lib',
         'packages/cc_rpc/lib',
         'packages/cc_data/lib',
+        'packages/cc_analytics/lib',
         'packages/cc_domain/lib',
         'packages/cc_ui/lib',
         'packages/cc_markdown/lib',
@@ -1345,6 +1346,7 @@ void main() {
         'packages/cc_markdown/lib',
         'packages/cc_rpc/lib',
         'packages/cc_data/lib',
+        'packages/cc_analytics/lib',
         'apps/cc_remote/lib',
       ]) {
         for (final rel in _dartFilesRelative(projectRoot, root)) {

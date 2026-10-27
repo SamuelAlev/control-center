@@ -1,5 +1,7 @@
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -100,7 +102,17 @@ final repoContentSearchProvider = FutureProvider.autoDispose
               if (args.options != const ContentSearchOptions())
                 'options': args.options.toWire(),
             });
-        return ((data['hits'] as List?) ?? const []).whereType<Map>().map((h) {
+        final hits = ((data['hits'] as List?) ?? const []).whereType<Map>();
+        ref.track(
+          AnalyticsEvents.searchPerformed(
+            scope: 'repo_content',
+            resultCount: hits.length,
+            queryLength: query.length,
+            workspaceId: args.workspaceId,
+            spaceId: args.spaceId,
+          ),
+        );
+        return hits.map((h) {
           final m = h.cast<String, dynamic>();
           final lines = ((m['matches'] as List?) ?? const [])
               .whereType<Map>()

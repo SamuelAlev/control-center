@@ -198,5 +198,6 @@
   "docs.sidebar.referenceRouteMap": "Bản đồ tuyến",
   "docs.sidebar.referenceCcServerCli": "CLI cc_server",
   "docs.sidebar.referenceBackup": "Sao lưu, xuất và nhập",
+  "docs.sidebar.referenceTelemetry": "Phân tích sử dụng",
   "docs.sidebar.referenceGlossary": "Thuật ngữ"
 }

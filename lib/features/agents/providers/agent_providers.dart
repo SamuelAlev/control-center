@@ -7,6 +7,8 @@ import 'package:cc_domain/features/agents/domain/value_objects/agent_live_state.
 import 'package:cc_domain/features/governance/domain/services/org_chart_service.dart';
 import 'package:cc_domain/features/governance/domain/value_objects/agent_presence.dart';
 import 'package:cc_domain/features/governance/domain/value_objects/org_node.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
@@ -40,10 +42,12 @@ abstract interface class AgentCreatePort {
 
 /// RPC implementation of [AgentCreatePort].
 class RpcAgentCreatePort implements AgentCreatePort {
-  /// Creates a [RpcAgentCreatePort] over `_remote`.
-  RpcAgentCreatePort(this._remote);
+  /// Creates a [RpcAgentCreatePort] over `_remote`, recording each created
+  /// agent through `_analytics` when given.
+  RpcAgentCreatePort(this._remote, [this._analytics]);
 
   final RemoteAgentRepository _remote;
+  final Analytics? _analytics;
 
   @override
   Future<Agent> create({
@@ -58,7 +62,16 @@ class RpcAgentCreatePort implements AgentCreatePort {
       title: title,
       skills: skills,
     );
-    return RpcAgentRepository.fromDto(dto);
+    final agent = RpcAgentRepository.fromDto(dto);
+    _analytics?.track(
+      AnalyticsEvents.agentCreated(
+        workspaceId: workspaceId,
+        agentId: agent.id,
+        adapter: agent.adapterId,
+        model: agent.modelId,
+      ),
+    );
+    return agent;
   }
 }
 
@@ -89,7 +102,10 @@ class UseCaseAgentCreatePort implements AgentCreatePort {
 
 /// The in-process port used to create agents from the UI and widget tests.
 final agentCreatePortProvider = Provider<AgentCreatePort>(
-  (ref) => RpcAgentCreatePort(ref.watch(remoteAgentOpsProvider)),
+  (ref) => RpcAgentCreatePort(
+    ref.watch(remoteAgentOpsProvider),
+    ref.watch(analyticsProvider),
+  ),
 );
 
 /// Host-side run-log operations beyond the repository contract: reading a run's

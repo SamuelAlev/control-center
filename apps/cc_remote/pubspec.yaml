@@ -38,6 +38,10 @@ dependencies:
   # fetches — the workspaces/tickets/messaging/newsfeed/agents repositories.
   cc_data:
     path: ../../packages/cc_data
+  # Analytics provider adapters (the Umami sink behind cc_domain's Analytics
+  # facade). Pure Dart over package:http, which the PWA already ships.
+  cc_analytics:
+    path: ../../packages/cc_analytics
   # The in-repo markdown engine (typed AST + widget renderer). PR bodies,
   # review comments and issue comments are markdown; rendered as plain text
   # they read as raw `## Summary` / `- [ ]` noise. Widgets-only and depends on
