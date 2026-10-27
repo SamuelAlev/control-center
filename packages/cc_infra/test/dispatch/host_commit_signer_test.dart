@@ -1,3 +1,7 @@
+// POSIX signer setup: a shebang stand-in, /bin/chmod and /usr/bin/ssh-keygen.
+@TestOn('!windows')
+library;
+
 import 'dart:io';
 
 import 'package:cc_infra/src/dispatch/host_commit_signer.dart';

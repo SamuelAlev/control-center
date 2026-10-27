@@ -33,6 +33,8 @@
 # (messages rendering: agent turns, transcript rows, read media) grew files
 # past the previous floor; new entries for the files they pushed over budget.
 # Lowered space_row_adornments.dart, which those commits shrank.
+# Raised 2026-10-27: 3d78806c1 lets a failed plan execution be approved again,
+# growing plan_studio_screen.dart past the previous floor.
 lib/features/agents/presentation/screens/agent_registry_screen.dart  609
 lib/features/agents/presentation/widgets/agent_form_dialog.dart  745
 lib/features/agents/presentation/widgets/agent_logs_tab.dart  483
@@ -95,7 +97,7 @@ lib/features/pipelines/presentation/widgets/pipeline_quick_insert.dart  428
 lib/features/pipelines/presentation/widgets/pipeline_run_waterfall.dart  463
 lib/features/pipelines/presentation/widgets/pipeline_step_detail_panel.dart  910
 lib/features/pipelines/presentation/widgets/trigger_node_panel.dart  388
-lib/features/plan_studio/presentation/screens/plan_studio_screen.dart  668
+lib/features/plan_studio/presentation/screens/plan_studio_screen.dart  672
 lib/features/plan_studio/presentation/screens/plans_screen.dart  343
 lib/features/plan_studio/presentation/widgets/plan_canvas.dart  651
 lib/features/plan_studio/presentation/widgets/plan_node_inspector.dart  619

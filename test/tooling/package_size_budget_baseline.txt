@@ -27,14 +27,17 @@
 # Lowered 2026-10-20: the Claude account-credential gate moved to
 # dispatch_session_claude_credentials.dart, taking dispatch_session_claude_cli.dart
 # under budget; _closeClaudeSubagents joined its sibling in the Claude CLI part.
+# Raised 2026-10-27: 3d78806c1 (thread permission requests, plan refinement in
+# the plan's conversation, re-approving a failed plan, join double-scheduling
+# guard, continueOnFail failure markers) grew the files past the floor.
 packages/cc_domain/lib/features/evals/domain/evaluation/evaluation_plan.dart  1580
-packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2227
+packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2260
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2850
 packages/cc_domain/lib/src/dtos/dtos.dart  4024
 packages/cc_harness/lib/src/loop/agent_loop_runner.dart  2195
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1868
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2629
-packages/cc_infra/lib/src/messaging/messaging_service.dart  1696
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2630
+packages/cc_infra/lib/src/messaging/messaging_service.dart  1764
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1585
 packages/cc_infra/lib/src/network/github_graphql_client.dart  2372
 packages/cc_infra/lib/src/network/github_pr_client.dart  2281
@@ -46,9 +49,9 @@ packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2088
 packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1722
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2835
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3356
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8233
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8246
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
-packages/cc_server_core/lib/src/local_rpc_server.dart  2551
+packages/cc_server_core/lib/src/local_rpc_server.dart  2560
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1715
 packages/cc_server_core/lib/src/remote_rpc_catalog.dart  15963
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2644
