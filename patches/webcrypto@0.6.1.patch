@@ -1,3 +1,39 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index a5a7e28..e44c4ee 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -92,6 +92,13 @@ else()
+   set(PLATFORM "linux")
+ endif()
+ 
++# BoringSSL's Windows aarch64 sources are GNU-syntax assembly that MSVC cannot
++# assemble (clang-cl can), so MSVC builds Windows on Arm without assembly.
++if(PLATFORM STREQUAL "win" AND ARCH STREQUAL "aarch64" AND
++   NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
++  unset(crypto_sources_win_aarch64)
++endif()
++
+ # If there is no assembly files disable ASM and set empty sources list
+ if(NOT DEFINED crypto_sources_${PLATFORM}_${ARCH})
+   add_definitions(-DOPENSSL_NO_ASM)
+@@ -122,10 +129,13 @@ if(MSVC)
+ endif()
+ if(WIN32)
+   # Windows/MSVC option from CMakeLists.txt in BoringSSL
+-  # Use NASM on Windows.
+-  enable_language(ASM_NASM)
+-  set(OPENSSL_NASM TRUE)
+-  set(CMAKE_ASM_NASM_FLAGS "${CMAKE_ASM_NASM_FLAGS} -gcv8")
++  # Use NASM on Windows. Only the x86 sources are NASM; requiring it on ARM64
++  # fails where no NASM is installed.
++  if(ARCH STREQUAL "x86_64" OR ARCH STREQUAL "x86")
++    enable_language(ASM_NASM)
++    set(OPENSSL_NASM TRUE)
++    set(CMAKE_ASM_NASM_FLAGS "${CMAKE_ASM_NASM_FLAGS} -gcv8")
++  endif()
+   # On Windows, prefer cl over gcc if both are available. By default most of
+   # the CMake generators prefer gcc, even on Windows.
+   set(CMAKE_GENERATOR_CC cl)
 diff --git a/third_party/boringssl/sources.cmake b/third_party/boringssl/sources.cmake
 index 90437ae9204e12013d47366987c79ad5e7c99f5c..9688073efcfc1b8f508800667261f1701f948d28 100644
 --- a/third_party/boringssl/sources.cmake

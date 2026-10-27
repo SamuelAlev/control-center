@@ -275,7 +275,9 @@ dev_dependencies:
   # Pinned for patches/webcrypto@0.6.1.patch: its BoringSSL source list omits
   # the fiat P-256 ADX assembly on macOS x86_64, so the x86_64 slice of a
   # universal (profile/release) macOS build fails to link. Arm64-only debug
-  # builds never compile that slice.
+  # builds never compile that slice. It also requires NASM only for Windows
+  # x86/x64 (the ARM64 runner has none) and builds MSVC Windows ARM64 without
+  # assembly, which MSVC cannot assemble.
   webcrypto: 0.6.1
 
   # Code generation — drift + json_serializable.
