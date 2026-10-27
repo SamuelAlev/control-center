@@ -1,5 +1,5 @@
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index a5a7e28..e44c4ee 100644
+index a5a7e28..d5cbede 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -92,6 +92,13 @@ else()
@@ -16,7 +16,17 @@ index a5a7e28..e44c4ee 100644
  # If there is no assembly files disable ASM and set empty sources list
  if(NOT DEFINED crypto_sources_${PLATFORM}_${ARCH})
    add_definitions(-DOPENSSL_NO_ASM)
-@@ -122,10 +129,13 @@ if(MSVC)
+@@ -108,6 +115,9 @@ if(MSVC)
+               # possible loss of data
+       "C4267" # conversion from 'size_t' to 'int', possible loss of data
+       "C4706" # assignment within conditional expression
++      "C4702" # unreachable code; BoringSSL disables it as too aggressive. An
++              # assembly-free build (Windows on Arm) trips it on constant-false
++              # hardware capability checks.
+       "C4141"
+       "C4201" # nonstandard extension used: nameless struct/union
+       )
+@@ -122,10 +132,13 @@ if(MSVC)
  endif()
  if(WIN32)
    # Windows/MSVC option from CMakeLists.txt in BoringSSL
@@ -35,7 +45,7 @@ index a5a7e28..e44c4ee 100644
    # the CMake generators prefer gcc, even on Windows.
    set(CMAKE_GENERATOR_CC cl)
 diff --git a/third_party/boringssl/sources.cmake b/third_party/boringssl/sources.cmake
-index 90437ae9204e12013d47366987c79ad5e7c99f5c..9688073efcfc1b8f508800667261f1701f948d28 100644
+index 90437ae..9688073 100644
 --- a/third_party/boringssl/sources.cmake
 +++ b/third_party/boringssl/sources.cmake
 @@ -321,6 +321,8 @@ set(crypto_sources_apple_x86_64

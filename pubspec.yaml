@@ -276,8 +276,9 @@ dev_dependencies:
   # the fiat P-256 ADX assembly on macOS x86_64, so the x86_64 slice of a
   # universal (profile/release) macOS build fails to link. Arm64-only debug
   # builds never compile that slice. It also requires NASM only for Windows
-  # x86/x64 (the ARM64 runner has none) and builds MSVC Windows ARM64 without
-  # assembly, which MSVC cannot assemble.
+  # x86/x64 (the ARM64 runner has none), builds MSVC Windows ARM64 without
+  # assembly, which MSVC cannot assemble, and silences MSVC's C4702 (as
+  # BoringSSL does) that the assembly-free build turns into a -WX error.
   webcrypto: 0.6.1
 
   # Code generation — drift + json_serializable.
