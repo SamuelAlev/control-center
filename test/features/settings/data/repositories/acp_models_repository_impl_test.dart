@@ -10,6 +10,9 @@ class _FakeAcpModelsService implements AcpModelsService {
   int listModelsCallCount = 0;
 
   @override
+  ClaudeCodeModelCatalog? get claudeCode => null;
+
+  @override
   Future<List<AcpModel>> listModels(String adapterId) async {
     listModelsCallCount++;
     return _models[adapterId] ?? [];

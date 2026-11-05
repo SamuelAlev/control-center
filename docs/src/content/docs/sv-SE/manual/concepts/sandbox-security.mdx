@@ -2,7 +2,7 @@
 title: Sandlåda och säkerhet
 description: Vad som faktiskt begränsar en agent i Control Center i dag, hur långt OS-sandlådan når och vilka gränser som håller på en värd som saknar backend.
 slug: sv-SE/handbok/koncept/sandlada-och-sakerhet
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Var OS-sandlådan når och inte når]
@@ -211,7 +211,7 @@ nekanden: läsningar av hemliga sökvägar, en skrivpolicy återställd till nek
 uttryckliga tillåtanden ovanpå, unlink-blockering på varje nekad sökväg och dess
 förfäder så att en namnändring inte kan kringgå ett skrivnekande, exec-nekanden
 för alltid farliga binärer och för allt som kopierats in i en skrivbar katalog
-samt nätverk begränsat till loopback-proxyportarna plus DNS.
+samt nätverk begränsat till loopback-proxyportarna plus DNS. Verktygsinstallationer under ditt hem (corepacks pnpm, nodeversionshanterare, Playwright-webbläsare, rustup, fvm, uv och liknande) förblir körbara trots den exec-spärren, så att agenter kan använda dem utan omvägar. De alltid farliga förbuden gäller fortfarande inuti dem. Varje session får också en egen privat `TMPDIR`. Det är den enda temporära katalog där agenten får köra program den har byggt eller öppna Unix-socketar.
 
 Den praktiska konsekvensen: på Linux är agentens vy av filsystemet snävare; på
 macOS kan agenten fortfarande _läsa_ det mesta av värden, och dina registrerade

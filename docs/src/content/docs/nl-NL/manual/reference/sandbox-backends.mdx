@@ -2,7 +2,7 @@
 title: Sandboxbackends
 description: De sandboxbackends, waar ze worden toegepast en elk waardeobject dat de sandboxruntime gebruikt.
 slug: nl-NL/handleiding/referentie/sandboxbackends
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Of een run gesandboxed is, hangt af van de host]
@@ -60,8 +60,8 @@ Het gegenereerde profiel is **standaard toestaan** (`(allow default)`) en haalt 
 
 - **Bestandssysteemlezen**: geweigerd voor de geheime paden (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` en de rest van de set met leesweigeringen)
 - **Bestandssysteemschrijven**: teruggezet naar weigeren, daarna expliciete toestemmingen voor subpaden, waarbij de verplicht te weigeren paden (shell-rc-bestanden, `.git/hooks`, Claude-configuratie, beschermde checkouts) ook binnen een beschrijfbare root geblokkeerd blijven. `file-write-unlink` wordt geweigerd op elk geweigerd pad en zijn voorouders, zodat een rename een schrijfweigering niet kan omzeilen
-- **Proces**: `process-exec`-weigeringen voor de altijd gevaarlijke binaries, plus een blokkade op het uitvoeren van alles uit een beschrijfbare map
-- **Netwerk**: beperkt tot de in-process proxypoorten plus DNS — loopback is niet in het algemeen toegestaan en Unix-sockets zijn niet toegestaan. De proxies dwingen de domein-allowlist per sessie af (zie [Netwerk-egress](#netwerk-egress))
+- **Proces**: `process-exec`-weigeringen voor de altijd gevaarlijke binaries, plus een blokkade op het uitvoeren van alles uit een beschrijfbare map. Bekende toolchain-installatiemappen onder je thuismap (corepack, `npx`- en `pnpm dlx`-caches, node-versiebeheerders, Playwright-browsers, rustup en cargo, Go, fvm en de pub-cache, pyenv, uv en pipx, rbenv, sdkman, mise, asdf en `~/.local/bin`) worden onder die blokkade weer opengezet. Gedeelde tijdelijke mappen worden ook geblokkeerd. Elke sessie krijgt in plaats daarvan een privé-`TMPDIR` onder `/private/tmp`, waar programma's die de agent bouwt (een `go test`-binary, een cargo-build) kunnen draaien. De altijd-gevaarlijke weigeringen worden na deze toestemmingen toegepast
+- **Netwerk**: beperkt tot de in-process proxypoorten plus DNS — loopback is niet in het algemeen toegestaan en TCP-luisteren is geweigerd. Unix-sockets zijn alleen toegestaan binnen de privé-`TMPDIR` van de sessie, wat tools dekt zoals tsx en Chrome die daar een IPC-socket aanhouden; je SSH-agent en andere sockets blijven onbereikbaar. De proxies dwingen de domein-allowlist per sessie af (zie [Netwerk-egress](#netwerk-egress))
 - **Configuratie**: profielen worden per start gegenereerd uit de `SandboxSpec`
 
 Vereisten:

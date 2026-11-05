@@ -2,7 +2,7 @@
 title: Backend sandbox
 description: Backend sandbox, tempat penerapannya, dan setiap objek nilai yang digunakan runtime sandbox.
 slug: id-ID/panduan-pengguna/referensi/backend-sandbox
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Apakah sebuah run di-sandbox bergantung pada host]
@@ -61,8 +61,8 @@ Profil yang dihasilkan **permisif secara default** (`(allow default)`) dan memah
 
 - **Pembacaan sistem berkas**: ditolak untuk jalur rahasia (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains`, dan sisanya dari himpunan tolak-baca)
 - **Penulisan sistem berkas**: diatur ulang ke tolak, lalu diizinkan secara eksplisit per subjalur, dengan jalur wajib-tolak (berkas rc shell, `.git/hooks`, konfigurasi Claude, checkout yang dilindungi) diblokir bahkan di dalam akar yang dapat ditulis. `file-write-unlink` ditolak pada setiap jalur yang ditolak beserta leluhurnya, sehingga rename tidak dapat melewati penolakan tulis
-- **Proses**: `process-exec` menolak biner yang selalu berbahaya, plus pemblokiran eksekusi apa pun dari direktori yang dapat ditulis
-- **Jaringan**: dibatasi ke port proksi dalam proses plus DNS — loopback tidak diizinkan secara menyeluruh dan Unix socket tidak diizinkan. Proksi menegakkan daftar izin domain per sesi (lihat [Egress jaringan](#egress-jaringan))
+- **Proses**: `process-exec` menolak biner yang selalu berbahaya, plus pemblokiran eksekusi apa pun dari direktori yang dapat ditulis. Direktori instalasi toolchain yang dikenal di bawah home Anda (cache corepack, `npx` dan `pnpm dlx`, pengelola versi node, browser Playwright, rustup dan cargo, Go, fvm dan pub cache, pyenv, uv dan pipx, rbenv, sdkman, mise, asdf dan `~/.local/bin`) dibuka kembali di bawah blokir tersebut. Direktori temp bersama juga diblokir. Setiap sesi justru mendapatkan `TMPDIR` pribadi di bawah `/private/tmp`, tempat program yang dibangunnya (binary `go test`, build cargo) dapat dijalankan. Penolakan untuk biner yang selalu berbahaya diterapkan setelah izin-izin ini
+- **Jaringan**: dibatasi ke port proksi dalam proses plus DNS — loopback tidak diizinkan secara menyeluruh dan mendengarkan TCP ditolak. Unix socket hanya diizinkan di dalam `TMPDIR` pribadi sesi, yang mencakup alat seperti tsx dan Chrome yang menyimpan socket IPC di sana; SSH agent dan socket lain tetap tidak dapat dijangkau. Proksi menegakkan daftar izin domain per sesi (lihat [Egress jaringan](#egress-jaringan))
 - **Konfigurasi**: profil dihasilkan per peluncuran dari `SandboxSpec`
 
 Persyaratan:

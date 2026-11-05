@@ -2,7 +2,7 @@
 title: Instalar
 description: Use o Control Center no navegador ou instale o aplicativo de desktop, configure um backend de agentes e escolha onde o servidor dele é executado.
 slug: pt-BR/manual/instalar
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 O Control Center é executado de duas formas: como um **aplicativo web** em
@@ -213,16 +213,21 @@ do banco de dados e faz todo o trabalho;
 [Implantação e clientes](/pt-BR/manual/conceitos/implantacao/) explica o que essa
 divisão significa para o desktop, a web e o celular.
 
-Na primeira inicialização, o desktop pergunta
-**"Como o Control Center deve ser executado?"**:
+Na primeira inicialização, o desktop mostra **Boas-vindas ao Control Center** e
+oferece três formas de começar. O botão de configurações no canto
+muda o idioma e o tema.
 
 - **Executar neste aplicativo**: o desktop inicia e supervisiona um `cc_server`
   nesta máquina e fala com ele por loopback. Nada mais a configurar. É a
   configuração que o [início rápido](/pt-BR/manual/inicio-rapido/) pressupõe.
-- **Conectar a uma instância remota**: aponte o desktop para um `cc_server` em
-  execução em outro lugar, com a URL do WebSocket, um id de dispositivo e uma chave
-  de emparelhamento ou um código de convite de uso único. Esse servidor é dono dos
-  dados; este desktop apenas os renderiza.
+- **Conectar a um servidor**: aponte o desktop para um `cc_server` em
+  execução em outro lugar, com a URL do WebSocket, e então entre por logon único se o
+  servidor oferecer, ou informe um código de convite de uso único, ou um id de
+  dispositivo e uma chave de emparelhamento em **Usar uma chave de pareamento**. Esse
+  servidor é dono dos dados; este desktop apenas os renderiza.
+- **Colar um link de pareamento**: cole um link de convite ou de emparelhamento. A
+  caixa de diálogo mostra a qual servidor o link leva e só conecta quando você clica
+  em **Conectar**.
 
 Adicione ou alterne servidores depois em
 **Configurações → Servidor → Conexão e status**. A alternância reconecta no mesmo

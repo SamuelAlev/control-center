@@ -5,6 +5,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/language_picker.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
+import 'package:control_center/shared/widgets/theme_choice_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -33,6 +34,7 @@ class AppearanceSection extends ConsumerWidget {
                 systemLabel: l10n.languageSystem,
                 searchHint: l10n.searchPlaceholder,
                 semanticLabel: l10n.settingsLanguage,
+                onSelected: ref.read(localeProvider.notifier).setLocale,
               ),
             ),
           ),
@@ -40,24 +42,25 @@ class AppearanceSection extends ConsumerWidget {
             icon: AppIcons.sun,
             title: l10n.theme,
             subtitle: l10n.matchOsAppearance,
-            trailing: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 180),
-              child: CcSelect<ThemeMode>(
-                options: [
-                  CcSelectOption(
-                    value: ThemeMode.system,
-                    label: l10n.themeSystem,
-                  ),
-                  CcSelectOption(
-                    value: ThemeMode.light,
-                    label: l10n.themeLight,
-                  ),
-                  CcSelectOption(value: ThemeMode.dark, label: l10n.themeDark),
-                ],
-                value: themeMode,
-                onChanged: (v) {
-                  ref.read(themeModeProvider.notifier).setThemeMode(v);
-                },
+            trailing: const SizedBox.shrink(),
+          ),
+          // Lines up with the row's text, past its 18px icon and 12px gap.
+          Padding(
+            padding: const EdgeInsetsDirectional.only(
+              start: 30,
+              top: AppSpacing.xs,
+              bottom: AppSpacing.sm,
+            ),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: ThemeChoicePicker(
+                  theme: themeMode.choice,
+                  onChanged: (choice) => ref
+                      .read(themeModeProvider.notifier)
+                      .setThemeMode(choice.mode),
+                ),
               ),
             ),
           ),
@@ -86,7 +89,8 @@ class SettingsRow extends StatelessWidget {
   /// Row title text.
   final String title;
 
-  /// Row subtitle text.
+  /// Row subtitle text. When empty, with no [subtitleWidget], the title centers
+  /// against the icon and [trailing].
   final String subtitle;
 
   /// Optional custom style for the subtitle.
@@ -123,12 +127,14 @@ class SettingsRow extends StatelessWidget {
                     color: tokens?.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
-                subtitleWidget ??
-                    Text(
-                      subtitle,
-                      style: subtitleStyle ?? defaultSubtitleStyle,
-                    ),
+                if (subtitleWidget != null || subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  subtitleWidget ??
+                      Text(
+                        subtitle,
+                        style: subtitleStyle ?? defaultSubtitleStyle,
+                      ),
+                ],
               ],
             ),
           ),

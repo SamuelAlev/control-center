@@ -2,7 +2,7 @@
 title: Sambung ke pelayan jauh
 description: Halakan apl desktop atau klien web ke cc_server yang berjalan di tempat lain dan beralih antara pelayan tanpa memulakan semula.
 slug: ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Setiap klien ialah pemapar kepada `cc_server` yang memiliki data. Desktop boleh
@@ -14,7 +14,7 @@ pelayan yang berjalan di tempat lain — kotak kecil, VM awan, pelayan binaan.
 ## Prasyarat
 
 - `cc_server` yang sedang berjalan. Jika anda belum mempunyainya, lihat [Jalankan pelayan tanpa kepala](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala/).
-- Sama ada tiga nilai penggandingan yang ditempa oleh pelayan — **URL pelayan** (`ws://…/rpc` atau `wss://…/rpc`), **id peranti** dan **kunci penggandingan** — **atau** **kod jemputan** sekali guna daripada pentadbir ruang kerja. Menebus jemputan akan memperuntukkan pengguna anda, merekodkan keahlian anda dan menempa kelayakan klien ini untuk anda, jadi anda tidak pernah mengendalikan id peranti atau kunci. Dapatkan nilai-nilai ini melalui saluran dipercayai dan semak cap jari pelayan terhadap kod QR dipercayai atau sematan yang diketahui pada sambungan pertama.
+- Sama ada tiga nilai penggandingan yang ditempa oleh pelayan — **URL pelayan** (`ws://…/rpc` atau `wss://…/rpc`), **id peranti** dan **kunci penggandingan** — **atau** **kod jemputan** sekali guna daripada pentadbir ruang kerja, **atau** pautan jemputan atau penggandingan yang membawanya. Menebus jemputan akan memperuntukkan pengguna anda, merekodkan keahlian anda dan menempa kelayakan klien ini untuk anda, jadi anda tidak pernah mengendalikan id peranti atau kunci. Dapatkan nilai-nilai ini melalui saluran dipercayai dan semak cap jari pelayan terhadap kod QR dipercayai atau sematan yang diketahui pada sambungan pertama.
 
 ### Pastikan pelayan boleh dicapai
 
@@ -42,14 +42,16 @@ sahaja; klien loopback dan natif sentiasa dibenarkan.
 
 Pada pemasangan baharu:
 
-1. Lancarkan Control Center. Skrin larian pertama bertanya **Bagaimana Control Center patut berjalan?**
-2. Daripada **Jalankan dalam apl ini**, isikan medan sambungan: URL pelayan, serta sama ada kod jemputan atau id peranti dan kunci penggandingan.
+1. Lancarkan Control Center. Skrin larian pertama memaparkan **Selamat datang ke Control Center**.
+2. Klik **Sambung ke pelayan** dan masukkan URL pelayan, serta sama ada kod jemputan atau, di bawah **Guna kunci pasangan**, id peranti dan kunci penggandingan.
 3. Klik **Sambung**. Control Center mendail pelayan dan mendarat di peti masuk ruang kerja.
+
+Jika anda mempunyai pautan jemputan atau penggandingan, klik **Tampal pautan pasangan** sebaliknya dan tampalkannya. Dialog menunjukkan pelayan yang dituju oleh pautan itu. Semaknya, kemudian klik **Sambung**: menampal sahaja tidak pernah menyambung. Jika sambungan gagal, dialog kekal terbuka bersama ralat dan semua yang anda masukkan.
 
 Pada desktop yang sudah menjalankan pelayannya sendiri:
 
 1. Buka **Tetapan → Pelayan → Sambungan & status**.
-2. Klik **Tambah pelayan**. Masukkan URL pelayan (`wss://host:9030/rpc`) dan sama ada kod jemputan atau id peranti dan kunci penggandingan. Butang akhiran medan URL menemui instans `cc_server` pada LAN atau tailnet anda.
+2. Klik **Tambah pelayan**. Masukkan URL pelayan (`wss://host:9030/rpc`) dan sama ada kod jemputan atau, di bawah **Guna kunci pasangan**, id peranti dan kunci penggandingan. Butang akhiran medan URL menemui instans `cc_server` pada LAN atau tailnet anda.
 3. Klik **Sambung**, kemudian **Tukar** pada baris pelayan baharu itu.
 
 Peralihan berlaku secara langsung: apl dibina semula di sekeliling sesi baharu di
@@ -68,11 +70,12 @@ pada loopback dan melalui geganti.
 Binaan web sentiasa jauh.
 
 1. Buka [app.usectrl.dev](https://app.usectrl.dev), atau salinan binaan web anda sendiri.
-2. Masukkan URL pelayan serta sama ada kod jemputan atau id peranti dan kunci penggandingan.
-3. Klien mendail pelayan dan memaparkan antara muka yang sama seperti desktop.
+2. Klik **Sambung ke pelayan** dan masukkan URL pelayan, serta sama ada kod jemputan atau, di bawah **Guna kunci pasangan**, id peranti dan kunci penggandingan. **Tampal pautan pasangan** menerima pautan jemputan atau penggandingan sebagai gantinya.
+3. Klik **Sambung**. Klien mendail pelayan dan memaparkan antara muka yang sama seperti desktop.
 
-Jika URL mengandungi pautan mendalam penggandingan, medan-medan itu telah diisi
-terlebih dahulu. Kunci penggandingan menunggang dalam **serpihan** URL, yang tidak
+Jika URL mengandungi pautan mendalam penggandingan, dialog sambungan terbuka dengan
+medannya telah diisi, supaya anda boleh menyemak pelayan sebelum mengklik **Sambung**.
+Kunci penggandingan menunggang dalam **serpihan** URL, yang tidak
 dihantar oleh penyemak imbas kepada hos halaman itu. Anggap pautan itu sebagai
 rahsia dan percayai halaman yang menyajikan klien web: serpihan itu tidak
 melindungi daripada kod halaman yang berniat jahat.

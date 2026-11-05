@@ -724,13 +724,6 @@ class AppLocalizationsFa extends AppLocalizations {
       'Control Center سرور خودش را روی این ماشین اجرا می‌کند و داده‌هایتان را محلی نگه می‌دارد.';
 
   @override
-  String get serverModeRemote => 'اتصال به یک نمونهٔ راه دور';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'به یک سرور Control Center که جای دیگری اجرا می‌شود وصل شوید. داده‌هایتان روی آن سرور می‌ماند.';
-
-  @override
   String get serverRemoteUrl => 'URL سرور';
 
   @override
@@ -951,13 +944,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'دستگاه‌های دیگر مستقیم به این سرور نمی‌رسند، پس کلاینت جدید نمی‌تواند وصل شود. URL عمومی سرور را تنظیم کنید تا کلاینت‌های بیشتری جفت کنید.';
-
-  @override
-  String get serverSetupTitle => 'Control Center چطور اجرا شود؟';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center به سروری نیاز دارد که مالک داده‌هایتان باشد. یکی را داخل این برنامه اجرا کنید، یا به نمونه‌ای که جای دیگری اجرا می‌شود وصل شوید.';
 
   @override
   String get serverSetupRunLocal => 'اجرا در این برنامه';
@@ -3013,10 +2999,6 @@ class AppLocalizationsFa extends AppLocalizations {
       'هویت، پرامپت و مهارت عامل‌ها را پیکربندی کنید و اجراها را ببینید.';
 
   @override
-  String get configureDefaultRunners =>
-      'آداپتور و مدل پیش‌فرض برای فضاهای جدید و تولید عنوان را پیکربندی کنید.';
-
-  @override
   String get configuredLabel => 'پیکربندی شد.';
 
   @override
@@ -3115,12 +3097,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get deactivate => 'غیرفعال‌سازی';
-
-  @override
-  String get defaultChat => 'گفتگوی پیش‌فرض';
-
-  @override
-  String get defaultRunners => 'اجراکننده‌های پیش‌فرض';
 
   @override
   String get delete => 'حذف';
@@ -4420,6 +4396,15 @@ class AppLocalizationsFa extends AppLocalizations {
   String get notificationGroupMachines => 'ماشین‌ها';
 
   @override
+  String get notificationSectionSound => 'صدا';
+
+  @override
+  String get notificationSectionSchedule => 'زمان‌بندی';
+
+  @override
+  String get notificationSectionEvents => 'رویدادها';
+
+  @override
   String get notificationsMutedRepos => 'مخزن‌های بی‌صدا';
 
   @override
@@ -4972,9 +4957,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'زبان برنامه را انتخاب کنید.';
-
-  @override
-  String get shortTask => 'کار کوتاه';
 
   @override
   String get showNativeNotifications =>
@@ -5560,10 +5542,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'کوچک کردن به نوار';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'حالت تمرکز فعال — برای پایان ضربه بزنید';
 
   @override
   String get dismiss => 'نادیده گرفتن';
@@ -12944,25 +12922,6 @@ class AppLocalizationsFa extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'اتصال به Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'به ⁨cc-server⁩ در حال اجرا از طریق WebSocket وصل شوید. کلیدتان روی این دستگاه می‌ماند.';
-
-  @override
-  String get webConnectServerLabel => 'سرور';
-
-  @override
-  String get webConnectDeviceIdLabel => 'شناسهٔ دستگاه';
-
-  @override
-  String get webConnectPairingKeyLabel => 'کلید جفت‌سازی';
-
-  @override
-  String get webConnectPairingKeyHint => 'PSK را جای‌گذاری کنید';
-
-  @override
   String get webConnectStayConnected => 'روی این دستگاه متصل بمانید';
 
   @override
@@ -13004,11 +12963,12 @@ class AppLocalizationsFa extends AppLocalizations {
       'اختیاری — خالی بگذارید تا مدل عنوان خودش نام‌گذاری کند';
 
   @override
-  String get shortTaskOff => 'خاموش';
+  String get contentSynthesizerUnavailable =>
+      'عامل Content synthesizer وجود ندارد یا اجراکننده‌ای که کار کند ندارد';
 
   @override
-  String get shortTaskUnavailable =>
-      'برای استفاده از این، در تنظیمات ← آداپتورها یک مدل کار کوتاه انتخاب کنید';
+  String get conversationNeedsAgent =>
+      'برای شروع این گفتگو، با @ از یک عامل نام ببرید';
 
   @override
   String get conversationTitleGenerate => 'تولید';
@@ -13474,14 +13434,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'در هر راه‌اندازی به خط فرمان اجراکننده افزوده می‌شود.';
-
-  @override
-  String get defaultChatDescription =>
-      'گفتگوهای جدید و هر عاملی بدون اجراکنندهٔ خودش را اجرا می‌کند.';
-
-  @override
-  String get shortTaskDescription =>
-      'کار پس‌زمینهٔ سریع مثل عناوین و خلاصه‌ها را اجرا می‌کند. مدل کوچک‌تر اینجا جا می‌گیرد.';
 
   @override
   String get settingsStateFailed => 'ناموفق';
@@ -14223,6 +14175,16 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'پیوست فایل — یا اینجا رها کنید';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'بزرگ‌کردن ویرایشگر ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'کوچک‌کردن ویرایشگر ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'تیز کردن هدف';
@@ -15380,6 +15342,11 @@ class AppLocalizationsFa extends AppLocalizations {
       'عاملی به‌خاطر اعتبارنامه متوقف شده است';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'هنوز در انتظار: $title';
+  }
+
+  @override
   String get killTerminal => 'بستن ترمینال';
 
   @override
@@ -15838,4 +15805,79 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'اجرا متوقف شد چون اعتبارنامهٔ ارائه‌دهنده دیگر کار نمی‌کند. آن را در تنظیمات ← ارائه‌دهندگان دوباره وصل کنید و سپس این نوبت را دوباره امتحان کنید.';
+
+  @override
+  String get helpMenuLabel => 'راهنما';
+
+  @override
+  String get helpWhatsNew => 'تازه‌ها';
+
+  @override
+  String get helpReportProblem => 'گزارش مشکل';
+
+  @override
+  String get helpCreateGitHubIssue => 'ایجاد issue در GitHub';
+
+  @override
+  String get changelogInstalled => 'نصب‌شده';
+
+  @override
+  String get changelogGroupNew => 'جدید';
+
+  @override
+  String get changelogGroupImproved => 'بهبودها';
+
+  @override
+  String get changelogGroupFixed => 'رفع اشکال‌ها';
+
+  @override
+  String get changelogLoadFailed => 'یادداشت‌های انتشار بارگیری نشد.';
+
+  @override
+  String get changelogOpenWebsite => 'باز کردن در وب‌سایت';
+
+  @override
+  String get connectWelcomeTitle => 'به Control Center خوش آمدید';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'آن را همین‌جا اجرا کنید یا به سروری که دارید متصل شوید.';
+
+  @override
+  String get connectWelcomeSubtitleWeb => 'برای شروع به سرور خود متصل شوید.';
+
+  @override
+  String get connectToServer => 'اتصال به یک سرور';
+
+  @override
+  String get connectToServerIntro =>
+      'نشانی یک سرور Control Center را وارد کنید.';
+
+  @override
+  String get connectUsePairingKey => 'استفاده از کلید جفت‌سازی';
+
+  @override
+  String get connectPasteLink => 'چسباندن پیوند جفت‌سازی';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'پیوند دعوت یا جفت‌سازی‌ای را که دریافت کرده‌اید بچسبانید.';
+
+  @override
+  String get connectPasteLinkLabel => 'پیوند دعوت یا جفت‌سازی';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'این پیوند دعوت یا جفت‌سازی Control Center نیست. کل پیوند را کپی کنید و دوباره تلاش کنید.';
+
+  @override
+  String get connectPasteLinkTarget => 'متصل می‌شود به';
+
+  @override
+  String get focusModeEnd => 'پایان جلسه تمرکز';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return '$minutes دقیقه مانده';
+  }
 }

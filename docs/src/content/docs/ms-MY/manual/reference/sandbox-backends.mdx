@@ -2,7 +2,7 @@
 title: Bahagian belakang kotak pasir
 description: Bahagian belakang kotak pasir, tempat ia digunakan dan setiap objek nilai yang digunakan oleh masa jalan kotak pasir.
 slug: ms-MY/manual-pengguna/rujukan/bahagian-belakang-kotak-pasir
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Sama ada sesuatu larian dikotak pasirkan bergantung pada hos]
@@ -52,8 +52,8 @@ Profil yang dijana **permisif secara lalai** (`(allow default)`) dan mengukir pe
 
 - **Bacaan sistem fail**: ditolak untuk laluan rahsia (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` dan seluruh set tolak-baca yang lain)
 - **Tulisan sistem fail**: ditetapkan semula kepada tolak, kemudian benarkan sub-laluan yang eksplisit, dengan laluan wajib-tolak (fail rc shell, `.git/hooks`, konfigurasi Claude, checkout yang dilindungi) disekat walaupun di dalam akar yang boleh ditulis. `file-write-unlink` ditolak pada setiap laluan yang ditolak dan nenek moyangnya, jadi penamaan semula tidak dapat memintas penolakan tulis
-- **Proses**: penolakan `process-exec` untuk binari yang sentiasa berbahaya, serta sekatan ke atas pelaksanaan apa-apa daripada direktori yang boleh ditulis
-- **Rangkaian**: terhad kepada port proksi dalam proses serta DNS — loopback tidak dibenarkan secara menyeluruh dan soket Unix tidak dibenarkan. Proksi menguatkuasakan senarai benarkan domain bagi setiap sesi (lihat [Keluar rangkaian](#keluar-rangkaian))
+- **Proses**: penolakan `process-exec` untuk binari yang sentiasa berbahaya, serta sekatan ke atas pelaksanaan apa-apa daripada direktori yang boleh ditulis. Direktori pemasangan toolchain yang diketahui di bawah home anda (corepack, cache `npx` dan `pnpm dlx`, pengurus versi node, pelayar Playwright, rustup dan cargo, Go, fvm dan pub cache, pyenv, uv dan pipx, rbenv, sdkman, mise, asdf dan `~/.local/bin`) dibuka semula di bawah sekatan tersebut. Direktori temp kongsi turut disekat. Sebaliknya, setiap sesi diberi `TMPDIR` persendirian di bawah `/private/tmp`, tempat program yang dibinanya (binari `go test`, binaan cargo) boleh dijalankan. Penolakan yang sentiasa berbahaya dikenakan selepas kebenaran ini
+- **Rangkaian**: terhad kepada port proksi dalam proses serta DNS — loopback tidak dibenarkan secara menyeluruh dan pendengaran TCP ditolak. Soket Unix dibenarkan hanya di dalam `TMPDIR` persendirian sesi, yang meliputi alat seperti tsx dan Chrome yang menyimpan soket IPC di situ; ejen SSH anda dan soket lain kekal tidak boleh dicapai. Proksi menguatkuasakan senarai benarkan domain bagi setiap sesi (lihat [Keluar rangkaian](#keluar-rangkaian)) menguatkuasakan senarai benarkan domain bagi setiap sesi (lihat [Keluar rangkaian](#keluar-rangkaian))
 - **Konfigurasi**: profil dijana bagi setiap pelancaran daripada `SandboxSpec`
 
 Keperluan:

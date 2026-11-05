@@ -794,6 +794,9 @@ class _TestNotificationPort implements NotificationPort {
   void show(AppNotification notification) {}
 
   @override
+  void withdraw(NotificationWait wait) {}
+
+  @override
   void dispose() {}
 }
 

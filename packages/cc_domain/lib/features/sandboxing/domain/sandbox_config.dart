@@ -10,6 +10,7 @@ class SandboxConfig {
     this.denyExecutables = const [],
     this.allowedExecutables = const [],
     this.allowedExecRoots = const [],
+    this.toolchainExecRoots = const [],
     this.allowAllUnixSockets = false,
     this.parentProxy,
     this.skipMandatoryHomeRcDenies = false,
@@ -42,6 +43,12 @@ class SandboxConfig {
   /// was asked about. Distinct from [allowedExecutables], which are individual
   /// binaries pinned by exact path.
   final List<String> allowedExecRoots;
+
+  /// Absolute, symlink-resolved toolchain install trees under `$HOME` (see
+  /// `SandboxPolicyResolver.homeToolchainExecRels`) that may exec. Unlike
+  /// [allowedExecRoots] they are emitted BEFORE the always-dangerous denies,
+  /// so a toolchain tree can never re-open `rm` or `sudo`.
+  final List<String> toolchainExecRoots;
 
   /// Whether to allow all Unix socket connections.
   final bool allowAllUnixSockets;

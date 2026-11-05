@@ -2,7 +2,7 @@
 title: Instalar
 description: Utilize o Control Center no navegador ou instale a aplicação de ambiente de trabalho, configure um backend de agentes e escolha onde é executado o servidor.
 slug: pt-PT/manual/instalar
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 O Control Center funciona de duas formas: como **aplicação web** em
@@ -216,18 +216,23 @@ a base de dados e faz todo o trabalho;
 essa separação significa para a aplicação de ambiente de trabalho, a web e o
 telemóvel.
 
-No primeiro arranque, a aplicação de ambiente de trabalho pergunta **Como o Control
-Center deve ser executado?**:
+No primeiro arranque, a aplicação de ambiente de trabalho mostra
+**Boas-vindas ao Control Center** e oferece três formas de começar. O botão de definições
+no canto muda o idioma e o tema.
 
 - **Executar nesta aplicação**: a aplicação de ambiente de trabalho lança e
   supervisiona um `cc_server` nesta máquina e comunica com ele por loopback. Nada
   mais para configurar. Esta é a configuração que o
   [Início rápido](/pt-PT/manual/inicio-rapido/) pressupõe.
-- **Ligar a uma instância remota**: aponte a aplicação de ambiente de trabalho a um
-  `cc_server` executado noutro sítio, com o seu URL de WebSocket, um id de
-  dispositivo e uma chave de emparelhamento ou um código de convite de utilização
-  única. Esse servidor detém os dados; esta aplicação de ambiente de trabalho
-  apenas os apresenta.
+- **Ligar a um servidor**: aponte a aplicação de ambiente de trabalho a um
+  `cc_server` executado noutro sítio, com o seu URL de WebSocket, e depois autentique-se
+  por início de sessão único, se o servidor o oferecer, ou introduza um código de
+  convite de utilização única, ou um id de dispositivo e uma chave de emparelhamento
+  em **Usar uma chave de emparelhamento**. Esse servidor detém os dados; esta aplicação de
+  ambiente de trabalho apenas os apresenta.
+- **Colar um link de emparelhamento**: cole um link de convite ou de emparelhamento. A
+  caixa de diálogo mostra a que servidor o link conduz e só liga quando clica em
+  **Ligar**.
 
 Adicione ou alterne de servidor mais tarde em
 **Definições → Servidor → Ligação e status**. A alternância volta a ligar no próprio

@@ -1,10 +1,11 @@
-import 'dart:convert';
-
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/core/server/pairing_link.dart';
+import 'package:control_center/core/server/sso_pair_link.dart'
+    show httpOriginFor;
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/qr_code_view.dart';
 import 'package:flutter/services.dart';
@@ -104,29 +105,26 @@ class _ServerPairingPanelState extends ConsumerState<ServerPairingPanel> {
     }
   }
 
-  /// Builds a one-tap deep link for pairing another first-party THIN CLIENT (web
-  /// browser / desktop) that dials the server directly: this app's origin + a
-  /// base64url-JSON fragment ({s: serverUrl, i: deviceId, k: psk}) the connect
-  /// gate reads (the PSK rides in the fragment, never the query). Returns '' off
-  /// the web (the executable has no http origin) — desktop-client pairing is a
-  /// copy-the-fields flow there, not a link.
+  /// Builds a link for pairing another first-party THIN CLIENT (web browser /
+  /// desktop) that dials the server directly: an origin + a base64url-JSON
+  /// fragment the connect screens read (the PSK rides in the fragment, never
+  /// the query). A browser opens it; the desktop pastes it. Off the web the
+  /// executable has no http origin, so the link names the server's own.
+  /// Returns '' when no origin is known.
   String _directClientLink(PairingMint mint) {
     final base = Uri.base;
-    if (base.scheme != 'http' && base.scheme != 'https') {
+    final origin = base.isScheme('http') || base.isScheme('https')
+        ? base.origin
+        : httpOriginFor(mint.serverUrl);
+    if (origin == null) {
       return '';
     }
-    final payload = base64Url
-        .encode(
-          utf8.encode(
-            jsonEncode({
-              's': mint.serverUrl,
-              'i': mint.deviceId,
-              'k': mint.psk,
-            }),
-          ),
-        )
-        .replaceAll('=', '');
-    return '${base.origin}/#$payload';
+    return buildPairingLink(
+      origin: origin,
+      server: mint.serverUrl,
+      deviceId: mint.deviceId,
+      psk: mint.psk,
+    );
   }
 
   /// Builds the PHONE pairing deep link: the cc_remote PWA host + a v2
@@ -312,10 +310,7 @@ class _MintedCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 color: const Color(0xFFFFFFFF),
-                child: QrCodeView(
-                  data: relay,
-                  size: 200,
-                ),
+                child: QrCodeView(data: relay, size: 200),
               ),
             ),
             const SizedBox(height: AppSpacing.md),

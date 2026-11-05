@@ -2,7 +2,7 @@
 title: Pasangkan perangkat
 description: Pasangkan ponsel Anda (atau peramban atau desktop kedua) dengan server Control Center Anda agar Anda dapat mengikuti fleet dari jarak jauh.
 slug: id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Panduan ini menunjukkan cara memasangkan ponsel dengan Control Center, sehingga
@@ -41,11 +41,11 @@ saya"), pilih jenisnya — **Peramban web**, **Aplikasi desktop**, atau
 **Ponsel** — lalu klik **Pasangkan**.
 
 - Untuk **ponsel**, kode QR akan muncul. Pindai dengan kamera ponsel, atau salin tautannya dan buka di peramban mana pun. Tautan ini mengarahkan aplikasi Remote ke server Anda dan membawa kredensialnya.
-- Untuk **peramban** atau **desktop**, salin tautan yang ditampilkan (atau id perangkat dan kunci pemasangan) ke klien baru. Tautan sekali ketuk hanya ditawarkan saat Anda memasangkan dari klien web, karena biner desktop tidak memiliki origin web untuk membangunnya.
+- Untuk **peramban** atau **desktop**, salin tautan yang ditampilkan (atau id perangkat dan kunci pemasangan) ke klien baru. Buka tautan itu di peramban, atau tempelkan ke **Tempel tautan pairing** di aplikasi desktop. Jika dipasangkan dari desktop, tautan dibuat dari URL server itu sendiri, sehingga hanya muncul jika server memiliki URL yang dapat dijangkau perangkat lain.
 
 QR ponsel dan tautan yang dicetak `cc_server pair --client-url` di CLI adalah
 **muatan yang berbeda dan tidak dapat dipertukarkan**: tautan CLI mengisi
-formulir koneksi klien web, sedangkan QR ini membawa deskriptor koneksi lengkap
+dialog koneksi klien web atau ditempelkan ke aplikasi desktop, sedangkan QR ini membawa deskriptor koneksi lengkap
 server dan sidik jari identitas untuk PWA Remote.
 
 Di sisi ponsel, membuka tautan pemasangan tidak memasangkan secara diam-diam.

@@ -1,8 +1,5 @@
 import 'package:control_center/core/providers/storage_providers.dart';
 
-const _defaultChatAdapterIdKey = 'default_chat_adapter_id';
-const _defaultChatModelIdKey = 'default_chat_model_id';
-
 /// Default per-adapter "YOLO" / skip-permissions argv (non-secret).
 ///
 /// These are EXTRA flags appended after the resolved binary — store the flag
@@ -17,32 +14,13 @@ const Map<String, String> defaultAdapterArgs = {
 
 const _adapterArgsPrefix = 'adapter_args_';
 
-/// Read/write access to default adapter + model preferences stored in
+/// Read/write access to per-adapter launch preferences stored in
 /// `SharedPreferences`.
 class AdapterPreferences {
   /// Creates an `AdapterPreferences` backed by `prefs`.
   const AdapterPreferences(this._prefs);
 
   final AppPreferences _prefs;
-
-  // -- Default Chat --
-
-  /// Returns the persisted default chat adapter id, or `null`.
-  String? getDefaultChatAdapterId() =>
-      _prefs.getString(_defaultChatAdapterIdKey);
-
-  /// Persists the default chat adapter id. Pass `null` to clear.
-  Future<bool> setDefaultChatAdapterId(String? value) => value == null
-      ? _prefs.remove(_defaultChatAdapterIdKey)
-      : _prefs.setString(_defaultChatAdapterIdKey, value);
-
-  /// Returns the persisted default chat model id, or `null`.
-  String? getDefaultChatModelId() => _prefs.getString(_defaultChatModelIdKey);
-
-  /// Persists the default chat model id. Pass `null` to clear.
-  Future<bool> setDefaultChatModelId(String? value) => value == null
-      ? _prefs.remove(_defaultChatModelIdKey)
-      : _prefs.setString(_defaultChatModelIdKey, value);
 
   // -- Per-adapter args (non-secret) --
 

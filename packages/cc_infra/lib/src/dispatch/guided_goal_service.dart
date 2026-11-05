@@ -1,9 +1,7 @@
-import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
-import 'package:cc_domain/features/settings/domain/services/short_task_runner.dart'
-    show kShortTaskAdapterSettingKey, kShortTaskModelSettingKey;
 import 'package:cc_harness/loop.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/messaging/content_synthesizer_resolver.dart';
 
 /// One step of the objective interview.
 class GuidedGoalStep {
@@ -28,7 +26,7 @@ class GuidedGoalStep {
   /// Anti-patterns found in what it does say.
   final List<String> weaknesses;
 
-  /// Whether no one-shot runner is configured for this workspace.
+  /// Whether the workspace has no content synthesizer to interview with.
   final bool unavailable;
 
   /// Whether the interview is finished.
@@ -45,13 +43,13 @@ class GuidedGoalService {
   /// Creates a [GuidedGoalService].
   GuidedGoalService({
     required this._runner,
-    required this._settings,
+    required this._synthesizer,
     this.maxTurns = 6,
     this._timeout = const Duration(minutes: 2),
   });
 
   final AdapterOneShotRunner _runner;
-  final WorkspaceSettingsRepository _settings;
+  final ContentSynthesizerResolver _synthesizer;
   final Duration _timeout;
 
   /// Cap on interview turns.
@@ -67,24 +65,17 @@ class GuidedGoalService {
     required String roughObjective,
     List<String> transcript = const [],
   }) async {
-    final adapterId = (await _settings.get(
-      workspaceId,
-      kShortTaskAdapterSettingKey,
-    ))?.trim();
-    if (adapterId == null || adapterId.isEmpty) {
+    final synthesizer = await _synthesizer.forWorkspace(workspaceId);
+    if (synthesizer == null) {
       return const GuidedGoalStep(unavailable: true);
     }
-    final modelId = (await _settings.get(
-      workspaceId,
-      kShortTaskModelSettingKey,
-    ))?.trim();
 
     final String? answer;
     try {
       answer = await _runner.complete(
-        adapterId: adapterId,
-        modelId: modelId,
-        systemPrompt: guidedGoalSystemPrompt,
+        adapterId: synthesizer.adapterId,
+        modelId: synthesizer.modelId,
+        systemPrompt: synthesizer.systemPromptFor(guidedGoalSystemPrompt),
         prompt: guidedGoalTurnPrompt(
           roughObjective: roughObjective,
           transcript: transcript,

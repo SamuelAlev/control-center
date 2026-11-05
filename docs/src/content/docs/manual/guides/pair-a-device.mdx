@@ -37,11 +37,11 @@ phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — an
 click **Pair**.
 
 - For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
-- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. Open the link in a browser, or paste it into **Paste a pairing link** in the desktop app. Paired from the desktop, the link is built from the server's own URL, so it appears only when the server has one other devices can reach.
 
 The phone QR and the link `cc_server pair --client-url` prints on the CLI are
 **different payloads and are not interchangeable**: the CLI link fills in the web
-client's connect form, while this QR carries the server's full connection
+client's connect dialog or pastes into the desktop app, while this QR carries the server's full connection
 descriptor and identity fingerprint for the Remote PWA.
 
 On the phone side, opening a pairing link does not pair silently. Remote shows

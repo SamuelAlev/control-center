@@ -2,7 +2,7 @@
 title: Sparuj urządzenie
 description: Sparuj telefon (albo drugą przeglądarkę lub komputer) z serwerem Control Center, aby śledzić flotę zdalnie.
 slug: pl-PL/podrecznik/poradniki/parowanie-urzadzenia
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Ten poradnik pokazuje, jak sparować telefon z Control Center, aby czytać
@@ -41,11 +41,11 @@ telefon”), wybierz typ — **Przeglądarka internetowa**, **Aplikacja desktopo
 lub **Telefon** — i kliknij **Sparuj**.
 
 - W przypadku **telefonu** pojawia się kod QR. Zeskanuj go aparatem telefonu albo skopiuj link i otwórz go w dowolnej przeglądarce. Wskazuje on aplikacji Remote Twój serwer i zawiera poświadczenie.
-- W przypadku **przeglądarki** lub **komputera** skopiuj zamiast tego pokazany link (albo identyfikator urządzenia i klucz parowania) do nowego klienta. Link jednoklikowy jest oferowany tylko wtedy, gdy parujesz z klienta webowego, ponieważ binarka desktopowa nie ma origin webowego, z którego można go zbudować.
+- W przypadku **przeglądarki** lub **komputera** skopiuj zamiast tego pokazany link (albo identyfikator urządzenia i klucz parowania) do nowego klienta. Otwórz link w przeglądarce albo wklej go w **Wklej link parowania** w aplikacji desktopowej. Przy parowaniu z aplikacji desktopowej link powstaje z własnego adresu URL serwera, więc pojawia się tylko wtedy, gdy serwer ma adres osiągalny dla innych urządzeń.
 
 Kod QR telefonu i link, który wypisuje `cc_server pair --client-url` w CLI, to
-**różne ładunki i nie są wymienne**: link z CLI wypełnia formularz połączenia
-klienta webowego, a ten kod QR przenosi pełny deskryptor połączenia serwera
+**różne ładunki i nie są wymienne**: link z CLI wypełnia okno dialogowe połączenia
+klienta webowego lub można go wkleić w aplikacji desktopowej, a ten kod QR przenosi pełny deskryptor połączenia serwera
 i odcisk tożsamości dla PWA Remote.
 
 Po stronie telefonu otwarcie linku parowania nie paruje po cichu. Remote pokazuje

@@ -2,7 +2,7 @@
 title: Eszköz párosítása
 description: Párosítsa a telefonját (vagy egy második böngészőt vagy asztali alkalmazást) a Control Center szerverével, hogy távolról is követhesse a flottát.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Ez az útmutató megmutatja, hogyan párosíthat egy telefont a Control Centerrel,
@@ -42,11 +42,12 @@ címkét (például „A telefonom"), válassza ki a típust — **Webböngész�
 alkalmazás** vagy **Telefon** —, majd kattintson a **Párosítás** elemre.
 
 - **Telefon** esetén megjelenik egy QR-kód. Olvassa be a telefon kamerájával, vagy másolja ki a hivatkozást, és nyissa meg bármelyik böngészőben. Ez a Remote alkalmazást az Ön szerverére irányítja, és magával viszi a hitelesítő adatot.
-- **Böngésző** vagy **asztali alkalmazás** esetén inkább másolja be az új kliensbe a megjelenített hivatkozást (vagy az eszköz-ID-t és a párosítási kulcsot). Az egyszer kattintással használható hivatkozást csak akkor kínálja fel, ha webes kliensből párosít, mivel az asztali binárisnak nincs webes originje, amelyből ilyet építhetne.
+- **Böngésző** vagy **asztali alkalmazás** esetén inkább másolja be az új kliensbe a megjelenített hivatkozást (vagy az eszköz-ID-t és a párosítási kulcsot). Nyissa meg a hivatkozást böngészőben, vagy illessze be az asztali alkalmazásban a **Párosítási hivatkozás beillesztése** alatt. Asztali alkalmazásból párosítva a hivatkozás a szerver saját URL-jéből készül, ezért csak akkor jelenik meg, ha a szervernek van más eszközök által is elérhető URL-je.
 
 A telefonos QR-kód és a `cc_server pair --client-url` paranccsal a parancssorban
 kiírt hivatkozás **különböző hasznos terhet hordoznak, és nem felcserélhetők**: a
-parancssori hivatkozás a webes kliens csatlakozási űrlapját tölti ki, míg ez a
+parancssori hivatkozás a webes kliens csatlakozási párbeszédablakát tölti ki, vagy
+az asztali alkalmazásba illeszthető be, míg ez a
 QR-kód a szerver teljes kapcsolatleíróját és identitás-ujjlenyomatát hozza a
 Remote PWA számára.
 

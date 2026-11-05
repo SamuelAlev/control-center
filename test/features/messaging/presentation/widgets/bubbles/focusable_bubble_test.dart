@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/focusable_bubble.dart';
+import 'package:control_center/features/messaging/providers/space_reactions_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
@@ -48,6 +49,16 @@ double _railOpacity(WidgetTester tester, {Finder? of}) {
     matching: find.byType(FadeTransition),
   );
   return tester.widget<FadeTransition>(fade.first).opacity.value;
+}
+
+/// The background painted behind a rail action's glyph.
+Color? _washOf(WidgetTester tester, IconData icon) {
+  final box = find.ancestor(
+    of: find.byIcon(icon),
+    matching: find.byType(AnimatedContainer),
+  );
+  final decoration = tester.widget<AnimatedContainer>(box.first).decoration;
+  return (decoration! as BoxDecoration).color;
 }
 
 void main() {
@@ -417,6 +428,68 @@ void main() {
         tester.getRect(find.byIcon(AppIcons.copy)).top,
         tester.getRect(find.byIcon(AppIcons.trash2)).top,
       );
+    });
+
+    testWidgets('every action shows the same wash and glyph on hover', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          FocusableBubble(
+            messageId: 'm-1',
+            spaceId: 'ch-1',
+            copyText: 'hello',
+            canRevert: true,
+            onEdit: () {},
+            onDelete: () {},
+            onStartThread: () {},
+            child: const SizedBox(key: _bubbleKey, width: 200, height: 28),
+          ),
+        ),
+      );
+
+      final gesture = await _hover(tester, find.byKey(_bubbleKey));
+      final tokens = CcThemeData.light().tokens;
+
+      for (final icon in [
+        AppIcons.copy,
+        AppIcons.link,
+        AppIcons.gitBranch,
+        AppIcons.smile,
+        AppIcons.rotateCcw,
+        AppIcons.pencil,
+        AppIcons.trash2,
+      ]) {
+        await gesture.moveTo(tester.getCenter(find.byIcon(icon)));
+        await tester.pumpAndSettle();
+
+        expect(_washOf(tester, icon), tokens.hover, reason: '$icon wash');
+        expect(
+          tester.widget<Icon>(find.byIcon(icon)).color,
+          tokens.fg,
+          reason: '$icon glyph',
+        );
+      }
+    });
+
+    testWidgets('the reaction button opens the emoji palette', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const FocusableBubble(
+            messageId: 'm-1',
+            spaceId: 'ch-1',
+            child: SizedBox(key: _bubbleKey, width: 200, height: 28),
+          ),
+        ),
+      );
+
+      await _hover(tester, find.byKey(_bubbleKey));
+      expect(find.text(kReactionPalette.first), findsNothing);
+
+      await tester.tap(find.byIcon(AppIcons.smile));
+      await tester.pumpAndSettle();
+
+      expect(find.text(kReactionPalette.first), findsOneWidget);
     });
   });
 }

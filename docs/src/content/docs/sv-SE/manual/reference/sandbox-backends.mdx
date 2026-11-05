@@ -2,7 +2,7 @@
 title: Sandlådebackends
 description: Sandlådebackendarna, var de tillämpas och varje värdeobjekt som sandlådans körtid använder.
 slug: sv-SE/handbok/referens/sandladebackends
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Om en körning är sandlådad beror på värden]
@@ -60,8 +60,8 @@ Den genererade profilen är **tillåtande som standard** (`(allow default)`) och
 
 - **Filsystemsläsningar**: nekade för de hemliga sökvägarna (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` och resten av läsmängden som nekas)
 - **Filsystemsskrivningar**: återställs till neka, därefter uttryckliga tillåtanden för undersökvägar, med de obligatoriska neka-sökvägarna (skalets rc-filer, `.git/hooks`, Claude-konfiguration, skyddade utcheckningar) blockerade även inuti en skrivbar rot. `file-write-unlink` nekas på varje nekad sökväg och dess förfäder, så en namnändring kan inte kringgå ett skrivnekande
-- **Process**: `process-exec`-nekanden för de alltid farliga binärerna, plus ett block mot att köra något från en skrivbar katalog
-- **Nätverk**: begränsat till proxyportarna i processen plus DNS — loopback är inte generellt tillåtet och Unix-socketar är inte tillåtna. Proxyservrarna framtvingar sessionens domän-allowlist (se [Utgående nätverkstrafik](#utgående-nätverkstrafik))
+- **Process**: `process-exec`-nekanden för de alltid farliga binärerna, plus ett block mot att köra något från en skrivbar katalog. Kända verktygsinstallationer under ditt hem (corepack, npx- och `pnpm dlx`-cacher, nodeversionshanterare, Playwright-webbläsare, rustup och cargo, Go, fvm och pub-cachen, pyenv, uv och pipx, rbenv, sdkman, mise, asdf och `~/.local/bin`) öppnas åter under blocket. De delade temporära katalogerna blockeras också. Varje session får i stället en privat `TMPDIR` under `/private/tmp`, där program den bygger (en `go test`-binär, en cargo-byggnad) kan köras. `process-exec`-nekandena för de alltid farliga binärerna tillämpas efter dessa tillåtelser
+- **Nätverk**: begränsat till proxyportarna i processen plus DNS — loopback är inte generellt tillåtet och TCP-lyssning nekas. Unix-socketar tillåts bara inom sessionens privata `TMPDIR`, vilket täcker verktyg som tsx och Chrome som håller en IPC-socket där; din SSH-agent och andra socketar förblir onåbara. Proxyservrarna framtvingar sessionens domän-allowlist (se [Utgående nätverkstrafik](#utgående-nätverkstrafik))
 - **Konfiguration**: profiler genereras per start utifrån `SandboxSpec`
 
 Krav:

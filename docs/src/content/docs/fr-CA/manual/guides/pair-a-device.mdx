@@ -2,7 +2,7 @@
 title: Associer un appareil
 description: Associez votre téléphone (ou un second navigateur ou poste de bureau) à votre serveur Control Center pour suivre la flotte à distance.
 slug: fr-CA/manuel/guides/associer-appareil
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Ce guide vous montre comment associer un téléphone à Control Center, de manière
@@ -44,12 +44,12 @@ donnez-lui un libellé (p. ex. « Mon téléphone »), choisissez le type —
 **Associer**.
 
 - Pour un **téléphone**, un code QR apparaît. Scannez-le avec l’appareil photo du téléphone, ou copiez le lien et ouvrez-le dans n’importe quel navigateur. Il pointe l’application Remote vers votre serveur et transporte le justificatif.
-- Pour un **navigateur** ou un **poste de bureau**, copiez plutôt le lien affiché (ou l’identifiant d’appareil et la clé d’appairage) dans le nouveau client. Le lien en un clic n’est proposé que lorsque vous associez à partir du client web, car un binaire de bureau n’a aucune origine web à partir de laquelle le construire.
+- Pour un **navigateur** ou un **poste de bureau**, copiez plutôt le lien affiché (ou l’identifiant d’appareil et la clé d’appairage) dans le nouveau client. Ouvrez le lien dans un navigateur, ou collez-le dans **Coller un lien d’appairage** dans l’application de bureau. Si vous associez à partir du bureau, le lien est construit à partir de l’URL du serveur lui-même, de sorte qu’il n’apparaît que si le serveur en a une que les autres appareils peuvent joindre.
 
 Le code QR du téléphone et le lien qu’imprime `cc_server pair --client-url` sur
 la ligne de commande sont **des charges utiles différentes et ne sont pas
-interchangeables** : le lien de la CLI remplit le formulaire de connexion du
-client web, tandis que ce code QR transporte le descripteur de connexion complet
+interchangeables** : le lien de la CLI remplit la boîte de dialogue de connexion du
+client web ou se colle dans l’application de bureau, tandis que ce code QR transporte le descripteur de connexion complet
 du serveur et l’empreinte d’identité pour la PWA Remote.
 
 Du côté du téléphone, l’ouverture d’un lien d’appairage n’associe rien en

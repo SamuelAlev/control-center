@@ -725,13 +725,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Control Center runs its own server on this machine and owns your data locally.';
 
   @override
-  String get serverModeRemote => 'Connect to a remote instance';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Connect to a Control Center server running elsewhere. Your data lives on that server.';
-
-  @override
   String get serverRemoteUrl => 'Server URL';
 
   @override
@@ -953,13 +946,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Other devices can\'t reach this server directly, so a new client can\'t connect. Set the server\'s public URL to pair more clients.';
-
-  @override
-  String get serverSetupTitle => 'How should Control Center run?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center needs a server that owns your data. Run one inside this app, or connect to an instance running elsewhere.';
 
   @override
   String get serverSetupRunLocal => 'Run in this app';
@@ -3018,10 +3004,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Configure agent identities, prompts, skills and view runs.';
 
   @override
-  String get configureDefaultRunners =>
-      'Configure which adapter and model are used for new spaces and title generation.';
-
-  @override
   String get configuredLabel => 'Configured.';
 
   @override
@@ -3120,12 +3102,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deactivate => 'Deactivate';
-
-  @override
-  String get defaultChat => 'Default chat';
-
-  @override
-  String get defaultRunners => 'Default runners';
 
   @override
   String get delete => 'Delete';
@@ -4427,6 +4403,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationGroupMachines => 'Machines';
 
   @override
+  String get notificationSectionSound => 'Sound';
+
+  @override
+  String get notificationSectionSchedule => 'Schedule';
+
+  @override
+  String get notificationSectionEvents => 'Events';
+
+  @override
   String get notificationsMutedRepos => 'Muted repositories';
 
   @override
@@ -4978,9 +4963,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'Choose the app language.';
-
-  @override
-  String get shortTask => 'Short task';
 
   @override
   String get showNativeNotifications => 'Show system notifications for events.';
@@ -5566,9 +5548,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Minimize to bar';
-
-  @override
-  String get focusModeActiveTooltip => 'Focus mode active — tap to end';
 
   @override
   String get dismiss => 'Dismiss';
@@ -12956,25 +12935,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Connect to Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'Dial a running cc-server over WebSocket. Your key stays on this device.';
-
-  @override
-  String get webConnectServerLabel => 'Server';
-
-  @override
-  String get webConnectDeviceIdLabel => 'Device id';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Pairing key';
-
-  @override
-  String get webConnectPairingKeyHint => 'paste the PSK';
-
-  @override
   String get webConnectStayConnected => 'Stay connected on this device';
 
   @override
@@ -13016,11 +12976,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Optional — leave empty and the title model names it automatically';
 
   @override
-  String get shortTaskOff => 'Off';
+  String get contentSynthesizerUnavailable =>
+      'The Content synthesizer agent is missing or has no working runner';
 
   @override
-  String get shortTaskUnavailable =>
-      'Pick a short-task model in Settings → Adapters to use this';
+  String get conversationNeedsAgent =>
+      'Mention an agent with @ to start this conversation';
 
   @override
   String get conversationTitleGenerate => 'Generate';
@@ -13485,14 +13446,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Appended to the runner\'s command line on every launch.';
-
-  @override
-  String get defaultChatDescription =>
-      'Runs new conversations and any agent with no runner of its own.';
-
-  @override
-  String get shortTaskDescription =>
-      'Runs quick background work such as titles and summaries. A smaller model belongs here.';
 
   @override
   String get settingsStateFailed => 'Failed';
@@ -14235,6 +14188,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Attach files — or drop them here';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Expand editor ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Collapse editor ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'Sharpen the objective';
@@ -15392,6 +15355,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'An agent is blocked on a credential';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Still waiting: $title';
+  }
+
+  @override
   String get killTerminal => 'Kill terminal';
 
   @override
@@ -15848,6 +15816,82 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.';
+
+  @override
+  String get helpMenuLabel => 'Help';
+
+  @override
+  String get helpWhatsNew => 'What\'s new';
+
+  @override
+  String get helpReportProblem => 'Report a problem';
+
+  @override
+  String get helpCreateGitHubIssue => 'Create a GitHub issue';
+
+  @override
+  String get changelogInstalled => 'Installed';
+
+  @override
+  String get changelogGroupNew => 'New';
+
+  @override
+  String get changelogGroupImproved => 'Improved';
+
+  @override
+  String get changelogGroupFixed => 'Fixed';
+
+  @override
+  String get changelogLoadFailed => 'Couldn\'t load the release notes.';
+
+  @override
+  String get changelogOpenWebsite => 'Open on the website';
+
+  @override
+  String get connectWelcomeTitle => 'Welcome to Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Run it here, or connect to a server you already have.';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'Connect to your server to get started.';
+
+  @override
+  String get connectToServer => 'Connect to a server';
+
+  @override
+  String get connectToServerIntro =>
+      'Enter the address of a Control Center server.';
+
+  @override
+  String get connectUsePairingKey => 'Use a pairing key';
+
+  @override
+  String get connectPasteLink => 'Paste a pairing link';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Paste the invite or pairing link you were given.';
+
+  @override
+  String get connectPasteLinkLabel => 'Invite or pairing link';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'That isn\'t a Control Center invite or pairing link. Copy the whole link and try again.';
+
+  @override
+  String get connectPasteLinkTarget => 'Connects to';
+
+  @override
+  String get focusModeEnd => 'End focus session';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return '${minutes}m left';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

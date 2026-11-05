@@ -2,7 +2,7 @@
 title: Nastavte oznámení
 description: Zapni nebo vypni kategorie, nastav tiché hodiny a zvuk a zjisti, která oznámení k tobě dorazí a kam.
 slug: cs-CZ/prirucka/navody/oznameni
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Tenhle návod ukazuje, jak nastavit oznámení a co které nastavení opravdu
@@ -49,11 +49,26 @@ Telefonní klient nemá plochu oznámení vůbec.
 Co v tomhle seznamu není, oznámit ani filtrovat nejde. Kategorie „všechno
 ostatní“ neexistuje.
 
-**Agent na vás čeká** se spustí jednou za každé čekání, hned když začne:
+**Agent na vás čeká** se spustí, jakmile začne čekání:
 čekající schválení (včetně povolení ke spuštění příkazů v sandboxu a schválení
 nástrojů Claude Code), otázka `ask_user`, nebo běh pozastavený proto, že ho jeho
 přihlašovací údaje nedokážou obsloužit. Otevře prostor, kde odpovíš, a mlčí,
 když se na ten prostor už díváš.
+
+Na počítači se tato oznámení chovají jinak než ostatní:
+
+- **Jsou časově citlivá.** Na macOS dokážou prorazit režim soustředění systému,
+  který povoluje časově citlivá oznámení z Control Center.
+- **Na schválení můžeš odpovědět přímo z oznámení.** **Schválit** a **Zakázat**
+  odešlou tvou odpověď, aniž bys otevíral aplikaci. Server ji ověří stejně jako
+  u karty v aplikaci. Pokud chceš schválit na nějakou dobu, otevři kartu.
+- **Nezodpovězené čekání ti připomene.** Když nikdo neodpoví, oznámení se vrátí
+  jako **Stále čeká: …** 3, 10, 25 a 45 minut od začátku čekání. Každá
+  připomínka nahradí předchozí oznámení, místo aby přidala další. Dokud má okno
+  Control Center fokus, připomínky se vynechávají, protože kartu se schválením i
+  zvonek máš stejně před sebou.
+- **Zmizí, jakmile čekání skončí**, ať bylo zodpovězeno jakkoli, takže nikdy
+  nemačkáš tlačítko u požadavku, který je už vyřízený.
 
 Tahle nastavení cestují s tvým uživatelem mezi zařízeními, takže telefon a
 notebook zůstanou ve shodě. Hlasitost je schválně výjimka a zůstává u každého
@@ -94,7 +109,8 @@ Oznámení se potichu zahodí, když platí cokoli z tohoto:
 
 - Oznámení jsou globálně vypnutá, nebo je vypnutá jeho kategorie
 - Už jsi na trase, kam by tě vzalo, a u zprávy už jsi v tom prostoru
-- Režim soustředění je aktivní a kategorie není naléhavá
+- Běží soustředěná relace se zapnutým **Blokovat oznámení** a kategorie není
+  naléhavá
 - Tiché hodiny jsou aktivní a kategorie není naléhavá
 
 Tyhle kontroly platí pro systémové toasty. Trvalý zvonek událost pořád zapíše.
@@ -136,6 +152,14 @@ je přečtená, nebo ne.
 Oprávnění se žádá nativně při spuštění aplikace. Když jsi ho odmítl, znovu
 zapni Control Center v Nastavení systému → Oznámení. V aplikaci není výzva,
 která by ho vyvolala znovu.
+
+### Na macOS mi pořád unikají oznámení o schválení
+
+macOS ve výchozím stavu zobrazuje oznámení Control Center jako proužky a proužek
+po pár sekundách zmizí. Aby zůstala na obrazovce, dokud nezareaguješ, nastav
+v Nastavení systému → Oznámení styl upozornění Control Center na **Trvalé**.
+Nezodpovězené schválení se navíc vrátí jako připomínka (viz
+[Zapni nebo vypni kategorie](#zapni-nebo-vypni-kategorie)).
 
 ### Na webovém sestavení nic nepřijde
 

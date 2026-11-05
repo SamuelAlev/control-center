@@ -2,7 +2,7 @@
 title: Konfigurasikan pemberitahuan
 description: Hidupkan atau matikan kategori, tetapkan waktu senyap dan bunyi, serta ketahui pemberitahuan mana yang sampai kepada anda dan di mana.
 slug: ms-MY/manual-pengguna/panduan-cara/pemberitahuan
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Panduan ini menunjukkan cara mengkonfigurasi pemberitahuan dan perkara yang
@@ -49,11 +49,27 @@ langsung tiada permukaan pemberitahuan.
 Apa-apa di luar senarai ini tidak boleh dimaklumkan atau ditapis — tiada
 kategori "segala-galanya yang lain".
 
-**Ejen menunggu anda** dicetuskan sekali bagi setiap penantian, apabila
-penantian itu bermula: kelulusan yang belum selesai (termasuk geran exec kotak
+**Ejen menunggu anda** dicetuskan apabila sesuatu penantian bermula: kelulusan yang belum selesai (termasuk geran exec kotak
 pasir dan kelulusan alat Claude Code), soalan `ask_user`, atau larian yang
 ditahan kerana kelayakannya tidak dapat melayaninya. Ia membuka ruang tempat
 anda menjawab, dan kekal senyap selagi anda sedang melihat ruang itu.
+
+Pada desktop, pemberitahuan ini berkelakuan berbeza daripada yang lain:
+
+- **Ia sensitif masa.** Pada macOS, ia boleh menembusi Tumpuan yang membenarkan
+  pemberitahuan sensitif masa daripada Control Center.
+- **Kelulusan boleh dijawab daripada pemberitahuan.** **Luluskan** dan **Tolak**
+  menghantar jawapan anda tanpa membuka aplikasi. Pelayan menyemaknya dengan
+  cara yang sama seperti kad dalam aplikasi. Untuk meluluskan bagi satu tempoh,
+  buka kad itu.
+- **Penantian yang tidak dijawab akan mengingatkan anda.** Jika tiada sesiapa
+  menjawab, pemberitahuan muncul semula sebagai **Masih menunggu: …** 3, 10, 25
+  dan 45 minit selepas penantian bermula. Setiap peringatan menggantikan
+  pemberitahuan sebelumnya dan bukannya menambah yang baharu. Peringatan
+  dilangkau selagi tetingkap Control Center mempunyai fokus, kerana kad
+  kelulusan dan loceng sudah berada di hadapan anda.
+- **Ia hilang apabila penantian tamat**, tidak kira bagaimana ia dijawab, jadi
+  anda tidak akan menekan butang pada permintaan yang sudah selesai.
 
 Keutamaan ini mengikut pengguna anda merentas peranti, jadi telefon dan komputer
 riba kekal selaras. Kelantangan ialah pengecualian yang disengajakan dan kekal
@@ -98,7 +114,8 @@ Pemberitahuan digugurkan, secara senyap, apabila mana-mana perkara ini benar:
 - Pemberitahuan dimatikan secara global, atau kategorinya dimatikan
 - Anda sudah berada pada laluan yang akan ditujunya — dan, bagi sesuatu mesej,
   sudah berada dalam ruang itu
-- Modus fokus aktif dan kategorinya tidak mendesak
+- Sesi fokus dengan **Sekat pemberitahuan** dihidupkan sedang berjalan dan
+  kategorinya tidak mendesak
 - Waktu senyap aktif dan kategorinya tidak mendesak
 
 Pemeriksaan itu terpakai pada toast OS. Loceng tahan lama masih merekodkan
@@ -144,6 +161,15 @@ baca.
 Kebenaran diminta secara natif apabila aplikasi dilancarkan. Jika anda
 menolaknya, dayakan semula Control Center di bawah Tetapan Sistem →
 Pemberitahuan; tiada gesaan dalam aplikasi untuk mencetuskannya semula.
+
+### Saya sering terlepas pemberitahuan kelulusan pada macOS
+
+Secara lalai, macOS memaparkan pemberitahuan Control Center sebagai sepanduk,
+dan sepanduk hilang selepas beberapa saat. Untuk mengekalkannya pada skrin
+sehingga anda bertindak, tetapkan gaya amaran Control Center kepada
+**Berterusan** di bawah Tetapan Sistem → Pemberitahuan. Kelulusan yang tidak
+dijawab juga muncul semula sebagai peringatan (lihat
+[Hidupkan atau matikan kategori](#hidupkan-atau-matikan-kategori)).
 
 ### Tiada apa-apa yang tiba pada binaan web
 

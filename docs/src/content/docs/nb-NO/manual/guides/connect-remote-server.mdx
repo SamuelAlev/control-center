@@ -2,7 +2,7 @@
 title: Koble til en ekstern server
 description: Pek skrivebordsappen eller nettklienten mot en cc_server som kjører et annet sted, og bytt mellom servere uten å starte på nytt.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Hver klient er en gjengiver over en `cc_server` som eier dataene. Skrivebordet
@@ -14,7 +14,7 @@ boks, en sky-VM, en byggeserver.
 ## Forutsetninger
 
 - En kjørende `cc_server`. Har du ingen, se [Kjør en headless server](/nb-NO/handbok/slik-gjor-du/kjor-headless-server/).
-- Enten de tre paringsverdiene serveren utstedte — **Server-URL**-en (`ws://…/rpc` eller `wss://…/rpc`), en **Enhets-id** og en **Paringsnøkkel** — **eller** en engangs **Invitasjonskode** fra en administrator for arbeidsområdet. Å løse inn en invitasjon oppretter brukeren din, registrerer medlemskapet ditt og utsteder legitimasjonen til denne klienten for deg, så du håndterer aldri en enhets-id eller nøkkel. Skaff disse gjennom en klarert kanal, og kontroller serverens fingeravtrykk mot en klarert QR-kode eller en kjent pin ved første tilkobling.
+- Enten de tre paringsverdiene serveren utstedte — **Server-URL**-en (`ws://…/rpc` eller `wss://…/rpc`), en **Enhets-id** og en **Paringsnøkkel** — **eller** en engangs **Invitasjonskode** fra en administrator for arbeidsområdet, **eller** en invitasjons- eller paringslenke som inneholder dem. Å løse inn en invitasjon oppretter brukeren din, registrerer medlemskapet ditt og utsteder legitimasjonen til denne klienten for deg, så du håndterer aldri en enhets-id eller nøkkel. Skaff disse gjennom en klarert kanal, og kontroller serverens fingeravtrykk mot en klarert QR-kode eller en kjent pin ved første tilkobling.
 
 ### Sørg for at serveren er tilgjengelig
 
@@ -42,14 +42,16 @@ standard; loopback og native klienter er alltid tillatt.
 
 Ved en fersk installasjon:
 
-1. Start Control Center. Førstegangsskjermen spør **Hvordan skal Control Center kjøre?**
-2. I stedet for **Kjør i denne appen** fyller du ut tilkoblingsfeltene: server-URL-en, pluss enten en invitasjonskode eller en enhets-id og paringsnøkkel.
+1. Start Control Center. Førstegangsskjermen viser **Velkommen til Control Center**.
+2. Klikk **Koble til en server** og skriv inn server-URL-en, pluss enten en invitasjonskode eller, under **Bruk en paringsnøkkel**, en enhets-id og paringsnøkkel.
 3. Klikk **Koble til**. Control Center ringer opp serveren og lander i arbeidsområdets innboks.
+
+Hvis du har en invitasjons- eller paringslenke, klikker du i stedet **Lim inn en paringslenke** og limer den inn. Dialogen viser hvilken server lenken fører til. Kontroller den, og klikk deretter **Koble til**: innliming alene kobler aldri til. Hvis en tilkobling mislykkes, forblir dialogen åpen med feilen og alt du har skrevet inn.
 
 På et skrivebord som allerede kjører sin egen server:
 
 1. Åpne **Innstillinger → Server → Tilkobling og status**.
-2. Klikk **Legg til server**. Skriv inn server-URL-en (`wss://host:9030/rpc`) og enten en invitasjonskode eller en enhets-id og paringsnøkkel. Suffiksknappen i URL-feltet oppdager `cc_server`-instanser på LAN-et eller tailnet-et ditt.
+2. Klikk **Legg til server**. Skriv inn server-URL-en (`wss://host:9030/rpc`) og enten en invitasjonskode eller, under **Bruk en paringsnøkkel**, en enhets-id og paringsnøkkel. Suffiksknappen i URL-feltet oppdager `cc_server`-instanser på LAN-et eller tailnet-et ditt.
 3. Klikk **Koble til**, deretter **Bytt** på raden til den nye serveren.
 
 Bytte skjer live: appen bygges på nytt rundt den nye økten på stedet, uten
@@ -66,10 +68,11 @@ WebSocket-økt; den samme beskyttelsen gjelder på loopback og gjennom reléet.
 Nettbygget er alltid eksternt.
 
 1. Åpne [app.usectrl.dev](https://app.usectrl.dev), eller din egen kopi av nettbygget.
-2. Skriv inn server-URL-en pluss enten en invitasjonskode eller en enhets-id og paringsnøkkel.
-3. Klienten ringer opp serveren og tegner det samme grensesnittet som skrivebordet.
+2. Klikk **Koble til en server** og skriv inn server-URL-en, pluss enten en invitasjonskode eller, under **Bruk en paringsnøkkel**, en enhets-id og paringsnøkkel. **Lim inn en paringslenke** tar i stedet imot en invitasjons- eller paringslenke.
+3. Klikk **Koble til**. Klienten ringer opp serveren og tegner det samme grensesnittet som skrivebordet.
 
-Hvis en paringsdyplenke ligger i URL-en, er feltene forhåndsutfylt.
+Hvis en paringsdyplenke ligger i URL-en, åpnes tilkoblingsdialogen med feltene
+utfylt, så du kan kontrollere serveren før du klikker **Koble til**.
 Paringsnøkkelen ligger i URL-**fragmentet**, som nettlesere aldri sender til
 serveren som hoster siden. Behandle lenken som en hemmelighet og stol på siden
 som betjener nettklienten: fragmentet beskytter ikke mot ondsinnet sidekode.

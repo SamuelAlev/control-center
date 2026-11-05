@@ -281,6 +281,129 @@ void main() {
       },
     );
   }, skip: !Platform.isMacOS ? 'requires macOS Seatbelt' : false);
+
+  group('exec enforcement under \$HOME (real process)', () {
+    late Directory home;
+    late SandboxManager manager;
+
+    setUp(() {
+      // Resolved, because the `$HOME` exec deny is matched against the real
+      // path and the system temp dir is a symlink on macOS.
+      home = Directory(
+        Directory.systemTemp
+            .createTempSync('cc-sbx-exec-home-')
+            .resolveSymbolicLinksSync(),
+      );
+      manager = SandboxManager();
+    });
+
+    tearDown(() async {
+      await manager.disposeSession('exec-enforcement');
+      home.deleteSync(recursive: true);
+    });
+
+    String tool(String rel) {
+      final file = File('${home.path}/$rel')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('#!/bin/sh\necho ran\n');
+      Process.runSync('/bin/chmod', ['+x', file.path]);
+      return file.path;
+    }
+
+    Future<ProcessResult> run(
+      String script, [
+      List<String> args = const [],
+    ]) async {
+      final config = await buildSandboxConfigFromPolicy(
+        SandboxPolicySpec(
+          sessionId: 'exec-enforcement',
+          denyRead: const [],
+          allowWrite: [home.path],
+          denyWrite: const [],
+          denyExecutables: SandboxPolicyResolver.alwaysDangerousExecutables,
+          allowedDomains: const [],
+          deniedDomains: const [],
+          networkOn: false,
+          homeDir: home.path,
+        ),
+      );
+      final wrap = await manager.wrap(
+        config: config,
+        argv: ['/bin/bash', '-c', script, 'exec-probe', ...args],
+      );
+      return Process.run(
+        wrap.executable,
+        wrap.argv,
+        environment: wrap.environment,
+      );
+    }
+
+    Future<ProcessResult> exec(String path) => run('"\$1"', [path]);
+
+    // Writes a tiny program into [dir] from inside the sandbox and runs it.
+    String dropAndRun(String dir) =>
+        'f="$dir/cc-probe-\$\$"; printf "#!/bin/sh\\necho ran\\n" > "\$f"; '
+        'chmod +x "\$f"; "\$f"; rc=\$?; rm -f "\$f"; exit \$rc';
+
+    test('a binary dropped into the shared temp dirs is denied', () async {
+      // `/tmp` resolves to `/private/tmp`, so a deny written only against the
+      // `/tmp` spelling never fired: copying a binary there ran it.
+      for (final dir in ['/tmp', '/private/tmp', Directory.systemTemp.path]) {
+        final result = await run(dropAndRun(dir));
+        expect(result.exitCode, isNot(0), reason: 'ran from $dir');
+        expect(result.stdout, isNot(contains('ran')), reason: dir);
+      }
+    });
+
+    test('the session TMPDIR is private, runnable and removed', () async {
+      final result = await run(
+        r'printf "%s\n" "$TMPDIR"; ' + dropAndRun(r'$TMPDIR'),
+      );
+      expect(result.exitCode, 0, reason: '${result.stderr}');
+      final tmp = (result.stdout as String).split('\n').first;
+      expect(tmp, startsWith('/private/tmp/cc-'));
+      expect(result.stdout, contains('ran'));
+      expect(
+        (Process.runSync('/usr/bin/stat', ['-f', '%Lp', tmp]).stdout as String)
+            .trim(),
+        '700',
+      );
+      await manager.disposeSession('exec-enforcement');
+      expect(Directory(tmp).existsSync(), isFalse);
+    });
+
+    test('unix sockets work only inside the session TMPDIR', () async {
+      // tsx's IPC pipe and Chrome's singleton socket live in TMPDIR.
+      const echo =
+          r'd="${1:-$TMPDIR}"; s="$d/cc-sock-$$"; '
+          r'/usr/bin/nc -lU "$s" > "$TMPDIR/got-$$" & '
+          r'for i in 1 2 3 4 5 6 7 8 9 10; do [ -S "$s" ] && break; '
+          r'sleep 0.2; done; '
+          r'echo hello | /usr/bin/nc -U "$s"; wait; cat "$TMPDIR/got-$$"; '
+          r'rm -f "$s"';
+      final inside = await run(echo);
+      expect(inside.stdout, contains('hello'), reason: '${inside.stderr}');
+
+      final outside = await run(echo, ['/private/tmp']);
+      expect(outside.stdout, isNot(contains('hello')));
+    });
+
+    test('a toolchain install under the home may run', () async {
+      // corepack's pnpm 12 spawns `pnpm-native` from this cache; every
+      // `pnpm` call failed with "Operation not permitted" before.
+      final result = await exec(
+        tool('.cache/node/corepack/v1/pnpm/12.6.0/pnpm-native'),
+      );
+      expect(result.exitCode, 0, reason: '${result.stderr}');
+      expect(result.stdout, contains('ran'));
+    });
+
+    test('any other binary under the home stays denied', () async {
+      final result = await exec(tool('Downloads/payload'));
+      expect(result.exitCode, isNot(0));
+      expect(result.stdout, isNot(contains('ran')));
+    });
+  }, skip: !Platform.isMacOS ? 'requires macOS Seatbelt' : false);
 }
 
 String? _skipReason() => Platform.isMacOS

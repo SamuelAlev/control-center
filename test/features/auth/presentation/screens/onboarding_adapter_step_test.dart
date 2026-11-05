@@ -263,15 +263,17 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      // Workspace creation seeds a CEO *and* four specialists with no runner;
+      // Workspace creation seeds a CEO *and* the specialists with no runner;
       // the adapter step is the only place the pick exists, so patching the
-      // CEO alone left four of the five agents unable to run.
+      // CEO alone left the rest unable to run. The content synthesizer is one
+      // of them: it is what names conversations from now on.
       expect(agents.saved.map((a) => a.name).toSet(), {
         'ceo',
         'architect',
         'engineer',
         'qa',
         'librarian',
+        'content-synthesizer',
       });
       for (final agent in agents.saved) {
         expect(agent.adapterId, 'cc-harness', reason: agent.name);
@@ -329,16 +331,15 @@ void main() {
     },
   );
 
-  testWidgets(
-    'a leftover deleted-runner preference still lands on the built-in',
-    (tester) async {
-      prefs = AppPreferences.inMemory({'default_chat_adapter_id': 'pi'});
-      await pumpToAdapterStep(tester);
+  testWidgets('a leftover default-runner preference is ignored', (
+    tester,
+  ) async {
+    prefs = AppPreferences.inMemory({'default_chat_adapter_id': 'pi'});
+    await pumpToAdapterStep(tester);
 
-      expect(find.text('Control Center (built-in)'), findsOneWidget);
-      expect(find.text('Select a provider to log in'), findsOneWidget);
-    },
-  );
+    expect(find.text('Control Center (built-in)'), findsOneWidget);
+    expect(find.text('Select a provider to log in'), findsOneWidget);
+  });
 
   testWidgets('empty detection no longer tells the operator to install Pi', (
     tester,
@@ -355,11 +356,18 @@ void main() {
   });
 }
 
-/// The roster a freshly created workspace is seeded with: a CEO and four
+/// The roster a freshly created workspace is seeded with: a CEO and the
 /// specialists, none of them carrying a runner yet (the seeder runs at
 /// workspace creation, before the adapter is picked).
 List<Agent> _seededRoster() => [
-  for (final name in ['ceo', 'architect', 'engineer', 'qa', 'librarian'])
+  for (final name in [
+    'ceo',
+    'architect',
+    'engineer',
+    'qa',
+    'librarian',
+    'content-synthesizer',
+  ])
     Agent(
       id: 'agent-$name',
       name: name,

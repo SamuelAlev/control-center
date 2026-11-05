@@ -717,13 +717,6 @@ class AppLocalizationsKo extends AppLocalizations {
       'Control Center가 이 머신에서 자체 서버를 실행하며 데이터를 로컬에서 소유합니다.';
 
   @override
-  String get serverModeRemote => '원격 인스턴스에 연결';
-
-  @override
-  String get serverModeRemoteDescription =>
-      '다른 곳에서 실행 중인 Control Center 서버에 연결합니다. 데이터는 해당 서버에 보관됩니다.';
-
-  @override
   String get serverRemoteUrl => '서버 URL';
 
   @override
@@ -937,13 +930,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       '다른 기기가 이 서버에 직접 접근할 수 없어 새 클라이언트를 연결할 수 없습니다. 클라이언트를 더 페어링하려면 서버의 공개 URL을 설정하세요.';
-
-  @override
-  String get serverSetupTitle => 'Control Center를 어떻게 실행할까요?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center에는 데이터를 소유하는 서버가 필요합니다. 앱 내에서 실행하거나 다른 곳에서 실행 중인 인스턴스에 연결하세요.';
 
   @override
   String get serverSetupRunLocal => '이 앱에서 실행';
@@ -2974,10 +2960,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get configureAgentIdentities => '에이전트 신원, 프롬프트, 스킬을 구성하고 실행을 확인하세요.';
 
   @override
-  String get configureDefaultRunners =>
-      '새 스페이스와 제목 생성에 어떤 어댑터와 모델을 사용할지 구성합니다.';
-
-  @override
   String get configuredLabel => '구성되었습니다.';
 
   @override
@@ -3075,12 +3057,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deactivate => '비활성화';
-
-  @override
-  String get defaultChat => '기본 채팅';
-
-  @override
-  String get defaultRunners => '기본 러너';
 
   @override
   String get delete => '삭제';
@@ -4347,6 +4323,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationGroupMachines => '머신';
 
   @override
+  String get notificationSectionSound => '소리';
+
+  @override
+  String get notificationSectionSchedule => '일정';
+
+  @override
+  String get notificationSectionEvents => '이벤트';
+
+  @override
   String get notificationsMutedRepos => '음소거된 리포지토리';
 
   @override
@@ -4893,9 +4878,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => '앱 언어를 선택하세요.';
-
-  @override
-  String get shortTask => '짧은 작업';
 
   @override
   String get showNativeNotifications => '이벤트에 대해 시스템 알림을 표시합니다.';
@@ -5470,9 +5452,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get focusModeFloat => '막대로 최소화';
-
-  @override
-  String get focusModeActiveTooltip => '집중 모드 사용 중 — 탭하여 종료';
 
   @override
   String get dismiss => '닫기';
@@ -12720,25 +12699,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Control Center에 연결';
-
-  @override
-  String get webConnectSubtitle =>
-      '실행 중인 cc-server에 WebSocket으로 연결합니다. 키는 이 장치에 남습니다.';
-
-  @override
-  String get webConnectServerLabel => '서버';
-
-  @override
-  String get webConnectDeviceIdLabel => '장치 ID';
-
-  @override
-  String get webConnectPairingKeyLabel => '페어링 키';
-
-  @override
-  String get webConnectPairingKeyHint => 'PSK 붙여넣기';
-
-  @override
   String get webConnectStayConnected => '이 장치에서 연결 유지';
 
   @override
@@ -12779,10 +12739,11 @@ class AppLocalizationsKo extends AppLocalizations {
       '선택 사항 — 비워 두면 제목 모델이 자동으로 이름을 붙입니다';
 
   @override
-  String get shortTaskOff => '꺼짐';
+  String get contentSynthesizerUnavailable =>
+      'Content synthesizer 에이전트가 없거나 작동하는 러너가 없습니다';
 
   @override
-  String get shortTaskUnavailable => '이 기능을 사용하려면 설정 → 어댑터에서 짧은 작업 모델을 선택하세요';
+  String get conversationNeedsAgent => '이 대화를 시작하려면 @로 에이전트를 멘션하세요';
 
   @override
   String get conversationTitleGenerate => '생성';
@@ -13228,13 +13189,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get adapterArgumentsDescription => '실행할 때마다 러너 명령줄에 추가됩니다.';
-
-  @override
-  String get defaultChatDescription => '새 대화와 자체 러너가 없는 에이전트를 실행합니다.';
-
-  @override
-  String get shortTaskDescription =>
-      '제목과 요약 같은 빠른 백그라운드 작업을 실행합니다. 더 작은 모델을 여기에 두세요.';
 
   @override
   String get settingsStateFailed => '실패';
@@ -13964,6 +13918,16 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => '파일을 첨부하거나 여기에 놓으세요';
+
+  @override
+  String composerExpand(String shortcut) {
+    return '편집기 펼치기($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return '편집기 접기($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => '목표를 구체화하세요';
@@ -15093,6 +15057,11 @@ class AppLocalizationsKo extends AppLocalizations {
       '에이전트가 자격 증명 문제로 멈췄습니다';
 
   @override
+  String notificationWaitReminder(String title) {
+    return '아직 대기 중: $title';
+  }
+
+  @override
   String get killTerminal => '터미널 종료';
 
   @override
@@ -15542,4 +15511,76 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       '제공자 자격 증명이 더 이상 작동하지 않아 실행이 중지되었습니다. 설정 → 제공자에서 다시 연결한 뒤 이 턴을 재시도하세요.';
+
+  @override
+  String get helpMenuLabel => '도움말';
+
+  @override
+  String get helpWhatsNew => '새로운 기능';
+
+  @override
+  String get helpReportProblem => '문제 신고';
+
+  @override
+  String get helpCreateGitHubIssue => 'GitHub 이슈 만들기';
+
+  @override
+  String get changelogInstalled => '설치됨';
+
+  @override
+  String get changelogGroupNew => '새 기능';
+
+  @override
+  String get changelogGroupImproved => '개선';
+
+  @override
+  String get changelogGroupFixed => '수정';
+
+  @override
+  String get changelogLoadFailed => '릴리스 노트를 불러오지 못했습니다.';
+
+  @override
+  String get changelogOpenWebsite => '웹사이트에서 열기';
+
+  @override
+  String get connectWelcomeTitle => 'Control Center에 오신 것을 환영합니다';
+
+  @override
+  String get connectWelcomeSubtitle => '여기에서 실행하거나 이미 있는 서버에 연결하세요.';
+
+  @override
+  String get connectWelcomeSubtitleWeb => '서버에 연결하여 시작하세요.';
+
+  @override
+  String get connectToServer => '서버에 연결';
+
+  @override
+  String get connectToServerIntro => 'Control Center 서버 주소를 입력하세요.';
+
+  @override
+  String get connectUsePairingKey => '페어링 키 사용';
+
+  @override
+  String get connectPasteLink => '페어링 링크 붙여넣기';
+
+  @override
+  String get connectPasteLinkIntro => '받은 초대 링크 또는 페어링 링크를 붙여넣으세요.';
+
+  @override
+  String get connectPasteLinkLabel => '초대 또는 페어링 링크';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Control Center 초대 링크나 페어링 링크가 아닙니다. 전체 링크를 복사한 후 다시 시도하세요.';
+
+  @override
+  String get connectPasteLinkTarget => '연결 대상';
+
+  @override
+  String get focusModeEnd => '집중 세션 종료';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return '$minutes분 남음';
+  }
 }

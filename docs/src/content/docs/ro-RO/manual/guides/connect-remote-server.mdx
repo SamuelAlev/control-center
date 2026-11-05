@@ -2,7 +2,7 @@
 title: Conectează-te la un server remote
 description: Îndreaptă aplicația desktop sau clientul web către un cc_server care rulează în altă parte și comută între servere fără repornire.
 slug: ro-RO/manual/ghiduri-practice/conectare-la-server-remote
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Fiecare client este un renderer peste un `cc_server` care deține datele. Aplicația
@@ -15,7 +15,7 @@ build.
 ## Cerințe preliminare
 
 - Un `cc_server` care rulează. Dacă nu ai unul, vezi [Rulează un server headless](/ro-RO/manual/ghiduri-practice/ruleaza-server-headless/).
-- Fie cele trei valori de asociere emise de server — **URL server** (`ws://…/rpc` sau `wss://…/rpc`), un **ID dispozitiv** și o **cheie de asociere** —, **fie** un **cod de invitație** de unică folosință de la un administrator al spațiului de lucru. Răscumpărarea unei invitații îți provisionează utilizatorul, înregistrează apartenența ta și emite acreditarea acestui client pentru tine, așa că nu ai de gestionat niciodată un ID de dispozitiv sau o cheie. Obține aceste valori printr-un canal de încredere și verifică amprenta serverului față de un cod QR de încredere sau o fixare cunoscută la prima conectare.
+- Fie cele trei valori de asociere emise de server — **URL server** (`ws://…/rpc` sau `wss://…/rpc`), un **ID dispozitiv** și o **cheie de asociere** —, **fie** un **cod de invitație** de unică folosință de la un administrator al spațiului de lucru, **fie** un link de invitație sau de asociere care le conține. Răscumpărarea unei invitații îți provisionează utilizatorul, înregistrează apartenența ta și emite acreditarea acestui client pentru tine, așa că nu ai de gestionat niciodată un ID de dispozitiv sau o cheie. Obține aceste valori printr-un canal de încredere și verifică amprenta serverului față de un cod QR de încredere sau o fixare cunoscută la prima conectare.
 
 ### Asigură-te că serverul este accesibil
 
@@ -44,14 +44,16 @@ permişi.
 
 La o instalare nouă:
 
-1. Pornește Control Center. Ecranul de prima rulare întreabă **Cum ar trebui să ruleze Control Center?**
-2. În loc de **Rulează în această aplicație**, completează câmpurile de conectare: URL-ul serverului, plus fie un cod de invitație, fie un ID de dispozitiv și o cheie de asociere.
+1. Pornește Control Center. Ecranul de prima rulare afișează **Bun venit în Control Center**.
+2. Dă clic pe **Conectează-te la un server** și introdu URL-ul serverului, plus fie un cod de invitație, fie, la **Folosește o cheie de asociere**, un ID de dispozitiv și o cheie de asociere.
 3. Dă clic pe **Conectează**. Control Center apelează serverul și ajunge în inbox-ul spațiului de lucru.
+
+Dacă ai un link de invitație sau de asociere, dă clic în schimb pe **Lipește un link de asociere** și lipește-l. Dialogul arată spre ce server duce linkul. Verifică-l, apoi dă clic pe **Conectează**: simpla lipire nu conectează niciodată. Dacă o conexiune eșuează, dialogul rămâne deschis cu eroarea și cu tot ce ai introdus.
 
 Pe un desktop care rulează deja propriul server:
 
 1. Deschide **Setări → Server → Conexiune și stare**.
-2. Dă clic pe **Adaugă server**. Introdu URL-ul serverului (`wss://host:9030/rpc`) și fie un cod de invitație, fie un ID de dispozitiv și o cheie de asociere. Butonul-sufix al câmpului de URL descoperă instanțe `cc_server` din LAN-ul sau tailnet-ul tău.
+2. Dă clic pe **Adaugă server**. Introdu URL-ul serverului (`wss://host:9030/rpc`) și fie un cod de invitație, fie, la **Folosește o cheie de asociere**, un ID de dispozitiv și o cheie de asociere. Butonul-sufix al câmpului de URL descoperă instanțe `cc_server` din LAN-ul sau tailnet-ul tău.
 3. Dă clic pe **Conectează**, apoi pe **Comută** în rândul serverului nou.
 
 Comutarea este live: aplicația se reconstruiește pe loc în jurul noii sesiuni,
@@ -68,10 +70,10 @@ cap; aceeași protecție se aplică pe loopback și prin releu.
 Versiunea web este întotdeauna remote.
 
 1. Deschide [app.usectrl.dev](https://app.usectrl.dev) sau propria copie a versiunii web.
-2. Introdu URL-ul serverului, plus fie un cod de invitație, fie un ID de dispozitiv și o cheie de asociere.
-3. Clientul apelează serverul și afișează aceeași interfață ca desktopul.
+2. Dă clic pe **Conectează-te la un server** și introdu URL-ul serverului, plus fie un cod de invitație, fie, la **Folosește o cheie de asociere**, un ID de dispozitiv și o cheie de asociere. **Lipește un link de asociere** acceptă în schimb un link de invitație sau de asociere.
+3. Dă clic pe **Conectează**. Clientul apelează serverul și afișează aceeași interfață ca desktopul.
 
-Dacă în URL se află un link profund de asociere, câmpurile sunt precompletate.
+Dacă în URL se află un link profund de asociere, dialogul de conectare se deschide cu câmpurile completate, ca să poți verifica serverul înainte de a da clic pe **Conectează**.
 Cheia de asociere călătorește în **fragmentul** URL-ului, pe care browserele nu îl
 trimit niciodată serverului care găzduiește pagina. Tratează linkul ca pe un
 secret și ai încredere în pagina care servește clientul web: fragmentul nu te

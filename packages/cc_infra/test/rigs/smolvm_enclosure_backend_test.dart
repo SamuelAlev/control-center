@@ -354,7 +354,7 @@ void main() {
         kSmolvmExecPackages,
         isNot(contains('netcat')),
         reason:
-            'netcat is virtual on Ubuntu 24.04; netcat-openbsd is the package.',
+            'netcat is virtual on Ubuntu 26.04; netcat-openbsd is the package.',
       );
       expect(kSmolvmExecPackages, isNot(contains('docker')));
       expect(kSmolvmExecPackages, isNot(contains('docker.io')));

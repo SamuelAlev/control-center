@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/notification_providers.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/shell/presentation/widgets/sidebar_chrome.dart';
 import 'package:control_center/features/shell/providers/notification_center_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -11,7 +12,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Top-bar notification center: a bell with an unread badge that opens a
+part 'notification_bell_button.dart';
+
+/// Sidebar-header notification center: a bell with an unread badge that opens a
 /// popover listing recent activity (the durable in-app history of events the
 /// app would otherwise only show as ephemeral OS toasts).
 class NotificationBell extends ConsumerStatefulWidget {
@@ -33,8 +36,8 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
 
   @override
   Widget build(BuildContext context) {
-    // Only the unread count is watched here: this widget lives in the shell
-    // title bar and watching the full entries list would rebuild it on every
+    // Only the unread count is watched here: this widget lives in the sidebar
+    // header and watching the full entries list would rebuild it on every
     // notification mutation even while the popover is closed. The entries are
     // watched by the Consumer inside the overlay, which only exists while
     // the popover is open.
@@ -43,15 +46,24 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
     return CcPopover(
       controller: _controller,
       toggleOnTargetTap: false,
-      followerAnchor: AlignmentDirectional.topEnd,
-      targetAnchor: AlignmentDirectional.bottomEnd,
+      // Start-aligned, so the panel grows out over the page rather than back
+      // over the sidebar it opens from.
+      followerAnchor: AlignmentDirectional.topStart,
+      targetAnchor: AlignmentDirectional.bottomStart,
       overlayBuilder: (context, _) => _NotificationPanel(
         onNavigate: (route) {
           _controller.hide();
           GoRouter.of(context).go(route);
         },
       ),
-      target: _BellButton(unread: unread, onTap: _controller.toggle),
+      target: ListenableBuilder(
+        listenable: _controller,
+        builder: (context, _) => _BellButton(
+          unread: unread,
+          open: _controller.isOpen,
+          onTap: _controller.toggle,
+        ),
+      ),
     );
   }
 }
@@ -557,61 +569,4 @@ String _relativeTime(DateTime at) {
     return '${diff.inHours}h';
   }
   return '${diff.inDays}d';
-}
-
-class _BellButton extends StatelessWidget {
-  const _BellButton({required this.unread, required this.onTap});
-
-  final int unread;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem;
-    final l10n = AppLocalizations.of(context);
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        CcIconButton(
-          icon: AppIcons.bell,
-          variant: CcButtonVariant.ghost,
-          size: CcButtonSize.sm,
-          onPressed: onTap,
-          tooltip: l10n.notificationsTooltip,
-          semanticLabel: l10n.notificationsTooltip,
-        ),
-        if (unread > 0)
-          PositionedDirectional(
-            top: 2,
-            end: 2,
-            // Never absorb the tap; the button underneath owns it.
-            child: IgnorePointer(
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 15),
-                height: 15,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: tokens?.fgBrandPrimary,
-                  borderRadius: AppRadii.brSm,
-                  border: Border.all(
-                    color: tokens?.bgPrimary ?? const Color(0xFFFFFFFF),
-                    width: 1.5,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  unread > 9 ? '9+' : '$unread',
-                  style: TextStyle(
-                    color: tokens?.textWhite ?? const Color(0xFFFFFFFF),
-                    fontSize: 9,
-                    height: 1,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
 }

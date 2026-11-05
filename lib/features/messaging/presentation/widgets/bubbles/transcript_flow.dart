@@ -14,6 +14,7 @@ import 'package:control_center/features/messaging/presentation/widgets/bubbles/t
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_links.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:flutter/widgets.dart';

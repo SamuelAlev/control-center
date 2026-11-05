@@ -172,6 +172,10 @@ class ServerConnectionStore {
   final AppPreferences _prefs;
   final SecureStore _secure;
 
+  /// The preferences this store reads, for local choices made before any
+  /// server is connected.
+  AppPreferences get preferences => _prefs;
+
   /// Prefs key holding the [ServerConnectionMode] name. Its presence is how
   /// we detect first run (the user has not chosen yet).
   static const String modeKey = 'server_connection_mode';

@@ -729,13 +729,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Control Center bu makinede kendi sunucusunu çalıştırır ve verileriniz yerelde kalır.';
 
   @override
-  String get serverModeRemote => 'Uzak bir örneğe bağlan';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Başka bir yerde çalışan bir Control Center sunucusuna bağlanın. Verileriniz o sunucuda tutulur.';
-
-  @override
   String get serverRemoteUrl => 'Sunucu URL\'si';
 
   @override
@@ -955,13 +948,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Diğer cihazlar bu sunucuya doğrudan erişemediği için yeni bir istemci bağlanamıyor. Daha fazla istemci eşlemek için sunucunun herkese açık URL’sini ayarlayın.';
-
-  @override
-  String get serverSetupTitle => 'Control Center nasıl çalışsın?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center, verilerinizi barındıran bir sunucuya ihtiyaç duyar. Birini bu uygulama içinde çalıştırın veya başka yerde çalışan bir örneğe bağlanın.';
 
   @override
   String get serverSetupRunLocal => 'Bu uygulamada çalıştır';
@@ -3027,10 +3013,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Ajan kimliklerini, istemleri, becerileri yapılandırın ve çalıştırmaları görüntüleyin.';
 
   @override
-  String get configureDefaultRunners =>
-      'Yeni alanlar ve başlık oluşturma için hangi bağdaştırıcı ve modelin kullanılacağını yapılandırın.';
-
-  @override
   String get configuredLabel => 'Yapılandırıldı.';
 
   @override
@@ -3129,12 +3111,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deactivate => 'Devre dışı bırak';
-
-  @override
-  String get defaultChat => 'Varsayılan sohbet';
-
-  @override
-  String get defaultRunners => 'Varsayılan runner\'lar';
 
   @override
   String get delete => 'Sil';
@@ -4437,6 +4413,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationGroupMachines => 'Makineler';
 
   @override
+  String get notificationSectionSound => 'Ses';
+
+  @override
+  String get notificationSectionSchedule => 'Zamanlama';
+
+  @override
+  String get notificationSectionEvents => 'Olaylar';
+
+  @override
   String get notificationsMutedRepos => 'Sessize alınan depolar';
 
   @override
@@ -4991,9 +4976,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'Uygulama dilini seçin.';
-
-  @override
-  String get shortTask => 'Kısa görev';
 
   @override
   String get showNativeNotifications =>
@@ -5581,9 +5563,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Çubuğa küçült';
-
-  @override
-  String get focusModeActiveTooltip => 'Odak modu açık — bitirmek için dokunun';
 
   @override
   String get dismiss => 'Kapat';
@@ -12990,25 +12969,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Control Center’a bağlan';
-
-  @override
-  String get webConnectSubtitle =>
-      'Çalışan bir cc-server’a WebSocket üzerinden bağlanın. Anahtarınız bu cihazda kalır.';
-
-  @override
-  String get webConnectServerLabel => 'Sunucu';
-
-  @override
-  String get webConnectDeviceIdLabel => 'Cihaz kimliği';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Eşleştirme anahtarı';
-
-  @override
-  String get webConnectPairingKeyHint => 'PSK’yı yapıştırın';
-
-  @override
   String get webConnectStayConnected => 'Bu cihazda bağlı kal';
 
   @override
@@ -13050,11 +13010,12 @@ class AppLocalizationsTr extends AppLocalizations {
       'İsteğe bağlı — boş bırakırsanız başlık modeli otomatik adlandırır';
 
   @override
-  String get shortTaskOff => 'Kapalı';
+  String get contentSynthesizerUnavailable =>
+      'Content synthesizer ajanı yok ya da çalışan bir çalıştırıcısı yok';
 
   @override
-  String get shortTaskUnavailable =>
-      'Bunu kullanmak için Ayarlar → Adaptörler bölümünden bir kısa görev modeli seçin';
+  String get conversationNeedsAgent =>
+      'Bu konuşmayı başlatmak için @ ile bir ajandan bahsedin';
 
   @override
   String get conversationTitleGenerate => 'Oluştur';
@@ -13522,14 +13483,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Her başlatmada runner\'ın komut satırına eklenir.';
-
-  @override
-  String get defaultChatDescription =>
-      'Yeni konuşmaları ve kendi çalıştırıcısı olmayan her ajanı çalıştırır.';
-
-  @override
-  String get shortTaskDescription =>
-      'Başlık ve özet gibi hızlı arka plan işlerini çalıştırır. Daha küçük bir model buraya aittir.';
 
   @override
   String get settingsStateFailed => 'Başarısız';
@@ -14273,6 +14226,16 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Dosya ekle — veya buraya bırak';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Düzenleyiciyi genişlet ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Düzenleyiciyi daralt ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'Hedefi netleştir';
@@ -15435,6 +15398,11 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bir ajan kimlik bilgisi nedeniyle durdu';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Hâlâ bekliyor: $title';
+  }
+
+  @override
   String get killTerminal => 'Terminali sonlandır';
 
   @override
@@ -15895,4 +15863,79 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Sağlayıcının kimlik bilgisi artık çalışmadığı için çalışma durdu. Ayarlar → Sağlayıcılar bölümünden yeniden bağlayın, ardından turu yeniden deneyin.';
+
+  @override
+  String get helpMenuLabel => 'Yardım';
+
+  @override
+  String get helpWhatsNew => 'Yenilikler';
+
+  @override
+  String get helpReportProblem => 'Sorun bildir';
+
+  @override
+  String get helpCreateGitHubIssue => 'GitHub sorunu oluştur';
+
+  @override
+  String get changelogInstalled => 'Yüklü';
+
+  @override
+  String get changelogGroupNew => 'Yeni';
+
+  @override
+  String get changelogGroupImproved => 'İyileştirildi';
+
+  @override
+  String get changelogGroupFixed => 'Düzeltildi';
+
+  @override
+  String get changelogLoadFailed => 'Sürüm notları yüklenemedi.';
+
+  @override
+  String get changelogOpenWebsite => 'Web sitesinde aç';
+
+  @override
+  String get connectWelcomeTitle => 'Control Center\'a hoş geldiniz';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Burada çalıştırın veya mevcut bir sunucuya bağlanın.';
+
+  @override
+  String get connectWelcomeSubtitleWeb => 'Başlamak için sunucunuza bağlanın.';
+
+  @override
+  String get connectToServer => 'Bir sunucuya bağlan';
+
+  @override
+  String get connectToServerIntro =>
+      'Bir Control Center sunucusunun adresini girin.';
+
+  @override
+  String get connectUsePairingKey => 'Eşleme anahtarı kullan';
+
+  @override
+  String get connectPasteLink => 'Eşleme bağlantısı yapıştır';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Size verilen davet veya eşleme bağlantısını yapıştırın.';
+
+  @override
+  String get connectPasteLinkLabel => 'Davet veya eşleme bağlantısı';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Bu bir Control Center davet veya eşleme bağlantısı değil. Bağlantının tamamını kopyalayıp yeniden deneyin.';
+
+  @override
+  String get connectPasteLinkTarget => 'Bağlanılacak sunucu';
+
+  @override
+  String get focusModeEnd => 'Odak oturumunu bitir';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return '$minutes dk kaldı';
+  }
 }

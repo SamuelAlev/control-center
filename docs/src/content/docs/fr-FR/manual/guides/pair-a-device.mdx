@@ -2,7 +2,7 @@
 title: Associer un appareil
 description: Associez votre téléphone (ou un second navigateur ou poste de bureau) à votre serveur Control Center pour suivre la flotte à distance.
 slug: fr-FR/manuel/guides/associer-appareil
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Ce guide explique comment associer un téléphone à Control Center, afin de lire
@@ -42,11 +42,12 @@ un libellé (ex. « Mon téléphone »), choisissez le type — **Navigateur w
 **Application de bureau** ou **Téléphone** — puis cliquez sur **Associer**.
 
 - Pour un **téléphone**, un QR code s’affiche. Scannez-le avec l’appareil photo du téléphone, ou copiez le lien et ouvrez-le dans n’importe quel navigateur. Il pointe l’application Remote vers votre serveur et transporte l’identifiant.
-- Pour un **navigateur** ou un **poste de bureau**, copiez plutôt le lien affiché (ou l’identifiant d’appareil et la clé d’appairage) dans le nouveau client. Le lien en un clic n’est proposé que lorsque vous associez depuis le client web, car un binaire de bureau n’a pas d’origine web à partir de laquelle le construire.
+- Pour un **navigateur** ou un **poste de bureau**, copiez plutôt le lien affiché (ou l’identifiant d’appareil et la clé d’appairage) dans le nouveau client. Ouvrez le lien dans un navigateur, ou collez-le dans **Coller un lien d’appairage** dans l’application de bureau. Si vous associez depuis le bureau, le lien est construit à partir de l’URL du serveur lui-même, de sorte qu’il n’apparaît que si le serveur en a une que les autres appareils peuvent joindre.
 
 Le QR code du téléphone et le lien qu’imprime `cc_server pair --client-url` en
 ligne de commande sont **des charges utiles différentes et non interchangeables** :
-le lien de la CLI remplit le formulaire de connexion du client web, tandis que ce
+le lien de la CLI remplit la boîte de dialogue de connexion du client web ou se
+colle dans l’application de bureau, tandis que ce
 QR code transporte le descripteur de connexion complet du serveur et l’empreinte
 d’identité pour la PWA Remote.
 

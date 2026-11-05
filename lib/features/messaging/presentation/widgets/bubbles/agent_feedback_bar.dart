@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_icon_button.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -43,11 +44,12 @@ class AgentFeedbackBar extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _ThumbButton(
+          BubbleIconButton(
             icon: AppIcons.thumbsUp,
+            tokens: t,
             tooltip: l10n.feedbackHelpful,
-            active: current == MessageFeedback.helpful,
-            activeColor: t.success,
+            restColor: t.fgQuaternary,
+            activeColor: current == MessageFeedback.helpful ? t.success : null,
             onTap: () => _set(
               ref,
               current == MessageFeedback.helpful
@@ -56,11 +58,14 @@ class AgentFeedbackBar extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.xxs),
-          _ThumbButton(
+          BubbleIconButton(
             icon: AppIcons.thumbsDown,
+            tokens: t,
             tooltip: l10n.feedbackNotHelpful,
-            active: current == MessageFeedback.notHelpful,
-            activeColor: t.danger,
+            restColor: t.fgQuaternary,
+            activeColor: current == MessageFeedback.notHelpful
+                ? t.danger
+                : null,
             onTap: () => _set(
               ref,
               current == MessageFeedback.notHelpful
@@ -69,48 +74,6 @@ class AgentFeedbackBar extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ThumbButton extends StatelessWidget {
-  const _ThumbButton({
-    required this.icon,
-    required this.tooltip,
-    required this.active,
-    required this.activeColor,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final bool active;
-  final Color activeColor;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return CcTooltip(
-      message: tooltip,
-      child: CcTappable(
-        onPressed: onTap,
-        semanticLabel: tooltip,
-        borderRadius: AppRadii.brSm,
-        builder: (context, states) {
-          final hovered = states.contains(WidgetState.hovered);
-          return Padding(
-            padding: const EdgeInsets.all(4),
-            child: Icon(
-              icon,
-              size: 14,
-              color: active
-                  ? activeColor
-                  : (hovered ? t.fgSecondary : t.fgQuaternary),
-            ),
-          );
-        },
       ),
     );
   }

@@ -68,6 +68,7 @@ LIB="libcc_inference.$NATIVE_EXT"
 # NOT the crate-local `target/`: the repo-root build/ dir is gitignored and
 # excluded from analysis; a stray crate-local target tree would be neither.
 export CARGO_TARGET_DIR="$REPO_ROOT/build/cargo/inference"
+native_cargo_darwin_strip
 export SHERPA_ONNX_LIB_DIR="$LIB_DIR"
 
 log "Building cc_inference (cargo, release, static sherpa-onnx ${SHERPA_ONNX_VERSION}) for $NATIVE_OS"

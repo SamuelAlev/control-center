@@ -2,7 +2,7 @@
 title: Értesítések konfigurálása
 description: Kapcsolja be vagy ki a kategóriákat, állítson be csendes órákat és hangot, és tudja meg, mely értesítések érkeznek meg Önhöz és hol.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ertesitesek
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Ez az útmutató bemutatja, hogyan konfigurálhatja az értesítéseket, és mit
@@ -49,12 +49,29 @@ telefonos kliensnek egyáltalán nincs értesítési felülete.
 Az ezen a listán kívül eső eseményekről nem lehet értesítést kapni vagy azokat
 szűrni — nincs „minden más” kategória.
 
-Az **Egy ügynök Önre vár** kategória várakozásonként egyszer jelez, amikor a
-várakozás elkezdődik: függőben lévő jóváhagyásnál (beleértve a homokozó
+Az **Egy ügynök Önre vár** kategória akkor jelez, amikor egy várakozás
+elkezdődik: függőben lévő jóváhagyásnál (beleértve a homokozó
 exec-engedélyeit és a Claude Code eszközjóváhagyásait), egy `ask_user`
 kérdésnél, vagy ha egy futás azért áll, mert a hitelesítő adata nem tudja
 kiszolgálni. Azt a teret nyitja meg, ahol válaszolhat, és csendben marad, amíg
 Ön éppen azt a teret nézi.
+
+Az asztali alkalmazásban ezek az értesítések másként viselkednek, mint a többi:
+
+- **Időérzékenyek.** macOS-en áttörhetnek egy olyan Fókuszt, amely engedélyezi a
+  Control Center időérzékeny értesítéseit.
+- **Egy jóváhagyásra az értesítésből is válaszolhat.** A **Jóváhagyás** és a
+  **Tiltás** az alkalmazás megnyitása nélkül elküldi a válaszát. A szerver
+  ugyanúgy ellenőrzi, mint az alkalmazáson belüli kártyát. Ha egy ideig tartó
+  jóváhagyást szeretne adni, nyissa meg inkább a kártyát.
+- **A megválaszolatlan várakozás emlékeztetőt küld.** Ha senki sem válaszol, az
+  értesítés a várakozás kezdete után 3, 10, 25 és 45 perccel **Még mindig vár: …**
+  formában tér vissza. Minden emlékeztető az előző értesítést váltja fel, nem
+  egy újabbat ad hozzá. Az emlékeztetők elmaradnak, amíg egy Control
+  Center-ablak van fókuszban, mert a jóváhagyási kártya és a csengő már Ön előtt
+  van.
+- **Eltűnik, amikor a várakozás véget ér**, bárhogyan is válaszolták meg, így
+  soha nem nyom meg gombot egy már lezárt kérésen.
 
 Ezek a beállítások a felhasználóval együtt vándorolnak az eszközök között, így a
 telefon és a laptop szinkronban marad. A hangerő szándékos kivétel, és
@@ -99,7 +116,8 @@ Egy értesítés csendben elmarad, ha az alábbiak bármelyike igaz:
   kapcsolva
 - Ön már azon az útvonalon van, amelyre az értesítés vinne — üzenet esetén pedig
   már abban a térben van
-- A fókuszmód aktív, és a kategória nem sürgős
+- Fut egy fókuszmunkamenet bekapcsolt **Értesítések blokkolása** beállítással,
+  és a kategória nem sürgős
 - A csendes órák aktívak, és a kategória nem sürgős
 
 Ezek az ellenőrzések az OS-toastokra vonatkoznak. A tartós harang ettől
@@ -143,6 +161,15 @@ függetlenül elvesznek.
 Az engedélyezést az alkalmazás natívan kéri, amikor elindul. Ha elutasította,
 engedélyezze újra a Control Centert a Rendszerbeállítások → Értesítések alatt;
 nincs alkalmazáson belüli felszólítás, amellyel újra kiváltaná.
+
+### Rendre lemaradok a jóváhagyási értesítésekről macOS-en
+
+A macOS alapértelmezés szerint szalagcímként jeleníti meg a Control Center
+értesítéseit, és a szalagcím néhány másodperc után eltűnik. Ha azt szeretné,
+hogy a képernyőn maradjanak, amíg nem reagál, állítsa a Control Center
+értesítési stílusát **Állandó** értékre a Rendszerbeállítások → Értesítések
+alatt. Egy megválaszolatlan jóváhagyás emlékeztetőként is visszatér (lásd:
+[A kategóriák be- és kikapcsolása](#a-kategóriák-be--és-kikapcsolása)).
 
 ### Semmi sem érkezik meg a webes buildben
 

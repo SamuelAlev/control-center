@@ -7,6 +7,7 @@ import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/service_status/presentation/widgets/service_status_badge.dart';
 import 'package:control_center/features/service_status/presentation/widgets/service_status_indicator.dart';
 import 'package:control_center/features/service_status/providers/service_status_providers.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/ai_brand_logo.dart';
 import 'package:control_center/shared/widgets/refresh_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -310,6 +311,39 @@ void main() {
         expect(find.byType(CcDivider), findsOneWidget);
       },
     );
+
+    testWidgets('opens above the entry, aligned to its end edge', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            servicesInUseProvider.overrideWithValue(_everyService),
+            serviceStatusProvider.overrideWith(
+              () => _DataNotifier(_statuses()),
+            ),
+          ],
+          child: testWrap(
+            const Align(
+              alignment: Alignment.bottomLeft,
+              child: Padding(
+                padding: EdgeInsets.only(left: 400),
+                child: SizedBox(width: 200, child: ServiceStatusSidebarEntry()),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final entry = tester.getRect(find.byType(ServiceStatusSidebarEntry));
+      await tester.tap(serviceStatusLabel());
+      await tester.pumpAndSettle();
+
+      final flyout = tester.getRect(find.byType(SingleChildScrollView).last);
+      expect(flyout.bottom, lessThanOrEqualTo(entry.top));
+      expect(flyout.right, entry.right);
+    });
 
     testWidgets('healthy providers have no dividers', (tester) async {
       await tester.pumpWidget(_wrap());
@@ -625,6 +659,12 @@ void main() {
 
       expect(find.byType(ServiceLogoStack), findsNothing);
       expect(find.byType(ServiceStatusDot), findsOneWidget);
+      // The dot sits on the glyph's corner, so it never reaches a neighbour in
+      // the footer strip.
+      final glyph = tester.getRect(find.byIcon(AppIcons.activity));
+      final dot = tester.getRect(find.byType(ServiceStatusDot));
+      expect(dot.right, glyph.right + 2);
+      expect(dot.top, glyph.top - 2);
     });
 
     testWidgets('three services fit without a count', (tester) async {

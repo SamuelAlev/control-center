@@ -6,6 +6,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/utils/format_utils.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_links.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:flutter/widgets.dart';
@@ -68,6 +69,7 @@ class BubbleBody extends StatelessWidget {
             options: chatMarkdownOptions,
             builders: chatMarkdownBuilders,
             imageBuilder: appMarkdownImageBuilder,
+            onTapLink: openMarkdownLink,
             codeBuilder: codeBuilder,
           ),
         const SizedBox(height: 6),
@@ -146,6 +148,7 @@ class _StreamingBodyState extends State<_StreamingBody> {
       style: widget.style,
       builders: chatMarkdownBuilders,
       imageBuilder: appMarkdownImageBuilder,
+      onTapLink: openMarkdownLink,
       codeBuilder: widget.codeBuilder,
       selectable: true,
     );

@@ -149,6 +149,20 @@ void main() {
       expect(matches, hasLength(2));
     });
 
+    test('finds a call wherever an expression can sit', () {
+      // A newer grammar recovers `dispose(x)` as a statement by inserting a
+      // MISSING `;`, which pinned the pattern to statement position: the call
+      // below is not an expression_statement, so it silently matched nothing.
+      final matches = find('dispose(x)', '''
+void main() {
+  final a = dispose(x);
+  print(dispose(x));
+  dispose(x);
+}
+''');
+      expect(matches, hasLength(3));
+    });
+
     test('does not match the same characters inside a string', () {
       // The property a textual grep cannot have.
       final matches = find('dispose(x)', '''

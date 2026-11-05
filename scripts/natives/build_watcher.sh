@@ -24,6 +24,7 @@ LIB="libcc_watcher.$NATIVE_EXT"
 # NOT the crate-local `target/`: the repo-root build/ dir is gitignored and
 # excluded from analysis; a stray crate-local target tree would be neither.
 export CARGO_TARGET_DIR="$REPO_ROOT/build/cargo/watcher"
+native_cargo_darwin_strip
 
 log "Building cc_watcher (cargo, release) for $NATIVE_OS"
 cargo build --release --locked --manifest-path "$CRATE_DIR/Cargo.toml"

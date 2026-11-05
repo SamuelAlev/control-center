@@ -2,7 +2,7 @@
 title: Configurar notificações
 description: Ative ou desative categorias, defina um horário de silêncio e um som e saiba quais notificações chegam até você e onde.
 slug: pt-BR/manual/guias/notificacoes
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Este guia mostra como configurar as notificações e o que cada ajuste realmente
@@ -50,12 +50,27 @@ notificação.
 Nada fora desta lista pode ser notificado nem filtrado — não existe uma
 categoria “todo o resto”.
 
-**Um agente está esperando você** dispara uma vez por espera, quando ela começa:
-uma aprovação pendente (incluindo concessões de execução no sandbox e aprovações
+**Um agente está esperando você** dispara quando uma espera começa: uma aprovação pendente (incluindo concessões de execução no sandbox e aprovações
 de ferramentas do Claude Code), uma pergunta `ask_user` ou uma execução retida
 porque a credencial dela não consegue atendê-la. A notificação abre o espaço
 onde você responde e fica em silêncio enquanto você já está olhando para esse
 espaço.
+
+No desktop, essas notificações se comportam de forma diferente das demais:
+
+- **Elas são sensíveis ao tempo.** No macOS, elas podem furar um Foco que
+  permita notificações sensíveis ao tempo do Control Center.
+- **Dá para responder a uma aprovação pela própria notificação.** **Aprovar** e
+  **Negar** enviam sua resposta sem abrir o app. O servidor a verifica da mesma
+  forma que o cartão dentro do app. Para aprovar por um período, abra o cartão.
+- **Uma espera sem resposta lembra você.** Se ninguém responder, a notificação
+  volta como **Ainda aguardando: …** 3, 10, 25 e 45 minutos depois do início da
+  espera. Cada lembrete substitui a notificação anterior em vez de adicionar
+  outra. Os lembretes são pulados enquanto uma janela do Control Center está em
+  foco, porque o cartão de aprovação e o sino já estão na sua frente.
+- **Ela desaparece quando a espera termina**, seja qual for a forma como foi
+  respondida, então você nunca aperta um botão numa solicitação que já foi
+  resolvida.
 
 Essas preferências seguem o seu usuário entre dispositivos, então um celular e
 um notebook ficam em sincronia. O volume é a exceção deliberada e permanece por
@@ -100,7 +115,8 @@ Uma notificação é descartada, em silêncio, quando qualquer uma destas condi�
 - As notificações estão desativadas globalmente, ou a categoria dela está
 - Você já está na rota para onde ela levaria — e, no caso de uma mensagem, já
   está nesse espaço
-- O modo foco está ativo e a categoria não é urgente
+- Uma sessão de foco com **Bloquear notificações** ativado está em andamento e a
+  categoria não é urgente
 - O horário de silêncio está ativo e a categoria não é urgente
 
 Essas verificações se aplicam aos toasts do sistema operacional. O sino durável
@@ -146,6 +162,14 @@ leitura.
 A autorização é solicitada nativamente quando o app é iniciado. Se você a
 recusou, reative o Control Center em Ajustes do Sistema → Notificações; não há
 nenhum aviso dentro do app para solicitá-la novamente.
+
+### Continuo perdendo notificações de aprovação no macOS
+
+Por padrão, o macOS mostra as notificações do Control Center como faixas, e uma
+faixa desaparece depois de alguns segundos. Para mantê-las na tela até você
+agir, defina o estilo de alerta do Control Center como **Persistente** em
+Ajustes do Sistema → Notificações. Uma aprovação sem resposta também volta como
+lembrete (veja [Ativar ou desativar categorias](#ativar-ou-desativar-categorias)).
 
 ### Nada chega na versão web
 

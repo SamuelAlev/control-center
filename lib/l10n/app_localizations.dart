@@ -1428,18 +1428,6 @@ abstract class AppLocalizations {
   /// **'Control Center runs its own server on this machine and owns your data locally.'**
   String get serverModeLocalDescription;
 
-  /// No description provided for @serverModeRemote.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to a remote instance'**
-  String get serverModeRemote;
-
-  /// No description provided for @serverModeRemoteDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to a Control Center server running elsewhere. Your data lives on that server.'**
-  String get serverModeRemoteDescription;
-
   /// No description provided for @serverRemoteUrl.
   ///
   /// In en, this message translates to:
@@ -1847,18 +1835,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other devices can\'t reach this server directly, so a new client can\'t connect. Set the server\'s public URL to pair more clients.'**
   String get pairServerUnreachable;
-
-  /// No description provided for @serverSetupTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'How should Control Center run?'**
-  String get serverSetupTitle;
-
-  /// No description provided for @serverSetupSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Control Center needs a server that owns your data. Run one inside this app, or connect to an instance running elsewhere.'**
-  String get serverSetupSubtitle;
 
   /// No description provided for @serverSetupRunLocal.
   ///
@@ -5310,12 +5286,6 @@ abstract class AppLocalizations {
   /// **'Configure agent identities, prompts, skills and view runs.'**
   String get configureAgentIdentities;
 
-  /// No description provided for @configureDefaultRunners.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure which adapter and model are used for new spaces and title generation.'**
-  String get configureDefaultRunners;
-
   /// No description provided for @configuredLabel.
   ///
   /// In en, this message translates to:
@@ -5477,18 +5447,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deactivate'**
   String get deactivate;
-
-  /// Default chat
-  ///
-  /// In en, this message translates to:
-  /// **'Default chat'**
-  String get defaultChat;
-
-  /// Default runners
-  ///
-  /// In en, this message translates to:
-  /// **'Default runners'**
-  String get defaultRunners;
 
   /// Delete
   ///
@@ -7675,6 +7633,24 @@ abstract class AppLocalizations {
   /// **'Machines'**
   String get notificationGroupMachines;
 
+  /// No description provided for @notificationSectionSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
+  String get notificationSectionSound;
+
+  /// No description provided for @notificationSectionSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get notificationSectionSchedule;
+
+  /// No description provided for @notificationSectionEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get notificationSectionEvents;
+
   /// No description provided for @notificationsMutedRepos.
   ///
   /// In en, this message translates to:
@@ -8634,12 +8610,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose the app language.'**
   String get settingsLanguageDescription;
-
-  /// Short task
-  ///
-  /// In en, this message translates to:
-  /// **'Short task'**
-  String get shortTask;
 
   /// No description provided for @showNativeNotifications.
   ///
@@ -9672,12 +9642,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Minimize to bar'**
   String get focusModeFloat;
-
-  /// Tooltip on the focus mode chip in title bar
-  ///
-  /// In en, this message translates to:
-  /// **'Focus mode active — tap to end'**
-  String get focusModeActiveTooltip;
 
   /// Button label to dismiss a banner or notice
   ///
@@ -22124,42 +22088,6 @@ abstract class AppLocalizations {
   /// **'Comment {count} selected'**
   String reviewArtifactCommentSelected(int count);
 
-  /// Title of the web client's connect gate
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to Control Center'**
-  String get webConnectTitle;
-
-  /// Subtitle explaining the web connect gate
-  ///
-  /// In en, this message translates to:
-  /// **'Dial a running cc-server over WebSocket. Your key stays on this device.'**
-  String get webConnectSubtitle;
-
-  /// Label for the server URL field on the web connect gate
-  ///
-  /// In en, this message translates to:
-  /// **'Server'**
-  String get webConnectServerLabel;
-
-  /// Label for the device id field on the web connect gate
-  ///
-  /// In en, this message translates to:
-  /// **'Device id'**
-  String get webConnectDeviceIdLabel;
-
-  /// Label for the pairing key field on the web connect gate
-  ///
-  /// In en, this message translates to:
-  /// **'Pairing key'**
-  String get webConnectPairingKeyLabel;
-
-  /// Hint for the pairing key field on the web connect gate
-  ///
-  /// In en, this message translates to:
-  /// **'paste the PSK'**
-  String get webConnectPairingKeyHint;
-
   /// Accessible label for the 'stay connected' checkbox
   ///
   /// In en, this message translates to:
@@ -22214,17 +22142,17 @@ abstract class AppLocalizations {
   /// **'Optional — leave empty and the title model names it automatically'**
   String get conversationTitleOptionalHint;
 
-  /// No description provided for @shortTaskOff.
+  /// Shown when a side question, handoff, goal interview or title suggestion cannot run because the workspace's Content synthesizer agent is missing or its runner cannot run ("Content synthesizer" is the agent's literal name and stays untranslated)
   ///
   /// In en, this message translates to:
-  /// **'Off'**
-  String get shortTaskOff;
+  /// **'The Content synthesizer agent is missing or has no working runner'**
+  String get contentSynthesizerUnavailable;
 
-  /// Shown when a feature needing the workspace short-task runner (side questions, title generation) runs with none configured; names the settings page to fix it
+  /// Composer placeholder and warning toast in a conversation with no agent in it: nothing runs until an agent is @mentioned
   ///
   /// In en, this message translates to:
-  /// **'Pick a short-task model in Settings → Adapters to use this'**
-  String get shortTaskUnavailable;
+  /// **'Mention an agent with @ to start this conversation'**
+  String get conversationNeedsAgent;
 
   /// Button in the rename-conversation dialog that asks the short-task model to propose a title
   ///
@@ -23023,18 +22951,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Appended to the runner\'s command line on every launch.'**
   String get adapterArgumentsDescription;
-
-  /// No description provided for @defaultChatDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Runs new conversations and any agent with no runner of its own.'**
-  String get defaultChatDescription;
-
-  /// No description provided for @shortTaskDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Runs quick background work such as titles and summaries. A smaller model belongs here.'**
-  String get shortTaskDescription;
 
   /// No description provided for @settingsStateFailed.
   ///
@@ -24259,6 +24175,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Attach files — or drop them here'**
   String get attachFilesOrDrop;
+
+  /// Tooltip on the composer toolbar button that grows the message composer to fill most of the conversation pane for writing a long prompt. The shortcut is a platform-formatted key combination such as ⌘⇧E or Ctrl+Shift+E.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand editor ({shortcut})'**
+  String composerExpand(String shortcut);
+
+  /// Tooltip on the composer toolbar button that shrinks an expanded message composer back to its normal size. The shortcut is a platform-formatted key combination such as ⌘⇧E or Ctrl+Shift+E.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse editor ({shortcut})'**
+  String composerCollapse(String shortcut);
 
   /// Title of the guided-goal interview dialog.
   ///
@@ -26058,6 +25986,12 @@ abstract class AppLocalizations {
   /// **'An agent is blocked on a credential'**
   String get notificationAgentBlockedOnCredentialUnnamed;
 
+  /// Title of a reminder notification for an agent wait nobody has answered yet. {title} is the original notification title, e.g. "engineer needs your approval".
+  ///
+  /// In en, this message translates to:
+  /// **'Still waiting: {title}'**
+  String notificationWaitReminder(String title);
+
   /// Tooltip on a sidebar TERMINALS row's trash button that ends the shell.
   ///
   /// In en, this message translates to:
@@ -26801,6 +26735,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.'**
   String get transcriptSignInExpiredBody;
+
+  /// Label of the help button in the sidebar footer, and the heading of its menu
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get helpMenuLabel;
+
+  /// Help menu item and dialog title showing the release notes
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s new'**
+  String get helpWhatsNew;
+
+  /// Heading of the help menu section for reporting a bug
+  ///
+  /// In en, this message translates to:
+  /// **'Report a problem'**
+  String get helpReportProblem;
+
+  /// Help menu item that opens a new GitHub issue in the browser
+  ///
+  /// In en, this message translates to:
+  /// **'Create a GitHub issue'**
+  String get helpCreateGitHubIssue;
+
+  /// Tag beside the release the user is running in the release notes dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get changelogInstalled;
+
+  /// Heading above the new features of a release in the release notes dialog
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get changelogGroupNew;
+
+  /// Heading above the improvements of a release in the release notes dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Improved'**
+  String get changelogGroupImproved;
+
+  /// Heading above the bug fixes of a release in the release notes dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed'**
+  String get changelogGroupFixed;
+
+  /// Shown in the release notes dialog when the release notes could not be fetched
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the release notes.'**
+  String get changelogLoadFailed;
+
+  /// Tooltip of the button opening the release notes on the website
+  ///
+  /// In en, this message translates to:
+  /// **'Open on the website'**
+  String get changelogOpenWebsite;
+
+  /// Heading of the login screen
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Control Center'**
+  String get connectWelcomeTitle;
+
+  /// Sentence under the login heading on desktop, which can run its own server
+  ///
+  /// In en, this message translates to:
+  /// **'Run it here, or connect to a server you already have.'**
+  String get connectWelcomeSubtitle;
+
+  /// Sentence under the login heading on web, which can only connect to a server
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to your server to get started.'**
+  String get connectWelcomeSubtitleWeb;
+
+  /// Login action and dialog title for connecting to a server by its address
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to a server'**
+  String get connectToServer;
+
+  /// One line at the top of the connect-to-a-server dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the address of a Control Center server.'**
+  String get connectToServerIntro;
+
+  /// Disclosure that reveals the device id and pairing key fields
+  ///
+  /// In en, this message translates to:
+  /// **'Use a pairing key'**
+  String get connectUsePairingKey;
+
+  /// Login action and dialog title for connecting with a pasted link
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a pairing link'**
+  String get connectPasteLink;
+
+  /// One line at the top of the paste-a-link dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the invite or pairing link you were given.'**
+  String get connectPasteLinkIntro;
+
+  /// Label of the field that takes a pasted link
+  ///
+  /// In en, this message translates to:
+  /// **'Invite or pairing link'**
+  String get connectPasteLinkLabel;
+
+  /// Validation error when the pasted text is not a usable link
+  ///
+  /// In en, this message translates to:
+  /// **'That isn\'t a Control Center invite or pairing link. Copy the whole link and try again.'**
+  String get connectPasteLinkInvalid;
+
+  /// Label above the server address a pasted link will connect to
+  ///
+  /// In en, this message translates to:
+  /// **'Connects to'**
+  String get connectPasteLinkTarget;
+
+  /// Menu item in the sidebar that ends the running focus session
+  ///
+  /// In en, this message translates to:
+  /// **'End focus session'**
+  String get focusModeEnd;
+
+  /// Time left in the running focus session, shown as the tooltip and menu heading of its sidebar entry
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m left'**
+  String focusModeRemaining(int minutes);
 }
 
 class _AppLocalizationsDelegate

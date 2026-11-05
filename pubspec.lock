@@ -219,10 +219,10 @@ packages:
   cnativeapi:
     dependency: "direct main"
     description:
-      path: ".dart_tool/patchwork/cnativeapi@0.5.2"
+      path: ".dart_tool/patchwork/cnativeapi@0.5.10"
       relative: true
     source: path
-    version: "0.5.2"
+    version: "0.5.10"
   code_assets:
     dependency: "direct overridden"
     description:
@@ -1085,18 +1085,18 @@ packages:
   nativeapi:
     dependency: "direct main"
     description:
-      path: ".dart_tool/patchwork/nativeapi@0.5.2"
+      path: ".dart_tool/patchwork/nativeapi@0.5.10"
       relative: true
     source: path
-    version: "0.5.2"
+    version: "0.5.10"
   nativeapi_flutter:
     dependency: "direct main"
     description:
       name: nativeapi_flutter
-      sha256: "4feaa68cb5c4fc3b2eeaee1a25e56e2d092178e1c59516d9db5dd34940dcf36c"
+      sha256: "357a405c69212f5157da1bd3be183a53c2b841d0de0eb51f4a3947913712aec4"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.2"
+    version: "0.5.10"
   nested:
     dependency: transitive
     description:
@@ -1656,10 +1656,10 @@ packages:
   sqlite_vector:
     dependency: "direct overridden"
     description:
-      path: ".dart_tool/patchwork/sqlite_vector@1.1.2"
+      path: ".dart_tool/patchwork/sqlite_vector@1.2.0"
       relative: true
     source: path
-    version: "1.1.2"
+    version: "1.2.0"
   sqlparser:
     dependency: transitive
     description:
@@ -2039,10 +2039,10 @@ packages:
     dependency: transitive
     description:
       name: widgetbook
-      sha256: aaee194c222e0aa140e2f14ecf0451906fbe1e6e2abe1e42efab9585597fc124
+      sha256: "2bae209482d265fc4d86653fda51f47d630e6359aa64bf88e6c61f829601d7ab"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.0-beta.14"
+    version: "4.0.0-beta.15"
   win32:
     dependency: transitive
     description:

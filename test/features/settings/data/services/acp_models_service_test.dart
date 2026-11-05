@@ -4,9 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late AcpModelsService service;
+  late _FakeProbe probe;
 
   setUp(() {
-    service = AcpModelsService();
+    probe = _FakeProbe();
+    service = AcpModelsService(
+      claudeCode: ClaudeCodeModelCatalog(
+        probe: probe,
+        resolveBinary: (_) async => '/nonexistent/claude',
+      ),
+    );
   });
 
   group('AcpModel', () {
@@ -46,66 +53,34 @@ void main() {
   });
 
   group('listModels', () {
-    test(
-      'returns models for claude-code adapter from static catalog',
-      () async {
-        final models = await service.listModels('claude-code');
-
-        final ids = models.map((m) => m.id).toList();
-        // `claude` has no listing command, so the catalog is curated — but it
-        // is the CLI's whole vocabulary, aliases included, not three ids.
-        expect(ids, contains('claude-opus-4-7'));
-        expect(ids, contains('claude-sonnet-4-6'));
-        expect(ids, contains('claude-haiku-4-5-20251001'));
-        expect(ids, containsAll(['opus', 'sonnet', 'haiku', 'fable']));
-        expect(ids, contains('opusplan'));
-        expect(ids.length, greaterThan(20));
-        expect(ids.toSet().length, ids.length, reason: 'ids must be unique');
-      },
-    );
-
-    test('claude-code long-context aliases carry a 1M window', () async {
+    test('claude-code models come from the installed CLI', () async {
       final models = await service.listModels('claude-code');
 
-      for (final id in ['opus[1m]', 'sonnet[1m]', 'fable[1m]']) {
-        final model = models.firstWhere((m) => m.id == id);
-        expect(model.contextWindow, 1000000, reason: id);
-      }
+      expect([for (final m in models) m.id], ['opus', 'claude-opus-5-5']);
+      expect(models.first.name, 'Opus (latest)');
+      expect(models.first.contextWindow, 1000000);
+      expect(models.first.thinkingLevels, isNotNull);
+      expect(models.first.defaultThinkingLevel, isNotNull);
+      expect(models.last.name, 'Claude Opus 5.5');
+    });
+
+    test('results are read from the CLI once', () async {
+      await service.listModels('claude-code');
+      await service.listModels('claude-code');
+
+      expect(probe.calls, 1);
+    });
+
+    test('without a catalog claude-code lists nothing', () async {
+      expect(await AcpModelsService().listModels('claude-code'), isEmpty);
     });
 
     test('returns empty list for unknown adapter id', () async {
-      final models = await service.listModels('unknown-adapter');
-
-      expect(models, isEmpty);
-    });
-
-    test('results are cached on second call', () async {
-      final first = await service.listModels('claude-code');
-      final second = await service.listModels('claude-code');
-
-      expect(second, same(first));
-    });
-
-    test('returns AcpModel with correct fields', () async {
-      final models = await service.listModels('claude-code');
-
-      for (final model in models) {
-        expect(model, isA<AcpModel>());
-        expect(model.id, isNotEmpty);
-        expect(model.name, isNotEmpty);
-      }
+      expect(await service.listModels('unknown-adapter'), isEmpty);
     });
 
     test('codex is not an adapter catalog', () async {
       expect(await service.listModels('codex'), isEmpty);
-    });
-
-    test('curated claude-code model carries its context window', () async {
-      final models = await service.listModels('claude-code');
-      final opus = models.firstWhere((m) => m.id.contains('opus'));
-      expect(opus.contextWindow, 200000);
-      expect(opus.thinkingLevels, isNotNull);
-      expect(opus.defaultThinkingLevel, isNotNull);
     });
 
     test('Cursor is not an adapter catalog', () async {
@@ -113,4 +88,32 @@ void main() {
       expect(await service.listModels('cursor-agent'), isEmpty);
     });
   });
+}
+
+/// Answers as the CLI would: one alias, resolving to Opus 5.5.
+class _FakeProbe extends ClaudeCodeModelProbe {
+  int calls = 0;
+
+  @override
+  Future<ClaudeCodeProbeResult> probe({
+    required String binaryPath,
+    String? configDir,
+    bool listCatalog = true,
+    List<String> extraIds = const [],
+  }) async {
+    calls++;
+    return const ClaudeCodeProbeResult(
+      models: [
+        ClaudeCodeProbedModel(
+          value: 'opus',
+          resolvedModel: 'claude-opus-5-5',
+          displayName: 'Opus 5.5',
+          effortLevels: ['low', 'medium', 'high'],
+          contextWindow: 1000000,
+        ),
+      ],
+      defaultWindow: 1000000,
+      extras: {},
+    );
+  }
 }

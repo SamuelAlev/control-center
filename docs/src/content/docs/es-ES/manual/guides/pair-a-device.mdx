@@ -2,7 +2,7 @@
 title: Emparejar un dispositivo
 description: Empareja tu teléfono (o un segundo navegador o escritorio) con tu servidor de Control Center para poder seguir la flota en remoto.
 slug: es-ES/manual/guias/emparejar-dispositivo
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Esta guía te muestra cómo emparejar un teléfono con Control Center, para que
@@ -42,11 +42,12 @@ etiqueta (por ejemplo, «Mi teléfono»), elige el tipo —**Navegador web**,
 **Aplicación de escritorio** o **Teléfono**— y haz clic en **Vincular**.
 
 - Para un **teléfono**, aparece un código QR. Escanéalo con la cámara del teléfono, o copia el enlace y ábrelo en cualquier navegador. Apunta la app Remote a tu servidor y lleva la credencial.
-- Para un **navegador** o un **escritorio**, copia el enlace que se muestra (o el id de dispositivo y la clave de emparejamiento) en el nuevo cliente. El enlace de un solo toque solo se ofrece cuando emparejas desde el cliente web, ya que un binario de escritorio no tiene un origen web desde el que construirlo.
+- Para un **navegador** o un **escritorio**, copia el enlace que se muestra (o el id de dispositivo y la clave de emparejamiento) en el nuevo cliente. Abre el enlace en un navegador o pégalo en **Pegar un enlace de emparejamiento** en la aplicación de escritorio. Si emparejas desde el escritorio, el enlace se construye a partir de la URL del propio servidor, así que solo aparece cuando el servidor tiene una a la que puedan llegar otros dispositivos.
 
 El QR para teléfono y el enlace que `cc_server pair --client-url` imprime en la
 CLI son **cargas útiles distintas y no son intercambiables**: el enlace de la CLI
-rellena el formulario de conexión del cliente web, mientras que este QR lleva el
+rellena el diálogo de conexión del cliente web o se pega en la aplicación de
+escritorio, mientras que este QR lleva el
 descriptor de conexión completo del servidor y la huella de identidad para la PWA
 Remote.
 

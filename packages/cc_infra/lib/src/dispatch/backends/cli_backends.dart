@@ -76,6 +76,14 @@ class ClaudeCliBackend implements AgentBackend {
       'change proxy settings or disable sandboxing to evade it. Report the '
       'blocked destination instead.';
 
+  /// Environment that turns Claude Code's auto-memory off for a run.
+  ///
+  /// `--settings` already carries `autoMemoryEnabled: false`, but the CLI
+  /// reads `CLAUDE_CODE_DISABLE_AUTO_MEMORY` BEFORE settings, and `0` there
+  /// forces memory on. Pinning it to `1` closes that path for a caller or
+  /// adapter env that sets it.
+  static const autoMemoryOffEnv = {'CLAUDE_CODE_DISABLE_AUTO_MEMORY': '1'};
+
   /// The same appended prompt is used by launch and native-resume scoping.
   /// Without the MCP connection, leave Claude's own checklist available.
   static String appendedSystemPrompt({required bool hasControlCenterMcp}) =>
@@ -156,11 +164,15 @@ class ClaudeCliBackend implements AgentBackend {
       ]);
     }
     // Command-line settings also cover non-pooled accounts and beat project
-    // settings. Preserve policy hooks, but never emit Claude's own bylines.
+    // settings. Preserve policy hooks, but never emit Claude's own bylines,
+    // and never let Claude Code keep its own auto-memory: it writes per-project
+    // notes under the account's config dir, invisible to Control Center and
+    // shared by every workspace that runs on that account.
     final settings = <String, dynamic>{
       if (settingsJson != null && settingsJson.isNotEmpty)
         ...jsonDecode(settingsJson) as Map<String, dynamic>,
       'attribution': const {'commit': '', 'pr': ''},
+      'autoMemoryEnabled': false,
     };
     args.addAll(['--settings', jsonEncode(settings)]);
     if (resumeSessionId != null &&

@@ -100,4 +100,46 @@ void main() {
       isTrue,
     );
   });
+
+  testWidgets('paints Markdown in place and keeps every character', (
+    tester,
+  ) async {
+    final ds = DesignSystemTokens.light();
+    controller.text = 'rename `Foo` and make it **bold**';
+    final span = await spanOf(tester);
+    expect(span.toPlainText(), controller.text);
+    final children = span.children!.cast<TextSpan>();
+    expect(children.map((c) => c.text), [
+      'rename ',
+      '`',
+      'Foo',
+      '`',
+      ' and make it ',
+      '**',
+      'bold',
+      '**',
+    ]);
+    final code = children[2].style!;
+    expect(code.fontFamily, CcFonts.code().fontFamily);
+    expect(code.backgroundColor, ds.hoverStrong);
+    // Delimiters stay in the text, dimmed, inside the same code chip.
+    expect(children[1].style!.color, ds.textPlaceholder);
+    expect(children[1].style!.backgroundColor, ds.hoverStrong);
+    expect(children[6].style!.fontWeight, FontWeight.w600);
+    expect(children[5].style!.color, ds.textPlaceholder);
+    expect(children[0].style, isNull);
+  });
+
+  testWidgets('a pill keeps its own style inside emphasis', (tester) async {
+    controller
+      ..text = '*see @[file:a_b.png] now*'
+      ..isResolved = (_) => true;
+    final span = await spanOf(tester);
+    expect(span.toPlainText(), controller.text);
+    final pill = span.children!.cast<TextSpan>().firstWhere(
+      (c) => c.text == '@[file:a_b.png]',
+    );
+    expect(pill.style?.color, DesignSystemTokens.light().accent);
+    expect(pill.style?.fontStyle, isNull);
+  });
 }

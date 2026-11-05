@@ -2,7 +2,7 @@
 title: Installer
 description: Utilisez Control Center dans le navigateur ou installez l’application de bureau, configurez un backend d’agent et choisissez où s’exécute son serveur.
 slug: fr-FR/manuel/installer
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center s’exécute de deux façons : en **application web** sur
@@ -144,10 +144,11 @@ La première étape de la configuration initiale est cette connexion. Ensuite, c
 
 Control Center est un client léger au-dessus d’un processus `cc_server` sans interface qui détient la base de données et fait tout le travail ; [Déploiement et clients](/fr-FR/manuel/concepts/deploiement/) explique ce que ce découpage implique pour le bureau, le web et le téléphone.
 
-Au premier lancement, le bureau demande **« Comment exécuter Control Center ? »** :
+Au premier lancement, le bureau affiche **Bienvenue dans Control Center** et propose trois façons d’entrer. Le bouton des paramètres dans le coin change la langue et le thème.
 
 - **Exécuter dans cette application** : le bureau lance et supervise un `cc_server` sur cette machine et lui parle par la boucle locale. Rien d’autre à configurer. C’est la configuration que suppose le [démarrage rapide](/fr-FR/manuel/demarrage-rapide/).
-- **Se connecter à une instance distante** : pointez le bureau vers un `cc_server` exécuté ailleurs avec son URL WebSocket, un identifiant d’appareil et, au choix, une clé d’appairage ou un code d’invitation à usage unique. Ce serveur détient les données ; ce bureau ne fait que les afficher.
+- **Se connecter à un serveur** : pointez le bureau vers un `cc_server` exécuté ailleurs avec son URL WebSocket, puis connectez-vous par authentification unique si le serveur la propose, ou saisissez un code d’invitation à usage unique, ou encore un identifiant d’appareil et une clé d’appairage sous **Utiliser une clé d’appairage**. Ce serveur détient les données ; ce bureau ne fait que les afficher.
+- **Coller un lien d’appairage** : collez un lien d’invitation ou d’appairage. La boîte de dialogue indique vers quel serveur mène le lien et ne se connecte que lorsque vous cliquez sur **Se connecter**.
 
 Ajoutez ou changez de serveur plus tard sous **Paramètres → Serveur → Connexion et état**. La bascule se reconnecte sur place — sans redémarrage. Un navigateur ne peut pas exécuter de serveur, le client web est donc toujours distant ; voir [Se connecter à un serveur distant](/fr-FR/manuel/guides/connecter-serveur-distant/).
 

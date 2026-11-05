@@ -3,7 +3,7 @@ title: Run a headless server
 description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
 dateModified: 2026-10-11
 slug: en-GB/manual/guides/run-headless-server
-sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
+sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
 ---
 
 Run `cc_server` on a machine that stays on, then connect to it from your desktop,
@@ -227,8 +227,8 @@ The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
 
 Point a client at the server URL and pairing key from step 3:
 
-- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/en-GB/manual/guides/connect-remote-server/).
-- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
+- **Desktop app**: on the first-run screen click **Connect to a server**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/en-GB/manual/guides/connect-remote-server/).
+- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build), click **Connect to a server**, and enter the server URL and, under **Use a pairing key**, the device id and pairing key.
 - **Phone**: pair the **Remote** app from a running client — see [Pair a device](/en-GB/manual/guides/pair-a-device/).
 
 :::note[cc_server serves no web bundle]

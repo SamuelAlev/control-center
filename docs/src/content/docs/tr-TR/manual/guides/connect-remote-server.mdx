@@ -2,7 +2,7 @@
 title: Uzak bir sunucuya bağlanma
 description: Masaüstü uygulamasını veya web istemcisini başka bir yerde çalışan bir cc_server’a yönlendirin ve sunucular arasında yeniden başlatmadan geçiş yapın.
 slug: tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Her istemci, verilerin sahibi olan bir `cc_server` üzerinde arayüz çizen bir
@@ -15,7 +15,7 @@ kutuya, bir bulut sanal makinesine, bir derleme sunucusuna — yönlendirir.
 ## Önkoşullar
 
 - Çalışan bir `cc_server`. Yoksa [Headless bir sunucu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma/) sayfasına bakın.
-- Sunucunun ürettiği üç eşleştirme değeri — **sunucu URL’si** (`ws://…/rpc` veya `wss://…/rpc`), bir **cihaz kimliği** ve bir **eşleştirme anahtarı** — **ya da** bir çalışma alanı yöneticisinden alınan tek kullanımlık bir **davet kodu**. Bir daveti kullanmak kullanıcınızı oluşturur, üyeliğinizi kaydeder ve bu istemcinin kimlik bilgisini sizin adınıza üretir; böylece bir cihaz kimliğini ya da anahtarı hiç elle işlemezsiniz. Bu değerleri güvenilir bir kanaldan alın ve ilk bağlantıda sunucunun parmak izini güvenilir bir QR ya da bilinen bir sabitlemeyle karşılaştırın.
+- Sunucunun ürettiği üç eşleştirme değeri — **sunucu URL’si** (`ws://…/rpc` veya `wss://…/rpc`), bir **cihaz kimliği** ve bir **eşleştirme anahtarı** — **ya da** bir çalışma alanı yöneticisinden alınan tek kullanımlık bir **davet kodu**, **ya da** bunları taşıyan bir davet veya eşleştirme bağlantısı. Bir daveti kullanmak kullanıcınızı oluşturur, üyeliğinizi kaydeder ve bu istemcinin kimlik bilgisini sizin adınıza üretir; böylece bir cihaz kimliğini ya da anahtarı hiç elle işlemezsiniz. Bu değerleri güvenilir bir kanaldan alın ve ilk bağlantıda sunucunun parmak izini güvenilir bir QR ya da bilinen bir sabitlemeyle karşılaştırın.
 
 ### Sunucunun erişilebilir olduğundan emin olun
 
@@ -44,14 +44,16 @@ istemcilere her zaman izin verilir.
 
 Yeni bir kurulumda:
 
-1. Control Center’ı başlatın. İlk çalıştırma ekranı **Control Center nasıl çalışsın?** diye sorar.
-2. **Bu uygulamada çalıştır** yerine bağlantı alanlarını doldurun: sunucu URL’si ile birlikte bir davet kodu ya da bir cihaz kimliği ve eşleştirme anahtarı.
+1. Control Center’ı başlatın. İlk çalıştırma ekranında **Control Center'a hoş geldiniz** görünür.
+2. **Bir sunucuya bağlan**’a tıklayın ve sunucu URL’sini, ayrıca bir davet kodunu ya da **Eşleme anahtarı kullan** altında bir cihaz kimliği ile eşleştirme anahtarını girin.
 3. **Bağlan**’a tıklayın. Control Center sunucuyu arar ve çalışma alanı gelen kutusunda açılır.
+
+Bir davet veya eşleştirme bağlantınız varsa bunun yerine **Eşleme bağlantısı yapıştır**’a tıklayıp bağlantıyı yapıştırın. İletişim kutusu, bağlantının hangi sunucuya gittiğini gösterir. Bunu kontrol edin, ardından **Bağlan**’a tıklayın: yalnızca yapıştırmak asla bağlantı kurmaz. Bağlantı başarısız olursa iletişim kutusu, hatayı ve girdiğiniz her şeyi koruyarak açık kalır.
 
 Kendi sunucusunu zaten çalıştıran bir masaüstünde:
 
 1. **Ayarlar → Sunucu → Bağlantı ve durum** bölümünü açın.
-2. **Sunucu ekle**’ye tıklayın. Sunucu URL’sini (`wss://host:9030/rpc`) ve bir davet kodunu ya da bir cihaz kimliği ile eşleştirme anahtarını girin. URL alanının son ek düğmesi, LAN’ınızdaki veya tailnet’inizdeki `cc_server` örneklerini keşfeder.
+2. **Sunucu ekle**’ye tıklayın. Sunucu URL’sini (`wss://host:9030/rpc`) ve bir davet kodunu ya da **Eşleme anahtarı kullan** altında bir cihaz kimliği ile eşleştirme anahtarını girin. URL alanının son ek düğmesi, LAN’ınızdaki veya tailnet’inizdeki `cc_server` örneklerini keşfeder.
 3. **Bağlan**’a, ardından yeni sunucunun satırındaki **Geç**’e tıklayın.
 
 Geçiş canlıdır: uygulama yeni oturumun çevresinde yerinde yeniden kurulur,
@@ -69,10 +71,10 @@ geçerlidir.
 Web yapısı her zaman uzaktır.
 
 1. [app.usectrl.dev](https://app.usectrl.dev) adresini ya da web paketinin kendi kopyanızı açın.
-2. Sunucu URL’sini ve bir davet kodunu ya da bir cihaz kimliği ile eşleştirme anahtarını girin.
-3. İstemci sunucuyu arar ve masaüstünün çizdiği aynı arayüzü çizer.
+2. **Bir sunucuya bağlan**’a tıklayın ve sunucu URL’sini, ayrıca bir davet kodunu ya da **Eşleme anahtarı kullan** altında bir cihaz kimliği ile eşleştirme anahtarını girin. **Eşleme bağlantısı yapıştır** ise bunun yerine bir davet veya eşleştirme bağlantısı alır.
+3. **Bağlan**’a tıklayın. İstemci sunucuyu arar ve masaüstünün çizdiği aynı arayüzü çizer.
 
-URL’de bir eşleştirme derin bağlantısı varsa alanlar önceden doldurulur.
+URL’de bir eşleştirme derin bağlantısı varsa bağlantı iletişim kutusu alanları doldurulmuş olarak açılır; böylece **Bağlan**’a tıklamadan önce sunucuyu kontrol edebilirsiniz.
 Eşleştirme anahtarı URL’nin **fragment** kısmında taşınır; tarayıcılar bunu sayfayı
 barındıran ana makineye yaptıkları istekte göndermez. Bağlantıyı bir sır olarak
 görün ve web istemcisini sunan sayfaya güvenin: fragment, sayfanın kötü niyetli

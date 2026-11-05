@@ -2,7 +2,7 @@
 title: Configure notifications
 description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
 slug: en-GB/manual/guides/notifications
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 This guide shows you how to configure notifications and what each setting really
@@ -48,11 +48,27 @@ The phone client has no notification surface at all.
 Anything outside this list cannot be notified or filtered — there is no
 "everything else" category.
 
-**Agent waiting on you** fires once per wait, when it starts: a pending
+**Agent waiting on you** fires when a wait starts: a pending
 approval (including sandbox exec grants and Claude Code tool approvals), an
 `ask_user` question, or a run held because its credential cannot serve it. It
 opens the space where you answer, and stays quiet while you are already looking
 at that space.
+
+On the desktop, these notifications behave differently from the rest:
+
+- **They are time-sensitive.** On macOS they can break through a Focus that
+  allows time-sensitive notifications from Control Center.
+- **An approval can be answered from the notification.** **Approve** and
+  **Deny** send your answer without opening the app. The server checks it in
+  the same way as the in-app card. To approve for a set period instead, open the
+  card.
+- **An unanswered wait reminds you.** If nobody answers, the notification comes
+  back as **Still waiting: …** 3, 10, 25 and 45 minutes after the wait
+  started. Each reminder replaces the previous notification rather than adding
+  another. Reminders are skipped while a Control Center window has focus,
+  because the approval card and the bell are already in front of you.
+- **It disappears when the wait ends**, however it was answered, so you never
+  press a button on a request that has already been settled.
 
 These preferences follow your user across devices, so a phone and a laptop stay
 in step. Volume is the deliberate exception and stays per device.
@@ -93,7 +109,8 @@ A notification is dropped, silently, when any of these is true:
 - Notifications are globally off, or its category is off
 - You are already on the route it would take you to — and, for a message, already
   in that space
-- Focus mode is active and the category is not urgent
+- A focus session with **Block notifications** on is running and the category
+  is not urgent
 - Quiet hours are active and the category is not urgent
 
 Those checks apply to OS toasts. The durable bell still records the event.
@@ -133,6 +150,14 @@ state.
 Authorisation is requested natively when the app launches. If you declined it,
 re-enable Control Center under System Settings → Notifications; there is no
 in-app prompt to re-trigger it.
+
+### I keep missing approval notifications on macOS
+
+By default, macOS shows Control Center's notifications as banners, and a banner
+disappears after a few seconds. To keep them on screen until you act, set
+Control Center's alert style to **Persistent** under System Settings →
+Notifications. An unanswered approval also comes back as a reminder (see
+[Turn categories on or off](#turn-categories-on-or-off)).
 
 ### Nothing arrives on the web build
 

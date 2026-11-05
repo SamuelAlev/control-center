@@ -48,6 +48,7 @@ class _ChatProseMarkdownState extends State<_ChatProseMarkdown> {
         options: chatMarkdownOptions,
         builders: chatMarkdownBuilders,
         imageBuilder: appMarkdownImageBuilder,
+        onTapLink: openMarkdownLink,
         codeBuilder: widget.codeBuilder,
       );
     }
@@ -60,6 +61,7 @@ class _ChatProseMarkdownState extends State<_ChatProseMarkdown> {
         options: chatMarkdownOptions,
         builders: chatMarkdownBuilders,
         imageBuilder: appMarkdownImageBuilder,
+        onTapLink: openMarkdownLink,
         codeBuilder: widget.codeBuilder,
       );
     }
@@ -71,6 +73,7 @@ class _ChatProseMarkdownState extends State<_ChatProseMarkdown> {
       options: chatMarkdownOptions,
       builders: chatMarkdownBuilders,
       imageBuilder: appMarkdownImageBuilder,
+      onTapLink: openMarkdownLink,
       codeBuilder: widget.codeBuilder,
     );
   }

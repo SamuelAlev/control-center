@@ -1,6 +1,9 @@
+import 'package:cc_domain/features/agents/domain/services/content_synthesizer.dart';
+
 /// Default specialist agents seeded into every new workspace alongside the
 /// CEO. Each role has its own AGENTS.md content and skill set so the CEO has
-/// a baseline team to delegate to.
+/// a baseline team to delegate to; the content synthesizer writes the text
+/// Control Center generates around conversations.
 ///
 /// Skills are defined in [specialistSkillContentMap] and shared across
 /// specialists where overlap is natural (e.g. both `qa` and `engineer` use
@@ -12,6 +15,7 @@ class DefaultSpecialistAgent {
     required this.title,
     required this.agentMdContent,
     required this.skillSlugs,
+    this.persona,
   });
 
   /// Agent slug, e.g. `qa`.
@@ -25,6 +29,13 @@ class DefaultSpecialistAgent {
 
   /// Skill slugs this agent owns. Must exist in [specialistSkillContentMap].
   final List<String> skillSlugs;
+
+  /// Persona stored on the agent row at creation, or null to leave it unset.
+  ///
+  /// Set only where something reads the row rather than AGENTS.md: the
+  /// content synthesizer runs one-shot completions with no working
+  /// directory, so its persona is what the workspace edits to change them.
+  final String? persona;
 }
 
 const _qaAgentMd = '''---
@@ -148,6 +159,49 @@ belongs.
 - Link to authoritative source files instead of duplicating their contents.
 ''';
 
+const _contentSynthesizerPersona = '''# Content Synthesizer
+
+You write the short text Control Center generates around a conversation:
+conversation titles, `/btw` side answers, `/handoff` documents and the
+`/goal` objective interview. You read what you are given and write; you do
+not take actions.
+
+Edit this persona to change how that text reads across the workspace.
+
+## Titles
+
+- About 8 words or fewer, in sentence case.
+- Name the main topic, not the first sentence.
+- Short and impersonal.
+- Good titles look like:
+  - Git rebase question
+  - Installing Python packages
+  - Location of LinkedList implementation in codebase
+  - Adding a tree view to a VS Code extension
+  - React useState hook usage
+
+## Side answers and handoffs
+
+- Answer from the conversation as it stands, and say so when it does not
+  hold the answer.
+- Lead with the answer, then the detail that supports it.
+- Name files, symbols and commands rather than describing them.
+
+## Goal objectives
+
+- Ask one question at a time.
+- Prefer concrete, checkable success criteria over adjectives.''';
+
+const _contentSynthesizerAgentMd =
+    '''---
+name: content-synthesizer
+skills: []
+reportsTo: ceo
+---
+
+$_contentSynthesizerPersona
+''';
+
 /// Skill files shared by specialist agents. Some entries overlap with
 /// `ceoSkillContentMap` only by spirit — we keep them separate so the
 /// specialists' baseline is self-contained.
@@ -176,7 +230,7 @@ const specialistSkillContentMap = <String, String>{
       '---\nname: information-architecture\ndescription: Structuring docs and folder layouts for discoverability\n---\n\n# Information Architecture\n\nGroup related content; promote the right level of detail to the right surface (README, inline comments, ADR, deep dive).',
 };
 
-/// The four specialists every workspace gets out of the box.
+/// The specialists every workspace gets out of the box.
 const defaultSpecialistAgents = <DefaultSpecialistAgent>[
   DefaultSpecialistAgent(
     slug: 'qa',
@@ -205,5 +259,12 @@ const defaultSpecialistAgents = <DefaultSpecialistAgent>[
       'knowledge-management',
       'information-architecture',
     ],
+  ),
+  DefaultSpecialistAgent(
+    slug: kContentSynthesizerSlug,
+    title: 'Content synthesizer',
+    agentMdContent: _contentSynthesizerAgentMd,
+    skillSlugs: [],
+    persona: _contentSynthesizerPersona,
   ),
 ];

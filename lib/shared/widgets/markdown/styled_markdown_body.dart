@@ -3,6 +3,7 @@ import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/shared/widgets/github_markdown_body.dart'
     show GitHubMarkdownBody;
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_links.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:flutter/widgets.dart';
@@ -56,6 +57,7 @@ class StyledMarkdownBody extends ConsumerWidget {
       options: githubMarkdownOptions,
       builders: builders ?? githubMarkdownBuilders,
       imageBuilder: appMarkdownImageBuilder,
+      onTapLink: openMarkdownLink,
       codeBuilder: sharedCodeBuilder(
         codeFontFamily: codeFont,
         codeLigatures: codeLigatures,

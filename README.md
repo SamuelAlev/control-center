@@ -248,10 +248,10 @@ comes in and what goes back out:
 | Connection                          | Comes in                                                                       | Goes out                                                  |
 | ----------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------- |
 | **GitHub · GitLab · Bitbucket Cloud** | Pull requests, diffs, checks and deployment previews                           | Reviews and comments, published under your own account    |
-| **Linear**                          | Tickets with their status, assignee and comments                               | The same fields, synced back                              |
+| **Linear**                          | Issues assigned to you, with their status, priority and labels                 | Title, description, priority and status changes           |
 | **Slack**                           | A mention in a bridged thread                                                  | The live run, then the answer, posted in that thread      |
 | **Google Calendar**                 | Your events                                                                    | RSVPs, where the calendar grants write access             |
-| **Agent runtimes**                  | Tool calls and output from the built-in runtime, Claude Code, Codex, Pi or any ACP runner | A prompt and an isolated worktree for every run |
+| **Agent runtimes**                  | Tool calls and output from the built-in runtime or Claude Code                 | A prompt and an isolated worktree for every run           |
 | **MCP**                             | Tools from external MCP servers, for your agents to use                        | Control Center itself, as typed tools for any MCP client  |
 
 One workspace can mix repos from all three code hosts; each repo's forge is read from its
@@ -326,13 +326,6 @@ which browsers trust without a certificate, or reach a server on another machine
 furnished workspace with invented data and scripted agents. No account, no install. It
 runs [`cc_demo_server`](apps/cc_demo_server/README.md), the real server with the
 executing half removed, so it can show a fleet without being able to run anything.
-
-> [!IMPORTANT]
-> Before your first run you need **Git**, an **agent runtime** (the built-in runtime with
-> a model-provider API key, or an agent CLI such as Claude Code, Codex or Pi on your
-> `PATH`) and a **code host**: GitHub, GitLab or Bitbucket Cloud. Credentials live on the
-> server, attached to your user account, never in the client, so a phone or browser tab
-> never holds a token.
 
 ### Build from source
 

@@ -2,7 +2,7 @@
 title: Usar espaços
 description: Crie espaços, defina o modo deles, gerencie participantes e autonomia e abra conversas e tópicos.
 slug: pt-BR/manual/guias/espacos
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Este guia mostra como usar espaços. Um **espaço** é a superfície de mensagens do
@@ -26,6 +26,8 @@ agentes](#espaços-entre-agentes) abaixo.
    provisiona worktrees. Todos vêm selecionados por padrão; desmarcar todos os
    repos cria um espaço sem nada em checkout
 6. Confirme
+
+Só um agente responde a uma mensagem, então um espaço sem agente não inicia nada: o compositor avisa isso e mantém a sua mensagem até você mencionar um agente com @, o que o adiciona ao espaço e envia a mensagem. Não há executor padrão por trás de um espaço vazio.
 
 Os espaços têm escopo de espaço de trabalho: você só vê agentes do espaço de
 trabalho atual, e um espaço nunca expõe dados de outro espaço de trabalho.
@@ -100,7 +102,7 @@ cria uma conversa permanente sem título.
 As conversas aparecem como abas do editor e, quando há mais de uma, como linhas
 aninhadas sob o espaço na barra lateral. **Nova conversa** fica no menu de nova
 aba do editor e cria uma conversa sem título, sem nenhum prompt de título — o
-modelo de títulos a nomeia a partir da primeira mensagem. Use uma para rodar
+agente Content synthesizer a nomeia a partir da primeira mensagem. Use uma para rodar
 trabalho em paralelo com o mesmo agente e a mesma worktree.
 
 Cada conversa mantém seu próprio histórico de mensagens e suas próprias sessões

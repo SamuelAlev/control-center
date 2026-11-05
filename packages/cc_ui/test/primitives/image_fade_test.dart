@@ -98,6 +98,46 @@ void main() {
 
       expect(find.text('failed'), findsOneWidget);
     });
+
+    // The bug this guards: a loaded preview stayed painted under the opaque
+    // error tile, and its colours fringed through at fractional tile edges.
+    testWidgets('stops painting the placeholder under an opaque error', (
+      tester,
+    ) async {
+      final provider = _ManualImageProvider();
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: ImageFade(
+            image: provider,
+            syncDuration: Duration.zero,
+            errorHidesPlaceholder: true,
+            placeholder: const ColoredBox(
+              key: ValueKey('placeholder'),
+              color: Color(0xFF000000),
+            ),
+            errorBuilder: (_, _) => const Text('failed'),
+          ),
+        ),
+      );
+
+      bool placeholderVisible() => tester
+          .widget<Visibility>(
+            find.ancestor(
+              of: find.byKey(const ValueKey('placeholder')),
+              matching: find.byType(Visibility),
+            ),
+          )
+          .visible;
+
+      expect(placeholderVisible(), isTrue);
+
+      provider.fail('boom');
+      await tester.pump();
+
+      expect(find.text('failed'), findsOneWidget);
+      expect(placeholderVisible(), isFalse);
+    });
   });
 }
 

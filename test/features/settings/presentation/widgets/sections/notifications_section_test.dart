@@ -5,6 +5,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/notifications/notification_sound_service.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/notifications_section.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/general/settings_shared.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -62,10 +63,7 @@ class _FakeNotificationPreferences implements NotificationPreferencesPort {
   Future<Set<String>> getMutedRepos() async => mutedRepos;
 
   @override
-  Future<void> setRepoMuted(
-    String repoFullName, {
-    required bool muted,
-  }) async {
+  Future<void> setRepoMuted(String repoFullName, {required bool muted}) async {
     if (muted) {
       mutedRepos.add(repoFullName.toLowerCase());
     } else {
@@ -140,13 +138,15 @@ Widget _buildSection({
   final effectivePrefs = prefs ?? _FakeNotificationPreferences();
   final effectiveSound = soundService ?? _FakeNotificationSoundService();
 
-  return testWrap(
-    ProviderScope(
-      overrides: [
-        notificationPreferencesProvider.overrideWith((ref) => effectivePrefs),
-        notificationSoundServiceProvider.overrideWith((ref) => effectiveSound),
-      ],
-      child: const Scaffold(
+  // Outside testWrap on purpose: the section's unscoped FutureProviders resolve
+  // in the root scope, so an override nested below testWrap never reaches them.
+  return ProviderScope(
+    overrides: [
+      notificationPreferencesProvider.overrideWith((ref) => effectivePrefs),
+      notificationSoundServiceProvider.overrideWith((ref) => effectiveSound),
+    ],
+    child: testWrap(
+      const Scaffold(
         body: SingleChildScrollView(child: NotificationsSection()),
       ),
     ),
@@ -160,6 +160,43 @@ void main() {
       await tester.pump();
 
       expect(find.text('NOTIFICATIONS'), findsOneWidget);
+    });
+
+    testWidgets('orders sound and schedule above the event list', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_buildSection());
+      await tester.pump();
+
+      double top(String text) => tester.getTopLeft(find.text(text)).dy;
+
+      final order = [
+        'Enable notifications',
+        'SOUND',
+        'Notification sound',
+        'Volume',
+        'SCHEDULE',
+        'Delivery schedule',
+        'Quiet hours',
+        'Alert lead time',
+        'EVENTS',
+        'Agent finished',
+      ].map(top).toList();
+      expect(order, [...order]..sort());
+    });
+
+    testWidgets('hides every card but the master switch when disabled', (
+      tester,
+    ) async {
+      final prefs = _FakeNotificationPreferences(globalEnabled: false);
+
+      await tester.pumpWidget(_buildSection(prefs: prefs));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Enable notifications'), findsOneWidget);
+      expect(find.text('SOUND'), findsNothing);
+      expect(find.text('SCHEDULE'), findsNothing);
+      expect(find.text('EVENTS'), findsNothing);
     });
 
     testWidgets('renders global enable toggle', (tester) async {
@@ -277,8 +314,11 @@ void main() {
       await tester.pumpWidget(_buildSection(prefs: prefs));
       await tester.pump();
 
-      final switches = find.byType(CcSwitch);
-      await tester.tap(switches.at(1));
+      // Index 0 is the master switch and 1 is quiet hours; events come after.
+      final categorySwitch = find.byType(CcSwitch).at(2);
+      await tester.ensureVisible(categorySwitch);
+      await tester.pump();
+      await tester.tap(categorySwitch);
       await tester.pump();
 
       expect(prefs.categoryEnabled, isFalse);
@@ -290,10 +330,16 @@ void main() {
       await tester.pumpWidget(_buildSection(prefs: prefs));
       await tester.pump();
 
-      final switches = find.byType(CcSwitch);
-      await tester.ensureVisible(switches.last);
+      final quietHoursSwitch = find.descendant(
+        of: find.ancestor(
+          of: find.text('Quiet hours'),
+          matching: find.byType(SettingsRow),
+        ),
+        matching: find.byType(CcSwitch),
+      );
+      await tester.ensureVisible(quietHoursSwitch);
       await tester.pump();
-      await tester.tap(switches.last);
+      await tester.tap(quietHoursSwitch);
       await tester.pump();
 
       expect(prefs.quietHours.enabled, isTrue);

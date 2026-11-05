@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_domain/core/domain/notifications/notification_sound.dart';
 import 'package:cc_domain/core/domain/ports/notification_preferences_port.dart';
@@ -13,7 +14,18 @@ import 'package:flutter_test/flutter_test.dart';
 // ── Fakes ──────────────────────────────────────────────────────────────
 /// Captures the OS-level delivery calls made by [LocalNotificationService].
 class _FakeDelivery implements DesktopNotificationDelivery {
-  final List<({String id, String title, String body, String route})> shown = [];
+  final List<
+    ({
+      String id,
+      String title,
+      String body,
+      String route,
+      bool timeSensitive,
+      String? approvalId,
+    })
+  >
+  shown = [];
+  final List<String> removed = [];
   int permissionRequests = 0;
 
   @override
@@ -25,9 +37,21 @@ class _FakeDelivery implements DesktopNotificationDelivery {
     required String title,
     required String body,
     required String route,
+    bool timeSensitive = false,
+    String? approvalId,
   }) async {
-    shown.add((id: id, title: title, body: body, route: route));
+    shown.add((
+      id: id,
+      title: title,
+      body: body,
+      route: route,
+      timeSensitive: timeSensitive,
+      approvalId: approvalId,
+    ));
   }
+
+  @override
+  Future<void> remove(String id) async => removed.add(id);
 
   @override
   void dispose() {}
@@ -139,6 +163,7 @@ void main() {
     LocalNotificationService createService({
       bool appFocused = true,
       String? activeSpaceId,
+      bool focusBlocking = false,
     }) {
       return LocalNotificationService(
         preferences: prefs,
@@ -147,8 +172,89 @@ void main() {
         soundService: _FakeSoundService(),
         isSpaceActive: (spaceId) => spaceId == activeSpaceId,
         isAppFocused: () => appFocused,
+        isFocusBlocking: () => focusBlocking,
       );
     }
+
+    AppNotification awaiting(String kind, {String waitId = 'cf_1'}) =>
+        mapNotificationFrame('notifications/agent_awaiting_input', {
+          'workspace_id': 'w1',
+          'space_id': 'sp-1',
+          'wait_id': waitId,
+          'kind': kind,
+          'agent_name': 'engineer',
+          'summary': 'Push to a Git remote',
+        }, l10n: lookupAppLocalizations(const Locale('en')))!;
+
+    test(
+      'an approval is time-sensitive, keyed by its wait and answerable',
+      () async {
+        final service = createService(appFocused: false);
+        service.show(awaiting('approval'));
+        await Future<void>.delayed(Duration.zero);
+        final shown = delivery.shown.single;
+        expect(shown.id, 'wait-cf_1');
+        expect(shown.timeSensitive, isTrue);
+        expect(shown.approvalId, 'cf_1');
+        service.dispose();
+      },
+    );
+
+    test('a question is time-sensitive but offers no approval', () async {
+      final service = createService(appFocused: false);
+      service.show(awaiting('question', waitId: 'msg-1'));
+      await Future<void>.delayed(Duration.zero);
+      final shown = delivery.shown.single;
+      expect(shown.id, 'wait-msg-1');
+      expect(shown.timeSensitive, isTrue);
+      expect(shown.approvalId, isNull);
+      service.dispose();
+    });
+
+    test(
+      'an ordinary notification is neither time-sensitive nor answerable',
+      () async {
+        final service = createService(appFocused: false);
+        service.show(
+          const AppNotification(
+            category: NotificationCategory.agentRunCompleted,
+            title: 'Done',
+            body: '',
+            route: '/x',
+            workspaceId: 'w1',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        final shown = delivery.shown.single;
+        expect(shown.id, startsWith('agentRunCompleted-'));
+        expect(shown.timeSensitive, isFalse);
+        expect(shown.approvalId, isNull);
+        service.dispose();
+      },
+    );
+
+    test('withdraw removes the wait\'s notification by its identifier', () {
+      final service = createService()
+        ..withdraw(NotificationWait(id: 'cf_9', kind: AgentInputKind.approval));
+      expect(delivery.removed, ['wait-cf_9']);
+      service.dispose();
+    });
+
+    test('a focus session that blocks notifications silences them', () async {
+      final service = createService(appFocused: false, focusBlocking: true);
+      service.show(awaiting('approval'));
+      await Future<void>.delayed(Duration.zero);
+      expect(delivery.shown, isEmpty);
+      service.dispose();
+    });
+
+    test('a focus session with blocking off lets them through', () async {
+      final service = createService(appFocused: false);
+      service.show(awaiting('approval'));
+      await Future<void>.delayed(Duration.zero);
+      expect(delivery.shown, hasLength(1));
+      service.dispose();
+    });
 
     test('shows notification when enabled and not on target route', () async {
       final service = createService();
@@ -329,10 +435,29 @@ void main() {
     const channelName = 'com.controlcenter/notifications';
     late List<MethodCall> nativeCalls;
     late List<String> navigated;
+    late List<(String, bool)> answered;
+
+    MacOsChannelNotificationDelivery createDelivery() =>
+        MacOsChannelNotificationDelivery(
+          onNavigate: navigated.add,
+          onApproval: (id, {required approved}) => answered.add((id, approved)),
+          actionLabels: () => (approve: 'Approve', deny: 'Deny'),
+        );
+
+    Future<void> sendFromNative(String method, Map<String, Object?> args) =>
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .handlePlatformMessage(
+              channelName,
+              const StandardMethodCodec().encodeMethodCall(
+                MethodCall(method, args),
+              ),
+              (_) {},
+            );
 
     setUp(() {
       nativeCalls = [];
       navigated = [];
+      answered = [];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(const MethodChannel(channelName), (
             call,
@@ -348,9 +473,7 @@ void main() {
     });
 
     test('forwards id/title/body/route to the native notify call', () async {
-      final delivery = MacOsChannelNotificationDelivery(
-        onNavigate: navigated.add,
-      );
+      final delivery = createDelivery();
       await delivery.show(
         id: 'meetingStartsSoon-0',
         title: 'Meeting starting soon',
@@ -365,26 +488,65 @@ void main() {
       expect(args['title'], 'Meeting starting soon');
       expect(args['body'], 'Standup');
       expect(args['route'], '/calendar/evt-1');
+      expect(args['timeSensitive'], isFalse);
+      expect(args.containsKey('approvalId'), isFalse);
+      delivery.dispose();
+    });
+
+    test('an approval carries its id, button titles and urgency', () async {
+      final delivery = createDelivery();
+      await delivery.show(
+        id: 'wait-cf_1',
+        title: 'engineer needs your approval',
+        body: 'Push',
+        route: '/w',
+        timeSensitive: true,
+        approvalId: 'cf_1',
+      );
+
+      final args = nativeCalls.single.arguments as Map;
+      expect(args['timeSensitive'], isTrue);
+      expect(args['approvalId'], 'cf_1');
+      expect(args['approveLabel'], 'Approve');
+      expect(args['denyLabel'], 'Deny');
+      delivery.dispose();
+    });
+
+    test('remove withdraws by identifier', () async {
+      final delivery = createDelivery();
+      await delivery.remove('wait-cf_1');
+
+      expect(nativeCalls.single.method, 'remove');
+      expect((nativeCalls.single.arguments as Map)['identifier'], 'wait-cf_1');
       delivery.dispose();
     });
 
     test('routes a native click back through onNavigate', () async {
-      final delivery = MacOsChannelNotificationDelivery(
-        onNavigate: navigated.add,
-      );
-
-      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .handlePlatformMessage(
-            channelName,
-            const StandardMethodCodec().encodeMethodCall(
-              const MethodCall('onNotificationClick', {
-                'route': '/calendar/evt-1',
-              }),
-            ),
-            (_) {},
-          );
+      final delivery = createDelivery();
+      await sendFromNative('onNotificationClick', {'route': '/calendar/evt-1'});
 
       expect(navigated, ['/calendar/evt-1']);
+      delivery.dispose();
+    });
+
+    test('routes Approve and Deny buttons to the approval handler', () async {
+      final delivery = createDelivery();
+      await sendFromNative('onNotificationAction', {
+        'action': 'approve',
+        'approvalId': 'cf_1',
+      });
+      await sendFromNative('onNotificationAction', {
+        'action': 'deny',
+        'approvalId': 'cf_2',
+      });
+      await sendFromNative('onNotificationAction', {
+        'action': 'snooze',
+        'approvalId': 'cf_3',
+      });
+      await sendFromNative('onNotificationAction', {'action': 'approve'});
+
+      expect(answered, [('cf_1', true), ('cf_2', false)]);
+      expect(navigated, isEmpty);
       delivery.dispose();
     });
   });

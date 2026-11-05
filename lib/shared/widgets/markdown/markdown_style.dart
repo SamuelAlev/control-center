@@ -539,6 +539,17 @@ class _SharedCodeBlock extends StatefulWidget {
 class _SharedCodeBlockState extends State<_SharedCodeBlock> {
   bool _expanded = false;
 
+  /// Shared by the horizontal code scrollable and its [CcScrollbar]: the
+  /// app-level scroll behavior injects thumbs on vertical axes only, so a
+  /// long line was otherwise reachable only by drag-selecting text.
+  final ScrollController _horizontalScroll = ScrollController();
+
+  @override
+  void dispose() {
+    _horizontalScroll.dispose();
+    super.dispose();
+  }
+
   /// Number of lines in [code], counted without allocating them.
   static int _countLines(String code) {
     var lines = 1;
@@ -745,16 +756,25 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
     // direction.
     final body = Directionality(
       textDirection: TextDirection.ltr,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: labeled
-            ? kCodeBlockContentPadding
-            : kCodeBlockContentPadding.copyWith(
-                right:
-                    kCodeBlockContentPadding.right +
-                    kCodeBlockOverlayCopyReserve,
-              ),
-        child: Text.rich(TextSpan(style: codeStyle, children: spans)),
+      // Always-visible thumb: RawScrollbar paints nothing when the code fits,
+      // so only overflowing blocks show one. Thinner than the default so it
+      // sits inside the bottom content padding instead of over the last line.
+      child: CcScrollbar(
+        controller: _horizontalScroll,
+        thumbVisibility: true,
+        thickness: 6,
+        child: SingleChildScrollView(
+          controller: _horizontalScroll,
+          scrollDirection: Axis.horizontal,
+          padding: labeled
+              ? kCodeBlockContentPadding
+              : kCodeBlockContentPadding.copyWith(
+                  right:
+                      kCodeBlockContentPadding.right +
+                      kCodeBlockOverlayCopyReserve,
+                ),
+          child: Text.rich(TextSpan(style: codeStyle, children: spans)),
+        ),
       ),
     );
 

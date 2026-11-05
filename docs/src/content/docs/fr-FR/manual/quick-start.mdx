@@ -2,7 +2,7 @@
 title: Démarrage rapide
 description: Installez Control Center, configurez un agent et regardez-le travailler sur votre dépôt.
 slug: fr-FR/manuel/demarrage-rapide
-sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
+sourceHash: 7b9007b72fd67a919a29caae8f47acf8ef9fb40b
 ---
 
 Voici le chemin complet le plus court pour passer de rien à un agent qui travaille sur votre propre code. Suivez-le dans l'ordre ; chaque étape dépend de la précédente.
@@ -13,7 +13,7 @@ Il vous faut Git, un compte GitHub et, au choix, un compte auprès d'un fourniss
 
 Installez Control Center comme décrit dans [Installer](/fr-FR/manuel/installer/), puis ouvrez-le.
 
-Au premier lancement, l'application de bureau demande **« Comment exécuter Control Center ? »**. Choisissez **Exécuter dans cette application**. Control Center lance un `cc_server` sans interface sur cette machine, qui détient vos données et fait tout le travail. Vous ne le voyez jamais ; l'écran de configuration initiale s'ouvre à la place.
+Au premier lancement, l'application de bureau affiche **Bienvenue dans Control Center**. Choisissez **Exécuter dans cette application**. Control Center lance un `cc_server` sans interface sur cette machine, qui détient vos données et fait tout le travail. Vous ne le voyez jamais ; l'écran de configuration initiale s'ouvre à la place.
 
 :::note[Vous préférez ne rien installer ?]
 La même application s'exécute dans le navigateur sur [app.usectrl.dev](https://app.usectrl.dev) avec les mêmes fonctionnalités. Un onglet de navigateur ne peut toutefois pas héberger le serveur : c'est donc à vous d'en fournir un — exécutez `cc_server` en local et connectez-vous à `ws://localhost:9030`, ou pointez-le vers un serveur sur une autre machine. Ce démarrage rapide emprunte la voie de l'application de bureau, car elle ne demande aucune configuration de serveur ; voir [Installer](/fr-FR/manuel/installer/#use-it-in-your-browser) pour la voie du navigateur.

@@ -50,8 +50,8 @@ typedef OneShotLauncher =
 /// the prompt, reads the answer; no MCP, no tools, throwaway cwd.
 /// - [AdapterTransport.harness]: in-process [LlmProviderPort]; only transport
 ///   with `maxTokens` and credential resolution we control.
-/// - [AdapterTransport.claudeCli]: `claude -p --output-format text`; system
-///   prompt folded into stdin (no extra flags).
+/// - [AdapterTransport.claudeCli]: `claude -p --output-format text` with no
+///   tools, no MCP servers and the caller's system prompt replacing Claude Code's own.
 /// - [AdapterTransport.acp]: full ACP handshake via [AcpClient], collect
 ///   [TextEvent]s.
 /// Returns null on cannot-run (unknown id / missing CLI / no credential) —
@@ -108,16 +108,27 @@ class AdapterOneShotRunner {
       ),
       AdapterTransport.claudeCli => _runPipedCli(
         adapter: adapter,
+        // A plain completion, not an agent session. Without `--tools ''`
+        // Claude Code keeps its built-in tools and its agentic system
+        // prompt, so a titling prompt over "rebase my branch" was answered
+        // as a task ("I couldn't start the rebase because there's no
+        // repository here") and that answer became the title.
+        // `--system-prompt` replaces Claude Code's own prompt instead of
+        // folding ours into the user turn.
         args: [
           '-p',
           '--output-format',
           'text',
+          '--tools',
+          '',
+          '--strict-mcp-config',
+          '--disable-slash-commands',
+          '--no-session-persistence',
+          '--system-prompt',
+          systemPrompt,
           if (modelId != null && modelId.isNotEmpty) ...['--model', modelId],
         ],
-        // Claude Code takes `--append-system-prompt`, but this repo has never
-        // driven it, so the instruction rides in the piped prompt where every
-        // CLI honours it identically.
-        input: '$systemPrompt\n\n$prompt',
+        input: prompt,
         timeout: timeout,
       ),
       AdapterTransport.acp => _runAcp(

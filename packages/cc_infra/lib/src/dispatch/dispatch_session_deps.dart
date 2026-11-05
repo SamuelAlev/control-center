@@ -61,6 +61,7 @@ class SandboxDispatchDeps {
     this.toolOutputStore,
     this.claudeSessionStore,
     this.claudeMcpDiscoveryCache = ClaudeMcpDiscoveryCachePolicy.disabled,
+    this.claudeContextWindowOf,
     this.debugSupervisor,
     this.kernelLauncherFactory,
     this.actionGuard,
@@ -259,6 +260,12 @@ class SandboxDispatchDeps {
   /// (`MCP_DISCOVERY_CACHE`). [ClaudeMcpDiscoveryCachePolicy.disabled] by
   /// default — the CLI's own behaviour, untouched.
   final ClaudeMcpDiscoveryCachePolicy claudeMcpDiscoveryCache;
+
+  /// The window, in tokens, Claude Code runs a `--model` id with (null id:
+  /// its default model), read from the installed CLI. What the context meter
+  /// measures against when the agent sets no size of its own. Null (unwired)
+  /// or a null answer leaves the window unreported.
+  final Future<int?> Function(String? modelId)? claudeContextWindowOf;
 
   /// Content-addressed storage for images a tool returned (screenshots from
   /// `browser_use` / `computer_use` / `mobile_use` / `ios_use`, rendered output).

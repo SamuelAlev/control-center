@@ -234,6 +234,73 @@ class SandboxPolicyResolver {
     '.gitconfig',
   ];
 
+  // ---- Exec allow: toolchain installs under $HOME ----
+
+  /// Toolchain install trees under `$HOME` whose binaries may exec, despite
+  /// the `$HOME` exec deny.
+  ///
+  /// Version managers and package managers download real executables here and
+  /// run them from here: corepack's pnpm 12 spawns `pnpm-native` from its
+  /// cache, fvm's `dart` script execs the SDK's VM, Playwright launches the
+  /// browsers it installed and `npx` runs bins from `~/.npm/_npx`. A literal
+  /// allow per runtime binary cannot cover them. Their names change with every
+  /// version and download, so every one of these tools failed with
+  /// "Operation not permitted". Agents then worked around that by copying
+  /// binaries into `/tmp`.
+  ///
+  /// Only trees a toolchain owns belong here, never a general location like
+  /// `$HOME` itself or a repo checkout. The infra materializer expands these
+  /// against the home, adds env relocations (`COREPACK_HOME`, `CARGO_HOME`, …)
+  /// and emits only the ones that exist.
+  static const List<String> homeToolchainExecRels = [
+    // JavaScript: corepack-managed package managers, one-off runners and
+    // version managers (global `npm i -g` CLIs live under the node version).
+    '.cache/node/corepack',
+    '.npm/_npx',
+    'Library/Caches/pnpm/dlx',
+    '.cache/pnpm/dlx',
+    'Library/pnpm',
+    '.local/share/pnpm',
+    '.nvm/versions',
+    '.local/share/fnm/node-versions',
+    '.fnm/node-versions',
+    'Library/Application Support/fnm/node-versions',
+    '.volta',
+    '.bun',
+    '.deno',
+    '.yarn/bin',
+    // Browser automation downloads.
+    'Library/Caches/ms-playwright',
+    '.cache/ms-playwright',
+    '.cache/puppeteer',
+    // Rust, Go.
+    '.cargo/bin',
+    '.rustup/toolchains',
+    'go/bin',
+    'go/pkg/mod/golang.org',
+    'sdk',
+    // Dart and Flutter.
+    'fvm/versions',
+    '.fvm/versions',
+    '.pub-cache/bin',
+    '.puro/envs',
+    // Python.
+    '.pyenv/versions',
+    '.local/share/uv',
+    '.cache/uv',
+    '.local/pipx',
+    '.local/share/pipx',
+    // Ruby, JVM.
+    '.rbenv/versions',
+    '.sdkman/candidates',
+    '.jdks',
+    // Polyglot version managers and user-level installs.
+    '.local/share/mise/installs',
+    '.asdf/installs',
+    '.asdf/shims',
+    '.local/bin',
+  ];
+
   // ---- Exec deny: always-dangerous-at-any-invocation binaries ----
 
   /// Single-token binaries denied at the exec level regardless of args.

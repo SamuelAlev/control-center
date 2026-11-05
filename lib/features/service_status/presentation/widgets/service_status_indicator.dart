@@ -11,6 +11,8 @@ import 'package:control_center/shared/widgets/refresh_control.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+part 'service_status_incident_tile.dart';
+
 /// Public githubstatus.com landing page opened by the provider block link.
 const String _githubStatusPageUrl = 'https://www.githubstatus.com/';
 
@@ -23,13 +25,12 @@ const String _openaiStatusPageUrl = 'https://status.openai.com/';
 /// Public status.moonshot.cn landing page opened by the provider block link.
 const String _kimiStatusPageUrl = 'https://status.moonshot.cn/';
 
-/// Global-sidebar entry for external service status, pinned in the footer above the
-/// newsfeed.
+/// Global-sidebar entry for external service status, in the footer.
 /// Unlike the nav items around it, the entry is ALWAYS mounted and opens no route: tapping
-/// it opens a flyout to the RIGHT of the sidebar (the sidebar hugs the window's left edge,
-/// so right is the only side with room) covering the external services the operator depends
-/// on (GitHub, Claude, Codex, Kimi): each provider's status word, active incidents,
-/// degraded components and a link to its status page.
+/// it opens a flyout ABOVE the entry (the footer sits at the window's bottom edge, so up is
+/// the side with room) covering the external services the operator depends on (GitHub,
+/// Claude, Codex, Kimi): each provider's status word, active incidents, degraded components
+/// and a link to its status page.
 class ServiceStatusSidebarEntry extends ConsumerStatefulWidget
     implements CcFluidHoverTarget {
   /// Creates a [ServiceStatusSidebarEntry].
@@ -98,15 +99,11 @@ class _ServiceStatusSidebarEntryState
       // toggles), so the popover must not wrap the target in a second tap
       // layer or one press would toggle twice.
       toggleOnTargetTap: false,
-      targetAnchor: AlignmentDirectional.centerEnd,
-      followerAnchor: AlignmentDirectional.centerStart,
-      // The row's trailing edge sits 8px inside the sidebar's outer edge (7px
-      // content inset + the 1px trailing border): 8 clears the sidebar and
-      // the extra 4 (AppSpacing.xs) leaves a visible gap between the border
-      // hairline and the flyout instead of the flyout overlapping it. With
-      // directional anchors the dx is logical (toward the end) and the
-      // overlay anchor mirrors it under RTL itself.
-      offset: const Offset(12, 0),
+      // End-aligned: the entry sits in the strip's trailing group, so the
+      // flyout grows back over the sidebar rather than out over the page.
+      targetAnchor: AlignmentDirectional.topEnd,
+      followerAnchor: AlignmentDirectional.bottomEnd,
+      offset: const Offset(0, -AppSpacing.sm),
       semanticLabel: l10n.serviceStatusTitle,
       overlayBuilder: (context, _) => _StatusFlyout(
         github: github,
@@ -124,20 +121,38 @@ class _ServiceStatusSidebarEntryState
       // (the controller notifies on open AND on barrier/Escape dismissal).
       target: ListenableBuilder(
         listenable: _controller,
-        builder: (context, _) => CcSidebarItem(
-          icon: AppIcons.activity,
-          label: l10n.serviceStatusTitle,
-          selected: _controller.isOpen,
-          // Trailing badge (the row default): the dot anchors to the row's
-          // right edge instead of hugging the label's words.
-          badge: ServiceStatusBadge(
+        builder: (context, _) {
+          final badge = ServiceStatusBadge(
             color: serviceIndicatorColor(context.designSystem, headline),
             semanticLabel: serviceStatusWord(l10n, headline),
             faulty: faulty,
             selected: _controller.isOpen,
-          ),
-          onPressed: _open,
-        ),
+          );
+          final iconOnly = CcSidebarScope.collapsedOf(context) ?? false;
+          return CcSidebarItem(
+            icon: AppIcons.activity,
+            label: l10n.serviceStatusTitle,
+            selected: _controller.isOpen,
+            // Icon-only, the dot sits on the glyph: the item's own badge slot
+            // hangs outside the square, over the neighbour in the footer strip.
+            iconBuilder: iconOnly
+                ? (color, size) => SizedBox.square(
+                    dimension: size,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(AppIcons.activity, size: size, color: color),
+                        PositionedDirectional(top: -2, end: -2, child: badge),
+                      ],
+                    ),
+                  )
+                : null,
+            // Trailing badge (the row default): the dot anchors to the row's
+            // right edge instead of hugging the label's words.
+            badge: iconOnly ? null : badge,
+            onPressed: _open,
+          );
+        },
       ),
     );
   }
@@ -568,96 +583,6 @@ class _ProviderBlock extends StatelessWidget {
         icon: AppIcons.externalLink,
         child: Text(openLabel),
       ),
-    );
-  }
-}
-
-class _IncidentTile extends StatelessWidget {
-  const _IncidentTile({required this.incident});
-
-  final GitHubStatusIncident incident;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return CcTappable(
-      onPressed: () => _open(incident.shortlink),
-      borderRadius: BorderRadius.circular(8),
-      semanticLabel: incident.name,
-      builder: (context, states) {
-        final pressed = states.contains(WidgetState.pressed);
-        final hovered = states.contains(WidgetState.hovered) || pressed;
-        // The tile is now the block's only link, so it has to read as one at
-        // rest and CHANGE visibly on hover in BOTH themes. Half-alpha fills
-        // and borders did neither in dark: `bgSecondary` IS `panel` there, so
-        // a 50% wash of it over the flyout was the flyout, and a 50%
-        // `borderSecondary` (gray800 on gray900) had nothing left to see.
-        // So: a solid `bgTertiary` fill, which is a step off `panel` on both
-        // palettes, washed further by the same `hover`/`hoverStrong` overlays
-        // every other tappable surface uses (they invert per theme, so the
-        // fill darkens in light and lightens in dark). The border pair is
-        // `CcButtonVariant.line`'s verbatim — `borderPrimary` at rest (one
-        // rung darker than before) firming to `fg` on hover — so this card
-        // and the app's other bordered surfaces speak one language.
-        final fill = tokens.bgTertiary;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 80),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: pressed
-                ? Color.alphaBlend(tokens.hoverStrong, fill)
-                : hovered
-                ? Color.alphaBlend(tokens.hover, fill)
-                : fill,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: hovered ? tokens.fg : tokens.borderPrimary,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(AppIcons.circleAlert, size: 14, color: tokens.warn),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      incident.name,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: tokens.textPrimary,
-                        height: 1.3,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      incident.status,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: tokens.textTertiary,
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // The affordance itself: quiet at rest, full ink on hover, so
-              // the card reports "this opens the incident" the moment the
-              // pointer lands rather than only through the fill.
-              Icon(
-                AppIcons.externalLink,
-                size: 12,
-                color: hovered ? tokens.textPrimary : tokens.textTertiary,
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

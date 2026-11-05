@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -132,6 +133,15 @@ const _version = 1;
 const _chunk = 32 * 1024;
 const _window = 8;
 const _maxActive = 32;
+
+/// HTTP lanes a client opens at once; further requests wait for one. Kept below
+/// [_maxActive] because the peer fails the whole channel on an opening past its
+/// limit, and it counts private handlers that are still unwinding after a lane
+/// reads as free here. The headroom also keeps WebSocket opens from queueing.
+const _maxRequests = 24;
+
+/// How long a request waits for a lane before it fails.
+const _laneTimeout = Duration(seconds: 60);
 // Real code-server extension-host startup emits a single ~1.4 MiB binary frame.
 // Keep a bounded message envelope with room for that state, fragmented below.
 const _maxMessage = 4 * 1024 * 1024;
@@ -777,6 +787,9 @@ abstract class _Tunnel {
   void _cancel(_Slot slot, [Object? error]) =>
       _terminate(slot, error ?? StateError('Resource cancelled'));
 
+  /// Called whenever a slot leaves [slots].
+  void _slotReleased() {}
+
   void _terminate(_Slot slot, Object? error, {bool notify = true}) {
     if (slot.terminated) {
       return;
@@ -792,6 +805,7 @@ abstract class _Tunnel {
       });
     }
     slots.remove(slot.id);
+    _slotReleased();
     finished[slot.id] = slot.aborted;
     while (finished.length > 1024) {
       finished.remove(finished.keys.first);
@@ -841,6 +855,51 @@ class RemoteResourceClient extends _Tunnel implements RemoteResources {
   RemoteResourceClient(super.channel);
   int _nextId = 0;
 
+  /// Requests waiting for a lane, oldest first.
+  final Queue<Completer<void>> _laneWaiters = Queue();
+
+  /// Lanes promised to woken waiters that have not created their slot yet.
+  int _reservedLanes = 0;
+
+  bool get _laneFree => slots.length + _reservedLanes < _maxRequests;
+
+  /// Null when a lane is free now. The caller creates its slot only after this
+  /// settles and writes `open` in the same synchronous run: the peer fails the
+  /// channel on an out-of-order ID, so IDs must not be allocated while queued.
+  Future<void>? _waitForLane() {
+    if (_laneWaiters.isEmpty && _laneFree) {
+      return null;
+    }
+    final waiter = Completer<void>();
+    _laneWaiters.add(waiter);
+    return waiter.future.timeout(
+      _laneTimeout,
+      onTimeout: () {
+        _laneWaiters.remove(waiter);
+        throw TimeoutException('Resource lane wait timed out');
+      },
+    );
+  }
+
+  @override
+  void _slotReleased() {
+    while (_laneWaiters.isNotEmpty && _laneFree) {
+      _reservedLanes++;
+      _laneWaiters.removeFirst().complete();
+    }
+  }
+
+  @override
+  Future<void> close() {
+    final closing = super.close();
+    // Each waiter releases its reservation, then `_create` refuses it.
+    while (_laneWaiters.isNotEmpty) {
+      _reservedLanes++;
+      _laneWaiters.removeFirst().complete();
+    }
+    return closing;
+  }
+
   _Slot _create(bool ws) {
     if (closed ||
         !channel.isOpen ||
@@ -864,6 +923,11 @@ class RemoteResourceClient extends _Tunnel implements RemoteResources {
     _validateHeaders(headers);
     if (!RegExp(r'^[A-Z]+$').hasMatch(method) || method.length > 16) {
       throw const FormatException('Invalid HTTP method');
+    }
+    final lane = _waitForLane();
+    if (lane != null) {
+      await lane;
+      _reservedLanes--;
     }
     final slot = _create(false);
     slot.hasUpload = body != null;

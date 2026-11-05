@@ -2,7 +2,7 @@
 title: Backend sandbox
 description: Các backend sandbox, nơi chúng được áp dụng và mọi value object mà runtime sandbox sử dụng.
 slug: vi-VN/so-tay/tham-chieu/backend-sandbox
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Việc một lượt chạy có được sandbox hay không phụ thuộc vào máy chủ]
@@ -61,8 +61,8 @@ Profile được sinh ra **mặc định là dễ dãi** (`(allow default)`) và
 
 - **Đọc hệ thống tệp**: bị từ chối với các đường dẫn bí mật (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` và phần còn lại của nhóm từ chối đọc)
 - **Ghi hệ thống tệp**: được đặt lại thành từ chối, rồi các lệnh cho phép tường minh cho từng đường dẫn con, với những đường dẫn bắt buộc từ chối (tệp rc của shell, `.git/hooks`, cấu hình Claude, các bản checkout được bảo vệ) bị chặn ngay cả bên trong một gốc có thể ghi. `file-write-unlink` bị từ chối trên mọi đường dẫn bị từ chối và các tổ tiên của nó, nên một lệnh rename không thể lách qua một lệnh từ chối ghi
-- **Tiến trình**: `process-exec` từ chối các tệp nhị phân luôn nguy hiểm, cộng thêm việc chặn thực thi bất cứ thứ gì từ một thư mục có thể ghi
-- **Mạng**: bị giới hạn ở các cổng proxy in-process cùng DNS — loopback không được cho phép toàn bộ và socket Unix không được phép. Các proxy thực thi danh sách cho phép theo tên miền của từng phiên (xem [Egress mạng](#egress-mạng))
+- **Tiến trình**: `process-exec` từ chối các tệp nhị phân luôn nguy hiểm, cộng thêm việc chặn thực thi bất cứ thứ gì từ một thư mục có thể ghi. Các cây cài đặt công cụ đã biết trong thư mục home của bạn (cache của corepack, npx và `pnpm dlx`, trình quản lý phiên bản node, trình duyệt Playwright, rustup và cargo, Go, fvm và pub cache, pyenv, uv và pipx, rbenv, sdkman, mise, asdf và `~/.local/bin`) được mở lại bên dưới khối chặn đó. Các thư mục tạm dùng chung cũng bị chặn. Thay vào đó, mỗi phiên được cấp một `TMPDIR` riêng dưới `/private/tmp`, nơi các chương trình nó build (một tệp nhị phân `go test`, một bản build cargo) có thể chạy. Quy tắc từ chối cho các tệp nhị phân luôn nguy hiểm được áp dụng sau các quy tắc cho phép này
+- **Mạng**: bị giới hạn ở các cổng proxy in-process cùng DNS — loopback không được cho phép toàn bộ và không cho phép lắng nghe TCP. Socket Unix chỉ được phép bên trong `TMPDIR` riêng của phiên, bao gồm các công cụ như tsx và Chrome giữ socket IPC ở đó; SSH agent và các socket khác vẫn không thể truy cập. Các proxy thực thi danh sách cho phép theo tên miền của từng phiên (xem [Egress mạng](#egress-mạng))
 - **Cấu hình**: profile được sinh theo từng lần khởi chạy từ `SandboxSpec`
 
 Yêu cầu:

@@ -10,13 +10,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Closed-list language autocomplete. Opening lists every locale; typing
 /// then filters native names, BCP 47 tags and ISO codes. Abandoning the
 /// query restores the current selection rather than committing free text.
-class LanguagePicker extends ConsumerStatefulWidget {
+class LanguagePicker extends StatefulWidget {
   /// Creates the shared closed-list language picker.
   const LanguagePicker({
     required this.selected,
     required this.systemLabel,
     required this.searchHint,
     required this.semanticLabel,
+    required this.onSelected,
     super.key,
   });
 
@@ -32,11 +33,14 @@ class LanguagePicker extends ConsumerStatefulWidget {
   /// Accessibility name for the field.
   final String semanticLabel;
 
+  /// Called with the chosen locale, or `null` for the follow-system option.
+  final ValueChanged<Locale?> onSelected;
+
   @override
-  ConsumerState<LanguagePicker> createState() => _LanguagePickerState();
+  State<LanguagePicker> createState() => _LanguagePickerState();
 }
 
-class _LanguagePickerState extends ConsumerState<LanguagePicker> {
+class _LanguagePickerState extends State<LanguagePicker> {
   static const _system = Locale('system');
 
   final _controller = TextEditingController();
@@ -132,11 +136,7 @@ class _LanguagePickerState extends ConsumerState<LanguagePicker> {
           ))
             option,
       ],
-      onSelected: (value) {
-        ref
-            .read(localeProvider.notifier)
-            .setLocale(value == _system ? null : value);
-      },
+      onSelected: (value) => widget.onSelected(value == _system ? null : value),
     );
   }
 }
@@ -177,6 +177,7 @@ Widget languagePickerPreview() => ProviderScope(
                     systemLabel: l10n.languageSystem,
                     searchHint: l10n.searchPlaceholder,
                     semanticLabel: l10n.settingsLanguage,
+                    onSelected: ref.read(localeProvider.notifier).setLocale,
                   ),
                 ),
               );

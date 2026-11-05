@@ -2,7 +2,7 @@
 title: Se connecter à un serveur distant
 description: Pointez l'application de bureau ou le client web vers un cc_server exécuté ailleurs et basculez d'un serveur à l'autre sans redémarrer.
 slug: fr-FR/manuel/guides/connecter-serveur-distant
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Tout client est un moteur de rendu au-dessus d'un `cc_server` qui détient les
@@ -15,7 +15,7 @@ VM cloud, un serveur de build.
 ## Prérequis
 
 - Un `cc_server` en cours d'exécution. Si vous n'en avez pas, voir [Exécuter un serveur sans interface](/fr-FR/manuel/guides/executer-serveur-sans-interface/).
-- Soit les trois valeurs d'appairage émises par le serveur — l'**URL du serveur** (`ws://…/rpc` ou `wss://…/rpc`), un **identifiant d'appareil** et une **clé d'appairage** —, **soit** un **code d'invitation** à usage unique fourni par un administrateur de l'espace de travail. Utiliser une invitation provisionne votre utilisateur, enregistre votre appartenance et émet pour vous l'identifiant de ce client : vous n'avez donc jamais à manipuler un identifiant d'appareil ni une clé. Obtenez ces valeurs par un canal fiable et vérifiez l'empreinte du serveur par rapport à un QR code fiable ou à une épinglure connue lors de la première connexion.
+- Soit les trois valeurs d'appairage émises par le serveur — l'**URL du serveur** (`ws://…/rpc` ou `wss://…/rpc`), un **identifiant d'appareil** et une **clé d'appairage** —, **soit** un **code d'invitation** à usage unique fourni par un administrateur de l'espace de travail, **soit** un lien d'invitation ou d'appairage qui les contient. Utiliser une invitation provisionne votre utilisateur, enregistre votre appartenance et émet pour vous l'identifiant de ce client : vous n'avez donc jamais à manipuler un identifiant d'appareil ni une clé. Obtenez ces valeurs par un canal fiable et vérifiez l'empreinte du serveur par rapport à un QR code fiable ou à une épinglure connue lors de la première connexion.
 
 ### Vérifier que le serveur est joignable
 
@@ -45,15 +45,17 @@ clients natifs sont toujours autorisés.
 
 Sur une installation neuve :
 
-1. Lancez Control Center. L'écran de premier lancement demande **Comment exécuter Control Center ?**
-2. Au lieu de **Exécuter dans cette application**, renseignez les champs de connexion : l'URL du serveur, plus soit un code d'invitation, soit un identifiant d'appareil et une clé d'appairage.
-3. Cliquez sur **Connecter**. Control Center joint le serveur et arrive sur la boîte de réception de l'espace de travail.
+1. Lancez Control Center. L'écran de premier lancement affiche **Bienvenue dans Control Center**.
+2. Cliquez sur **Se connecter à un serveur** et saisissez l'URL du serveur, plus soit un code d'invitation, soit, sous **Utiliser une clé d'appairage**, un identifiant d'appareil et une clé d'appairage.
+3. Cliquez sur **Se connecter**. Control Center joint le serveur et arrive sur la boîte de réception de l'espace de travail.
+
+Si vous avez un lien d'invitation ou d'appairage, cliquez plutôt sur **Coller un lien d'appairage** et collez-le. La boîte de dialogue indique vers quel serveur mène le lien. Vérifiez-le, puis cliquez sur **Se connecter** : le collage seul ne connecte jamais. Si une connexion échoue, la boîte de dialogue reste ouverte avec l'erreur et tout ce que vous avez saisi.
 
 Sur un poste de bureau qui exécute déjà son propre serveur :
 
 1. Ouvrez **Paramètres → Serveur → Connexion et état**.
-2. Cliquez sur **Ajouter un serveur**. Saisissez l'URL du serveur (`wss://host:9030/rpc`) et soit un code d'invitation, soit un identifiant d'appareil et une clé d'appairage. Le bouton suffixe du champ d'URL découvre les instances `cc_server` sur votre réseau local ou votre tailnet.
-3. Cliquez sur **Connecter**, puis sur **Basculer** dans la ligne du nouveau serveur.
+2. Cliquez sur **Ajouter un serveur**. Saisissez l'URL du serveur (`wss://host:9030/rpc`) et soit un code d'invitation, soit, sous **Utiliser une clé d'appairage**, un identifiant d'appareil et une clé d'appairage. Le bouton suffixe du champ d'URL découvre les instances `cc_server` sur votre réseau local ou votre tailnet.
+3. Cliquez sur **Se connecter**, puis sur **Basculer** dans la ligne du nouveau serveur.
 
 La bascule s'effectue à chaud : l'application se reconstruit autour de la nouvelle
 session sur place, sans redémarrage. Si la connexion échoue, vous restez sur le
@@ -71,10 +73,12 @@ locale et via le relais.
 La version web est toujours distante.
 
 1. Ouvrez [app.usectrl.dev](https://app.usectrl.dev), ou votre propre copie de la version web.
-2. Saisissez l'URL du serveur, plus soit un code d'invitation, soit un identifiant d'appareil et une clé d'appairage.
-3. Le client joint le serveur et affiche la même interface que le bureau.
+2. Cliquez sur **Se connecter à un serveur** et saisissez l'URL du serveur, plus soit un code d'invitation, soit, sous **Utiliser une clé d'appairage**, un identifiant d'appareil et une clé d'appairage. **Coller un lien d'appairage** accepte à la place un lien d'invitation ou d'appairage.
+3. Cliquez sur **Se connecter**. Le client joint le serveur et affiche la même interface que le bureau.
 
-Si un lien profond d'appairage figure dans l'URL, les champs sont préremplis. La
+Si un lien profond d'appairage figure dans l'URL, la boîte de dialogue de connexion
+s'ouvre avec ses champs préremplis, pour que vous puissiez vérifier le serveur avant
+de cliquer sur **Se connecter**. La
 clé d'appairage voyage dans le **fragment d'URL**, que les navigateurs n'envoient
 jamais au serveur qui héberge la page. Traitez le lien comme un secret et faites
 confiance à la page qui sert le client web : le fragment ne protège pas contre du

@@ -12,9 +12,17 @@ import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 /// dyld/xpc/mach shells — then explicit denies: secret `file-read*`; write
 /// reset + subpath allows with mandatory-deny even inside writable roots;
 /// `file-write-unlink` on denied paths + ancestors (block rename bypass);
-/// `process-exec` deny for dangerous bins + writable-dir exec; `network*` only
+/// `process-exec` deny for writable-dir exec (toolchain installs re-opened)
+/// and dangerous bins; `network*` only
 /// proxy ports + DNS (no blanket loopback, no unix sockets).
 abstract final class MacosSandbox {
+  /// Shared, writable temp trees, as the kernel spells them (`/tmp` and
+  /// `/var` are symlinks into `/private`).
+  static const List<String> _tempRoots = [
+    '/private/tmp',
+    '/private/var/folders',
+  ];
+
   /// Generates an sbpl profile string from [config].
   ///
   /// [httpProxyPort] / [socksProxyPort] carve out the in-process proxy
@@ -23,13 +31,15 @@ abstract final class MacosSandbox {
   /// the writable-dir exec block doesn't block the agent's own CLI).
   /// [readOnlyToolDirs] hold tools the sandbox installs for itself (the
   /// keychain stand-in); they sit inside writable scratch, so they get a
-  /// write-deny emitted last.
+  /// write-deny emitted last. [sessionTmpDir] is the session's private
+  /// `TMPDIR`: the only temp tree where exec and unix sockets are allowed.
   static String generateSeatbeltProfile(
     SandboxConfig config, {
     int? httpProxyPort,
     int? socksProxyPort,
     List<String> allowedExecutables = const [],
     List<String> readOnlyToolDirs = const [],
+    String? sessionTmpDir,
   }) {
     final policy = config.policy;
     final lines = <String>[];
@@ -132,12 +142,34 @@ abstract final class MacosSandbox {
       lines.add('');
     }
 
-    // Always-dangerous binaries (resolved to absolute paths) + writable-dir
-    // exec blocks (no running binaries from $HOME or /tmp — closes the
-    // TOCTOU where a copied/symlinked binary bypasses literal exec-denies).
+    // Writable-dir exec blocks (no running binaries from $HOME or the temp
+    // dirs — closes the TOCTOU where a copied/symlinked binary bypasses
+    // literal exec-denies), toolchain installs and the session's private
+    // TMPDIR re-opened beneath them, then the always-dangerous binaries
+    // (resolved to absolute paths). Seatbelt is last-match-wins, so the
+    // dangerous denies come after those allows and can never be re-opened.
     if (config.denyExecutables.isNotEmpty ||
         config.allowedExecRoots.isNotEmpty ||
+        config.toolchainExecRoots.isNotEmpty ||
         policy != null) {
+      final home = policy?.homeDir;
+      if (home != null && home.isNotEmpty) {
+        lines.add('(deny process-exec (subpath "${_escape(home)}"))');
+      }
+      // The resolved spellings: the kernel matches `/private/tmp`, so a deny
+      // written against `/tmp` alone never fired, and `/var/folders` (the
+      // per-user TMPDIR) was not denied at all.
+      for (final temp in _tempRoots) {
+        lines.add('(deny process-exec (subpath "$temp"))');
+      }
+      if (sessionTmpDir != null && sessionTmpDir.isNotEmpty) {
+        lines.add('(allow process-exec (subpath "${_escape(sessionTmpDir)}"))');
+      }
+      for (final root in config.toolchainExecRoots) {
+        if (root.isNotEmpty) {
+          lines.add('(allow process-exec (subpath "${_escape(root)}"))');
+        }
+      }
       for (final exePath in config.denyExecutables) {
         lines.add('(deny process-exec (literal "${_escape(exePath)}"))');
         // Also deny realpaths (symlink resolution) — the kernel matches
@@ -161,13 +193,6 @@ abstract final class MacosSandbox {
           lines.add('(deny process-exec (literal "${_escape(real)}"))');
         } catch (_) {}
       }
-      final home = policy?.homeDir;
-      if (home != null && home.isNotEmpty) {
-        lines.add('(deny process-exec (subpath "${_escape(home)}"))');
-      }
-      lines.add('(deny process-exec (subpath "/tmp"))');
-      // Explicit allow for the legitimate CLI binary (more specific than
-      // the writable-dir block above).
       // Explicit allows for the legitimate CLI binary + resolved runtime
       // tools (node, python, dart, …) so the writable-dir block doesn't
       // break fnm/nvm/pyenv-managed runtimes. These are more specific than
@@ -215,6 +240,19 @@ abstract final class MacosSandbox {
       lines.add(
         '(allow network-outbound (literal "/private/var/run/mDNSResponder"))',
       );
+      // Unix sockets only inside the session's private TMPDIR: tsx's IPC pipe
+      // and Chrome's singleton socket live there. Every other socket, the
+      // user's SSH agent included, stays unreachable.
+      if (sessionTmpDir != null && sessionTmpDir.isNotEmpty) {
+        final dir = _escape(sessionTmpDir);
+        lines.add(
+          '(allow network-bind network-inbound '
+          '(local unix-socket (subpath "$dir")))',
+        );
+        lines.add(
+          '(allow network-outbound (remote unix-socket (subpath "$dir")))',
+        );
+      }
       // Explicit deny for container/runtime sockets (belt-and-suspenders —
       // they're already blocked by the blanket deny + removal of the
       // unix-socket allow).
@@ -338,6 +376,7 @@ exit 1
     int? socksProxyPort,
     String binShell = '/bin/bash',
     String? sshSigningProgram,
+    String? sessionTmpDir,
   }) {
     if (!profilesDir.existsSync()) {
       profilesDir.createSync(recursive: true);
@@ -360,6 +399,7 @@ exit 1
       socksProxyPort: socksProxyPort,
       allowedExecutables: allowedExecutables,
       readOnlyToolDirs: [toolDir],
+      sessionTmpDir: sessionTmpDir,
     );
     final profileFile = File(
       '${profilesDir.path}/sandbox-${config.sessionId}.sb',
@@ -371,12 +411,17 @@ exit 1
         ? ''
         : 'cd ${_shellQuote([workingDirectory])} && ';
     final path = 'PATH=${_shellQuote([toolDir])}:"\$PATH"; export PATH; ';
+    // Set here, not in the caller's environment, so no env merge can point
+    // the session back at a temp dir the profile keeps closed.
+    final tmp = sessionTmpDir == null
+        ? ''
+        : 'TMPDIR=${_quoteOne(sessionTmpDir)}; export TMPDIR; ';
     final wrapped = <String>[
       '-f',
       profileFile.path,
       binShell,
       '-c',
-      '$path${_gitSignerConfig(signer, sshSigningProgram)}$cd$inner',
+      '$path$tmp${_gitSignerConfig(signer, sshSigningProgram)}$cd$inner',
     ];
     return MacosWrapResult(
       executable: '/usr/bin/sandbox-exec',

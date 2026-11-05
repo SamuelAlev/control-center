@@ -2,7 +2,7 @@
 title: Bildirimleri yapılandırma
 description: Kategorileri açıp kapatın, sessiz saatleri ve bir ses belirleyin; hangi bildirimlerin size nerede ulaştığını öğrenin.
 slug: tr-TR/kilavuz/nasil-yapilir/bildirimler
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Bu kılavuz, bildirimleri nasıl yapılandıracağınızı ve her ayarın gerçekte neyi
@@ -49,11 +49,26 @@ istemcisinde hiçbir bildirim yüzeyi yoktur.
 Bu liste dışındaki hiçbir şey için bildirim gönderilemez veya filtrelenemez —
 “diğer her şey” diye bir kategori yoktur.
 
-**Bir ajan sizi bekliyor** her bekleme için bir kez, bekleme başladığında
-tetiklenir: bekleyen bir onay (sandbox çalıştırma izinleri ve Claude Code araç
-onayları dahil), bir `ask_user` sorusu ya da kimlik bilgisi kendisine hizmet
-veremediği için bekletilen bir çalıştırma. Bildirim, yanıt vereceğiniz alanı
-açar ve o alana zaten bakıyorsanız sessiz kalır.
+**Bir ajan sizi bekliyor** bir bekleme başladığında tetiklenir: bekleyen bir
+onay (sandbox çalıştırma izinleri ve Claude Code araç onayları dahil), bir
+`ask_user` sorusu ya da kimlik bilgisi kendisine hizmet veremediği için
+bekletilen bir çalıştırma. Bildirim, yanıt vereceğiniz alanı açar ve o alana
+zaten bakıyorsanız sessiz kalır.
+
+Masaüstünde bu bildirimler diğerlerinden farklı davranır:
+
+- **Zamana duyarlıdırlar.** macOS'ta, Control Center'dan gelen zamana duyarlı
+  bildirimlere izin veren bir Odak modunu aşabilirler.
+- **Bir onay doğrudan bildirimden yanıtlanabilir.** **Onayla** ve **Reddet**,
+  uygulamayı açmadan yanıtınızı gönderir. Sunucu yanıtı uygulama içindeki kartla
+  aynı şekilde denetler. Bunun yerine bir süreliğine onay vermek için kartı açın.
+- **Yanıtlanmayan bir bekleme size hatırlatılır.** Kimse yanıt vermezse bildirim,
+  bekleme başladıktan 3, 10, 25 ve 45 dakika sonra **Hâlâ bekliyor: …** olarak
+  geri gelir. Her hatırlatma yeni bir bildirim eklemek yerine öncekinin yerini
+  alır. Bir Control Center penceresi odaktayken hatırlatmalar atlanır, çünkü
+  onay kartı ve zil zaten önünüzdedir.
+- **Bekleme sona erdiğinde kaybolur**, nasıl yanıtlanmış olursa olsun; böylece
+  zaten sonuçlanmış bir istekteki düğmeye asla basmazsınız.
 
 Bu tercihler kullanıcınızı cihazlar arasında izler, böylece bir telefon ile bir
 dizüstü uyum içinde kalır. Ses düzeyi bilinçli istisnadır ve cihaz başına kalır.
@@ -95,7 +110,8 @@ tetiklenir. Varsayılan 5 dakikadır.
 - Bildirimler genel olarak kapalı ya da ilgili kategori kapalı
 - Sizi götüreceği rotada zaten bulunuyorsunuz — ve bir mesaj için, o alanda zaten
   bulunuyorsunuz
-- Odak modu etkin ve kategori acil değil
+- **Bildirimleri engelle** açıkken bir odak oturumu sürüyor ve kategori acil
+  değil
 - Sessiz saatler etkin ve kategori acil değil
 
 Bu denetimler işletim sistemi bildirimleri için geçerlidir. Kalıcı zil yine de
@@ -139,6 +155,15 @@ abone olur ve açılır pencere bunlardan en fazla **15**'ini listeler. Bunun
 Uygulama başlatıldığında yetkilendirme yerel olarak istenir. Reddettiyseniz,
 Sistem Ayarları → Bildirimler altında Control Center'ı yeniden etkinleştirin;
 bunu yeniden tetikleyecek uygulama içi bir istem yoktur.
+
+### macOS'ta onay bildirimlerini sürekli kaçırıyorum
+
+macOS, Control Center bildirimlerini varsayılan olarak afiş şeklinde gösterir ve
+bir afiş birkaç saniye sonra kaybolur. Siz bir işlem yapana kadar ekranda
+kalmaları için Sistem Ayarları → Bildirimler altında Control Center'ın uyarı
+stilini **Kalıcı** olarak ayarlayın. Yanıtlanmayan bir onay ayrıca bir
+hatırlatma olarak geri gelir (bkz.
+[Kategorileri açma veya kapatma](#kategorileri-açma-veya-kapatma)).
 
 ### Web yapımında hiçbir şey ulaşmıyor
 

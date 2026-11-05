@@ -75,6 +75,9 @@ class SandboxConfigBuilder {
       // that never fires — while the `$HOME` deny above, already resolved,
       // would. The pair reads as "we allowed it and it was refused anyway".
       allowedExecRoots: _withResolvedPaths(spec.execGrantRoots),
+      toolchainExecRoots: _withResolvedPaths(
+        await _toolchainExecRoots(spec.homeDir),
+      ),
       policy: spec.copyWith(
         readOnlyMounts: _withResolvedPaths(spec.readOnlyMounts),
         runnerStateDirs: _withResolvedPaths(spec.runnerStateDirs),
@@ -235,8 +238,8 @@ class SandboxConfigBuilder {
   /// `PATH` names (the fnm default, a repo's `.node-version`) — so an fnm user
   /// whose default was not their newest install had `node` refused outright.
   /// Each tool therefore allows its install-prefix hit, its `PATH` hit, and
-  /// every version-manager install, all as literals: the `$HOME` exec deny
-  /// stays closed to anything that is not a named runtime binary.
+  /// every version-manager install, all as literals. Whatever those runtimes
+  /// download and spawn in turn is covered by [_toolchainExecRoots].
   Future<List<String>> _resolveRuntimeTools(String? homeDir) async {
     final home = (homeDir != null && homeDir.isNotEmpty)
         ? homeDir
@@ -268,6 +271,103 @@ class SandboxConfigBuilder {
       }
     }
     return resolved.toList()..sort();
+  }
+
+  /// Environment variables that relocate a toolchain tree, each with the
+  /// subdirectory of it that holds executables (`''` for the whole tree).
+  static const List<(String, String)> _toolchainEnvRoots = [
+    ('COREPACK_HOME', ''),
+    ('PNPM_HOME', ''),
+    ('NVM_DIR', 'versions'),
+    ('FNM_DIR', 'node-versions'),
+    ('VOLTA_HOME', ''),
+    ('BUN_INSTALL', ''),
+    ('DENO_INSTALL', ''),
+    ('PLAYWRIGHT_BROWSERS_PATH', ''),
+    ('CARGO_HOME', 'bin'),
+    ('RUSTUP_HOME', 'toolchains'),
+    ('GOPATH', 'bin'),
+    ('FVM_CACHE_PATH', 'versions'),
+    ('PUB_CACHE', 'bin'),
+    ('PYENV_ROOT', 'versions'),
+    ('UV_PYTHON_INSTALL_DIR', ''),
+    ('UV_TOOL_DIR', ''),
+    ('PIPX_HOME', ''),
+    ('RBENV_ROOT', 'versions'),
+    ('SDKMAN_DIR', 'candidates'),
+    ('MISE_DATA_DIR', 'installs'),
+    ('ASDF_DATA_DIR', 'installs'),
+    ('ASDF_DATA_DIR', 'shims'),
+  ];
+
+  /// XDG relocations of the [SandboxPolicyResolver.homeToolchainExecRels]
+  /// trees that live under `~/.cache` or `~/.local/share` by default.
+  static const Map<String, List<String>> _toolchainXdgRels = {
+    'XDG_CACHE_HOME': [
+      'node/corepack',
+      'pnpm/dlx',
+      'ms-playwright',
+      'puppeteer',
+      'uv',
+    ],
+    'XDG_DATA_HOME': [
+      'pnpm',
+      'fnm/node-versions',
+      'uv',
+      'pipx',
+      'mise/installs',
+    ],
+  };
+
+  /// Existing toolchain install trees inside [homeDir] that may exec.
+  ///
+  /// Expands [SandboxPolicyResolver.homeToolchainExecRels], their env and XDG
+  /// relocations, and the `bin` dir of a Flutter or Dart SDK installed under
+  /// the home: its `dart` launcher execs the VM in `bin/cache/dart-sdk`,
+  /// which no literal allow names. Only trees strictly inside the home are
+  /// kept. Nothing outside it is exec-denied, and an env var pointing at `/`
+  /// or at the home itself must not re-open the whole `$HOME` exec deny.
+  Future<List<String>> _toolchainExecRoots(String? homeDir) async {
+    final home = (homeDir != null && homeDir.isNotEmpty)
+        ? homeDir
+        : Platform.environment['HOME'] ?? '';
+    if (home.isEmpty) {
+      return const [];
+    }
+    final env = Platform.environment;
+    final candidates = <String>[
+      for (final rel in SandboxPolicyResolver.homeToolchainExecRels)
+        p.join(home, rel),
+      for (final (name, sub) in _toolchainEnvRoots)
+        if (env[name] case final dir? when p.isAbsolute(dir))
+          sub.isEmpty ? dir : p.join(dir, sub),
+      for (final MapEntry(key: name, value: rels) in _toolchainXdgRels.entries)
+        if (env[name] case final dir? when p.isAbsolute(dir))
+          for (final rel in rels) p.join(dir, rel),
+    ];
+    for (final sdkTool in const ['flutter', 'dart']) {
+      for (final path in {
+        await _resolveAbsolute(sdkTool),
+        _scanPath(sdkTool),
+      }) {
+        if (path == null) {
+          continue;
+        }
+        try {
+          candidates.add(p.dirname(File(path).resolveSymbolicLinksSync()));
+        } on Object {
+          // Dangling launcher: nothing to allow.
+        }
+      }
+    }
+    final roots = <String>{};
+    for (final candidate in candidates) {
+      final root = p.normalize(candidate);
+      if (p.isWithin(home, root) && Directory(root).existsSync()) {
+        roots.add(root);
+      }
+    }
+    return roots.toList()..sort();
   }
 
   /// Returns the wrap shell + its realpath so exec-deny never blocks the

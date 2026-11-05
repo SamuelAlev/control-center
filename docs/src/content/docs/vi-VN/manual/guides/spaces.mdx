@@ -2,7 +2,7 @@
 title: Dùng space
 description: Tạo space, đặt chế độ cho chúng, quản lý người tham gia và quyền tự chủ, rồi mở cuộc trò chuyện và luồng.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/space
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Hướng dẫn này chỉ cho bạn cách dùng space. Một **space** là bề mặt nhắn tin trong
@@ -25,6 +25,8 @@ xem [Space giữa các agent](#space-giữa-các-agent) bên dưới.
    cấp phát worktree cho. Mặc định tất cả đều được chọn; bỏ chọn mọi kho mã sẽ tạo
    một space không checkout gì cả
 6. Xác nhận
+
+Chỉ một agent mới trả lời tin nhắn, nên một space không có agent sẽ không khởi chạy gì: ô soạn thảo cho biết điều đó và giữ tin nhắn của bạn cho đến khi bạn @ nhắc một agent, khi đó agent được thêm vào space và tin nhắn được gửi. Không có runner mặc định đứng sau một space trống.
 
 Space thuộc phạm vi không gian làm việc: bạn chỉ thấy agent từ không gian làm việc
 hiện tại và một space không bao giờ hiển thị dữ liệu từ không gian làm việc khác.
@@ -100,7 +102,7 @@ chưa có cuộc nào sẽ tạo ra một cuộc trò chuyện thường trực 
 Các cuộc trò chuyện hiển thị dưới dạng tab trong trình soạn thảo, và dưới dạng hàng
 lồng nhau bên dưới space trên thanh bên khi có nhiều hơn một. **Cuộc trò chuyện
 mới** nằm trong menu tab mới của trình soạn thảo và tạo một cuộc trò chuyện không
-có tiêu đề mà không hỏi tiêu đề — mô hình đặt tiêu đề sẽ đặt tên cho nó theo tin
+có tiêu đề mà không hỏi tiêu đề — agent Content synthesizer sẽ đặt tên cho nó theo tin
 nhắn đầu tiên. Hãy dùng nó để chạy công việc song song với cùng một agent và
 worktree.
 

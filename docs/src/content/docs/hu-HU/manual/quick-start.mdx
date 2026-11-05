@@ -2,7 +2,7 @@
 title: Gyors kezdés
 description: Telepítse a Control Centert, konfiguráljon egy ügynököt, és nézze, ahogy a repóján dolgozik.
 slug: hu-HU/kezikonyv/gyors-kezdes
-sourceHash: 960bda6383d49e2431125ea54c7dc02c30a1fe02
+sourceHash: 7b9007b72fd67a919a29caae8f47acf8ef9fb40b
 ---
 
 Ez a legrövidebb teljes út attól, hogy semmije sincs, odáig, hogy egy ügynök a saját kódján dolgozik. Kövesse sorrendben; minden lépés az előzőre épül.
@@ -13,7 +13,7 @@ Szüksége van a Gitre, egy GitHub-fiókra, valamint vagy egy modellszolgáltat�
 
 Telepítse a Control Centert a [Telepítés](/hu-HU/kezikonyv/telepites/) oldalon leírtak szerint, majd nyissa meg.
 
-Az első indításkor az asztali alkalmazás ezt kérdezi: **„Hogyan fusson a Control Center?”**. Válassza a **Futtatás ebben az alkalmazásban** lehetőséget. A Control Center elindít egy headless `cc_server` folyamatot ezen a gépen, amely a saját adatait birtokolja, és minden munkát elvégez. Ezt sosem látja; helyette a bevezető képernyő nyílik meg.
+Az első indításkor az asztali alkalmazás az **Üdvözli a Control Center** képernyőt jeleníti meg. Válassza a **Futtatás ebben az alkalmazásban** lehetőséget. A Control Center elindít egy headless `cc_server` folyamatot ezen a gépen, amely a saját adatait birtokolja, és minden munkát elvégez. Ezt sosem látja; helyette a bevezető képernyő nyílik meg.
 
 :::note[Inkább nem telepítene semmit?]
 Ugyanez az alkalmazás ugyanazokkal a funkciókkal fut böngészőben az [app.usectrl.dev](https://app.usectrl.dev) címen. A böngészőfül azonban nem tud szervert hosztolni, ezért Önnek kell biztosítania egyet — futtassa a `cc_server`-t helyben, és csatlakozzon a `ws://localhost:9030` címhez, vagy irányítsa egy másik gépen futó szerverre. Ez a gyors kezdés az asztali utat választja, mert nem igényel szerverbeállítást; a böngészős útvonalhoz lásd a [Telepítés](/hu-HU/kezikonyv/telepites/#use-it-in-your-browser) oldalt.

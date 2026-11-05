@@ -2,7 +2,7 @@
 title: Cài đặt
 description: Dùng Control Center trong trình duyệt hoặc cài ứng dụng desktop, thiết lập backend agent và chọn nơi máy chủ của nó chạy.
 slug: vi-VN/so-tay/cai-dat
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center chạy theo hai cách: dưới dạng **ứng dụng web** tại
@@ -147,10 +147,11 @@ Bước đầu tiên của quá trình thiết lập ban đầu là kết nối 
 
 Control Center là một máy khách mỏng trên một tiến trình `cc_server` không giao diện, thứ sở hữu cơ sở dữ liệu và làm mọi công việc; [Triển khai và máy khách](/vi-VN/so-tay/khai-niem/trien-khai/) giải thích ý nghĩa của sự tách biệt đó đối với desktop, web và điện thoại.
 
-Ở lần khởi chạy đầu tiên, ứng dụng desktop hỏi **"Control Center nên chạy như thế nào?"**:
+Ở lần khởi chạy đầu tiên, ứng dụng desktop hiển thị **Chào mừng đến với Control Center** và đưa ra ba cách bắt đầu. Nút cài đặt ở góc màn hình dùng để đổi ngôn ngữ và chủ đề.
 
 - **Chạy trong ứng dụng này**: ứng dụng desktop khởi tạo và giám sát một `cc_server` trên máy này rồi nói chuyện với nó qua loopback. Không cần cấu hình gì thêm. Đây là thiết lập mà [bắt đầu nhanh](/vi-VN/so-tay/bat-dau-nhanh/) giả định.
-- **Kết nối tới một phiên bản từ xa**: trỏ ứng dụng desktop tới một `cc_server` đang chạy ở nơi khác bằng URL WebSocket của nó, một id thiết bị, và hoặc một khóa ghép nối hoặc một mã mời dùng một lần. Máy chủ đó sở hữu dữ liệu; desktop này chỉ hiển thị nó.
+- **Kết nối tới máy chủ**: trỏ ứng dụng desktop tới một `cc_server` đang chạy ở nơi khác bằng URL WebSocket của nó, rồi đăng nhập bằng đăng nhập một lần nếu máy chủ hỗ trợ, hoặc nhập một mã mời dùng một lần, hoặc nhập id thiết bị và khóa ghép nối trong **Dùng khóa ghép nối**. Máy chủ đó sở hữu dữ liệu; desktop này chỉ hiển thị nó.
+- **Dán liên kết ghép nối**: dán một liên kết mời hoặc liên kết ghép nối. Hộp thoại cho biết liên kết dẫn tới máy chủ nào và chỉ kết nối khi bạn nhấp vào **Kết nối**.
 
 Thêm hoặc chuyển đổi máy chủ sau này trong **Cài đặt → Máy chủ → Kết nối & trạng thái**. Việc chuyển đổi kết nối lại ngay tại chỗ — không cần khởi động lại. Trình duyệt không thể chạy máy chủ, nên máy khách web luôn là từ xa; xem [Kết nối máy chủ từ xa](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa/).
 

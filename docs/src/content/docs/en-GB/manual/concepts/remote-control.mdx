@@ -2,7 +2,7 @@
 title: Remote control and mobile
 description: How the phone reaches your server over direct or brokered end-to-end-encrypted connections and the layered access model that keeps that reach narrow.
 slug: en-GB/manual/concepts/remote-control
-sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
+sourceHash: cb6a1ecae8bc1c410e872649d26d3cae127003f6
 ---
 
 Control Center is a desktop app, but the work it tracks doesn't stop when you
@@ -93,7 +93,8 @@ secret.
 There are two payload shapes and they are **not interchangeable**. The phone QR
 minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
 at the Remote PWA host. `cc_server pair --client-url` emits a v1 link
-(`{s, i, k}` — server URL, device id, key) intended for the **web** client only.
+(`{s, i, k}` — server URL, device id, key) for the **web** and **desktop** clients:
+open it in a browser, or paste it into **Paste a pairing link** on the desktop.
 These are pairing data formats, not transport fallbacks: both clients must
 support the current encrypted session protocol.
 

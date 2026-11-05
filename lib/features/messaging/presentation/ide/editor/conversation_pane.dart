@@ -20,6 +20,7 @@ import 'package:control_center/features/messaging/presentation/widgets/space_sid
 import 'package:control_center/features/messaging/presentation/widgets/steering_queue_list.dart';
 import 'package:control_center/features/messaging/presentation/widgets/takeover_banner.dart';
 import 'package:control_center/features/messaging/presentation/widgets/visible_conversation_registrar.dart';
+import 'package:control_center/features/messaging/providers/composer_expanded_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/pending_space_sends_provider.dart';
 import 'package:control_center/features/messaging/providers/space_folder_providers.dart';
@@ -133,79 +134,110 @@ class ConversationPane extends ConsumerWidget {
       ),
     );
 
+    // A long prompt can take the pane: the composer grows to three quarters
+    // of it, and the feed keeps the rest — still mounted, scrolled where it
+    // was, with the last messages in view to write against.
+    final composerExpanded = ref.watch(
+      composerExpandedProvider((spaceId: spaceId, conversationId: convId)),
+    );
+
     return LayoutBuilder(
-      builder: (context, constraints) => VisibleConversationRegistrar(
-        spaceId: spaceId,
-        conversationId: convId,
-        child: Column(
-          children: [
-            SpaceHeader(
-              space: space,
-              conversation: conversation,
-              onManage: () => _handleManage(context, ref),
-              onArchive: () => unawaited(_handleArchiveSpace(context, ref)),
+      builder: (context, constraints) {
+        final input = SpaceInputBar(
+          spaceId: spaceId,
+          conversationId: convId,
+          autofocus: autofocusComposer,
+          maxInputHeight: constraints.maxHeight * 0.4,
+        );
+        // The provisioning banner, the typing line and the composer share ONE
+        // centered-column wrapper so they can never drift apart: each status
+        // line's text starts on the composer's own left border instead of
+        // hugging the pane edge (~65px further left on a wide pane).
+        final bottom = Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: conversationColumnWidth,
             ),
-            // Thread parent link: when this pane shows a thread, a compact row
-            // points back at the anchor message's conversation.
-            _ThreadParentLink(spaceId: spaceId, conversationId: convId),
-            const CcDivider(),
-            // Someone else is spotlighting this space (PRD 16 §5).
-            SpotlightBanner(spaceId: spaceId),
-            // A take-over of this space's worktree is active (PRD 16 §8).
-            TakeoverBanner(spaceId: spaceId),
-            Expanded(
-              child: SpaceMessageFeed(
-                key: ValueKey('feed-$convId'),
-                spaceId: spaceId,
-                conversationId: convId,
-                onStartThread: (message) => _startThread(context, ref, message),
-                // A thread opens exactly the way the switcher opens any
-                // conversation — it IS one.
-                onOpenThread: onSelectConversation,
-              ),
-            ),
-            const CcDivider(),
-            // The provisioning banner, the typing line and the composer share ONE
-            // centered-column wrapper so they can never drift apart: each status
-            // line's text now starts on the composer's own left border instead of
-            // hugging the pane edge (~65px further left on a wide pane).
-            Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: conversationColumnWidth,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: composerExpanded
+                  ? MainAxisSize.max
+                  : MainAxisSize.min,
+              children: [
+                SpaceProvisioningBanner(spaceId: spaceId),
+                _TypingIndicator(spaceId: spaceId),
+                // Queued steering cards: mid-run nudges the user typed while
+                // an agent works, waiting to be injected. Between the trail
+                // and the composer, where "what I asked for that hasn't
+                // landed yet" is read at a glance — and drawn onto the
+                // composer's top edge, so it owns its own insets rather than
+                // being padded from here. Renders nothing when the
+                // conversation's queue is empty.
+                SteeringQueueList(spaceId: spaceId, conversationId: convId),
+                ConversationPermissionPrompt(
+                  spaceId: spaceId,
+                  conversationId: convId,
+                  maxHeight: constraints.maxHeight * 0.6,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SpaceProvisioningBanner(spaceId: spaceId),
-                    _TypingIndicator(spaceId: spaceId),
-                    // Queued steering cards: mid-run nudges the user typed while
-                    // an agent works, waiting to be injected. Between the trail
-                    // and the composer, where "what I asked for that hasn't
-                    // landed yet" is read at a glance — and drawn onto the
-                    // composer's top edge, so it owns its own insets rather than
-                    // being padded from here. Renders nothing when the
-                    // conversation's queue is empty.
-                    SteeringQueueList(spaceId: spaceId, conversationId: convId),
-                    ConversationPermissionPrompt(
-                      spaceId: spaceId,
-                      conversationId: convId,
-                      maxHeight: constraints.maxHeight * 0.6,
-                    ),
-                    SpaceInputBar(
-                      spaceId: spaceId,
-                      conversationId: convId,
-                      autofocus: autofocusComposer,
-                    ),
-                  ],
+                // Expanded, the composer takes what the column has left;
+                // otherwise its text area grows to 40% of the pane before it
+                // scrolls — room for a real prompt without hiding the feed.
+                // Flex 0 lays out at content size, and keeping the same
+                // wrapper either way is what keeps the field (and its focus)
+                // mounted across the toggle.
+                Flexible(
+                  flex: composerExpanded ? 1 : 0,
+                  fit: FlexFit.tight,
+                  child: input,
+                ),
+              ],
+            ),
+          ),
+        );
+        return VisibleConversationRegistrar(
+          spaceId: spaceId,
+          conversationId: convId,
+          child: Column(
+            children: [
+              SpaceHeader(
+                space: space,
+                conversation: conversation,
+                onManage: () => _handleManage(context, ref),
+                onArchive: () => unawaited(_handleArchiveSpace(context, ref)),
+              ),
+              // Thread parent link: when this pane shows a thread, a compact row
+              // points back at the anchor message's conversation.
+              _ThreadParentLink(spaceId: spaceId, conversationId: convId),
+              const CcDivider(),
+              // Someone else is spotlighting this space (PRD 16 §5).
+              SpotlightBanner(spaceId: spaceId),
+              // A take-over of this space's worktree is active (PRD 16 §8).
+              TakeoverBanner(spaceId: spaceId),
+              Expanded(
+                child: SpaceMessageFeed(
+                  key: ValueKey('feed-$convId'),
+                  spaceId: spaceId,
+                  conversationId: convId,
+                  onStartThread: (message) =>
+                      _startThread(context, ref, message),
+                  // A thread opens exactly the way the switcher opens any
+                  // conversation — it IS one.
+                  onOpenThread: onSelectConversation,
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
+              const CcDivider(),
+              // Same wrapper both ways (see the composer's slot above): flex 0
+              // sizes to content, flex 3 takes three quarters beside the feed.
+              Flexible(
+                flex: composerExpanded ? 3 : 0,
+                fit: FlexFit.tight,
+                child: bottom,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

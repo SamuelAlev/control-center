@@ -2,7 +2,7 @@
 title: Sandbox und Sicherheit
 description: Was einen Agenten in Control Center heute tatsächlich begrenzt, wie weit die Betriebssystem-Sandbox reicht und welche Grenzen auf einem Host ohne Backend halten.
 slug: de-DE/handbuch/konzepte/sandbox-und-sicherheit
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Wo die Betriebssystem-Sandbox reicht und wo nicht]
@@ -231,7 +231,7 @@ Unlink-Sperren auf jedem verweigerten Pfad und seinen Vorfahren, damit ein
 Umbenennen ein Schreibverbot nicht umgeht, Exec-Verbote für dauerhaft
 gefährliche Binaries und für alles, was in ein beschreibbares Verzeichnis
 kopiert wurde, und das Netzwerk beschränkt auf die Loopback-Ports der Proxys
-plus DNS.
+plus DNS. Toolchain-Installationen in Ihrem Home-Verzeichnis (pnpm über corepack, Node-Versionsmanager, Playwright-Browser, rustup, fvm, uv und ähnliche) bleiben innerhalb dieser Exec-Verbote ausführbar, sodass Agenten sie ohne Umwege nutzen können. Die dauerhaft gefährlichen Verbote gelten innerhalb davon weiterhin. Jede Sitzung bekommt außerdem ein eigenes privates `TMPDIR`. Es ist das einzige temporäre Verzeichnis, in dem der Agent selbst gebaute Programme ausführen oder Unix-Sockets öffnen darf.
 
 Die praktische Folge: Unter Linux ist die Sicht des Agenten auf das
 Dateisystem verengt. Unter macOS kann der Agent den größten Teil des Hosts

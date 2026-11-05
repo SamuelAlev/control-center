@@ -1,4 +1,4 @@
-/// Proposes a title for a conversation on the workspace's short-task runner,
+/// Proposes a title for a conversation on the workspace's content synthesizer,
 /// without writing it. The rename dialog's "Generate" button; the human
 /// decides whether the suggestion is kept. Also reports which conversations
 /// the automatic titling pass is naming right now.
@@ -33,8 +33,8 @@ final class ConversationTitleSuggestion {
   /// The proposed title, or null when none could be produced.
   final String? title;
 
-  /// No short-task runner is configured, or it cannot run (adapter missing,
-  /// no credential for its provider).
+  /// The workspace has no content synthesizer, or it cannot run (adapter
+  /// missing, no credential for its provider).
   final bool unavailable;
 
   /// The conversation has no human message to name it from yet.

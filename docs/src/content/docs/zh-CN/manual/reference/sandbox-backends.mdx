@@ -2,7 +2,7 @@
 title: 沙盒后端
 description: 各个沙盒后端、它们各自在何处生效，以及沙盒运行时用到的每一个值对象。
 slug: zh-CN/手册/参考/沙盒后端
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[一次运行是否被沙盒包裹取决于主机]
@@ -52,8 +52,8 @@ sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 
 - **文件系统读取**：对机密路径（`~/.ssh`、`~/.aws`、`~/.gnupg`、`~/.config/gh`、`~/Library/Keychains` 以及拒绝读取集合中的其余路径）拒绝
 - **文件系统写入**：先重置为拒绝，再显式放行子路径，其中强制拒绝的路径（shell rc 文件、`.git/hooks`、Claude 配置、受保护的检出）即使在可写根目录之内也会被阻止。`file-write-unlink` 在每一条被拒绝路径及其祖先路径上都被拒绝，因此重命名无法绕过一次写入拒绝
-- **进程**：对始终危险的二进制文件执行 `process-exec` 拒绝，并阻止从任何可写目录执行任何东西
-- **网络**：限制为进程内代理端口加 DNS——回环并非一律放行，Unix 套接字也不允许。代理强制执行按会话的域名允许列表（见[网络出站](#网络出站)）
+- **进程**：对始终危险的二进制文件执行 `process-exec` 拒绝，并阻止从任何可写目录执行任何东西。主目录下已知的工具链安装目录（corepack、npx 和 `pnpm dlx` 缓存、Node 版本管理器、Playwright 浏览器、rustup 和 cargo、Go、fvm 和 pub 缓存、pyenv、uv 和 pipx、rbenv、sdkman、mise、asdf 以及 `~/.local/bin`）会在该阻止之下重新开放。共享临时目录也被阻止。每个会话则改为获得 `/private/tmp` 下的私有 `TMPDIR`，供其构建的程序（如 `go test` 二进制文件、cargo 构建产物）运行。始终危险的拒绝规则在这些允许之后应用
+- **网络**：限制为进程内代理端口加 DNS——回环并非一律放行，且禁止 TCP 监听。Unix 套接字仅允许在会话的私有 `TMPDIR` 内使用，涵盖了 tsx、Chrome 等将 IPC 套接字放在那里的工具；你的 SSH agent 及其他套接字仍不可访问。代理强制执行按会话的域名允许列表（见[网络出站](#网络出站)）
 - **配置**：配置在每次启动时根据 `SandboxSpec` 生成
 
 要求：

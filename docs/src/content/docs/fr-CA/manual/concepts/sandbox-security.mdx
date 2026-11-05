@@ -2,7 +2,7 @@
 title: Bac à sable et sécurité
 description: Ce qui limite réellement un agent dans Control Center aujourd’hui, jusqu’où va le bac à sable du système d’exploitation et quelles frontières tiennent sur un hôte dépourvu de backend.
 slug: fr-CA/manuel/concepts/bac-a-sable-et-securite
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Jusqu’où le bac à sable du système d’exploitation va, et où il ne va pas]
@@ -245,7 +245,7 @@ explicites par-dessus, blocage de la suppression (`unlink`) sur chaque chemin
 refusé et ses ancêtres pour qu’un renommage ne puisse pas contourner un refus
 d’écriture, refus d’exécution pour les binaires toujours dangereux et pour tout ce
 qui est copié dans un répertoire accessible en écriture, et réseau limité aux
-ports du proxy de bouclage plus DNS.
+ports du proxy de bouclage plus DNS. Les installations d’outils sous votre dossier personnel (pnpm via corepack, gestionnaires de versions de Node, navigateurs Playwright, rustup, fvm, uv et semblables) demeurent exécutables à l’intérieur de ces refus d’exécution, de sorte que les agents peuvent les utiliser sans contournement. Les refus visant les binaires toujours dangereux s’appliquent toujours à l’intérieur. Chaque session obtient aussi son propre `TMPDIR` privé. C’est le seul répertoire temporaire où l’agent peut exécuter des programmes qu’il a compilés ou ouvrir des sockets Unix.
 
 La conséquence pratique : sous Linux, la vue qu’a l’agent du système de fichiers
 est rétrécie; sous macOS, l’agent peut encore _lire_ la majeure partie de l’hôte

@@ -2,7 +2,7 @@
 title: Instalar
 description: Usa Control Center en el navegador o instala la aplicación de escritorio, configura un backend de agentes y elige dónde se ejecuta su servidor.
 slug: es-ES/manual/instalar
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center se ejecuta de dos maneras: como **aplicación web** en
@@ -156,10 +156,11 @@ El primer paso del onboarding es esta conexión. Después, esa misma tarjeta es 
 
 Control Center es un cliente ligero sobre un proceso `cc_server` headless que posee la base de datos y hace todo el trabajo; [Despliegue y clientes](/es-ES/manual/conceptos/despliegue/) explica qué significa esa separación para el escritorio, la web y el teléfono.
 
-En el primer arranque, el escritorio pregunta **«¿Cómo debe ejecutarse Control Center?»**:
+En el primer arranque, el escritorio muestra **Te damos la bienvenida a Control Center** y ofrece tres formas de entrar. El botón de ajustes de la esquina cambia el idioma y el tema.
 
 - **Ejecutar en esta aplicación**: el escritorio lanza y supervisa un `cc_server` en esta máquina y habla con él por loopback. No hay nada más que configurar. Esta es la configuración que da por supuesta el [inicio rápido](/es-ES/manual/inicio-rapido/).
-- **Conectar a una instancia remota**: apunta el escritorio a un `cc_server` que se ejecute en otro sitio con su URL de WebSocket, un id de dispositivo y una clave de emparejamiento o un código de invitación de un solo uso. Ese servidor posee los datos; este escritorio solo los representa.
+- **Conectar a un servidor**: apunta el escritorio a un `cc_server` que se ejecute en otro sitio con su URL de WebSocket y luego entra mediante inicio de sesión único si el servidor lo ofrece, o introduce un código de invitación de un solo uso, o un id de dispositivo y una clave de emparejamiento en **Usar una clave de emparejamiento**. Ese servidor posee los datos; este escritorio solo los representa.
+- **Pegar un enlace de emparejamiento**: pega un enlace de invitación o de emparejamiento. El diálogo muestra a qué servidor lleva el enlace y solo se conecta cuando haces clic en **Conectar**.
 
 Añade o cambia de servidor más adelante en **Ajustes → Servidor → Conexión y estado**. El cambio se reconecta en el sitio, sin reiniciar. Un navegador no puede ejecutar un servidor, así que el cliente web siempre es remoto; consulta [Conectar a un servidor remoto](/es-ES/manual/guias/conectar-servidor-remoto/).
 

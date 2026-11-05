@@ -2,7 +2,7 @@
 title: Sandbox dan keamanan
 description: Apa yang sebenarnya membatasi agen di Control Center saat ini, sejauh mana sandbox OS menjangkau, dan batas mana yang tetap berlaku di host tanpa backend.
 slug: id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Sejauh mana sandbox OS menjangkau dan tidak menjangkau]
@@ -224,7 +224,7 @@ tolak dengan izin eksplisit di atasnya, pemblokiran unlink pada setiap jalur
 yang ditolak beserta leluhurnya agar rename tidak dapat melewati penolakan
 tulis, penolakan exec untuk biner yang selalu berbahaya dan untuk apa pun yang
 disalin ke direktori yang dapat ditulis, serta jaringan yang dibatasi ke port
-proksi loopback plus DNS.
+proksi loopback plus DNS. Instalasi toolchain di bawah home Anda (pnpm dari corepack, pengelola versi node, browser Playwright, rustup, fvm, uv dan sejenisnya) tetap dapat dijalankan di dalam blok exec tersebut, sehingga agen dapat menggunakannya tanpa solusi tambahan. Penolakan untuk biner yang selalu berbahaya tetap berlaku di dalamnya. Setiap sesi juga mendapatkan `TMPDIR` pribadinya sendiri. Itulah satu-satunya direktori sementara tempat agen boleh menjalankan program yang dibangunnya atau membuka Unix socket.
 
 Konsekuensi praktisnya: di Linux pandangan agen terhadap sistem berkas
 dipersempit; di macOS agen masih dapat _membaca_ sebagian besar host dan

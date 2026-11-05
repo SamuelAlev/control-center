@@ -2,7 +2,7 @@
 title: Sandbox and security
 description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
 slug: en-GB/manual/concepts/sandbox-security
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Where the OS sandbox does and does not reach]
@@ -214,7 +214,12 @@ calls to enumerate is impractical. The macOS profile therefore starts from
 reset to deny with explicit allows on top, unlink-blocking on every denied path
 and its ancestors so a rename cannot bypass a write-deny, exec denies for
 always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+network restricted to the loopback proxy ports plus DNS. Toolchain installs under
+your home (corepack's pnpm, node version managers, Playwright browsers, rustup,
+fvm, uv and similar) stay runnable inside that exec block, so agents can use
+them without workarounds. The always-dangerous denies still apply inside them.
+Each session also gets its own private `TMPDIR`. It is the only temp directory
+where the agent may run programs it built or open Unix sockets.
 
 The practical consequence: on Linux the agent's view of the filesystem is
 narrowed; on macOS the agent can still _read_ most of the host and your

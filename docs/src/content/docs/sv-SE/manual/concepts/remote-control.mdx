@@ -2,7 +2,7 @@
 title: Fjärrstyrning och mobil
 description: Hur telefonen når din server över direkta eller förmedlade end-to-end-krypterade anslutningar, och den skiktade åtkomstmodell som håller den räckvidden snäv.
 slug: sv-SE/handbok/koncept/fjarrstyrning
-sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
+sourceHash: cb6a1ecae8bc1c410e872649d26d3cae127003f6
 ---
 
 Control Center är en skrivbordsapp, men arbetet den håller reda på stannar inte
@@ -95,8 +95,9 @@ så använd en betrodd appvärd och behandla länken som en hemlighet.
 Det finns två former av nyttolasten och de är **inte utbytbara**. Telefon-QR:en
 som skapas i parkopplingspanelen i appen är v2-`PairingPayload` ovan, riktad
 mot Remote-PWA-värden. `cc_server pair --client-url` ger en v1-länk
-(`{s, i, k}` – server-URL, enhets-id, nyckel) avsedd endast för
-**webb**klienten. Dessa är dataformat för parkoppling, inte reservvägar för
+(`{s, i, k}` – server-URL, enhets-id, nyckel) för **webb**- och
+**skrivbords**klienterna: öppna den i en webbläsare, eller klistra in den i
+**Klistra in en parkopplingslänk** i skrivbordsappen. Dessa är dataformat för parkoppling, inte reservvägar för
 transport: båda klienterna måste stödja det aktuella krypterade
 sessionsprotokollet.
 

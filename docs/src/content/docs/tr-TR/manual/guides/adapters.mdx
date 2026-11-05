@@ -2,7 +2,7 @@
 title: Adaptörleri ve modelleri yönetme
 description: Model sağlayıcılarını bağlayın, bir ajanın üzerinde çalıştığı modeli seçin ve sunucu ana makinesinde hangi ajan runner CLI'lerinin bulunduğunu kontrol edin.
 slug: tr-TR/kilavuz/nasil-yapilir/adaptorler
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Bu kılavuz, model sağlayıcılarını nasıl bağlayacağınızı ve bir ajanın neyin
@@ -96,12 +96,12 @@ istediğiniz model üzerinden değil turu gerçekte sunan model üzerinden
 fiyatlandırılır.
 
 :::note[Adaptörü olmayan bir ajan yerleşik döngüde çalışır]
-Her çalışma alanı, bir CEO ile `qa`, `architect`, `engineer` ve `librarian`'dan
-oluşan beş ajanı adaptörsüz ve modelsiz olarak başlatır. Gönderim, bu sayfadaki
-ve gönderim yolunun hiçbir zaman okumadığı bir istemci tercihi olan **Varsayılan
-runner'lar** ayarına değil, **Control Center (built-in)** seçeneğine geri düşer.
-Çalıştırma günlüğü bu çalıştırmalar için `cc-harness` kaydeder; böylece
-transkript gerçekte neyin çalıştığını adlandırır.
+Her çalışma alanı, bir CEO ile `qa`, `architect`, `engineer`, `librarian` ve
+`content-synthesizer`'dan oluşan altı ajanı adaptörsüz ve modelsiz olarak
+başlatır. Gönderim **Control Center (built-in)** seçeneğine geri düşer; çalışma
+alanı ya da cihaz düzeyinde bir varsayılan runner yoktur. Çalıştırma günlüğü bu
+çalıştırmalar için `cc-harness` kaydeder; böylece transkript gerçekte neyin
+çalıştığını adlandırır.
 
 Model de yoksa, yerleşik döngü Anthropic'ten varsayılan modelini ister. Tamamen
 ayarsız bırakılan bir ajan, bu nedenle bir Anthropic hesabı bağladıysanız
@@ -111,9 +111,22 @@ olur.
 İlk kurulumun adaptör adımını tamamlamak, kendisinde hâlâ adaptör ya da model
 eksik olan **her** ajanı — o anda var olan her çalışma alanındaki CEO ve uzmanlar
 dahil — seçtiğiniz ikiliyle geriye dönük olarak yamalar. Daha sonra oluşturulan
-çalışma alanları yine de beş ajanı da ayarsız olarak başlatır. Kullanmayı
+çalışma alanları yine de altı ajanı da ayarsız olarak başlatır. Kullanmayı
 düşündüğünüz her ajan için adaptörü ve modeli açıkça ayarlayın.
 :::
+
+## Başlıkları ve özetleri kişiselleştirin
+
+**Content synthesizer** ajanı, Control Center'ın bir konuşmanın etrafında ürettiği
+metni yazar: başlığını, `/btw` yanıtlarını, `/handoff` belgelerini ve `/goal`
+hedef görüşmesini. Her seferinde araç kullanmayan tek bir tamamlama çalıştırır,
+kendi adaptörü ve modelinde; bu yüzden ona küçük ve hızlı bir model verin.
+
+Bu metnin nasıl okunacağını değiştirmek için **Ayarlar → Çalışma alanı → Ajanlar**
+bölümünde onun **persona**sını düzenleyin: başlık uzunluğu, dil, ton, izlediği
+örnekler. Her özelliğin ayrıştırdığı yanıt biçimi (tek satırlık başlık, hedefin
+bölümleri) sabittir ve personanızdan sonra uygulanır. Bu özellikleri kapatmak için
+ajanı silin; yeniden oluşturulmaz.
 
 ## Bir runner CLI'si kurma
 

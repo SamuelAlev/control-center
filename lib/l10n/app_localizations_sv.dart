@@ -734,13 +734,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Control Center kör en egen server på den här maskinen och äger din data lokalt.';
 
   @override
-  String get serverModeRemote => 'Anslut till en fjärrinstans';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Anslut till en Control Center-server som körs någon annanstans. Din data ligger på den servern.';
-
-  @override
   String get serverRemoteUrl => 'Server-URL';
 
   @override
@@ -962,13 +955,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Andra enheter kan inte nå den här servern direkt, så en ny klient kan inte ansluta. Ange serverns publika URL för att parkoppla fler klienter.';
-
-  @override
-  String get serverSetupTitle => 'Hur ska Control Center köras?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center behöver en server som äger din data. Kör en i den här appen, eller anslut till en instans som körs någon annanstans.';
 
   @override
   String get serverSetupRunLocal => 'Kör i den här appen';
@@ -3031,10 +3017,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Konfigurera agentidentiteter, promptar, färdigheter och visa körningar.';
 
   @override
-  String get configureDefaultRunners =>
-      'Konfigurera vilken adapter och modell som används för nya ytor och titelgenerering.';
-
-  @override
   String get configuredLabel => 'Konfigurerad.';
 
   @override
@@ -3133,12 +3115,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deactivate => 'Inaktivera';
-
-  @override
-  String get defaultChat => 'Standardchatt';
-
-  @override
-  String get defaultRunners => 'Standardkörare';
 
   @override
   String get delete => 'Ta bort';
@@ -4443,6 +4419,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get notificationGroupMachines => 'Maskiner';
 
   @override
+  String get notificationSectionSound => 'Ljud';
+
+  @override
+  String get notificationSectionSchedule => 'Schema';
+
+  @override
+  String get notificationSectionEvents => 'Händelser';
+
+  @override
   String get notificationsMutedRepos => 'Tystade arkiv';
 
   @override
@@ -4994,9 +4979,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'Välj appspråk.';
-
-  @override
-  String get shortTask => 'Kort uppgift';
 
   @override
   String get showNativeNotifications => 'Visa systemaviseringar för händelser.';
@@ -5585,10 +5567,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Minimera till fältet';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'Fokusläge aktivt – tryck för att avsluta';
 
   @override
   String get dismiss => 'Stäng';
@@ -13004,25 +12982,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Anslut till Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'Ring en körande cc-server över WebSocket. Din nyckel stannar på den här enheten.';
-
-  @override
-  String get webConnectServerLabel => 'Server';
-
-  @override
-  String get webConnectDeviceIdLabel => 'Enhets-ID';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Parkopplingsnyckel';
-
-  @override
-  String get webConnectPairingKeyHint => 'klistra in PSK';
-
-  @override
   String get webConnectStayConnected => 'Förbli ansluten på den här enheten';
 
   @override
@@ -13064,11 +13023,12 @@ class AppLocalizationsSv extends AppLocalizations {
       'Valfritt – lämna tomt så namnger titelmodellen den automatiskt';
 
   @override
-  String get shortTaskOff => 'Av';
+  String get contentSynthesizerUnavailable =>
+      'Content synthesizer-agenten saknas eller har ingen fungerande runner';
 
   @override
-  String get shortTaskUnavailable =>
-      'Välj en modell för korta uppgifter under Inställningar → Adaptrar för att använda det här';
+  String get conversationNeedsAgent =>
+      'Nämn en agent med @ för att starta den här konversationen';
 
   @override
   String get conversationTitleGenerate => 'Generera';
@@ -13538,14 +13498,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Läggs till på körarens kommandorad vid varje start.';
-
-  @override
-  String get defaultChatDescription =>
-      'Kör nya samtal och alla agenter utan egen körare.';
-
-  @override
-  String get shortTaskDescription =>
-      'Kör snabbt bakgrundsarbete som titlar och sammanfattningar. En mindre modell hör hemma här.';
 
   @override
   String get settingsStateFailed => 'Misslyckades';
@@ -14286,6 +14238,16 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Bifoga filer – eller släpp dem här';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Expandera redigeraren ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Fäll ihop redigeraren ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'Skärp målet';
@@ -15452,6 +15414,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'En agent är blockerad av inloggningsuppgifter';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Väntar fortfarande: $title';
+  }
+
+  @override
   String get killTerminal => 'Avsluta terminal';
 
   @override
@@ -15911,4 +15878,81 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Körningen stoppades eftersom leverantörens inloggningsuppgifter inte längre fungerar. Anslut den igen under Inställningar → Leverantörer och försök sedan med turen igen.';
+
+  @override
+  String get helpMenuLabel => 'Hjälp';
+
+  @override
+  String get helpWhatsNew => 'Nyheter';
+
+  @override
+  String get helpReportProblem => 'Rapportera ett problem';
+
+  @override
+  String get helpCreateGitHubIssue => 'Skapa ett GitHub-ärende';
+
+  @override
+  String get changelogInstalled => 'Installerad';
+
+  @override
+  String get changelogGroupNew => 'Nytt';
+
+  @override
+  String get changelogGroupImproved => 'Förbättrat';
+
+  @override
+  String get changelogGroupFixed => 'Åtgärdat';
+
+  @override
+  String get changelogLoadFailed =>
+      'Det gick inte att läsa in versionsinformationen.';
+
+  @override
+  String get changelogOpenWebsite => 'Öppna på webbplatsen';
+
+  @override
+  String get connectWelcomeTitle => 'Välkommen till Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Kör det här eller anslut till en server du redan har.';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'Anslut till din server för att komma igång.';
+
+  @override
+  String get connectToServer => 'Anslut till en server';
+
+  @override
+  String get connectToServerIntro =>
+      'Ange adressen till en Control Center-server.';
+
+  @override
+  String get connectUsePairingKey => 'Använd en parkopplingsnyckel';
+
+  @override
+  String get connectPasteLink => 'Klistra in en parkopplingslänk';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Klistra in inbjudnings- eller parkopplingslänken du fick.';
+
+  @override
+  String get connectPasteLinkLabel => 'Inbjudnings- eller parkopplingslänk';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Det är inte en inbjudnings- eller parkopplingslänk från Control Center. Kopiera hela länken och försök igen.';
+
+  @override
+  String get connectPasteLinkTarget => 'Ansluter till';
+
+  @override
+  String get focusModeEnd => 'Avsluta fokussession';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return '$minutes min kvar';
+  }
 }

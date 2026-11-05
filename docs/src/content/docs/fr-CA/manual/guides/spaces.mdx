@@ -2,7 +2,7 @@
 title: Utiliser les espaces
 description: Créez des espaces, définissez leur mode, gérez les participants et l’autonomie, et ouvrez des conversations et des fils.
 slug: fr-CA/manuel/guides/espaces
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Ce guide vous montre comment utiliser les espaces. Un **espace** est la surface de
@@ -27,6 +27,8 @@ voir [Espaces agent à agent](#espaces-agent-à-agent) ci-dessous.
    par défaut ; désélectionner tous les dépôts crée un espace où rien n’est
    extrait
 6. Confirmez
+
+Seul un agent répond à un message, donc un espace sans agent ne lance rien : le compositeur l’indique et conserve votre message jusqu’à ce que vous mentionniez un agent avec @, ce qui l’ajoute à l’espace et envoie le message. Il n’existe aucun exécuteur par défaut derrière un espace vide.
 
 Les espaces sont propres à l’espace de travail : vous ne voyez que les agents de
 l’espace de travail courant, et un espace ne fait jamais remonter de données d’un
@@ -108,7 +110,7 @@ permanente sans titre.
 Les conversations apparaissent comme des onglets d’éditeur, et comme des lignes
 imbriquées sous l’espace dans la barre latérale dès qu’il y en a plus d’une.
 **Nouvelle conversation** se trouve dans le menu de nouvel onglet de l’éditeur et
-crée une conversation sans titre, sans invite de titre — le modèle de titre la
+crée une conversation sans titre, sans invite de titre — l’agent Content synthesizer la
 nomme d’après le premier message. Utilisez-en une pour exécuter du travail en
 parallèle avec le même agent et le même arbre de travail.
 

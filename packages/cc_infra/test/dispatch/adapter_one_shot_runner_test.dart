@@ -82,8 +82,7 @@ void main() {
   });
 
   group('claudeCli transport', () {
-    test('drives `claude -p --output-format text` with the piped prompt',
-        () async {
+    test('drives a tool-less `claude -p` with the piped prompt', () async {
       launcher.stdoutLines = ['Git rebase question'];
 
       final out = await complete('claude-code', modelId: 'sonnet');
@@ -91,32 +90,28 @@ void main() {
       expect(out?.trim(), 'Git rebase question');
       final spawn = launcher.spawns.single;
       expect(spawn.executable, '/usr/local/bin/claude');
-      expect(spawn.arguments, [
-        '-p',
-        '--output-format',
-        'text',
-        '--model',
-        'sonnet',
-      ]);
-      // The system prompt rides the piped prompt, not a flag.
-      expect(spawn.process.stdinWrites.single, 'Name it.\n\nHow do I rebase?');
+      expect(spawn.arguments, [..._lockedDownClaudeArgs, '--model', 'sonnet']);
+      // The system prompt replaces Claude Code's own; stdin is the prompt.
+      expect(spawn.process.stdinWrites.single, 'How do I rebase?');
       expect(spawn.process.stdinClosed, isTrue);
     });
 
     test('omits --model when no model is set', () async {
       launcher.stdoutLines = ['T'];
       await complete('claude-code');
-      expect(launcher.spawns.single.arguments, ['-p', '--output-format', 'text']);
+      expect(launcher.spawns.single.arguments, _lockedDownClaudeArgs);
     });
 
-    test('a non-zero exit throws rather than returning a partial title',
-        () async {
-      launcher
-        ..stdoutLines = ['half an ans']
-        ..exitCode = 1;
+    test(
+      'a non-zero exit throws rather than returning a partial title',
+      () async {
+        launcher
+          ..stdoutLines = ['half an ans']
+          ..exitCode = 1;
 
-      await expectLater(complete('claude-code'), throwsA(isA<StateError>()));
-    });
+        await expectLater(complete('claude-code'), throwsA(isA<StateError>()));
+      },
+    );
 
     test('the process is killed even when the run throws', () async {
       launcher
@@ -139,44 +134,46 @@ void main() {
       acpArgs: 'acp',
     );
 
-    test('runs initialize → session/new → session/prompt and collects text',
-        () async {
-      launcher.acpScript = true;
+    test(
+      'runs initialize → session/new → session/prompt and collects text',
+      () async {
+        launcher.acpScript = true;
 
-      final out = await runner(
-        installed: const {'acp-test'},
-        extra: const [acpAdapter],
-      ).complete(
-        adapterId: 'acp-test',
-        modelId: 'grok',
-        systemPrompt: 'Name it.',
-        prompt: 'How do I rebase?',
-        timeout: const Duration(seconds: 5),
-      );
+        final out =
+            await runner(
+              installed: const {'acp-test'},
+              extra: const [acpAdapter],
+            ).complete(
+              adapterId: 'acp-test',
+              modelId: 'grok',
+              systemPrompt: 'Name it.',
+              prompt: 'How do I rebase?',
+              timeout: const Duration(seconds: 5),
+            );
 
-      expect(out, 'Git rebase question');
-      final spawn = launcher.spawns.single;
-      expect(spawn.executable, '/usr/local/bin/acp-test');
-      expect(spawn.arguments, ['acp']);
+        expect(out, 'Git rebase question');
+        final spawn = launcher.spawns.single;
+        expect(spawn.executable, '/usr/local/bin/acp-test');
+        expect(spawn.arguments, ['acp']);
 
-      final methods = spawn.process.stdinWrites
-          .map((l) => (jsonDecode(l) as Map<String, dynamic>)['method'])
-          .toList();
-      expect(methods, ['initialize', 'session/new', 'session/prompt']);
+        final methods = spawn.process.stdinWrites
+            .map((l) => (jsonDecode(l) as Map<String, dynamic>)['method'])
+            .toList();
+        expect(methods, ['initialize', 'session/new', 'session/prompt']);
 
-      final promptCall =
-          jsonDecode(spawn.process.stdinWrites.last) as Map<String, dynamic>;
-      final params = promptCall['params'] as Map<String, dynamic>;
-      expect(params['sessionId'], 'sess-1');
-      expect(params['prompt'], 'Name it.\n\nHow do I rebase?');
+        final promptCall =
+            jsonDecode(spawn.process.stdinWrites.last) as Map<String, dynamic>;
+        final params = promptCall['params'] as Map<String, dynamic>;
+        expect(params['sessionId'], 'sess-1');
+        expect(params['prompt'], 'Name it.\n\nHow do I rebase?');
 
-      final sessionNew =
-          jsonDecode(spawn.process.stdinWrites[1]) as Map<String, dynamic>;
-      expect((sessionNew['params'] as Map)['model'], 'grok');
-    });
+        final sessionNew =
+            jsonDecode(spawn.process.stdinWrites[1]) as Map<String, dynamic>;
+        expect((sessionNew['params'] as Map)['model'], 'grok');
+      },
+    );
   });
 }
-
 
 class _Spawn {
   _Spawn(this.executable, this.arguments, this.process);
@@ -320,11 +317,13 @@ class _FakeFactory implements HarnessProviderFactory {
   String reply = '';
 
   @override
-  ParsedModel parseModel(String? modelId, {String defaultProvider = 'anthropic'}) =>
-      const HarnessProviderFactory().parseModel(
-        modelId,
-        defaultProvider: defaultProvider,
-      );
+  ParsedModel parseModel(
+    String? modelId, {
+    String defaultProvider = 'anthropic',
+  }) => const HarnessProviderFactory().parseModel(
+    modelId,
+    defaultProvider: defaultProvider,
+  );
 
   @override
   LlmProviderPort create({
@@ -358,3 +357,18 @@ class _FakeProvider implements LlmProviderPort {
   @override
   dynamic noSuchMethod(Invocation invocation) {}
 }
+
+/// A plain completion: no built-in tools, no MCP servers, no slash commands,
+/// no saved session, and the caller's system prompt instead of Claude Code's.
+const _lockedDownClaudeArgs = [
+  '-p',
+  '--output-format',
+  'text',
+  '--tools',
+  '',
+  '--strict-mcp-config',
+  '--disable-slash-commands',
+  '--no-session-persistence',
+  '--system-prompt',
+  'Name it.',
+];

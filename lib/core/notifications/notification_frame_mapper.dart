@@ -7,6 +7,7 @@
 // not have pinged this user live must not surface in their bell either.
 library;
 
+import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
@@ -770,6 +771,11 @@ AppNotification _rigClosed(Map<String, dynamic> p, AppLocalizations l10n) {
 ///
 /// Carries the space id so the toast stays quiet while the operator is already
 /// looking at that space: the card in front of them is the notification.
+///
+/// Carries the wait so the OS notification keeps one identity for its whole
+/// life (reminders replace it, the wait's end withdraws it) and, for an
+/// approval, offers Approve and Deny. A frame without a `wait_id` (an older
+/// server) still notifies, without either.
 AppNotification? _agentAwaitingInput(
   Map<String, dynamic> p,
   AppLocalizations l10n,
@@ -805,6 +811,20 @@ AppNotification? _agentAwaitingInput(
     ),
     workspaceId: workspaceId,
     spaceId: spaceId,
+    wait: agentWaitOf(p),
+  );
+}
+
+/// The wait an `agent_awaiting_input` frame's [params] announce, or null when
+/// they carry no `wait_id`.
+NotificationWait? agentWaitOf(Map<String, dynamic> params) {
+  final id = params['wait_id'] as String?;
+  if (id == null || id.isEmpty) {
+    return null;
+  }
+  return NotificationWait(
+    id: id,
+    kind: AgentInputKind.values.asNameMap()[params['kind'] as String?],
   );
 }
 

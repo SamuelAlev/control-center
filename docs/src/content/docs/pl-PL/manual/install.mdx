@@ -2,7 +2,7 @@
 title: Instalacja
 description: Korzystaj z Control Center w przeglądarce albo zainstaluj aplikację desktopową, skonfiguruj backend agenta i wybierz, gdzie działa jego serwer.
 slug: pl-PL/podrecznik/instalacja
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center działa na dwa sposoby: jako **aplikacja webowa** pod adresem
@@ -209,17 +209,23 @@ właścicielem bazy danych i wykonuje całą pracę;
 [Wdrażanie i klienci](/pl-PL/podrecznik/koncepcje/wdrazanie/) wyjaśnia, co ten
 podział oznacza dla wersji desktopowej, webowej i telefonicznej.
 
-Przy pierwszym uruchomieniu aplikacja desktopowa pyta:
-**„Jak ma działać Control Center?"**:
+Przy pierwszym uruchomieniu aplikacja desktopowa wyświetla ekran
+**Witamy w Control Center** i oferuje trzy sposoby rozpoczęcia pracy. Przycisk ustawień
+w rogu zmienia język i motyw.
 
 - **Uruchom w tej aplikacji**: aplikacja desktopowa uruchamia i nadzoruje `cc_server`
   na tym komputerze i rozmawia z nim przez pętlę zwrotną. Niczego więcej nie trzeba
   konfigurować. To konfiguracja, którą zakłada
   [Szybki start](/pl-PL/podrecznik/szybki-start/).
-- **Połącz ze zdalną instancją**: wskaż aplikacji desktopowej `cc_server` działający
-  gdzie indziej, podając jego adres URL WebSocket, identyfikator urządzenia oraz
-  klucz parowania albo jednorazowy kod zaproszenia. To ten serwer jest właścicielem
-  danych; ten desktop tylko je renderuje.
+- **Połącz z serwerem**: wskaż aplikacji desktopowej `cc_server` działający
+  gdzie indziej, podając jego adres URL WebSocket, a następnie zaloguj się przez
+  logowanie jednokrotne, jeśli serwer je oferuje, albo wprowadź jednorazowy kod
+  zaproszenia, albo identyfikator urządzenia i klucz parowania w sekcji
+  **Użyj klucza parowania**. To ten serwer jest właścicielem danych; ten desktop
+  tylko je renderuje.
+- **Wklej link parowania**: wklej link zaproszenia lub parowania. Okno dialogowe
+  pokazuje, do którego serwera prowadzi link, i łączy się dopiero po kliknięciu
+  **Połącz**.
 
 Serwery dodasz lub zmienisz później w **Ustawienia → Serwer → Połączenie i status**.
 Przełączenie łączy od nowa w miejscu — bez restartu. Przeglądarka nie może uruchomić

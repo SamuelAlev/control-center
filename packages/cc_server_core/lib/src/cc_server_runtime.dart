@@ -232,6 +232,7 @@ import 'package:cc_server_core/src/review_fix_dispatch.dart';
 import 'package:cc_server_core/src/rig_event_listener.dart';
 import 'package:cc_server_core/src/rpc_exception_mapper.dart';
 import 'package:cc_server_core/src/run_log_reader.dart';
+import 'package:cc_server_core/src/runtime/review_impact_payloads.dart';
 import 'package:cc_server_core/src/runtime/server_extra_ops.dart';
 import 'package:cc_server_core/src/runtime/server_fleet_wiring.dart';
 import 'package:cc_server_core/src/runtime/server_native_preflight.dart';
@@ -2020,6 +2021,23 @@ Future<CcServer> runCcServer({
             log: (message) => _announce('cc_server: $message'),
           ),
         );
+  // Claude Code's models and the window each runs with, read live from the
+  // installed CLI as the account unattributed dispatches use sees it, so a new
+  // model needs no app update. A demo never spawns the CLI: it offers the
+  // family aliases only. `claudeAccountStore` is read lazily — it is built
+  // further down, before anything can ask.
+  final claudeCodeModels = ClaudeCodeModelCatalog(
+    resolveBinary: demo != null ? (_) async => null : null,
+    configDir: () async {
+      final accounts = await claudeAccountStore.list();
+      final account =
+          accounts.where((a) => a.isDefault).firstOrNull ??
+          accounts.firstOrNull;
+      return account == null
+          ? null
+          : claudeAccountStore.configDirFor(account.id);
+    },
+  );
   demoMeeting = demo != null ? DemoMeetingService(meetingRepository) : null;
   if (demo != null) {
     _announce(
@@ -2378,6 +2396,7 @@ Future<CcServer> runCcServer({
     transcriptStore: transcriptStore,
     toolOutputStore: toolOutputStore,
     claudeSessionStore: claudeSessionStore,
+    claudeContextWindowOf: claudeCodeModels.contextWindowOf,
     llmCallRecordRepository: llmCallRecordRepository,
     // The `debug` tool: a stopped frame answers every question about that
     // moment at once, where a print statement answers one and costs a run.
@@ -2895,37 +2914,40 @@ Future<CcServer> runCcServer({
     credentials: harnessCreds,
     refresher: harnessOAuthBroker,
   );
-  // Automatic conversation titling: the WORKSPACE's chosen runner (an
-  // admin-gated adapter + model pair, read per send) names a conversation once
-  // its first human message lands. Off unless the adapter setting is set — no
-  // fallback runner.
+  // The workspace's content synthesizer agent (its runner, model, persona and
+  // system prompt, read per call) writes titles, side answers and goal
+  // objectives. A workspace without one has those features off — no fallback.
+  final contentSynthesizer = ContentSynthesizerResolver(agentRepository);
+  // Automatic conversation titling: names a conversation once its first human
+  // message lands.
   final conversationTitleService = ConversationTitleService(
     runner: adapterOneShotRunner,
-    settings: workspaceSettingsRepository,
+    synthesizer: contentSynthesizer,
     conversationRepo: conversationRepository,
     messagingRepo: messagingRepository,
-    // Titling only needs the first human message. Do not load every
-    // transcript to find it.
+    // The opening and a bounded tail of the newest turns. Neither loads the
+    // whole transcript.
     firstHumanContent: messagingRepository.firstHumanContent,
+    recentMessages: messagingRepository.sideChannelMessages,
   );
   // `/handoff`, `/btw`, `/omfg`: one question ABOUT the conversation that is
-  // never added to it. Runs on the SAME operator-chosen one-shot runner as
-  // conversation titling — a side question that silently used a different
-  // model would be a surprise on the bill.
+  // never added to it. Runs on the SAME content synthesizer as conversation
+  // titling — a side question that silently used a different model would be a
+  // surprise on the bill.
   final conversationSideChannelService = ConversationSideChannelService(
     repo: messagingRepository,
     runner: adapterOneShotRunner,
-    settings: workspaceSettingsRepository,
+    synthesizer: contentSynthesizer,
     // The prompt keeps the newest 60k characters. Do not load every
     // transcript to build that window.
     sideChannelMessages: messagingRepository.sideChannelMessages,
   );
   // Turns a rough request into an objective an agent can pursue for hours
-  // without supervision. On the same one-shot runner: anything wanting a
+  // without supervision. On the same content synthesizer: anything wanting a
   // single short completion on the workspace's chosen model belongs here.
   final guidedGoalService = GuidedGoalService(
     runner: adapterOneShotRunner,
-    settings: workspaceSettingsRepository,
+    synthesizer: contentSynthesizer,
   );
   // Declared ahead of MessagingService because the two point at each other: the
   // provisioning service reads the messaging repositories, and messaging routes
@@ -3695,8 +3717,9 @@ Future<CcServer> runCcServer({
       '  - ${missingNatives.join('\n  - ')}\n'
       'Looked in \$$nativeLibDirEnvVar, ${config.dataDir}, $grammarsRoot and '
       'the server bundle. Stage them with scripts/natives/build_natives.sh and '
-      'rebuild the server (`dart build cli` bundles build/natives into '
-      '<bundle>/lib/), or drop the dylibs into the data dir. Refusing to boot '
+      'rebuild the server with scripts/build_server.sh (`dart build cli` '
+      'bundles build/natives into <bundle>/lib/ but not media/ into '
+      '<bundle>/bin/media/), or drop them into the data dir. Refusing to boot '
       'with a degraded feature set.',
     );
   }
@@ -4705,48 +4728,13 @@ Future<CcServer> runCcServer({
     int depth = 2,
   }) async {
     final linked = await resolveLinkedReviewRepo(workspaceId, owner, repo);
-    final symbols = await workspaceDbs
-        .of(workspaceId)
-        .codeGraphDao
-        .getSymbolsByFiles(workspaceId, linked.id, [filePath]);
-    if (symbols.isEmpty) {
-      return {'nodes': const [], 'edges': const [], 'indexed': false};
-    }
-    symbols.sort(
-      (a, b) => (b.endLine - b.startLine) - (a.endLine - a.startLine),
+    return fileBlastRadiusPayload(
+      dao: workspaceDbs.of(workspaceId).codeGraphDao,
+      workspaceId: workspaceId,
+      repoId: linked.id,
+      filePath: filePath,
+      depth: depth,
     );
-    final impact = await workspaceDbs
-        .of(workspaceId)
-        .codeGraphDao
-        .getImpactRadius(workspaceId, symbols.first.id, depth: depth);
-    return {
-      'indexed': true,
-      'root': {
-        'id': symbols.first.id,
-        'name': symbols.first.name,
-        'qualifiedName': symbols.first.qualifiedName,
-        'filePath': symbols.first.filePath,
-      },
-      'nodes': [
-        for (final n in impact.nodes)
-          {
-            'id': n.id,
-            'name': n.name,
-            'qualifiedName': n.qualifiedName,
-            'filePath': n.filePath,
-            'kind': n.kind,
-            'depth': impact.depthById[n.id] ?? 0,
-          },
-      ],
-      'edges': [
-        for (final e in impact.edges)
-          {
-            'source': e.sourceSymbolId,
-            'target': e.targetSymbolId,
-            'kind': e.kind,
-          },
-      ],
-    };
   }
 
   // Conversation revert/unrevert (undo/redo): this host owns the DB AND runs the
@@ -4917,6 +4905,7 @@ Future<CcServer> runCcServer({
     eventBus: eventBus,
     credentials: harnessCreds,
     claudeAccounts: claudeAccountStore,
+    claudeModels: AcpModelsService(claudeCode: claudeCodeModels),
     refreshCredential: harnessOAuthBroker.refreshIfNeeded,
     resolveModel: (qualified) async {
       final catalog = await modelCatalogService.catalog();
@@ -5372,71 +5361,14 @@ Future<CcServer> runCcServer({
     if (cohort == null || cohort.filePaths.isEmpty) {
       return empty;
     }
-    final symbols = await workspaceDbs
-        .of(workspaceId)
-        .codeGraphDao
-        .getSymbolsByFiles(workspaceId, linked.id, cohort.filePaths);
-    if (symbols.isEmpty) {
-      return empty;
-    }
-    final files = cohort.filePaths.toSet();
-    final dominantByFile = <String, CodeSymbolsTableData>{};
-    for (final s in symbols) {
-      if (!files.contains(s.filePath)) {
-        continue;
-      }
-      final current = dominantByFile[s.filePath];
-      if (current == null ||
-          (s.endLine - s.startLine) > (current.endLine - current.startLine)) {
-        dominantByFile[s.filePath] = s;
-      }
-    }
-    final nodes = <String, Map<String, dynamic>>{};
-    final edges = <String, Map<String, dynamic>>{};
-    for (final dominant in dominantByFile.values) {
-      final impact = await workspaceDbs
-          .of(workspaceId)
-          .codeGraphDao
-          .getImpactRadius(workspaceId, dominant.id, depth: depth);
-      for (final n in impact.nodes) {
-        final hop = impact.depthById[n.id] ?? 0;
-        final existing = nodes[n.id];
-        if (existing == null) {
-          nodes[n.id] = {
-            'id': n.id,
-            'name': n.name,
-            'qualifiedName': n.qualifiedName,
-            'filePath': n.filePath,
-            'kind': n.kind,
-            'depth': hop,
-          };
-        } else if (hop < (existing['depth'] as num)) {
-          existing['depth'] = hop;
-        }
-      }
-      for (final e in impact.edges) {
-        edges['${e.sourceSymbolId}->${e.targetSymbolId}'] = {
-          'source': e.sourceSymbolId,
-          'target': e.targetSymbolId,
-          'kind': e.kind,
-        };
-      }
-    }
-    return {
-      'indexed': true,
-      'cohort_key': cohortKey,
-      'roots': [
-        for (final r in dominantByFile.values)
-          {
-            'id': r.id,
-            'name': r.name,
-            'qualifiedName': r.qualifiedName,
-            'filePath': r.filePath,
-          },
-      ],
-      'nodes': nodes.values.toList(),
-      'edges': edges.values.toList(),
-    };
+    return cohortImpactPayload(
+      dao: workspaceDbs.of(workspaceId).codeGraphDao,
+      workspaceId: workspaceId,
+      repoId: linked.id,
+      filePaths: cohort.filePaths,
+      cohortKey: cohortKey,
+      depth: depth,
+    );
   }
 
   // The agent-facing entry to the SAME flow the UI's "Ask AI" action uses.
@@ -5578,6 +5510,9 @@ Future<CcServer> runCcServer({
   final backupTransferStagingDir = '${config.dataDir}/backups/transfer';
 
   final serverExtraOps = buildServerExtraOps(
+    // usectrl.dev/changelog.md (token-less). The thin client parses it with
+    // `ChangelogRelease.parseMarkdown`.
+    fetchChangelog: () => ChangelogService(createHttpClient()).fetchMarkdown(),
     fleetOps: fleetOps,
     fleetWatchQueries: fleetWatchQueries,
     telemetryConfig: telemetry.config,
@@ -5606,6 +5541,7 @@ Future<CcServer> runCcServer({
           .resolve(modelCatalogService.catalogSync().resolve, qualified)
           ?.limits
           .context,
+      claudeCodeWindowOf: claudeCodeModels.contextWindowOf,
     ),
     weatherService: weatherService,
     fontCatalog: fontCatalog,
@@ -5989,7 +5925,9 @@ Future<CcServer> runCcServer({
     adapterDetection:
         demo?.adapterDetection ??
         const AdapterDetectionRepository(AdapterDetectionService()),
-    acpModels: AcpModelRepositoryImpl(AcpModelsService()),
+    acpModels: AcpModelRepositoryImpl(
+      AcpModelsService(claudeCode: claudeCodeModels),
+    ),
     providerOAuth: demo != null ? null : providerOAuth,
     // demo: no app identity to configure.
     providerApps: demo != null ? null : providerApps,
@@ -7478,6 +7416,15 @@ Future<CcServer> runCcServer({
     );
   }
 
+  // Claude Code's model list, read off the ready path: a cold read drives
+  // the CLI through every model (~10s), and the first picker open should not
+  // be what waits for it. Read-only and token-free (see
+  // [ClaudeCodeModelProbe]); a host without `claude` makes it a no-op. The
+  // demo never spawns the CLI.
+  if (demo == null) {
+    unawaited(claudeCodeModels.models());
+  }
+
   // On-device model warm-up (embedding + diarization + ASR) via the same
   // [ManagedModelControl]s as `models.*` RPC: no-op if on disk; clients see
   // live progress on `models.watch*`; failure → control `error` (retry next
@@ -7604,16 +7551,25 @@ Future<CcServer> runCcServer({
   );
   // Hand it to the demo's pool (see `demoBaseSeeder` above).
   demoBaseSeeder = workspaceSeeder;
+  // One-shot: puts the content synthesizer on rosters that predate it and
+  // moves a retired "short task" runner choice onto it. On a new workspace it
+  // only records that the roster seed already created it.
+  final contentSynthesizerSeeder = ContentSynthesizerSeeder(
+    agentRepository: agentRepository,
+    filesystem: workspaceFilesystem,
+    settings: workspaceSettingsRepository,
+  );
   eventBus.on<WorkspaceCreated>().listen(
-    (event) => unawaited(
-      workspaceSeeder.seed(
+    (event) => unawaited(() async {
+      await workspaceSeeder.seed(
         event.workspaceId,
         // demo: the same curated whitelist everywhere templates are written —
         // this listener is unawaited, so an unfiltered seed here re-added the
         // catalogue the seeder's prune had just removed.
         onlyTemplateIds: demo == null ? null : kDemoPipelineTemplateIds,
-      ),
-    ),
+      );
+      await contentSynthesizerSeeder.ensure(event.workspaceId);
+    }()),
   );
   // Seed built-in pipeline templates into every workspace at boot so older
   // workspaces pick up graph changes. Read-only in steady state; user-edited
@@ -7626,6 +7582,7 @@ Future<CcServer> runCcServer({
     try {
       final all = await workspaceRepository.watchAll().first;
       for (final ws in all) {
+        await contentSynthesizerSeeder.ensure(ws.id);
         // demo: the same curated whitelist the seeder prunes to — an
         // unfiltered reconcile would re-add the rest of the catalogue on
         // every boot.

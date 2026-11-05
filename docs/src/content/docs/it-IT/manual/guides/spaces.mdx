@@ -2,7 +2,7 @@
 title: Usa gli spazi
 description: Crea spazi, impostane la modalità, gestisci partecipanti e autonomia e apri conversazioni e thread.
 slug: it-IT/manuale/guide/spazi
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Questa guida mostra come usare gli spazi. Uno **spazio** è la superficie di
@@ -26,6 +26,11 @@ agente-agente](#spazi-agente-agente) qui sotto.
    worktree. Sono tutti selezionati per impostazione predefinita; deselezionando
    ogni repo si crea uno spazio senza nulla estratto
 6. Conferma
+
+Solo un agente risponde a un messaggio, quindi uno spazio senza agenti non avvia
+nulla: il compositore lo segnala e conserva il tuo messaggio finché non menzioni
+un agente con @, che lo aggiunge allo spazio e invia il messaggio. Non esiste
+alcun runner predefinito dietro a uno spazio vuoto.
 
 Gli spazi sono circoscritti allo spazio di lavoro: vedi solo gli agenti dello
 spazio di lavoro corrente e uno spazio non mostra mai dati di un altro spazio di
@@ -104,7 +109,7 @@ non ne ha ancora nessuna viene creata una conversazione permanente senza titolo.
 Le conversazioni compaiono come schede dell'editor e, quando ce n'è più di una,
 come righe annidate sotto lo spazio nella barra laterale. **Nuova conversazione**
 si trova nel menu di nuova scheda dell'editor e crea una conversazione senza
-titolo, senza alcuna richiesta del titolo: il modello dei titoli la nomina in base
+titolo, senza alcuna richiesta del titolo: l'agente Content synthesizer la nomina in base
 al primo messaggio. Usane una per svolgere lavoro in parallelo con lo stesso
 agente e lo stesso worktree.
 

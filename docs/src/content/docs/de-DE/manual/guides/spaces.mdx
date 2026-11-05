@@ -2,7 +2,7 @@
 title: Bereiche nutzen
 description: Lege Bereiche an, setze ihren Modus, verwalte Teilnehmer und Autonomie und öffne Unterhaltungen und Threads.
 slug: de-DE/handbuch/anleitungen/bereiche
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Diese Anleitung zeigt, wie du Bereiche nutzt. Ein **Bereich** ist die
@@ -26,6 +26,8 @@ sind Bereiche, die Agenten öffnen, um miteinander zu sprechen — siehe
    bereitstellt. Anfangs sind alle ausgewählt; wählst du jedes Repo ab, entsteht
    ein Bereich, in dem nichts ausgecheckt ist
 6. Bestätige
+
+Nur ein Agent antwortet auf eine Nachricht, daher startet ein Bereich ohne Agenten nichts: das Eingabefeld sagt das und behält deine Nachricht, bis du einen Agenten mit @ erwähnst. Dieser wird dem Bereich hinzugefügt und die Nachricht gesendet. Hinter einem leeren Bereich steht kein Standard-Runner.
 
 Bereiche gehören zu einem Arbeitsbereich: du siehst nur Agenten des aktuellen
 Arbeitsbereichs, und ein Bereich zeigt nie Daten aus einem anderen.
@@ -104,7 +106,7 @@ unbenannte Unterhaltung, die bleibt.
 Unterhaltungen erscheinen als Tabs im Editor und, sobald es mehr als eine gibt,
 als verschachtelte Zeilen unter dem Bereich in der Seitenleiste. **Neue
 Konversation** sitzt im Menü für einen neuen Tab des Editors und legt ohne
-Titelfrage eine unbenannte Unterhaltung an. Das Titelmodell benennt sie nach
+Titelfrage eine unbenannte Unterhaltung an. Der Agent Content synthesizer benennt sie nach
 der ersten Nachricht. Damit führst du parallele Arbeit mit demselben Agenten
 und demselben Worktree aus.
 

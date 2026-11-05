@@ -2,7 +2,7 @@
 title: Sandbox e sicurezza
 description: Cosa vincola davvero un agente in Control Center oggi, fin dove arriva il sandbox del sistema operativo e quali confini tengono su un host privo di backend.
 slug: it-IT/manuale/concetti/sandbox-e-sicurezza
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Dove arriva e dove non arriva il sandbox del sistema operativo]
@@ -220,7 +220,7 @@ di scrittura riportata a deny con allow espliciti in aggiunta, blocco di unlink 
 percorso negato e sui suoi antenati così che una rinomina non possa aggirare un diniego
 di scrittura, dinieghi di exec per binari sempre pericolosi e per qualsiasi cosa
 copiata in una directory scrivibile, e rete limitata alle porte proxy di loopback più
-il DNS.
+il DNS. Le installazioni di toolchain nella home (pnpm tramite corepack, gestori di versioni di node, browser Playwright, rustup, fvm, uv e simili) restano eseguibili all'interno di quel blocco exec, così gli agenti possono usarle senza workaround. I dinieghi per i binari sempre pericolosi continuano ad applicarsi anche al loro interno. Ogni sessione riceve inoltre un proprio `TMPDIR` privato. È l'unica directory temporanea in cui l'agente può eseguire programmi che ha compilato o aprire socket Unix.
 
 La conseguenza pratica: su Linux la visione del filesystem da parte dell'agente è
 ristretta; su macOS l'agente può ancora _leggere_ gran parte dell'host e i tuoi

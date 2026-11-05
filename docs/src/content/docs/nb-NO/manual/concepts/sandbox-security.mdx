@@ -2,7 +2,7 @@
 title: Sandkasse og sikkerhet
 description: Hva som faktisk begrenser en agent i Control Center i dag, hvor langt OS-sandkassen rekker, og hvilke grenser som holder på en vert uten backend.
 slug: nb-NO/handbok/konsepter/sandkasse-og-sikkerhet
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Hvor OS-sandkassen rekker, og hvor den ikke rekker]
@@ -214,7 +214,7 @@ skjærer ut nekter: lesing av hemmelige stier, en skrivepolicy nullstilt til nek
 med eksplisitte tillatelser på toppen, blokkering av unlink på hver nektet sti
 og dens overordnede, så en omdøping ikke kan omgå en skrivenekt, exec-nekt for
 alltid-farlige binærer og for alt som kopieres inn i en skrivbar katalog, og
-nettverk begrenset til loopback-proxyportene pluss DNS.
+nettverk begrenset til loopback-proxyportene pluss DNS. Verktøykjeder installert under hjemmekatalogen din (pnpm fra corepack, versjonsbehandlere for node, Playwright-nettlesere, rustup, fvm, uv og lignende) kan fortsatt kjøres innenfor den exec-blokkeringen, slik at agenter kan bruke dem uten omveier. De alltid-farlige nektene gjelder fortsatt innenfor dem. Hver økt får også sin egen private `TMPDIR`. Det er den eneste midlertidige katalogen der agenten får kjøre programmer den har bygget eller åpne Unix-sokler.
 
 Den praktiske konsekvensen: på Linux blir agentens syn på filsystemet smalere;
 på macOS kan agenten fortsatt _lese_ mesteparten av verten, og de registrerte

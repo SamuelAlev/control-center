@@ -740,13 +740,6 @@ class AppLocalizationsEl extends AppLocalizations {
       'Το Control Center εκτελεί τον δικό του διακομιστή σε αυτό το μηχάνημα και διατηρεί τα δεδομένα σας τοπικά.';
 
   @override
-  String get serverModeRemote => 'Σύνδεση σε απομακρυσμένη παρουσία';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Συνδεθείτε σε διακομιστή Control Center που εκτελείται αλλού. Τα δεδομένα σας βρίσκονται σε εκείνον τον διακομιστή.';
-
-  @override
   String get serverRemoteUrl => 'URL διακομιστή';
 
   @override
@@ -970,13 +963,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Άλλες συσκευές δεν μπορούν να φτάσουν αυτόν τον διακομιστή απευθείας, επομένως ένας νέος πελάτης δεν μπορεί να συνδεθεί. Ορίστε το δημόσιο URL του διακομιστή για σύζευξη περισσότερων πελατών.';
-
-  @override
-  String get serverSetupTitle => 'Πώς να εκτελείται το Control Center;';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Το Control Center χρειάζεται έναν διακομιστή που κατέχει τα δεδομένα σας. Εκτελέστε έναν μέσα σε αυτή την εφαρμογή ή συνδεθείτε σε παρουσία που εκτελείται αλλού.';
 
   @override
   String get serverSetupRunLocal => 'Εκτέλεση σε αυτή την εφαρμογή';
@@ -3057,10 +3043,6 @@ class AppLocalizationsEl extends AppLocalizations {
       'Ρυθμίστε ταυτότητες πρακτόρων, προτροπές, δεξιότητες και δείτε εκτελέσεις.';
 
   @override
-  String get configureDefaultRunners =>
-      'Ρυθμίστε ποιον προσαρμογέα και μοντέλο χρησιμοποιούν οι νέοι χώροι και η δημιουργία τίτλων.';
-
-  @override
   String get configuredLabel => 'Ρυθμίστηκε.';
 
   @override
@@ -3160,12 +3142,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get deactivate => 'Απενεργοποίηση';
-
-  @override
-  String get defaultChat => 'Προεπιλεγμένη συνομιλία';
-
-  @override
-  String get defaultRunners => 'Προεπιλεγμένοι εκτελεστές';
 
   @override
   String get delete => 'Διαγραφή';
@@ -4487,6 +4463,15 @@ class AppLocalizationsEl extends AppLocalizations {
   String get notificationGroupMachines => 'Μηχανές';
 
   @override
+  String get notificationSectionSound => 'Ήχος';
+
+  @override
+  String get notificationSectionSchedule => 'Χρονοδιάγραμμα';
+
+  @override
+  String get notificationSectionEvents => 'Συμβάντα';
+
+  @override
   String get notificationsMutedRepos => 'Αποθετήρια σε σίγαση';
 
   @override
@@ -5044,9 +5029,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'Επιλέξτε τη γλώσσα της εφαρμογής.';
-
-  @override
-  String get shortTask => 'Σύντομη εργασία';
 
   @override
   String get showNativeNotifications =>
@@ -5640,10 +5622,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Ελαχιστοποίηση στη γραμμή';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'Η λειτουργία εστίασης είναι ενεργή — πατήστε για τερματισμό';
 
   @override
   String get dismiss => 'Απόρριψη';
@@ -13113,25 +13091,6 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Σύνδεση στο Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'Κλήση σε τρέχοντα cc-server μέσω WebSocket. Το κλειδί σας μένει σε αυτή τη συσκευή.';
-
-  @override
-  String get webConnectServerLabel => 'Διακομιστής';
-
-  @override
-  String get webConnectDeviceIdLabel => 'ID συσκευής';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Κλειδί σύζευξης';
-
-  @override
-  String get webConnectPairingKeyHint => 'επικολλήστε το PSK';
-
-  @override
   String get webConnectStayConnected =>
       'Να παραμένει συνδεδεμένο σε αυτή τη συσκευή';
 
@@ -13174,11 +13133,12 @@ class AppLocalizationsEl extends AppLocalizations {
       'Προαιρετικό — αφήστε κενό και το μοντέλο τίτλων το ονομάζει αυτόματα';
 
   @override
-  String get shortTaskOff => 'Ανενεργό';
+  String get contentSynthesizerUnavailable =>
+      'Ο πράκτορας Content synthesizer λείπει ή δεν έχει runner που λειτουργεί';
 
   @override
-  String get shortTaskUnavailable =>
-      'Επιλέξτε μοντέλο σύντομων εργασιών στις Ρυθμίσεις → Προσαρμογείς για να το χρησιμοποιήσετε';
+  String get conversationNeedsAgent =>
+      'Αναφέρετε έναν πράκτορα με @ για να ξεκινήσετε αυτή τη συνομιλία';
 
   @override
   String get conversationTitleGenerate => 'Δημιουργία';
@@ -13652,14 +13612,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Προσαρτώνται στη γραμμή εντολών του εκτελεστή σε κάθε εκκίνηση.';
-
-  @override
-  String get defaultChatDescription =>
-      'Τρέχει νέες συνομιλίες και κάθε πράκτορα χωρίς δικό του εκτελεστή.';
-
-  @override
-  String get shortTaskDescription =>
-      'Τρέχει γρήγορη εργασία παρασκηνίου όπως τίτλους και περιλήψεις. Ένα μικρότερο μοντέλο ανήκει εδώ.';
 
   @override
   String get settingsStateFailed => 'Απέτυχε';
@@ -14411,6 +14363,16 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Επισύναψη αρχείων — ή αφήστε τα εδώ';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Ανάπτυξη επεξεργαστή ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Σύμπτυξη επεξεργαστή ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'Όξυνση του αντικειμενικού σκοπού';
@@ -15590,6 +15552,11 @@ class AppLocalizationsEl extends AppLocalizations {
       'Ένας πράκτορας είναι μπλοκαρισμένος λόγω διαπιστευτηρίων';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Ακόμα σε αναμονή: $title';
+  }
+
+  @override
   String get killTerminal => 'Τερματισμός τερματικού';
 
   @override
@@ -16053,4 +16020,81 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Η εκτέλεση σταμάτησε επειδή τα διαπιστευτήρια του παρόχου δεν λειτουργούν πλέον. Συνδέστε τον ξανά στις Ρυθμίσεις → Πάροχοι και επαναλάβετε τον γύρο.';
+
+  @override
+  String get helpMenuLabel => 'Βοήθεια';
+
+  @override
+  String get helpWhatsNew => 'Τι νέο υπάρχει';
+
+  @override
+  String get helpReportProblem => 'Αναφορά προβλήματος';
+
+  @override
+  String get helpCreateGitHubIssue => 'Δημιουργία issue στο GitHub';
+
+  @override
+  String get changelogInstalled => 'Εγκατεστημένη';
+
+  @override
+  String get changelogGroupNew => 'Νέα';
+
+  @override
+  String get changelogGroupImproved => 'Βελτιώσεις';
+
+  @override
+  String get changelogGroupFixed => 'Διορθώσεις';
+
+  @override
+  String get changelogLoadFailed =>
+      'Δεν ήταν δυνατή η φόρτωση των σημειώσεων έκδοσης.';
+
+  @override
+  String get changelogOpenWebsite => 'Άνοιγμα στον ιστότοπο';
+
+  @override
+  String get connectWelcomeTitle => 'Καλώς ήρθατε στο Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Εκτελέστε το εδώ ή συνδεθείτε σε έναν διακομιστή που έχετε ήδη.';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'Συνδεθείτε στον διακομιστή σας για να ξεκινήσετε.';
+
+  @override
+  String get connectToServer => 'Σύνδεση σε διακομιστή';
+
+  @override
+  String get connectToServerIntro =>
+      'Εισαγάγετε τη διεύθυνση ενός διακομιστή Control Center.';
+
+  @override
+  String get connectUsePairingKey => 'Χρήση κλειδιού σύζευξης';
+
+  @override
+  String get connectPasteLink => 'Επικόλληση συνδέσμου σύζευξης';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Επικολλήστε τον σύνδεσμο πρόσκλησης ή σύζευξης που λάβατε.';
+
+  @override
+  String get connectPasteLinkLabel => 'Σύνδεσμος πρόσκλησης ή σύζευξης';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Αυτός δεν είναι σύνδεσμος πρόσκλησης ή σύζευξης του Control Center. Αντιγράψτε ολόκληρο τον σύνδεσμο και δοκιμάστε ξανά.';
+
+  @override
+  String get connectPasteLinkTarget => 'Συνδέεται σε';
+
+  @override
+  String get focusModeEnd => 'Τερματισμός συνεδρίας εστίασης';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'Απομένουν $minutes λ.';
+  }
 }

@@ -97,7 +97,12 @@ class EditorTabGroupController extends ChangeNotifier {
   void _forget(EditorTab tab) =>
       _visitOrder.removeWhere((t) => identical(t, tab));
 
-  /// Appends [tab] and selects it. When [EditorTab.dedupKey] is non-null and a
+  /// Opens [tab] immediately to the right of the selected tab and selects it
+  /// (VS Code's `workbench.editor.openPositioning: right`), so a new tab lands
+  /// next to the one you were working in rather than at the far end of a long
+  /// strip. Opening several tabs in a row still lays them out in order: each
+  /// new tab becomes the selection the next one opens beside. An empty group
+  /// simply gains its first tab. When [EditorTab.dedupKey] is non-null and a
   /// tab with the same key already exists, that tab is refocused instead of
   /// stacking a duplicate — and replaced in place only when the payload
   /// actually changed (same rule as [refreshTabAt]).
@@ -124,8 +129,9 @@ class EditorTabGroupController extends ChangeNotifier {
         return;
       }
     }
-    _tabs.add(tab);
-    _selectedIndex = _tabs.length - 1;
+    final at = _tabs.isEmpty ? 0 : selectedIndex + 1;
+    _tabs.insert(at, tab);
+    _selectedIndex = at;
     _visit(_selectedIndex);
     notifyListeners();
     onTabOpened?.call(tab.kind);

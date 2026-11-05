@@ -2,7 +2,7 @@
 title: Sandbox arka uçları
 description: Sandbox arka uçları, nerede uygulandıkları ve sandbox çalışma zamanının kullandığı her değer nesnesi.
 slug: tr-TR/kilavuz/referans/sandbox-arka-uclari
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Bir çalıştırmanın sandbox'a alınıp alınmadığı ana makineye bağlıdır]
@@ -60,8 +60,8 @@ Apple'ın Seatbelt sandbox mekanizmasını kullanır (macOS App Sandbox'ın da k
 
 - **Dosya sistemi okumaları**: gizli yollar için reddedilir (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` ve okuma-reddi kümesinin geri kalanı)
 - **Dosya sistemi yazmaları**: redde sıfırlanır, ardından açık alt yol izinleri eklenir; zorunlu red yolları (kabuk rc dosyaları, `.git/hooks`, Claude yapılandırması, korunan çalışma kopyaları) yazılabilir bir kökün içinde bile engellenir. `file-write-unlink` reddedilen her yol ve onun üstleri için reddedilir, böylece bir yeniden adlandırma yazma reddini atlayamaz
-- **Süreç**: `process-exec`, her zaman tehlikeli ikilileri reddeder; ayrıca yazılabilir bir dizinden herhangi bir şeyin yürütülmesini engeller
-- **Ağ**: süreç içi proxy portları artı DNS ile kısıtlanır — loopback'e toptan izin verilmez ve Unix soketlerine izin verilmez. Proxy'ler oturum başına alan adı izin listesini uygular (bkz. [Ağ çıkışı](#ağ-çıkışı))
+- **Süreç**: `process-exec`, her zaman tehlikeli ikilileri reddeder; ayrıca yazılabilir bir dizinden herhangi bir şeyin yürütülmesini engeller. Ana dizininizin altındaki bilinen araç zinciri kurulum ağaçları (corepack, npx ve `pnpm dlx` önbellekleri, node sürüm yöneticileri, Playwright tarayıcıları, rustup ve cargo, Go, fvm ve pub önbelleği, pyenv, uv ve pipx, rbenv, sdkman, mise, asdf ve `~/.local/bin`) bu engelin altında yeniden açılır. Paylaşılan geçici dizinler de engellenir. Bunun yerine her oturuma `/private/tmp` altında özel bir `TMPDIR` verilir; oturumun derlediği programlar (bir `go test` ikilisi, bir cargo derlemesi) orada çalışabilir. Her zaman tehlikeli olan yasaklar bu izinlerden sonra uygulanır
+- **Ağ**: süreç içi proxy portları artı DNS ile kısıtlanır — loopback'e toptan izin verilmez ve TCP dinlemesi yasaktır. Unix soketlerine yalnızca oturumun özel `TMPDIR`'i içinde izin verilir; bu, IPC soketini orada tutan tsx ve Chrome gibi araçları kapsar. SSH agent'ınız ve diğer soketler erişilemez kalır. Proxy'ler oturum başına alan adı izin listesini uygular (bkz. [Ağ çıkışı](#ağ-çıkışı))
 - **Yapılandırma**: profiller her başlatmada `SandboxSpec` üzerinden üretilir
 
 Gereksinimler:

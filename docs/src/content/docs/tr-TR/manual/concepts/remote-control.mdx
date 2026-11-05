@@ -2,7 +2,7 @@
 title: Uzaktan kontrol ve mobil
 description: Telefonun sunucunuza, doğrudan ya da aracılı, uçtan uca şifrelenmiş bağlantılar üzerinden nasıl ulaştığı ve bu erişimi dar tutan katmanlı erişim modeli.
 slug: tr-TR/kilavuz/kavramlar/uzaktan-kontrol
-sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
+sourceHash: cb6a1ecae8bc1c410e872649d26d3cae127003f6
 ---
 
 Control Center bir masaüstü uygulamasıdır, ancak izlediği iş siz masanızdan
@@ -97,8 +97,9 @@ bağlantıyı bir sır olarak görün.
 İki yük biçimi vardır ve bunlar **birbirinin yerine geçmez**. Uygulama içi
 eşleştirme panelinden üretilen telefon QR'ı, Remote PWA ana makinesine
 yöneltilmiş yukarıdaki v2 `PairingPayload`'dır. `cc_server pair --client-url`
-ise yalnızca **web** istemcisi için tasarlanmış bir v1 bağlantısı üretir
-(`{s, i, k}` — sunucu URL'si, cihaz kimliği, anahtar). Bunlar eşleştirme veri
+ise **web** ve **masaüstü** istemcileri için bir v1 bağlantısı üretir
+(`{s, i, k}` — sunucu URL'si, cihaz kimliği, anahtar): bunu bir tarayıcıda açın ya da
+masaüstünde **Eşleme bağlantısı yapıştır** ile yapıştırın. Bunlar eşleştirme veri
 biçimleridir, aktarım yedekleri değil: her iki istemci de güncel şifrelenmiş
 oturum protokolünü desteklemek zorundadır.
 

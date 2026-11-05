@@ -2,7 +2,7 @@
 title: Gestionează adaptoarele și modelele
 description: Conectează provideri de modele, alege modelul pe care rulează un agent și verifică ce CLI-uri de runner are mașina gazdă a serverului.
 slug: ro-RO/manual/ghiduri-practice/adaptoare
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Acest ghid îți arată cum să conectezi provideri de modele și cum să alegi pe ce
@@ -98,11 +98,10 @@ costul este calculat pentru modelul care a servit efectiv runda, nu pentru cel
 pe care l-ai cerut.
 
 :::note[Un agent fără adaptor rulează pe bucla încorporată]
-Fiecare spațiu de lucru creează cinci agenți — un CEO plus `qa`, `architect`,
-`engineer` și `librarian` — fără adaptor și fără model. Trimiterea revine la
-**Control Center (încorporat)**, nu la setarea **Runnere implicite** de pe
-această pagină, care este o preferință de client ce nu este citită niciodată de
-calea de trimitere. Jurnalul rulării înregistrează `cc-harness` pentru acele
+Fiecare spațiu de lucru creează șase agenți — un CEO plus `qa`, `architect`,
+`engineer`, `librarian` și `content-synthesizer` — fără adaptor și fără model.
+Trimiterea revine la **Control Center (încorporat)**; nu există un runner implicit
+nici pentru spațiul de lucru, nici pentru dispozitiv. Jurnalul rulării înregistrează `cc-harness` pentru acele
 rulări, astfel încât transcriptul numește ce a rulat efectiv.
 
 Fără model, bucla încorporată cere de la Anthropic modelul său implicit. Un
@@ -112,10 +111,16 @@ Anthropic și, în caz contrar, eșuează cu `No credential for provider "anthro
 Finalizarea pasului de adaptor din onboarding **modifică retroactiv fiecare**
 agent căruia îi lipsește încă un adaptor sau un model — CEO și specialiști, în
 fiecare spațiu de lucru care există în acel moment — cu perechea pe care ai
-ales-o. Spațiile de lucru create mai târziu tot pornesc cu toți cinci
+ales-o. Spațiile de lucru create mai târziu tot pornesc cu toți șase
 neconfigurați. Setează explicit adaptorul și modelul pe fiecare agent pe care
 intenționezi să îl folosești.
 :::
+
+## Personalizează titlurile și rezumatele
+
+Agentul **Content synthesizer** scrie textul pe care Control Center îl generează în jurul unei conversații: titlul, răspunsurile `/btw`, documentele `/handoff` și interviul de obiectiv `/goal`. Rulează câte o singură completare fără unelte de fiecare dată, pe propriul adaptor și model, așa că atribuie-i un model mic și rapid.
+
+Editează **personajul** lui în **Setări → Spațiu de lucru → Agenți** pentru a schimba felul în care sună textul: lungimea titlurilor, limba, tonul și exemplele pe care le urmează. Formatul de răspuns pe care îl analizează fiecare funcție (un titlu pe un rând, secțiunile obiectivului) este fix și se aplică după personajul tău. Șterge agentul pentru a dezactiva aceste funcții; nu va fi recreat automat.
 
 ## Instalează un CLI de runner
 

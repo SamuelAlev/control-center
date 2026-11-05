@@ -1,6 +1,8 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/settings_shared.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -8,6 +10,28 @@ import '../../../../../helpers/test_wrap.dart';
 
 void main() {
   group('SettingsRow', () {
+    testWidgets('centers the title when the subtitle is empty', (tester) async {
+      const trailingKey = Key('trailing');
+      await tester.pumpWidget(
+        testWrap(
+          const SingleChildScrollView(
+            child: SettingsRow(
+              icon: AppIcons.gitBranch,
+              title: 'Frontify/web-app',
+              subtitle: '',
+              trailing: SizedBox(key: trailingKey, width: 40, height: 40),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(''), findsNothing);
+      expect(
+        tester.getCenter(find.text('Frontify/web-app')).dy,
+        tester.getCenter(find.byKey(trailingKey)).dy,
+      );
+    });
+
     testWidgets('renders icon, title, subtitle and trailing', (tester) async {
       await tester.pumpWidget(
         testWrap(
@@ -62,6 +86,18 @@ void main() {
   });
 
   group('AppearanceSection', () {
+    testWidgets('a theme tile changes the app theme', (tester) async {
+      await tester.pumpWidget(testWrap(const AppearanceSection()));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AppearanceSection)),
+      );
+
+      await tester.tap(find.text('Dark'));
+      await tester.pump();
+
+      expect(container.read(themeModeProvider), ThemeMode.dark);
+    });
+
     testWidgets('language picker is a searchable autocomplete', (tester) async {
       await tester.pumpWidget(testWrap(const AppearanceSection()));
 

@@ -2,7 +2,7 @@
 title: Cấu hình thông báo
 description: Bật hoặc tắt các danh mục, đặt giờ yên tĩnh cùng âm thanh và biết thông báo nào đến với bạn ở đâu.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/thong-bao
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Hướng dẫn này chỉ cho bạn cách cấu hình thông báo và mỗi tùy chọn thực sự kiểm
@@ -49,11 +49,28 @@ thông báo từ máy chủ. Máy khách điện thoại không có bề mặt t
 Bất cứ thứ gì nằm ngoài danh sách này đều không thể được thông báo hay lọc —
 không có danh mục "mọi thứ còn lại".
 
-**Agent đang chờ bạn** kích hoạt một lần cho mỗi lần chờ, ngay khi việc chờ bắt
-đầu: một yêu cầu phê duyệt đang chờ (bao gồm quyền cấp exec sandbox và phê duyệt
-công cụ của Claude Code), một câu hỏi `ask_user`, hoặc một lần chạy bị giữ lại vì
-thông tin xác thực của nó không dùng được cho lần chạy đó. Thông báo mở space nơi
-bạn trả lời, và không hiện ra khi bạn đang xem chính space đó.
+**Agent đang chờ bạn** kích hoạt khi một lần chờ bắt đầu: một yêu cầu phê duyệt
+đang chờ (bao gồm quyền cấp exec sandbox và phê duyệt công cụ của Claude Code),
+một câu hỏi `ask_user`, hoặc một lần chạy bị giữ lại vì thông tin xác thực của
+nó không dùng được cho lần chạy đó. Thông báo mở space nơi bạn trả lời, và không
+hiện ra khi bạn đang xem chính space đó.
+
+Trên desktop, các thông báo này hoạt động khác với phần còn lại:
+
+- **Chúng là thông báo nhạy cảm về thời gian.** Trên macOS, chúng có thể vượt
+  qua một chế độ Tập trung cho phép thông báo nhạy cảm về thời gian từ
+  Control Center.
+- **Có thể trả lời yêu cầu phê duyệt ngay từ thông báo.** **Phê duyệt** và
+  **Từ chối** gửi câu trả lời của bạn mà không cần mở ứng dụng. Máy chủ kiểm
+  tra câu trả lời giống như với thẻ trong ứng dụng. Nếu muốn phê duyệt trong
+  một khoảng thời gian, hãy mở thẻ.
+- **Lần chờ chưa được trả lời sẽ nhắc bạn.** Nếu không ai trả lời, thông báo
+  quay lại dưới dạng **Vẫn đang chờ: …** sau 3, 10, 25 và 45 phút kể từ khi bắt
+  đầu chờ. Mỗi lời nhắc thay thế thông báo trước đó thay vì thêm một thông báo
+  mới. Lời nhắc được bỏ qua khi một cửa sổ Control Center đang được focus, vì
+  thẻ phê duyệt và chiếc chuông đã ở ngay trước mặt bạn.
+- **Thông báo biến mất khi lần chờ kết thúc**, bất kể được trả lời bằng cách
+  nào, nên bạn không bao giờ bấm nút trên một yêu cầu đã được giải quyết.
 
 Các tùy chọn này đi theo người dùng của bạn trên mọi thiết bị, nên điện thoại và
 laptop luôn đồng bộ. Âm lượng là ngoại lệ có chủ đích và giữ riêng theo từng
@@ -96,7 +113,8 @@ Một thông báo bị loại bỏ, trong im lặng, khi bất kỳ điều nào
 - Thông báo bị tắt trên toàn cục, hoặc danh mục của nó bị tắt
 - Bạn đã ở sẵn trên tuyến mà nó sẽ dẫn bạn tới — và với một tin nhắn, bạn đã ở
   trong space đó
-- Chế độ tập trung đang bật và danh mục không khẩn cấp
+- Một phiên tập trung đang chạy với **Chặn thông báo** được bật và danh mục
+  không khẩn cấp
 - Giờ yên tĩnh đang bật và danh mục không khẩn cấp
 
 Những kiểm tra đó áp dụng cho toast của hệ điều hành. Chiếc chuông bền vững vẫn
@@ -141,6 +159,15 @@ vượt quá giới hạn đó biến mất bất kể trạng thái đã đọc
 Quyền được yêu cầu theo cách gốc khi ứng dụng khởi chạy. Nếu bạn đã từ chối, hãy
 bật lại Control Center trong Cài đặt hệ thống → Thông báo; không có lời nhắc nào
 trong ứng dụng để yêu cầu lại.
+
+### Tôi liên tục bỏ lỡ thông báo phê duyệt trên macOS
+
+Theo mặc định, macOS hiển thị thông báo của Control Center dưới dạng biểu ngữ,
+và biểu ngữ biến mất sau vài giây. Để thông báo ở lại trên màn hình cho đến khi
+bạn xử lý, hãy đặt kiểu thông báo của Control Center thành **Liên tục** trong
+Cài đặt hệ thống → Thông báo. Một yêu cầu phê duyệt chưa được trả lời cũng sẽ
+quay lại dưới dạng lời nhắc (xem
+[Bật hoặc tắt các danh mục](#bật-hoặc-tắt-các-danh-mục)).
 
 ### Không có gì đến trên bản web
 

@@ -2,7 +2,7 @@
 title: Sandbox a zabezpečení
 description: Co dnes agenta v Control Center skutečně omezuje, kam až sahá sandbox operačního systému a které hranice drží na hostiteli bez backendu.
 slug: cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Kam sandbox operačního systému sahá a kam ne]
@@ -208,7 +208,7 @@ z `(allow default)` a vykrajuje zákazy: čtení tajných cest, politiku zápisu
 vrácenou na zákaz s výslovnými povoleními nad ní, blokování unlink na každé
 zakázané cestě a jejích předcích, aby přejmenování neobešlo zákaz zápisu,
 zákazy exec pro binárky, které jsou vždy nebezpečné, a pro cokoli zkopírované
-do zapisovatelného adresáře, a síť omezenou na porty loopback proxy plus DNS.
+do zapisovatelného adresáře, a síť omezenou na porty loopback proxy plus DNS. Toolchainy nainstalované ve vašem domovském adresáři (pnpm z corepacku, správci verzí node, prohlížeče Playwright, rustup, fvm, uv a podobné) zůstanou spustitelné i uvnitř těchto zákazů exec, takže je agenti mohou používat bez obcházení. Zákazy pro vždy nebezpečné binárky zůstávají platné i uvnitř nich. Každá relace navíc dostane vlastní soukromý `TMPDIR`. Je to jediný dočasný adresář, kde smí agent spouštět programy, které sestavil, nebo otevírat Unix sockety.
 
 Praktický důsledek: na Linuxu je pohled agenta na souborový systém zúžený, na
 macOS agent pořád může _číst_ většinu hostitele a tvoje registrované checkouty

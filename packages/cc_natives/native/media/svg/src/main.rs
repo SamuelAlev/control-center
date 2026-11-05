@@ -22,7 +22,7 @@ fn main() {
 
 fn run() -> Result<(), Box<dyn Error>> {
     if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--version")) {
-        println!("cc_svg_render {} (resvg 0.48.1)", env!("CARGO_PKG_VERSION"));
+        println!("cc_svg_render {} (resvg 0.49.0)", env!("CARGO_PKG_VERSION"));
         return Ok(());
     }
     let mut args = std::env::args_os();

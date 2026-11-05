@@ -212,7 +212,12 @@ calls to enumerate is impractical. The macOS profile therefore starts from
 reset to deny with explicit allows on top, unlink-blocking on every denied path
 and its ancestors so a rename cannot bypass a write-deny, exec denies for
 always-dangerous binaries and for anything copied into a writable directory and
-network restricted to the loopback proxy ports plus DNS.
+network restricted to the loopback proxy ports plus DNS. Toolchain installs under
+your home (corepack's pnpm, node version managers, Playwright browsers, rustup,
+fvm, uv and similar) stay runnable inside that exec block, so agents can use
+them without workarounds. The always-dangerous denies still apply inside them.
+Each session also gets its own private `TMPDIR`. It is the only temp directory
+where the agent may run programs it built or open Unix sockets.
 
 The practical consequence: on Linux the agent's view of the filesystem is
 narrowed; on macOS the agent can still _read_ most of the host and your

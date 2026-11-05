@@ -3,7 +3,7 @@ title: Headless szerver futtatása
 description: Futtassa a cc_server headless binárisát vagy annak Docker-image-ét, párosítson hozzá egy klienst, és konfigurálja a teljes CLI-kapcsoló- és környezetiváltozó-felülettel.
 dateModified: 2026-10-11
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa
-sourceHash: cf5e5c306f4134386684d42670e7500a2d265946
+sourceHash: 278a16568004b3d6b5b9e0db65db6cb62e3e9f50
 ---
 
 Futtassa a `cc_server`-t egy folyamatosan bekapcsolt gépen, majd csatlakozzon
@@ -241,8 +241,8 @@ A szerver a `SIGINT`/`SIGTERM` jelig fut, majd tisztán leáll.
 
 Irányítson egy klienst a 3. lépésben kapott szerver URL-re és párosítási kulcsra:
 
-- **Asztali alkalmazás**: az első indítás képernyőjén (**Hogyan fusson a Control Center?**) a **Futtatás ebben az alkalmazásban** helyett töltse ki a csatlakozási mezőket, vagy később vegye fel a szervert a **Beállítások → Szerver → Kapcsolat és állapot** alatt. Lásd: [Csatlakozás távoli szerverhez](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/).
-- **Webes kliens**: nyissa meg az [app.usectrl.dev](https://app.usectrl.dev) címet (vagy a webes build saját példányát), és adja meg a szerver URL-t, az eszköz-ID-t és a párosítási kulcsot.
+- **Asztali alkalmazás**: az első indítás képernyőjén kattintson a **Csatlakozás szerverhez** elemre, vagy később vegye fel a szervert a **Beállítások → Szerver → Kapcsolat és állapot** alatt. Lásd: [Csatlakozás távoli szerverhez](/hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez/).
+- **Webes kliens**: nyissa meg az [app.usectrl.dev](https://app.usectrl.dev) címet (vagy a webes build saját példányát), kattintson a **Csatlakozás szerverhez** elemre, és adja meg a szerver URL-t, valamint a **Párosítási kulcs használata** alatt az eszköz-ID-t és a párosítási kulcsot.
 - **Telefon**: párosítsa a **Remote** alkalmazást egy futó kliensből — lásd: [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/).
 
 :::note[A cc_server nem szolgál ki webes bundle-t]

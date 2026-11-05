@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_icon_button.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/reaction_chips_row.dart';
 import 'package:control_center/features/messaging/providers/conversation_checkpoint_providers.dart';
@@ -186,21 +187,21 @@ class _FocusableBubbleState extends ConsumerState<FocusableBubble> {
 
     final actions = <Widget>[
       if (showCopy)
-        _HoverIconButton(
+        BubbleIconButton(
           icon: AppIcons.copy,
           tokens: tokens,
           tooltip: AppLocalizations.of(context).copy,
           onTap: () => Clipboard.setData(ClipboardData(text: widget.copyText!)),
         ),
       if (showCopyLink)
-        _HoverIconButton(
+        BubbleIconButton(
           icon: AppIcons.link,
           tokens: tokens,
           tooltip: AppLocalizations.of(context).copyLink,
           onTap: _copyLink,
         ),
       if (showThread)
-        _HoverIconButton(
+        BubbleIconButton(
           icon: AppIcons.gitBranch,
           tokens: tokens,
           tooltip: AppLocalizations.of(context).startThread,
@@ -220,21 +221,21 @@ class _FocusableBubbleState extends ConsumerState<FocusableBubble> {
           },
         ),
       if (showRevert)
-        _HoverIconButton(
+        BubbleIconButton(
           icon: AppIcons.rotateCcw,
           tokens: tokens,
           tooltip: AppLocalizations.of(context).revertToHere,
           onTap: _confirmAndRevert,
         ),
       if (showEdit)
-        _HoverIconButton(
+        BubbleIconButton(
           icon: AppIcons.pencil,
           tokens: tokens,
           tooltip: AppLocalizations.of(context).edit,
           onTap: widget.onEdit!,
         ),
       if (showDelete)
-        _HoverIconButton(
+        BubbleIconButton(
           icon: AppIcons.trash2,
           tokens: tokens,
           tooltip: AppLocalizations.of(context).delete,
@@ -270,43 +271,6 @@ class _FocusableBubbleState extends ConsumerState<FocusableBubble> {
         ),
       ),
     );
-  }
-}
-
-class _HoverIconButton extends StatelessWidget {
-  const _HoverIconButton({
-    required this.icon,
-    required this.onTap,
-    required this.tokens,
-    this.tooltip,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final DesignSystemTokens tokens;
-  final String? tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    final button = CcTappable(
-      onPressed: onTap,
-      semanticLabel: tooltip,
-      builder: (context, states) => Padding(
-        padding: const EdgeInsets.all(4),
-        child: Icon(
-          icon,
-          size: 14,
-          color: states.contains(WidgetState.hovered)
-              ? tokens.fg
-              : tokens.fgTertiary,
-        ),
-      ),
-    );
-    final label = tooltip;
-    if (label == null) {
-      return button;
-    }
-    return CcTooltip(message: label, child: button);
   }
 }
 
@@ -365,17 +329,14 @@ class _AddReactionButtonState extends ConsumerState<_AddReactionButton> {
     final l10n = AppLocalizations.of(context);
     return CcPopover(
       controller: _controller,
-      semanticLabel: l10n.reactionAddTooltip,
-      target: CcTooltip(
-        message: l10n.reactionAddTooltip,
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Icon(
-            AppIcons.smile,
-            size: 14,
-            color: widget.tokens.fgTertiary,
-          ),
-        ),
+      // The target is a rail button, so it drives the controller itself: the
+      // popover's own trigger would compete for the tap and paint a second wash.
+      toggleOnTargetTap: false,
+      target: BubbleIconButton(
+        icon: AppIcons.smile,
+        tokens: widget.tokens,
+        tooltip: l10n.reactionAddTooltip,
+        onTap: _controller.toggle,
       ),
       overlayBuilder: (context, _) => Padding(
         padding: const EdgeInsets.all(6),

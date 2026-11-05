@@ -732,13 +732,6 @@ class AppLocalizationsHu extends AppLocalizations {
       'A Control Center saját szervert futtat ezen a gépen, és helyben birtokolja az adatait.';
 
   @override
-  String get serverModeRemote => 'Csatlakozás távoli példányhoz';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Csatlakozzon egy máshol futó Control Center szerverhez. Az adatai azon a szerveren élnek.';
-
-  @override
   String get serverRemoteUrl => 'Szerver URL';
 
   @override
@@ -960,13 +953,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Más eszközök nem érik el közvetlenül ezt a szervert, így egy új kliens nem tud csatlakozni. Állítsa be a szerver nyilvános URL-jét további kliensek párosításához.';
-
-  @override
-  String get serverSetupTitle => 'Hogyan fusson a Control Center?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'A Control Centernek szerverre van szüksége, amely birtokolja az adatait. Futtasson egyet ebben az alkalmazásban, vagy csatlakozzon egy máshol futó példányhoz.';
 
   @override
   String get serverSetupRunLocal => 'Futtatás ebben az alkalmazásban';
@@ -3035,10 +3021,6 @@ class AppLocalizationsHu extends AppLocalizations {
       'Ügynökidentitások, promptok, készségek beállítása és futtatások megtekintése.';
 
   @override
-  String get configureDefaultRunners =>
-      'Állítsa be, melyik adaptert és modellt használják az új terek és a címgenerálás.';
-
-  @override
   String get configuredLabel => 'Beállítva.';
 
   @override
@@ -3138,12 +3120,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get deactivate => 'Deaktiválás';
-
-  @override
-  String get defaultChat => 'Alapértelmezett csevegés';
-
-  @override
-  String get defaultRunners => 'Alapértelmezett futtatók';
 
   @override
   String get delete => 'Törlés';
@@ -4458,6 +4434,15 @@ class AppLocalizationsHu extends AppLocalizations {
   String get notificationGroupMachines => 'Gépek';
 
   @override
+  String get notificationSectionSound => 'Hang';
+
+  @override
+  String get notificationSectionSchedule => 'Ütemezés';
+
+  @override
+  String get notificationSectionEvents => 'Események';
+
+  @override
   String get notificationsMutedRepos => 'Némított tárolók';
 
   @override
@@ -5013,9 +4998,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get settingsLanguageDescription =>
       'Válassza ki az alkalmazás nyelvét.';
-
-  @override
-  String get shortTask => 'Rövid feladat';
 
   @override
   String get showNativeNotifications =>
@@ -5605,10 +5587,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Minimalizálás sávra';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'Fókuszmód aktív — koppintson a befejezéshez';
 
   @override
   String get dismiss => 'Elvetés';
@@ -13044,25 +13022,6 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Csatlakozás a Control Centerhez';
-
-  @override
-  String get webConnectSubtitle =>
-      'Csatlakozzon egy futó cc-serverhez WebSocketen. A kulcsa ezen az eszközön marad.';
-
-  @override
-  String get webConnectServerLabel => 'Szerver';
-
-  @override
-  String get webConnectDeviceIdLabel => 'Eszköz-ID';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Párosítási kulcs';
-
-  @override
-  String get webConnectPairingKeyHint => 'illesze be a PSK-t';
-
-  @override
   String get webConnectStayConnected => 'Maradjon csatlakozva ezen az eszközön';
 
   @override
@@ -13104,11 +13063,12 @@ class AppLocalizationsHu extends AppLocalizations {
       'Nem kötelező — hagyja üresen, és a címmodell automatikusan elnevezi';
 
   @override
-  String get shortTaskOff => 'Ki';
+  String get contentSynthesizerUnavailable =>
+      'A Content synthesizer ügynök hiányzik, vagy nincs működő futtatója';
 
   @override
-  String get shortTaskUnavailable =>
-      'A használathoz válasszon rövid feladat modellt a Beállítások → Adapterek alatt';
+  String get conversationNeedsAgent =>
+      'A beszélgetés elindításához említsen meg egy ügynököt @ jellel';
 
   @override
   String get conversationTitleGenerate => 'Generálás';
@@ -13578,14 +13538,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Minden indításkor a futtató parancssorához fűződik.';
-
-  @override
-  String get defaultChatDescription =>
-      'Az új beszélgetéseket és minden saját futtató nélküli ügynököt futtat.';
-
-  @override
-  String get shortTaskDescription =>
-      'Gyors háttérmunkát futtat, például címeket és összefoglalókat. Ide egy kisebb modell tartozik.';
 
   @override
   String get settingsStateFailed => 'Sikertelen';
@@ -14330,6 +14282,16 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Fájlok csatolása — vagy ejtse ide őket';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Szerkesztő kibontása ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Szerkesztő összecsukása ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'A célkitűzés élesítése';
@@ -15499,6 +15461,11 @@ class AppLocalizationsHu extends AppLocalizations {
       'Egy ügynök hitelesítő adatok miatt elakadt';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Még mindig vár: $title';
+  }
+
+  @override
   String get killTerminal => 'Terminál leállítása';
 
   @override
@@ -15959,4 +15926,80 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'A futás leállt, mert a szolgáltató hitelesítő adata már nem működik. Csatlakoztasd újra a Beállítások → Szolgáltatók alatt, majd próbáld újra a kört.';
+
+  @override
+  String get helpMenuLabel => 'Súgó';
+
+  @override
+  String get helpWhatsNew => 'Újdonságok';
+
+  @override
+  String get helpReportProblem => 'Probléma jelentése';
+
+  @override
+  String get helpCreateGitHubIssue => 'GitHub-hibajegy létrehozása';
+
+  @override
+  String get changelogInstalled => 'Telepítve';
+
+  @override
+  String get changelogGroupNew => 'Új';
+
+  @override
+  String get changelogGroupImproved => 'Továbbfejlesztett';
+
+  @override
+  String get changelogGroupFixed => 'Javított';
+
+  @override
+  String get changelogLoadFailed => 'A kiadási megjegyzések nem tölthetők be.';
+
+  @override
+  String get changelogOpenWebsite => 'Megnyitás a webhelyen';
+
+  @override
+  String get connectWelcomeTitle => 'Üdvözli a Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Futtassa itt, vagy csatlakozzon egy meglévő szerverhez.';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'A kezdéshez csatlakozzon a szerveréhez.';
+
+  @override
+  String get connectToServer => 'Csatlakozás szerverhez';
+
+  @override
+  String get connectToServerIntro =>
+      'Adja meg egy Control Center-szerver címét.';
+
+  @override
+  String get connectUsePairingKey => 'Párosítási kulcs használata';
+
+  @override
+  String get connectPasteLink => 'Párosítási hivatkozás beillesztése';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Illessze be a kapott meghívó- vagy párosítási hivatkozást.';
+
+  @override
+  String get connectPasteLinkLabel => 'Meghívó- vagy párosítási hivatkozás';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Ez nem Control Center meghívó- vagy párosítási hivatkozás. Másolja ki a teljes hivatkozást, és próbálja újra.';
+
+  @override
+  String get connectPasteLinkTarget => 'Csatlakozási cél';
+
+  @override
+  String get focusModeEnd => 'Fókuszmunkamenet befejezése';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'Még $minutes perc';
+  }
 }

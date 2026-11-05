@@ -2,7 +2,7 @@
 title: Install
 description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
 slug: en-GB/manual/install
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center runs two ways: as a **web app** at
@@ -132,10 +132,11 @@ Onboarding's first step is this connection. After that the same card is where yo
 
 Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/en-GB/manual/concepts/deployment/) explains what that split means for the desktop, web and phone.
 
-On first launch the desktop asks **"How should Control Center run?"**:
+On first launch the desktop shows **Welcome to Control Center** and offers three ways in. The settings button in the corner changes the language and theme.
 
 - **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/en-GB/manual/quick-start/) assumes.
-- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+- **Connect to a server**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, then sign in through single sign-on if the server offers it, or enter a one-time invite code, or a device id and pairing key under **Use a pairing key**. That server owns the data; this desktop only renders it.
+- **Paste a pairing link**: paste an invite or pairing link. The dialog shows which server the link leads to and connects only when you click **Connect**.
 
 Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/en-GB/manual/guides/connect-remote-server/).
 

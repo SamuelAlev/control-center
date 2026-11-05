@@ -2,7 +2,7 @@
 title: Installazione
 description: Usa Control Center nel browser oppure installa l'app desktop, configura un backend per gli agenti e scegli dove viene eseguito il suo server.
 slug: it-IT/manuale/installazione
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center funziona in due modi: come **app web** su
@@ -148,10 +148,11 @@ Il primo passo dell'onboarding è questa connessione. Dopodiché la stessa sched
 
 Control Center è un thin client sopra un processo `cc_server` headless che possiede il database e fa tutto il lavoro; [Deployment e client](/it-IT/manuale/concetti/deployment/) spiega cosa significa questa separazione per desktop, web e telefono.
 
-Al primo avvio il desktop chiede **«Come eseguire Control Center?»**:
+Al primo avvio il desktop mostra **Benvenuto in Control Center** e offre tre modi per iniziare. Il pulsante delle impostazioni nell'angolo cambia la lingua e il tema.
 
 - **Esegui in questa app**: il desktop avvia e supervisiona un `cc_server` su questa macchina e comunica con esso tramite loopback. Nient'altro da configurare. È la configurazione che presuppone l'[avvio rapido](/it-IT/manuale/avvio-rapido/).
-- **Connetti a un'istanza remota**: punta il desktop su un `cc_server` in esecuzione altrove con il suo URL WebSocket, un ID dispositivo e una chiave di abbinamento oppure un codice di invito monouso. Quel server possiede i dati; questo desktop si limita a renderizzarli.
+- **Connetti a un server**: punta il desktop su un `cc_server` in esecuzione altrove con il suo URL WebSocket, poi usa l'accesso singolo se il server lo offre, oppure inserisci un codice di invito monouso, oppure un ID dispositivo e una chiave di abbinamento in **Usa una chiave di abbinamento**. Quel server possiede i dati; questo desktop si limita a renderizzarli.
+- **Incolla un link di abbinamento**: incolla un link di invito o di abbinamento. La finestra di dialogo mostra a quale server porta il link e si connette solo quando fai clic su **Connetti**.
 
 Puoi aggiungere o cambiare server più tardi in **Impostazioni → Server → Connessione e stato**. Il cambio si riconnette sul posto — senza riavvio. Un browser non può eseguire un server, quindi il client web è sempre remoto; vedi [Connettiti a un server remoto](/it-IT/manuale/guide/connetti-server-remoto/).
 

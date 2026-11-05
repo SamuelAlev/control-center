@@ -38,7 +38,7 @@ CC_THIRD_PARTY=(
   "AppImage runtime|20251108|MIT|https://github.com/AppImage/type2-runtime|appimage-runtime-MIT.txt|bundled|desktop"
   "FFmpeg (managed media CLI)|@FFMPEG_MEDIA_VERSION|GPL-3.0-or-later|https://ffmpeg.org/|ffmpeg-GPL-3.0.txt|bundled|server"
   "PDFium binaries (managed PDF renderer)|@PDFIUM_MEDIA_VERSION|MIT|https://github.com/bblanchon/pdfium-binaries|pdfium-binaries-MIT.txt|bundled|server"
-  "resvg (managed SVG renderer)|0.48.1|Apache-2.0 OR MIT|https://github.com/linebender/resvg|resvg-MIT.txt|static|server"
+  "resvg (managed SVG renderer)|0.49.0|Apache-2.0 OR MIT|https://github.com/linebender/resvg|resvg-MIT.txt|static|server"
   # Fonts. The server's SVG helper also ships the two text fonts as fallbacks;
   # no system font installation is required. These notices match the ones
   # alongside the source .ttf files, which is where a

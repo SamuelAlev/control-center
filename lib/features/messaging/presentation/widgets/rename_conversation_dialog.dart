@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart';
 
 /// Opens the rename dialog for a conversation titled [initialValue].
 ///
-/// [suggest] asks the workspace's short-task runner for a title; its result
+/// [suggest] asks the workspace's content synthesizer for a title; its result
 /// only fills the field, so the human still edits or discards it before
 /// saving. Returns null for cancellation, an empty title or an unchanged one.
 Future<String?> showRenameConversationDialog(
@@ -39,7 +39,7 @@ class RenameConversationDialog extends StatefulWidget {
   /// The conversation's current title.
   final String initialValue;
 
-  /// Proposes a title on the workspace's short-task runner.
+  /// Proposes a title on the workspace's content synthesizer.
   final Future<ConversationTitleSuggestion> Function() suggest;
 
   @override
@@ -71,7 +71,7 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
       final result = await widget.suggest();
       final title = result.title;
       if (result.unavailable) {
-        problem = l10n.shortTaskUnavailable;
+        problem = l10n.contentSynthesizerUnavailable;
       } else if (result.empty) {
         problem = l10n.conversationTitleNoMessages;
       } else if (title == null) {

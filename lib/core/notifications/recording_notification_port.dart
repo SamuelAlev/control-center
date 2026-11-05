@@ -25,5 +25,8 @@ class RecordingNotificationPort implements NotificationPort {
   }
 
   @override
+  void withdraw(NotificationWait wait) => inner.withdraw(wait);
+
+  @override
   void dispose() => inner.dispose();
 }

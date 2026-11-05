@@ -3,8 +3,29 @@ import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/theme/app_theme.dart';
+import 'package:control_center/core/theme/theme_choice.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+
+/// [ThemeMode] as the Material-free [ThemeChoice].
+extension ThemeModeChoice on ThemeMode {
+  /// The matching [ThemeChoice].
+  ThemeChoice get choice => switch (this) {
+    ThemeMode.system => ThemeChoice.system,
+    ThemeMode.light => ThemeChoice.light,
+    ThemeMode.dark => ThemeChoice.dark,
+  };
+}
+
+/// [ThemeChoice] as the [ThemeMode] the app persists.
+extension ThemeChoiceMode on ThemeChoice {
+  /// The matching [ThemeMode].
+  ThemeMode get mode => switch (this) {
+    ThemeChoice.system => ThemeMode.system,
+    ThemeChoice.light => ThemeMode.light,
+    ThemeChoice.dark => ThemeMode.dark,
+  };
+}
 
 /// Riverpod provider for the current theme mode.
 final themeModeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(

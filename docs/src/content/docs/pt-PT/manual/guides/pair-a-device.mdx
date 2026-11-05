@@ -2,7 +2,7 @@
 title: Emparelhar um dispositivo
 description: Emparelhe o seu telemóvel (ou um segundo navegador ou computador) com o seu servidor do Control Center para poder acompanhar a frota à distância.
 slug: pt-PT/manual/guias/emparelhar-dispositivo
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Este guia mostra-lhe como emparelhar um telemóvel com o Control Center, para que
@@ -42,11 +42,12 @@ rótulo (por exemplo, "O meu telemóvel"), escolha o tipo — **Navegador web**,
 **Aplicação para computador** ou **Telefone** — e clique em **Emparelhar**.
 
 - Para um **telemóvel**, aparece um código QR. Leia-o com a câmara do telemóvel, ou copie o link e abra-o em qualquer navegador. Este aponta a aplicação Remote ao seu servidor e transporta a credencial.
-- Para um **navegador** ou **computador**, copie antes o link apresentado (ou o id do dispositivo e a chave de emparelhamento) para o novo cliente. O link de um clique só é oferecido quando está a emparelhar a partir do cliente web, uma vez que um binário de computador não tem uma origem web a partir da qual o construir.
+- Para um **navegador** ou **computador**, copie antes o link apresentado (ou o id do dispositivo e a chave de emparelhamento) para o novo cliente. Abra o link num navegador ou cole-o em **Colar um link de emparelhamento** na aplicação para computador. Quando emparelha a partir do computador, o link é construído a partir do URL do próprio servidor, pelo que só aparece se o servidor tiver um URL acessível a outros dispositivos.
 
 O código QR do telemóvel e o link que `cc_server pair --client-url` imprime na CLI
 são **cargas úteis diferentes e não são intercambiáveis**: o link da CLI preenche
-o formulário de ligação do cliente web, enquanto este código QR transporta o
+a caixa de diálogo de ligação do cliente web ou é colado na aplicação para computador,
+enquanto este código QR transporta o
 descritor de ligação completo do servidor e a impressão digital de identidade
 para a PWA Remote.
 

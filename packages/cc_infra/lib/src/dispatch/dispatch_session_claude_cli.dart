@@ -315,10 +315,10 @@ extension _ClaudeCliMethods on DispatchSession {
       trustCache: resumeRecord != null,
     );
 
-    final mergedEnv = _mergedEnv(
-      scopedEnv: scoped.environment,
-      backendEnv: discoveryEnv,
-    );
+    final mergedEnv = {
+      ..._mergedEnv(scopedEnv: scoped.environment, backendEnv: discoveryEnv),
+      ...ClaudeCliBackend.autoMemoryOffEnv,
+    };
 
     // One attempt per attached account, best first. A `claude -p` process owns
     // its own credential, so there is no swapping it mid-stream the way the
@@ -330,6 +330,28 @@ extension _ClaudeCliMethods on DispatchSession {
             (accountId: '', configDir: claudeConfigDir ?? ''),
           ]
         : claudeAccounts;
+
+    // The window the meter measures against: the agent's own setting, else
+    // the one the CLI reports for this `--model` id. Read off the critical
+    // path — the first usage report lands after the first model response, by
+    // which time the (cached, usually) catalog read is long done; until then
+    // the window is simply unreported rather than guessed.
+    var modelWindow = contextWindowTokens;
+    final windowOf = deps.claudeContextWindowOf;
+    if (modelWindow == null && windowOf != null) {
+      unawaited(
+        windowOf(modelId).then(
+          (w) => modelWindow = w,
+          onError: (Object e) {
+            CcInfraLog.warning(
+              'dispatch $dispatchId: could not read the Claude Code '
+              'context window: $e',
+            );
+            return null;
+          },
+        ),
+      );
+    }
 
     var exitCode = 0;
     // Whether the attempt that ended the loop already explained itself, so the
@@ -416,9 +438,7 @@ extension _ClaudeCliMethods on DispatchSession {
           onCallUsage: (u) => addEvent(
             ContextWindowEvent(
               contextTokens: u.contextTokens,
-              windowTokens:
-                  contextWindowTokens ??
-                  AcpModelsService.claudeCodeContextWindow(modelId),
+              windowTokens: modelWindow,
               compactions: compactions,
             ),
           ),

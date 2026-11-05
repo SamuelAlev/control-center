@@ -101,23 +101,32 @@ class SpaceRowLabel extends StatelessWidget {
       children: [
         Row(
           children: [
-            Flexible(
-              child: CcTooltip(
-                message: label,
-                showDelay: const Duration(milliseconds: 700),
-                placement: CcTooltipPlacement.end,
-                maxWidth: 480,
-                child: CcScrambleText(
-                  label,
-                  scrambling: labelScrambling,
-                  style: _labelStyle,
-                ),
+            // The title and its chip take the free width so the caption and
+            // indicator always sit flush at the end, whatever the title's
+            // length. The inner row stays loose: the tooltip hugs the text.
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: CcTooltip(
+                      message: label,
+                      showDelay: const Duration(milliseconds: 700),
+                      placement: CcTooltipPlacement.end,
+                      maxWidth: 480,
+                      child: CcScrambleText(
+                        label,
+                        scrambling: labelScrambling,
+                        style: _labelStyle,
+                      ),
+                    ),
+                  ),
+                  if (showCount) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    SpaceCountChip(count: count!, selected: filled),
+                  ],
+                ],
               ),
             ),
-            if (showCount) ...[
-              const SizedBox(width: AppSpacing.sm),
-              SpaceCountChip(count: count!, selected: filled),
-            ],
             if (showTrailing) ...[
               const SizedBox(width: AppSpacing.sm),
               Text(

@@ -2,7 +2,7 @@
 title: Spárujte zařízení
 description: Spáruj telefon (nebo druhý prohlížeč či desktop) se serverem Control Center, ať flotilu sleduješ na dálku.
 slug: cs-CZ/prirucka/navody/parovani-zarizeni
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Tenhle návod ukazuje, jak spárovat telefon s Control Center, ať odkudkoli čteš
@@ -40,11 +40,11 @@ V záhlaví stránky klikni na **Spárovat nového klienta**, dej mu popisek (na
 **Telefon** — a klikni na **Spárovat**.
 
 - U **telefonu** se objeví QR kód. Naskenuj ho kamerou telefonu, nebo odkaz zkopíruj a otevři v libovolném prohlížeči. Namíří aplikaci Remote na tvůj server a veze pověření.
-- U **prohlížeče** nebo **desktopu** místo toho zkopíruj zobrazený odkaz (nebo id zařízení a párovací klíč) do nového klienta. Odkaz na jedno klepnutí se nabízí jen tehdy, když páruješ z webového klienta, protože desktopový binární soubor nemá webový origin, ze kterého by se dal sestavit.
+- U **prohlížeče** nebo **desktopu** místo toho zkopíruj zobrazený odkaz (nebo id zařízení a párovací klíč) do nového klienta. Otevři odkaz v prohlížeči, nebo ho v desktopové aplikaci vlož do **Vložit párovací odkaz**. Při párování z desktopu se odkaz sestaví z vlastní URL serveru, takže se objeví jen tehdy, když server má takovou, na kterou ostatní zařízení dosáhnou.
 
 QR telefonu a odkaz, který na CLI vypíše `cc_server pair --client-url`, jsou
-**jiné payloady a nejdou zaměnit**: odkaz z CLI vyplní formulář připojení
-webového klienta, zatímco tenhle QR veze úplný deskriptor spojení serveru
+**jiné payloady a nejdou zaměnit**: odkaz z CLI vyplní dialog připojení
+webového klienta nebo se vloží do desktopové aplikace, zatímco tenhle QR veze úplný deskriptor spojení serveru
 a otisk identity pro PWA Remote.
 
 Na straně telefonu otevření párovacího odkazu nespáruje potichu. Remote ukáže

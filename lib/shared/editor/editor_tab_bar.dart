@@ -5,6 +5,7 @@ import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/editor_tab_face.dart';
 import 'package:control_center/shared/editor/editor_tab_ghost.dart';
 import 'package:control_center/shared/editor/editor_tab_landing.dart';
+import 'package:control_center/shared/editor/editor_tab_reveal.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart'
     show kMiddleMouseButton, PointerSignalEvent, PointerScrollEvent;
@@ -36,6 +37,12 @@ typedef TabReorderDrop = void Function(TabDragData data, int insertIndex);
 /// that slot ended up. All of it respects reduced motion. Tab bodies are owned
 /// by the caller; this widget renders chrome + selection + drag only. Trailing
 /// [actions] (close / split / new-tab menu) are right-aligned.
+///
+/// An overflowing strip keeps the selected tab whole, VS Code-style: whenever
+/// the selection moves to another tab (a click, a newly opened tab, a close
+/// falling back to a neighbour, arrow-key focus) or a partly hidden tab is
+/// clicked, the strip scrolls by the least amount that shows the full tab —
+/// see [editorTabRevealOffset].
 class EditorTabBar extends StatefulWidget {
   /// Creates an [EditorTabBar].
   const EditorTabBar({
@@ -183,8 +190,10 @@ class _EditorTabBarState extends State<EditorTabBar> {
   /// strip, so it never slides over the pinned trailing actions.
   final GlobalKey _laneKey = GlobalKey();
 
-  /// Per-cell keys so a hovering drag can measure tab boundaries.
-  List<GlobalKey> _tabKeys = const [];
+  /// Per-cell keys so a hovering drag can measure tab boundaries and a reveal
+  /// can find a tab's cell. Held by tab IDENTITY, like the slots themselves,
+  /// so a key stays with its tab as others are inserted or removed around it.
+  final Map<EditorTab, GlobalKey> _tabKeys = Map.identity();
 
   /// Per-tab keyboard focus. The strip is ONE Tab stop — the selected tab;
   /// the others skip traversal and are reached with the arrow keys (the
@@ -202,6 +211,69 @@ class _EditorTabBarState extends State<EditorTabBar> {
   /// Drop-gap width when the dragged tab's cell couldn't be measured (e.g. a
   /// cross-bar drag whose payload carries no width).
   static const double _fallbackGapWidth = 160;
+
+  @override
+  void initState() {
+    super.initState();
+    // A restored layout can select a tab far past the visible strip.
+    final selected = _selectedTabOf(widget);
+    if (selected != null) {
+      _scheduleReveal(selected, animate: false);
+    }
+  }
+
+  /// [bar]'s selected tab, or null when it has none in range.
+  static EditorTab? _selectedTabOf(EditorTabBar bar) {
+    final i = bar.selectedIndex;
+    return i >= 0 && i < bar.tabs.length ? bar.tabs[i] : null;
+  }
+
+  @override
+  void didUpdateWidget(EditorTabBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final selected = _selectedTabOf(widget);
+    if (selected != null && !identical(selected, _selectedTabOf(oldWidget))) {
+      _scheduleReveal(selected);
+    }
+  }
+
+  /// Reveals [tab] once the frame being built has laid out, so a tab that was
+  /// just inserted has a cell to measure and the strip its new extent.
+  void _scheduleReveal(EditorTab tab, {bool animate = true}) {
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _revealTab(tab, animate: animate),
+    );
+  }
+
+  /// Scrolls the strip by the least amount that shows all of [tab]; a no-op
+  /// when it is already fully visible or no longer in this strip.
+  void _revealTab(EditorTab tab, {bool animate = true}) {
+    if (!mounted || !_scrollController.hasClients) {
+      return;
+    }
+    final index = widget.tabs.indexWhere((t) => identical(t, tab));
+    final box = _tabKeys[tab]?.currentContext?.findRenderObject();
+    if (index < 0 || box == null) {
+      return;
+    }
+    final position = _scrollController.position;
+    final target = editorTabRevealOffset(
+      position,
+      box,
+      toEnd: index == widget.tabs.length - 1,
+    );
+    if (target == null) {
+      return;
+    }
+    final duration = animate
+        ? CcMotion.resolveTravel(context, CcMotion.moderate)
+        : Duration.zero;
+    if (duration == Duration.zero) {
+      position.jumpTo(target);
+    } else {
+      position.animateTo(target, duration: duration, curve: CcMotion.standard);
+    }
+  }
 
   @override
   void dispose() {
@@ -256,12 +328,8 @@ class _EditorTabBarState extends State<EditorTabBar> {
       return KeyEventResult.ignored;
     }
     final next = target % count;
-    final node = _tabFocus[next];
-    node.requestFocus();
-    final cell = _tabKeys[next].currentContext;
-    if (cell != null) {
-      Scrollable.ensureVisible(cell);
-    }
+    _tabFocus[next].requestFocus();
+    _revealTab(widget.tabs[next]);
     return KeyEventResult.handled;
   }
 
@@ -312,9 +380,12 @@ class _EditorTabBarState extends State<EditorTabBar> {
     }
   }
 
-  void _ensureKeys(int count) {
-    if (_tabKeys.length != count) {
-      _tabKeys = List.generate(count, (_) => GlobalKey());
+  /// Gives every current tab a cell key and drops the keys of tabs that left.
+  void _syncKeys() {
+    final live = Set<EditorTab>.identity()..addAll(widget.tabs);
+    _tabKeys.removeWhere((tab, _) => !live.contains(tab));
+    for (final tab in widget.tabs) {
+      _tabKeys.putIfAbsent(tab, GlobalKey.new);
     }
   }
 
@@ -322,8 +393,10 @@ class _EditorTabBarState extends State<EditorTabBar> {
   /// before the tab it is left-of-center over, after otherwise; clamped to the
   /// ends so dragging past the last tab appends.
   int _insertionIndexFor(Offset globalPosition) {
-    for (var i = 0; i < _tabKeys.length; i++) {
-      final box = _tabKeys[i].currentContext?.findRenderObject() as RenderBox?;
+    for (var i = 0; i < widget.tabs.length; i++) {
+      final box =
+          _tabKeys[widget.tabs[i]]?.currentContext?.findRenderObject()
+              as RenderBox?;
       if (box == null || !box.hasSize) {
         continue;
       }
@@ -370,7 +443,8 @@ class _EditorTabBarState extends State<EditorTabBar> {
   /// first layout / while its slot is collapsed.
   double? _measuredWidthOf(int index) {
     final box =
-        _tabKeys[index].currentContext?.findRenderObject() as RenderBox?;
+        _tabKeys[widget.tabs[index]]?.currentContext?.findRenderObject()
+            as RenderBox?;
     return (box != null && box.hasSize) ? box.size.width : null;
   }
 
@@ -448,7 +522,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    _ensureKeys(widget.tabs.length);
+    _syncKeys();
     _ensureFocusNodes(widget.tabs.length);
     // The strip carries the continuous bottom rule (the divider under the tabs).
     // Inactive tabs sit ON that rule; the ACTIVE tab paints a bottom border in
@@ -569,6 +643,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
   /// positional indicator, without the slide.
   Widget _buildGap(int index) {
     return AnimatedContainer(
+      key: ValueKey<int>(index),
       duration: _gapsAnimate
           ? CcMotion.resolve(context, CcMotion.normal)
           : Duration.zero,
@@ -586,9 +661,10 @@ class _EditorTabBarState extends State<EditorTabBar> {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final labelColor = EditorTabFace.labelColorFor(t, selected: selected);
 
+    final tab = widget.tabs[index];
     final focusNode = _tabFocus[index];
     final cell = KeyedSubtree(
-      key: _tabKeys[index],
+      key: _tabKeys[tab],
       // A tab to assistive tech — selected or not, activated by tap — and a
       // keyboard stop with a visible focus ring (see [_onTabKey]).
       child: Semantics(
@@ -607,7 +683,16 @@ class _EditorTabBarState extends State<EditorTabBar> {
                 () => _hovered = _hovered == index ? null : _hovered,
               ),
               child: GestureDetector(
-                onTap: () => widget.onTabSelected(index),
+                // Clicking a partly hidden tab scrolls it whole. A selection
+                // change reveals on its own (see [didUpdateWidget]); clicking
+                // the tab that is already selected changes nothing to rebuild
+                // for, so it reveals now, against the current layout.
+                onTap: () {
+                  if (index == widget.selectedIndex) {
+                    _revealTab(tab);
+                  }
+                  widget.onTabSelected(index);
+                },
                 // Right-click opens the menu WITHOUT selecting the tab, so closing a
                 // tab from its menu never first loads its body (a rig boots, a PTY
                 // spawns, a diff re-scrolls). The tab is washed for the menu's
@@ -691,7 +776,12 @@ class _EditorTabBarState extends State<EditorTabBar> {
     );
     // Middle-click closes the tab (VS Code parity). A passive [Listener] so it
     // never steals the left-button drag/select gestures below it.
+    //
+    // Keyed by tab identity so each slot (and its [AnimatedSize]) follows its
+    // tab: opening a tab mid-strip slots the newcomer in at full width instead
+    // of every later slot easing from its old occupant's width to its new one.
     return Listener(
+      key: ObjectKey(tab),
       onPointerDown: (event) {
         if (widget.onTabClosed != null && event.buttons == kMiddleMouseButton) {
           widget.onTabClosed!(index);

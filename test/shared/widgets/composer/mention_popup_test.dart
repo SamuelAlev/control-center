@@ -52,7 +52,246 @@ class _ControlledAgentSource extends _ControlledSource {
   String get kind => 'agent';
 }
 
+/// A labelled source of described rows: the shape of the real slash list, whose
+/// rows are taller than a label alone and sit under a section header.
+class _SectionSource extends SyncMentionSource {
+  _SectionSource(this.kind, this.labels);
+
+  @override
+  final String kind;
+
+  final List<String> labels;
+
+  @override
+  Set<MentionTrigger> get triggers => {MentionTrigger.slash};
+
+  @override
+  String? sectionLabel(BuildContext context) => 'Section $kind';
+
+  @override
+  List<MentionSuggestion> suggestSync(MentionQuery query) => [
+    for (final label in labels)
+      if (label.startsWith(query.partial))
+        MentionSuggestion(
+          id: '$kind:$label',
+          kind: kind,
+          label: label,
+          description: 'What $label does',
+          icon: const IconData(0xe000),
+          replacement: '/$label',
+        ),
+  ];
+}
+
+Widget _popup(
+  MentionQuery query,
+  List<MentionSource> sources, {
+  void Function(MentionSuggestion)? onSelect,
+  TextDirection? textDirection,
+}) => testWrap(
+  // Loose constraints, as in the composer's overlay: the popup sizes itself.
+  Align(
+    alignment: AlignmentDirectional.topStart,
+    child: SizedBox(
+      width: 400,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // The composer's field keeps focus while the popup is open. Without
+          // it the arrow keys walk focus along the rows and Enter activates
+          // the focused one, which is not what the app does.
+          const Material(child: TextField(autofocus: true)),
+          MentionPopup(
+            query: query,
+            sources: sources,
+            onSelect: onSelect ?? (_) {},
+            onDismiss: () {},
+          ),
+        ],
+      ),
+    ),
+  ),
+  textDirection: textDirection,
+);
+
+Future<void> _press(WidgetTester tester, LogicalKeyboardKey key) async {
+  await tester.sendKeyEvent(key);
+  await _settleScroll(tester);
+}
+
+/// Runs the post-frame scroll and its animation to the end. Takes two timed
+/// pumps: a ticker's first tick only records its start time, so a single long
+/// pump leaves the animation at zero.
+Future<void> _settleScroll(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 1));
+  await tester.pump(const Duration(milliseconds: 200));
+}
+
+/// Fails unless the whole row for [label], description included, is on screen
+/// inside the popup rather than clipped by its scroll viewport.
+void _expectRowFullyVisible(WidgetTester tester, String label) {
+  final popup = tester.getRect(find.byType(MentionPopup));
+  final top = tester.getRect(find.text(label)).top;
+  final bottom = tester.getRect(find.text('What $label does')).bottom;
+  expect(top, greaterThanOrEqualTo(popup.top), reason: '$label clipped above');
+  expect(
+    bottom,
+    lessThanOrEqualTo(popup.bottom),
+    reason: '$label clipped below',
+  );
+}
+
 void main() {
+  group('MentionPopup keyboard scrolling', () {
+    const first = ['plan', 'goal', 'loop', 'tree', 'export', 'share'];
+    const second = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'];
+    final labels = [...first, ...second];
+    List<MentionSource> sources() => [
+      _SectionSource('a', first),
+      _SectionSource('b', second),
+    ];
+
+    testWidgets('arrow down keeps every active row fully in view', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_popup(_query(''), sources()));
+      await tester.pump();
+
+      for (final label in labels.skip(1)) {
+        await _press(tester, LogicalKeyboardKey.arrowDown);
+        _expectRowFullyVisible(tester, label);
+      }
+    });
+
+    testWidgets('arrow up keeps every active row fully in view', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_popup(_query(''), sources()));
+      await tester.pump();
+
+      // Up from the first row wraps to the last, which has never been on
+      // screen.
+      await _press(tester, LogicalKeyboardKey.arrowUp);
+      _expectRowFullyVisible(tester, labels.last);
+
+      for (final label in labels.reversed.skip(1)) {
+        await _press(tester, LogicalKeyboardKey.arrowUp);
+        _expectRowFullyVisible(tester, label);
+      }
+    });
+
+    testWidgets('wrapping to the first row brings its section header back', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_popup(_query(''), sources()));
+      await tester.pump();
+
+      final popup = tester.getRect(find.byType(MentionPopup));
+      await _press(tester, LogicalKeyboardKey.arrowUp);
+      expect(
+        tester.getRect(find.text('SECTION A')).bottom,
+        lessThanOrEqualTo(popup.top),
+      );
+
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      _expectRowFullyVisible(tester, labels.first);
+      expect(
+        tester.getRect(find.text('SECTION A')).top,
+        greaterThanOrEqualTo(popup.top),
+      );
+    });
+
+    testWidgets('a pointer resting over the list does not steal the selection '
+        'as rows scroll under it', (tester) async {
+      MentionSuggestion? picked;
+      await tester.pumpWidget(
+        _popup(_query(''), sources(), onSelect: (s) => picked = s),
+      );
+      await tester.pump();
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: tester.getCenter(find.text('goal')));
+      await tester.pump();
+
+      for (var i = 0; i < 7; i++) {
+        await _press(tester, LogicalKeyboardKey.arrowDown);
+      }
+      await _press(tester, LogicalKeyboardKey.enter);
+      expect(picked?.label, 'beta');
+
+      await gesture.removePointer();
+    });
+
+    testWidgets('moving the pointer still selects the row under it', (
+      tester,
+    ) async {
+      MentionSuggestion? picked;
+      await tester.pumpWidget(
+        _popup(_query(''), sources(), onSelect: (s) => picked = s),
+      );
+      await tester.pump();
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      await gesture.moveTo(tester.getCenter(find.text('loop')));
+      await tester.pump();
+
+      await _press(tester, LogicalKeyboardKey.enter);
+      expect(picked?.label, 'loop');
+
+      await gesture.removePointer();
+    });
+
+    testWidgets('refining the query reveals the reset selection', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_popup(_query(''), sources()));
+      await tester.pump();
+      for (var i = 0; i < 8; i++) {
+        await _press(tester, LogicalKeyboardKey.arrowDown);
+      }
+
+      // Selection resets to the first row, which must not stay scrolled off.
+      const many = ['aa', 'ab', 'ac', 'ad', 'ae', 'af'];
+      await tester.pumpWidget(
+        _popup(_query('a'), [
+          _SectionSource('a', many),
+          _SectionSource('b', [for (final m in many) '${m}x']),
+        ]),
+      );
+      await _settleScroll(tester);
+
+      _expectRowFullyVisible(tester, 'aa');
+    });
+
+    testWidgets('scrolling follows the selection under RTL', (tester) async {
+      await tester.pumpWidget(
+        _popup(_query(''), sources(), textDirection: TextDirection.rtl),
+      );
+      await tester.pump();
+
+      for (final label in labels.skip(1)) {
+        await _press(tester, LogicalKeyboardKey.arrowDown);
+        _expectRowFullyVisible(tester, label);
+      }
+    });
+
+    testWidgets('two suggestions sharing an id both render', (tester) async {
+      // Sources do not promise unique ids, and a non-lazy list must not turn
+      // a duplicate into a build failure.
+      await tester.pumpWidget(
+        _popup(_query(''), [
+          _SectionSource('a', const ['same', 'same']),
+        ]),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('same'), findsNWidgets(2));
+    });
+  });
+
   group('MentionPopup searching UX', () {
     testWidgets('refining the query keeps rows visible and never flashes '
         '"Searching…" for fast sources', (tester) async {

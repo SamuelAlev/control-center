@@ -7,6 +7,7 @@ import 'package:control_center/features/artifacts/presentation/widgets/artifact_
 import 'package:control_center/features/artifacts/presentation/widgets/artifact_table.dart';
 import 'package:control_center/shared/widgets/artifacts/json_tree_view.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_links.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/markdown/mermaid_block.dart';
@@ -77,6 +78,7 @@ class ArtifactBlockView extends StatelessWidget {
         plugins: chatMarkdownPlugins,
         builders: chatMarkdownBuilders,
         imageBuilder: appMarkdownImageBuilder,
+        onTapLink: openMarkdownLink,
       ),
       ArtifactTableBlock(:final columns, :final rows) => ArtifactTable(
         columns: columns,

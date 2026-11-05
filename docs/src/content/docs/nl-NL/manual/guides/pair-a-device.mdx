@@ -2,7 +2,7 @@
 title: Een apparaat koppelen
 description: Koppel je telefoon (of een tweede browser of desktop) aan je Control Center-server, zodat je de fleet op afstand kunt volgen.
 slug: nl-NL/handleiding/gidsen/apparaat-koppelen
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Deze gids laat zien hoe je een telefoon aan Control Center koppelt, zodat je
@@ -40,11 +40,11 @@ Klik op **Een nieuwe client koppelen** in de paginakop, geef hem een label (bijv
 — en klik op **Koppelen**.
 
 - Voor een **telefoon** verschijnt een QR-code. Scan die met de camera van de telefoon, of kopieer de link en open hem in een willekeurige browser. Hij wijst de Remote-app naar je server en bevat de referentie.
-- Voor een **browser** of **desktop** kopieer je in plaats daarvan de getoonde link (of het apparaat-id en de koppelingssleutel) naar de nieuwe client. De link voor één klik wordt alleen aangeboden wanneer je vanuit de webclient koppelt, omdat een desktop-binary geen web-origin heeft om er een te bouwen.
+- Voor een **browser** of **desktop** kopieer je in plaats daarvan de getoonde link (of het apparaat-id en de koppelingssleutel) naar de nieuwe client. Open de link in een browser, of plak hem in de desktop-app bij **Een koppelingslink plakken**. Koppel je vanaf de desktop, dan wordt de link gebouwd vanuit de eigen URL van de server en verschijnt hij dus alleen als de server een URL heeft die andere apparaten kunnen bereiken.
 
 De telefoon-QR en de link die `cc_server pair --client-url` op de CLI afdrukt,
 zijn **verschillende payloads en niet uitwisselbaar**: de CLI-link vult het
-verbindingsformulier van de webclient in, terwijl deze QR de volledige
+verbindingsdialoogvenster van de webclient in of plak je in de desktop-app, terwijl deze QR de volledige
 verbindingsdescriptor en identiteitsvingerafdruk van de server bevat voor de
 Remote-PWA.
 

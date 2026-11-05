@@ -2,7 +2,7 @@
 title: Alanları kullanma
 description: Alanlar oluşturun, modlarını ayarlayın, katılımcıları ve özerkliği yönetin, konuşmaları ve konuları açın.
 slug: tr-TR/kilavuz/nasil-yapilir/alanlar
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Bu kılavuz alanları nasıl kullanacağınızı gösterir. **Alan**, Control Center'daki
@@ -26,6 +26,8 @@ açtığı alanlardır — aşağıdaki
    hazırlayacağını seçin. Varsayılan olarak hepsi seçilidir; tüm depoların
    seçimini kaldırmak, hiçbir şeyin checkout edilmediği bir alan oluşturur
 6. Onaylayın
+
+Yalnızca bir ajan bir mesajı yanıtlar; bu yüzden içinde ajan bulunmayan bir alan hiçbir şey başlatmaz: mesaj alanı bunu belirtir ve siz bir ajanı @ ile anana kadar mesajınızı tutar; bu ajanı alana ekler ve mesajı gönderir. Boş bir alanın arkasında varsayılan bir runner yoktur.
 
 Alanlar çalışma alanı kapsamlıdır: yalnızca geçerli çalışma alanının ajanlarını
 görürsünüz ve bir alan başka bir çalışma alanının verilerini asla göstermez.
@@ -100,7 +102,7 @@ açmak, adsız ve kalıcı bir konuşma oluşturur.
 Konuşmalar düzenleyici sekmeleri olarak ve birden fazla olduklarında kenar
 çubuğunda alanın altında iç içe satırlar olarak görünür. **Yeni sohbet**,
 düzenleyicinin yeni sekme menüsünde bulunur ve başlık sorulmadan adsız bir
-konuşma oluşturur — başlık modeli ona ilk iletiye göre ad verir. Aynı ajan ve
+konuşma oluşturur — Content synthesizer ajanı ona ilk iletiye göre ad verir. Aynı ajan ve
 worktree ile paralel iş yürütmek için bir tane kullanın.
 
 Her konuşma kendi ileti geçmişini ve ajan oturumlarını korur, bununla birlikte

@@ -45,6 +45,7 @@ import 'package:control_center/core/update/desktop_update_controller.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/core/utils/cc_domain_logging.dart';
 import 'package:control_center/core/utils/cc_infra_logging.dart';
+import 'package:control_center/di/agent_wait_reminder_provider.dart';
 import 'package:control_center/di/notification_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
@@ -500,6 +501,9 @@ class DesktopBackendSession {
         // suppressing that account's own actions on the next frame.
         viewerLogins: () => container.read(viewerLoginSetProvider),
       );
+      // Re-raises unanswered agent waits and withdraws ended ones. Lives as
+      // long as the container; reading it starts its feed subscription.
+      container.read(agentWaitReminderProvider);
       return session;
     } on Object {
       container.dispose();

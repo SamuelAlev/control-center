@@ -36,11 +36,10 @@ const Size mainWindowMinSize = Size(1024, 600);
 
 /// Size the pre-app server-setup window opens at.
 ///
-/// Tall enough for the remote form (URL, invite, device id, pairing key, an
-/// error banner and the connect button) without scrolling. Clamped to the
-/// display like [defaultMainWindowSize], so a small laptop still gets a window
-/// that fits; the form scrolls below that.
-const Size serverSetupWindowSize = Size(600, 920);
+/// Room for the landing and for the connect dialog over it, with its pairing
+/// fields unfolded. Clamped to the display like [defaultMainWindowSize], so a
+/// small laptop still gets a window that fits; both scroll below that.
+const Size serverSetupWindowSize = Size(720, 680);
 
 /// Smallest frame the server-setup window can be resized to (matches its
 /// `BoxConstraints`).

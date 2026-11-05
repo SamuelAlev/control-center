@@ -94,10 +94,34 @@ Pass an explicit DEST_DIR, or remove the stale app-support directory." ;;
   esac
 }
 
+# Makes a first-party crate's `strip = true` safe on Darwin. rustc strips Apple
+# targets by running its bundled `rust-objcopy -x`, which leaves the Mach-O
+# string table only 4-byte aligned; dyld on macOS 27+ refuses any image linked
+# against the 27 SDK that way ("mis-aligned LINKEDIT string pool"). Turn the
+# post-link strip off and have ld drop the local symbols itself (`-x`), which
+# lays LINKEDIT out aligned. Other platforms keep the profile's strip: ELF
+# strips at link time and PE is unaffected.
+native_cargo_darwin_strip() {
+  [ "$NATIVE_OS" = "Darwin" ] || return 0
+  export CARGO_PROFILE_RELEASE_STRIP=false
+  export RUSTFLAGS="${RUSTFLAGS:-} -Clink-arg=-Wl,-x"
+}
+
+# Fails when a Mach-O's string table is not 8-byte aligned, which macOS 27+
+# dyld rejects at load time — far from the build that produced it, and as a
+# boot preflight failure rather than a build error. No-op off macOS.
+native_check_macho_linkedit() { # path
+  [ "$NATIVE_OS" = "Darwin" ] || return 0
+  if otool -l "$1" | awk '$1 == "stroff" && $2 % 8 { bad = 1 } END { exit !bad }'; then
+    die "$1 has a mis-aligned LINKEDIT string pool; macOS 27+ dyld refuses to load it. A post-link strip (rustc's rust-objcopy) rewrote it; see native_cargo_darwin_strip."
+  fi
+}
+
 # Ad-hoc codesigns a freshly-installed dylib so it loads under the local
 # Hardened Runtime. No-op off macOS. A release re-signs with the app's identity
 # when embedding into Runner.app/Contents/Frameworks/ (see macos_package.sh).
 native_adhoc_sign() { # path
   [ "$NATIVE_OS" = "Darwin" ] || return 0
+  native_check_macho_linkedit "$1"
   codesign -s - -f "$1" >/dev/null 2>&1 || true
 }

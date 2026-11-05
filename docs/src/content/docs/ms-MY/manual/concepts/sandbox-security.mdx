@@ -2,7 +2,7 @@
 title: Kotak pasir dan keselamatan
 description: Apa yang sebenarnya membataskan ejen dalam Control Center hari ini, sejauh mana kotak pasir OS menjangkau dan sempadan mana yang kekal pada hos yang tiada bahagian belakang.
 slug: ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Di mana kotak pasir OS menjangkau dan tidak menjangkau]
@@ -223,7 +223,7 @@ rahsia, polisi tulis yang ditetapkan semula kepada tolak dengan benarkan eksplis
 di atasnya, penyekatan unlink pada setiap laluan yang ditolak dan nenek moyangnya
 supaya penamaan semula tidak dapat memintas penolakan tulis, penolakan exec untuk
 binari yang sentiasa berbahaya dan untuk apa-apa yang disalin ke direktori boleh
-tulis, serta rangkaian yang dihadkan kepada port proksi loopback dan DNS.
+tulis, serta rangkaian yang dihadkan kepada port proksi loopback dan DNS. Pemasangan toolchain di bawah direktori home anda (pnpm daripada corepack, pengurus versi node, pelayar Playwright, rustup, fvm, uv dan yang seumpamanya) kekal boleh dijalankan di dalam blok exec tersebut, supaya ejen boleh menggunakannya tanpa penyelesaian lain. Penolakan yang sentiasa berbahaya tetap terpakai di dalamnya. Setiap sesi turut mendapat `TMPDIR` persendirian sendiri. Ia ialah satu-satunya direktori sementara tempat ejen dibenarkan menjalankan program yang dibinanya atau membuka soket Unix.
 
 Akibat praktikalnya: pada Linux, pandangan ejen terhadap sistem fail disempitkan;
 pada macOS, ejen masih boleh _membaca_ sebahagian besar hos dan checkout berdaftar

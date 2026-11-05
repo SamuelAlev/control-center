@@ -424,7 +424,7 @@ Future<CcServerProcess> _spawnLocalServer({
       'Fix: build the binary with `dart build cli` inside apps/cc_server, or '
       'launch the app with the repo root as the working directory so the built '
       'binary (or the dev `dart run` fallback) resolves. To skip the local '
-      'server entirely, choose "Connect to a remote instance" on the setup '
+      'server entirely, choose "Connect to a server" on the setup '
       'screen.',
     );
   }

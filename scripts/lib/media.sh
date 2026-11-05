@@ -88,8 +88,8 @@ cc_media_verify() { # media-dir os [architecture]
   for f in "ffmpeg$suffix" "ffprobe$suffix" "cc_pdf_render$suffix" "cc_svg_render$suffix"; do
     [ -x "$dir/$f" ] || die "required media tool not executable: $dir/$f"
   done
-  [ "$("$dir/cc_svg_render$suffix" --version)" = "cc_svg_render 0.1.0 (resvg 0.48.1)" ] \
-    || die "cc_svg_render is missing or does not match the pinned resvg 0.48.1 wrapper"
+  [ "$("$dir/cc_svg_render$suffix" --version)" = "cc_svg_render 0.1.0 (resvg 0.49.0)" ] \
+    || die "cc_svg_render is missing or does not match the pinned resvg 0.49.0 wrapper"
   for f in ffmpeg ffprobe; do
     identity="$("$dir/$f$suffix" -version)" \
       || die "managed $f cannot start: $dir/$f$suffix"

@@ -601,8 +601,12 @@ class _CcAutocompleteFieldState extends State<_CcAutocompleteField>
   Widget build(BuildContext context) {
     final t = context.ds;
     final input = CcInputTokens.resolve(t);
-    final textStyle = CcTypography.bodySm.copyWith(
-      color: widget.enabled ? input.text : t.textDisabled,
+    // Inherits the family: EditableText has no ambient font of its own, and
+    // the pre-app surfaces have no Material theme to supply one.
+    final textStyle = DefaultTextStyle.of(context).style.merge(
+      CcTypography.bodySm.copyWith(
+        color: widget.enabled ? input.text : t.textDisabled,
+      ),
     );
 
     return Semantics(

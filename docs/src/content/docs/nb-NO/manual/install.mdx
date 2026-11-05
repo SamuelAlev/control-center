@@ -2,7 +2,7 @@
 title: Installer
 description: Bruk Control Center i nettleseren eller installer skrivebordsappen, sett opp en agentbackend og velg hvor serveren skal kjøre.
 slug: nb-NO/handbok/installer
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center kjører på to måter: som en **nettapp** på
@@ -137,10 +137,11 @@ Første steg i oppstartsveiledningen er denne tilkoblingen. Etterpå er det samm
 
 Control Center er en tynn klient over en headless `cc_server`-prosess som eier databasen og gjør alt arbeidet; [Drift og klienter](/nb-NO/handbok/konsepter/drift/) forklarer hva denne delingen betyr for skrivebord, nett og telefon.
 
-Ved første oppstart spør skrivebordsappen **«Hvordan skal Control Center kjøre?»**:
+Ved første oppstart viser skrivebordsappen **Velkommen til Control Center** og tilbyr tre måter å komme i gang på. Innstillingsknappen i hjørnet endrer språk og tema.
 
 - **Kjør i denne appen**: skrivebordsappen starter og overvåker en `cc_server` på denne maskinen og snakker med den over loopback. Ingenting annet å konfigurere. Dette er oppsettet [hurtigstarten](/nb-NO/handbok/hurtigstart/) forutsetter.
-- **Koble til en ekstern instans**: pek skrivebordsappen mot en `cc_server` som kjører et annet sted, med WebSocket-URL-en, en enhets-id og enten en paringsnøkkel eller en engangskode for invitasjon. Den serveren eier dataene; denne skrivebordsappen gjengir dem bare.
+- **Koble til en server**: pek skrivebordsappen mot en `cc_server` som kjører et annet sted, med WebSocket-URL-en, og logg deretter på med enkel pålogging hvis serveren tilbyr det, eller skriv inn en engangskode for invitasjon, eller en enhets-id og paringsnøkkel under **Bruk en paringsnøkkel**. Den serveren eier dataene; denne skrivebordsappen gjengir dem bare.
+- **Lim inn en paringslenke**: lim inn en invitasjons- eller paringslenke. Dialogen viser hvilken server lenken fører til, og kobler til først når du klikker **Koble til**.
 
 Legg til eller bytt servere senere under **Innstillinger → Server → Tilkobling og status**. Bytte kobler til på nytt uten omstart. En nettleser kan ikke kjøre en server, så nettklienten er alltid ekstern; se [Koble til en ekstern server](/nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server/).
 

@@ -76,6 +76,39 @@ Future<void> stageServerNatives(String dataDir) async {
       _stageNative(entity, target.path);
     }
   }
+  // The preflight also requires the managed media tools, found at
+  // `<dataDir>/media/`. Link the first staged copy rather than copying it.
+  final mediaTarget = p.join(dataDir, 'media');
+  for (final source in sources) {
+    final media = Directory(p.join(source.path, 'media'));
+    if (!media.existsSync() || Directory(mediaTarget).existsSync()) {
+      continue;
+    }
+    _stageMedia(media, mediaTarget);
+  }
+}
+
+/// Symlinks the media directory, copying it only where a link is refused
+/// (unprivileged Windows).
+void _stageMedia(Directory source, String targetPath) {
+  try {
+    Link(targetPath).createSync(source.absolute.path);
+    return;
+  } on FileSystemException {
+    if (!Platform.isWindows) {
+      rethrow;
+    }
+  }
+  for (final entity in source.listSync(recursive: true)) {
+    final relative = p.relative(entity.path, from: source.path);
+    if (entity is Directory) {
+      Directory(p.join(targetPath, relative)).createSync(recursive: true);
+    } else if (entity is File) {
+      final target = File(p.join(targetPath, relative));
+      target.parent.createSync(recursive: true);
+      entity.copySync(target.path);
+    }
+  }
 }
 
 /// Hard-link a native into the temp data dir, copying only when `ln` cannot.

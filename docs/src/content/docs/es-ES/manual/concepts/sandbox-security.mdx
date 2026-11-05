@@ -2,7 +2,7 @@
 title: Entorno aislado y seguridad
 description: Qué limita realmente a un agente en Control Center hoy, hasta dónde llega el entorno aislado del sistema operativo y qué fronteras se mantienen en un host que no tiene backend.
 slug: es-ES/manual/conceptos/entorno-aislado-y-seguridad
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Dónde llega el entorno aislado del sistema operativo y dónde no]
@@ -234,7 +234,7 @@ reajustada a denegar con permisos explícitos por encima, bloqueo de unlink en
 cada ruta denegada y sus ancestros para que un rename no pueda eludir una
 denegación de escritura, denegaciones de exec para binarios siempre peligrosos y
 para cualquier cosa copiada a un directorio con permiso de escritura, y red
-restringida a los puertos del proxy de loopback más DNS.
+restringida a los puertos del proxy de loopback más DNS. Las instalaciones de herramientas bajo su directorio personal (pnpm mediante corepack, gestores de versiones de Node, navegadores de Playwright, rustup, fvm, uv y similares) siguen siendo ejecutables dentro de esas denegaciones de exec, así que los agentes pueden usarlas sin rodeos. Las denegaciones de binarios siempre peligrosos siguen aplicándose dentro de ellas. Cada sesión recibe además su propio `TMPDIR` privado. Es el único directorio temporal donde el agente puede ejecutar programas que haya compilado o abrir sockets Unix.
 
 La consecuencia práctica: en Linux se estrecha la visión que el agente tiene del
 sistema de archivos; en macOS el agente todavía puede _leer_ buena parte del host,

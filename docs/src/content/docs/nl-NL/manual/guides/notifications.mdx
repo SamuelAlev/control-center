@@ -2,7 +2,7 @@
 title: Meldingen configureren
 description: Zet categorieën aan of uit, stel Quiet hours en een geluid in en zie welke meldingen je waar bereiken.
 slug: nl-NL/handleiding/gidsen/meldingen
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Deze gids laat je zien hoe je meldingen configureert en wat elke instelling
@@ -49,12 +49,28 @@ server lezen. De telefoonclient heeft helemaal geen meldingsoppervlak.
 Alles buiten deze lijst kan niet worden gemeld of gefilterd — er is geen
 categorie "al het andere".
 
-**Agent wacht op je** wordt één keer per wachtmoment geactiveerd, op het moment
-dat het wachten begint: een openstaande goedkeuring (inclusief
+**Agent wacht op je** wordt geactiveerd zodra het wachten begint: een openstaande goedkeuring (inclusief
 sandbox-uitvoeringsrechten en goedkeuringen van tools in Claude Code), een
 `ask_user`-vraag of een run die wordt vastgehouden omdat de inloggegevens ervan
 hem niet kunnen bedienen. De melding opent de ruimte waar je antwoordt en blijft
 stil zolang je al naar die ruimte kijkt.
+
+Op de desktop gedragen deze meldingen zich anders dan de rest:
+
+- **Ze zijn tijdgevoelig.** Op macOS kunnen ze door een Focus heen breken die
+  tijdgevoelige meldingen van Control Center toestaat.
+- **Een goedkeuring kun je vanuit de melding beantwoorden.** **Goedkeuren** en
+  **Weigeren** sturen je antwoord zonder de app te openen. De server controleert
+  het op dezelfde manier als de kaart in de app. Wil je liever voor een tijdje
+  goedkeuren, open dan de kaart.
+- **Een onbeantwoord wachtmoment herinnert je eraan.** Als niemand antwoordt,
+  komt de melding 3, 10, 25 en 45 minuten na het begin van het wachten terug als
+  **Wacht nog steeds: …**. Elke herinnering vervangt de vorige melding in plaats
+  van er een toe te voegen. Herinneringen worden overgeslagen zolang een venster
+  van Control Center focus heeft, omdat de goedkeuringskaart en de bel dan al
+  voor je neus staan.
+- **Ze verdwijnt zodra het wachten voorbij is**, hoe er ook is geantwoord, zodat
+  je nooit op een knop drukt bij een verzoek dat al is afgehandeld.
 
 Deze voorkeuren volgen je gebruiker naar elk apparaat, dus een telefoon en een
 laptop blijven gelijk lopen. Het volume is de bewuste uitzondering en blijft per
@@ -97,7 +113,8 @@ Een melding wordt stil verworpen wanneer een van deze dingen waar is:
 - Meldingen staan globaal uit, of de categorie staat uit
 - Je bent al op de route waarheen ze je zou brengen — en, bij een bericht, al in
   die ruimte
-- De focusmodus is actief en de categorie is niet dringend
+- Er loopt een focussessie met **Meldingen blokkeren** aan en de categorie is
+  niet dringend
 - Quiet hours zijn actief en de categorie is niet dringend
 
 Die controles gelden voor OS-toasts. De blijvende bel legt de gebeurtenis wel
@@ -142,6 +159,15 @@ toont. Geschiedenis daarbuiten is weg, ongeacht de leesstatus.
 De toestemming wordt bij het starten van de app native aangevraagd. Heb je die
 geweigerd, schakel Control Center dan weer in onder Systeeminstellingen →
 Meldingen; er is geen melding in de app die dat opnieuw aanvraagt.
+
+### Ik mis steeds goedkeuringsmeldingen op macOS
+
+macOS toont de meldingen van Control Center standaard als banners, en een banner
+verdwijnt na een paar seconden. Wil je ze op het scherm houden tot je iets doet,
+stel de meldingsstijl van Control Center dan in op **Blijvend** onder
+Systeeminstellingen → Meldingen. Een onbeantwoorde goedkeuring komt ook terug
+als herinnering (zie
+[Categorieën aan- of uitzetten](#categorieën-aan--of-uitzetten)).
 
 ### Niets komt aan in de webbuild
 

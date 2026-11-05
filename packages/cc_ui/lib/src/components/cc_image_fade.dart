@@ -34,7 +34,8 @@ class CcImageFade extends StatelessWidget {
   final Widget? placeholder;
 
   /// Shown if [image] fails to load, faded in over whatever was already on
-  /// screen. Keep it an opaque, muted surface (the fade is over prior content).
+  /// screen. Keep it an opaque, muted surface (the fade is over prior content);
+  /// with a [preview] it must be, because the layers beneath stop painting.
   final ImageFadeErrorBuilder? errorBuilder;
 
   /// How the image paints inside its box. Defaults to [BoxFit.cover]. Note:
@@ -84,6 +85,7 @@ class CcImageFade extends StatelessWidget {
       duration: effectiveDuration,
       syncDuration: Duration.zero,
       errorBuilder: errorBuilder,
+      errorHidesPlaceholder: preview != null,
     );
   }
 }

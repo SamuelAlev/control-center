@@ -354,5 +354,28 @@ void main() {
         expect(a, isNot(equals(b)));
       });
     });
+
+    group('blocksNotifications', () {
+      test('a running session with blocking on blocks', () {
+        expect(const FocusModeState(active: true).blocksNotifications, isTrue);
+      });
+
+      test('a running session with blocking off does not', () {
+        expect(
+          const FocusModeState(
+            active: true,
+            blockNotifications: false,
+          ).blocksNotifications,
+          isFalse,
+        );
+      });
+
+      test('no session blocks nothing', () {
+        expect(
+          const FocusModeState(active: false).blocksNotifications,
+          isFalse,
+        );
+      });
+    });
   });
 }

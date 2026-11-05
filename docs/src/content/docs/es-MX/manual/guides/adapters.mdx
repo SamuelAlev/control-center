@@ -2,7 +2,7 @@
 title: Administrar adaptadores y modelos
 description: Conecta proveedores de modelos, elige el modelo con el que se ejecuta un agente y consulta qué CLIs de ejecutor de agentes tiene el host del servidor.
 slug: es-MX/manual/guias/adaptadores
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Esta guía te muestra cómo conectar proveedores de modelos y elegir con qué se
@@ -98,11 +98,10 @@ respaldo, el costo se calcula según el modelo que atendió realmente el turno, 
 el que solicitaste.
 
 :::note[Un agente sin adaptador se ejecuta en el bucle integrado]
-Cada espacio de trabajo crea cinco agentes —un CEO más `qa`, `architect`,
-`engineer` y `librarian`— sin adaptador y sin modelo. El despacho recurre a
-**Control Center (built-in)**, no al ajuste **Ejecutores predeterminados** de
-esta página, que es una preferencia del cliente que la ruta de despacho nunca
-lee. El registro de ejecución anota `cc-harness` en esas ejecuciones, así que la
+Cada espacio de trabajo crea seis agentes —un CEO más `qa`, `architect`,
+`engineer`, `librarian` y `content-synthesizer`— sin adaptador ni modelo. El
+despacho recurre a **Control Center (built-in)**; no hay ejecutor predeterminado a
+nivel de espacio de trabajo ni de dispositivo. El registro de ejecución anota `cc-harness` en esas ejecuciones, así que la
 transcripción indica con qué se ejecutó realmente.
 
 Si tampoco hay modelo, el bucle integrado le pide a Anthropic su modelo
@@ -114,9 +113,15 @@ Al terminar el paso del adaptador de la configuración inicial se aplica
 retroactivamente el par que elegiste a **todos** los agentes a los que todavía
 les falte un adaptador o un modelo —el CEO y los especialistas, en todos los
 espacios de trabajo que existan en ese momento—. Los espacios de trabajo creados
-después siguen creando los cinco sin configurar. Define el adaptador y el modelo
+después siguen creando los seis sin configurar. Define el adaptador y el modelo
 de forma explícita en cada agente que tengas previsto usar.
 :::
+
+## Personaliza los títulos y los resúmenes
+
+El agente **Content synthesizer** escribe el texto que Control Center genera alrededor de una conversación: su título, las respuestas de `/btw`, los documentos de `/handoff` y la entrevista de objetivo de `/goal`. Ejecuta una única compleción sin herramientas cada vez, con su propio adaptador y modelo, así que dale un modelo pequeño y rápido.
+
+Edita su **Persona** en **Ajustes → Espacio de trabajo → Agentes** para cambiar cómo se lee ese texto: longitud de los títulos, idioma, tono y los ejemplos que sigue. El formato de respuesta que analiza cada función (un título de una línea, las secciones del objetivo) es fijo y se aplica después de tu persona. Elimina el agente para desactivar estas funciones; no se vuelve a crear automáticamente.
 
 ## Instalar la CLI de un ejecutor
 

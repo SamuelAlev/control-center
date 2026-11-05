@@ -2,7 +2,7 @@
 title: Kurulum
 description: Control Center'ı tarayıcıda kullanın ya da masaüstü uygulamasını kurun, bir ajan arka ucunu ayarlayın ve sunucusunun nerede çalışacağını seçin.
 slug: tr-TR/kilavuz/kurulum
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center iki şekilde çalışır: [app.usectrl.dev](https://app.usectrl.dev)
@@ -225,16 +225,21 @@ süreci üzerinde ince bir istemcidir;
 [Dağıtım ve istemciler](/tr-TR/kilavuz/kavramlar/dagitim/) bu ayrımın masaüstü,
 web ve telefon için ne anlama geldiğini açıklar.
 
-Masaüstü ilk açılışta şunu sorar: **"Control Center nasıl çalışsın?"**:
+Masaüstü ilk açılışta **Control Center'a hoş geldiniz** ekranını gösterir ve üç giriş
+yolu sunar. Köşedeki ayarlar düğmesi dili ve temayı değiştirir.
 
 - **Bu uygulamada çalıştır**: masaüstü bu makinede bir `cc_server` başlatır ve
   onu denetler, onunla loopback üzerinden konuşur. Yapılandırılacak başka bir
   şey yoktur. [Hızlı başlangıç](/tr-TR/kilavuz/hizli-baslangic/) sayfasının
   varsaydığı kurulum budur.
-- **Uzak bir örneğe bağlan**: masaüstünü başka bir yerde çalışan bir `cc_server`
-  sunucusuna WebSocket URL'si, bir cihaz kimliği ve ya bir eşleştirme anahtarı
-  ya da tek kullanımlık bir davet koduyla yönlendirin. Verilere o sunucu
-  sahiptir; bu masaüstü yalnızca onu çizer.
+- **Bir sunucuya bağlan**: masaüstünü başka bir yerde çalışan bir `cc_server`
+  sunucusuna WebSocket URL'siyle yönlendirin; ardından sunucu sunuyorsa tek oturum
+  açma ile giriş yapın, ya da tek kullanımlık bir davet kodu veya
+  **Eşleme anahtarı kullan** altında bir cihaz kimliği ve eşleştirme anahtarı girin.
+  Verilere o sunucu sahiptir; bu masaüstü yalnızca onu çizer.
+- **Eşleme bağlantısı yapıştır**: bir davet veya eşleştirme bağlantısı yapıştırın.
+  İletişim kutusu bağlantının hangi sunucuya gittiğini gösterir ve yalnızca
+  **Bağlan**'a tıkladığınızda bağlanır.
 
 Sunucuları sonradan **Ayarlar → Sunucu → Bağlantı ve durum** altında ekleyebilir
 ya da değiştirebilirsiniz. Geçiş yapmak yerinde yeniden bağlanır — yeniden

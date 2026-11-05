@@ -2,7 +2,7 @@
 title: Połącz się ze zdalnym serwerem
 description: Skieruj aplikację desktopową lub klienta webowego na serwer cc_server działający gdzie indziej i przełączaj się między serwerami bez ponownego uruchamiania.
 slug: pl-PL/podrecznik/poradniki/laczenie-ze-zdalnym-serwerem
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Każdy klient to renderer działający nad serwerem `cc_server`, do którego należą dane. Aplikacja desktopowa może uruchomić taki serwer u siebie; aplikacja webowa pod [app.usectrl.dev](https://app.usectrl.dev) nie może, bo karta przeglądarki nie może hostować serwera. Tak czy inaczej, ten poradnik kieruje klienta na serwer działający gdzie indziej — mały komputer, maszynę wirtualną w chmurze albo serwer budowania.
@@ -10,7 +10,7 @@ Każdy klient to renderer działający nad serwerem `cc_server`, do którego nal
 ## Wymagania wstępne
 
 - Działający `cc_server`. Jeśli go nie masz, zobacz [Uruchom serwer headless](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless/).
-- Albo trzy wartości parowania wygenerowane przez serwer — **adres URL serwera** (`ws://…/rpc` lub `wss://…/rpc`), **identyfikator urządzenia** i **klucz parowania** — **albo** jednorazowy **kod zaproszenia** od administratora obszaru roboczego. Wykorzystanie zaproszenia zakłada Twoje konto użytkownika, zapisuje Twoje członkostwo i generuje poświadczenie tego klienta za Ciebie, więc nigdy nie musisz posługiwać się identyfikatorem urządzenia ani kluczem. Zdobądź je zaufanym kanałem i przy pierwszym połączeniu sprawdź odcisk serwera na podstawie zaufanego kodu QR albo znanego przypięcia.
+- Albo trzy wartości parowania wygenerowane przez serwer — **adres URL serwera** (`ws://…/rpc` lub `wss://…/rpc`), **identyfikator urządzenia** i **klucz parowania** — **albo** jednorazowy **kod zaproszenia** od administratora obszaru roboczego, **albo** link zaproszenia lub parowania, który je zawiera. Wykorzystanie zaproszenia zakłada Twoje konto użytkownika, zapisuje Twoje członkostwo i generuje poświadczenie tego klienta za Ciebie, więc nigdy nie musisz posługiwać się identyfikatorem urządzenia ani kluczem. Zdobądź je zaufanym kanałem i przy pierwszym połączeniu sprawdź odcisk serwera na podstawie zaufanego kodu QR albo znanego przypięcia.
 
 ### Upewnij się, że serwer jest osiągalny
 
@@ -37,14 +37,16 @@ które domyślnie obejmuje wyłącznie `https://app.usectrl.dev`; loopback i kli
 
 Przy świeżej instalacji:
 
-1. Uruchom Control Center. Ekran pierwszego uruchomienia pyta **Jak ma działać Control Center?**
-2. Zamiast **Uruchom w tej aplikacji** wypełnij pola połączenia: adres URL serwera oraz albo kod zaproszenia, albo identyfikator urządzenia i klucz parowania.
+1. Uruchom Control Center. Ekran pierwszego uruchomienia pokazuje **Witamy w Control Center**.
+2. Kliknij **Połącz z serwerem** i wprowadź adres URL serwera oraz albo kod zaproszenia, albo, w sekcji **Użyj klucza parowania**, identyfikator urządzenia i klucz parowania.
 3. Kliknij **Połącz**. Control Center łączy się z serwerem i otwiera skrzynkę obszaru roboczego.
+
+Jeśli masz link zaproszenia lub parowania, kliknij zamiast tego **Wklej link parowania** i wklej go. Okno dialogowe pokazuje, do którego serwera prowadzi link. Sprawdź go, a potem kliknij **Połącz**: samo wklejenie nigdy nie nawiązuje połączenia. Jeśli połączenie się nie powiedzie, okno dialogowe pozostaje otwarte z błędem i wszystkim, co wprowadzono.
 
 W aplikacji desktopowej, która już uruchamia własny serwer:
 
 1. Otwórz **Ustawienia → Serwer → Połączenie i status**.
-2. Kliknij **Dodaj serwer**. Wprowadź adres URL serwera (`wss://host:9030/rpc`) oraz albo kod zaproszenia, albo identyfikator urządzenia i klucz parowania. Przycisk przyrostka w polu adresu URL wykrywa instancje `cc_server` w Twojej sieci LAN lub tailnecie.
+2. Kliknij **Dodaj serwer**. Wprowadź adres URL serwera (`wss://host:9030/rpc`) oraz albo kod zaproszenia, albo, w sekcji **Użyj klucza parowania**, identyfikator urządzenia i klucz parowania. Przycisk przyrostka w polu adresu URL wykrywa instancje `cc_server` w Twojej sieci LAN lub tailnecie.
 3. Kliknij **Połącz**, a następnie **Przełącz** w wierszu nowego serwera.
 
 Przełączanie działa na żywo: aplikacja przebudowuje się wokół nowej sesji w miejscu,
@@ -61,11 +63,12 @@ szyfrowanej end-to-end; ta sama ochrona dotyczy loopbacku i przekaźnika.
 Build webowy jest zawsze zdalny.
 
 1. Otwórz [app.usectrl.dev](https://app.usectrl.dev) lub własną kopię builda webowego.
-2. Wprowadź adres URL serwera oraz albo kod zaproszenia, albo identyfikator urządzenia i klucz parowania.
-3. Klient łączy się z serwerem i renderuje ten sam interfejs co aplikacja desktopowa.
+2. Kliknij **Połącz z serwerem** i wprowadź adres URL serwera oraz albo kod zaproszenia, albo, w sekcji **Użyj klucza parowania**, identyfikator urządzenia i klucz parowania. **Wklej link parowania** przyjmuje zamiast tego link zaproszenia lub parowania.
+3. Kliknij **Połącz**. Klient łączy się z serwerem i renderuje ten sam interfejs co aplikacja desktopowa.
 
-Jeśli w adresie URL znajduje się bezpośredni link do parowania, pola są wstępnie
-wypełnione. Klucz parowania jedzie we **fragmencie** adresu URL, którego przeglądarki
+Jeśli w adresie URL znajduje się bezpośredni link do parowania, okno dialogowe
+połączenia otwiera się z wypełnionymi polami, więc możesz sprawdzić serwer przed
+kliknięciem **Połącz**. Klucz parowania jedzie we **fragmencie** adresu URL, którego przeglądarki
 nigdy nie wysyłają do serwera hostującego stronę. Traktuj link jak sekret i ufaj stronie
 serwującej klienta webowego: fragment nie chroni przed złośliwym kodem strony.
 

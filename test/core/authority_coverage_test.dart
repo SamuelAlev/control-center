@@ -99,6 +99,7 @@ void main() {
       'claude_accounts.list', 'connection.describe', 'connection.ping',
       'connectivity.status', 'github.serviceStatus', 'kimi.serviceStatus',
       'openai.serviceStatus', 'serviceStatus.getAll', 'sandbox.detect',
+      'changelog.get',
       'ide.detectEditors', 'process.detect', 'fonts.list',
       'gif.search', 'gif.trending', 'demo.repoStars',
       'models.voiceCatalog',

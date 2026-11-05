@@ -2,7 +2,7 @@
 title: Emparelhar um dispositivo
 description: Emparelhe seu telefone (ou um segundo navegador ou app de desktop) com o seu servidor do Control Center para acompanhar a frota remotamente.
 slug: pt-BR/manual/guias/emparelhar-dispositivo
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Este guia mostra como emparelhar um telefone com o Control Center, para você ler
@@ -41,11 +41,12 @@ ele (ex.: "Meu telefone"), escolha o tipo — **Navegador web**, **App de deskto
 ou **Telefone** — e clique em **Emparelhar**.
 
 - Para um **telefone**, um código QR aparece. Leia-o com a câmera do telefone, ou copie o link e abra-o em qualquer navegador. Ele aponta o app Remote para o seu servidor e carrega a credencial.
-- Para um **navegador** ou **desktop**, copie o link exibido (ou o id do dispositivo e a chave de emparelhamento) para o novo cliente. O link de um toque só é oferecido quando você emparelha a partir do cliente web, já que um binário de desktop não tem uma origem web a partir da qual montá-lo.
+- Para um **navegador** ou **desktop**, copie o link exibido (ou o id do dispositivo e a chave de emparelhamento) para o novo cliente. Abra o link em um navegador ou cole-o em **Colar um link de pareamento** no app de desktop. Quando você emparelha a partir do desktop, o link é montado com a URL do próprio servidor, então ele só aparece se o servidor tiver uma URL que outros dispositivos consigam alcançar.
 
 O QR do telefone e o link que `cc_server pair --client-url` imprime na CLI são
-**payloads diferentes e não são intercambiáveis**: o link da CLI preenche o
-formulário de conexão do cliente web, enquanto este QR carrega o descritor de
+**payloads diferentes e não são intercambiáveis**: o link da CLI preenche a
+caixa de diálogo de conexão do cliente web ou é colado no app de desktop, enquanto
+este QR carrega o descritor de
 conexão completo do servidor e a impressão digital de identidade para a PWA
 Remote.
 

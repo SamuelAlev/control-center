@@ -35,6 +35,11 @@ class FocusModeState {
   /// Whether the session is currently paused.
   bool get isPaused => pausedAt != null;
 
+  /// Whether this session silences non-urgent notifications: a session is
+  /// running AND the operator left "Block notifications" on. A session with it
+  /// switched off is a focus timer only.
+  bool get blocksNotifications => active && blockNotifications;
+
   /// Elapsed time since focus session start, accounting for pauses.
   Duration get elapsed {
     if (!active || sessionStartedAt == null) {

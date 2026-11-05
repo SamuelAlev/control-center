@@ -3,7 +3,6 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
-import 'package:control_center/features/settings/providers/adapter_preferences_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,7 +34,8 @@ class SpaceAdapterEnforcement {
 }
 
 /// The adapter enforcement in force for `spaceId`, or null while the answer is still
-/// unknown (no workspace, or participants/agents not loaded yet).
+/// unknown (no workspace, or participants/agents not loaded yet) or there is no
+/// agent in the space to run anything.
 /// A space can hold several agents on different adapters and a mode guarantee is only as
 /// good as the runner most able to break it.
 /// Reporting the strongest (or the first) would let one sandbox-only agent hide behind a
@@ -59,31 +59,28 @@ final spaceAdapterEnforcementProvider = Provider.autoDispose
       }
       final participants = participantsAsync.value ?? const [];
       final agents = agentsAsync.value ?? const <Agent>[];
-      final defaultAdapterId = ref.watch(defaultChatAdapterProvider);
 
       final agentIds = participants
           .where((p) => p.participantType == PrincipalType.agent)
           .map((p) => p.principalId)
           .toSet();
+      // No agent, no run: a conversation only starts once one is in it, so
+      // there is no guarantee to qualify yet.
+      if (agentIds.isEmpty) {
+        return null;
+      }
       final byId = {for (final a in agents) a.id: a};
 
-      final adapterIds = <String>{
-        for (final id in agentIds) ?(byId[id]?.adapterId ?? defaultAdapterId),
-      };
-      if (adapterIds.isEmpty && defaultAdapterId != null) {
-        adapterIds.add(defaultAdapterId);
-      }
-
-      final resolved = [
-        for (final id in adapterIds)
-          ?predefinedAdapters.where((a) => a.id == id).firstOrNull,
-      ];
-      // Nothing named an adapter, or nothing it named exists. Dispatch runs
-      // those on the built-in loop, so the badge reports the built-in loop —
-      // the roster is loaded by here, so this is a real answer, not a gap.
-      if (resolved.isEmpty) {
-        resolved.add(builtInAdapter);
-      }
+      // An agent with no runner of its own — or one naming an adapter that
+      // does not exist — runs on the built-in loop, exactly as dispatch
+      // resolves it.
+      final resolved = {
+        for (final id in agentIds)
+          predefinedAdapters
+                  .where((a) => a.id == byId[id]?.adapterId)
+                  .firstOrNull ??
+              builtInAdapter,
+      }.toList();
 
       resolved.sort(
         (a, b) => _enforcementRank(a).compareTo(_enforcementRank(b)),

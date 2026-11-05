@@ -2,7 +2,7 @@
 title: Instalare
 description: Folosește Control Center în browser sau instalează aplicația desktop, configurează un backend de agenți și alege unde rulează serverul.
 slug: ro-RO/manual/instalare
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center rulează în două moduri: ca **aplicație web** la
@@ -137,10 +137,11 @@ Primul pas al onboardingului este această conexiune. După aceea, același card
 
 Control Center este un client subțire peste un proces `cc_server` headless care deține baza de date și face toată treaba; [Implementare și clienți](/ro-RO/manual/concepte/implementare/) explică ce înseamnă această separare pentru desktop, web și telefon.
 
-La prima lansare, desktopul întreabă **„Cum ar trebui să ruleze Control Center?”**:
+La prima lansare, desktopul afișează **Bun venit în Control Center** și oferă trei variante de acces. Butonul de setări din colț schimbă limba și tema.
 
 - **Rulează în această aplicație**: desktopul pornește și supraveghează un `cc_server` pe această mașină și comunică cu el prin loopback. Nimic altceva de configurat. Aceasta este configurația pe care o presupune [pornirea rapidă](/ro-RO/manual/pornire-rapida/).
-- **Conectează-te la o instanță remote**: îndreaptă desktopul spre un `cc_server` care rulează în altă parte, cu URL-ul său WebSocket, un id de dispozitiv și fie o cheie de asociere, fie un cod de invitație de unică folosință. Acel server deține datele; acest desktop doar le afișează.
+- **Conectează-te la un server**: îndreaptă desktopul spre un `cc_server` care rulează în altă parte, cu URL-ul său WebSocket, apoi conectează-te prin autentificare unică dacă serverul o oferă, sau introdu un cod de invitație de unică folosință ori, la **Folosește o cheie de asociere**, un id de dispozitiv și o cheie de asociere. Acel server deține datele; acest desktop doar le afișează.
+- **Lipește un link de asociere**: lipește un link de invitație sau de asociere. Dialogul arată spre ce server duce linkul și se conectează doar când dai clic pe **Conectează**.
 
 Adaugă sau comută servere mai târziu în **Setări → Server → Conexiune și stare**. Comutarea se reconectează pe loc — fără repornire. Un browser nu poate rula un server, așa că clientul web este întotdeauna remote; vezi [Conectează-te la un server remote](/ro-RO/manual/ghiduri-practice/conectare-la-server-remote/).
 

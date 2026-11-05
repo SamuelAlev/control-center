@@ -1,8 +1,8 @@
 /// A model advertised by an ACP-compatible agent runner.
 ///
 /// In a full ACP integration these come from the `availableModels` field of
-/// the adapter's `session/new` response (Agent Client Protocol). Until the
-/// ACP transport is wired we ship a curated list keyed by adapter id.
+/// the adapter's `session/new` response (Agent Client Protocol). Claude
+/// Code's are read live from the installed CLI's own model list.
 ///
 /// Model traits — [contextWindow] and the [thinkingLevels] vocabulary — drive
 /// the agent form's auto-inference: picking a model pre-fills its context size

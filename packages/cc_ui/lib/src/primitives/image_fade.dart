@@ -30,6 +30,7 @@ class ImageFade extends StatefulWidget {
     this.excludeFromSemantics = false,
     this.semanticLabel,
     this.errorBuilder,
+    this.errorHidesPlaceholder = false,
   });
 
   /// The image to display. Changing it fades the new image over the previous one.
@@ -82,6 +83,12 @@ class ImageFade extends StatefulWidget {
   /// Builds the content shown when [image] fails. It fades in over whatever was
   /// already on screen, so give it an opaque background.
   final ImageFadeErrorBuilder? errorBuilder;
+
+  /// Stops painting [placeholder] once [errorBuilder] content is fully opaque.
+  /// Set it when the placeholder holds an image: at fractional tile edges the
+  /// error layer's antialiased coverage lets that image's colours fringe
+  /// through. The placeholder keeps its layout, so the box does not resize.
+  final bool errorHidesPlaceholder;
 
   @override
   State<ImageFade> createState() => _ImageFadeState();
@@ -260,12 +267,23 @@ class _ImageFadeState extends State<ImageFade> with TickerProviderStateMixin {
         ? null
         : _withOpacity(frontContent, _frontOpacity ?? kAlwaysCompleteAnimation);
 
+    final Widget? placeholder = widget.placeholder;
+    final bool covered =
+        resolver?.error == true && front != null && _controller.isCompleted;
+
     final Widget content = SizedBox(
       width: widget.width,
       height: widget.height,
       child: Stack(
         fit: StackFit.passthrough,
-        children: [?widget.placeholder, ?_fadeBack, ?front],
+        children: [
+          if (placeholder != null && widget.errorHidesPlaceholder)
+            Visibility.maintain(visible: !covered, child: placeholder)
+          else
+            ?placeholder,
+          ?_fadeBack,
+          ?front,
+        ],
       ),
     );
 

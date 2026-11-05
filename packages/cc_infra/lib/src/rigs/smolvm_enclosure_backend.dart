@@ -23,14 +23,14 @@ import 'package:path/path.dart' as p;
 
 /// The OCI image every exec (terminal) rig boots, pinned by digest.
 ///
-/// Ubuntu 24.04 — the same userland the old qcow2 exec image booted, so the
+/// Ubuntu 26.04 — the same userland the desktop qcow2 boots, so the
 /// enclosed terminal keeps `apt` and a glibc baseline. The stock image ships
 /// neither git nor curl; [smolvmExecInit] installs a GitHub-runner-style
 /// CLI toolset on first start (the machine's overlay persists it afterwards).
 /// The digest is the Docker Hub index digest, so one pin serves both arm64
 /// and x64 hosts; smolvm resolves it through its default registry.
 const String kSmolvmExecImage =
-    'ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac';
+    'ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c';
 
 /// The OCI image every browser rig boots, pinned by digest.
 ///
@@ -41,7 +41,7 @@ const String kSmolvmExecImage =
 /// that binary emit sound.
 const String kSmolvmDebianBrowserImage =
     'debian:trixie-slim'
-    '@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad';
+    '@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2';
 
 /// The Debian mirrors each browser guest reaches while its pack warms.
 ///
@@ -170,7 +170,7 @@ const String kSmolvmExecPackVariant = 'tools-v1';
 /// (for `python-is-python3`), and cmake/ninja/zstd. Matches the desktop
 /// qcow2's `COMMON_PACKAGES`. Excluded on purpose: language toolcaches,
 /// Docker, GUI/daemon packages, `pollinate`, the `ssh` metapackage
-/// (`openssh-client` only), and names Ubuntu 24.04 will not install
+/// (`openssh-client` only), and names Ubuntu 26.04 will not install
 /// (`netcat` → `netcat-openbsd`; `p7zip-rar` is multiverse).
 const List<String> kSmolvmExecPackages = [
   'acl',

@@ -2,7 +2,7 @@
 title: Homokozó-háttérrendszerek
 description: A homokozó-háttérrendszerek, alkalmazási helyeik, és minden értékobjektum, amelyet a homokozó-futtatókörnyezet használ.
 slug: hu-HU/kezikonyv/referencia/homokozo-hatterrendszerek
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Hogy egy futtatás homokozóba kerül-e, a gazdagéptől függ]
@@ -52,8 +52,8 @@ A generált profil **alapértelmezés szerint megengedő** (`(allow default)`), 
 
 - **Fájlrendszer-olvasás**: tiltott a titkos útvonalakra (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` és az olvasásmegtagadási halmaz többi tagja)
 - **Fájlrendszer-írás**: visszaállítva tiltásra, majd explicit alútvonal-engedélyek, a kötelezően tiltott útvonalak (shell rc-fájlok, `.git/hooks`, Claude-konfiguráció, védett checkoutok) egy írható gyökér belsejében is blokkolva. A `file-write-unlink` minden tiltott útvonalon és annak ősein tiltott, így egy átnevezés nem kerülheti meg az írási tiltást
-- **Folyamat**: `process-exec` tiltások a mindig veszélyes binárisokra, valamint blokk bárminek az írható könyvtárból való végrehajtására
-- **Hálózat**: a folyamaton belüli proxyportokra és a DNS-re korlátozva — a loopback nincs általánosan engedélyezve, és a Unix-socketek sem engedélyezettek. A proxyk érvényesítik a munkamenetenkénti domain-engedélylistát (lásd [Hálózati kimenő forgalom](#hálózati-kimenő-forgalom))
+- **Folyamat**: `process-exec` tiltások a mindig veszélyes binárisokra, valamint blokk bárminek az írható könyvtárból való végrehajtására. A felhasználói könyvtáradban lévő ismert eszköztelepítési fák (corepack-, npx- és `pnpm dlx`-gyorsítótárak, node-verziókezelők, Playwright-böngészők, rustup és cargo, Go, fvm és a pub-gyorsítótár, pyenv, uv és pipx, rbenv, sdkman, mise, asdf és `~/.local/bin`) ezen blokk alatt újra megnyílnak. A megosztott ideiglenes könyvtárak is blokkolva vannak. Helyette minden munkamenet kap egy privát `TMPDIR`-t a `/private/tmp` alatt, ahol futhatnak az általa épített programok (egy `go test` bináris, egy cargo-build). A mindig veszélyes binárisokra vonatkozó tiltások ezen engedélyek után alkalmazódnak
+- **Hálózat**: a folyamaton belüli proxyportokra és a DNS-re korlátozva — a loopback nincs általánosan engedélyezve, a TCP-figyelés tiltott. A Unix-socketek csak a munkamenet privát `TMPDIR`-jén belül engedélyezettek, ami olyan eszközöket fed le, mint a tsx és a Chrome, amelyek ott tartanak IPC-socketet; az SSH-ügynököd és a többi socket elérhetetlen marad. A proxyk érvényesítik a munkamenetenkénti domain-engedélylistát (lásd [Hálózati kimenő forgalom](#hálózati-kimenő-forgalom))
 - **Konfiguráció**: a profilok indításonként, a `SandboxSpec` alapján generálódnak
 
 Követelmények:

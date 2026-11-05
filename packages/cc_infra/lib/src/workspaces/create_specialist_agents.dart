@@ -5,8 +5,8 @@ import 'package:cc_domain/features/workspaces/domain/constants/specialist_agent_
 import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:uuid/uuid.dart';
 
-/// Seeds the default specialist agents (QA, Architect, Engineer, Librarian)
-/// into a workspace alongside the CEO.
+/// Seeds the default specialist agents (QA, Architect, Engineer, Librarian,
+/// Content synthesizer) into a workspace alongside the CEO.
 ///
 /// Idempotent: agents whose slug already exists in the workspace are left
 /// alone; their filesystem files are re-written so a stale workspace gets
@@ -37,7 +37,7 @@ class CreateSpecialistAgentsUseCase {
 
     final created = <Agent>[];
     for (final spec in defaultSpecialistAgents) {
-      final agent = await _seedOne(
+      final agent = await seedOne(
         spec: spec,
         workspaceId: workspaceId,
         ceoAgentId: ceoAgentId,
@@ -49,10 +49,17 @@ class CreateSpecialistAgentsUseCase {
     return created;
   }
 
-  Future<Agent> _seedOne({
+  /// Seeds the single specialist [spec] into [workspaceId], returning the
+  /// existing row when one already carries its slug.
+  ///
+  /// Rewrites the agent's AGENTS.md and skill links either way, so call it
+  /// only where that is wanted (workspace creation, or an agent that does not
+  /// exist yet). [ceoAgentId] null leaves the agent top-level, for a
+  /// workspace whose CEO was removed.
+  Future<Agent> seedOne({
     required DefaultSpecialistAgent spec,
     required String workspaceId,
-    required String ceoAgentId,
+    String? ceoAgentId,
     String? adapterId,
     String? modelId,
   }) async {
@@ -87,6 +94,7 @@ class CreateSpecialistAgentsUseCase {
       workspaceId: workspaceId,
       skills: AgentSkills(spec.skillSlugs),
       reportsTo: ceoAgentId,
+      persona: spec.persona,
       adapterId: adapterId,
       modelId: modelId,
       createdAt: DateTime.now(),

@@ -2,7 +2,7 @@
 title: Pasang
 description: Gunakan Control Center dalam penyemak imbas atau pasang apl desktop, sediakan bahagian belakang ejen dan pilih tempat pelayanannya berjalan.
 slug: ms-MY/manual-pengguna/pasang
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center berjalan dalam dua cara: sebagai **apl web** di
@@ -199,14 +199,19 @@ pangkalan data dan melakukan semua kerja;
 [Penerapan dan klien](/ms-MY/manual-pengguna/konsep/penerapan/) menerangkan apa maksud
 pemisahan itu bagi desktop, web dan telefon.
 
-Pada pelancaran pertama desktop bertanya **"Bagaimana Control Center patut berjalan?"**:
+Pada pelancaran pertama desktop memaparkan **Selamat datang ke Control Center** dan menawarkan
+tiga cara untuk bermula. Butang tetapan di penjuru menukar bahasa dan tema.
 
 - **Jalankan dalam apl ini**: desktop melahirkan dan mengawasi `cc_server` pada mesin ini dan
   bercakap dengannya melalui loopback. Tiada apa lagi untuk dikonfigurasikan. Inilah
   persediaan yang diandaikan oleh [mula pantas](/ms-MY/manual-pengguna/mula-pantas/).
-- **Sambung ke tika jauh**: halakan desktop ke `cc_server` yang berjalan di tempat lain
-  dengan URL WebSocket-nya, id peranti, dan sama ada kunci pasangan atau kod jemputan sekali
-  guna. Pelayan itu memiliki data; desktop ini hanya memaparkannya.
+- **Sambung ke pelayan**: halakan desktop ke `cc_server` yang berjalan di tempat lain
+  dengan URL WebSocket-nya, kemudian log masuk melalui daftar masuk tunggal jika pelayan
+  menawarkannya, atau masukkan kod jemputan sekali guna, atau id peranti dan kunci pasangan
+  di bawah **Guna kunci pasangan**. Pelayan itu memiliki data; desktop ini hanya
+  memaparkannya.
+- **Tampal pautan pasangan**: tampal pautan jemputan atau pasangan. Dialog menunjukkan pelayan
+  yang dituju oleh pautan itu dan hanya menyambung apabila anda mengklik **Sambung**.
 
 Tambah atau tukar pelayan kemudian di bawah **Tetapan → Pelayan → Sambungan & status**.
 Menukar menyambung semula di tempatnya — tiada permulaan semula. Penyemak imbas tidak boleh

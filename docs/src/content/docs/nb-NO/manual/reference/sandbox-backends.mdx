@@ -2,7 +2,7 @@
 title: Sandkasse-backender
 description: Sandkasse-backendene, hvor de brukes, og hvert verdiobjekt som sandkassekjøretiden bruker.
 slug: nb-NO/handbok/referanse/sandkasse-backender
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Hvorvidt en kjøring er sandkasseinnpakket, avhenger av verten]
@@ -61,8 +61,8 @@ Den genererte profilen er **tillatende som standard** (`(allow default)`) og skj
 
 - **Filsystemlesing**: nektet for de hemmelige stiene (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` og resten av lesenekt-settet)
 - **Filsystemskriving**: nullstilt til nekt, deretter eksplisitte tillatelser for understier, med de obligatoriske nekt-stiene (shell-rc-filer, `.git/hooks`, Claude-konfigurasjon, beskyttede utsjekkinger) blokkert selv inne i en skrivbar rot. `file-write-unlink` nektes på hver nektet sti og dens overordnede, så en omdøping ikke kan omgå en skrivenekt
-- **Prosess**: `process-exec`-nekter for de alltid-farlige binærene, pluss en blokkering av å kjøre noe fra en skrivbar katalog
-- **Nettverk**: begrenset til proxyportene i samme prosess pluss DNS — loopback er ikke tillatt i sin helhet, og Unix-sokler er ikke tillatt. Proxyene håndhever domenetillatelseslisten per økt (se [Utgående nettverkstrafikk](#utgående-nettverkstrafikk))
+- **Prosess**: `process-exec`-nekter for de alltid-farlige binærene, pluss en blokkering av å kjøre noe fra en skrivbar katalog. Kjente installasjonskataloger for verktøykjeder under hjemmekatalogen (corepack, cacher for `npx` og `pnpm dlx`, versjonsbehandlere for node, Playwright-nettlesere, rustup og cargo, Go, fvm og pub-cachen, pyenv, uv og pipx, rbenv, sdkman, mise, asdf og `~/.local/bin`) åpnes igjen under blokkeringen. Delte midlertidige kataloger blokkeres også. I stedet får hver økt en privat `TMPDIR` under `/private/tmp`, der programmer den bygger (en `go test`-binær, en cargo-bygging) kan kjøres. Alltid-farlige nekter brukes etter disse tillatelsene
+- **Nettverk**: begrenset til proxyportene i samme prosess pluss DNS — loopback er ikke tillatt i sin helhet, og TCP-lytting er nektet. Unix-sokler er tillatt bare innenfor øktens private `TMPDIR`, som dekker verktøy som tsx og Chrome som holder en IPC-socket der; SSH-agenten din og andre sokler forblir utilgjengelige. Proxyene håndhever domenetillatelseslisten per økt (se [Utgående nettverkstrafikk](#utgående-nettverkstrafikk))
 - **Konfigurasjon**: profiler genereres ved hver oppstart fra `SandboxSpec`
 
 Krav:

@@ -735,13 +735,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'O Control Center executa o próprio servidor nesta máquina e mantém seus dados localmente.';
 
   @override
-  String get serverModeRemote => 'Conectar a uma instância remota';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Conecte-se a um servidor do Control Center em execução em outro lugar. Seus dados ficam nesse servidor.';
-
-  @override
   String get serverRemoteUrl => 'URL do servidor';
 
   @override
@@ -965,13 +958,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Outros dispositivos não conseguem acessar este servidor diretamente, então um novo cliente não pode conectar. Defina a URL pública do servidor para emparelhar mais clientes.';
-
-  @override
-  String get serverSetupTitle => 'Como o Control Center deve ser executado?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'O Control Center precisa de um servidor que seja o dono dos seus dados. Execute um neste aplicativo ou conecte-se a uma instância em execução em outro lugar.';
 
   @override
   String get serverSetupRunLocal => 'Executar neste aplicativo';
@@ -3046,10 +3032,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Configurar identidades, prompts e habilidades dos agentes, e ver execuções.';
 
   @override
-  String get configureDefaultRunners =>
-      'Configure qual adaptador e modelo são usados para novas conversas e geração de títulos.';
-
-  @override
   String get configuredLabel => 'Configurado.';
 
   @override
@@ -3149,12 +3131,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get deactivate => 'Desativar';
-
-  @override
-  String get defaultChat => 'Chat padrão';
-
-  @override
-  String get defaultRunners => 'Executores padrão';
 
   @override
   String get delete => 'Excluir';
@@ -4471,6 +4447,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get notificationGroupMachines => 'Máquinas';
 
   @override
+  String get notificationSectionSound => 'Som';
+
+  @override
+  String get notificationSectionSchedule => 'Programação';
+
+  @override
+  String get notificationSectionEvents => 'Eventos';
+
+  @override
   String get notificationsMutedRepos => 'Repositórios silenciados';
 
   @override
@@ -5026,9 +5011,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'Escolher o idioma do aplicativo.';
-
-  @override
-  String get shortTask => 'Tarefa curta';
 
   @override
   String get showNativeNotifications =>
@@ -5618,10 +5600,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Minimizar para barra';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'Modo de foco ativo — toque para terminar';
 
   @override
   String get dismiss => 'Dispensar';
@@ -13059,25 +13037,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Ligar ao Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'Contacte um cc-server em execução por WebSocket. A sua chave permanece neste dispositivo.';
-
-  @override
-  String get webConnectServerLabel => 'Servidor';
-
-  @override
-  String get webConnectDeviceIdLabel => 'ID do dispositivo';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Chave de emparelhamento';
-
-  @override
-  String get webConnectPairingKeyHint => 'cole a PSK';
-
-  @override
   String get webConnectStayConnected => 'Manter a ligação neste dispositivo';
 
   @override
@@ -13119,11 +13078,12 @@ class AppLocalizationsPt extends AppLocalizations {
       'Opcional — deixe vazio e o modelo de títulos a nomeia automaticamente';
 
   @override
-  String get shortTaskOff => 'Desativado';
+  String get contentSynthesizerUnavailable =>
+      'O agente Content synthesizer não existe ou não tem um runner funcionando';
 
   @override
-  String get shortTaskUnavailable =>
-      'Escolha um modelo de tarefas curtas em Configurações → Adaptadores para usar isto';
+  String get conversationNeedsAgent =>
+      'Mencione um agente com @ para começar esta conversa';
 
   @override
   String get conversationTitleGenerate => 'Gerar';
@@ -13595,14 +13555,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Anexados à linha de comando do runner a cada inicialização.';
-
-  @override
-  String get defaultChatDescription =>
-      'Executa novas conversas e qualquer agente sem runner próprio.';
-
-  @override
-  String get shortTaskDescription =>
-      'Executa trabalhos rápidos em segundo plano, como títulos e resumos. Um modelo menor cabe aqui.';
 
   @override
   String get settingsStateFailed => 'Falhou';
@@ -14348,6 +14300,16 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Anexar ficheiros — ou solte-os aqui';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Expandir o editor ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Recolher o editor ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'Afinar o objetivo';
@@ -15521,6 +15483,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'Um agente está bloqueado por uma credencial';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Ainda aguardando: $title';
+  }
+
+  @override
   String get killTerminal => 'Encerrar terminal';
 
   @override
@@ -15980,6 +15947,83 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'A execução parou porque a credencial do provedor não funciona mais. Reconecte-o em Configurações → Provedores e tente o turno outra vez.';
+
+  @override
+  String get helpMenuLabel => 'Ajuda';
+
+  @override
+  String get helpWhatsNew => 'Novidades';
+
+  @override
+  String get helpReportProblem => 'Relatar um problema';
+
+  @override
+  String get helpCreateGitHubIssue => 'Criar uma issue no GitHub';
+
+  @override
+  String get changelogInstalled => 'Instalada';
+
+  @override
+  String get changelogGroupNew => 'Novo';
+
+  @override
+  String get changelogGroupImproved => 'Melhorado';
+
+  @override
+  String get changelogGroupFixed => 'Corrigido';
+
+  @override
+  String get changelogLoadFailed =>
+      'Não foi possível carregar as notas da versão.';
+
+  @override
+  String get changelogOpenWebsite => 'Abrir no site';
+
+  @override
+  String get connectWelcomeTitle => 'Boas-vindas ao Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Execute aqui ou conecte-se a um servidor que você já tem.';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'Conecte-se ao seu servidor para começar.';
+
+  @override
+  String get connectToServer => 'Conectar a um servidor';
+
+  @override
+  String get connectToServerIntro =>
+      'Digite o endereço de um servidor do Control Center.';
+
+  @override
+  String get connectUsePairingKey => 'Usar uma chave de pareamento';
+
+  @override
+  String get connectPasteLink => 'Colar um link de pareamento';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Cole o link de convite ou de pareamento que você recebeu.';
+
+  @override
+  String get connectPasteLinkLabel => 'Link de convite ou de pareamento';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Esse não é um link de convite ou de pareamento do Control Center. Copie o link inteiro e tente novamente.';
+
+  @override
+  String get connectPasteLinkTarget => 'Conecta a';
+
+  @override
+  String get focusModeEnd => 'Encerrar sessão de foco';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'Faltam $minutes min';
+  }
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -16026,11 +16070,15 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
   String get serverModeLocal => 'Executar nesta aplicação';
 
   @override
-  String get serverModeRemote => 'Ligar a uma instância remota';
+  String get serverRemotePairingKey => 'Chave de emparelhamento';
 
   @override
-  String get serverModeRemoteDescription =>
-      'Ligue-se a um servidor do Control Center em execução em outro lugar. Seus dados ficam nesse servidor.';
+  String get serverRemotePairingKeyHint =>
+      'Cole a chave de emparelhamento do servidor remoto';
+
+  @override
+  String get serverSetupInviteCodeHint =>
+      'Cole um código de convite de uso único (deixe vazio para usar uma chave de emparelhamento)';
 
   @override
   String get shutdownServiceMcpConnections => 'Ligações MCP';
@@ -16040,7 +16088,7 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get serverSharingDescription =>
-      'Torne este servidor acessível a partir dos seus outros dispositivos. Nada é exposto publicamente a menos que você ative um túnel abaixo. Os convites de pareamento incluem automaticamente os endereços atuais do servidor; crie-os nas definições do espaço de trabalho.';
+      'Torne este servidor acessível a partir dos seus outros dispositivos. Nada é exposto publicamente a menos que você ative um túnel abaixo. Os convites de emparelhamento incluem automaticamente os endereços atuais do servidor; crie-os nas definições do espaço de trabalho.';
 
   @override
   String get serverSharingUnavailable =>
@@ -16067,10 +16115,6 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
   @override
   String get pairServerUnreachable =>
       'Outros dispositivos não conseguem aceder a este servidor diretamente, então um novo cliente não pode ligar. Defina a URL pública do servidor para emparelhar mais clientes.';
-
-  @override
-  String get serverSetupSubtitle =>
-      'O Control Center precisa de um servidor que seja o dono dos seus dados. Execute um nesta aplicação ou ligue-se a uma instância em execução em outro lugar.';
 
   @override
   String get serverSetupRunLocal => 'Executar nesta aplicação';
@@ -16155,6 +16199,10 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get kbSearch => 'pesquisar';
+
+  @override
+  String get remoteControlAndDevicesSettingsDescription =>
+      'Emparelhe telemóveis e configure o servidor de controlo remoto.';
 
   @override
   String get diffSharingOffSubtitle =>
@@ -17137,8 +17185,21 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
       'Colaboradores em outras máquinas não poderão aceder a este servidor. Inicie um túnel (Definições → Integrações → Partilhar este servidor) ou ligue-se à sua rede para que utilizadores externos possam ligar-se.';
 
   @override
+  String get yourDevicesDescription =>
+      'Clientes emparelhados com a sua conta neste servidor.';
+
+  @override
+  String get noOwnDevices =>
+      'Nenhum dispositivo emparelhado com a sua conta ainda';
+
+  @override
   String revokeDeviceConfirm(String label) {
     return 'Revogar $label? Ele é desligado imediatamente e já não pode aceder a este servidor.';
+  }
+
+  @override
+  String devicePairedTime(String time) {
+    return 'Emparelhado $time';
   }
 
   @override
@@ -17768,4 +17829,43 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get ideQuickOpenNoRecent => 'Nenhum ficheiro aberto recentemente';
+
+  @override
+  String notificationWaitReminder(String title) {
+    return 'Ainda à espera: $title';
+  }
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Execute aqui ou ligue a um servidor que já tenha.';
+
+  @override
+  String get connectWelcomeSubtitleWeb => 'Ligue ao seu servidor para começar.';
+
+  @override
+  String get connectToServer => 'Ligar a um servidor';
+
+  @override
+  String get connectToServerIntro =>
+      'Introduza o endereço de um servidor do Control Center.';
+
+  @override
+  String get connectUsePairingKey => 'Usar uma chave de emparelhamento';
+
+  @override
+  String get connectPasteLink => 'Colar um link de emparelhamento';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Cole o link de convite ou de emparelhamento que recebeu.';
+
+  @override
+  String get connectPasteLinkLabel => 'Link de convite ou de emparelhamento';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Esse não é um link de convite ou de emparelhamento do Control Center. Copie o link inteiro e tente novamente.';
+
+  @override
+  String get connectPasteLinkTarget => 'Liga a';
 }

@@ -738,13 +738,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Control Center uruchamia własny serwer na tym komputerze i przechowuje Twoje dane lokalnie.';
 
   @override
-  String get serverModeRemote => 'Połącz ze zdalną instancją';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Połącz z serwerem Control Center działającym gdzie indziej. Twoje dane znajdują się na tym serwerze.';
-
-  @override
   String get serverRemoteUrl => 'Adres URL serwera';
 
   @override
@@ -966,13 +959,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Inne urządzenia nie mogą połączyć się z tym serwerem bezpośrednio, więc nowy klient nie może się połączyć. Ustaw publiczny adres URL serwera, aby sparować więcej klientów.';
-
-  @override
-  String get serverSetupTitle => 'Jak ma działać Control Center?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center potrzebuje serwera, który jest właścicielem Twoich danych. Uruchom go w tej aplikacji albo połącz się z instancją działającą gdzie indziej.';
 
   @override
   String get serverSetupRunLocal => 'Uruchom w tej aplikacji';
@@ -3067,10 +3053,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Konfiguruj tożsamości agentów, prompty, skille i przeglądaj uruchomienia.';
 
   @override
-  String get configureDefaultRunners =>
-      'Skonfiguruj, który adapter i model są używane dla nowych przestrzeni i generowania tytułów.';
-
-  @override
   String get configuredLabel => 'Skonfigurowano.';
 
   @override
@@ -3172,12 +3154,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get deactivate => 'Dezaktywuj';
-
-  @override
-  String get defaultChat => 'Domyślny czat';
-
-  @override
-  String get defaultRunners => 'Domyślne runnery';
 
   @override
   String get delete => 'Usuń';
@@ -4504,6 +4480,15 @@ class AppLocalizationsPl extends AppLocalizations {
   String get notificationGroupMachines => 'Maszyny';
 
   @override
+  String get notificationSectionSound => 'Dźwięk';
+
+  @override
+  String get notificationSectionSchedule => 'Harmonogram';
+
+  @override
+  String get notificationSectionEvents => 'Zdarzenia';
+
+  @override
   String get notificationsMutedRepos => 'Wyciszone repozytoria';
 
   @override
@@ -5068,9 +5053,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'Wybierz język aplikacji.';
-
-  @override
-  String get shortTask => 'Krótkie zadanie';
 
   @override
   String get showNativeNotifications =>
@@ -5661,10 +5643,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Zminimalizuj do paska';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'Tryb skupienia aktywny — dotknij, aby zakończyć';
 
   @override
   String get dismiss => 'Odrzuć';
@@ -13190,25 +13168,6 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Połącz z Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'Połącz się z działającym cc-serverem przez WebSocket. Twój klucz zostaje na tym urządzeniu.';
-
-  @override
-  String get webConnectServerLabel => 'Serwer';
-
-  @override
-  String get webConnectDeviceIdLabel => 'Identyfikator urządzenia';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Klucz parowania';
-
-  @override
-  String get webConnectPairingKeyHint => 'wklej PSK';
-
-  @override
   String get webConnectStayConnected => 'Pozostań połączonym na tym urządzeniu';
 
   @override
@@ -13252,11 +13211,12 @@ class AppLocalizationsPl extends AppLocalizations {
       'Opcjonalne — zostaw puste, a model tytułujący nazwie ją automatycznie';
 
   @override
-  String get shortTaskOff => 'Wyłączone';
+  String get contentSynthesizerUnavailable =>
+      'Brak agenta Content synthesizer albo nie ma on działającego runnera';
 
   @override
-  String get shortTaskUnavailable =>
-      'Aby tego używać, wybierz model krótkich zadań w Ustawienia → Adaptery';
+  String get conversationNeedsAgent =>
+      'Wspomnij agenta za pomocą @, aby rozpocząć tę rozmowę';
 
   @override
   String get conversationTitleGenerate => 'Generuj';
@@ -13726,14 +13686,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Doklejane do wiersza poleceń runnera przy każdym uruchomieniu.';
-
-  @override
-  String get defaultChatDescription =>
-      'Obsługuje nowe rozmowy i każdego agenta bez własnego runnera.';
-
-  @override
-  String get shortTaskDescription =>
-      'Obsługuje szybką pracę w tle, jak tytuły i streszczenia. Mniejszy model pasuje tutaj.';
 
   @override
   String get settingsStateFailed => 'Niepowodzenie';
@@ -14486,6 +14438,16 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Załącz pliki — albo upuść je tutaj';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Rozwiń edytor ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Zwiń edytor ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'Ostrzeż zadanie';
@@ -15667,6 +15629,11 @@ class AppLocalizationsPl extends AppLocalizations {
       'Agent jest zablokowany przez dane logowania';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Nadal czeka: $title';
+  }
+
+  @override
   String get killTerminal => 'Zakończ terminal';
 
   @override
@@ -16123,4 +16090,80 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Przebieg został zatrzymany, ponieważ dane uwierzytelniające dostawcy już nie działają. Połącz go ponownie w Ustawienia → Dostawcy, a następnie ponów turę.';
+
+  @override
+  String get helpMenuLabel => 'Pomoc';
+
+  @override
+  String get helpWhatsNew => 'Co nowego';
+
+  @override
+  String get helpReportProblem => 'Zgłoś problem';
+
+  @override
+  String get helpCreateGitHubIssue => 'Utwórz zgłoszenie w GitHubie';
+
+  @override
+  String get changelogInstalled => 'Zainstalowana';
+
+  @override
+  String get changelogGroupNew => 'Nowe';
+
+  @override
+  String get changelogGroupImproved => 'Ulepszone';
+
+  @override
+  String get changelogGroupFixed => 'Naprawione';
+
+  @override
+  String get changelogLoadFailed =>
+      'Nie udało się wczytać informacji o wydaniu.';
+
+  @override
+  String get changelogOpenWebsite => 'Otwórz w witrynie';
+
+  @override
+  String get connectWelcomeTitle => 'Witamy w Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Uruchom go tutaj lub połącz się z serwerem, który już masz.';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'Połącz się ze swoim serwerem, aby zacząć.';
+
+  @override
+  String get connectToServer => 'Połącz z serwerem';
+
+  @override
+  String get connectToServerIntro => 'Wpisz adres serwera Control Center.';
+
+  @override
+  String get connectUsePairingKey => 'Użyj klucza parowania';
+
+  @override
+  String get connectPasteLink => 'Wklej link parowania';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Wklej otrzymany link z zaproszeniem lub link parowania.';
+
+  @override
+  String get connectPasteLinkLabel => 'Link z zaproszeniem lub link parowania';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'To nie jest link z zaproszeniem ani link parowania Control Center. Skopiuj cały link i spróbuj ponownie.';
+
+  @override
+  String get connectPasteLinkTarget => 'Połączy z';
+
+  @override
+  String get focusModeEnd => 'Zakończ sesję skupienia';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'Pozostało $minutes min';
+  }
 }

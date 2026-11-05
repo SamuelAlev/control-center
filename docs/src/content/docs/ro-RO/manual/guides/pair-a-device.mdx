@@ -2,7 +2,7 @@
 title: Asociază un dispozitiv
 description: Asociază-ți telefonul (sau un al doilea browser ori desktop) cu serverul tău Control Center ca să poți urmări flota de la distanță.
 slug: ro-RO/manual/ghiduri-practice/asociaza-dispozitiv
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Acest ghid îți arată cum să asociezi un telefon cu Control Center, ca să poți citi
@@ -41,11 +41,11 @@ Apasă **Asociază un client nou** în antetul paginii, dă-i o etichetă (de ex
 **Telefon** — și apasă **Asociază**.
 
 - Pentru un **telefon**, apare un cod QR. Scanează-l cu camera telefonului sau copiază linkul și deschide-l în orice browser. Acesta îndreaptă aplicația Remote spre serverul tău și transportă credențialul.
-- Pentru un **browser** sau un **desktop**, copiază în noul client linkul afișat (sau id-ul dispozitivului și cheia de asociere). Linkul cu un singur clic este oferit doar când asociezi din clientul web, deoarece un binar desktop nu are origine web din care să-l construiască.
+- Pentru un **browser** sau un **desktop**, copiază în noul client linkul afișat (sau id-ul dispozitivului și cheia de asociere). Deschide linkul într-un browser sau lipește-l în **Lipește un link de asociere** în aplicația desktop. Când asociezi din desktop, linkul este construit din URL-ul propriu al serverului, așa că apare doar dacă serverul are unul accesibil altor dispozitive.
 
 Codul QR pentru telefon și linkul pe care `cc_server pair --client-url` îl afișează
 în CLI sunt **payload-uri diferite și nu sunt interschimbabile**: linkul din CLI
-completează formularul de conectare al clientului web, în timp ce acest cod QR
+completează dialogul de conectare al clientului web sau se lipește în aplicația desktop, în timp ce acest cod QR
 transportă descriptorul complet de conexiune al serverului și amprenta de
 identitate pentru PWA-ul Remote.
 

@@ -13,12 +13,29 @@ import UserNotifications
 ///   • `requestAuthorization` → triggers the one-time system prompt and
 ///     registers the app under System Settings → Notifications.
 ///   • `notify` → posts an immediate banner, stashing the click-through `route`
-///     in the request's `userInfo`.
+///     in the request's `userInfo`. One already delivered under the same
+///     identifier is replaced and alerts again (how a reminder re-raises a
+///     wait). `timeSensitive` sets the time-sensitive interruption level;
+///     `approvalId` adds Approve and Deny buttons.
+///   • `remove` → withdraws a delivered notification by identifier.
 ///
 /// Banners are presented even while the app is frontmost (the common case for
-/// Control Center) and a tap is forwarded back to Dart via `onNotificationClick`.
+/// Control Center). A tap is forwarded back to Dart via `onNotificationClick`,
+/// a button via `onNotificationAction`.
+///
+/// Time-sensitive delivery takes effect only when the app is signed with the
+/// `com.apple.developer.usernotifications.time-sensitive` entitlement. Without
+/// it macOS shows the notification at the normal level.
 class MacOsNotifier: NSObject, UNUserNotificationCenterDelegate {
+  private static let approvalCategory = "cc.agentApproval"
+  private static let approveAction = "cc.approve"
+  private static let denyAction = "cc.deny"
+
   private let channel: FlutterMethodChannel
+
+  /// The button titles last registered, so the category is re-registered only
+  /// when the app's language changes.
+  private var registeredLabels: (approve: String, deny: String)?
 
   init(messenger: FlutterBinaryMessenger) {
     channel = FlutterMethodChannel(
@@ -53,6 +70,13 @@ class MacOsNotifier: NSObject, UNUserNotificationCenterDelegate {
       result(nil)
     case "notify":
       notify(call.arguments as? [String: Any] ?? [:], result: result)
+    case "remove":
+      if let identifier = (call.arguments as? [String: Any])?["identifier"] as? String {
+        let center = UNUserNotificationCenter.current()
+        center.removeDeliveredNotifications(withIdentifiers: [identifier])
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+      }
+      result(nil)
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -66,16 +90,33 @@ class MacOsNotifier: NSObject, UNUserNotificationCenterDelegate {
     // The app plays its own sound via NotificationSoundService, so leave the
     // OS sound off to avoid a double chime.
     content.sound = nil
+    var userInfo: [String: Any] = [:]
     if let route = args["route"] as? String {
-      content.userInfo = ["route": route]
+      userInfo["route"] = route
     }
+    if args["timeSensitive"] as? Bool == true {
+      content.interruptionLevel = .timeSensitive
+    }
+    if let approvalId = args["approvalId"] as? String,
+      let approveLabel = args["approveLabel"] as? String,
+      let denyLabel = args["denyLabel"] as? String
+    {
+      registerApprovalCategory(approve: approveLabel, deny: denyLabel)
+      content.categoryIdentifier = MacOsNotifier.approvalCategory
+      userInfo["approvalId"] = approvalId
+    }
+    content.userInfo = userInfo
 
+    let center = UNUserNotificationCenter.current()
+    // Re-adding a delivered identifier only updates it in place. Removing it
+    // first makes a reminder alert again instead of changing silently.
+    center.removeDeliveredNotifications(withIdentifiers: [identifier])
     let request = UNNotificationRequest(
       identifier: identifier,
       content: content,
       trigger: nil  // deliver immediately
     )
-    UNUserNotificationCenter.current().add(request) { error in
+    center.add(request) { error in
       DispatchQueue.main.async {
         if let error = error {
           NSLog("MacOsNotifier: add() failed: \(error)")
@@ -89,6 +130,34 @@ class MacOsNotifier: NSObject, UNUserNotificationCenterDelegate {
         }
       }
     }
+  }
+
+  /// Registers the Approve/Deny category with the current localized titles.
+  /// Neither button opens the app: the answer goes to the server in the
+  /// background, as the in-app card's does.
+  private func registerApprovalCategory(approve: String, deny: String) {
+    if let labels = registeredLabels, labels == (approve, deny) {
+      return
+    }
+    let category = UNNotificationCategory(
+      identifier: MacOsNotifier.approvalCategory,
+      actions: [
+        UNNotificationAction(
+          identifier: MacOsNotifier.approveAction,
+          title: approve,
+          options: [.authenticationRequired]
+        ),
+        UNNotificationAction(
+          identifier: MacOsNotifier.denyAction,
+          title: deny,
+          options: [.destructive]
+        ),
+      ],
+      intentIdentifiers: [],
+      options: []
+    )
+    UNUserNotificationCenter.current().setNotificationCategories([category])
+    registeredLabels = (approve, deny)
   }
 
   // Present banners even while the app is in the foreground.
@@ -106,8 +175,25 @@ class MacOsNotifier: NSObject, UNUserNotificationCenterDelegate {
     didReceive response: UNNotificationResponse,
     withCompletionHandler completionHandler: @escaping () -> Void
   ) {
-    if let route = response.notification.request.content.userInfo["route"] as? String {
-      channel.invokeMethod("onNotificationClick", arguments: ["route": route])
+    let request = response.notification.request
+    let userInfo = request.content.userInfo
+    switch response.actionIdentifier {
+    case MacOsNotifier.approveAction, MacOsNotifier.denyAction:
+      if let approvalId = userInfo["approvalId"] as? String {
+        let action = response.actionIdentifier == MacOsNotifier.approveAction ? "approve" : "deny"
+        channel.invokeMethod(
+          "onNotificationAction",
+          arguments: ["action": action, "approvalId": approvalId]
+        )
+      }
+      // Answered: it must not stay in the list with buttons that now do nothing.
+      center.removeDeliveredNotifications(withIdentifiers: [request.identifier])
+    case UNNotificationDefaultActionIdentifier:
+      if let route = userInfo["route"] as? String {
+        channel.invokeMethod("onNotificationClick", arguments: ["route": route])
+      }
+    default:
+      break
     }
     completionHandler()
   }

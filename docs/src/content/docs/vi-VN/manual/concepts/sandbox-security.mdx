@@ -2,7 +2,7 @@
 title: Sandbox và bảo mật
 description: Điều gì thực sự ràng buộc một agent trong Control Center hiện nay, sandbox hệ điều hành vươn tới đâu và những ranh giới nào vẫn đứng vững trên một máy chủ không có backend.
 slug: vi-VN/so-tay/khai-niem/sandbox-va-bao-mat
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Sandbox hệ điều hành vươn tới đâu và không vươn tới đâu]
@@ -215,7 +215,7 @@ thành từ chối cùng những lệnh cho phép tường minh đặt lên trê
 mọi đường dẫn bị từ chối và các tổ tiên của nó để một lệnh rename không thể lách
 qua một lệnh từ chối ghi, từ chối exec với các tệp nhị phân luôn nguy hiểm và với
 bất cứ thứ gì được sao chép vào một thư mục có thể ghi, và mạng bị giới hạn ở
-các cổng proxy loopback cùng DNS.
+các cổng proxy loopback cùng DNS. Các công cụ được cài đặt trong thư mục home của bạn (pnpm do corepack cài, trình quản lý phiên bản node, trình duyệt Playwright, rustup, fvm, uv và tương tự) vẫn chạy được bên trong khối exec đó, nên agent có thể dùng chúng mà không cần cách lách. Quy tắc từ chối cho các tệp nhị phân luôn nguy hiểm vẫn áp dụng bên trong chúng. Mỗi phiên cũng được cấp một `TMPDIR` riêng. Đây là thư mục tạm duy nhất mà agent có thể chạy chương trình do chính nó build hoặc mở socket Unix.
 
 Hệ quả thực tế: trên Linux, tầm nhìn của agent về hệ thống tệp bị thu hẹp; trên
 macOS, agent vẫn có thể _đọc_ phần lớn máy chủ và các bản checkout đã đăng ký của

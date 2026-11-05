@@ -10,80 +10,41 @@ void main() {
   });
 
   group('AdapterPreferences', () {
-    // -- Default Chat Adapter --
-
     test(
-      'getDefaultChatAdapterId returns null initially',
+      'adapter args fall back to the built-in default',
       timeout: const Timeout.factor(2),
       () {
-        expect(prefs.getDefaultChatAdapterId(), isNull);
+        expect(
+          prefs.getAdapterArgs('claude-code'),
+          defaultAdapterArgs['claude-code'],
+        );
+        expect(prefs.getAdapterArgs('pi'), isNull);
       },
     );
 
     test(
-      'setDefaultChatAdapterId persists value',
+      'setAdapterArgs persists per adapter',
       timeout: const Timeout.factor(2),
       () async {
-        await prefs.setDefaultChatAdapterId('claude-code');
-        expect(prefs.getDefaultChatAdapterId(), 'claude-code');
+        await prefs.setAdapterArgs('pi', '--fast');
+        expect(prefs.getAdapterArgs('pi'), '--fast');
+        expect(
+          prefs.getAdapterArgs('claude-code'),
+          defaultAdapterArgs['claude-code'],
+        );
       },
     );
 
     test(
-      'setDefaultChatAdapterId with null removes',
+      'clearing adapter args restores the default',
       timeout: const Timeout.factor(2),
       () async {
-        await prefs.setDefaultChatAdapterId('claude-code');
-        await prefs.setDefaultChatAdapterId(null);
-        expect(prefs.getDefaultChatAdapterId(), isNull);
-      },
-    );
-
-    // -- Default Chat Model --
-
-    test(
-      'getDefaultChatModelId returns null initially',
-      timeout: const Timeout.factor(2),
-      () {
-        expect(prefs.getDefaultChatModelId(), isNull);
-      },
-    );
-
-    test(
-      'setDefaultChatModelId persists value',
-      timeout: const Timeout.factor(2),
-      () async {
-        await prefs.setDefaultChatModelId('anthropic/claude-opus-4-7');
-        expect(prefs.getDefaultChatModelId(), 'anthropic/claude-opus-4-7');
-      },
-    );
-
-    test(
-      'setDefaultChatModelId with null removes',
-      timeout: const Timeout.factor(2),
-      () async {
-        await prefs.setDefaultChatModelId('model-a');
-        await prefs.setDefaultChatModelId(null);
-        expect(prefs.getDefaultChatModelId(), isNull);
-      },
-    );
-
-    // -- Independence --
-
-    test(
-      'chat adapter and model are independent',
-      timeout: const Timeout.factor(2),
-      () async {
-        await prefs.setDefaultChatAdapterId('chat-adapter');
-        await prefs.setDefaultChatModelId('chat-model');
-
-        expect(prefs.getDefaultChatAdapterId(), 'chat-adapter');
-        expect(prefs.getDefaultChatModelId(), 'chat-model');
-
-        // Clearing one doesn't affect others
-        await prefs.setDefaultChatAdapterId(null);
-        expect(prefs.getDefaultChatAdapterId(), isNull);
-        expect(prefs.getDefaultChatModelId(), 'chat-model');
+        await prefs.setAdapterArgs('claude-code', '--verbose');
+        await prefs.setAdapterArgs('claude-code', null);
+        expect(
+          prefs.getAdapterArgs('claude-code'),
+          defaultAdapterArgs['claude-code'],
+        );
       },
     );
   });

@@ -2,7 +2,7 @@
 title: Spravujte adaptéry a modely
 description: Připojte poskytovatele modelů, vyberte model, na kterém agent běží, a zkontrolujte, která CLI runnerů má hostitel serveru.
 slug: cs-CZ/prirucka/navody/adaptery
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Tento návod ukazuje, jak připojit poskytovatele modelů a vybrat, na čem agent
@@ -91,10 +91,10 @@ záloh oddělený `|`. Při záloze se náklady účtují podle modelu, který t
 skutečně obsloužil, ne podle toho, o který jste požádali.
 
 :::note[Agent bez adaptéru běží na vestavěné smyčce]
-Každý pracovní prostor založí pět agentů, CEO a `qa`, `architect`, `engineer`
-a `librarian`, bez adaptéru a bez modelu. Odeslání spadne zpět na
-**Control Center (built-in)**, ne na nastavení **Výchozí runnery** na této
-stránce. To je preference klienta, kterou cesta odeslání nikdy nečte. Záznam
+Každý pracovní prostor založí šest agentů, CEO a `qa`, `architect`, `engineer`,
+`librarian` a `content-synthesizer`, bez adaptéru a bez modelu. Odeslání spadne
+zpět na **Control Center (built-in)**; pracovní prostor ani zařízení nemá výchozí
+runner. Záznam
 běhu u těchto běhů zapíše `cc-harness`, takže přepis pojmenuje, co skutečně
 běželo.
 
@@ -105,9 +105,15 @@ Anthropic, a jinak spadne s `No credential for provider "anthropic"`.
 Dokončení kroku s adaptérem v úvodním nastavení zpětně doplní **každého**
 agenta, kterému pořád chybí adaptér nebo model, CEO i specialisty, ve všech
 pracovních prostorech, které v tu chvíli existují, dvojicí, kterou jste vybrali.
-Pracovní prostory vytvořené později pořád založí všech pět bez nastavení.
+Pracovní prostory vytvořené později pořád založí všech šest bez nastavení.
 Adaptér a model nastavte výslovně u každého agenta, kterého chcete používat.
 :::
+
+## Přizpůsobte názvy a shrnutí
+
+Agent **Content synthesizer** píše text, který kolem konverzace generuje Control Center: její název, odpovědi na `/btw`, dokumenty `/handoff` a rozhovor k cíli `/goal`. Pokaždé spustí jedno dokončení bez nástrojů, na vlastním adaptéru a modelu, takže mu dejte malý a rychlý model.
+
+Jeho **Persona** upravte v **Nastavení → Pracovní prostor → Agenti**, když chcete změnit, jak ten text zní: délku názvu, jazyk, tón, příklady, které následuje. Formát odpovědi, který každá funkce zpracovává (jednořádkový název, sekce cíle), je pevný a použije se až po vaší personě. Agenta smažte, když chcete tyto funkce vypnout; nebude znovu založen.
 
 ## Nainstalujte CLI runneru
 

@@ -2,7 +2,7 @@
 title: Administrer adaptere og modeller
 description: Koble til modellleverandører, velg modellen en agent kjører på, og sjekk hvilke kjører-CLI-er som finnes på serververten.
 slug: nb-NO/handbok/slik-gjor-du/adaptere
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Denne veiledningen viser deg hvordan du kobler til modellleverandører og velger
@@ -96,10 +96,10 @@ kan ha en reservekjede atskilt med `|`. Ved en reservekjede beregnes kostnaden u
 fra modellen som faktisk betjente turen, ikke den du ba om.
 
 :::note[En agent uten adapter kjører på den innebygde løkken]
-Hvert arbeidsområde opprettes med fem agenter — en CEO pluss `qa`, `architect`,
-`engineer` og `librarian` — uten adapter og uten modell. Utsending faller tilbake
-på **Control Center (built-in)**, ikke på innstillingen **Standardkjørere** på
-denne siden, som er en klientinnstilling utsendingsløypen aldri leser.
+Hvert arbeidsområde opprettes med seks agenter — en CEO pluss `qa`, `architect`,
+`engineer`, `librarian` og `content-synthesizer` — uten adapter og uten modell.
+Utsending faller tilbake på **Control Center (built-in)**; det finnes ingen
+standardkjører for arbeidsområdet eller enheten.
 Kjøreloggen registrerer `cc-harness` for disse kjøringene, slik at
 transkripsjonen navngir det som faktisk kjørte.
 
@@ -110,9 +110,15 @@ Anthropic-konto, og feiler ellers med `No credential for provider "anthropic"`.
 Når du fullfører adaptertrinnet i oppstartsveiledningen, etteroppdateres **hver**
 agent som fortsatt mangler adapter eller modell — CEO og spesialister, i alle
 arbeidsområder som finnes i det øyeblikket — med paret du valgte. Arbeidsområder
-som opprettes senere, får fortsatt alle fem uten konfigurasjon. Angi adapteren og
+som opprettes senere, får fortsatt alle seks uten konfigurasjon. Angi adapteren og
 modellen eksplisitt for hver agent du har tenkt å bruke.
 :::
+
+## Tilpass titler og sammendrag
+
+Agenten **Content synthesizer** skriver teksten Control Center genererer rundt en samtale: tittelen, svar på `/btw`, `/handoff`-dokumenter og `/goal`-målintervjuet. Den kjører én fullføring uten verktøy hver gang, med egen adapter og modell, så gi den en liten, rask modell.
+
+Rediger **persona** til agenten i **Innstillinger → Arbeidsområde → Agenter** for å endre hvordan teksten leses — tittellengde, språk, tone og eksemplene den følger. Svarformatet hver funksjon tolker (en tittel på én linje, målets seksjoner) er fast og brukes etter personaen din. Slett agenten for å slå av disse funksjonene; den blir ikke gjenskapt automatisk.
 
 ## Installer en kjører-CLI
 

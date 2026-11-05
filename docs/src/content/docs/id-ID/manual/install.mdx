@@ -2,7 +2,7 @@
 title: Instal
 description: Gunakan Control Center di peramban atau instal aplikasi desktop, siapkan backend agen, dan pilih tempat server-nya berjalan.
 slug: id-ID/panduan-pengguna/instal
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center berjalan dengan dua cara: sebagai **aplikasi web** di
@@ -137,10 +137,11 @@ Langkah pertama onboarding adalah koneksi ini. Setelah itu, kartu yang sama menj
 
 Control Center adalah klien tipis di atas proses `cc_server` headless yang memiliki basis data dan mengerjakan semua pekerjaan; [Deployment dan klien](/id-ID/panduan-pengguna/konsep/deployment/) menjelaskan arti pemisahan itu bagi desktop, web, dan ponsel.
 
-Saat pertama kali diluncurkan, aplikasi desktop menanyakan **"Bagaimana Control Center harus dijalankan?"**:
+Saat pertama kali diluncurkan, aplikasi desktop menampilkan **Selamat datang di Control Center** dan menawarkan tiga cara untuk memulai. Tombol pengaturan di sudut mengubah bahasa dan tema.
 
 - **Jalankan di aplikasi ini**: desktop memunculkan dan mengawasi `cc_server` di mesin ini serta berbicara dengannya melalui loopback. Tidak ada lagi yang perlu dikonfigurasi. Inilah penyiapan yang diasumsikan [mulai cepat](/id-ID/panduan-pengguna/mulai-cepat/).
-- **Hubungkan ke instans jarak jauh**: arahkan desktop ke `cc_server` yang berjalan di tempat lain dengan URL WebSocket-nya, id perangkat, dan kunci pairing atau kode undangan sekali pakai. Server itulah yang memiliki data; desktop ini hanya menampilkannya.
+- **Hubungkan ke server**: arahkan desktop ke `cc_server` yang berjalan di tempat lain dengan URL WebSocket-nya, lalu gunakan masuk tunggal jika server menawarkannya, atau masukkan kode undangan sekali pakai, atau id perangkat dan kunci pairing di bawah **Gunakan kunci pairing**. Server itulah yang memiliki data; desktop ini hanya menampilkannya.
+- **Tempel tautan pairing**: tempel tautan undangan atau pairing. Dialog menampilkan server yang dituju tautan itu dan baru terhubung saat Anda mengklik **Hubungkan**.
 
 Tambahkan atau alihkan server nanti di **Pengaturan → Server → Koneksi & status**. Pengalihan akan terhubung kembali di tempat — tanpa mulai ulang. Peramban tidak dapat menjalankan server, jadi klien web selalu jarak jauh; lihat [Hubungkan ke server jarak jauh](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh/).
 

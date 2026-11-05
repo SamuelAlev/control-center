@@ -725,13 +725,6 @@ class AppLocalizationsTh extends AppLocalizations {
       'Control Center รันเซิร์ฟเวอร์ของตัวเองบนเครื่องนี้ และเก็บข้อมูลในเครื่อง';
 
   @override
-  String get serverModeRemote => 'เชื่อมต่ออินสแตนซ์ระยะไกล';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'เชื่อมต่อเซิร์ฟเวอร์ Control Center ที่รันที่อื่น ข้อมูลของคุณอยู่บนเซิร์ฟเวอร์นั้น';
-
-  @override
   String get serverRemoteUrl => 'URL ของเซิร์ฟเวอร์';
 
   @override
@@ -951,13 +944,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'อุปกรณ์อื่นเข้าถึงเซิร์ฟเวอร์นี้โดยตรงไม่ได้ จึงเชื่อมต่อไคลเอนต์ใหม่ไม่ได้ ตั้ง URL สาธารณะของเซิร์ฟเวอร์เพื่อจับคู่ไคลเอนต์เพิ่ม';
-
-  @override
-  String get serverSetupTitle => 'Control Center ควรรันอย่างไร?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center ต้องมีเซิร์ฟเวอร์ที่เป็นเจ้าของข้อมูลของคุณ รันในแอปนี้ หรือเชื่อมต่ออินสแตนซ์ที่รันที่อื่น';
 
   @override
   String get serverSetupRunLocal => 'รันในแอปนี้';
@@ -3003,10 +2989,6 @@ class AppLocalizationsTh extends AppLocalizations {
       'กำหนดตัวตน พรอมต์ สกิลของเอเจนต์ และดูรัน';
 
   @override
-  String get configureDefaultRunners =>
-      'กำหนดอะแดปเตอร์และโมเดลที่ใช้กับสเปซใหม่และการสร้างชื่อ';
-
-  @override
   String get configuredLabel => 'ตั้งค่าแล้ว';
 
   @override
@@ -3105,12 +3087,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get deactivate => 'ปิดใช้';
-
-  @override
-  String get defaultChat => 'แชทเริ่มต้น';
-
-  @override
-  String get defaultRunners => 'ตัวรันเริ่มต้น';
 
   @override
   String get delete => 'ลบ';
@@ -4401,6 +4377,15 @@ class AppLocalizationsTh extends AppLocalizations {
   String get notificationGroupMachines => 'เครื่อง';
 
   @override
+  String get notificationSectionSound => 'เสียง';
+
+  @override
+  String get notificationSectionSchedule => 'ตารางเวลา';
+
+  @override
+  String get notificationSectionEvents => 'เหตุการณ์';
+
+  @override
   String get notificationsMutedRepos => 'รีโพสิทอรีที่ปิดเสียง';
 
   @override
@@ -4951,9 +4936,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'เลือกภาษาของแอป';
-
-  @override
-  String get shortTask => 'งานสั้น';
 
   @override
   String get showNativeNotifications =>
@@ -5534,9 +5516,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'ย่อเป็นแถบ';
-
-  @override
-  String get focusModeActiveTooltip => 'โหมดโฟกัสกำลังทำงาน — แตะเพื่อจบ';
 
   @override
   String get dismiss => 'ปิด';
@@ -12879,25 +12858,6 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'เชื่อมต่อ Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'โทรหา cc-server ที่กำลังรันผ่าน WebSocket คีย์ของคุณอยู่บนอุปกรณ์นี้';
-
-  @override
-  String get webConnectServerLabel => 'เซิร์ฟเวอร์';
-
-  @override
-  String get webConnectDeviceIdLabel => 'ID อุปกรณ์';
-
-  @override
-  String get webConnectPairingKeyLabel => 'คีย์จับคู่';
-
-  @override
-  String get webConnectPairingKeyHint => 'วาง PSK';
-
-  @override
   String get webConnectStayConnected => 'เชื่อมต่อต่อไปบนอุปกรณ์นี้';
 
   @override
@@ -12939,11 +12899,12 @@ class AppLocalizationsTh extends AppLocalizations {
       'ไม่บังคับ — เว้นว่างแล้วโมเดลชื่อจะตั้งให้อัตโนมัติ';
 
   @override
-  String get shortTaskOff => 'ปิด';
+  String get contentSynthesizerUnavailable =>
+      'ไม่มีเอเจนต์ Content synthesizer หรือไม่มีตัวรันที่ใช้งานได้';
 
   @override
-  String get shortTaskUnavailable =>
-      'เลือกโมเดลสำหรับงานสั้นในการตั้งค่า → อะแดปเตอร์เพื่อใช้สิ่งนี้';
+  String get conversationNeedsAgent =>
+      'กล่าวถึงเอเจนต์ด้วย @ เพื่อเริ่มการสนทนานี้';
 
   @override
   String get conversationTitleGenerate => 'สร้าง';
@@ -13404,14 +13365,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'ต่อท้ายบรรทัดคำสั่งของตัวรันทุกครั้งที่เปิดใช้';
-
-  @override
-  String get defaultChatDescription =>
-      'รันการสนทนาใหม่และเอเจนต์ที่ไม่มีตัวรันของตัวเอง';
-
-  @override
-  String get shortTaskDescription =>
-      'รันงานเบื้องหลังเร็ว เช่น ชื่อและสรุป โมเดลเล็กกว่าเหมาะที่นี่';
 
   @override
   String get settingsStateFailed => 'ล้มเหลว';
@@ -14146,6 +14099,16 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'แนบไฟล์ — หรือวางที่นี่';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'ขยายตัวแก้ไข ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'ย่อตัวแก้ไข ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'ทำให้วัตถุประสงค์คมขึ้น';
@@ -15293,6 +15256,11 @@ class AppLocalizationsTh extends AppLocalizations {
       'เอเจนต์ติดขัดเพราะข้อมูลรับรอง';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'ยังรออยู่: $title';
+  }
+
+  @override
   String get killTerminal => 'ปิดเทอร์มินัล';
 
   @override
@@ -15751,4 +15719,78 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'การทำงานหยุดลงเพราะข้อมูลรับรองของผู้ให้บริการใช้ไม่ได้อีกต่อไป เชื่อมต่อใหม่ในการตั้งค่า → ผู้ให้บริการ แล้วลองรอบนี้ใหม่';
+
+  @override
+  String get helpMenuLabel => 'ความช่วยเหลือ';
+
+  @override
+  String get helpWhatsNew => 'มีอะไรใหม่';
+
+  @override
+  String get helpReportProblem => 'รายงานปัญหา';
+
+  @override
+  String get helpCreateGitHubIssue => 'สร้าง issue บน GitHub';
+
+  @override
+  String get changelogInstalled => 'ติดตั้งแล้ว';
+
+  @override
+  String get changelogGroupNew => 'ใหม่';
+
+  @override
+  String get changelogGroupImproved => 'ปรับปรุง';
+
+  @override
+  String get changelogGroupFixed => 'แก้ไขแล้ว';
+
+  @override
+  String get changelogLoadFailed => 'โหลดบันทึกประจำรุ่นไม่ได้';
+
+  @override
+  String get changelogOpenWebsite => 'เปิดในเว็บไซต์';
+
+  @override
+  String get connectWelcomeTitle => 'ยินดีต้อนรับสู่ Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'เรียกใช้ที่นี่ หรือเชื่อมต่อกับเซิร์ฟเวอร์ที่คุณมีอยู่แล้ว';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'เชื่อมต่อกับเซิร์ฟเวอร์ของคุณเพื่อเริ่มต้น';
+
+  @override
+  String get connectToServer => 'เชื่อมต่อกับเซิร์ฟเวอร์';
+
+  @override
+  String get connectToServerIntro => 'ป้อนที่อยู่ของเซิร์ฟเวอร์ Control Center';
+
+  @override
+  String get connectUsePairingKey => 'ใช้คีย์จับคู่';
+
+  @override
+  String get connectPasteLink => 'วางลิงก์จับคู่';
+
+  @override
+  String get connectPasteLinkIntro => 'วางลิงก์เชิญหรือลิงก์จับคู่ที่คุณได้รับ';
+
+  @override
+  String get connectPasteLinkLabel => 'ลิงก์เชิญหรือลิงก์จับคู่';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'นี่ไม่ใช่ลิงก์เชิญหรือลิงก์จับคู่ของ Control Center คัดลอกลิงก์ทั้งหมดแล้วลองอีกครั้ง';
+
+  @override
+  String get connectPasteLinkTarget => 'เชื่อมต่อกับ';
+
+  @override
+  String get focusModeEnd => 'จบเซสชันโฟกัส';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'เหลือ $minutes นาที';
+  }
 }

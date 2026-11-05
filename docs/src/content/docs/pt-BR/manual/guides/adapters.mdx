@@ -2,7 +2,7 @@
 title: Gerenciar adaptadores e modelos
 description: Conecte provedores de modelos, escolha o modelo em que um agente é executado e verifique quais CLIs de executor de agentes o host do servidor tem.
 slug: pt-BR/manual/guias/adaptadores
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Este guia mostra como conectar provedores de modelos e escolher em que um agente
@@ -96,10 +96,10 @@ calculado com base no modelo que de fato atendeu o turno, e não no que você
 pediu.
 
 :::note[Um agente sem adaptador é executado no loop integrado]
-Cada espaço de trabalho cria cinco agentes — um CEO e mais `qa`, `architect`,
-`engineer` e `librarian` — sem adaptador e sem modelo. O despacho recorre a
-**Control Center (built-in)**, e não à configuração **Executores padrão** desta
-página, que é uma preferência do cliente que o caminho de despacho nunca lê. O
+Cada espaço de trabalho cria seis agentes — um CEO e mais `qa`, `architect`,
+`engineer`, `librarian` e `content-synthesizer` — sem adaptador e sem modelo. O
+despacho recorre a **Control Center (built-in)**; não há executor padrão para o
+espaço de trabalho nem para o dispositivo. O
 log de execução registra `cc-harness` para essas execuções, de modo que a
 transcrição nomeia o que realmente foi executado.
 
@@ -111,10 +111,16 @@ uma conta Anthropic; caso contrário, falha com
 Concluir a etapa de adaptador da configuração inicial aplica retroativamente a
 **todos** os agentes que ainda não têm adaptador nem modelo — CEO e
 especialistas, em cada espaço de trabalho existente naquele momento — o par que
-você escolheu. Espaços de trabalho criados depois ainda inicializam os cinco sem
+você escolheu. Espaços de trabalho criados depois ainda inicializam os seis sem
 configuração. Defina o adaptador e o modelo explicitamente em cada agente que
 você pretende usar.
 :::
+
+## Personalizar títulos e resumos
+
+O agente **Content synthesizer** escreve o texto que o Control Center gera em torno de uma conversa: o título, as respostas de `/btw`, os documentos de `/handoff` e a entrevista de objetivo de `/goal`. Ele executa uma única conclusão sem ferramentas a cada vez, com o próprio adaptador e modelo, então dê a ele um modelo pequeno e rápido.
+
+Edite a **persona** dele em **Configurações → Espaço de trabalho → Agentes** para mudar como esse texto soa: tamanho dos títulos, idioma, tom e os exemplos que ele segue. O formato de resposta que cada recurso interpreta (um título em uma linha, as seções do objetivo) é fixo e aplicado depois da sua persona. Exclua o agente para desligar esses recursos; ele não é recriado automaticamente.
 
 ## Instalar a CLI de um executor
 

@@ -1,27 +1,18 @@
-import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
 import 'package:cc_infra/src/dispatch/guided_goal_service.dart';
+import 'package:cc_infra/src/messaging/content_synthesizer_resolver.dart';
 import 'package:test/test.dart';
 
-class _FakeSettings implements WorkspaceSettingsRepository {
-  _FakeSettings(this.values);
-
-  final Map<String, String> values;
-
-  @override
-  Future<String?> get(String workspaceId, String key) async => values[key];
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
-}
+import '../helpers/fake_agent_roster.dart';
 
 class _ScriptedRunner implements AdapterOneShotRunner {
   _ScriptedRunner(this.replies);
 
   final List<String?> replies;
   final List<String> prompts = [];
+  final List<String> systemPrompts = [];
+  final List<({String adapterId, String? modelId})> runners = [];
   var _index = 0;
 
   @override
@@ -34,6 +25,8 @@ class _ScriptedRunner implements AdapterOneShotRunner {
     int maxTokens = 1024,
   }) async {
     prompts.add(prompt);
+    systemPrompts.add(systemPrompt);
+    runners.add((adapterId: adapterId, modelId: modelId));
     return _index < replies.length ? replies[_index++] : null;
   }
 }
@@ -60,25 +53,51 @@ Stop and ask me if the fix needs a schema change.
 ''';
 
 void main() {
-  _FakeSettings configured() => _FakeSettings({
-    'conversation_title_adapter': 'anthropic',
-    'conversation_title_model': 'claude-sonnet-5',
-  });
-
-  GuidedGoalService build(_ScriptedRunner runner, {WorkspaceSettingsRepository? settings}) =>
-      GuidedGoalService(
-        runner: runner,
-        settings: settings ?? configured(),
+  ContentSynthesizerResolver configured({String? persona}) =>
+      ContentSynthesizerResolver(
+        FakeAgentRoster()..put(
+          contentSynthesizerAgent(
+            workspaceId: 'ws',
+            adapterId: 'claude-code',
+            modelId: 'claude-sonnet-5',
+            persona: persona,
+          ),
+        ),
       );
 
-  test('reports unavailable when no one-shot model is configured', () async {
+  GuidedGoalService build(
+    _ScriptedRunner runner, {
+    ContentSynthesizerResolver? synthesizer,
+  }) => GuidedGoalService(
+    runner: runner,
+    synthesizer: synthesizer ?? configured(),
+  );
+
+  test('reports unavailable without a content synthesizer', () async {
     final service = build(
       _ScriptedRunner([]),
-      settings: _FakeSettings(const {}),
+      synthesizer: ContentSynthesizerResolver(FakeAgentRoster()),
     );
     final step = await service.step(workspaceId: 'ws', roughObjective: 'fix the tests');
     expect(step.unavailable, isTrue);
     expect(step.question, isNull);
+  });
+
+  test('runs on the synthesizer agent, persona before the contract', () async {
+    final runner = _ScriptedRunner([_completeObjective]);
+    await build(
+      runner,
+      synthesizer: configured(persona: 'Keep questions under ten words.'),
+    ).step(workspaceId: 'ws', roughObjective: 'fix auth');
+    expect(runner.runners.single, (
+      adapterId: 'claude-code',
+      modelId: 'claude-sonnet-5',
+    ));
+    expect(
+      runner.systemPrompts.single,
+      startsWith('Keep questions under ten words.'),
+    );
+    expect(runner.systemPrompts.single, endsWith(guidedGoalSystemPrompt));
   });
 
   test('accepts a draft that covers all five requirements', () async {
@@ -161,7 +180,7 @@ Ask me if stuck.
     // question nobody will answer.
     final service = GuidedGoalService(
       runner: _ScriptedRunner(['## Objective\nMake it work well.\n']),
-      settings: configured(),
+      synthesizer: configured(),
       maxTurns: 1,
     );
     final step = await service.step(

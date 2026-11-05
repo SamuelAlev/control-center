@@ -2,7 +2,7 @@
 title: Bir cihaz eşleştirme
 description: Telefonunuzu (ya da ikinci bir tarayıcıyı veya masaüstünü) Control Center sunucunuzla eşleştirin; böylece filoyu uzaktan izleyebilirsiniz.
 slug: tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Bu kılavuz, bir telefonu Control Center ile nasıl eşleştireceğinizi gösterir;
@@ -42,11 +42,11 @@ Sayfa başlığındaki **Yeni istemci eşle** düğmesine tıklayın, ona bir ad
 da **Telefon** — ve **Eşle** düğmesine tıklayın.
 
 - **Telefon** için bir QR kodu görünür. Telefonun kamerasıyla tarayın ya da bağlantıyı kopyalayıp herhangi bir tarayıcıda açın. Bu kod, Remote uygulamasını sunucunuza yönlendirir ve kimlik bilgisini taşır.
-- **Tarayıcı** ya da **masaüstü** için bunun yerine gösterilen bağlantıyı (ya da cihaz kimliğini ve eşleme anahtarını) yeni istemciye kopyalayın. Tek dokunuşlu bağlantı yalnızca web istemcisinden eşleme yaparken sunulur; çünkü bir masaüstü ikilisinin bunu oluşturacak bir web kaynağı yoktur.
+- **Tarayıcı** ya da **masaüstü** için bunun yerine gösterilen bağlantıyı (ya da cihaz kimliğini ve eşleme anahtarını) yeni istemciye kopyalayın. Bağlantıyı bir tarayıcıda açın ya da masaüstü uygulamasında **Eşleme bağlantısı yapıştır** ile yapıştırın. Masaüstünden eşleme yapıldığında bağlantı sunucunun kendi URL’sinden oluşturulur; bu yüzden yalnızca sunucunun diğer cihazların erişebileceği bir URL’si varsa görünür.
 
 Telefon QR’ı ile CLI’da `cc_server pair --client-url` komutunun yazdırdığı
 bağlantı **farklı yüklerdir ve birbirlerinin yerine kullanılamaz**: CLI
-bağlantısı web istemcisinin bağlantı formunu doldurur; bu QR ise Remote PWA’sı
+bağlantısı web istemcisinin bağlantı iletişim kutusunu doldurur ya da masaüstü uygulamasına yapıştırılır; bu QR ise Remote PWA’sı
 için sunucunun tam bağlantı tanımlayıcısını ve kimlik parmak izini taşır.
 
 Telefon tarafında, bir eşleme bağlantısını açmak sessizce eşleme yapmaz. Remote,

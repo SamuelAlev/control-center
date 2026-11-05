@@ -2,7 +2,7 @@
 title: Kelola adapter dan model
 description: Hubungkan penyedia model, pilih model yang dijalankan agen, dan periksa CLI runner agen mana yang tersedia di host server.
 slug: id-ID/panduan-pengguna/panduan-praktis/adapter
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Panduan ini menunjukkan cara menghubungkan penyedia model dan memilih apa yang
@@ -95,11 +95,10 @@ dihitung berdasarkan model yang benar-benar melayani giliran tersebut, bukan mod
 yang Anda minta.
 
 :::note[Agen tanpa adapter berjalan pada loop bawaan]
-Setiap ruang kerja menyemai lima agen — seorang CEO plus `qa`, `architect`,
-`engineer`, dan `librarian` — tanpa adapter dan tanpa model. Pengiriman jatuh
-kembali ke **Control Center (built-in)**, bukan ke setelan **Runner default** di
-halaman ini, yang merupakan preferensi sisi klien yang tidak pernah dibaca jalur
-pengiriman. Log run mencatat `cc-harness` untuk run tersebut, sehingga transkrip
+Setiap ruang kerja menyemai enam agen — seorang CEO plus `qa`, `architect`,
+`engineer`, `librarian` dan `content-synthesizer` — tanpa adapter dan tanpa
+model. Pengiriman jatuh kembali ke **Control Center (built-in)**; tidak ada
+runner default untuk ruang kerja maupun perangkat. Log run mencatat `cc-harness` untuk run tersebut, sehingga transkrip
 menyebutkan apa yang benar-benar berjalan.
 
 Karena juga tanpa model, loop bawaan meminta Anthropic memakai model defaultnya.
@@ -110,9 +109,23 @@ provider "anthropic"`.
 Menyelesaikan langkah adapter pada onboarding akan menambal balik **setiap** agen
 yang masih belum memiliki adapter atau model — CEO dan para spesialis, di semua
 ruang kerja yang ada saat itu — dengan pasangan yang Anda pilih. Ruang kerja yang
-dibuat kemudian tetap menyemai kelimanya tanpa setelan. Setel adapter dan model
+dibuat kemudian tetap menyemai keenamnya tanpa setelan. Setel adapter dan model
 secara eksplisit pada setiap agen yang ingin Anda gunakan.
 :::
+
+## Personalisasi judul dan ringkasan
+
+Agen **Content synthesizer** menulis teks yang dihasilkan Control Center di
+sekitar sebuah percakapan: judulnya, jawaban `/btw`, dokumen `/handoff`, dan
+wawancara tujuan `/goal`. Agen ini menjalankan satu penyelesaian tanpa alat
+setiap kali, pada adapter dan modelnya sendiri, jadi berikan model yang kecil
+dan cepat.
+
+Sunting **persona**-nya di **Pengaturan → Ruang kerja → Agen** untuk mengubah
+cara teks itu dibaca — panjang judul, bahasa, nada, contoh yang diikutinya.
+Format balasan yang diurai setiap fitur (judul satu baris, bagian-bagian tujuan)
+bersifat tetap dan diterapkan setelah persona Anda. Hapus agen untuk mematikan
+fitur-fitur ini; agen tidak akan disemai ulang.
 
 ## Instal CLI runner
 

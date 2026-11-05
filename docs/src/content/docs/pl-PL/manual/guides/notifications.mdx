@@ -2,7 +2,7 @@
 title: Skonfiguruj powiadomienia
 description: Włączaj i wyłączaj kategorie, ustaw godziny ciszy i dźwięk oraz wiedz, które powiadomienia docierają do Ciebie i gdzie.
 slug: pl-PL/podrecznik/poradniki/powiadomienia
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Ten poradnik pokazuje, jak skonfigurować powiadomienia i czym naprawdę steruje
@@ -49,12 +49,28 @@ jego historia nadal działają, bo czytają kanał z serwera. Klient mobilny nie
 Wszystko poza tą listą nie może być zgłaszane ani filtrowane — nie ma kategorii
 „wszystko inne”.
 
-**Agent czeka na Ciebie** jest wyzwalane raz na każde oczekiwanie, w chwili gdy
-się ono zaczyna: przy oczekującej zgodzie (także na uprawnienia wykonywania w
+**Agent czeka na Ciebie** jest wyzwalane, gdy zaczyna się oczekiwanie: przy oczekującej zgodzie (także na uprawnienia wykonywania w
 sandboxie i na użycie narzędzi w Claude Code), przy pytaniu `ask_user` albo gdy
 uruchomienie jest wstrzymane, bo jego dane logowania nie mogą go obsłużyć.
 Powiadomienie otwiera przestrzeń, w której odpowiadasz, i milczy, gdy już na nią
 patrzysz.
+
+Na komputerze te powiadomienia działają inaczej niż pozostałe:
+
+- **System traktuje je jako pilne.** W macOS mogą przebić się przez Skupienie,
+  które dopuszcza pilne powiadomienia z Control Center.
+- **Na prośbę o zgodę można odpowiedzieć z poziomu powiadomienia.**
+  **Zatwierdź** i **Odmów** wysyłają odpowiedź bez otwierania aplikacji. Serwer
+  sprawdza ją tak samo jak kartę w aplikacji. Aby wyrazić zgodę na pewien czas,
+  otwórz kartę.
+- **Oczekiwanie bez odpowiedzi przypomina o sobie.** Jeśli nikt nie odpowie,
+  powiadomienie wraca jako **Nadal czeka: …** po 3, 10, 25 i 45 minutach od
+  rozpoczęcia oczekiwania. Każde przypomnienie zastępuje poprzednie
+  powiadomienie, zamiast dodawać kolejne. Przypomnienia są pomijane, gdy okno
+  Control Center jest aktywne, bo karta zgody i dzwonek są już przed Tobą.
+- **Znika, gdy oczekiwanie się kończy**, niezależnie od tego, jak udzielono
+  odpowiedzi, więc nigdy nie naciśniesz przycisku przy prośbie, która jest już
+  rozstrzygnięta.
 
 Te preferencje podążają za Twoim użytkownikiem na wszystkie urządzenia, więc
 telefon i laptop pozostają zgodne. Głośność to celowy wyjątek i pozostaje
@@ -99,7 +115,8 @@ warunków:
 - Powiadomienia są globalnie wyłączone albo wyłączona jest jego kategoria
 - Jesteś już na trasie, na którą miało Cię zaprowadzić — a w przypadku
   wiadomości, już w tej przestrzeni
-- Tryb skupienia jest aktywny, a kategoria nie jest pilna
+- Trwa sesja skupienia z włączoną opcją **Blokuj powiadomienia**, a kategoria
+  nie jest pilna
 - Godziny ciszy są aktywne, a kategoria nie jest pilna
 
 Te warunki dotyczą toastów systemowych. Trwały dzwonek i tak zapisuje zdarzenie.
@@ -144,6 +161,14 @@ stanu przeczytania.
 Zgoda jest pytana natywnie przy uruchomieniu aplikacji. Jeśli ją odrzucisz,
 włącz ponownie Control Center w Ustawienia systemowe → Powiadomienia; w
 aplikacji nie ma monitu, który wywołałby tę prośbę ponownie.
+
+### W systemie macOS ciągle przegapiam powiadomienia o zgodach
+
+Domyślnie macOS pokazuje powiadomienia Control Center jako banery, a baner
+znika po kilku sekundach. Aby zostawały na ekranie, dopóki nie zareagujesz,
+ustaw styl powiadomień Control Center na **Stałe** w Ustawienia systemowe →
+Powiadomienia. Prośba o zgodę bez odpowiedzi wraca też jako przypomnienie
+(zobacz [Włączaj i wyłączaj kategorie](#włączaj-i-wyłączaj-kategorie)).
 
 ### W wersji webowej nic nie dociera
 

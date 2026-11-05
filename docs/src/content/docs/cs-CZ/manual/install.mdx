@@ -2,7 +2,7 @@
 title: Instalace
 description: Použij Control Center v prohlížeči nebo nainstaluj aplikaci pro počítač, nastav backend agenta a vyber, kde poběží jeho server.
 slug: cs-CZ/prirucka/instalace
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center běží dvěma způsoby: jako **webová aplikace** na
@@ -205,15 +205,18 @@ databázi a dělá všechnu práci.
 [Nasazení a klienti](/cs-CZ/prirucka/koncepty/nasazeni/) vysvětluje, co to
 rozdělení znamená pro počítač, web a telefon.
 
-Při prvním spuštění se aplikace pro počítač ptá **„Jak má Control Center běžet?“**:
+Při prvním spuštění aplikace pro počítač zobrazí **Vítejte v Control Center** a nabídne tři cesty dál. Tlačítko nastavení v rohu mění jazyk a motiv.
 
 - **Spustit v této aplikaci**: aplikace na tomhle stroji spustí `cc_server`,
   dohlíží na něj a mluví s ním přes loopback. Nic dalšího nenastavuješ. S
   tímhle nastavením počítá [rychlý start](/cs-CZ/prirucka/rychly-start/).
-- **Připojit ke vzdálené instanci**: namiř aplikaci pro počítač na `cc_server`,
-  který běží jinde, pomocí URL WebSocketu, ID zařízení a buď párovacího klíče,
-  nebo jednorázového kódu pozvánky. Data vlastní ten server; tahle aplikace je
-  jen vykresluje.
+- **Připojit k serveru**: namiř aplikaci pro počítač na `cc_server`, který běží
+  jinde, pomocí URL WebSocketu. Pak se přihlas přes jednotné přihlášení, pokud ho
+  server nabízí, nebo zadej jednorázový kód pozvánky, nebo v části
+  **Použít párovací klíč** ID zařízení a párovací klíč. Data vlastní ten server;
+  tahle aplikace je jen vykresluje.
+- **Vložit párovací odkaz**: vlož odkaz pozvánky nebo párovací odkaz. Dialog ukáže,
+  ke kterému serveru odkaz vede, a připojí se, až když klikneš na **Připojit**.
 
 Server později přidáš nebo přepneš v **Nastavení → Server → Připojení a stav**.
 Přepnutí se připojí znovu na místě, bez restartu. Prohlížeč server spustit

@@ -2,7 +2,7 @@
 title: Configura le notifiche
 description: Attiva o disattiva le categorie, imposta un orario di silenzio e un suono e scopri quali notifiche ti arrivano e dove.
 slug: it-IT/manuale/guide/notifiche
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Questa guida ti mostra come configurare le notifiche e che cosa controlla
@@ -50,12 +50,28 @@ notifica.
 Tutto ciò che è fuori da questa lista non può essere notificato né filtrato — non
 esiste una categoria «tutto il resto».
 
-**Un agente ti aspetta** si attiva una sola volta per ogni attesa, quando questa
-inizia: un'approvazione in sospeso (comprese le concessioni di esecuzione nel
+**Un agente ti aspetta** si attiva quando inizia un'attesa: un'approvazione in sospeso (comprese le concessioni di esecuzione nel
 sandbox e le approvazioni degli strumenti di Claude Code), una domanda
 `ask_user` o un'esecuzione bloccata perché la sua credenziale non può servirla.
 Apre lo spazio in cui rispondi e resta in silenzio mentre stai già guardando
 quello spazio.
+
+Sul desktop, queste notifiche si comportano diversamente dalle altre:
+
+- **Sono contrassegnate come urgenti per il sistema.** Su macOS possono superare
+  una modalità Full immersion che consente le notifiche urgenti di Control
+  Center.
+- **Puoi rispondere a un'approvazione dalla notifica.** **Approva** e **Nega**
+  inviano la tua risposta senza aprire l'app. Il server la verifica come fa con
+  la scheda nell'app. Per approvare per un certo periodo, apri invece la scheda.
+- **Un'attesa senza risposta te lo ricorda.** Se nessuno risponde, la notifica
+  ricompare come **Ancora in attesa: …** 3, 10, 25 e 45 minuti dopo l'inizio
+  dell'attesa. Ogni promemoria sostituisce la notifica precedente invece di
+  aggiungerne un'altra. I promemoria vengono saltati mentre una finestra di
+  Control Center è in primo piano, perché la scheda di approvazione e la
+  campanella sono già davanti a te.
+- **Scompare quando l'attesa finisce**, in qualunque modo sia stata risolta,
+  così non premi mai un pulsante su una richiesta già chiusa.
 
 Queste preferenze seguono il tuo utente su tutti i dispositivi, così telefono e
 portatile restano allineati. Il volume è l'eccezione voluta e resta per
@@ -100,7 +116,8 @@ condizioni:
   disattivata
 - Ti trovi già sulla route verso cui ti porterebbe — e, per un messaggio, sei già
   in quello spazio
-- La modalità focus è attiva e la categoria non è urgente
+- È in corso una sessione focus con **Blocca notifiche** attivo e la categoria
+  non è urgente
 - L'orario di silenzio è attivo e la categoria non è urgente
 
 Questi controlli valgono per i toast di sistema. La campanella durevole registra
@@ -146,6 +163,15 @@ indipendentemente dallo stato di lettura.
 L'autorizzazione viene richiesta in modo nativo all'avvio dell'app. Se l'hai
 rifiutata, riabilita Control Center in Impostazioni di Sistema → Notifiche; non
 c'è alcun prompt nell'app per riproporla.
+
+### Mi sfuggono le notifiche di approvazione su macOS
+
+Per impostazione predefinita macOS mostra le notifiche di Control Center come
+banner, e un banner scompare dopo pochi secondi. Per tenerle sullo schermo
+finché non agisci, imposta lo stile di avviso di Control Center su
+**Persistente** in Impostazioni di Sistema → Notifiche. Un'approvazione senza
+risposta ricompare anche come promemoria (vedi
+[Attiva o disattiva le categorie](#attiva-o-disattiva-le-categorie)).
 
 ### Sulla build web non arriva nulla
 

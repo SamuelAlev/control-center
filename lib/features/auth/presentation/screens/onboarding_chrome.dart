@@ -1,6 +1,6 @@
 /// The chrome around the pre-context auth surfaces — first-run onboarding and
 /// the re-authentication screen: the full-screen frame, the labelled progress
-/// bar, the card each step's copy and body sit in, and local appearance controls.
+/// bar, the card each step's copy and body sit in, and the settings button.
 ///
 /// Split out of `onboarding_screen.dart` so the screen file is the FLOW — which
 /// step follows which, and what each one says — rather than the flow plus the
@@ -15,7 +15,7 @@ import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_step_layout.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/language_picker.dart';
+import 'package:control_center/shared/widgets/server_connect/pre_app_settings.dart';
 import 'package:control_center/shared/widgets/shader_background.dart';
 import 'package:control_center/shared/widgets/window_caption_buttons.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
@@ -25,7 +25,7 @@ import 'package:material_ui/material_ui.dart';
 part 'onboarding_step_chrome.dart';
 
 /// The full-screen frame every pre-context auth surface sits in: the shader background, a
-/// centred column capped at a readable width, and language/theme controls.
+/// centred column capped at a readable width, and the settings button.
 /// Shared rather than copied because these screens are the app's first impression and the
 /// only ones drawn outside the shell — two hand-rolled frames drift in exactly the places
 /// (the max width, the inset, where the toggle sits) where the drift is visible as a jump
@@ -83,16 +83,7 @@ class OnboardingScaffold extends StatelessWidget {
                       ),
                   ],
                 ),
-                const WindowCaptionCorner(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(width: 200, child: OnboardingLanguagePicker()),
-                      SizedBox(width: AppSpacing.sm),
-                      OnboardingThemeToggle(),
-                    ],
-                  ),
-                ),
+                const WindowCaptionCorner(child: OnboardingSettingsButton()),
               ],
             ),
           ),
@@ -102,41 +93,34 @@ class OnboardingScaffold extends StatelessWidget {
   }
 }
 
-/// Local language selection without opening the app's settings.
-class OnboardingLanguagePicker extends ConsumerWidget {
-  /// Creates the login language picker.
-  const OnboardingLanguagePicker({super.key});
+/// Opens the settings a person needs before signing in, from the corner.
+class OnboardingSettingsButton extends StatelessWidget {
+  /// Creates the [OnboardingSettingsButton].
+  const OnboardingSettingsButton({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    return LanguagePicker(
-      selected: ref.watch(localeProvider),
-      systemLabel: l10n.languageSystem,
-      searchHint: l10n.searchPlaceholder,
-      semanticLabel: l10n.settingsLanguage,
+  Widget build(BuildContext context) {
+    return CcIconButton(
+      icon: AppIcons.settings,
+      tooltip: AppLocalizations.of(context).navSettings,
+      onPressed: () =>
+          showPreAppSettings(context, (_) => const _OnboardingSettings()),
     );
   }
 }
 
-/// The light/dark switch in the onboarding corner.
-///
-/// Flips the theme itself: it already has to read the current brightness to
-/// pick its own icon, so having each host pass back an `onToggle` that derives
-/// the same thing again was two copies of one decision.
-class OnboardingThemeToggle extends ConsumerWidget {
-  /// Creates an [OnboardingThemeToggle].
-  const OnboardingThemeToggle({super.key});
+/// The settings page over the persisted language and theme.
+class _OnboardingSettings extends ConsumerWidget {
+  const _OnboardingSettings();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    return CcIconButton(
-      icon: isLight ? AppIcons.moon : AppIcons.sun,
-      tooltip: AppLocalizations.of(context).toggleTheme,
-      onPressed: () => ref
-          .read(themeModeProvider.notifier)
-          .setThemeMode(isLight ? ThemeMode.dark : ThemeMode.light),
+    return PreAppSettingsPage(
+      locale: ref.watch(localeProvider),
+      onLocaleChanged: ref.read(localeProvider.notifier).setLocale,
+      theme: ref.watch(themeModeProvider).choice,
+      onThemeChanged: (choice) =>
+          ref.read(themeModeProvider.notifier).setThemeMode(choice.mode),
     );
   }
 }

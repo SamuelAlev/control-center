@@ -3,7 +3,7 @@ import 'package:control_center/features/settings/presentation/widgets/sections/g
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
-/// Settings → Notifications: per-event notification toggles.
+/// Settings → Notifications: sound, schedule and per-event toggles.
 class NotificationsSettingsScreen extends StatelessWidget {
   /// Creates a [NotificationsSettingsScreen].
   const NotificationsSettingsScreen({super.key});

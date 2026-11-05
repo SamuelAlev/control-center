@@ -2,7 +2,7 @@
 title: Sandbox e segurança
 description: O que de fato restringe um agente no Control Center hoje, até onde o sandbox do sistema operacional chega e quais fronteiras se sustentam em um host sem backend.
 slug: pt-BR/manual/conceitos/sandbox-e-seguranca
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Onde o sandbox do sistema operacional chega e onde não chega]
@@ -221,7 +221,7 @@ de escrita redefinida para negar com permissões explícitas por cima, bloqueio 
 unlink em todo caminho negado e em seus ancestrais, para que um rename não
 contorne uma negação de escrita, negações de exec para binários sempre perigosos
 e para qualquer coisa copiada para um diretório gravável, e rede restrita às
-portas do proxy de loopback mais o DNS.
+portas do proxy de loopback mais o DNS. Instalações de toolchain sob o seu home (pnpm do corepack, gerenciadores de versão do node, navegadores do Playwright, rustup, fvm, uv e similares) continuam executáveis dentro desse bloco de exec, então os agentes podem usá-las sem contornos. As negações sempre perigosas continuam valendo dentro dele. Cada sessão também recebe seu próprio `TMPDIR` privado. Ele é o único diretório temporário onde o agente pode executar programas que compilou ou abrir sockets Unix.
 
 A consequência prática: no Linux, a visão do agente sobre o sistema de arquivos é
 estreitada; no macOS, o agente ainda consegue _ler_ a maior parte do host, e seus

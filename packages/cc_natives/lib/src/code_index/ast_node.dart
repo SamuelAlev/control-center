@@ -23,6 +23,7 @@ class AstNode {
     required this.text,
     required this.children,
     this.fieldName,
+    this.recovered = false,
   });
 
   /// The grammar's name for this node (`method_declaration`, `identifier`, …).
@@ -53,6 +54,12 @@ class AstNode {
 
   /// The field the parent gave this node, or null when it is positional.
   final String? fieldName;
+
+  /// Whether the parser inserted a MISSING token directly under this node.
+  ///
+  /// Those tokens are left out of [children], so this is what still says the
+  /// node only exists because the grammar repaired the source.
+  final bool recovered;
 
   /// Children, in source order, anonymous tokens included.
   final List<AstNode> children;

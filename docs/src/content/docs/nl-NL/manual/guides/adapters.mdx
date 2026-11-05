@@ -2,7 +2,7 @@
 title: Adapters en modellen beheren
 description: Verbind modelproviders, kies het model waarop een agent draait en bekijk welke agent-runner-CLI's de serverhost heeft.
 slug: nl-NL/handleiding/gidsen/adapters
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Deze gids laat zien hoe je modelproviders verbindt en kiest waarop een agent
@@ -96,10 +96,10 @@ worden de kosten afgerekend op het model dat de beurt werkelijk heeft
 afgehandeld, niet op het model dat je hebt opgevraagd.
 
 :::note[Een agent zonder adapter draait op de ingebouwde loop]
-Elke werkruimte maakt standaard vijf agenten aan — een CEO plus `qa`, `architect`,
-`engineer` en `librarian` — zonder adapter en zonder model. Dispatch valt terug
-op **Control Center (built-in)**, niet op de instelling **Standaard-runners** op
-deze pagina; dat is een clientvoorkeur die het dispatchpad nooit leest. Het runlog
+Elke werkruimte maakt standaard zes agenten aan — een CEO plus `qa`, `architect`,
+`engineer`, `librarian` en `content-synthesizer` — zonder adapter en zonder model.
+Dispatch valt terug op **Control Center (built-in)**; er is geen standaardrunner
+voor de werkruimte of het apparaat. Het runlog
 registreert `cc-harness` voor die runs, zodat het transcript vermeldt wat er
 werkelijk draaide.
 
@@ -110,9 +110,15 @@ hebt verbonden, en mislukt anders met `No credential for provider "anthropic"`.
 Als je de adapterstap van de onboarding afrondt, worden **alle** agenten die nog
 geen adapter of model hebben — de CEO en de specialisten, in elke werkruimte die
 op dat moment bestaat — bijgewerkt met het paar dat je hebt gekozen. Werkruimtes
-die later worden aangemaakt, maken nog steeds alle vijf oningesteld aan. Stel de
+die later worden aangemaakt, maken nog steeds alle zes oningesteld aan. Stel de
 adapter en het model expliciet in op elke agent die je wilt gebruiken.
 :::
+
+## Titels en samenvattingen personaliseren
+
+De agent **Content synthesizer** schrijft de tekst die Control Center rond een gesprek genereert: de titel, antwoorden op `/btw`, `/handoff`-documenten en het doelinterview van `/goal`. Elke keer voert hij één completion zonder tools uit, met zijn eigen adapter en model, dus geef hem een klein, snel model.
+
+Pas de **persona** aan in **Instellingen → Werkruimte → Agenten** om te veranderen hoe die tekst klinkt: titellengte, taal, toon en de voorbeelden die hij volgt. Het antwoordformaat dat elke functie verwerkt (een titel van één regel, de secties van het doel) ligt vast en wordt toegepast na je persona. Verwijder de agent om deze functies uit te zetten; hij wordt niet opnieuw aangemaakt.
 
 ## Een runner-CLI installeren
 

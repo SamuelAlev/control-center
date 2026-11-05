@@ -738,13 +738,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Control Center rulează propriul server pe această mașină și deține datele local.';
 
   @override
-  String get serverModeRemote => 'Conectează-te la o instanță remote';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Conectează-te la un server Control Center care rulează în altă parte. Datele tale trăiesc pe acel server.';
-
-  @override
   String get serverRemoteUrl => 'URL server';
 
   @override
@@ -967,13 +960,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Alte dispozitive nu pot atinge acest server direct, deci un client nou nu se poate conecta. Setează URL-ul public al serverului ca să asociezi mai mulți clienți.';
-
-  @override
-  String get serverSetupTitle => 'Cum ar trebui să ruleze Control Center?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center are nevoie de un server care deține datele tale. Rulează unul în această aplicație sau conectează-te la o instanță care rulează în altă parte.';
 
   @override
   String get serverSetupRunLocal => 'Rulează în această aplicație';
@@ -3056,10 +3042,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Configurează identitățile agenților, prompturile, abilitățile și vezi rulările.';
 
   @override
-  String get configureDefaultRunners =>
-      'Configurează ce adaptor și model se folosesc pentru spațiile noi și generarea de titluri.';
-
-  @override
   String get configuredLabel => 'Configurat.';
 
   @override
@@ -3160,12 +3142,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deactivate => 'Dezactivează';
-
-  @override
-  String get defaultChat => 'Chat implicit';
-
-  @override
-  String get defaultRunners => 'Runnere implicite';
 
   @override
   String get delete => 'Șterge';
@@ -4485,6 +4461,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get notificationGroupMachines => 'Mașini';
 
   @override
+  String get notificationSectionSound => 'Sunet';
+
+  @override
+  String get notificationSectionSchedule => 'Program';
+
+  @override
+  String get notificationSectionEvents => 'Evenimente';
+
+  @override
   String get notificationsMutedRepos => 'Depozite dezactivate';
 
   @override
@@ -5045,9 +5030,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'Alege limba aplicației.';
-
-  @override
-  String get shortTask => 'Sarcină scurtă';
 
   @override
   String get showNativeNotifications =>
@@ -5637,10 +5619,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Minimizează în bară';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'Modul focus este activ — apasă pentru a încheia';
 
   @override
   String get dismiss => 'Închide';
@@ -13132,25 +13110,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Conectează-te la Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'Apelează un cc-server în rulare prin WebSocket. Cheia rămâne pe acest dispozitiv.';
-
-  @override
-  String get webConnectServerLabel => 'Server';
-
-  @override
-  String get webConnectDeviceIdLabel => 'ID dispozitiv';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Cheie de asociere';
-
-  @override
-  String get webConnectPairingKeyHint => 'lipește PSK-ul';
-
-  @override
   String get webConnectStayConnected => 'Rămâi conectat pe acest dispozitiv';
 
   @override
@@ -13193,11 +13152,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Opțional — lasă gol și modelul de titluri o numește automat';
 
   @override
-  String get shortTaskOff => 'Oprit';
+  String get contentSynthesizerUnavailable =>
+      'Agentul Content synthesizer lipsește sau nu are un runner funcțional';
 
   @override
-  String get shortTaskUnavailable =>
-      'Alege un model pentru sarcini scurte în Setări → Adaptori ca să folosești asta';
+  String get conversationNeedsAgent =>
+      'Menționează un agent cu @ ca să începi această conversație';
 
   @override
   String get conversationTitleGenerate => 'Generează';
@@ -13669,14 +13629,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Adăugate la linia de comandă a runnerului la fiecare lansare.';
-
-  @override
-  String get defaultChatDescription =>
-      'Rulează conversațiile noi și orice agent fără un runner propriu.';
-
-  @override
-  String get shortTaskDescription =>
-      'Rulează lucrul rapid de fundal, precum titluri și rezumate. Un model mai mic aparține aici.';
 
   @override
   String get settingsStateFailed => 'Eșuat';
@@ -14428,6 +14380,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Atașează fișiere — sau lasă-le aici';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Extinde editorul ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Restrânge editorul ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'Clarifică obiectivul';
@@ -15607,6 +15569,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Un agent este blocat de credențiale';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Încă așteaptă: $title';
+  }
+
+  @override
   String get killTerminal => 'Închide terminalul';
 
   @override
@@ -16069,4 +16036,81 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Rularea s-a oprit deoarece datele de acces ale furnizorului nu mai funcționează. Reconectează-l în Setări → Furnizori, apoi reîncearcă tura.';
+
+  @override
+  String get helpMenuLabel => 'Ajutor';
+
+  @override
+  String get helpWhatsNew => 'Noutăți';
+
+  @override
+  String get helpReportProblem => 'Raportează o problemă';
+
+  @override
+  String get helpCreateGitHubIssue => 'Creează un issue pe GitHub';
+
+  @override
+  String get changelogInstalled => 'Instalată';
+
+  @override
+  String get changelogGroupNew => 'Nou';
+
+  @override
+  String get changelogGroupImproved => 'Îmbunătățit';
+
+  @override
+  String get changelogGroupFixed => 'Remediat';
+
+  @override
+  String get changelogLoadFailed =>
+      'Notele de lansare nu au putut fi încărcate.';
+
+  @override
+  String get changelogOpenWebsite => 'Deschide pe site';
+
+  @override
+  String get connectWelcomeTitle => 'Bun venit în Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Rulează-l aici sau conectează-te la un server pe care îl ai deja.';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'Conectează-te la serverul tău pentru a începe.';
+
+  @override
+  String get connectToServer => 'Conectează-te la un server';
+
+  @override
+  String get connectToServerIntro =>
+      'Introdu adresa unui server Control Center.';
+
+  @override
+  String get connectUsePairingKey => 'Folosește o cheie de asociere';
+
+  @override
+  String get connectPasteLink => 'Lipește un link de asociere';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Lipește linkul de invitație sau de asociere pe care l-ai primit.';
+
+  @override
+  String get connectPasteLinkLabel => 'Link de invitație sau de asociere';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Acesta nu este un link de invitație sau de asociere Control Center. Copiază linkul întreg și încearcă din nou.';
+
+  @override
+  String get connectPasteLinkTarget => 'Se conectează la';
+
+  @override
+  String get focusModeEnd => 'Încheie sesiunea de concentrare';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'Au mai rămas $minutes min';
+  }
 }

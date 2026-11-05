@@ -2,7 +2,7 @@
 title: Sandbox i bezpieczeństwo
 description: Co dziś realnie ogranicza agenta w Control Center, jak daleko sięga sandbox systemowy i które granice utrzymują się na hoście bez backendu.
 slug: pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Gdzie sandbox systemowy sięga, a gdzie nie]
@@ -224,7 +224,7 @@ wierzchu, blokowanie odłączania (unlink) na każdej zabronionej ścieżce i je
 przodkach, tak aby zmiana nazwy nie ominęła zakazu zapisu, odmowy wykonania
 (exec) dla zawsze niebezpiecznych plików binarnych i dla wszystkiego, co
 skopiowano do katalogu z prawem zapisu, oraz sieć ograniczoną do portów proxy
-na pętli zwrotnej plus DNS.
+na pętli zwrotnej plus DNS. Instalacje narzędzi w katalogu domowym (pnpm z corepack, menedżery wersji node, przeglądarki Playwright, rustup, fvm, uv i podobne) pozostają uruchamialne w tym bloku exec, dzięki czemu agenci mogą z nich korzystać bez obejść. Zawsze niebezpieczne odmowy nadal obowiązują wewnątrz niego. Każda sesja otrzymuje też własny prywatny `TMPDIR`. Jest to jedyny katalog tymczasowy, w którym agent może uruchamiać zbudowane przez siebie programy lub otwierać gniazda Unix.
 
 Praktyczna konsekwencja: w Linuksie widok systemu plików dostępny dla agenta
 jest zawężony; w macOS agent nadal może _czytać_ większość hosta, a Twoje

@@ -33,17 +33,20 @@ class LocalNotificationService implements NotificationPort {
     required this._delivery,
     required this._isRouteActive,
     required this._soundService,
-    bool Function()? isFocusModeActive,
+    bool Function()? isFocusBlocking,
     bool Function(String spaceId)? isSpaceActive,
     bool Function()? isAppFocused,
-  }) : _isFocusModeActive = isFocusModeActive ?? (() => false),
+  }) : _isFocusBlocking = isFocusBlocking ?? (() => false),
        _isSpaceActive = isSpaceActive ?? ((_) => false),
        _isAppFocused = isAppFocused ?? (() => true);
 
   final NotificationPreferencesPort _preferences;
   final DesktopNotificationDelivery _delivery;
   final bool Function(String route) _isRouteActive;
-  final bool Function() _isFocusModeActive;
+
+  /// Whether a focus session is running with "Block notifications" on. A
+  /// session with that switch off must not silence anything.
+  final bool Function() _isFocusBlocking;
   final NotificationSoundService _soundService;
   final bool Function(String spaceId) _isSpaceActive;
 
@@ -97,7 +100,7 @@ class LocalNotificationService implements NotificationPort {
       final isUrgent = _urgentCategories.contains(notification.category);
 
       // Focus mode: suppress all non-urgent notifications.
-      if (!isUrgent && _isFocusModeActive()) {
+      if (!isUrgent && _isFocusBlocking()) {
         return;
       }
 
@@ -116,15 +119,32 @@ class LocalNotificationService implements NotificationPort {
 
       // Awaited (not fire-and-forget) so a native delivery failure surfaces in
       // the catch below instead of being silently swallowed.
+      //
+      // A wait keeps one identifier for its whole life, so a reminder replaces
+      // the original and the withdrawal at its end finds it.
+      final wait = notification.wait;
       await _delivery.show(
-        id: '${notification.category.name}-${_seq++}',
+        id: wait?.notificationId ?? '${notification.category.name}-${_seq++}',
         title: notification.title,
         body: notification.body,
         route: notification.route,
+        timeSensitive: wait != null,
+        approvalId: wait != null && wait.approvable ? wait.id : null,
       );
     } on Object catch (e) {
       AppLog.e('notifications', 'Failed to show notification: $e');
     }
+  }
+
+  @override
+  void withdraw(NotificationWait wait) {
+    // Not gated on preferences: removing something stale is always right, and
+    // removing what was never delivered is a no-op.
+    unawaited(
+      _delivery.remove(wait.notificationId).catchError((Object e) {
+        AppLog.e('notifications', 'Failed to withdraw notification: $e');
+      }),
+    );
   }
 
   @override

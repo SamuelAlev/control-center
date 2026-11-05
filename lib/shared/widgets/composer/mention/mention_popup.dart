@@ -4,6 +4,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_source.dart';
+import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -77,6 +78,11 @@ class _MentionPopupState extends State<MentionPopup> {
   List<_Row> _rows = const [];
   List<MentionSuggestion> _flat = const [];
   int _selected = 0;
+
+  /// One key per position in [_flat], so the active row can be measured.
+  /// Positional because sources do not promise unique suggestion ids, and a
+  /// shared GlobalKey is a build failure.
+  final List<GlobalKey> _rowKeys = [];
   bool _loading = false;
 
   /// Bumped on every re-query; a source's entry is current only when its
@@ -231,6 +237,9 @@ class _MentionPopupState extends State<MentionPopup> {
         idx++;
       }
     }
+    while (_rowKeys.length < flat.length) {
+      _rowKeys.add(GlobalKey());
+    }
     setState(() {
       _rows = rows;
       _flat = flat;
@@ -244,6 +253,8 @@ class _MentionPopupState extends State<MentionPopup> {
         _selected = _flat.isEmpty ? 0 : _flat.length - 1;
       }
     });
+    // A new query resets the selection, possibly to a row scrolled out of view.
+    _scrollSelectedIntoView();
   }
 
   bool _handleKey(KeyEvent event) {
@@ -299,52 +310,47 @@ class _MentionPopupState extends State<MentionPopup> {
     _scrollSelectedIntoView();
   }
 
+  /// Scrolls the least distance that shows the whole active row.
+  ///
+  /// Measures the laid-out row: row height depends on the description, the
+  /// font and the text scale, so no constant can stand in for it.
   void _scrollSelectedIntoView() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scroll.hasClients) {
+      if (!mounted || !_scroll.hasClients || _flat.isEmpty) {
         return;
       }
-      final offset = _offsetForFlatIndex(_selected);
-      final pos = _scroll.position;
-      final view = pos.viewportDimension;
-      final cur = pos.pixels;
-      final top = offset;
-      final bottom = offset + _rowHeight;
-      double? target;
-      if (top < cur + 4) {
-        target = (top - _headerHeight).clamp(
-          pos.minScrollExtent,
-          pos.maxScrollExtent,
-        );
-      } else if (bottom > cur + view - 4) {
-        target = (bottom - view).clamp(
-          pos.minScrollExtent,
-          pos.maxScrollExtent,
-        );
+      final row = _rowKeys[_selected].currentContext?.findRenderObject();
+      if (row == null) {
+        return;
       }
-      if (target != null && target != cur) {
+      final viewport = RenderAbstractViewport.of(row);
+      final pos = _scroll.position;
+      final rowAtTop = viewport.getOffsetToReveal(row, 0).offset;
+      final rowAtBottom = viewport.getOffsetToReveal(row, 1).offset;
+      double? target;
+      if (pos.pixels > rowAtTop) {
+        // Headroom for the section header when the row opens a section; the
+        // first row goes all the way back, list padding included.
+        target = _selected == 0
+            ? pos.minScrollExtent
+            : rowAtTop - _headerHeight;
+      } else if (pos.pixels < rowAtBottom) {
+        target = _selected == _flat.length - 1
+            ? pos.maxScrollExtent
+            : rowAtBottom;
+      }
+      if (target == null) {
+        return;
+      }
+      final clamped = target.clamp(pos.minScrollExtent, pos.maxScrollExtent);
+      if (clamped != pos.pixels) {
         _scroll.animateTo(
-          target,
+          clamped,
           duration: const Duration(milliseconds: 80),
           curve: Curves.easeOut,
         );
       }
     });
-  }
-
-  double _offsetForFlatIndex(int flatIdx) {
-    double offset = 6;
-    for (final row in _rows) {
-      if (row.isHeader) {
-        offset += _headerHeight;
-      } else {
-        if (row.index == flatIdx) {
-          return offset;
-        }
-        offset += _rowHeight;
-      }
-    }
-    return offset;
   }
 
   @override
@@ -369,18 +375,22 @@ class _MentionPopupState extends State<MentionPopup> {
                 style: CcTypography.body.copyWith(color: ds.textTertiary),
               ),
             )
-          : ListView.builder(
+          // Not lazy: wrapping selection jumps to rows that have never been
+          // on screen, and a row must be built to be measured. Sources are
+          // capped at [_perSourceLimit], so the list stays short.
+          : SingleChildScrollView(
               controller: _scroll,
               padding: const EdgeInsets.symmetric(vertical: 6),
-              shrinkWrap: true,
-              itemCount: _rows.length,
-              itemBuilder: _buildRow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [for (final row in _rows) _buildRow(context, row)],
+              ),
             ),
     );
   }
 
-  Widget _buildRow(BuildContext context, int i) {
-    final row = _rows[i];
+  Widget _buildRow(BuildContext context, _Row row) {
     final ds = context.designSystem ?? DesignSystemTokens.light();
     if (row.isHeader) {
       return SizedBox(
@@ -404,7 +414,7 @@ class _MentionPopupState extends State<MentionPopup> {
     final s = row.suggestion!;
     final selected = row.index == _selected;
     return _SuggestionRow(
-      key: ValueKey('${row.sourceKind}:${s.id}'),
+      key: _rowKeys[row.index!],
       suggestion: s,
       selected: selected,
       onTap: () {
@@ -454,7 +464,9 @@ class _SuggestionRow extends StatelessWidget {
         onPressed: onTap,
         mouseCursor: SystemMouseCursors.click,
         builder: (context, states) => MouseRegion(
-          onEnter: (_) => onHover(),
+          // Not onEnter: that also fires when keyboard scrolling carries a row
+          // under a resting pointer, which would steal the selection.
+          onHover: (_) => onHover(),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 60),
             margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),

@@ -1,3 +1,23 @@
+diff --git a/hook/build.dart b/hook/build.dart
+index fcbf862..d5f30ad 100644
+--- a/hook/build.dart
++++ b/hook/build.dart
+@@ -47,9 +47,14 @@ Future<void> main(List<String> args) async {
+         'CMAKE_INSTALL_PREFIX': installDir.toFilePath(),
+       },
+       targets: ['install'],
++      // BoringSSL is ~260 objects, and CMake builds serially by default.
++      parallelUseAllProcessors: true,
+     );
+ 
+-    await builder.run(input: input, output: output);
++    // The hook reruns whenever PATH changes, and ios.toolchain.cmake appends to
++    // CMAKE_C_FLAGS on every configure, so a reconfigure recompiles everything.
++    // CMake still regenerates on its own when a CMakeLists.txt changes.
++    await builder.run(input: input, output: output, skipGenerateIfCached: true);
+ 
+     final assets = await output.findAndAddCodeAssets(
+       input,
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
 index a5a7e28..d5cbede 100644
 --- a/src/CMakeLists.txt

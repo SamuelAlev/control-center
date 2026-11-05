@@ -2,7 +2,7 @@
 title: Sandbox ve güvenlik
 description: Bugün Control Center'da bir ajanı gerçekte neyin kısıtladığı, işletim sistemi sandbox'ının ne kadar eriştiği ve arka ucu olmayan bir ana makinede hangi sınırların geçerli kaldığı.
 slug: tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[İşletim sistemi sandbox'ının eriştiği ve erişmediği yerler]
@@ -222,7 +222,7 @@ okunması, üzerine açık izinler eklenmiş şekilde redde sıfırlanan bir yaz
 politikası, bir yeniden adlandırmanın yazma-reddini atlayamaması için reddedilen
 her yol ve üstünde unlink engelleme, her zaman tehlikeli ikililer ve yazılabilir
 bir dizine kopyalanan her şey için exec retleri ve loopback proxy portlarına
-artı DNS'ye kısıtlanan ağ.
+artı DNS'ye kısıtlanan ağ. Ana dizininizin altındaki araç zinciri kurulumları (corepack'in pnpm'i, node sürüm yöneticileri, Playwright tarayıcıları, rustup, fvm, uv ve benzerleri) bu exec bloğunun içinde çalıştırılabilir kalır; böylece ajanlar geçici çözümlere gerek kalmadan bunları kullanabilir. Her zaman tehlikeli olan yasaklar bunların içinde de geçerli kalır. Her oturuma ayrıca kendine ait özel bir `TMPDIR` verilir. Ajanın kendi derlediği programları çalıştırabileceği ya da Unix soketi açabileceği tek geçici dizin burasıdır.
 
 Pratik sonuç: Linux'ta ajanın dosya sistemine bakışı daraltılır; macOS'ta ajan
 ana makinenin çoğunu hâlâ _okuyabilir_ ve kayıtlı kopyalarınız görünmezlikle

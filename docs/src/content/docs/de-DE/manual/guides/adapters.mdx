@@ -2,7 +2,7 @@
 title: Adapter und Modelle verwalten
 description: Verbinde Modellanbieter, wähle das Modell, auf dem ein Agent läuft, und prüfe, welche Runner-CLIs der Server-Host hat.
 slug: de-DE/handbuch/anleitungen/adapter
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Diese Anleitung zeigt dir, wie du Modellanbieter verbindest und festlegst, worauf
@@ -96,11 +96,10 @@ werden die Kosten nach dem Modell berechnet, das den Turn tatsächlich bedient
 hat, nicht nach dem, das du angefordert hast.
 
 :::note[Ein Agent ohne Adapter läuft auf der eingebauten Schleife]
-Jeder Arbeitsbereich legt fünf Agenten an — einen CEO plus `qa`, `architect`,
-`engineer` und `librarian` — ohne Adapter und ohne Modell. Die Ausführung fällt
-auf **Control Center (built-in)** zurück, nicht auf die Einstellung
-**Standard-Runner** auf dieser Seite. Das ist eine Client-Präferenz, die der
-Ausführungspfad nie liest. Im Laufprotokoll steht für diese Läufe `cc-harness`,
+Jeder Arbeitsbereich legt sechs Agenten an — einen CEO plus `qa`, `architect`,
+`engineer`, `librarian` und `content-synthesizer` — ohne Adapter und ohne Modell.
+Die Ausführung fällt auf **Control Center (built-in)** zurück; es gibt keinen
+Standard-Runner auf Ebene des Arbeitsbereichs oder des Geräts. Im Laufprotokoll steht für diese Läufe `cc-harness`,
 das Transkript nennt also, was tatsächlich gelaufen ist.
 
 Auch ohne Modell fragt die eingebaute Schleife Anthropic nach seinem
@@ -111,9 +110,15 @@ Schließt du den Adapter-Schritt im Onboarding ab, werden **alle** Agenten
 nachgetragen, denen noch ein Adapter oder ein Modell fehlt — CEO und
 Spezialisten, in jedem Arbeitsbereich, der in diesem Moment existiert — mit
 dem Paar, das du gewählt hast. Arbeitsbereiche, die du später anlegst, starten
-weiter mit allen fünf ungesetzt. Setze Adapter und Modell ausdrücklich bei
+weiter mit allen sechs ungesetzt. Setze Adapter und Modell ausdrücklich bei
 jedem Agenten, den du nutzen willst.
 :::
+
+## Titel und Zusammenfassungen anpassen
+
+Der Agent **Content synthesizer** schreibt den Text, den Control Center rund um eine Unterhaltung erzeugt: ihren Titel, Antworten auf `/btw`, `/handoff`-Dokumente und das Zielinterview von `/goal`. Er führt jedes Mal eine Vervollständigung ohne Werkzeuge aus, auf seinem eigenen Adapter und Modell, also gib ihm ein kleines, schnelles Modell.
+
+Bearbeite seine **Persona** unter **Einstellungen → Arbeitsbereich → Agenten**, um zu ändern, wie dieser Text klingt: Titellänge, Sprache, Tonfall und die Beispiele, denen er folgt. Das Antwortformat, das jede Funktion auswertet (ein einzeiliger Titel, die Abschnitte des Ziels), ist fest und wird nach deiner Persona angewendet. Lösche den Agenten, um diese Funktionen abzuschalten; er wird nicht wieder angelegt.
 
 ## Eine Runner-CLI installieren
 

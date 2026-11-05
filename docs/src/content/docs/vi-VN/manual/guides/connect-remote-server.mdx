@@ -2,7 +2,7 @@
 title: Kết nối máy chủ từ xa
 description: Trỏ ứng dụng máy tính hoặc máy khách web tới một cc_server đang chạy ở nơi khác và chuyển đổi giữa các máy chủ mà không cần khởi động lại.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Mọi máy khách đều là một lớp dựng giao diện trên một `cc_server` sở hữu dữ liệu.
@@ -14,7 +14,7 @@ chủ đang chạy ở nơi khác — một chiếc máy nhỏ, một VM trên �
 ## Điều kiện tiên quyết
 
 - Một `cc_server` đang chạy. Nếu bạn chưa có, xem [Chạy máy chủ không giao diện](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien/).
-- Hoặc ba giá trị ghép nối mà máy chủ đã tạo — **URL máy chủ** (`ws://…/rpc` hoặc `wss://…/rpc`), một **id thiết bị** và một **khóa ghép nối** — **hoặc** một **mã mời** dùng một lần từ quản trị viên không gian làm việc. Đổi một mã mời sẽ cấp phát người dùng của bạn, ghi nhận tư cách thành viên và tạo thông tin xác thực của máy khách này thay bạn, nên bạn không bao giờ phải xử lý id thiết bị hay khóa. Hãy lấy những giá trị này qua một kênh tin cậy và đối chiếu dấu vân tay của máy chủ với một mã QR tin cậy hoặc một ghim đã biết ở lần kết nối đầu tiên.
+- Hoặc ba giá trị ghép nối mà máy chủ đã tạo — **URL máy chủ** (`ws://…/rpc` hoặc `wss://…/rpc`), một **id thiết bị** và một **khóa ghép nối** — **hoặc** một **mã mời** dùng một lần từ quản trị viên không gian làm việc, **hoặc** một liên kết mời hay liên kết ghép nối chứa các giá trị đó. Đổi một mã mời sẽ cấp phát người dùng của bạn, ghi nhận tư cách thành viên và tạo thông tin xác thực của máy khách này thay bạn, nên bạn không bao giờ phải xử lý id thiết bị hay khóa. Hãy lấy những giá trị này qua một kênh tin cậy và đối chiếu dấu vân tay của máy chủ với một mã QR tin cậy hoặc một ghim đã biết ở lần kết nối đầu tiên.
 
 ### Đảm bảo có thể truy cập tới máy chủ
 
@@ -41,14 +41,16 @@ vốn mặc định chỉ có `https://app.usectrl.dev`; loopback và các máy 
 
 Khi cài đặt mới:
 
-1. Khởi chạy Control Center. Màn hình lần chạy đầu tiên hỏi **Control Center nên chạy như thế nào?**
-2. Thay vì **Chạy trong ứng dụng này**, hãy điền vào các trường kết nối: URL máy chủ, cùng với mã mời hoặc id thiết bị và khóa ghép nối.
+1. Khởi chạy Control Center. Màn hình lần chạy đầu tiên hiển thị **Chào mừng đến với Control Center**.
+2. Nhấp vào **Kết nối tới máy chủ** rồi nhập URL máy chủ, cùng với mã mời hoặc, trong **Dùng khóa ghép nối**, id thiết bị và khóa ghép nối.
 3. Nhấp vào **Kết nối**. Control Center gọi tới máy chủ và đưa bạn đến hộp thư của không gian làm việc.
+
+Nếu bạn có liên kết mời hoặc liên kết ghép nối, hãy nhấp vào **Dán liên kết ghép nối** rồi dán liên kết vào. Hộp thoại cho biết liên kết dẫn tới máy chủ nào. Hãy kiểm tra, rồi nhấp vào **Kết nối**: chỉ dán thôi thì không bao giờ kết nối. Nếu kết nối thất bại, hộp thoại vẫn mở cùng thông báo lỗi và mọi thứ bạn đã nhập.
 
 Trên một ứng dụng máy tính đã chạy máy chủ của riêng nó:
 
 1. Mở **Cài đặt → Máy chủ → Kết nối & trạng thái**.
-2. Nhấp vào **Thêm máy chủ**. Nhập URL máy chủ (`wss://host:9030/rpc`) cùng mã mời hoặc id thiết bị và khóa ghép nối. Nút ở cuối trường URL sẽ dò tìm các phiên bản `cc_server` trên LAN hoặc tailnet của bạn.
+2. Nhấp vào **Thêm máy chủ**. Nhập URL máy chủ (`wss://host:9030/rpc`) cùng mã mời hoặc, trong **Dùng khóa ghép nối**, id thiết bị và khóa ghép nối. Nút ở cuối trường URL sẽ dò tìm các phiên bản `cc_server` trên LAN hoặc tailnet của bạn.
 3. Nhấp vào **Kết nối**, rồi **Chuyển** trên hàng của máy chủ mới.
 
 Việc chuyển đổi diễn ra ngay lập tức: ứng dụng dựng lại quanh phiên mới ngay tại
@@ -65,10 +67,10 @@ sự bảo vệ tương tự cũng áp dụng trên loopback và qua relay.
 Bản dựng web luôn ở chế độ từ xa.
 
 1. Mở [app.usectrl.dev](https://app.usectrl.dev), hoặc bản sao bản dựng web của riêng bạn.
-2. Nhập URL máy chủ cùng mã mời hoặc id thiết bị và khóa ghép nối.
-3. Máy khách gọi tới máy chủ và dựng đúng giao diện mà ứng dụng máy tính dựng.
+2. Nhấp vào **Kết nối tới máy chủ** rồi nhập URL máy chủ, cùng với mã mời hoặc, trong **Dùng khóa ghép nối**, id thiết bị và khóa ghép nối. **Dán liên kết ghép nối** thì nhận liên kết mời hoặc liên kết ghép nối.
+3. Nhấp vào **Kết nối**. Máy khách gọi tới máy chủ và dựng đúng giao diện mà ứng dụng máy tính dựng.
 
-Nếu URL có chứa một deep link ghép nối, các trường sẽ được điền sẵn. Khóa ghép nối
+Nếu URL có chứa một deep link ghép nối, hộp thoại kết nối sẽ mở ra với các trường đã được điền sẵn, để bạn có thể kiểm tra máy chủ trước khi nhấp vào **Kết nối**. Khóa ghép nối
 nằm trong **fragment** của URL, thứ mà trình duyệt không gửi tới máy chủ lưu trữ
 trang. Hãy coi liên kết như một bí mật và tin cậy trang phục vụ máy khách web:
 fragment không bảo vệ khỏi mã độc hại của trang.

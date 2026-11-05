@@ -730,13 +730,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'يشغّل Control Center خادمه الخاص على هذا الجهاز ويملك بياناتك محليًا.';
 
   @override
-  String get serverModeRemote => 'الاتصال بمثيل بعيد';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'اتصل بخادم Control Center يعمل في مكان آخر. تبقى بياناتك على ذلك الخادم.';
-
-  @override
   String get serverRemoteUrl => 'عنوان URL للخادم';
 
   @override
@@ -957,13 +950,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'لا يمكن للأجهزة الأخرى الوصول إلى هذا الخادم مباشرة، لذا لا يمكن لعميل جديد الاتصال. عيّن عنوان URL العام للخادم لإقران مزيد من العملاء.';
-
-  @override
-  String get serverSetupTitle => 'كيف ينبغي أن يعمل Control Center؟';
-
-  @override
-  String get serverSetupSubtitle =>
-      'يحتاج Control Center إلى خادم يملك بياناتك. شغّل واحدًا داخل هذا التطبيق، أو اتصل بمثيل يعمل في مكان آخر.';
 
   @override
   String get serverSetupRunLocal => 'التشغيل داخل هذا التطبيق';
@@ -3061,10 +3047,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'اضبط هويات الوكلاء والموجّهات والمهارات واعرض عمليات التشغيل.';
 
   @override
-  String get configureDefaultRunners =>
-      'اضبط المحوّل والنموذج المستخدمين للمساحات الجديدة وتوليد العناوين.';
-
-  @override
   String get configuredLabel => 'تم الضبط.';
 
   @override
@@ -3167,12 +3149,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deactivate => 'إلغاء التفعيل';
-
-  @override
-  String get defaultChat => 'الدردشة الافتراضية';
-
-  @override
-  String get defaultRunners => 'المشغّلات الافتراضية';
 
   @override
   String get delete => 'حذف';
@@ -4482,6 +4458,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notificationGroupMachines => 'الآلات';
 
   @override
+  String get notificationSectionSound => 'الصوت';
+
+  @override
+  String get notificationSectionSchedule => 'الجدولة';
+
+  @override
+  String get notificationSectionEvents => 'الأحداث';
+
+  @override
   String get notificationsMutedRepos => 'المستودعات المكتومة';
 
   @override
@@ -5051,9 +5036,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'اختر لغة التطبيق.';
-
-  @override
-  String get shortTask => 'مهمة قصيرة';
 
   @override
   String get showNativeNotifications => 'عرض إشعارات النظام للأحداث.';
@@ -5641,9 +5623,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'تصغير إلى الشريط';
-
-  @override
-  String get focusModeActiveTooltip => 'وضع التركيز نشط — انقر للإنهاء';
 
   @override
   String get dismiss => 'تجاهل';
@@ -13183,25 +13162,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'الاتصال بـ Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'اتصل بخادم cc-server قيد التشغيل عبر WebSocket. يبقى مفتاحك على هذا الجهاز.';
-
-  @override
-  String get webConnectServerLabel => 'الخادم';
-
-  @override
-  String get webConnectDeviceIdLabel => 'معرّف الجهاز';
-
-  @override
-  String get webConnectPairingKeyLabel => 'مفتاح الاقتران';
-
-  @override
-  String get webConnectPairingKeyHint => 'الصق مفتاح PSK';
-
-  @override
   String get webConnectStayConnected => 'البقاء متصلاً على هذا الجهاز';
 
   @override
@@ -13247,11 +13207,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'اختياري — اتركه فارغًا وسيسميه نموذج العناوين تلقائيًا';
 
   @override
-  String get shortTaskOff => 'معطّل';
+  String get contentSynthesizerUnavailable =>
+      'وكيل Content synthesizer غير موجود أو ليس لديه مشغّل يعمل';
 
   @override
-  String get shortTaskUnavailable =>
-      'اختر نموذج المهام القصيرة في الإعدادات ← المحوّلات لاستخدام هذا';
+  String get conversationNeedsAgent =>
+      'اذكر وكيلًا باستخدام @ لبدء هذه المحادثة';
 
   @override
   String get conversationTitleGenerate => 'توليد';
@@ -13719,14 +13680,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'تُلحق بسطر أوامر المشغّل عند كل إطلاق.';
-
-  @override
-  String get defaultChatDescription =>
-      'يشغّل المحادثات الجديدة وأي وكيل ليس له مشغّل خاص به.';
-
-  @override
-  String get shortTaskDescription =>
-      'يشغّل الأعمال الخلفية السريعة مثل العناوين والملخصات. النموذج الأصغر هو الأنسب هنا.';
 
   @override
   String get settingsStateFailed => 'فشل';
@@ -14484,6 +14437,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'أرفق ملفات — أو أفلتها هنا';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'توسيع المحرر ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'طي المحرر ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'صقل الهدف';
@@ -15663,6 +15626,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'وكيل متوقف بسبب بيانات الاعتماد';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'لا يزال بالانتظار: $title';
+  }
+
+  @override
   String get killTerminal => 'إنهاء الطرفية';
 
   @override
@@ -16120,4 +16088,77 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'توقف التشغيل لأن بيانات اعتماد المزوّد لم تعد تعمل. أعد ربطه من الإعدادات ← المزوّدون، ثم أعد محاولة الدور.';
+
+  @override
+  String get helpMenuLabel => 'مساعدة';
+
+  @override
+  String get helpWhatsNew => 'ما الجديد';
+
+  @override
+  String get helpReportProblem => 'الإبلاغ عن مشكلة';
+
+  @override
+  String get helpCreateGitHubIssue => 'إنشاء مشكلة على GitHub';
+
+  @override
+  String get changelogInstalled => 'مثبّت';
+
+  @override
+  String get changelogGroupNew => 'جديد';
+
+  @override
+  String get changelogGroupImproved => 'تحسينات';
+
+  @override
+  String get changelogGroupFixed => 'إصلاحات';
+
+  @override
+  String get changelogLoadFailed => 'تعذّر تحميل ملاحظات الإصدار.';
+
+  @override
+  String get changelogOpenWebsite => 'فتح على الموقع';
+
+  @override
+  String get connectWelcomeTitle => 'مرحبًا بك في Control Center';
+
+  @override
+  String get connectWelcomeSubtitle => 'شغّله هنا، أو اتصل بخادم لديك بالفعل.';
+
+  @override
+  String get connectWelcomeSubtitleWeb => 'اتصل بخادمك للبدء.';
+
+  @override
+  String get connectToServer => 'الاتصال بخادم';
+
+  @override
+  String get connectToServerIntro => 'أدخل عنوان خادم Control Center.';
+
+  @override
+  String get connectUsePairingKey => 'استخدام مفتاح اقتران';
+
+  @override
+  String get connectPasteLink => 'لصق رابط اقتران';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'الصق رابط الدعوة أو الاقتران الذي حصلت عليه.';
+
+  @override
+  String get connectPasteLinkLabel => 'رابط الدعوة أو الاقتران';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'هذا ليس رابط دعوة أو اقتران لـ Control Center. انسخ الرابط كاملًا وحاول مرة أخرى.';
+
+  @override
+  String get connectPasteLinkTarget => 'سيتصل بـ';
+
+  @override
+  String get focusModeEnd => 'إنهاء جلسة التركيز';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'متبقٍ $minutes د';
+  }
 }

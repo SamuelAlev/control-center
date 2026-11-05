@@ -221,6 +221,22 @@ if [ "${SKIP_SIGNING:-0}" = "1" ]; then PROFILE_SRC=""; fi
 if [ -n "$PROFILE_SRC" ]; then
   test -f "$PROFILE_SRC" || { echo "ERROR: provisioning profile not found at '$PROFILE_SRC' (set MACOS_PROVISIONING_PROFILE or MACOS_PROVISIONING_PROFILE_BASE64)."; exit 1; }
   echo "==> Embedding provisioning profile: $PROFILE_SRC"
+  # Every profile-gated entitlement the app claims must be granted by the
+  # profile. A missing one does not fail signing or notarization: macOS kills
+  # the shipped app at launch. Fail here instead, naming the key to enable on
+  # the App ID before the profile is regenerated.
+  PROFILE_PLIST="$SECRETS_DIR/embedded.provisionprofile.plist"
+  security cms -D -i "$PROFILE_SRC" > "$PROFILE_PLIST"
+  for key in $(sed -n 's:.*<key>\(.*\)</key>.*:\1:p' macos/Runner/Release.entitlements); do
+    case "$key" in
+      com.apple.developer.*|keychain-access-groups)
+        /usr/libexec/PlistBuddy -c "Print :Entitlements:$key" "$PROFILE_PLIST" >/dev/null 2>&1 || {
+          echo "ERROR: Release.entitlements claims '$key' but the provisioning profile does not grant it. Enable it on the App ID, regenerate the Developer ID profile and update MACOS_PROVISIONING_PROFILE_BASE64 (see RELEASING.md)."
+          exit 1
+        }
+        ;;
+    esac
+  done
   cp "$PROFILE_SRC" "$APP/Contents/embedded.provisionprofile"
 fi
 

@@ -2,7 +2,7 @@
 title: Homokozó és biztonság
 description: Mi korlátozza valójában ma az ügynököt a Control Centerben, milyen messzire ér el az operációs rendszer homokozója, és mely határok tartanak egy olyan hoszton, amelynek nincs háttérrendszere.
 slug: hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Hová ér el az operációs rendszer homokozója, és hová nem]
@@ -225,7 +225,7 @@ visszaállítva tiltásra, felül pedig explicit engedélyek, unlink-blokkolás 
 tiltott útvonalon és annak ősein, hogy egy átnevezés ne kerülhesse meg az írási
 tiltást, exec-tiltások a mindig veszélyes binárisokra és bármire, amit egy
 írható könyvtárba másoltak, valamint a hálózat a loopback proxy portjaira és a
-DNS-re korlátozva.
+DNS-re korlátozva. A felhasználói könyvtáradban található eszköztelepítések (corepack pnpm, node-verziókezelők, Playwright-böngészők, rustup, fvm, uv és hasonlók) a homokozón belül is futtathatók maradnak az exec-tiltásokon belül, így az ügynökök megkerülő megoldások nélkül használhatják őket. A mindig veszélyes binárisokra vonatkozó tiltások továbbra is érvényesek bennük. Minden munkamenet kap egy saját, privát `TMPDIR` könyvtárat is. Ez az egyetlen ideiglenes könyvtár, ahol az ügynök a saját maga által épített programokat futtathatja, vagy Unix-socketeket nyithat.
 
 A gyakorlati következmény: Linuxon az ügynök fájlrendszer-képe szűkül; macOS-en
 az ügynök még mindig _olvashatja_ a hoszt nagy részét, és a regisztrált

@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:control_center/core/notifications/notification_frame_mapper.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_tab_kinds.dart';
@@ -358,6 +359,26 @@ void main() {
         final n = map({'kind': 'approval'})!;
         expect(n.spaceId, isNull);
         expect(n.route, contains('ws-1'));
+      });
+
+      test('carries the wait; only an approval is answerable', () {
+        final approval = map({'kind': 'approval', 'wait_id': 'cf_1'})!.wait!;
+        expect(approval.id, 'cf_1');
+        expect(approval.kind, AgentInputKind.approval);
+        expect(approval.approvable, isTrue);
+        expect(approval.notificationId, 'wait-cf_1');
+
+        final question = map({'kind': 'question', 'wait_id': 'msg-1'})!.wait!;
+        expect(question.approvable, isFalse);
+
+        final unknown = map({'kind': 'somethingNew', 'wait_id': 'w-1'})!.wait!;
+        expect(unknown.kind, isNull);
+        expect(unknown.approvable, isFalse);
+      });
+
+      test('an older server without a wait id still notifies, plainly', () {
+        final n = map({'kind': 'approval'})!;
+        expect(n.wait, isNull);
       });
     });
 

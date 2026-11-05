@@ -6,7 +6,9 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/shell/presentation/layout/control_center_layout.dart';
+import 'package:control_center/features/shell/presentation/layout/shell_title_bar.dart';
 import 'package:control_center/features/shell/presentation/widgets/app_sidebar.dart';
+import 'package:control_center/features/shell/presentation/widgets/notification_bell.dart';
 import 'package:control_center/features/shell/providers/sidebar_providers.dart';
 import 'package:control_center/features/soundscape/device_location_reader.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
@@ -380,12 +382,92 @@ void main() {
     );
   }
 
+  testWidgets('the footer is one icon strip, and a stack in the rail', (
+    tester,
+  ) async {
+    await pumpShellAt(tester, pullRequestsRoute('ws-1'));
+
+    final footerIcons = [
+      AppIcons.newspaper,
+      AppIcons.volume2,
+      AppIcons.focus,
+      AppIcons.activity,
+      AppIcons.gauge,
+      AppIcons.circleHelp,
+      AppIcons.settings,
+    ];
+    List<Offset> centers() => [
+      for (final icon in footerIcons) tester.getCenter(find.byIcon(icon)),
+    ];
+
+    expect(find.text('Observability'), findsNothing);
+    final strip = centers();
+    expect(strip.map((c) => c.dy).toSet(), hasLength(1));
+    final xs = strip.map((c) => c.dx).toList();
+    expect(xs, orderedEquals([...xs]..sort()));
+    // The two groups sit apart, with the space between them.
+    expect(xs[3] - xs[2], greaterThan(xs[1] - xs[0]));
+
+    await tester.tap(find.byIcon(AppIcons.panelLeftClose));
+    await tester.pumpAndSettle();
+
+    final stack = centers();
+    expect(stack.map((c) => c.dx).toSet(), hasLength(1));
+    // The leading icon holds its line across the toggle, to within the half
+    // pixel the rail's trailing border takes off its centre.
+    expect(stack.first.dx, closeTo(strip.first.dx, 0.5));
+  });
+
+  testWidgets('the notification bell sits right of search in the sidebar', (
+    tester,
+  ) async {
+    await pumpShellAt(tester, pullRequestsRoute('ws-1'));
+
+    expect(
+      find.descendant(
+        of: find.byType(ShellTitleBar),
+        matching: find.byType(NotificationBell),
+      ),
+      findsNothing,
+    );
+    final search = tester.getRect(find.byIcon(AppIcons.search));
+    final bell = tester.getRect(find.byIcon(AppIcons.bell));
+    expect(bell.center.dy, search.center.dy);
+    expect(bell.left, greaterThan(search.right));
+
+    await tester.tap(find.byIcon(AppIcons.panelLeftClose));
+    await tester.pumpAndSettle();
+
+    // The rail stacks them in the same order.
+    final railSearch = tester.getRect(find.byIcon(AppIcons.search));
+    final railBell = tester.getRect(find.byIcon(AppIcons.bell));
+    expect(railBell.center.dx, railSearch.center.dx);
+    expect(railBell.top, greaterThan(railSearch.bottom));
+  });
+
+  testWidgets('the help menu opens above the footer', (tester) async {
+    await pumpShellAt(tester, pullRequestsRoute('ws-1'));
+
+    final help = tester.getRect(find.byIcon(AppIcons.circleHelp));
+    await tester.tap(find.byIcon(AppIcons.circleHelp));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Keyboard shortcuts'), findsOneWidget);
+    expect(find.text("What's new"), findsOneWidget);
+    expect(find.text('Create a GitHub issue'), findsOneWidget);
+    expect(find.text('Discord'), findsNothing);
+    expect(
+      tester.getRect(find.text('Control Center').last).bottom,
+      lessThan(help.top),
+    );
+  });
+
   testWidgets('settings drills the global sidebar in, and exit returns to '
       'the page it was opened from', (tester) async {
     final router = await pumpShellAt(tester, pullRequestsRoute('ws-1'));
     expect(find.text('Inbox'), findsOneWidget);
 
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.byIcon(AppIcons.settings));
     await tester.pumpAndSettle();
     expect(
       router.routerDelegate.currentConfiguration.uri.path,
@@ -490,7 +572,7 @@ void main() {
     'the sidebar retains its return destination across a rail toggle',
     (tester) async {
       final router = await pumpShellAt(tester, pullRequestsRoute('ws-1'));
-      await tester.tap(find.text('Settings'));
+      await tester.tap(find.byIcon(AppIcons.settings));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(AppIcons.panelLeftClose));
       await tester.pumpAndSettle();

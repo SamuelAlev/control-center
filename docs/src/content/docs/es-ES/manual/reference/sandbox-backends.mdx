@@ -2,7 +2,7 @@
 title: Backends del entorno aislado
 description: Los backends del entorno aislado, dónde se aplican y todos los objetos de valor que usa el runtime del entorno aislado.
 slug: es-ES/manual/referencia/backends-de-entorno-aislado
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Que una ejecución esté aislada depende del host]
@@ -52,8 +52,8 @@ El perfil generado es **permisivo de forma predeterminada** (`(allow default)`) 
 
 - **Lecturas del sistema de archivos**: denegadas para las rutas secretas (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` y el resto del conjunto de lectura denegada)
 - **Escrituras del sistema de archivos**: se reajustan a denegar y después se permiten subrutas explícitas, con las rutas de denegación obligatoria (archivos rc del shell, `.git/hooks`, la configuración de Claude, las copias de trabajo protegidas) bloqueadas incluso dentro de una raíz escribible. `file-write-unlink` se deniega en cada ruta denegada y en sus ancestros, de modo que un rename no puede eludir una denegación de escritura
-- **Procesos**: denegaciones de `process-exec` para los binarios siempre peligrosos, más un bloqueo a ejecutar cualquier cosa desde un directorio escribible
-- **Red**: restringida a los puertos del proxy en proceso más DNS: loopback no se permite sin más y los sockets Unix no se permiten. Los proxies aplican la lista de permitidos de dominios por sesión (consulta [Salida de red](#salida-de-red))
+- **Procesos**: denegaciones de `process-exec` para los binarios siempre peligrosos, más un bloqueo a ejecutar cualquier cosa desde un directorio escribible. Los árboles conocidos de instalación de herramientas bajo su directorio personal (caché de corepack, de npx y de `pnpm dlx`, gestores de versiones de Node, navegadores de Playwright, rustup y cargo, Go, fvm y la caché de pub, pyenv, uv y pipx, rbenv, sdkman, mise, asdf y `~/.local/bin`) se vuelven a abrir bajo ese bloqueo. Los directorios temporales compartidos también están bloqueados. Cada sesión recibe en su lugar un `TMPDIR` privado bajo `/private/tmp`, donde pueden ejecutarse los programas que compila (un binario de `go test`, una compilación de cargo). Las denegaciones de binarios siempre peligrosos se aplican después de estas autorizaciones
+- **Red**: restringida a los puertos del proxy en proceso más DNS: loopback no se permite sin más y la escucha TCP está denegada. Los sockets Unix solo se permiten dentro del `TMPDIR` privado de la sesión, lo que cubre herramientas como tsx y Chrome que mantienen ahí un socket IPC; su agente SSH y otros sockets siguen inaccesibles. Los proxies aplican la lista de permitidos de dominios por sesión (consulta [Salida de red](#salida-de-red))
 - **Configuración**: los perfiles se generan en cada lanzamiento a partir del `SandboxSpec`
 
 Requisitos:

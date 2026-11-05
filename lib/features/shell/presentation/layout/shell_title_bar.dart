@@ -1,15 +1,8 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
 import 'package:control_center/features/demo/presentation/widgets/demo_badge.dart';
-import 'package:control_center/features/focus_mode/presentation/widgets/focus_config_dialog.dart';
-import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
 import 'package:control_center/features/presence/presentation/widgets/workspace_presence_rail.dart';
-import 'package:control_center/features/shell/presentation/widgets/notification_bell.dart';
 import 'package:control_center/features/shell/presentation/widgets/title_bar_breadcrumb.dart';
 import 'package:control_center/features/shell/providers/sidebar_providers.dart';
-import 'package:control_center/features/soundscape/presentation/notifiers/soundscape_mini_player_controller.dart';
-import 'package:control_center/features/soundscape/presentation/screens/soundscape_panel.dart';
-import 'package:control_center/features/soundscape/providers/soundscape_providers.dart';
 import 'package:control_center/features/subscriptions/presentation/widgets/subscription_usage_pill.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -19,8 +12,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The slim 40px top bar: back/forward navigation, the route breadcrumb, the
-/// command-palette search field, notifications and the focus-mode control.
+/// The slim 40px top bar: back/forward navigation and the route breadcrumb,
+/// with presence and subscription usage at its end.
 ///
 /// The bar spans the FULL window width (the sidebar starts below it, so no
 /// sidebar border runs up beside it) and the global-sidebar rail toggle
@@ -51,7 +44,6 @@ class ShellTitleBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final focusMode = ref.watch(focusModeProvider);
     final t = context.designSystem ?? DesignSystemTokens.light();
     // macOS traffic-light clearance: the cluster (3 ~14px circles, ~8px
     // gaps, ~12px left inset) ends near x=70; 80 leaves a comfortable gap so
@@ -113,24 +105,6 @@ class ShellTitleBar extends ConsumerWidget {
                 const WorkspacePresenceRail(),
                 const SizedBox(width: AppSpacing.xs),
                 const SubscriptionUsagePill(),
-                const SizedBox(width: AppSpacing.xs),
-                const NotificationBell(),
-                const SizedBox(width: AppSpacing.xs),
-                // No libmpv (a stock Linux desktop): nothing could play.
-                if (ref.watch(mediaPlaybackAvailableProvider)) ...[
-                  const _SoundscapeButton(),
-                  const SizedBox(width: AppSpacing.xs),
-                ],
-                if (focusMode.active)
-                  _FocusModeChip(
-                    minutesRemaining: focusMode.minutesRemaining,
-                    onDeactivate: () =>
-                        ref.read(focusModeProvider.notifier).deactivate(),
-                    onFloat: () =>
-                        ref.read(focusModeProvider.notifier).enterCompactMode(),
-                  )
-                else
-                  const _StartFocusButton(),
               ],
             ),
           ),
@@ -164,133 +138,6 @@ class ShellTitleBar extends ConsumerWidget {
           tooltip: l10n.goForward,
           onPressed: canGoForward ? onGoForward : null,
         ),
-      ],
-    );
-  }
-}
-
-class _FocusModeChip extends StatelessWidget {
-  const _FocusModeChip({
-    required this.minutesRemaining,
-    required this.onDeactivate,
-    required this.onFloat,
-  });
-
-  final int minutesRemaining;
-  final VoidCallback onDeactivate;
-  final VoidCallback onFloat;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    // A live focus session is the operator's single "I'm heads-down" signal, so
-    // it carries the brand accent — the status-capsule recipe from DESIGN.md
-    // (soft accent fill, accent text, fully-rounded). Accent (never amber):
-    // amber/`warn` means *blocked* in this system, which a focus session is not.
-    final tokens = context.designSystem;
-    final accent = tokens?.accent ?? const Color(0xFFFA500F);
-    final accentSoft = tokens?.accentSoft ?? const Color(0x1FFA500F);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CcTooltip(
-          message: l10n.focusModeActiveTooltip,
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: onDeactivate,
-              child: Container(
-                height: 24,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: accentSoft,
-                  borderRadius: BorderRadius.circular(AppRadii.pill),
-                  border: Border.all(color: accent.withValues(alpha: 0.30)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(AppIcons.focus, size: 12, color: accent),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      '${minutesRemaining}m',
-                      style: CcTypography.caption.copyWith(
-                        color: accent,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.xs),
-        CcIconButton(
-          icon: AppIcons.pictureInPicture2,
-          variant: CcButtonVariant.ghost,
-          size: CcButtonSize.sm,
-          onPressed: onFloat,
-          tooltip: l10n.focusModeFloat,
-        ),
-      ],
-    );
-  }
-}
-
-class _StartFocusButton extends StatelessWidget {
-  const _StartFocusButton();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return CcIconButton(
-      icon: AppIcons.focus,
-      variant: CcButtonVariant.ghost,
-      size: CcButtonSize.sm,
-      onPressed: () => showCcDialog<void>(
-        context: context,
-        builder: (_) => const FocusConfigDialog(),
-      ),
-      tooltip: l10n.focusModeStart,
-    );
-  }
-}
-
-/// Title-bar entry point to the soundscape panel. Reflects playback state with
-/// the brand accent when audio is playing (presence-over-decoration: the color
-/// reports a real, live thing).
-class _SoundscapeButton extends ConsumerWidget {
-  const _SoundscapeButton();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final playing = ref.watch(soundscapeProvider.select((s) => s.playing));
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CcIconButton(
-          icon: playing ? AppIcons.audioLines : AppIcons.volume2,
-          variant: CcButtonVariant.ghost,
-          size: CcButtonSize.sm,
-          color: playing ? tokens.accent : null,
-          onPressed: () => showSoundscapePanel(context),
-          tooltip: l10n.soundscapeTitle,
-        ),
-        if (playing) ...[
-          const SizedBox(width: AppSpacing.xs),
-          CcIconButton(
-            icon: AppIcons.pictureInPicture2,
-            variant: CcButtonVariant.ghost,
-            size: CcButtonSize.sm,
-            onPressed: () => ref
-                .read(soundscapeMiniPlayerControllerProvider.notifier)
-                .open(),
-            tooltip: l10n.soundscapePopOut,
-          ),
-        ],
       ],
     );
   }

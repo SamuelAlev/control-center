@@ -2,7 +2,7 @@
 title: Gestisci adattatori e modelli
 description: Collega i fornitori di modelli, scegli il modello su cui viene eseguito un agente e verifica quali CLI dei runner degli agenti sono presenti sull'host del server.
 slug: it-IT/manuale/guide/adapter
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Questa guida mostra come collegare i fornitori di modelli e scegliere su cosa
@@ -96,11 +96,10 @@ costo è calcolato sul modello che ha effettivamente servito il turno, non su
 quello che hai richiesto.
 
 :::note[Un agente senza adattatore viene eseguito sul ciclo integrato]
-Ogni spazio di lavoro viene popolato inizialmente con cinque agenti — un CEO più
-`qa`, `architect`, `engineer` e `librarian` — senza adattatore e senza modello.
-L'invio ricade su **Control Center (built-in)**, non sull'impostazione
-**Runner predefiniti** di questa pagina, che è una preferenza lato client che il
-percorso di invio non legge mai. Il log di esecuzione registra `cc-harness` per
+Ogni spazio di lavoro viene popolato inizialmente con sei agenti — un CEO più
+`qa`, `architect`, `engineer`, `librarian` e `content-synthesizer` — senza
+adattatore e senza modello. L'invio ricade su **Control Center (built-in)**; non
+esiste un runner predefinito per lo spazio di lavoro né per il dispositivo. Il log di esecuzione registra `cc-harness` per
 quelle esecuzioni, così la trascrizione indica che cosa è stato effettivamente
 eseguito.
 
@@ -113,9 +112,24 @@ Completare il passaggio dell'adattatore dell'onboarding applica a posteriori a
 **ogni** agente a cui manca ancora un adattatore o un modello — CEO e
 specialisti, in ogni spazio di lavoro esistente in quel momento — la coppia che
 hai scelto. Gli spazi di lavoro creati in seguito popolano comunque tutti e
-cinque non configurati. Imposta esplicitamente adattatore e modello su ogni
+sei non configurati. Imposta esplicitamente adattatore e modello su ogni
 agente che intendi usare.
 :::
+
+## Personalizza titoli e riepiloghi
+
+L'agente **Content synthesizer** scrive il testo che Control Center genera
+attorno a una conversazione: il titolo, le risposte di `/btw`, i documenti di
+`/handoff` e l'intervista sull'obiettivo di `/goal`. Esegue ogni volta un unico
+completamento senza strumenti, con il proprio adattatore e modello, quindi
+assegnagli un modello piccolo e veloce.
+
+Modifica la sua **persona** in **Impostazioni → Spazio di lavoro → Agenti** per
+cambiare il modo in cui si legge quel testo: lunghezza dei titoli, lingua, tono,
+gli esempi che segue. Il formato della risposta che ogni funzione analizza (un
+titolo su una riga, le sezioni dell'obiettivo) è fisso e viene applicato dopo la
+tua persona. Elimina l'agente per disattivare queste funzioni; non viene
+ripristinato automaticamente.
 
 ## Installa la CLI di un runner
 

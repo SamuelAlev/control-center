@@ -2,7 +2,7 @@
 title: Ruimtes gebruiken
 description: Maak ruimtes, stel hun modus in, beheer deelnemers en autonomie en open gesprekken en threads.
 slug: nl-NL/handleiding/gidsen/ruimtes
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Deze gids laat je zien hoe je ruimtes gebruikt. Een **ruimte** is het
@@ -26,6 +26,11 @@ agenten openen om met elkaar te praten — zie
    worktrees aanmaakt. Alle repo's zijn standaard geselecteerd; vink je elke repo
    uit, dan ontstaat een ruimte waarin niets is uitgecheckt
 6. Bevestig
+
+Alleen een agent beantwoordt een bericht, dus een ruimte zonder agent start niets:
+de composer meldt dat en bewaart je bericht totdat je een agent @-noemt, die hem
+dan aan de ruimte toevoegt en verzendt. Achter een lege ruimte staat geen
+standaardrunner.
 
 Ruimtes zijn gebonden aan één werkruimte: je ziet alleen agenten uit de huidige
 werkruimte en een ruimte toont nooit gegevens uit een andere werkruimte.
@@ -102,7 +107,7 @@ aangemaakt.
 Gesprekken verschijnen als tabbladen in de editor en, zodra er meer dan één is,
 als geneste rijen onder de ruimte in de zijbalk. **Nieuw gesprek** staat in het
 nieuw-tabbladmenu van de editor en maakt een titelloos gesprek aan zonder
-titelvraag — het titelmodel noemt het naar het eerste bericht. Gebruik er een om
+titelvraag — de agent Content synthesizer noemt het naar het eerste bericht. Gebruik er een om
 parallel werk te doen met dezelfde agent en worktree.
 
 Elk gesprek houdt zijn eigen berichtgeschiedenis en agentsessies bij, terwijl het

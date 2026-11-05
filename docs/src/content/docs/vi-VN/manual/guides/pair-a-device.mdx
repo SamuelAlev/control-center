@@ -2,7 +2,7 @@
 title: Ghép nối thiết bị
 description: Ghép nối điện thoại (hoặc trình duyệt hay máy tính thứ hai) với máy chủ Control Center của bạn để theo dõi đội máy từ xa.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Hướng dẫn này chỉ cho bạn cách ghép nối một chiếc điện thoại với Control Center,
@@ -41,11 +41,11 @@ Nhấp vào **Ghép nối máy khách mới** ở đầu trang, đặt cho nó m
 hoặc **Điện thoại** — rồi nhấp vào **Ghép nối**.
 
 - Với **điện thoại**, một mã QR hiện ra. Hãy quét nó bằng camera của điện thoại, hoặc sao chép liên kết và mở trong bất kỳ trình duyệt nào. Nó trỏ ứng dụng Remote tới máy chủ của bạn và mang theo thông tin xác thực.
-- Với **trình duyệt** hoặc **máy tính**, hãy sao chép liên kết được hiển thị (hoặc id thiết bị và khóa ghép nối) vào máy khách mới. Liên kết một chạm chỉ được cung cấp khi bạn ghép nối từ máy khách web, vì một binary máy tính để bàn không có web origin để dựng liên kết đó.
+- Với **trình duyệt** hoặc **máy tính**, hãy sao chép liên kết được hiển thị (hoặc id thiết bị và khóa ghép nối) vào máy khách mới. Mở liên kết trong trình duyệt, hoặc dán vào **Dán liên kết ghép nối** trong ứng dụng máy tính. Khi ghép nối từ ứng dụng máy tính, liên kết được dựng từ URL của chính máy chủ, nên nó chỉ xuất hiện khi máy chủ có URL mà các thiết bị khác truy cập được.
 
 Mã QR của điện thoại và liên kết mà `cc_server pair --client-url` in ra trên CLI
 là **những payload khác nhau và không thể thay thế cho nhau**: liên kết CLI điền
-vào biểu mẫu kết nối của máy khách web, còn mã QR này mang bản mô tả kết nối đầy
+vào hộp thoại kết nối của máy khách web hoặc được dán vào ứng dụng máy tính, còn mã QR này mang bản mô tả kết nối đầy
 đủ và dấu vân tay danh tính của máy chủ cho PWA Remote.
 
 Về phía điện thoại, việc mở một liên kết ghép nối không ghép nối một cách âm

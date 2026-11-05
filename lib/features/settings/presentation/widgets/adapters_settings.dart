@@ -1,18 +1,14 @@
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:collection/collection.dart';
-import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/adapters/adapter_detail_pane.dart';
 import 'package:control_center/features/settings/presentation/widgets/adapters/adapter_rail.dart';
-import 'package:control_center/features/settings/presentation/widgets/adapters/default_runner_row.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/providers_models_section.dart';
 import 'package:control_center/features/settings/presentation/widgets/usage_summary_card.dart';
-import 'package:control_center/features/settings/providers/adapter_preferences_providers.dart';
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/features/settings/settings_shortcuts.dart';
-import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
@@ -20,8 +16,8 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Auto-detection panel for installed agent runner CLIs, plus default adapter+model
-/// configuration for chat and short-task agents.
+/// Auto-detection panel for installed agent runner CLIs. Which runner and model
+/// an agent uses is set on the agent itself; there is no workspace default.
 /// Every runner in the catalogue used to render its whole configuration inline: the
 /// enforcement matrix, an environment-variable button and an extra-argv field, for the
 /// installed ones and the missing ones alike.
@@ -61,10 +57,6 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final detected = ref.watch(detectedAdaptersProvider);
-    // The rail above deliberately shows every catalogued runner (finding out
-    // what is missing is the point of this page); the default-runner pickers
-    // below must only offer what is installed.
-    final available = ref.watch(availableAdaptersProvider);
 
     return SettingsShortcuts(
       extraBindings: {
@@ -96,8 +88,6 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _detectedCard(context, l10n, detected),
-              const SizedBox(height: AppSpacing.xl),
-              _defaultsCard(context, l10n, available),
               const SizedBox(height: AppSpacing.xl),
               // Model catalog & provider governance (PRD 05).
               const ProvidersModelsSection(),
@@ -203,49 +193,6 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
                 ),
               ],
             ),
-    );
-  }
-
-  Widget _defaultsCard(
-    BuildContext context,
-    AppLocalizations l10n,
-    List<Adapter> available,
-  ) {
-    final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    final isAdmin =
-        workspaceId != null &&
-        (ref.watch(myWorkspaceRoleProvider(workspaceId))?.isAdmin ?? false);
-    return SectionCard(
-      label: l10n.defaultRunners,
-      subtitle: Text(l10n.configureDefaultRunners),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          DefaultRunnerRow(
-            label: l10n.defaultChat,
-            description: l10n.defaultChatDescription,
-            adapterIdProvider: defaultChatAdapterProvider,
-            modelIdProvider: defaultChatModelProvider,
-            available: available,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          const CcDivider(),
-          const SizedBox(height: AppSpacing.lg),
-          // Workspace state, not a device preference: the server runs titles
-          // and side questions on it for every member, so only an admin may
-          // change it, and unset means those features are off.
-          DefaultRunnerRow(
-            label: l10n.shortTask,
-            description: l10n.shortTaskDescription,
-            adapterIdProvider: shortTaskAdapterProvider,
-            modelIdProvider: shortTaskModelProvider,
-            available: available,
-            enabled: isAdmin,
-            offLabel: l10n.shortTaskOff,
-            footnote: isAdmin ? null : l10n.settingsWorkspaceAdminOnly,
-          ),
-        ],
-      ),
     );
   }
 }

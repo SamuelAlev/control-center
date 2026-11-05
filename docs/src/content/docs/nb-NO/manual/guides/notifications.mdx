@@ -2,7 +2,7 @@
 title: Konfigurer varsler
 description: Slå kategorier av eller på, angi Quiet hours og en lyd, og få oversikt over hvilke varsler som når deg hvor.
 slug: nb-NO/handbok/slik-gjor-du/varsler
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Denne veiledningen viser hvordan du konfigurerer varsler og hva hver innstilling
@@ -49,11 +49,25 @@ Telefonklienten har ingen varselflate i det hele tatt.
 Alt utenfor denne listen kan det verken varsles om eller filtreres på — det
 finnes ingen «alt annet»-kategori.
 
-**En agent venter på deg** utløses én gang per venting, når ventingen starter:
-en ventende godkjenning (inkludert sandkasse-tillatelser og verktøygodkjenninger
+**En agent venter på deg** utløses når en venting starter: en ventende godkjenning (inkludert sandkasse-tillatelser og verktøygodkjenninger
 i Claude Code), et `ask_user`-spørsmål eller en kjøring som holdes tilbake fordi
 påloggingsinformasjonen dens ikke kan betjene den. Varselet åpner området der du
 svarer, og forblir stille mens du allerede ser på det området.
+
+På skrivebordet oppfører disse varslene seg annerledes enn resten:
+
+- **De er tidssensitive.** På macOS kan de bryte gjennom en Fokus-modus som
+  tillater tidssensitive varsler fra Control Center.
+- **En godkjenning kan besvares fra varselet.** **Godkjenn** og **Nekt** sender
+  svaret ditt uten å åpne appen. Serveren kontrollerer det på samme måte som
+  kortet i appen. Vil du heller godkjenne for en periode, åpner du kortet.
+- **En ubesvart venting minner deg på det.** Hvis ingen svarer, kommer varselet
+  tilbake som **Venter fortsatt: …** 3, 10, 25 og 45 minutter etter at
+  ventingen startet. Hver påminnelse erstatter det forrige varselet i stedet for
+  å legge til et nytt. Påminnelser hoppes over mens et Control Center-vindu har
+  fokus, fordi godkjenningskortet og bjellen allerede er foran deg.
+- **Det forsvinner når ventingen er over**, uansett hvordan den ble besvart, så
+  du trykker aldri på en knapp for en forespørsel som allerede er avgjort.
 
 Disse innstillingene følger brukeren din på tvers av enheter, så en telefon og en
 bærbar maskin holder følge. Volumet er det bevisste unntaket og holdes per enhet.
@@ -94,7 +108,8 @@ Et varsel forkastes i stillhet når ett av disse er sant:
 - Varsler er slått av globalt, eller kategorien er slått av
 - Du er allerede på ruten det ville ført deg til — og, for en melding, allerede
   i det området
-- Fokusmodus er aktiv, og kategorien er ikke hastende
+- En fokusøkt med **Blokker varslinger** på pågår, og kategorien er ikke
+  hastende
 - Quiet hours er aktive, og kategorien er ikke hastende
 
 Disse sjekkene gjelder OS-toasts. Den varige bjella registrerer fortsatt
@@ -137,6 +152,14 @@ er borte, uansett lesestatus.
 Tillatelse forespørres nativt når appen starter. Hvis du avslo den, slår du på
 Control Center igjen under Systeminnstillinger → Varsler; det finnes ingen
 forespørsel i appen som kan utløse den på nytt.
+
+### Jeg går stadig glipp av godkjenningsvarsler på macOS
+
+macOS viser varslene fra Control Center som bannere som standard, og et banner
+forsvinner etter noen sekunder. For å beholde dem på skjermen til du handler,
+setter du varslingsstilen for Control Center til **Vedvarende** under
+Systeminnstillinger → Varsler. En ubesvart godkjenning kommer også tilbake som en
+påminnelse (se [Slå kategorier av eller på](#slå-kategorier-av-eller-på)).
 
 ### Ingenting kommer inn i nettbygget
 

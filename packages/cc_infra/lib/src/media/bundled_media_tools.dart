@@ -25,22 +25,34 @@ class BundledMediaTools {
   /// Bundled SVG rasterizer with external resources disabled.
   final String svgRenderer;
 
+  /// The directories [locate] searches, in order.
+  static List<String> searchDirectories({
+    required String appSupportRoot,
+    String? directory,
+  }) {
+    final explicit = directory ?? Platform.environment['CC_MEDIA_TOOLS_DIR'];
+    if (explicit != null && explicit.isNotEmpty) {
+      return [explicit];
+    }
+    final executableDirectory = File(Platform.resolvedExecutable).parent.path;
+    final nativeDirectory = Platform.environment['CC_NATIVE_LIB_DIR'];
+    return [
+      p.join(executableDirectory, 'media'),
+      if (nativeDirectory != null && nativeDirectory.isNotEmpty)
+        p.join(nativeDirectory, 'media'),
+      p.join(appSupportRoot, 'media'),
+    ];
+  }
+
   /// Resolves a complete managed bundle or fails without a system-tool fallback.
   static BundledMediaTools locate({
     required String appSupportRoot,
     String? directory,
   }) {
-    final explicit = directory ?? Platform.environment['CC_MEDIA_TOOLS_DIR'];
-    final executableDirectory = File(Platform.resolvedExecutable).parent.path;
-    final nativeDirectory = Platform.environment['CC_NATIVE_LIB_DIR'];
-    final candidates = explicit != null && explicit.isNotEmpty
-        ? [explicit]
-        : [
-            p.join(executableDirectory, 'media'),
-            if (nativeDirectory != null && nativeDirectory.isNotEmpty)
-              p.join(nativeDirectory, 'media'),
-            p.join(appSupportRoot, 'media'),
-          ];
+    final candidates = searchDirectories(
+      appSupportRoot: appSupportRoot,
+      directory: directory,
+    );
     for (final candidate in candidates) {
       if (!p.isAbsolute(candidate)) {
         throw const MediaRenderException(

@@ -58,6 +58,7 @@ class ContextInspectionService {
     this._toolDeferralEnabled = true,
     this._conversationContextUseCase,
     this._modelWindowOf,
+    this._claudeCodeWindowOf,
   });
 
   final AgentRepository _agentRepository;
@@ -84,6 +85,10 @@ class ContextInspectionService {
   /// The context window, in tokens, of a qualified harness model
   /// (`provider/model`), or null when the catalog does not know it.
   final int? Function(String qualifiedModel)? _modelWindowOf;
+
+  /// The window, in tokens, Claude Code runs a `--model` id with (null: its
+  /// default model), read from the installed CLI; null when it cannot say.
+  final Future<int?> Function(String? modelId)? _claudeCodeWindowOf;
 
   /// The harness's own fallback when the model's window is unknown
   /// (`DispatchSession._runHarness`).
@@ -465,7 +470,7 @@ class ContextInspectionService {
       runner: runner,
       modelId: agent.modelId,
       workingDirectory: workingDirectory,
-      windowTokens: _windowFor(agent, runner),
+      windowTokens: await _windowFor(agent, runner),
       hasContent: includeContent,
       segments: segments,
     );
@@ -483,13 +488,21 @@ class ContextInspectionService {
 
   /// The window [agent]'s runs actually get, in tokens.
   ///
-  /// Claude Code's is the agent's setting as given, else the one its model id
-  /// runs with; the harness's is the model's, capped by the setting — both
-  /// mirror what the run reports.
-  int _windowFor(Agent agent, ContextRunner runner) {
+  /// Claude Code's is the agent's setting as given, else the one the CLI
+  /// reports for its model id (0, unknown, when it cannot say); the
+  /// harness's is the model's, capped by the setting — both mirror what the
+  /// run reports.
+  Future<int> _windowFor(Agent agent, ContextRunner runner) async {
     if (runner == ContextRunner.claudeCode) {
-      return agent.contextSize ??
-          AcpModelsService.claudeCodeContextWindow(agent.modelId);
+      final setting = agent.contextSize;
+      if (setting != null) {
+        return setting;
+      }
+      try {
+        return await _claudeCodeWindowOf?.call(agent.modelId) ?? 0;
+      } on Object {
+        return 0;
+      }
     }
     final spec = (agent.modelId ?? '')
         .split('|')

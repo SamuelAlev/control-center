@@ -185,6 +185,10 @@ SVG_CRATE="$REPO_ROOT/packages/cc_natives/native/media/svg"
 export CARGO_TARGET_DIR="$REPO_ROOT/build/cargo/svg"
 if [ "$OS" = windows ]; then
   export RUSTFLAGS="${RUSTFLAGS:-} -Ctarget-feature=+crt-static"
+elif [ "$OS" = macos ]; then
+  source "$REPO_ROOT/scripts/natives/lib/natives_common.sh"
+  native_detect_platform
+  native_cargo_darwin_strip
 fi
 cargo build --release --locked --manifest-path "$SVG_CRATE/Cargo.toml"
 [ -s "$CARGO_TARGET_DIR/release/cc_svg_render$SUFFIX" ] || die "SVG helper missing after cargo build"
@@ -242,12 +246,12 @@ if [ -n "$svg_source" ]; then
   svg_count=$((svg_count + 1))
 fi
 [ "$svg_count" -gt 1 ] || die "SVG Cargo.lock has no dependency notices"
-cp -f "$DEST/svg-licenses/resvg-0.48.1/LICENSE-MIT" "$DEST/resvg-LICENSE-MIT.txt"
-cp -f "$DEST/svg-licenses/resvg-0.48.1/LICENSE-APACHE" "$DEST/resvg-LICENSE-APACHE.txt"
+cp -f "$DEST/svg-licenses/resvg-0.49.0/LICENSE-MIT" "$DEST/resvg-LICENSE-MIT.txt"
+cp -f "$DEST/svg-licenses/resvg-0.49.0/LICENSE-APACHE" "$DEST/resvg-LICENSE-APACHE.txt"
 cp -f "$SVG_CRATE/Cargo.lock" "$DEST/resvg-Cargo.lock"
 {
   printf 'cc_svg_render: application-owned wrapper, source packages/cc_natives/native/media/svg/src/main.rs\n'
-  printf 'resvg/usvg 0.48.1: https://github.com/linebender/resvg/tree/v0.48.1\n'
+  printf 'resvg/usvg 0.49.0: https://github.com/linebender/resvg/tree/v0.49.0\n'
   printf 'Exact Rust dependency versions and registry checksums: resvg-Cargo.lock (packages/cc_natives/native/media/svg/Cargo.lock)\n'
   printf 'Dual license: Apache-2.0 OR MIT; upstream texts resvg-LICENSE-APACHE.txt and resvg-LICENSE-MIT.txt.\n'
   printf 'All %s locked registry crates have Cargo.toml metadata and actual upstream LICENSE/COPYING/NOTICE/COPYRIGHT files in svg-licenses/<crate-version>/.\n' "$svg_count"
@@ -295,7 +299,7 @@ fi
       "$FFMPEG_MEDIA_BTBN_SOURCE_COMMIT"
     printf 'Publisher zlib recipe: https://github.com/BtbN/FFmpeg-Builds/blob/%s/scripts.d/20-zlib.sh\n' \
       "$FFMPEG_MEDIA_BTBN_RECIPE_COMMIT"
-    printf 'Publisher zlib checkout: https://github.com/madler/zlib/tree/767c4c947852e143f582c85f14cf573411df1b35 (zlib.h: %s)\n' \
+    printf 'Publisher zlib checkout: https://github.com/madler/zlib/tree/9d314c341b2ce16e01ae44e27ec3dd2f32aa58fd (zlib.h: %s)\n' \
       "$ZLIB_MEDIA_BTBN_VERSION"
   fi
   printf 'Upstream FFmpeg %s LICENSE/COPYING notices: https://ffmpeg.org/releases/ffmpeg-%s.tar.xz (SHA-256 %s)\n' \

@@ -2,7 +2,7 @@
 title: Folosește spațiile
 description: Creează spații, setează-le modul, gestionează participanții și autonomia și deschide conversații și fire.
 slug: ro-RO/manual/ghiduri-practice/spatii
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Acest ghid îți arată cum să folosești spațiile. Un **spațiu** este suprafața de
@@ -26,6 +26,8 @@ deschid ca să vorbească între ei — vezi
    provisionează acest spațiu worktree-uri. Toate sunt selectate implicit;
    deselectarea tuturor repo-urilor creează un spațiu cu nimic extras
 6. Confirmă
+
+Doar un agent răspunde unui mesaj, așa că un spațiu fără agent nu pornește nimic: compozitorul o spune și îți păstrează mesajul până când menționezi un agent cu @, care îl adaugă în spațiu și trimite mesajul. Nu există niciun runner implicit în spatele unui spațiu gol.
 
 Spațiile sunt limitate la spațiul de lucru: vezi doar agenți din spațiul de lucru
 curent, iar un spațiu nu expune niciodată date din alt spațiu de lucru.
@@ -100,7 +102,7 @@ spațiu care nu are încă niciuna creează o conversație permanentă fără ti
 Conversațiile apar ca file în editor și ca rânduri imbricate sub spațiu în bara
 laterală, odată ce sunt mai multe. **Conversație nouă** se află în meniul de file
 nou al editorului și creează o conversație fără titlu, fără nicio solicitare de
-titlu — modelul de titluri o denumește după primul mesaj. Folosește una pentru a
+titlu — agentul Content synthesizer o denumește după primul mesaj. Folosește una pentru a
 rula muncă în paralel cu același agent și același worktree.
 
 Fiecare conversație își păstrează propriul istoric de mesaje și propriile sesiuni

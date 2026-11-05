@@ -5,7 +5,6 @@ import 'package:control_center/features/auth/providers/onboarding_runner_choice.
 import 'package:control_center/features/settings/presentation/widgets/field_placeholder.dart';
 import 'package:control_center/features/settings/presentation/widgets/harness_provider_login.dart';
 import 'package:control_center/features/settings/presentation/widgets/model_picker_field.dart';
-import 'package:control_center/features/settings/providers/adapter_preferences_providers.dart';
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -37,9 +36,9 @@ class _OnboardingAdapterStepState extends ConsumerState<OnboardingAdapterStep> {
   String? _selectedAdapterId;
   String? _selectedModelId;
 
-  /// The runner to show: an explicit pick, else a persisted one that is still
-  /// installed, else the built-in loop. The built-in loop is always found
-  /// (no binary), so waiting on Claude Code's `--version` must not hide it.
+  /// The runner to show: an explicit pick, else the built-in loop. The
+  /// built-in loop is always found (no binary), so waiting on Claude Code's
+  /// `--version` must not hide it.
   String? _resolvedAdapterId(List<DetectedAdapter> found) {
     if (_selectedAdapterId != null) {
       return _selectedAdapterId;
@@ -48,10 +47,6 @@ class _OnboardingAdapterStepState extends ConsumerState<OnboardingAdapterStep> {
       return null;
     }
     final ids = {for (final d in found) d.adapter.id};
-    final persisted = ref.read(defaultChatAdapterProvider);
-    if (persisted != null && ids.contains(persisted)) {
-      return persisted;
-    }
     if (ids.contains(builtInAdapter.id)) {
       return builtInAdapter.id;
     }
@@ -66,13 +61,7 @@ class _OnboardingAdapterStepState extends ConsumerState<OnboardingAdapterStep> {
       (d) => d.status == DetectionStatus.checking,
     );
     final adapterId = _resolvedAdapterId(found);
-    final persistedAdapter = ref.read(defaultChatAdapterProvider);
-    final persistedModel = ref.read(defaultChatModelProvider);
-    final modelId =
-        _selectedModelId ??
-        (adapterId != null && adapterId == persistedAdapter
-            ? persistedModel
-            : null);
+    final modelId = _selectedModelId;
     final t = context.designSystem ?? DesignSystemTokens.light();
     final tokens = context.designSystem;
     final l10n = AppLocalizations.of(context);

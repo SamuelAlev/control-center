@@ -2,7 +2,7 @@
 title: Backends de bac à sable
 description: Les backends de bac à sable, où ils s’appliquent et chaque objet valeur utilisé par le runtime du bac à sable.
 slug: fr-FR/manuel/reference/backends-de-bac-a-sable
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Qu’un lancement soit isolé dans un bac à sable dépend de l’hôte]
@@ -62,8 +62,8 @@ Le profil généré est **permissif par défaut** (`(allow default)`) et y défi
 
 - **Lectures du système de fichiers** : refusées pour les chemins de secrets (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` et le reste de l’ensemble de refus de lecture)
 - **Écritures dans le système de fichiers** : réinitialisées à un refus, puis des autorisations explicites de sous-chemins, les chemins à refus obligatoire (fichiers rc du shell, `.git/hooks`, configuration de Claude, copies de travail protégées) étant bloqués même à l’intérieur d’une racine inscriptible. `file-write-unlink` est refusé sur chaque chemin refusé et ses ancêtres, si bien qu’un renommage ne peut pas contourner un refus d’écriture
-- **Processus** : des refus `process-exec` pour les binaires toujours dangereux, plus un blocage de l’exécution de tout binaire depuis un répertoire inscriptible
-- **Réseau** : limité aux ports des proxys in-process plus le DNS — la boucle locale n’est pas autorisée en bloc et les sockets Unix ne sont pas autorisées. Les proxys appliquent la liste d’autorisation de domaines propre à la session (voir [Sortie réseau](#sortie-réseau))
+- **Processus** : des refus `process-exec` pour les binaires toujours dangereux, plus un blocage de l’exécution de tout binaire depuis un répertoire inscriptible. Les arbres d’installation d’outils connus sous votre répertoire personnel (caches de corepack, de npx et de `pnpm dlx`, gestionnaires de versions de Node, navigateurs Playwright, rustup et cargo, Go, fvm et le cache de pub, pyenv, uv et pipx, rbenv, sdkman, mise, asdf et `~/.local/bin`) sont rouverts sous ce blocage. Les répertoires temporaires partagés sont aussi bloqués. Chaque session reçoit à la place un `TMPDIR` privé sous `/private/tmp`, où peuvent s’exécuter les programmes qu’elle compile (un binaire `go test`, une compilation cargo). Les refus visant les binaires toujours dangereux sont appliqués après ces autorisations
+- **Réseau** : limité aux ports des proxys in-process plus le DNS — la boucle locale n’est pas autorisée en bloc et l’écoute TCP est refusée. Les sockets Unix ne sont autorisées qu’à l’intérieur du `TMPDIR` privé de la session, ce qui couvre des outils comme tsx et Chrome qui gardent un socket IPC à cet endroit ; votre agent SSH et les autres sockets restent inaccessibles. Les proxys appliquent la liste d’autorisation de domaines propre à la session (voir [Sortie réseau](#sortie-réseau))
 - **Configuration** : les profils sont générés à chaque lancement à partir de la `SandboxSpec`
 
 Prérequis :

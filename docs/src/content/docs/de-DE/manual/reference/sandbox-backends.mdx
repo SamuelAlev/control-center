@@ -2,7 +2,7 @@
 title: Sandbox-Backends
 description: Die Sandbox-Backends, wo sie gelten, und jedes Wertobjekt, das die Sandbox-Laufzeit verwendet.
 slug: de-DE/handbuch/referenz/sandbox-backends
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Ob ein Lauf in der Sandbox läuft, hängt vom Host ab]
@@ -62,8 +62,8 @@ Das erzeugte Profil ist **standardmäßig permissiv** (`(allow default)`) und sc
 
 - **Dateisystem, Lesen**: verweigert für die geheimen Pfade (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` und der Rest der Leseverbotsmenge)
 - **Dateisystem, Schreiben**: zuerst auf Verweigern zurückgesetzt, dann ausdrückliche Erlaubnisse für Teilpfade; die Pfade mit zwingendem Verbot (Shell-rc-Dateien, `.git/hooks`, Claude-Konfiguration, geschützte Checkouts) bleiben auch innerhalb einer beschreibbaren Wurzel gesperrt. `file-write-unlink` ist auf jedem verweigerten Pfad und seinen Vorfahren verboten, ein Umbenennen kann ein Schreibverbot also nicht umgehen
-- **Prozess**: `process-exec` verweigert die dauerhaft gefährlichen Binaries, dazu eine Sperre für alles, was aus einem beschreibbaren Verzeichnis ausgeführt wird
-- **Netzwerk**: beschränkt auf die Ports der prozessinternen Proxys plus DNS — Loopback ist nicht pauschal erlaubt, und Unix-Sockets sind nicht erlaubt. Die Proxys setzen die Domain-Zulassungsliste je Sitzung durch (siehe [Netzwerkausgang](#netzwerkausgang))
+- **Prozess**: `process-exec` verweigert die dauerhaft gefährlichen Binaries, dazu eine Sperre für alles, was aus einem beschreibbaren Verzeichnis ausgeführt wird. Bekannte Toolchain-Installationsbäume in Ihrem Home-Verzeichnis (Caches von corepack, npx und `pnpm dlx`, Node-Versionsmanager, Playwright-Browser, rustup und cargo, Go, fvm und der pub-Cache, pyenv, uv und pipx, rbenv, sdkman, mise, asdf und `~/.local/bin`) werden unter dieser Sperre wieder geöffnet. Auch die gemeinsamen temporären Verzeichnisse sind gesperrt. Jede Sitzung erhält stattdessen ein privates `TMPDIR` unter `/private/tmp`, in dem selbst gebaute Programme (eine `go test`-Binary, ein cargo-Build) laufen können. Die dauerhaft gefährlichen Verbote werden nach diesen Freigaben angewendet
+- **Netzwerk**: beschränkt auf die Ports der prozessinternen Proxys plus DNS — Loopback ist nicht pauschal erlaubt, und TCP-Listening ist verweigert. Unix-Sockets sind nur innerhalb des privaten `TMPDIR` der Sitzung erlaubt, was Werkzeuge wie tsx und Chrome abdeckt, die dort einen IPC-Socket halten; Ihr SSH-Agent und andere Sockets bleiben unerreichbar. Die Proxys setzen die Domain-Zulassungsliste je Sitzung durch (siehe [Netzwerkausgang](#netzwerkausgang))
 - **Konfiguration**: Profile werden je Start aus der `SandboxSpec` erzeugt
 
 Voraussetzungen:

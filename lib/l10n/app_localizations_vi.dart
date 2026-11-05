@@ -731,13 +731,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Control Center chạy máy chủ riêng trên máy này và lưu dữ liệu của bạn tại chỗ.';
 
   @override
-  String get serverModeRemote => 'Kết nối tới một phiên bản từ xa';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Kết nối tới máy chủ Control Center đang chạy ở nơi khác. Dữ liệu của bạn nằm trên máy chủ đó.';
-
-  @override
   String get serverRemoteUrl => 'URL máy chủ';
 
   @override
@@ -957,13 +950,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Các thiết bị khác không thể truy cập máy chủ này trực tiếp, nên máy khách mới không thể kết nối. Đặt URL công khai của máy chủ để ghép nối thêm máy khách.';
-
-  @override
-  String get serverSetupTitle => 'Control Center nên chạy như thế nào?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center cần một máy chủ nắm giữ dữ liệu của bạn. Chạy một máy chủ trong ứng dụng này, hoặc kết nối tới instance đang chạy ở nơi khác.';
 
   @override
   String get serverSetupRunLocal => 'Chạy trong ứng dụng này';
@@ -3022,10 +3008,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Cấu hình danh tính agent, prompt, kỹ năng và xem các lần chạy.';
 
   @override
-  String get configureDefaultRunners =>
-      'Cấu hình adapter và mô hình dùng cho không gian mới và tạo tiêu đề.';
-
-  @override
   String get configuredLabel => 'Đã cấu hình.';
 
   @override
@@ -3125,12 +3107,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deactivate => 'Vô hiệu hóa';
-
-  @override
-  String get defaultChat => 'Chat mặc định';
-
-  @override
-  String get defaultRunners => 'Runner mặc định';
 
   @override
   String get delete => 'Xóa';
@@ -4436,6 +4412,15 @@ class AppLocalizationsVi extends AppLocalizations {
   String get notificationGroupMachines => 'Máy';
 
   @override
+  String get notificationSectionSound => 'Âm thanh';
+
+  @override
+  String get notificationSectionSchedule => 'Lịch';
+
+  @override
+  String get notificationSectionEvents => 'Sự kiện';
+
+  @override
   String get notificationsMutedRepos => 'Kho lưu trữ đã tắt thông báo';
 
   @override
@@ -4990,9 +4975,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'Chọn ngôn ngữ ứng dụng.';
-
-  @override
-  String get shortTask => 'Tác vụ ngắn';
 
   @override
   String get showNativeNotifications => 'Hiện thông báo hệ thống cho sự kiện.';
@@ -5576,10 +5558,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Thu nhỏ xuống thanh';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'Chế độ tập trung đang bật — chạm để kết thúc';
 
   @override
   String get dismiss => 'Bỏ qua';
@@ -12972,25 +12950,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Kết nối với Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'Kết nối tới cc-server đang chạy qua WebSocket. Khóa của bạn được giữ trên thiết bị này.';
-
-  @override
-  String get webConnectServerLabel => 'Máy chủ';
-
-  @override
-  String get webConnectDeviceIdLabel => 'Id thiết bị';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Khóa ghép nối';
-
-  @override
-  String get webConnectPairingKeyHint => 'dán PSK';
-
-  @override
   String get webConnectStayConnected => 'Giữ kết nối trên thiết bị này';
 
   @override
@@ -13032,11 +12991,12 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tùy chọn — để trống thì mô hình tiêu đề sẽ đặt tên tự động';
 
   @override
-  String get shortTaskOff => 'Tắt';
+  String get contentSynthesizerUnavailable =>
+      'Không có tác tử Content synthesizer hoặc nó không có trình chạy hoạt động';
 
   @override
-  String get shortTaskUnavailable =>
-      'Chọn mô hình tác vụ ngắn trong Cài đặt → Bộ điều hợp để dùng tính năng này';
+  String get conversationNeedsAgent =>
+      'Nhắc một tác tử bằng @ để bắt đầu cuộc trò chuyện này';
 
   @override
   String get conversationTitleGenerate => 'Tạo';
@@ -13502,14 +13462,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Được thêm vào dòng lệnh của runner mỗi lần khởi chạy.';
-
-  @override
-  String get defaultChatDescription =>
-      'Chạy các cuộc hội thoại mới và mọi agent không có runner riêng.';
-
-  @override
-  String get shortTaskDescription =>
-      'Chạy việc nền nhanh như tiêu đề và tóm tắt. Nên dùng mô hình nhỏ hơn ở đây.';
 
   @override
   String get settingsStateFailed => 'Thất bại';
@@ -14253,6 +14205,16 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Đính kèm tệp — hoặc thả vào đây';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Mở rộng trình soạn thảo ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Thu gọn trình soạn thảo ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'Làm rõ mục tiêu';
@@ -15409,6 +15371,11 @@ class AppLocalizationsVi extends AppLocalizations {
       'Một agent bị chặn do thông tin xác thực';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Vẫn đang chờ: $title';
+  }
+
+  @override
   String get killTerminal => 'Đóng terminal';
 
   @override
@@ -15869,4 +15836,80 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Lần chạy đã dừng vì thông tin xác thực của nhà cung cấp không còn hoạt động. Hãy kết nối lại trong Cài đặt → Nhà cung cấp rồi thử lại lượt này.';
+
+  @override
+  String get helpMenuLabel => 'Trợ giúp';
+
+  @override
+  String get helpWhatsNew => 'Có gì mới';
+
+  @override
+  String get helpReportProblem => 'Báo cáo sự cố';
+
+  @override
+  String get helpCreateGitHubIssue => 'Tạo issue trên GitHub';
+
+  @override
+  String get changelogInstalled => 'Đã cài đặt';
+
+  @override
+  String get changelogGroupNew => 'Mới';
+
+  @override
+  String get changelogGroupImproved => 'Cải thiện';
+
+  @override
+  String get changelogGroupFixed => 'Đã sửa';
+
+  @override
+  String get changelogLoadFailed => 'Không thể tải ghi chú phát hành.';
+
+  @override
+  String get changelogOpenWebsite => 'Mở trên trang web';
+
+  @override
+  String get connectWelcomeTitle => 'Chào mừng đến với Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Chạy tại đây hoặc kết nối tới máy chủ bạn đã có.';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'Kết nối tới máy chủ của bạn để bắt đầu.';
+
+  @override
+  String get connectToServer => 'Kết nối tới máy chủ';
+
+  @override
+  String get connectToServerIntro =>
+      'Nhập địa chỉ của một máy chủ Control Center.';
+
+  @override
+  String get connectUsePairingKey => 'Dùng khóa ghép nối';
+
+  @override
+  String get connectPasteLink => 'Dán liên kết ghép nối';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Dán liên kết mời hoặc liên kết ghép nối bạn nhận được.';
+
+  @override
+  String get connectPasteLinkLabel => 'Liên kết mời hoặc ghép nối';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Đó không phải là liên kết mời hoặc ghép nối của Control Center. Hãy sao chép toàn bộ liên kết và thử lại.';
+
+  @override
+  String get connectPasteLinkTarget => 'Kết nối tới';
+
+  @override
+  String get focusModeEnd => 'Kết thúc phiên tập trung';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'Còn $minutes phút';
+  }
 }

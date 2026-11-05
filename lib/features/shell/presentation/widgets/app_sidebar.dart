@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:cc_domain/features/ticketing/domain/entities/project.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
+import 'package:control_center/features/focus_mode/presentation/widgets/focus_sidebar_entry.dart';
 import 'package:control_center/features/inbox/providers/inbox_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/conversations_sidebar_section.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
@@ -10,8 +12,10 @@ import 'package:control_center/features/settings/presentation/widgets/settings_s
 import 'package:control_center/features/shell/presentation/widgets/app_sidebar_header.dart';
 import 'package:control_center/features/shell/presentation/widgets/offline_pending_pill.dart';
 import 'package:control_center/features/shell/presentation/widgets/sidebar_chrome.dart';
+import 'package:control_center/features/shell/presentation/widgets/sidebar_help_menu.dart';
 import 'package:control_center/features/shell/providers/shell_route_providers.dart';
 import 'package:control_center/features/shell/providers/sidebar_providers.dart';
+import 'package:control_center/features/soundscape/presentation/widgets/soundscape_sidebar_entry.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/new_project_dialog.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/project_visuals.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';

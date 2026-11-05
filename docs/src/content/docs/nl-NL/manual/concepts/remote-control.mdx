@@ -2,7 +2,7 @@
 title: Afstandsbediening en mobiel
 description: Hoe de telefoon je server bereikt via directe of via een broker bemiddelde end-to-end-versleutelde verbindingen, en het gelaagde toegangsmodel dat dat bereik beperkt houdt.
 slug: nl-NL/handleiding/concepten/afstandsbediening
-sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
+sourceHash: cb6a1ecae8bc1c410e872649d26d3cae127003f6
 ---
 
 Control Center is een desktopapp, maar het werk dat het volgt stopt niet wanneer
@@ -101,8 +101,9 @@ de link als een geheim.
 Er zijn twee payloadvormen en ze zijn **niet uitwisselbaar**. De telefoon-QR die
 het koppelingspaneel in de app aanmaakt, is de v2 `PairingPayload` hierboven,
 gericht op de Remote PWA-host. `cc_server pair --client-url` levert een
-v1-link (`{s, i, k}` — server-URL, apparaat-id, sleutel) die alleen voor
-de **web**client bedoeld is. Dit zijn koppelingsgegevensformaten, geen
+v1-link (`{s, i, k}` — server-URL, apparaat-id, sleutel) voor de **web**- en
+**desktop**client: open hem in een browser, of plak hem op de desktop bij
+**Een koppelingslink plakken**. Dit zijn koppelingsgegevensformaten, geen
 transport-fallbacks: beide clients moeten het huidige versleutelde
 sessieprotocol ondersteunen.
 

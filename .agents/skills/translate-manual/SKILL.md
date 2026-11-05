@@ -48,7 +48,7 @@ sourceHash: 3b18e512dba79e4c8300dd08aeb37f8e728bac34
 ## Translation rules
 
 - Translate `title`, `description`, prose, headings, table text, alt text and user-visible component props or children. Keep frontmatter keys, `import` lines, component names, non-text props, code blocks, inline code, commands, flags, environment variables, file paths and non-manual URLs exactly as in English.
-- UI labels the manual quotes from the app (**Settings → Workspace → Agents**) must match the app's own translation in `lib/l10n/app_<lang>.arb`. Find the key by its English value in `app_en.arb`. The sparse variants (`en_GB`, `es_MX`, `fr_CA`, `pt_PT`, `zh_HK`) fall back to their base language file.
+- UI labels the manual quotes from the app (**Settings → Workspace → Agents**) must match the app's own translation in `lib/l10n/app_<lang>.arb`. Find the key by its English value in `app_en.arb`. The sparse variants (`en_GB`, `es_MX`, `fr_CA`, `pt_PT`) fall back to their base language file.
 - Keep product terminology consistent with the locale's `docs.sidebar.*` labels and its landing copy (`docs/src/data/landing-*.ts`).
 - Product labels that the app and its API show in English stay in English, e.g. the AI-review verdicts **Ship**, **Hold** and **Block** (`approve_on_ship`). Brand and protocol names stay in Latin script.
 - Point every link to another manual page at the same locale's translated URL (the target page's `slug`, with a leading `/` and a trailing `/`). Anchors (`#…`) are generated from the target page's translated heading text, so update them when you translate headings.

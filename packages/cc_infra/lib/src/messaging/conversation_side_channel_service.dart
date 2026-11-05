@@ -1,12 +1,10 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
-import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/side_channel_render.dart';
-import 'package:cc_domain/features/settings/domain/services/short_task_runner.dart'
-    show kShortTaskAdapterSettingKey, kShortTaskModelSettingKey;
 import 'package:cc_harness/context.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/messaging/content_synthesizer_resolver.dart';
 
 /// What a side-channel request produced.
 class SideChannelResult {
@@ -20,7 +18,7 @@ class SideChannelResult {
   /// The answer, or null when there is none.
   final String? text;
 
-  /// Whether no runner is configured for this workspace.
+  /// Whether the workspace has no content synthesizer to answer with.
   final bool unavailable;
 
   /// Whether the conversation had nothing to work from.
@@ -47,7 +45,7 @@ class ConversationSideChannelService {
   ConversationSideChannelService({
     required this._repo,
     required this._runner,
-    required this._settings,
+    required this._synthesizer,
     this._sideChannelMessages,
     this._timeout = const Duration(minutes: 2),
     this._maxPromptChars = 60000,
@@ -55,7 +53,7 @@ class ConversationSideChannelService {
 
   final MessagingRepository _repo;
   final AdapterOneShotRunner _runner;
-  final WorkspaceSettingsRepository _settings;
+  final ContentSynthesizerResolver _synthesizer;
 
   /// Newest rows of the conversation, already cut to `maxChars` of rendered
   /// side-channel text. Null keeps [MessagingRepository.getMessages], which
@@ -108,20 +106,13 @@ class ConversationSideChannelService {
     required String question,
     required int maxTokens,
   }) async {
-    // The workspace's chosen one-shot runner, the same pair conversation
+    // The workspace's content synthesizer, the same agent conversation
     // titling uses. No fallback: running a side question on some other model
     // than the operator configured would be a surprise on their bill.
-    final adapterId = (await _settings.get(
-      workspaceId,
-      kShortTaskAdapterSettingKey,
-    ))?.trim();
-    if (adapterId == null || adapterId.isEmpty) {
+    final synthesizer = await _synthesizer.forWorkspace(workspaceId);
+    if (synthesizer == null) {
       return const SideChannelResult(unavailable: true);
     }
-    final modelId = (await _settings.get(
-      workspaceId,
-      kShortTaskModelSettingKey,
-    ))?.trim();
 
     final load = _sideChannelMessages;
     final messages = load == null
@@ -146,13 +137,14 @@ class ConversationSideChannelService {
     );
     try {
       final answer = await _runner.complete(
-        adapterId: adapterId,
-        modelId: modelId,
-        systemPrompt:
-            'You are reviewing a conversation between a person and one or '
-            'more coding agents. Answer only what is asked. Be specific and '
-            'concrete: name files, symbols and commands rather than '
-            'describing them.',
+        adapterId: synthesizer.adapterId,
+        modelId: synthesizer.modelId,
+        systemPrompt: synthesizer.systemPromptFor(
+          'You are reviewing a conversation between a person and one or '
+          'more coding agents. Answer only what is asked. Be specific and '
+          'concrete: name files, symbols and commands rather than '
+          'describing them.',
+        ),
         prompt: '$transcript\n\n---\n\n$question',
         timeout: _timeout,
         maxTokens: maxTokens,

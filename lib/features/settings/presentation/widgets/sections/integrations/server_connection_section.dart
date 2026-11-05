@@ -3,12 +3,12 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/server_build_provider.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/integrations/add_server_dialog.dart';
 import 'package:control_center/features/settings/providers/server_connection_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/connection_error_alert.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
+import 'package:control_center/shared/widgets/server_connect/server_connect_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -142,10 +142,13 @@ class _ServerConnectionSectionState
     final pairedIds = {
       for (final e in ref.read(serverListProvider).entries) e.serverId,
     };
-    final result = await showCcDialog<AddServerCredentials>(
+    final result = await showCcDialog<ServerConnectCredentials>(
       context: context,
-      builder: (dialogContext) =>
-          AddServerDialog(prefillUrl: prefillUrl, excludeServerIds: pairedIds),
+      builder: (dialogContext) => ServerConnectDialog(
+        title: AppLocalizations.of(dialogContext).serverListAddTitle,
+        prefillUrl: prefillUrl,
+        excludeServerIds: pairedIds,
+      ),
     );
     if (result == null || !mounted) {
       // Dismissed, or an SSO round-trip is finishing in the browser: on the

@@ -3,8 +3,8 @@ import 'package:cc_domain/features/workspaces/domain/constants/specialist_agent_
 
 /// What a built-in agent looked like the moment its workspace was created.
 ///
-/// Every workspace is seeded with a CEO and four specialists. Those five are
-/// the only agents whose "default" is a thing that exists — everything else was
+/// Every workspace is seeded with a CEO and the default specialists
+/// ([defaultSpecialistAgents]). Those are the only agents whose "default" is a thing that exists — everything else was
 /// hired by a person or by another agent, so there is nothing to reset it to.
 /// This is what lets the registry offer "reset to default" honestly: the button
 /// is absent for an agent nobody seeded, rather than present and quietly
@@ -53,7 +53,7 @@ class BuiltinAgentSeed {
   }
 }
 
-/// The five agents every workspace is created with, in org order.
+/// The agents every workspace is created with, in org order.
 final builtinAgentSeeds = <BuiltinAgentSeed>[
   const BuiltinAgentSeed(
     slug: 'ceo',

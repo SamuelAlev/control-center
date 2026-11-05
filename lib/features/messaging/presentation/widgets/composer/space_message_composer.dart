@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/edit_message_choice_dialog.dart';
+import 'package:control_center/features/messaging/providers/composer_expanded_provider.dart';
 import 'package:control_center/features/messaging/providers/conversation_checkpoint_providers.dart';
 import 'package:control_center/features/messaging/providers/editing_message_provider.dart';
 import 'package:control_center/features/messaging/providers/message_edit_providers.dart';
@@ -33,12 +34,14 @@ class SpaceMessageComposer extends ConsumerStatefulWidget {
     required this.historyKey,
     this.history,
     this.minLines = 1,
+    this.maxInputHeight,
     this.leading,
     this.isBusy = false,
     this.onStop,
     this.onPlanToggle,
     this.attachedTop = false,
     this.autofocus = false,
+    this.submitGuard,
   });
 
   /// Space the edited message belongs to.
@@ -70,6 +73,10 @@ class SpaceMessageComposer extends ConsumerStatefulWidget {
   /// Minimum lines the field keeps open.
   final int minLines;
 
+  /// Tallest the field grows before it scrolls; see
+  /// [Composer.maxInputHeight].
+  final double? maxInputHeight;
+
   /// Toolbar content before the built-in actions.
   final Widget? leading;
 
@@ -89,6 +96,10 @@ class SpaceMessageComposer extends ConsumerStatefulWidget {
   /// Whether the field takes focus. Read on mount and on every flip to true,
   /// so a kept-alive tab that comes back on screen takes focus again.
   final bool autofocus;
+
+  /// Refuses a normal send, keeping the draft; see [Composer.submitGuard].
+  /// An edit is not guarded: it changes a message that was already sent.
+  final bool Function(ComposerSubmission submission)? submitGuard;
 
   @override
   ConsumerState<SpaceMessageComposer> createState() =>
@@ -195,6 +206,7 @@ class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
     final editing = ref.watch(editingMessageProvider(_key));
     ref.listen<EditingMessage?>(editingMessageProvider(_key), _onEditChanged);
     final isEditing = editing != null;
+    final expanded = ref.watch(composerExpandedProvider(_key));
     final workspaceId = ref.requireWorkspaceId();
     final uploadService = ref.watch(
       spaceAttachmentUploadServiceProvider(workspaceId),
@@ -211,6 +223,10 @@ class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
       sources: widget.sources,
       hint: widget.hint,
       minLines: widget.minLines,
+      maxInputHeight: widget.maxInputHeight,
+      expanded: expanded,
+      onExpandedChanged: (value) =>
+          ref.read(composerExpandedProvider(_key).notifier).set(value),
       // Recall would swap the message out from under the edit. The caret
       // keeps the arrow keys while the session is open.
       history: isEditing ? null : widget.history,
@@ -224,6 +240,7 @@ class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
       // draft. Clearing here would drop that draft and any attachments that
       // belonged to it.
       clearOnSubmit: !isEditing,
+      submitGuard: isEditing ? null : widget.submitGuard,
       onEscape: isEditing ? _cancel : null,
       onSubmit: (submission) async {
         final current = ref.read(editingMessageProvider(_key));

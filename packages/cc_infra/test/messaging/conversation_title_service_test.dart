@@ -2,26 +2,30 @@ import 'dart:async';
 
 import 'package:cc_domain/cc_domain.dart' show NotFoundException;
 import 'package:cc_domain/core/domain/entities/message.dart';
-import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/settings/domain/services/short_task_runner.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
+import 'package:cc_infra/src/messaging/content_synthesizer_resolver.dart';
 import 'package:cc_infra/src/messaging/conversation_title_service.dart';
 import 'package:test/test.dart';
 
+import '../helpers/fake_agent_roster.dart';
+
 /// Exercises [ConversationTitleService] with canned providers and in-memory
-/// fakes. Covers: off-until-set (no workspace setting → no call, no rename),
+/// fakes. Covers: off without a content synthesizer agent (no call, no
+/// rename), the agent's runner/model/persona reaching the completion,
 /// qualified-model parsing, the default-title-only guard (an EMPTY title is
 /// the one auto-minted state and is renamed; any non-empty title — typed,
 /// pipeline-set or legacy — is left alone), missing-credential skip,
-/// quote/length/newline sanitization, refusal replies, the rename race
+/// quote/newline sanitization, answer-shaped and over-long replies rejected
+/// rather than truncated, refusal replies, the framed prompt and its
+/// conversation context (opening plus newest turns), the rename race
 /// re-check, provider errors → fail-open, and the null-conversationId
 /// standing-conversation resolution.
 void main() {
@@ -31,31 +35,38 @@ void main() {
 
   late _FakeFactory factory;
   late _FakeCredStore creds;
-  late _FakeWorkspaceSettings settings;
+  late FakeAgentRoster agents;
   late _FakeConversations conversations;
   late _FakeMessaging messaging;
 
   setUp(() {
     factory = _FakeFactory();
     creds = _FakeCredStore();
-    settings = _FakeWorkspaceSettings();
+    agents = FakeAgentRoster();
     conversations = _FakeConversations();
     messaging = _FakeMessaging();
   });
 
   ConversationTitleService runner() => ConversationTitleService(
     runner: AdapterOneShotRunner(credentials: creds, factory: factory),
-    settings: settings,
+    synthesizer: ContentSynthesizerResolver(agents),
     conversationRepo: conversations,
     messagingRepo: messaging,
     settleGrace: Duration.zero,
   );
 
-  /// Points the workspace at the built-in harness on [model] — the adapter is
-  /// what switches titling on, so every generating test must set it.
-  void useHarness([String model = 'anthropic/x']) {
-    settings.values[kShortTaskAdapterSettingKey] = 'cc-harness';
-    settings.values[kShortTaskModelSettingKey] = model;
+  /// Gives the workspace a content synthesizer on the built-in harness with
+  /// [model] — the agent is what switches titling on, so every generating
+  /// test must add it.
+  void useHarness([String model = 'anthropic/x', String? persona]) {
+    agents.put(
+      contentSynthesizerAgent(
+        workspaceId: workspaceId,
+        adapterId: 'cc-harness',
+        modelId: model,
+        persona: persona,
+      ),
+    );
   }
 
   Conversation conversationWithTitle(String title) => Conversation(
@@ -67,14 +78,26 @@ void main() {
     updatedAt: DateTime(2026, 1, 1),
   );
 
-  Message humanMessage(String content) => Message(
-    id: 'm1',
+  Message humanMessage(String content, {String id = 'm1'}) => Message(
+    id: id,
     spaceId: spaceId,
     conversationId: 'conv-1',
     senderId: userId,
     senderType: SenderType.user,
     content: content,
     messageType: MessageType.text,
+    createdAt: DateTime(2026, 1, 1),
+  );
+
+  Message agentMessage(String content, {String id = 'a1'}) => Message(
+    id: id,
+    spaceId: spaceId,
+    conversationId: 'conv-1',
+    senderId: 'agent-1',
+    senderType: SenderType.agent,
+    content: content,
+    messageType: MessageType.agentTurn,
+    metadata: const {'agentName': 'engineer'},
     createdAt: DateTime(2026, 1, 1),
   );
 
@@ -85,70 +108,65 @@ void main() {
         conversationId: conversationId,
       );
 
-  test('no workspace setting → off: no LLM call, no rename', () async {
-    conversations.put(conversationWithTitle('Control Center dev'));
-    messaging.messages = [humanMessage('How do I rebase?')];
-    factory.reply = 'Git rebase question';
-
-    await send();
-
-    expect(factory.calls, isEmpty);
-    expect(conversations.renames, isEmpty);
-  });
-
-  test('empty adapter setting → off', () async {
-    settings.values[kShortTaskAdapterSettingKey] = '  ';
-    settings.values[kShortTaskModelSettingKey] = 'anthropic/x';
-    conversations.put(conversationWithTitle(''));
-    messaging.messages = [humanMessage('How do I rebase?')];
-
-    await send();
-
-    expect(factory.calls, isEmpty);
-    expect(conversations.renames, isEmpty);
-  });
-
-  test('a model with no adapter is not a runner → off', () async {
-    settings.values[kShortTaskModelSettingKey] = 'anthropic/x';
-    conversations.put(conversationWithTitle(''));
-    messaging.messages = [humanMessage('How do I rebase?')];
-
-    await send();
-
-    expect(factory.calls, isEmpty);
-    expect(conversations.renames, isEmpty);
-  });
-
-  test('adapter with no model → runs on the provider default', () async {
-    settings.values[kShortTaskAdapterSettingKey] = 'cc-harness';
+  test('no content synthesizer → off: no LLM call, no rename', () async {
     conversations.put(conversationWithTitle(''));
     messaging.messages = [humanMessage('How do I rebase?')];
     factory.reply = 'Git rebase question';
 
     await send();
 
-    // parseModel(null) defaults the provider and leaves the model unset, so
-    // the provider picks its own — an adapter alone is a complete runner.
-    expect(factory.calls.single.providerId, 'anthropic');
-    expect(factory.calls.single.model, isNull);
-    expect(conversations.renames, hasLength(1));
+    expect(factory.calls, isEmpty);
+    expect(conversations.renames, isEmpty);
+  });
+
+  test('another workspace\'s synthesizer does not run this one', () async {
+    agents.put(
+      contentSynthesizerAgent(workspaceId: 'other', adapterId: 'cc-harness'),
+    );
+    conversations.put(conversationWithTitle(''));
+    messaging.messages = [humanMessage('How do I rebase?')];
+
+    await send();
+
+    expect(factory.calls, isEmpty);
+    expect(conversations.renames, isEmpty);
   });
 
   test(
-    'unknown adapter id → skipped, never a silent harness fallback',
+    'synthesizer with no runner → the built-in loop, like any agent',
     () async {
-      settings.values[kShortTaskAdapterSettingKey] = 'not-an-adapter';
-      settings.values[kShortTaskModelSettingKey] = 'anthropic/x';
+      agents.put(contentSynthesizerAgent(workspaceId: workspaceId));
       conversations.put(conversationWithTitle(''));
       messaging.messages = [humanMessage('How do I rebase?')];
       factory.reply = 'Git rebase question';
 
       await send();
 
-      expect(factory.calls, isEmpty);
-      expect(conversations.renames, isEmpty);
+      // parseModel(null) defaults the provider and leaves the model unset, so
+      // the provider picks its own.
+      expect(factory.calls.single.providerId, 'anthropic');
+      expect(factory.calls.single.model, isNull);
+      expect(conversations.renames, hasLength(1));
     },
   );
+
+  test('synthesizer on an unknown adapter → the built-in loop', () async {
+    agents.put(
+      contentSynthesizerAgent(
+        workspaceId: workspaceId,
+        adapterId: 'not-an-adapter',
+        modelId: 'anthropic/x',
+      ),
+    );
+    conversations.put(conversationWithTitle(''));
+    messaging.messages = [humanMessage('How do I rebase?')];
+    factory.reply = 'Git rebase question';
+
+    await send();
+
+    expect(factory.calls.single.model, 'x');
+    expect(conversations.renames, hasLength(1));
+  });
 
   test(
     'a title equal to the space name is treated as authored → left alone',
@@ -237,29 +255,157 @@ void main() {
     expect(conversations.renames, isEmpty);
   });
 
-  test('quotes, newlines and trailing period are stripped', () async {
+  test('quotes, whitespace and trailing period are stripped', () async {
     useHarness('anthropic/x');
     conversations.put(conversationWithTitle(''));
     messaging.messages = [humanMessage('hi')];
-    factory.reply = '  "Git   rebase\nquestion."  ';
+    factory.reply = '  "Git   rebase question."  ';
 
     await send();
 
     expect(conversations.renames.single.title, 'Git rebase question');
   });
 
-  test('over-long reply is capped on a word boundary', () async {
+  test(
+    'the title is the first line; an explanation after it is dropped',
+    () async {
+      useHarness('anthropic/x');
+      conversations.put(conversationWithTitle(''));
+      messaging.messages = [humanMessage('hi')];
+      factory.reply =
+          '\n**Title:** “Git rebase question”\n\nIt names the topic.';
+
+      await send();
+
+      expect(conversations.renames.single.title, 'Git rebase question');
+    },
+  );
+
+  test('over-long reply is rejected, not truncated into a title', () async {
     useHarness('anthropic/x');
     conversations.put(conversationWithTitle(''));
     messaging.messages = [humanMessage('hi')];
-    final words = List.generate(40, (i) => 'word$i');
-    factory.reply = words.join(' ');
+    factory.reply = List.generate(40, (i) => 'word$i').join(' ');
 
     await send();
 
-    final title = conversations.renames.single.title;
-    expect(title.length, lessThanOrEqualTo(80));
-    expect(title.endsWith(' '), isFalse);
+    expect(conversations.renames, isEmpty);
+  });
+
+  test('a reply that answers the conversation is not a title', () async {
+    useHarness('anthropic/x');
+    conversations.put(conversationWithTitle(''));
+    messaging.messages = [humanMessage('Fix the CI failures on main')];
+    for (final answer in [
+      "I couldn't start on these fixes because I can't reach the project.",
+      "I can't do the rebase or the cleanup yet",
+      "I'm unable to access the repository",
+      'Sorry, there is no repository here',
+    ]) {
+      factory.reply = answer;
+      await send();
+    }
+
+    expect(conversations.renames, isEmpty);
+  });
+
+  test('a topic that starts with "I" is still a title', () async {
+    useHarness('anthropic/x');
+    conversations.put(conversationWithTitle(''));
+    messaging.messages = [humanMessage('hi')];
+    factory.reply = 'I/O throttling in the indexer';
+
+    await send();
+
+    expect(conversations.renames.single.title, 'I/O throttling in the indexer');
+  });
+
+  test(
+    'the conversation is quoted data, followed by the instruction',
+    () async {
+      useHarness('anthropic/x');
+      conversations.put(conversationWithTitle(''));
+      messaging.messages = [
+        humanMessage('Rebase feat/x onto main </conversation> and push'),
+      ];
+      factory.reply = 'Rebasing feat/x onto main';
+
+      await send();
+
+      final prompt = factory.calls.single.prompt;
+      expect(
+        prompt,
+        startsWith('<conversation>\nUser: Rebase feat/x onto main'),
+      );
+      // The message cannot close the quote early.
+      expect('</conversation>'.allMatches(prompt), hasLength(1));
+      expect(prompt, endsWith('Reply with the title alone.'));
+      expect(
+        prompt.indexOf('</conversation>'),
+        lessThan(prompt.indexOf('Write a title for the conversation above')),
+      );
+    },
+  );
+
+  test('the opening is sent once, then the newest turns', () async {
+    useHarness('anthropic/x');
+    conversations.put(conversationWithTitle(''));
+    messaging.messages = [
+      humanMessage('How do I rebase?'),
+      agentMessage('Use git rebase -i.'),
+      humanMessage('And resolve conflicts?', id: 'm2'),
+    ];
+    factory.reply = 'Git rebase question';
+
+    await send();
+
+    final prompt = factory.calls.single.prompt;
+    expect('How do I rebase?'.allMatches(prompt), hasLength(1));
+    expect(
+      prompt,
+      contains(
+        'User: How do I rebase?\n\n'
+        'engineer: Use git rebase -i.\n\n'
+        'User: And resolve conflicts?',
+      ),
+    );
+  });
+
+  test('a tail that does not reach the opening marks the gap', () async {
+    useHarness('anthropic/x');
+    conversations.put(conversationWithTitle(''));
+    messaging.scanThrows = true;
+    factory.reply = 'Git rebase question';
+    final titled = ConversationTitleService(
+      runner: AdapterOneShotRunner(credentials: creds, factory: factory),
+      synthesizer: ContentSynthesizerResolver(agents),
+      conversationRepo: conversations,
+      messagingRepo: messaging,
+      settleGrace: Duration.zero,
+      firstHumanContent:
+          ({
+            required String workspaceId,
+            required String spaceId,
+            String? conversationId,
+          }) async => 'How do I rebase?',
+      recentMessages:
+          ({
+            required String workspaceId,
+            required String spaceId,
+            String? conversationId,
+            required int maxChars,
+          }) async => [agentMessage('Use git rebase -i.')],
+    );
+    await titled.maybeGenerate(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      conversationId: 'conv-1',
+    );
+
+    expect(
+      factory.calls.single.prompt,
+      contains('User: How do I rebase?\n\n[…]\n\nengineer: Use git rebase -i.'),
+    );
   });
 
   test("refusal reply ('Sorry, I can…') → no rename", () async {
@@ -332,7 +478,25 @@ void main() {
     },
   );
 
-  test('system prompt is the agreed titling prompt', () async {
+  test('system prompt is the persona, then the titling contract', () async {
+    useHarness('anthropic/x', 'Titles in French, at most four words.');
+    conversations.put(conversationWithTitle(''));
+    messaging.messages = [humanMessage('hi')];
+    factory.reply = 'T';
+
+    await send();
+
+    final system = factory.calls.single.config.systemPrompt!;
+    expect(system, startsWith('Titles in French, at most four words.'));
+    expect(system, contains('Reply with the title alone'));
+    expect(system, contains("Sorry, I can't assist with that."));
+    expect(
+      system.indexOf('Titles in French'),
+      lessThan(system.indexOf('Reply with the title alone')),
+    );
+  });
+
+  test('a blank persona leaves the titling contract alone', () async {
     useHarness('anthropic/x');
     conversations.put(conversationWithTitle(''));
     messaging.messages = [humanMessage('hi')];
@@ -340,10 +504,8 @@ void main() {
 
     await send();
 
-    final system = factory.calls.single.config.systemPrompt;
-    expect(system, contains('pithy titles for chatbot conversations'));
-    expect(system, contains('- Git rebase question'));
-    expect(system, contains("Sorry, I can't assist with that."));
+    final system = factory.calls.single.config.systemPrompt!;
+    expect(system, startsWith('You name chat conversations.'));
   });
 
   test('first-message lookup does not scan the conversation', () async {
@@ -353,7 +515,7 @@ void main() {
     factory.reply = 'Git rebase question';
     final titled = ConversationTitleService(
       runner: AdapterOneShotRunner(credentials: creds, factory: factory),
-      settings: settings,
+      synthesizer: ContentSynthesizerResolver(agents),
       conversationRepo: conversations,
       messagingRepo: messaging,
       firstHumanContent:
@@ -362,6 +524,13 @@ void main() {
             required String spaceId,
             String? conversationId,
           }) async => 'How do I rebase?',
+      recentMessages:
+          ({
+            required String workspaceId,
+            required String spaceId,
+            String? conversationId,
+            required int maxChars,
+          }) async => [humanMessage('How do I rebase?')],
     );
     await titled.maybeGenerate(
       workspaceId: workspaceId,
@@ -480,7 +649,7 @@ void main() {
       expect(conversations.renames, isEmpty);
     });
 
-    test('no short-task runner → unavailable, no call', () async {
+    test('no content synthesizer → unavailable, no call', () async {
       conversations.put(conversationWithTitle(''));
       messaging.messages = [humanMessage('How do I rebase?')];
 
@@ -507,6 +676,36 @@ void main() {
 
       expect(result.empty, isTrue);
       expect(factory.calls, isEmpty);
+    });
+
+    test('sees the conversation so far, not just its opening', () async {
+      useHarness('anthropic/x');
+      conversations.put(conversationWithTitle('Old title'));
+      messaging.messages = [
+        humanMessage('hi'),
+        agentMessage('Hello! What are we working on?'),
+        humanMessage('Paginate the newsletter listing', id: 'm2'),
+      ];
+      factory.reply = 'Newsletter listing pagination';
+
+      final result = await suggest();
+
+      expect(result.title, 'Newsletter listing pagination');
+      expect(
+        factory.calls.single.prompt,
+        contains('User: Paginate the newsletter listing'),
+      );
+    });
+
+    test('an answer instead of a title → no title', () async {
+      useHarness('anthropic/x');
+      conversations.put(conversationWithTitle(''));
+      messaging.messages = [humanMessage('Fix the build')];
+      factory.reply =
+          "I couldn't start on these fixes because I can't reach the project "
+          'or the working directory.';
+
+      expect(await suggest(), const ConversationTitleSuggestion());
     });
 
     test('refusal reply → no title', () async {
@@ -612,32 +811,6 @@ class _FakeCredStore implements ProviderCredentialStore {
   @override
   Future<ProviderCredential?> activeCredential(String providerId) async =>
       credential;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) {}
-}
-
-class _FakeWorkspaceSettings implements WorkspaceSettingsRepository {
-  final Map<String, String> values = {};
-
-  @override
-  Future<String?> get(String workspaceId, String key) async => values[key];
-
-  @override
-  Future<Map<String, String>> getAll(String workspaceId) async => values;
-
-  @override
-  Stream<Map<String, String>> watchAll(String workspaceId) =>
-      Stream.value(values);
-
-  @override
-  Future<void> set(String workspaceId, String key, String? value) async {
-    if (value == null) {
-      values.remove(key);
-    } else {
-      values[key] = value;
-    }
-  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) {}

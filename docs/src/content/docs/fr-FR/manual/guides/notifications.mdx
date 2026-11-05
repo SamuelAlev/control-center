@@ -2,7 +2,7 @@
 title: Configurer les notifications
 description: Activez ou désactivez des catégories, définissez des heures de silence et un son, et sachez quelles notifications vous parviennent et où.
 slug: fr-FR/manuel/guides/notifications
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Ce guide vous explique comment configurer les notifications et ce que chaque
@@ -50,12 +50,30 @@ surface de notification.
 Tout ce qui ne figure pas dans cette liste ne peut être ni notifié ni filtré —
 il n’existe pas de catégorie « tout le reste ».
 
-**Un agent vous attend** se déclenche une fois par attente, au moment où elle
+**Un agent vous attend** se déclenche au moment où une attente
 commence : une approbation en suspens (y compris les autorisations d’exécution du
 bac à sable et les approbations d’outils de Claude Code), une question
 `ask_user`, ou une exécution retenue parce que ses identifiants ne peuvent pas
 la servir. La notification ouvre l’espace où vous répondez, et reste muette tant
 que vous regardez déjà cet espace.
+
+Sur le bureau, ces notifications se comportent différemment des autres :
+
+- **Elles sont urgentes au sens de macOS.** Sur macOS, elles peuvent passer
+  outre un mode de concentration qui autorise les notifications urgentes de
+  Control Center.
+- **Vous pouvez répondre à une approbation depuis la notification.**
+  **Approuver** et **Refuser** envoient votre réponse sans ouvrir l’application.
+  Le serveur la vérifie de la même façon que la carte dans l’application. Pour
+  approuver pendant un certain temps, ouvrez plutôt la carte.
+- **Une attente sans réponse vous relance.** Si personne ne répond, la
+  notification revient sous la forme **Toujours en attente : …** 3, 10, 25 et
+  45 minutes après le début de l’attente. Chaque rappel remplace la notification
+  précédente au lieu d’en ajouter une autre. Les rappels sont omis tant qu’une
+  fenêtre de Control Center a le focus, puisque la carte d’approbation et la
+  cloche sont déjà sous vos yeux.
+- **Elle disparaît à la fin de l’attente**, quelle que soit la réponse donnée,
+  si bien que vous n’appuyez jamais sur un bouton d’une demande déjà réglée.
 
 Ces préférences suivent votre utilisateur d’un appareil à l’autre, si bien qu’un
 téléphone et un ordinateur portable restent synchronisés. Le volume est
@@ -102,7 +120,8 @@ est vraie :
 - Les notifications sont désactivées globalement, ou sa catégorie l’est
 - Vous êtes déjà sur la route vers laquelle elle vous mènerait — et, pour un
   message, déjà dans cet espace
-- Le mode focus est actif et la catégorie n’est pas urgente
+- Une session de concentration avec **Bloquer les notifications** activé est en
+  cours et la catégorie n’est pas urgente
 - Les heures de silence sont actives et la catégorie n’est pas urgente
 
 Ces vérifications s’appliquent aux toasts du système d’exploitation. La cloche
@@ -148,6 +167,15 @@ au-delà a disparu, quel que soit l’état de lecture.
 L’autorisation est demandée nativement au lancement de l’application. Si vous
 l’avez refusée, réactivez Control Center dans Réglages Système → Notifications ;
 aucune invite dans l’application ne permet de la redemander.
+
+### Je rate sans arrêt les notifications d’approbation sous macOS
+
+Par défaut, macOS affiche les notifications de Control Center sous forme de
+bannières, et une bannière disparaît au bout de quelques secondes. Pour qu’elles
+restent à l’écran jusqu’à ce que vous agissiez, réglez le style d’alerte de
+Control Center sur **Persistant** dans Réglages Système → Notifications. Une
+approbation sans réponse revient aussi sous forme de rappel (voir
+[Activer ou désactiver des catégories](#activer-ou-désactiver-des-catégories)).
 
 ### Rien n’arrive dans la version web
 

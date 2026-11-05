@@ -11,7 +11,7 @@ a client at a server running elsewhere — a small box, a cloud VM, a build serv
 ## Prerequisites
 
 - A running `cc_server`. If you don't have one, see [Run a headless server](/manual/guides/run-headless-server/).
-- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key. Obtain these through a trusted channel and check the server fingerprint against a trusted QR or known pin on first connection.
+- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin, **or** an invite or pairing link that carries them. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key. Obtain these through a trusted channel and check the server fingerprint against a trusted QR or known pin on first connection.
 
 ### Make sure the server is reachable
 
@@ -37,14 +37,16 @@ to `https://app.usectrl.dev` alone; loopback and native clients are always allow
 
 On a fresh install:
 
-1. Launch Control Center. The first-run screen asks **How should Control Center run?**
-2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
+1. Launch Control Center. The first-run screen shows **Welcome to Control Center**.
+2. Click **Connect to a server** and enter the server URL, plus either an invite code or, under **Use a pairing key**, a device id and pairing key.
 3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+
+If you have an invite or pairing link, click **Paste a pairing link** instead and paste it. The dialog shows which server the link leads to. Check it, then click **Connect**: pasting alone never connects. If a connection fails, the dialog stays open with the error and everything you entered.
 
 On a desktop that already runs its own server:
 
 1. Open **Settings → Server → Connection & status**.
-2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
+2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or, under **Use a pairing key**, a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
 3. Click **Connect**, then **Switch** on the new server's row.
 
 Switching is live: the app rebuilds around the new session in place, with no
@@ -61,10 +63,11 @@ the same protection applies on loopback and through the relay.
 The web build is always remote.
 
 1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
-2. Enter the server URL plus either an invite code or a device id and pairing key.
-3. The client dials the server and renders the same interface the desktop does.
+2. Click **Connect to a server** and enter the server URL, plus either an invite code or, under **Use a pairing key**, a device id and pairing key. **Paste a pairing link** takes an invite or pairing link instead.
+3. Click **Connect**. The client dials the server and renders the same interface the desktop does.
 
-If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
+If a pairing deep link is in the URL, the connect dialog opens with its fields
+filled in, so you can check the server before clicking **Connect**. The pairing key
 rides in the URL **fragment**, which browsers never send to the server hosting
 the page. Treat the link as a secret and trust the page serving the web client:
 the fragment does not protect against malicious page code.

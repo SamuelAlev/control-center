@@ -39,7 +39,8 @@ class CompiledAstPattern {
 /// every fragment parses correctly: a statement needs a function body, an
 /// expression needs somewhere to be a value, a member needs a class, and a
 /// declaration needs top level. So each candidate is parsed and checked, and
-/// the first that accepts the fragment without an `ERROR` across it wins.
+/// the first that accepts the fragment without an `ERROR` or a MISSING token
+/// across it wins.
 const Map<String, List<String>> _contexts = {
   'dart': [
     '%s',
@@ -131,12 +132,14 @@ CompiledAstPattern? compileAstPattern({
     }
 
     // An ERROR across the fragment means this scaffold gave the grammar
-    // nowhere valid to put it.
+    // nowhere valid to put it. A MISSING token does too: Dart repairs a bare
+    // `dispose(x)` into a statement that way, and a pattern compiled from that
+    // repair only ever matches statements, never the same call as a value.
     var errored = false;
     AstNode? exact;
     AstNode? container;
     for (final node in tree.descendants) {
-      if (node.type == 'ERROR' &&
+      if ((node.type == 'ERROR' || node.recovered) &&
           node.startByte < end &&
           node.endByte > start) {
         errored = true;

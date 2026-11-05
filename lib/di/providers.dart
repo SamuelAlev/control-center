@@ -179,7 +179,7 @@ final conversationRepositoryProvider = Provider<ConversationRepository>((ref) {
 });
 
 /// Provides the [ConversationTitlePort] — title suggestions on the
-/// workspace's short-task runner (`conversation.suggestTitle`) and the live
+/// workspace's content synthesizer (`conversation.suggestTitle`) and the live
 /// "title being generated" flags (`conversation.watchTitleGenerating`).
 final conversationTitlePortProvider = Provider<ConversationTitlePort>((ref) {
   return RpcConversationRepository(ref.watch(rpcClientProvider));

@@ -2,7 +2,7 @@
 title: Kawalan jauh dan mudah alih
 description: Bagaimana telefon mencapai pelayan anda melalui sambungan tersulit hujung ke hujung, sama ada langsung atau berperantara, serta model akses berlapis yang mengekalkan jangkauan itu sempit.
 slug: ms-MY/manual-pengguna/konsep/kawalan-jauh
-sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
+sourceHash: cb6a1ecae8bc1c410e872649d26d3cae127003f6
 ---
 
 Control Center ialah aplikasi desktop, tetapi kerja yang dijejakinya tidak
@@ -99,7 +99,8 @@ Terdapat dua bentuk muatan dan kedua-duanya **tidak boleh ditukar ganti**. Kod
 QR telefon yang dijana daripada panel penggandingan dalam aplikasi ialah
 `PairingPayload` v2 di atas, yang diarahkan ke hos PWA Remote. `cc_server pair
 --client-url` mengeluarkan pautan v1 (`{s, i, k}` — URL pelayan, id peranti,
-kunci) yang ditujukan untuk klien **web** sahaja. Kedua-duanya ialah format data
+kunci) untuk klien **web** dan **desktop**: bukanya dalam pelayar, atau tampalkannya ke dalam
+**Tampal pautan pasangan** pada desktop. Kedua-duanya ialah format data
 penggandingan, bukan sandaran pengangkutan: kedua-dua klien mesti menyokong
 protokol sesi tersulit semasa.
 

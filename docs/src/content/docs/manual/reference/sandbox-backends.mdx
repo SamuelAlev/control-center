@@ -58,8 +58,8 @@ The generated profile is **permissive by default** (`(allow default)`) and carve
 
 - **Filesystem reads**: denied for the secret paths (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` and the rest of the deny-read set)
 - **Filesystem writes**: reset to deny, then explicit subpath allows, with the mandatory-deny paths (shell rc files, `.git/hooks`, Claude config, protected checkouts) blocked even inside a writable root. `file-write-unlink` is denied on every denied path and its ancestors, so a rename cannot bypass a write-deny
-- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory
-- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and Unix sockets are not allowed. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
+- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory. Known toolchain install trees under your home (corepack, npx and `pnpm dlx` caches, node version managers, Playwright browsers, rustup and cargo, Go, fvm and the pub cache, pyenv, uv and pipx, rbenv, sdkman, mise, asdf and `~/.local/bin`) are re-opened beneath that block. The shared temp directories are blocked too. Each session instead gets a private `TMPDIR` under `/private/tmp`, where programs it builds (a `go test` binary, a cargo build) can run. The always-dangerous denies are applied after these allows
+- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and TCP listening is denied. Unix sockets are allowed only inside the session's private `TMPDIR`, which covers tools such as tsx and Chrome that keep an IPC socket there; your SSH agent and other sockets stay unreachable. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
 - **Configuration**: profiles are generated per launch from the `SandboxSpec`
 
 Requirements:

@@ -2,7 +2,7 @@
 title: Připojte se ke vzdálenému serveru
 description: Namiř aplikaci pro počítač nebo webového klienta na cc_server, který běží jinde, a přepínej mezi servery bez restartu.
 slug: cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Každý klient jen vykresluje `cc_server`, který vlastní data. Desktop si umí
@@ -14,7 +14,7 @@ který běží jinde: malý stroj, cloudové VM, sestavovací server.
 ## Než začneš
 
 - Běžící `cc_server`. Když žádný nemáš, viz [Spusťte headless server](/cs-CZ/prirucka/navody/spusteni-headless-serveru/).
-- Buď tři párovací hodnoty, které server vydal, **URL serveru** (`ws://…/rpc` nebo `wss://…/rpc`), **ID zařízení** a **párovací klíč**, nebo jednorázový **kód pozvánky** od správce pracovního prostoru. Uplatnění pozvánky ti založí uživatele, zapíše členství a vydá pověření pro tohoto klienta, takže ID zařízení ani klíč do ruky nedostaneš. Tyto hodnoty získej důvěryhodným kanálem a při prvním připojení zkontroluj otisk serveru proti důvěryhodnému QR kódu nebo známému pinu.
+- Buď tři párovací hodnoty, které server vydal, **URL serveru** (`ws://…/rpc` nebo `wss://…/rpc`), **ID zařízení** a **párovací klíč**, nebo jednorázový **kód pozvánky** od správce pracovního prostoru, nebo odkaz pozvánky či párovací odkaz, který je nese. Uplatnění pozvánky ti založí uživatele, zapíše členství a vydá pověření pro tohoto klienta, takže ID zařízení ani klíč do ruky nedostaneš. Tyto hodnoty získej důvěryhodným kanálem a při prvním připojení zkontroluj otisk serveru proti důvěryhodnému QR kódu nebo známému pinu.
 
 ### Ověř, že je server dosažitelný
 
@@ -40,14 +40,16 @@ a nativní klienti jsou povolení vždy.
 
 Po nové instalaci:
 
-1. Spusť Control Center. Obrazovka prvního spuštění se ptá **Jak má Control Center běžet?**
-2. Místo **Spustit v této aplikaci** vyplň pole připojení: URL serveru a buď kód pozvánky, nebo ID zařízení a párovací klíč.
+1. Spusť Control Center. Obrazovka prvního spuštění zobrazí **Vítejte v Control Center**.
+2. Klikni na **Připojit k serveru** a zadej URL serveru a buď kód pozvánky, nebo v části **Použít párovací klíč** ID zařízení a párovací klíč.
 3. Klikni na **Připojit**. Control Center se připojí k serveru a otevře doručenou poštu pracovního prostoru.
+
+Když máš odkaz pozvánky nebo párovací odkaz, klikni místo toho na **Vložit párovací odkaz** a vlož ho. Dialog ukáže, ke kterému serveru odkaz vede. Zkontroluj to a pak klikni na **Připojit**: samotné vložení nikdy nepřipojí. Když připojení selže, dialog zůstane otevřený s chybou a všemi zadanými údaji.
 
 Na desktopu, který už svůj server spouští:
 
 1. Otevři **Nastavení → Server → Připojení a stav**.
-2. Klikni na **Přidat server**. Zadej URL serveru (`wss://host:9030/rpc`) a buď kód pozvánky, nebo ID zařízení a párovací klíč. Tlačítko na konci pole URL najde instance `cc_server` v LAN nebo tailnetu.
+2. Klikni na **Přidat server**. Zadej URL serveru (`wss://host:9030/rpc`) a buď kód pozvánky, nebo v části **Použít párovací klíč** ID zařízení a párovací klíč. Tlačítko na konci pole URL najde instance `cc_server` v LAN nebo tailnetu.
 3. Klikni na **Připojit** a pak na **Přepnout** na řádku nového serveru.
 
 Přepnutí proběhne za běhu: aplikace se na místě přestaví kolem nové relace a
@@ -64,10 +66,11 @@ WebSocket; stejná ochrana platí na loopbacku i přes relé.
 Webové sestavení je vždy vzdálené.
 
 1. Otevři [app.usectrl.dev](https://app.usectrl.dev), nebo vlastní kopii webového sestavení.
-2. Zadej URL serveru a buď kód pozvánky, nebo ID zařízení a párovací klíč.
-3. Klient se připojí k serveru a vykreslí totéž rozhraní jako desktop.
+2. Klikni na **Připojit k serveru** a zadej URL serveru a buď kód pozvánky, nebo v části **Použít párovací klíč** ID zařízení a párovací klíč. **Vložit párovací odkaz** místo toho přijme odkaz pozvánky nebo párovací odkaz.
+3. Klikni na **Připojit**. Klient se připojí k serveru a vykreslí totéž rozhraní jako desktop.
 
-Když je v URL odkaz na párování, pole jsou předvyplněná. Párovací klíč se veze
+Když je v URL odkaz na párování, otevře se dialog připojení s vyplněnými poli, takže
+můžeš server zkontrolovat, než klikneš na **Připojit**. Párovací klíč se veze
 ve **fragmentu** URL, který prohlížeč nikdy nepošle serveru hostujícímu
 stránku. S odkazem zacházej jako s tajemstvím a důvěřuj stránce, která
 webového klienta servíruje: fragment nechrání před škodlivým kódem stránky.

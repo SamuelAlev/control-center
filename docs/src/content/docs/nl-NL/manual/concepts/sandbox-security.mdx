@@ -2,7 +2,7 @@
 title: Sandbox en beveiliging
 description: Wat een agent in Control Center vandaag daadwerkelijk beperkt, hoe ver de OS-sandbox reikt en welke grenzen standhouden op een host die geen backend heeft.
 slug: nl-NL/handleiding/concepten/sandbox-en-beveiliging
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Waar de OS-sandbox wel en niet reikt]
@@ -222,7 +222,7 @@ schrijfbeleid dat op weigeren wordt gezet met expliciete toestemmingen
 daarbovenop, blokkering van unlink op elk geweigerd pad en zijn voorouders zodat
 een rename een schrijfweigering niet kan omzeilen, exec-weigeringen voor altijd
 gevaarlijke binaries en voor alles wat naar een beschrijfbare map is gekopieerd,
-en een netwerk dat beperkt blijft tot de loopback-proxypoorten plus DNS.
+en een netwerk dat beperkt blijft tot de loopback-proxypoorten plus DNS. Toolchain-installaties onder je thuismap (pnpm via corepack, node-versiebeheerders, Playwright-browsers, rustup, fvm, uv en vergelijkbare) blijven binnen dat exec-blok uitvoerbaar, zodat agents ze zonder omwegen kunnen gebruiken. De altijd-gevaarlijke weigeringen blijven er binnen wel van kracht. Elke sessie krijgt bovendien een eigen privé-`TMPDIR`. Dat is de enige tijdelijke map waarin de agent zelf gebouwde programma's mag uitvoeren of Unix-sockets mag openen.
 
 De praktische consequentie: op Linux wordt het beeld dat de agent van het
 bestandssysteem heeft smaller; op macOS kan de agent nog steeds het grootste deel

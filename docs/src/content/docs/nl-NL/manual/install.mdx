@@ -2,7 +2,7 @@
 title: Installeren
 description: Gebruik Control Center in de browser of installeer de desktopapp, stel een agentbackend in en kies waar zijn server draait.
 slug: nl-NL/handleiding/installeren
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center werkt op twee manieren: als **webapp** op
@@ -149,10 +149,11 @@ De eerste stap van de onboarding is deze verbinding. Daarna vervang of wis je he
 
 Control Center is een dunne client boven op een headless `cc_server`-proces dat de database bezit en al het werk doet; [Deployment en clients](/nl-NL/handleiding/concepten/deployment/) legt uit wat die splitsing betekent voor desktop, web en telefoon.
 
-Bij de eerste start vraagt de desktop **“Hoe moet Control Center draaien?”**:
+Bij de eerste start toont de desktop **Welkom bij Control Center** en biedt drie manieren om te beginnen. Met de instellingenknop in de hoek wijzig je de taal en het thema.
 
 - **In deze app uitvoeren**: de desktop start en bewaakt een `cc_server` op deze machine en praat er via loopback mee. Niets anders in te stellen. Dit is de opzet die de [snelstart](/nl-NL/handleiding/snelstart/) veronderstelt.
-- **Verbinden met een externe instantie**: richt de desktop op een `cc_server` die elders draait, met zijn WebSocket-URL, een apparaat-id en ofwel een koppelingssleutel ofwel een eenmalige uitnodigingscode. Die server bezit de gegevens; deze desktop toont ze alleen.
+- **Verbinden met een server**: richt de desktop op een `cc_server` die elders draait, met zijn WebSocket-URL, en meld je daarna aan via eenmalige aanmelding als de server dat aanbiedt, of voer een eenmalige uitnodigingscode in, of een apparaat-id en koppelingssleutel onder **Een koppelingssleutel gebruiken**. Die server bezit de gegevens; deze desktop toont ze alleen.
+- **Een koppelingslink plakken**: plak een uitnodigings- of koppelingslink. Het dialoogvenster toont naar welke server de link leidt en maakt pas verbinding wanneer je op **Verbinden** klikt.
 
 Voeg later servers toe of wissel ertussen onder **Instellingen → Server → Verbinding en status**. Wisselen maakt ter plaatse opnieuw verbinding — geen herstart. Een browser kan geen server draaien, dus de webclient is altijd extern; zie [Verbinden met een externe server](/nl-NL/handleiding/gidsen/externe-server-verbinden/).
 

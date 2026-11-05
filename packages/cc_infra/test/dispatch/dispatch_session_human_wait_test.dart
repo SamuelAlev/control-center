@@ -232,7 +232,7 @@ void main() {
       expect(f.sandbox.destroyed, isFalse);
       expect(
         events.whereType<ErrorEvent>().where(
-          (e) => e.content.contains('Agent silent'),
+          (e) => e.content.startsWith('Silent run'),
         ),
         isEmpty,
       );
@@ -284,10 +284,13 @@ void main() {
       final timedOut = f.bus.on<TaskMessage>().firstWhere(
         (event) => event.content.startsWith('Silent run'),
       );
+      final failed = f.bus.on<TaskFailed>().first;
       f.advance(const Duration(minutes: 15));
       f.tick();
       await run;
       await timedOut;
+      // The abort finishes after `run()` returns; wait for its terminal event.
+      expect((await failed).errorMessage, startsWith('Silent run'));
       expect(f.sandbox.destroyed, isTrue);
       expect(session.silenceTimer, isNull);
     }),
@@ -297,6 +300,8 @@ void main() {
     'unrelated waits do not shield a genuinely silent agent',
     () => _exercise((f) async {
       final session = f.session();
+      final events = <AgentProcessEvent>[];
+      final sub = session.controller.stream.listen(events.add);
       final run = session.run();
       await f.sandbox.started.future;
       f.bus.publish(f.question('wrong-workspace', workspace: 'ws-2'));
@@ -308,12 +313,20 @@ void main() {
       final timedOut = f.bus.on<TaskMessage>().firstWhere(
         (event) => event.content.startsWith('Silent run'),
       );
+      final failed = f.bus.on<TaskFailed>().first;
       f.advance(const Duration(minutes: 16));
       f.tick();
       await run;
       await timedOut;
+      // The abort finishes after `run()` returns; wait for its terminal event.
+      expect((await failed).errorMessage, startsWith('Silent run'));
       expect(f.sandbox.destroyed, isTrue);
       expect(session.silenceTimer, isNull);
+      // One transcript error per timeout; the watchdog's own line is debug.
+      expect(events.whereType<ErrorEvent>().map((e) => e.content), [
+        startsWith('Silent run'),
+      ]);
+      await sub.cancel();
     }),
   );
 

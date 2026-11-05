@@ -7,6 +7,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_links.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/transcript/tool_body.dart';
@@ -15,6 +16,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'transcript_segment_row_text.dart';
+part 'transcript_status_dot.dart';
 
 /// One row in the transcript process timeline: a reasoning span, tool call,
 /// error, or sandbox violation. Collapsed by default; tools and long prose
@@ -305,67 +307,8 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
       options: chatMarkdownOptions,
       builders: chatMarkdownBuilders,
       imageBuilder: appMarkdownImageBuilder,
+      onTapLink: openMarkdownLink,
     );
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  const _StatusDot({
-    required this.segment,
-    required this.pending,
-    required this.tokens,
-  });
-
-  final TranscriptSegment segment;
-  final bool pending;
-  final DesignSystemTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final seg = segment;
-    if (pending) {
-      if (reduceMotion) {
-        return Icon(
-          AppIcons.loaderCircle,
-          size: 12,
-          color: tokens.fgBrandPrimary,
-        );
-      }
-      return const SizedBox(width: 12, height: 12, child: CcSpinner(size: 12));
-    }
-    if (seg is ToolSegment) {
-      return switch (seg.status) {
-        ToolSegmentStatus.running => Icon(
-          AppIcons.minus,
-          size: 12,
-          color: tokens.textQuaternary,
-        ),
-        ToolSegmentStatus.ok => Icon(
-          AppIcons.check,
-          size: 12,
-          color: tokens.fgSuccessPrimary,
-        ),
-        ToolSegmentStatus.error => Icon(
-          AppIcons.circleX,
-          size: 12,
-          color: tokens.fgErrorPrimary,
-        ),
-        ToolSegmentStatus.interrupted => Icon(
-          AppIcons.circleSlash,
-          size: 12,
-          color: tokens.fgWarningPrimary,
-        ),
-      };
-    }
-    if (seg is ErrorSegment) {
-      return Icon(AppIcons.circleX, size: 12, color: tokens.fgErrorPrimary);
-    }
-    if (seg is ViolationSegment) {
-      return Icon(AppIcons.shield, size: 12, color: tokens.fgWarningPrimary);
-    }
-    return const SizedBox(width: 12, height: 12);
   }
 }
 

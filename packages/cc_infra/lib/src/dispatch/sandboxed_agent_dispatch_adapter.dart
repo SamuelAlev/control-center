@@ -87,6 +87,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     ClaudeNativeSessionStore? claudeSessionStore,
     ClaudeMcpDiscoveryCachePolicy claudeMcpDiscoveryCache =
         ClaudeMcpDiscoveryCachePolicy.disabled,
+    Future<int?> Function(String? modelId)? claudeContextWindowOf,
     DebugSessionSupervisor? debugSupervisor,
     Future<KernelLauncher> Function({
       required String workingDirectory,
@@ -143,6 +144,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          toolOutputStore: toolOutputStore,
          claudeSessionStore: claudeSessionStore,
          claudeMcpDiscoveryCache: claudeMcpDiscoveryCache,
+         claudeContextWindowOf: claudeContextWindowOf,
          debugSupervisor: debugSupervisor,
          kernelLauncherFactory: kernelLauncherFactory,
          actionGuard: actionGuard,

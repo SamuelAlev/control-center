@@ -6,17 +6,27 @@
 // connected `cc_server` pushes (see `RemoteEventForwarder`).
 library;
 
+import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:cc_domain/core/domain/ports/notification_port.dart';
+import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:control_center/app/app_window_focused.dart';
 import 'package:control_center/core/notifications/desktop_notification_delivery.dart';
 import 'package:control_center/core/notifications/live_notification_lane.dart';
 import 'package:control_center/core/notifications/notification_service.dart';
 import 'package:control_center/core/notifications/recording_notification_port.dart';
+import 'package:control_center/core/providers/analytics_providers.dart';
+import 'package:control_center/core/providers/locale_provider.dart';
+import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
 import 'package:control_center/features/shell/providers/current_route_provider.dart';
+import 'package:control_center/l10n/app_locales.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -49,26 +59,36 @@ final viewerLoginSetProvider = Provider<Set<String>>((ref) {
   return ref.watch(viewerLoginsProvider).values.toSet();
 });
 
-/// The active [NotificationPort]: renders OS notifications and reports every
-/// produced notification (before suppression) into the live banner lane so
-/// time-critical banner-class events reach the ambient rail. The durable bell
-/// history is NOT recorded here any more — the server records it per
-/// workspace (`NotificationFeedRecorder`) and the bell watches that feed.
+/// The OS notification service alone, without the live banner lane.
 ///
 /// Wires route-awareness, space-level suppression and click-through
 /// navigation by reading from the [routerProvider] and
 /// [selectedSpaceIdProvider] at call time (not at construction time),
 /// keeping the service decoupled from the router lifecycle.
-final notificationServiceProvider = Provider<NotificationPort>((ref) {
+///
+/// Reminders for unanswered agent waits (`agentWaitReminderProvider`) show
+/// through this directly: a reminder is not a new arrival, so it must not
+/// reach the lane that [notificationServiceProvider] feeds.
+final desktopNotificationServiceProvider = Provider<NotificationPort>((ref) {
   final preferences = ref.watch(notificationPreferencesProvider);
   final router = ref.watch(routerProvider);
   final soundService = ref.watch(notificationSoundServiceProvider);
 
-  final inner = LocalNotificationService(
+  return LocalNotificationService(
     preferences: preferences,
-    delivery: createDesktopNotificationDelivery(onNavigate: router.go),
+    delivery: createDesktopNotificationDelivery(
+      onNavigate: router.go,
+      onApproval: (id, {required approved}) => unawaited(
+        answerApprovalFromNotification(ref, id, approved: approved),
+      ),
+      actionLabels: () {
+        final l10n = notificationLocalizations(ref);
+        return (approve: l10n.approve, deny: l10n.deny);
+      },
+    ),
     isRouteActive: (route) => isRouteActive(router, route),
-    isFocusModeActive: () => ref.read(focusModeProvider).active,
+    // Only a session with "Block notifications" on silences anything.
+    isFocusBlocking: () => ref.read(focusModeProvider).blocksNotifications,
     soundService: soundService,
     isSpaceActive: (spaceId) => ref.read(selectedSpaceIdProvider) == spaceId,
     // Polled at show time, not tracked: the native window event handlers do
@@ -76,10 +96,69 @@ final notificationServiceProvider = Provider<NotificationPort>((ref) {
     // was when the app launched.
     isAppFocused: appWindowFocused,
   );
+});
 
+/// The active [NotificationPort]: renders OS notifications and reports every
+/// produced notification (before suppression) into the live banner lane so
+/// time-critical banner-class events reach the ambient rail. The durable bell
+/// history is NOT recorded here any more — the server records it per
+/// workspace (`NotificationFeedRecorder`) and the bell watches that feed.
+final notificationServiceProvider = Provider<NotificationPort>((ref) {
   return RecordingNotificationPort(
-    inner: inner,
+    inner: ref.watch(desktopNotificationServiceProvider),
     onRecord: (notification) =>
         ref.read(liveNotificationLaneProvider).add(notification),
   );
 });
+
+/// The localizations notifications render in: the app's chosen locale, else
+/// the system's.
+AppLocalizations notificationLocalizations(Ref ref) => lookupAppLocalizations(
+  remapTranslationLocale(
+    ref.read(localeProvider) ?? PlatformDispatcher.instance.locale,
+  ),
+);
+
+/// Answers approval [id] from an OS notification's Approve or Deny button.
+///
+/// Goes through `confirmation.respond`, the same call the in-app approval card
+/// makes, so the server applies the same checks: the approval must still be
+/// pending and the signed-in user must be a member it is routed to. The button
+/// itself authorizes nothing. Never remembers the decision: a standing
+/// approval is offered only where the full request is on screen.
+Future<void> answerApprovalFromNotification(
+  Ref ref,
+  String id, {
+  required bool approved,
+}) async {
+  // The overlay keeps this subscription alive, so the request is normally
+  // known; it only enriches the analytics event.
+  final request = ref
+      .read(pendingConfirmationsProvider)
+      .value
+      ?.where((r) => r.id == id)
+      .firstOrNull;
+  try {
+    final ok = await ref
+        .read(confirmationRepositoryProvider)
+        .respond(id, approved: approved);
+    if (!ok) {
+      AppLog.w('notifications', 'Approval $id was no longer pending');
+      return;
+    }
+    ref.track(
+      AnalyticsEvents.approvalDecided(
+        approved: approved,
+        remembered: false,
+        surface: 'notification',
+        actionClasses: request?.actionClasses ?? const [],
+        severity: request?.severity,
+        workspaceId: request?.workspaceId,
+        spaceId: request?.spaceId,
+        conversationId: request?.conversationId,
+      ),
+    );
+  } on Object catch (e) {
+    AppLog.e('notifications', 'Failed to answer approval $id: $e');
+  }
+}

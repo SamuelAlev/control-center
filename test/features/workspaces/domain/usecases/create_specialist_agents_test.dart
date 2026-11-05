@@ -120,8 +120,17 @@ void main() {
         final agents = await useCase.execute('ws-1', ceoAgentId: 'ceo-1');
 
         expect(agents, isNotEmpty);
-        // defaultSpecialistAgents has 4 entries (qa, architect, engineer, librarian)
-        expect(agents, hasLength(4));
+        expect(agents, hasLength(defaultSpecialistAgents.length));
+        expect(
+          agents.map((a) => a.name),
+          containsAll([
+            'qa',
+            'architect',
+            'engineer',
+            'librarian',
+            'content-synthesizer',
+          ]),
+        );
       },
     );
 
@@ -177,8 +186,8 @@ void main() {
         final useCase = createUseCase();
         final agents = await useCase.execute('ws-1', ceoAgentId: 'ceo-1');
 
-        // Should still return 4 agents (including the existing one)
-        expect(agents, hasLength(4));
+        // Still one per specialist, the existing one included.
+        expect(agents, hasLength(defaultSpecialistAgents.length));
 
         // The existing agent should be returned as-is
         final qaAgent = agents.firstWhere((a) => a.name == 'qa');

@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../helpers/test_wrap.dart';
 
 /// Shift+Enter inserts a newline on the controller, which skips the field's
-/// own caret-reveal. Once the draft is taller than [Composer.maxLines] that
+/// own caret-reveal. Once the draft is taller than [Composer.maxInputHeight] that
 /// newline has to scroll the caret back into the viewport.
 void main() {
   late ComposerTextController controller;
@@ -26,7 +26,8 @@ void main() {
             child: Composer(
               controller: controller,
               autofocus: true,
-              maxLines: 4,
+              // About four lines; the composer's floor for the cap.
+              maxInputHeight: 88,
               sources: const [],
               onSubmit: (_) async {},
             ),

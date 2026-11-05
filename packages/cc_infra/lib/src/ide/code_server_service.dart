@@ -22,7 +22,7 @@ const String codeServerBinaryName = 'code-server';
 /// The pinned code-server release tag vendored / downloaded on demand
 /// (Renovate-tracked — bump here and the CI fetch + managed download follow).
 /// Matches the `coder/code-server` GitHub release naming (`v<version>`).
-const String codeServerVersion = '4.143.1';
+const String codeServerVersion = '4.145.0';
 
 /// Curated language extensions pre-provisioned into the shared `--extensions-dir`
 /// so the embedded editor demonstrably ships one LSP end-to-end (the "one LSP
@@ -34,7 +34,7 @@ const String codeServerVersion = '4.143.1';
 /// Each entry is (publisher, name, version) on the Open VSX registry.
 const List<({String publisher, String name, String version})>
 codeServerCuratedExtensions = [
-  (publisher: 'Dart-Code', name: 'dart-code', version: '3.144.0'),
+  (publisher: 'Dart-Code', name: 'dart-code', version: '3.146.0'),
 ];
 
 /// Session capability TTL: a minted capability authorizes the proxy for this

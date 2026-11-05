@@ -2,7 +2,7 @@
 title: Terek használata
 description: Hozzon létre tereket, állítsa be a módjukat, kezelje a résztvevőket és az autonómiát, valamint nyisson beszélgetéseket és szálakat.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/terek
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Ez az útmutató bemutatja, hogyan használhatja a tereket. A **tér** a Control
@@ -27,6 +27,8 @@ egymás közötti beszélgetéshez nyitnak teret — lásd lentebb az
    jelölve; ha minden repó kijelölését megszünteti, a tér semmit nem
    checkoutolva jön létre
 6. Erősítse meg
+
+Csak ügynök válaszol egy üzenetre, ezért az ügynök nélküli tér nem indít semmit: az üzenetmező jelzi ezt, és megőrzi az üzenetet, amíg @-jelöléssel meg nem említ egy ügynököt. Ekkor az ügynök hozzáadódik a térhez, és az üzenet elküldésre kerül. Egy üres tér mögött nincs alapértelmezett futtató.
 
 A terek munkaterület-hatókörűek: csak az aktuális munkaterület ügynökeit látja,
 és egy tér soha nem jelenít meg adatot egy másik munkaterületről.
@@ -104,7 +106,7 @@ egy sem, az létrehoz egy cím nélküli, állandó beszélgetést.
 A beszélgetések szerkesztőfülekként jelennek meg, és ha egynél több van, az
 oldalsávban a tér alatti beágyazott sorokként is. Az **Új beszélgetés** a
 szerkesztő új fül menüjében található, és címbekérő nélkül hoz létre egy cím
-nélküli beszélgetést — a címet adó modell az első üzenet alapján nevezi el.
+nélküli beszélgetést — a Content synthesizer ügynök nevezi el az első üzenet alapján.
 Használjon egyet párhuzamos munkához ugyanazzal az ügynökkel és worktree-vel.
 
 Minden beszélgetés megtartja a saját üzenetelőzményét és ügynökmunkameneteit,

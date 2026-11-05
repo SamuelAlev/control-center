@@ -2,7 +2,7 @@
 title: Installation
 description: Nutze Control Center im Browser oder installiere die Desktop-App, richte ein Agenten-Backend ein und wähle, wo der Server läuft.
 slug: de-DE/handbuch/installation
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center läuft auf zwei Wegen: als **Web-App** unter
@@ -211,16 +211,20 @@ die Datenbank besitzt und die ganze Arbeit macht;
 [Bereitstellung und Clients](/de-DE/handbuch/konzepte/bereitstellung/) erklärt, was
 diese Trennung für Desktop, Web und Smartphone bedeutet.
 
-Beim ersten Start fragt der Desktop **„Wie soll Control Center laufen?“**:
+Beim ersten Start zeigt der Desktop **Willkommen bei Control Center** und bietet drei Einstiege an. Über die Einstellungsschaltfläche in der Ecke änderst du Sprache und Design.
 
 - **In dieser App ausführen**: Der Desktop startet und beaufsichtigt ein `cc_server`
   auf diesem Rechner und spricht mit ihm über Loopback. Sonst ist nichts
   einzurichten. Das ist die Einrichtung, von der der
   [Schnellstart](/de-DE/handbuch/schnellstart/) ausgeht.
-- **Mit einer entfernten Instanz verbinden**: Richte den Desktop auf ein `cc_server`,
-  das woanders läuft, mit seiner WebSocket-URL, einer Geräte-ID und entweder einem
-  Kopplungsschlüssel oder einem einmaligen Einladungscode. Dieser Server besitzt die
-  Daten; dieser Desktop zeichnet sie nur.
+- **Mit einem Server verbinden**: Richte den Desktop mit seiner WebSocket-URL auf ein
+  `cc_server`, das woanders läuft. Melde dich dann per Single Sign-on an, falls der Server
+  das anbietet, oder gib einen einmaligen Einladungscode ein, oder unter
+  **Kopplungsschlüssel verwenden** eine Geräte-ID und einen Kopplungsschlüssel. Dieser
+  Server besitzt die Daten; dieser Desktop zeichnet sie nur.
+- **Kopplungslink einfügen**: Füge einen Einladungs- oder Kopplungslink ein. Der Dialog
+  zeigt, zu welchem Server der Link führt, und verbindet erst, wenn du auf **Verbinden**
+  klickst.
 
 Server fügst du später hinzu oder wechselst sie unter **Einstellungen → Server →
 Verbindung und Status**. Der Wechsel verbindet an Ort und Stelle neu — kein

@@ -9,10 +9,12 @@ on:
     branches: [main]
     paths:
       - "docs/**"
+      - ".nvmrc"
       - ".github/workflows/deploy-docs.yml"
   pull_request:
     paths:
       - "docs/**"
+      - ".nvmrc"
       - ".github/workflows/deploy-docs.yml"
   workflow_dispatch:
 
@@ -34,12 +36,15 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: d7dccdb80e94309a90054ed9c182ba05
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
         with:
           egress-policy: block
           # Fonts are self-hosted; a new CDN host fails this allowlist.
           allowed-endpoints: >
+            *.blob.core.windows.net:443
             github.com:443
+            api.github.com:443
+            release-assets.githubusercontent.com:443
             registry.npmjs.org:443
             api.cloudflare.com:443
             sparrow.cloudflare.com:443
@@ -50,14 +55,17 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          package_json_file: docs/package.json
+
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
-
-      - name: Enable pnpm
-        working-directory: docs
-        run: corepack enable pnpm && pnpm --version
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: docs/pnpm-lock.yaml
 
       - name: Install dependencies
         working-directory: docs

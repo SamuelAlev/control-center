@@ -1,15 +1,16 @@
 import 'dart:async';
 import 'package:cc_domain/core/domain/entities/message.dart';
-import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/settings/domain/services/short_task_runner.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
+import 'package:cc_infra/src/messaging/content_synthesizer_resolver.dart';
 import 'package:cc_infra/src/messaging/conversation_side_channel_service.dart';
 import 'package:test/test.dart';
+
+import '../helpers/fake_agent_roster.dart';
 
 Message _user(String text) => Message(
   id: 'u',
@@ -114,14 +115,19 @@ void main() {
 
   test('paged history does not scan the conversation', () async {
     final messaging = _ScanMessaging();
-    final settings = _Settings()
-      ..values[kShortTaskAdapterSettingKey] = 'cc-harness'
-      ..values[kShortTaskModelSettingKey] = 'anthropic/x';
+    final agents = FakeAgentRoster()
+      ..put(
+        contentSynthesizerAgent(
+          workspaceId: 'ws',
+          adapterId: 'cc-harness',
+          modelId: 'anthropic/x',
+        ),
+      );
     final factory = _Factory()..reply = 'the aside';
     final service = ConversationSideChannelService(
       repo: messaging,
       runner: AdapterOneShotRunner(credentials: _Creds(), factory: factory),
-      settings: settings,
+      synthesizer: ContentSynthesizerResolver(agents),
       sideChannelMessages:
           ({
             required String workspaceId,
@@ -140,6 +146,22 @@ void main() {
     expect(factory.calls.single.prompt, contains('User: from the window'));
     expect(messaging.scanned, isFalse);
   });
+
+  test('no content synthesizer → unavailable, no model call', () async {
+    final factory = _Factory()..reply = 'never';
+    final service = ConversationSideChannelService(
+      repo: _ScanMessaging(),
+      runner: AdapterOneShotRunner(credentials: _Creds(), factory: factory),
+      synthesizer: ContentSynthesizerResolver(FakeAgentRoster()),
+    );
+    final result = await service.handoff(
+      workspaceId: 'ws',
+      spaceId: 's',
+      conversationId: 'c',
+    );
+    expect(result.unavailable, isTrue);
+    expect(factory.calls, isEmpty);
+  });
 }
 
 class _ScanMessaging implements MessagingRepository {
@@ -157,29 +179,6 @@ class _ScanMessaging implements MessagingRepository {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
-}
-
-class _Settings implements WorkspaceSettingsRepository {
-  final Map<String, String> values = {};
-
-  @override
-  Future<String?> get(String workspaceId, String key) async => values[key];
-
-  @override
-  Future<Map<String, String>> getAll(String workspaceId) async => values;
-
-  @override
-  Stream<Map<String, String>> watchAll(String workspaceId) =>
-      Stream.value(values);
-
-  @override
-  Future<void> set(String workspaceId, String key, String? value) async {
-    if (value == null) {
-      values.remove(key);
-    } else {
-      values[key] = value;
-    }
-  }
 }
 
 class _Creds implements ProviderCredentialStore {

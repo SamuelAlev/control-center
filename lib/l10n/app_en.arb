@@ -416,8 +416,6 @@
   "serverConnection": "Server connection",
   "serverModeLocal": "Run in this app",
   "serverModeLocalDescription": "Control Center runs its own server on this machine and owns your data locally.",
-  "serverModeRemote": "Connect to a remote instance",
-  "serverModeRemoteDescription": "Connect to a Control Center server running elsewhere. Your data lives on that server.",
   "serverRemoteUrl": "Server URL",
   "serverRemoteDeviceId": "Device id",
   "serverRemotePairingKey": "Pairing key",
@@ -507,8 +505,6 @@
   "pairScanQr": "Scan this QR code with your phone's camera to pair it.",
   "pairServerUnreachableTitle": "Not reachable",
   "pairServerUnreachable": "Other devices can't reach this server directly, so a new client can't connect. Set the server's public URL to pair more clients.",
-  "serverSetupTitle": "How should Control Center run?",
-  "serverSetupSubtitle": "Control Center needs a server that owns your data. Run one inside this app, or connect to an instance running elsewhere.",
   "serverSetupRunLocal": "Run in this app",
   "serverSetupConnect": "Connect",
   "serverSetupInvalidUrl": "Enter a valid ws:// or wss:// server URL.",
@@ -2230,7 +2226,6 @@
     }
   },
   "configureAgentIdentities": "Configure agent identities, prompts, skills and view runs.",
-  "configureDefaultRunners": "Configure which adapter and model are used for new spaces and title generation.",
   "configuredLabel": "Configured.",
   "confirmedBy": "Confirmed by",
   "@confirmedBy": {
@@ -2336,10 +2331,6 @@
   "@deactivate": {
     "description": "Button to deactivate a policy"
   },
-  "defaultChat": "Default chat",
-  "@defaultChat": {
-    "description": "Default chat"
-  },
   "@defaultPortHint": {
     "description": "Default port number hint",
     "placeholders": {
@@ -2347,10 +2338,6 @@
         "type": "int"
       }
     }
-  },
-  "defaultRunners": "Default runners",
-  "@defaultRunners": {
-    "description": "Default runners"
   },
   "delete": "Delete",
   "@delete": {
@@ -3749,6 +3736,9 @@
   "notificationGroupTickets": "Tickets",
   "notificationGroupCalendar": "Calendar",
   "notificationGroupMachines": "Machines",
+  "notificationSectionSound": "Sound",
+  "notificationSectionSchedule": "Schedule",
+  "notificationSectionEvents": "Events",
   "notificationsMutedRepos": "Muted repositories",
   "notificationsMutedReposCount": "{count, plural, =0{No repositories muted} =1{1 repository muted} other{{count} repositories muted}}",
   "@notificationsMutedReposCount": {
@@ -4316,10 +4306,6 @@
   "settingsLanguageDescription": "Choose the app language.",
   "@settingsLanguageDescription": {
     "description": "Subtitle for the language setting row"
-  },
-  "shortTask": "Short task",
-  "@shortTask": {
-    "description": "Short task"
   },
   "showNativeNotifications": "Show system notifications for events.",
   "showSuperseded": "Show superseded",
@@ -5004,10 +4990,6 @@
   "focusModeFloat": "Minimize to bar",
   "@focusModeFloat": {
     "description": "Tooltip to minimize app to compact focus bar"
-  },
-  "focusModeActiveTooltip": "Focus mode active — tap to end",
-  "@focusModeActiveTooltip": {
-    "description": "Tooltip on the focus mode chip in title bar"
   },
   "dismiss": "Dismiss",
   "@dismiss": {
@@ -11717,30 +11699,6 @@
       }
     }
   },
-  "webConnectTitle": "Connect to Control Center",
-  "@webConnectTitle": {
-    "description": "Title of the web client's connect gate"
-  },
-  "webConnectSubtitle": "Dial a running cc-server over WebSocket. Your key stays on this device.",
-  "@webConnectSubtitle": {
-    "description": "Subtitle explaining the web connect gate"
-  },
-  "webConnectServerLabel": "Server",
-  "@webConnectServerLabel": {
-    "description": "Label for the server URL field on the web connect gate"
-  },
-  "webConnectDeviceIdLabel": "Device id",
-  "@webConnectDeviceIdLabel": {
-    "description": "Label for the device id field on the web connect gate"
-  },
-  "webConnectPairingKeyLabel": "Pairing key",
-  "@webConnectPairingKeyLabel": {
-    "description": "Label for the pairing key field on the web connect gate"
-  },
-  "webConnectPairingKeyHint": "paste the PSK",
-  "@webConnectPairingKeyHint": {
-    "description": "Hint for the pairing key field on the web connect gate"
-  },
   "webConnectStayConnected": "Stay connected on this device",
   "@webConnectStayConnected": {
     "description": "Accessible label for the 'stay connected' checkbox"
@@ -11783,10 +11741,13 @@
   "newConversation": "New conversation",
   "untitledConversation": "Untitled conversation",
   "conversationTitleOptionalHint": "Optional — leave empty and the title model names it automatically",
-  "shortTaskOff": "Off",
-  "shortTaskUnavailable": "Pick a short-task model in Settings → Adapters to use this",
-  "@shortTaskUnavailable": {
-    "description": "Shown when a feature needing the workspace short-task runner (side questions, title generation) runs with none configured; names the settings page to fix it"
+  "contentSynthesizerUnavailable": "The Content synthesizer agent is missing or has no working runner",
+  "@contentSynthesizerUnavailable": {
+    "description": "Shown when a side question, handoff, goal interview or title suggestion cannot run because the workspace's Content synthesizer agent is missing or its runner cannot run (\"Content synthesizer\" is the agent's literal name and stays untranslated)"
+  },
+  "conversationNeedsAgent": "Mention an agent with @ to start this conversation",
+  "@conversationNeedsAgent": {
+    "description": "Composer placeholder and warning toast in a conversation with no agent in it: nothing runs until an agent is @mentioned"
   },
   "conversationTitleGenerate": "Generate",
   "@conversationTitleGenerate": {
@@ -12143,8 +12104,6 @@
     }
   },
   "adapterArgumentsDescription": "Appended to the runner's command line on every launch.",
-  "defaultChatDescription": "Runs new conversations and any agent with no runner of its own.",
-  "shortTaskDescription": "Runs quick background work such as titles and summaries. A smaller model belongs here.",
   "settingsStateFailed": "Failed",
   "providerAppsGroupServer": "Acting as the server",
   "providerAppsGroupServerDescription": "Used by workspaces that inherit this install's GitHub App. A workspace with its own App or a PAT configures that under Workspace → General.",
@@ -12931,6 +12890,26 @@
   "attachFilesOrDrop": "Attach files — or drop them here",
   "@attachFilesOrDrop": {
     "description": "Tooltip on the composer's attach button, which also names the drag-and-drop affordance."
+  },
+  "composerExpand": "Expand editor ({shortcut})",
+  "@composerExpand": {
+    "description": "Tooltip on the composer toolbar button that grows the message composer to fill most of the conversation pane for writing a long prompt. The shortcut is a platform-formatted key combination such as ⌘⇧E or Ctrl+Shift+E.",
+    "placeholders": {
+      "shortcut": {
+        "type": "String",
+        "example": "⌘⇧E"
+      }
+    }
+  },
+  "composerCollapse": "Collapse editor ({shortcut})",
+  "@composerCollapse": {
+    "description": "Tooltip on the composer toolbar button that shrinks an expanded message composer back to its normal size. The shortcut is a platform-formatted key combination such as ⌘⇧E or Ctrl+Shift+E.",
+    "placeholders": {
+      "shortcut": {
+        "type": "String",
+        "example": "⌘⇧E"
+      }
+    }
   },
   "guidedGoalTitle": "Sharpen the objective",
   "@guidedGoalTitle": {
@@ -13994,6 +13973,8 @@
   "notificationAgentBlockedOnCredential": "{agent} is blocked on a credential",
   "@notificationAgentBlockedOnCredential": {"placeholders": {"agent": {"type": "String"}}},
   "notificationAgentBlockedOnCredentialUnnamed": "An agent is blocked on a credential",
+  "notificationWaitReminder": "Still waiting: {title}",
+  "@notificationWaitReminder": {"description": "Title of a reminder notification for an agent wait nobody has answered yet. {title} is the original notification title, e.g. \"engineer needs your approval\".", "placeholders": {"title": {"type": "String"}}},
   "killTerminal": "Kill terminal",
   "@killTerminal": {"description": "Tooltip on a sidebar TERMINALS row's trash button that ends the shell."},
   "stopAgentCommand": "Stop command",
@@ -14235,5 +14216,51 @@
   "transcriptSignInExpiredTitle": "Provider sign-in expired",
   "@transcriptSignInExpiredTitle": {"description": "Title of the notice in a turn that failed because its model provider credential stopped working"},
   "transcriptSignInExpiredBody": "The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.",
-  "@transcriptSignInExpiredBody": {"description": "Body of the notice in a turn that failed because its model provider credential stopped working"}
+  "@transcriptSignInExpiredBody": {"description": "Body of the notice in a turn that failed because its model provider credential stopped working"},
+  "helpMenuLabel": "Help",
+  "@helpMenuLabel": {"description": "Label of the help button in the sidebar footer, and the heading of its menu"},
+  "helpWhatsNew": "What's new",
+  "@helpWhatsNew": {"description": "Help menu item and dialog title showing the release notes"},
+  "helpReportProblem": "Report a problem",
+  "@helpReportProblem": {"description": "Heading of the help menu section for reporting a bug"},
+  "helpCreateGitHubIssue": "Create a GitHub issue",
+  "@helpCreateGitHubIssue": {"description": "Help menu item that opens a new GitHub issue in the browser"},
+  "changelogInstalled": "Installed",
+  "@changelogInstalled": {"description": "Tag beside the release the user is running in the release notes dialog"},
+  "changelogGroupNew": "New",
+  "@changelogGroupNew": {"description": "Heading above the new features of a release in the release notes dialog"},
+  "changelogGroupImproved": "Improved",
+  "@changelogGroupImproved": {"description": "Heading above the improvements of a release in the release notes dialog"},
+  "changelogGroupFixed": "Fixed",
+  "@changelogGroupFixed": {"description": "Heading above the bug fixes of a release in the release notes dialog"},
+  "changelogLoadFailed": "Couldn't load the release notes.",
+  "@changelogLoadFailed": {"description": "Shown in the release notes dialog when the release notes could not be fetched"},
+  "changelogOpenWebsite": "Open on the website",
+  "@changelogOpenWebsite": {"description": "Tooltip of the button opening the release notes on the website"},
+  "connectWelcomeTitle": "Welcome to Control Center",
+  "@connectWelcomeTitle": {"description": "Heading of the login screen"},
+  "connectWelcomeSubtitle": "Run it here, or connect to a server you already have.",
+  "@connectWelcomeSubtitle": {"description": "Sentence under the login heading on desktop, which can run its own server"},
+  "connectWelcomeSubtitleWeb": "Connect to your server to get started.",
+  "@connectWelcomeSubtitleWeb": {"description": "Sentence under the login heading on web, which can only connect to a server"},
+  "connectToServer": "Connect to a server",
+  "@connectToServer": {"description": "Login action and dialog title for connecting to a server by its address"},
+  "connectToServerIntro": "Enter the address of a Control Center server.",
+  "@connectToServerIntro": {"description": "One line at the top of the connect-to-a-server dialog"},
+  "connectUsePairingKey": "Use a pairing key",
+  "@connectUsePairingKey": {"description": "Disclosure that reveals the device id and pairing key fields"},
+  "connectPasteLink": "Paste a pairing link",
+  "@connectPasteLink": {"description": "Login action and dialog title for connecting with a pasted link"},
+  "connectPasteLinkIntro": "Paste the invite or pairing link you were given.",
+  "@connectPasteLinkIntro": {"description": "One line at the top of the paste-a-link dialog"},
+  "connectPasteLinkLabel": "Invite or pairing link",
+  "@connectPasteLinkLabel": {"description": "Label of the field that takes a pasted link"},
+  "connectPasteLinkInvalid": "That isn't a Control Center invite or pairing link. Copy the whole link and try again.",
+  "@connectPasteLinkInvalid": {"description": "Validation error when the pasted text is not a usable link"},
+  "connectPasteLinkTarget": "Connects to",
+  "@connectPasteLinkTarget": {"description": "Label above the server address a pasted link will connect to"},
+  "focusModeEnd": "End focus session",
+  "@focusModeEnd": {"description": "Menu item in the sidebar that ends the running focus session"},
+  "focusModeRemaining": "{minutes}m left",
+  "@focusModeRemaining": {"description": "Time left in the running focus session, shown as the tooltip and menu heading of its sidebar entry", "placeholders": {"minutes": {"type": "int"}}}
 }

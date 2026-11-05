@@ -2,7 +2,7 @@
 title: Control remote și mobil
 description: Cum ajunge telefonul la serverul tău prin conexiuni directe sau intermediate, criptate cap la cap, și modelul de acces pe straturi care ține această accesare restrânsă.
 slug: ro-RO/manual/concepte/control-remote
-sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
+sourceHash: cb6a1ecae8bc1c410e872649d26d3cae127003f6
 ---
 
 Control Center este o aplicație de desktop, dar munca pe care o urmărește nu se
@@ -97,8 +97,9 @@ folosește o gazdă de aplicație de încredere și tratează linkul ca pe un se
 Există două forme de payload și ele **nu sunt interschimbabile**. Codul QR al
 telefonului, emis din panoul de asociere din aplicație, este `PairingPayload` v2
 de mai sus, îndreptat spre gazda PWA Remote. `cc_server pair --client-url` emite
-un link v1 (`{s, i, k}` — URL de server, ID de dispozitiv, cheie), destinat
-exclusiv clientului **web**. Sunt formate de date de asociere, nu variante de
+un link v1 (`{s, i, k}` — URL de server, ID de dispozitiv, cheie), pentru clienții
+**web** și **desktop**: deschide-l într-un browser sau lipește-l în
+**Lipește un link de asociere** pe desktop. Sunt formate de date de asociere, nu variante de
 rezervă pentru transport: ambii clienți trebuie să accepte protocolul actual de
 sesiune criptată.
 

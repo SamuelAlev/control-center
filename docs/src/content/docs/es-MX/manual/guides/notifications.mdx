@@ -2,7 +2,7 @@
 title: Configurar notificaciones
 description: Activa o desactiva categorías, define un horario de silencio y un sonido, y averigua qué notificaciones te llegan y dónde.
 slug: es-MX/manual/guias/notificaciones
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Esta guía te muestra cómo configurar las notificaciones y qué controla realmente
@@ -50,11 +50,28 @@ notificaciones.
 Nada que quede fuera de esta lista puede notificarse ni filtrarse: no existe una
 categoría de «todo lo demás».
 
-**Un agente te espera** se activa una vez por espera, cuando esta empieza: una
+**Un agente te espera** se activa en cuanto empieza una espera: una
 aprobación pendiente (incluidos los permisos de ejecución del sandbox y las
 aprobaciones de herramientas de Claude Code), una pregunta `ask_user` o una
 ejecución retenida porque su credencial no puede atenderla. Abre el espacio
 donde respondes y no avisa mientras ya estás viendo ese espacio.
+
+En el escritorio, estas notificaciones se comportan de forma distinta al resto:
+
+- **macOS las trata como urgentes.** Pueden atravesar una Concentración de macOS
+  que permita las notificaciones urgentes de Control Center.
+- **Puedes responder a una aprobación desde la notificación.** **Aprobar** y
+  **Denegar** envían tu respuesta sin abrir la app. El servidor la comprueba
+  igual que la tarjeta de la app. Si prefieres aprobar durante un tiempo, abre
+  la tarjeta.
+- **Una espera sin respuesta te lo recuerda.** Si nadie responde, la
+  notificación vuelve como **Sigue esperando: …** a los 3, 10, 25 y 45 minutos
+  de empezar la espera. Cada recordatorio sustituye a la notificación anterior
+  en lugar de agregar otra. Los recordatorios se omiten mientras una ventana de
+  Control Center tiene el foco, porque la tarjeta de aprobación y la campana ya
+  están delante de ti.
+- **Desaparece cuando termina la espera**, sea cual sea la respuesta, así que
+  nunca presionas un botón de una solicitud que ya está resuelta.
 
 Estas preferencias siguen a tu usuario de un dispositivo a otro, así que un
 teléfono y una laptop se mantienen sincronizados. El volumen es la excepción
@@ -100,7 +117,8 @@ condiciones:
 - Las notificaciones están desactivadas de forma global, o su categoría lo está
 - Ya estás en la ruta a la que te llevaría y, en el caso de un mensaje, ya estás
   en ese espacio
-- El modo enfoque está activo y la categoría no es urgente
+- Hay una sesión de enfoque en curso con **Bloquear notificaciones** activado y
+  la categoría no es urgente
 - El horario de silencio está activo y la categoría no es urgente
 
 Esas comprobaciones se aplican a los toasts del sistema operativo. La campana
@@ -146,6 +164,15 @@ pierde, sea cual sea el estado de lectura.
 La autorización se solicita de forma nativa cuando se inicia la app. Si la
 rechazaste, vuelve a habilitar Control Center en Ajustes del Sistema →
 Notificaciones; no hay ningún aviso dentro de la app para volver a solicitarla.
+
+### Se me pasan las notificaciones de aprobación en macOS
+
+De forma predeterminada, macOS muestra las notificaciones de Control Center como
+tiras, y una tira desaparece a los pocos segundos. Para que permanezcan en
+pantalla hasta que actúes, cambia el estilo de alerta de Control Center a
+**Persistente** en Ajustes del Sistema → Notificaciones. Una aprobación sin
+respuesta también vuelve como recordatorio (consulta
+[Activar o desactivar categorías](#activar-o-desactivar-categorías)).
 
 ### En la compilación web no llega nada
 

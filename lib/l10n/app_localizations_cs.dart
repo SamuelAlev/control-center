@@ -735,13 +735,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Control Center spustí vlastní server na tomto stroji a data drží lokálně.';
 
   @override
-  String get serverModeRemote => 'Připojit ke vzdálené instanci';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Připojte se k serveru Control Center jinde. Data žijí na tom serveru.';
-
-  @override
   String get serverRemoteUrl => 'URL serveru';
 
   @override
@@ -964,13 +957,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Ostatní zařízení tento server přímo nedosáhnou, takže se nový klient nemůže připojit. Nastavte veřejné URL serveru, abyste mohli párovat další klienty.';
-
-  @override
-  String get serverSetupTitle => 'Jak má Control Center běžet?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center potřebuje server, který vlastní vaše data. Spusťte ho v této aplikaci, nebo se připojte k instanci jinde.';
 
   @override
   String get serverSetupRunLocal => 'Spustit v této aplikaci';
@@ -3053,10 +3039,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nastavte identity agentů, prompty, dovednosti a prohlížejte běhy.';
 
   @override
-  String get configureDefaultRunners =>
-      'Nastavte, který adaptér a model se použije pro nové prostory a generování názvů.';
-
-  @override
   String get configuredLabel => 'Nastaveno.';
 
   @override
@@ -3158,12 +3140,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get deactivate => 'Deaktivovat';
-
-  @override
-  String get defaultChat => 'Výchozí chat';
-
-  @override
-  String get defaultRunners => 'Výchozí runnery';
 
   @override
   String get delete => 'Smazat';
@@ -4482,6 +4458,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get notificationGroupMachines => 'Stroje';
 
   @override
+  String get notificationSectionSound => 'Zvuk';
+
+  @override
+  String get notificationSectionSchedule => 'Plán';
+
+  @override
+  String get notificationSectionEvents => 'Události';
+
+  @override
   String get notificationsMutedRepos => 'Ztlumené repozitáře';
 
   @override
@@ -5045,9 +5030,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'Vyberte jazyk aplikace.';
-
-  @override
-  String get shortTask => 'Krátký úkol';
 
   @override
   String get showNativeNotifications =>
@@ -5638,10 +5620,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Minimalizovat na lištu';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'Režim soustředění je aktivní — klepněte pro ukončení';
 
   @override
   String get dismiss => 'Zavřít';
@@ -13141,25 +13119,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Připojit k Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'Vytočte běžící cc-server přes WebSocket. Klíč zůstane na tomto zařízení.';
-
-  @override
-  String get webConnectServerLabel => 'Server';
-
-  @override
-  String get webConnectDeviceIdLabel => 'ID zařízení';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Párovací klíč';
-
-  @override
-  String get webConnectPairingKeyHint => 'vložte PSK';
-
-  @override
   String get webConnectStayConnected => 'Zůstat připojen na tomto zařízení';
 
   @override
@@ -13203,11 +13162,12 @@ class AppLocalizationsCs extends AppLocalizations {
       'Volitelné — nechte prázdné a model názvu ho pojmenuje automaticky';
 
   @override
-  String get shortTaskOff => 'Vypnuto';
+  String get contentSynthesizerUnavailable =>
+      'Agent Content synthesizer chybí nebo nemá funkční runner';
 
   @override
-  String get shortTaskUnavailable =>
-      'Pro použití vyberte model pro krátké úkoly v Nastavení → Adaptéry';
+  String get conversationNeedsAgent =>
+      'Konverzaci zahájíte zmínkou agenta pomocí @';
 
   @override
   String get conversationTitleGenerate => 'Vygenerovat';
@@ -13677,14 +13637,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Připojí se k příkazové řádce runneru při každém spuštění.';
-
-  @override
-  String get defaultChatDescription =>
-      'Spouští nové konverzace a každého agenta bez vlastního runneru.';
-
-  @override
-  String get shortTaskDescription =>
-      'Spouští rychlou práci na pozadí, například názvy a shrnutí. Patří sem menší model.';
 
   @override
   String get settingsStateFailed => 'Selhalo';
@@ -14437,6 +14389,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Přiložit soubory — nebo je sem pusťte';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Rozbalit editor ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Sbalit editor ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'Zpřesnit cíl';
@@ -15612,6 +15574,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Agent je zablokován kvůli přihlašovacím údajům';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Stále čeká: $title';
+  }
+
+  @override
   String get killTerminal => 'Ukončit terminál';
 
   @override
@@ -16072,4 +16039,79 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Běh se zastavil, protože přihlašovací údaje poskytovatele už nefungují. Znovu jej připojte v Nastavení → Poskytovatelé a pak tah zopakujte.';
+
+  @override
+  String get helpMenuLabel => 'Nápověda';
+
+  @override
+  String get helpWhatsNew => 'Co je nového';
+
+  @override
+  String get helpReportProblem => 'Nahlásit problém';
+
+  @override
+  String get helpCreateGitHubIssue => 'Vytvořit issue na GitHubu';
+
+  @override
+  String get changelogInstalled => 'Nainstalováno';
+
+  @override
+  String get changelogGroupNew => 'Nové';
+
+  @override
+  String get changelogGroupImproved => 'Vylepšené';
+
+  @override
+  String get changelogGroupFixed => 'Opravené';
+
+  @override
+  String get changelogLoadFailed => 'Poznámky k vydání se nepodařilo načíst.';
+
+  @override
+  String get changelogOpenWebsite => 'Otevřít na webu';
+
+  @override
+  String get connectWelcomeTitle => 'Vítejte v Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Spusťte ho zde, nebo se připojte k serveru, který už máte.';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'Začněte připojením ke svému serveru.';
+
+  @override
+  String get connectToServer => 'Připojit k serveru';
+
+  @override
+  String get connectToServerIntro => 'Zadejte adresu serveru Control Center.';
+
+  @override
+  String get connectUsePairingKey => 'Použít párovací klíč';
+
+  @override
+  String get connectPasteLink => 'Vložit párovací odkaz';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Vložte odkaz pozvánky nebo párovací odkaz, který jste dostali.';
+
+  @override
+  String get connectPasteLinkLabel => 'Odkaz pozvánky nebo párovací odkaz';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Toto není odkaz pozvánky ani párovací odkaz Control Center. Zkopírujte celý odkaz a zkuste to znovu.';
+
+  @override
+  String get connectPasteLinkTarget => 'Připojí se k';
+
+  @override
+  String get focusModeEnd => 'Ukončit relaci soustředění';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'Zbývá $minutes min';
+  }
 }

@@ -394,6 +394,7 @@ class TreeSitterParser {
     final startPoint = bindings.nodeStartPoint(node);
     final endPoint = bindings.nodeEndPoint(node);
     final children = <AstNode>[];
+    var recovered = false;
     if (depthLeft > 0) {
       final count = bindings.nodeChildCount(node);
       for (var i = 0; i < count; i++) {
@@ -401,6 +402,7 @@ class TreeSitterParser {
         // A MISSING node is one the parser inserted to recover; it spans zero
         // bytes and matching against it would assert about text nobody wrote.
         if (bindings.nodeIsMissing(child)) {
+          recovered = true;
           continue;
         }
         final fieldPtr = bindings.nodeFieldNameForChild(node, i);
@@ -429,6 +431,7 @@ class TreeSitterParser {
             )
           : '',
       fieldName: fieldName,
+      recovered: recovered,
       children: children,
     );
   }

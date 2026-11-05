@@ -59,6 +59,7 @@ void main() {
   ContextInspectionService buildService({
     BuildConversationContextUseCase? history,
     int? Function(String qualifiedModel)? modelWindowOf,
+    Future<int?> Function(String? modelId)? claudeCodeWindowOf,
   }) => ContextInspectionService(
     agentRepository: agents,
     conversationRepository: conversations,
@@ -69,6 +70,7 @@ void main() {
     fileSearch: _FakeFileSearch(),
     conversationContextUseCase: history,
     modelWindowOf: modelWindowOf,
+    claudeCodeWindowOf: claudeCodeWindowOf,
   );
 
   setUp(() async {
@@ -262,34 +264,51 @@ void main() {
     });
 
     test('the window is the setting as given, not second-guessed', () async {
-      // `opus` runs at 200k; a 1M setting on it is the operator's call, and
-      // the model id is never rewritten to `opus[1m]` behind their back.
-      final inspection = await buildService().inspect(
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-        conversationId: conversationId,
-        agentId: agentId,
-      );
+      // The CLI says 200k; a 1M setting is the operator's call, and the model
+      // id is never rewritten to a `[1m]` variant behind their back.
+      final inspection =
+          await buildService(claudeCodeWindowOf: (_) async => 200000).inspect(
+            workspaceId: workspaceId,
+            spaceId: spaceId,
+            conversationId: conversationId,
+            agentId: agentId,
+          );
       expect(inspection.runner, ContextRunner.claudeCode);
       expect(inspection.windowTokens, 1000000);
     });
 
-    test('with no setting the window is the model id\'s', () async {
-      agents.seed(
-        buildAgent(
-          contextSize: null,
-          adapterId: 'claude-code',
-          modelId: 'opus[1m]',
-        ),
-      );
-      final inspection = await buildService().inspect(
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-        conversationId: conversationId,
-        agentId: agentId,
-      );
-      expect(inspection.windowTokens, 1000000);
+    test('with no setting the window is the one the CLI reports', () async {
+      // What the installed CLI answers per `--model` id.
+      Future<int?> cliWindow(String? id) async => switch (id) {
+        'claude-opus-4-6[1m]' => 1000000,
+        'claude-opus-4-6' => 200000,
+        _ => null,
+      };
+      Future<int> windowOf(String modelId) async {
+        agents.seed(
+          buildAgent(
+            contextSize: null,
+            adapterId: 'claude-code',
+            modelId: modelId,
+          ),
+        );
+        final inspection = await buildService(claudeCodeWindowOf: cliWindow)
+            .inspect(
+              workspaceId: workspaceId,
+              spaceId: spaceId,
+              conversationId: conversationId,
+              agentId: agentId,
+            );
+        return inspection.windowTokens;
+      }
 
+      expect(await windowOf('claude-opus-4-6[1m]'), 1000000);
+      expect(await windowOf('claude-opus-4-6'), 200000);
+      // Unknown to the CLI: reported as unknown (0), never guessed.
+      expect(await windowOf('claude-unknown'), 0);
+    });
+
+    test('an unreadable CLI leaves the window unknown', () async {
       agents.seed(
         buildAgent(
           contextSize: null,
@@ -297,13 +316,16 @@ void main() {
           modelId: 'opus',
         ),
       );
-      final standard = await buildService().inspect(
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-        conversationId: conversationId,
-        agentId: agentId,
-      );
-      expect(standard.windowTokens, 200000);
+      final inspection =
+          await buildService(
+            claudeCodeWindowOf: (_) async => throw StateError('no claude'),
+          ).inspect(
+            workspaceId: workspaceId,
+            spaceId: spaceId,
+            conversationId: conversationId,
+            agentId: agentId,
+          );
+      expect(inspection.windowTokens, 0);
     });
 
     test(

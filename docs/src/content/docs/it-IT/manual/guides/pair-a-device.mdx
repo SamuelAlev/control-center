@@ -2,7 +2,7 @@
 title: Associa un dispositivo
 description: Associa il telefono (o un secondo browser o desktop) al tuo server Control Center per seguire la flotta da remoto.
 slug: it-IT/manuale/guide/associa-dispositivo
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Questa guida mostra come associare un telefono a Control Center, così puoi
@@ -42,11 +42,12 @@ un nome (ad es. «Il mio telefono»), scegli il tipo — **Browser web**, **App
 desktop** o **Telefono** — e fai clic su **Associa**.
 
 - Per un **telefono** compare un codice QR. Inquadralo con la fotocamera del telefono, oppure copia il link e aprilo in un qualsiasi browser. Indica all'app Remote il tuo server e trasporta la credenziale.
-- Per un **browser** o un **desktop**, copia invece il link mostrato (o l'ID dispositivo e la chiave di abbinamento) nel nuovo client. Il link a un tocco viene offerto solo quando esegui l'abbinamento dal client web, perché un binario desktop non ha un'origine web da cui generarlo.
+- Per un **browser** o un **desktop**, copia invece il link mostrato (o l'ID dispositivo e la chiave di abbinamento) nel nuovo client. Apri il link in un browser, oppure incollalo in **Incolla un link di abbinamento** nell'app desktop. Se esegui l'abbinamento dal desktop, il link viene generato dall'URL del server stesso, quindi compare solo quando il server ne ha uno raggiungibile dagli altri dispositivi.
 
 Il codice QR del telefono e il link che `cc_server pair --client-url` stampa sulla
-CLI sono **payload diversi e non intercambiabili**: il link della CLI compila il
-modulo di connessione del client web, mentre questo codice QR trasporta il
+CLI sono **payload diversi e non intercambiabili**: il link della CLI compila la
+finestra di dialogo di connessione del client web o si incolla nell'app desktop,
+mentre questo codice QR trasporta il
 descrittore di connessione completo del server e l'impronta dell'identità per la
 PWA Remote.
 

@@ -2,7 +2,7 @@
 title: Backendy sandboxa
 description: Backendy sandboxa, miejsca ich stosowania oraz każdy obiekt wartości używany przez runtime sandboxa.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/backendy-sandboxa
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[To, czy uruchomienie działa w sandboxie, zależy od hosta]
@@ -61,8 +61,8 @@ Generowany profil jest **domyślnie permisywny** (`(allow default)`) i wycina z 
 
 - **Odczyty systemu plików**: odmawiane dla ścieżek z sekretami (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` i pozostałych ze zbioru zakazu odczytu)
 - **Zapisy systemu plików**: resetowane do odmowy, a następnie jawne zezwolenia na podścieżki, przy czym ścieżki objęte obowiązkowym zakazem (pliki rc powłoki, `.git/hooks`, konfiguracja Claude, chronione kopie robocze) są blokowane nawet wewnątrz korzenia z prawem zapisu. `file-write-unlink` jest odmawiany na każdej zabronionej ścieżce i jej przodkach, więc zmiana nazwy nie może ominąć zakazu zapisu
-- **Procesy**: odmowy `process-exec` dla zawsze niebezpiecznych plików binarnych oraz blokada wykonywania czegokolwiek z katalogu z prawem zapisu
-- **Sieć**: ograniczona do portów proxy działających w procesie plus DNS — pętla zwrotna nie jest dozwolona hurtowo, a gniazda Unix nie są dozwolone. Proxy egzekwują listę dozwolonych domen dla sesji (zobacz [Ruch wychodzący w sieci](#ruch-wychodzący-w-sieci))
+- **Procesy**: odmowy `process-exec` dla zawsze niebezpiecznych plików binarnych oraz blokada wykonywania czegokolwiek z katalogu z prawem zapisu. Znane katalogi instalacji narzędzi w katalogu domowym (corepack, pamięci podręczne `npx` i `pnpm dlx`, menedżery wersji node, przeglądarki Playwright, rustup i cargo, Go, fvm i pamięć podręczna pub, pyenv, uv i pipx, rbenv, sdkman, mise, asdf oraz `~/.local/bin`) są ponownie otwierane pod tą blokadą. Wspólne katalogi tymczasowe też są zablokowane. Zamiast tego każda sesja dostaje prywatny `TMPDIR` pod `/private/tmp`, w którym mogą działać programy zbudowane przez agenta (plik binarny `go test`, build cargo). Zawsze niebezpieczne odmowy są stosowane po tych zezwoleniach
+- **Sieć**: ograniczona do portów proxy działających w procesie plus DNS — pętla zwrotna nie jest dozwolona hurtowo, a nasłuch TCP jest odrzucany. Gniazda Unix są dozwolone wyłącznie w prywatnym `TMPDIR` sesji, który obejmuje narzędzia takie jak tsx i Chrome trzymające tam gniazdo IPC; agent SSH i inne gniazda pozostają nieosiągalne. Proxy egzekwują listę dozwolonych domen dla sesji (zobacz [Ruch wychodzący w sieci](#ruch-wychodzący-w-sieci))
 - **Konfiguracja**: profile są generowane przy każdym starcie na podstawie `SandboxSpec`
 
 Wymagania:

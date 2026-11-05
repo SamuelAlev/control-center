@@ -726,13 +726,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Control Center menjalankan servernya sendiri di mesin ini dan mengelola data Anda secara lokal.';
 
   @override
-  String get serverModeRemote => 'Hubungkan ke instans jarak jauh';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Hubungkan ke server Control Center yang berjalan di tempat lain. Data Anda berada di server tersebut.';
-
-  @override
   String get serverRemoteUrl => 'URL server';
 
   @override
@@ -954,13 +947,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Perangkat lain tidak dapat menjangkau server ini secara langsung, jadi klien baru tidak dapat terhubung. Atur URL publik server untuk memasangkan klien lain.';
-
-  @override
-  String get serverSetupTitle => 'Bagaimana Control Center harus dijalankan?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center memerlukan server yang menyimpan data Anda. Jalankan di dalam aplikasi ini, atau hubungkan ke instance yang berjalan di tempat lain.';
 
   @override
   String get serverSetupRunLocal => 'Jalankan di aplikasi ini';
@@ -3024,10 +3010,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Konfigurasikan identitas agen, prompt, skill, dan lihat run.';
 
   @override
-  String get configureDefaultRunners =>
-      'Konfigurasikan adapter dan model untuk Spaces baru dan pembuatan judul.';
-
-  @override
   String get configuredLabel => 'Terkonfigurasi.';
 
   @override
@@ -3126,12 +3108,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get deactivate => 'Nonaktifkan';
-
-  @override
-  String get defaultChat => 'Chat default';
-
-  @override
-  String get defaultRunners => 'Runner default';
 
   @override
   String get delete => 'Hapus';
@@ -4448,6 +4424,15 @@ class AppLocalizationsId extends AppLocalizations {
   String get notificationGroupMachines => 'Mesin';
 
   @override
+  String get notificationSectionSound => 'Suara';
+
+  @override
+  String get notificationSectionSchedule => 'Jadwal';
+
+  @override
+  String get notificationSectionEvents => 'Peristiwa';
+
+  @override
   String get notificationsMutedRepos => 'Repositori yang dibisukan';
 
   @override
@@ -5001,9 +4986,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'Pilih bahasa aplikasi.';
-
-  @override
-  String get shortTask => 'Tugas singkat';
 
   @override
   String get showNativeNotifications =>
@@ -5593,10 +5575,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Kecilkan ke bar';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'Mode fokus aktif — ketuk untuk mengakhiri';
 
   @override
   String get dismiss => 'Tutup';
@@ -13009,25 +12987,6 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Hubungkan ke Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'Hubungi cc-server yang sedang berjalan lewat WebSocket. Kunci Anda tetap di perangkat ini.';
-
-  @override
-  String get webConnectServerLabel => 'Server';
-
-  @override
-  String get webConnectDeviceIdLabel => 'Id perangkat';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Kunci pairing';
-
-  @override
-  String get webConnectPairingKeyHint => 'tempel PSK';
-
-  @override
   String get webConnectStayConnected => 'Tetap terhubung di perangkat ini';
 
   @override
@@ -13069,11 +13028,12 @@ class AppLocalizationsId extends AppLocalizations {
       'Opsional — biarkan kosong dan model judul akan menamainya otomatis';
 
   @override
-  String get shortTaskOff => 'Nonaktif';
+  String get contentSynthesizerUnavailable =>
+      'Agen Content synthesizer tidak ada atau tidak memiliki runner yang berfungsi';
 
   @override
-  String get shortTaskUnavailable =>
-      'Pilih model tugas singkat di Pengaturan → Adapter untuk menggunakan ini';
+  String get conversationNeedsAgent =>
+      'Sebut agen dengan @ untuk memulai percakapan ini';
 
   @override
   String get conversationTitleGenerate => 'Buat';
@@ -13540,14 +13500,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Ditambahkan ke baris perintah runner pada setiap peluncuran.';
-
-  @override
-  String get defaultChatDescription =>
-      'Menjalankan percakapan baru dan agen tanpa runner sendiri.';
-
-  @override
-  String get shortTaskDescription =>
-      'Menjalankan pekerjaan latar belakang cepat seperti judul dan ringkasan. Model yang lebih kecil cocok di sini.';
 
   @override
   String get settingsStateFailed => 'Gagal';
@@ -14290,6 +14242,16 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Lampirkan file — atau jatuhkan di sini';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Perluas editor ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Ciutkan editor ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'Perjelas tujuan';
@@ -15452,6 +15414,11 @@ class AppLocalizationsId extends AppLocalizations {
       'Agen terhambat oleh kredensial';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Masih menunggu: $title';
+  }
+
+  @override
   String get killTerminal => 'Matikan terminal';
 
   @override
@@ -15911,4 +15878,79 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Proses berhenti karena kredensial penyedianya tidak lagi berfungsi. Hubungkan ulang di Pengaturan → Penyedia, lalu coba ulang giliran ini.';
+
+  @override
+  String get helpMenuLabel => 'Bantuan';
+
+  @override
+  String get helpWhatsNew => 'Yang baru';
+
+  @override
+  String get helpReportProblem => 'Laporkan masalah';
+
+  @override
+  String get helpCreateGitHubIssue => 'Buat issue GitHub';
+
+  @override
+  String get changelogInstalled => 'Terpasang';
+
+  @override
+  String get changelogGroupNew => 'Baru';
+
+  @override
+  String get changelogGroupImproved => 'Ditingkatkan';
+
+  @override
+  String get changelogGroupFixed => 'Diperbaiki';
+
+  @override
+  String get changelogLoadFailed => 'Tidak dapat memuat catatan rilis.';
+
+  @override
+  String get changelogOpenWebsite => 'Buka di situs web';
+
+  @override
+  String get connectWelcomeTitle => 'Selamat datang di Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Jalankan di sini, atau hubungkan ke server yang sudah Anda miliki.';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'Hubungkan ke server Anda untuk memulai.';
+
+  @override
+  String get connectToServer => 'Hubungkan ke server';
+
+  @override
+  String get connectToServerIntro => 'Masukkan alamat server Control Center.';
+
+  @override
+  String get connectUsePairingKey => 'Gunakan kunci pairing';
+
+  @override
+  String get connectPasteLink => 'Tempel tautan pairing';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Tempel tautan undangan atau pairing yang Anda terima.';
+
+  @override
+  String get connectPasteLinkLabel => 'Tautan undangan atau pairing';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Itu bukan tautan undangan atau pairing Control Center. Salin seluruh tautan lalu coba lagi.';
+
+  @override
+  String get connectPasteLinkTarget => 'Terhubung ke';
+
+  @override
+  String get focusModeEnd => 'Akhiri sesi fokus';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'Tersisa $minutes mnt';
+  }
 }

@@ -172,6 +172,7 @@ class SandboxManager {
         workingDirectory: workingDirectory,
         httpProxyPort: session.httpProxy?.port,
         socksProxyPort: session.socksProxy?.port,
+        sessionTmpDir: session.ensureTmpDir(),
         // Read per spawn: the user may turn SSH signing on or off any time.
         sshSigningProgram: await globalSshSigningProgram(
           environment: _gitEnvironment,
@@ -245,6 +246,7 @@ class SandboxManager {
     for (final h in session.linuxBridges) {
       await h.dispose();
     }
+    session.deleteTmpDir();
     // Closing matters: each proxy owns a listener AND a long-lived upstream
     // `HttpClient`, so a session whose proxies are dropped without a close
     // leaks both for the process lifetime.
@@ -336,6 +338,42 @@ class _SessionState {
   /// This session's own egress proxies (restricted sessions only).
   SandboxHttpProxy? httpProxy;
   SandboxSocksProxy? socksProxy;
+
+  /// This session's private `TMPDIR` (macOS only), see [ensureTmpDir].
+  String? _tmpDir;
+
+  /// Creates the session's private `TMPDIR` on first use.
+  ///
+  /// The macOS profile denies exec and unix sockets in the shared temp dirs
+  /// and re-opens both only here. Tools that compile into `TMPDIR` and run the
+  /// result (`go test`) or keep an IPC socket there (tsx, Chrome's singleton)
+  /// then work, and no agent reaches another process's socket in `/tmp`. It
+  /// sits directly under `/private/tmp` because macOS caps a unix socket path
+  /// at 104 bytes, which `/var/folders/…/T/` nearly fills on its own.
+  /// `createTempSync` fails rather than reuse an existing name, so the
+  /// directory cannot be pre-created by someone else.
+  String ensureTmpDir() {
+    if (_tmpDir case final dir? when Directory(dir).existsSync()) {
+      return dir;
+    }
+    final dir = Directory('/private/tmp').createTempSync('cc-');
+    Process.runSync('/bin/chmod', ['700', dir.path]);
+    return _tmpDir = dir.path;
+  }
+
+  /// Removes the private `TMPDIR` and everything the session left in it.
+  void deleteTmpDir() {
+    final dir = _tmpDir;
+    _tmpDir = null;
+    if (dir == null) {
+      return;
+    }
+    try {
+      Directory(dir).deleteSync(recursive: true);
+    } on FileSystemException catch (e) {
+      CcInfraLog.warning('sandbox: could not remove session TMPDIR $dir: $e');
+    }
+  }
 
   /// Starts the proxies on first use, or re-applies [network] to the ones this
   /// session already owns (a re-wrap with changed capabilities). Rules never

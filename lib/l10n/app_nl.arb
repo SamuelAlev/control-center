@@ -306,8 +306,6 @@
   "serverConnection": "Serververbinding",
   "serverModeLocal": "In deze app uitvoeren",
   "serverModeLocalDescription": "Control Center draait een eigen server op dit apparaat en bewaart je gegevens lokaal.",
-  "serverModeRemote": "Verbinden met een externe instantie",
-  "serverModeRemoteDescription": "Maak verbinding met een Control Center-server die elders draait. Je gegevens staan op die server.",
   "serverRemoteUrl": "Server-URL",
   "serverRemoteDeviceId": "Apparaat-id",
   "serverRemotePairingKey": "Koppelingssleutel",
@@ -376,8 +374,6 @@
   "pairScanQr": "Scan deze QR-code met de camera van je telefoon om te koppelen.",
   "pairServerUnreachableTitle": "Niet bereikbaar",
   "pairServerUnreachable": "Andere apparaten kunnen deze server niet rechtstreeks bereiken, dus een nieuwe client kan geen verbinding maken. Stel de publieke URL van de server in om meer clients te koppelen.",
-  "serverSetupTitle": "Hoe moet Control Center draaien?",
-  "serverSetupSubtitle": "Control Center heeft een server nodig die je gegevens bezit. Voer er een uit in deze app of maak verbinding met een instantie die elders draait.",
   "serverSetupRunLocal": "In deze app uitvoeren",
   "serverSetupConnect": "Verbinden",
   "serverSetupInvalidUrl": "Voer een geldige ws:// of wss:// server-URL in.",
@@ -1206,7 +1202,6 @@
     }
   },
   "configureAgentIdentities": "Configureer agent-identiteiten, prompts, vaardigheden en bekijk runs.",
-  "configureDefaultRunners": "Configureer welke adapter en model worden gebruikt voor nieuwe gesprekken en titelgeneratie.",
   "configuredLabel": "Geconfigureerd.",
   "confirmedBy": "Bevestigd door",
   "@confirmedBy": {
@@ -1284,8 +1279,6 @@
   "@deactivate": {
     "description": "Button to deactivate a policy"
   },
-  "defaultChat": "Standaard-chat",
-  "defaultRunners": "Standaard-runners",
   "delete": "Verwijderen",
   "deleteAgent": "Agent verwijderen",
   "deleteAgentConfirm": "\\\"{name}\\\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
@@ -1516,10 +1509,6 @@
   "filterSkillsPlaceholder": "Vaardigheden filteren…",
   "finish": "Afronden",
   "fix": "Repareren",
-  "focusModeActiveTooltip": "Focusmodus actief — tik om te beëindigen",
-  "@focusModeActiveTooltip": {
-    "description": "Tooltip on the focus mode chip in title bar"
-  },
   "focusModeBlockNotifications": "Meldingen blokkeren",
   "@focusModeBlockNotifications": {
     "description": "Toggle label for blocking notifications during focus"
@@ -2324,6 +2313,9 @@
   "notificationGroupTickets": "Tickets",
   "notificationGroupCalendar": "Agenda",
   "notificationGroupMachines": "Machines",
+  "notificationSectionSound": "Geluid",
+  "notificationSectionSchedule": "Schema",
+  "notificationSectionEvents": "Gebeurtenissen",
   "notificationsMutedRepos": "Gedempte repositories",
   "notificationsMutedReposCount": "{count, plural, =0{Geen repositories gedempt} =1{1 repository gedempt} other{{count} repositories gedempt}}",
   "@notificationsMutedReposCount": {
@@ -2658,7 +2650,6 @@
   "settingsLabel": "Instellingen",
   "settingsLanguage": "Taal",
   "settingsLanguageDescription": "Kies de taal van de app.",
-  "shortTask": "Korte taak",
   "showNativeNotifications": "Systeemmeldingen tonen voor gebeurtenissen.",
   "showSuperseded": "Vervangen tonen",
   "@showSuperseded": {
@@ -7027,12 +7018,6 @@
       }
     }
   },
-  "webConnectTitle": "Verbinden met Control Center",
-  "webConnectSubtitle": "Verbind via WebSocket met een draaiende cc-server. Je sleutel blijft op dit apparaat.",
-  "webConnectServerLabel": "Server",
-  "webConnectDeviceIdLabel": "Apparaat-id",
-  "webConnectPairingKeyLabel": "Koppelsleutel",
-  "webConnectPairingKeyHint": "plak de PSK",
   "webConnectStayConnected": "Verbonden blijven op dit apparaat",
   "webConnectStayConnectedDetail": "Verbonden blijven op dit apparaat (bewaart je sleutel in deze browser)",
   "failedToCreateWorkspace": "Werkruimte maken is mislukt: {error}",
@@ -7042,8 +7027,8 @@
   "newConversation": "Nieuw gesprek",
   "untitledConversation": "Gesprek zonder titel",
   "conversationTitleOptionalHint": "Optioneel — laat leeg en het titelmodel geeft automatisch een naam",
-  "shortTaskOff": "Uit",
-  "shortTaskUnavailable": "Kies een model voor korte taken in Instellingen → Adapters om dit te gebruiken",
+  "contentSynthesizerUnavailable": "De Content synthesizer-agent ontbreekt of heeft geen werkende runner",
+  "conversationNeedsAgent": "Noem een agent met @ om dit gesprek te starten",
   "conversationTitleGenerate": "Genereren",
   "conversationTitleNoMessages": "Stuur eerst een bericht. De titel wordt daaruit gegenereerd.",
   "conversationTitleGenerateFailed": "Kan geen titel genereren. Probeer het opnieuw.",
@@ -7202,8 +7187,6 @@
     }
   },
   "adapterArgumentsDescription": "Worden bij elke start aan de opdrachtregel van de runner toegevoegd.",
-  "defaultChatDescription": "Draait nieuwe gesprekken en elke agent zonder eigen runner.",
-  "shortTaskDescription": "Doet kort achtergrondwerk zoals titels en samenvattingen. Een kleiner model past hier.",
   "settingsStateFailed": "Mislukt",
   "providerAppsGroupServer": "Handelen als de server",
   "providerAppsGroupServerDescription": "Voor werkruimten die de GitHub App van deze installatie erven. Een werkruimte met eigen App of PAT wordt ingesteld onder Werkruimte → Algemeen.",
@@ -7623,6 +7606,8 @@
   "handoffTitle": "Overdracht",
   "asideTitle": "Zijvraag",
   "attachFilesOrDrop": "Bestanden toevoegen — of sleep ze hierheen",
+  "composerExpand": "Editor vergroten ({shortcut})",
+  "composerCollapse": "Editor verkleinen ({shortcut})",
   "guidedGoalTitle": "Doel aanscherpen",
   "guidedGoalIntro": "Een agent die zonder toezicht werkt moet precies weten wanneer hij klaar is. Eerst een paar vragen.",
   "guidedGoalAnswerHint": "Jouw antwoord",
@@ -8051,6 +8036,7 @@
   "notificationAgentAskedQuestionUnnamed": "Een agent heeft een vraag",
   "notificationAgentBlockedOnCredential": "{agent} zit vast op inloggegevens",
   "notificationAgentBlockedOnCredentialUnnamed": "Een agent zit vast op inloggegevens",
+  "notificationWaitReminder": "Wacht nog steeds: {title}",
   "killTerminal": "Terminal beëindigen",
   "stopAgentCommand": "Opdracht stoppen",
   "agentCommandStopping": "Bezig met stoppen…",
@@ -8171,5 +8157,28 @@
   "transcriptClaudeSignInExpiredTitle": "Aanmelding bij Claude Code verlopen",
   "transcriptClaudeSignInExpiredBody": "De run is gestopt omdat het account zich niet meer authenticeert. Meld je opnieuw aan en probeer de beurt dan opnieuw.",
   "transcriptSignInExpiredTitle": "Aanmelding bij provider verlopen",
-  "transcriptSignInExpiredBody": "De run is gestopt omdat de inloggegevens van de provider niet meer werken. Verbind hem opnieuw via Instellingen → Providers en probeer de beurt dan opnieuw."
+  "transcriptSignInExpiredBody": "De run is gestopt omdat de inloggegevens van de provider niet meer werken. Verbind hem opnieuw via Instellingen → Providers en probeer de beurt dan opnieuw.",
+  "helpMenuLabel": "Help",
+  "helpWhatsNew": "Wat is er nieuw",
+  "helpReportProblem": "Een probleem melden",
+  "helpCreateGitHubIssue": "GitHub-issue aanmaken",
+  "changelogInstalled": "Geïnstalleerd",
+  "changelogGroupNew": "Nieuw",
+  "changelogGroupImproved": "Verbeterd",
+  "changelogGroupFixed": "Opgelost",
+  "changelogLoadFailed": "De releaseopmerkingen konden niet worden geladen.",
+  "changelogOpenWebsite": "Openen op de website",
+  "connectWelcomeTitle": "Welkom bij Control Center",
+  "connectWelcomeSubtitle": "Voer het hier uit of maak verbinding met een server die je al hebt.",
+  "connectWelcomeSubtitleWeb": "Maak verbinding met je server om te beginnen.",
+  "connectToServer": "Verbinden met een server",
+  "connectToServerIntro": "Voer het adres van een Control Center-server in.",
+  "connectUsePairingKey": "Een koppelingssleutel gebruiken",
+  "connectPasteLink": "Een koppelingslink plakken",
+  "connectPasteLinkIntro": "Plak de uitnodigings- of koppelingslink die je hebt gekregen.",
+  "connectPasteLinkLabel": "Uitnodigings- of koppelingslink",
+  "connectPasteLinkInvalid": "Dat is geen uitnodigings- of koppelingslink van Control Center. Kopieer de hele link en probeer het opnieuw.",
+  "connectPasteLinkTarget": "Verbindt met",
+  "focusModeEnd": "Focussessie beëindigen",
+  "focusModeRemaining": "Nog {minutes} min"
 }

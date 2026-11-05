@@ -1,3 +1,5 @@
+import 'package:cc_domain/core/domain/events/agent_events.dart';
+
 /// Categories of desktop notifications the app can emit.
 ///
 /// Each category can be independently enabled/disabled by the user.
@@ -186,6 +188,7 @@ class AppNotification {
     this.spaceId,
     this.presentation = NotificationPresentation.centerOnly,
     this.suppressWhenViewingTarget = true,
+    this.wait,
   });
 
   /// Which notification category this belongs to.
@@ -221,6 +224,16 @@ class AppNotification {
   /// have no inline approval card, so they still notify on the active route.
   final bool suppressWhenViewingTarget;
 
+  /// The agent wait this announces, when it announces one.
+  ///
+  /// Present only on awaiting-input notifications. It gives the OS
+  /// notification a stable identity, so a reminder replaces the original rather
+  /// than stacking beside it and the notification can be withdrawn once the
+  /// wait ends. It also makes the notification time-sensitive. An approval wait
+  /// adds Approve and Deny actions, which answer through the same
+  /// server-authorized call as the in-app approval card.
+  final NotificationWait? wait;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -232,7 +245,8 @@ class AppNotification {
           workspaceId == other.workspaceId &&
           spaceId == other.spaceId &&
           presentation == other.presentation &&
-          suppressWhenViewingTarget == other.suppressWhenViewingTarget;
+          suppressWhenViewingTarget == other.suppressWhenViewingTarget &&
+          wait == other.wait;
 
   @override
   int get hashCode => Object.hash(
@@ -244,5 +258,39 @@ class AppNotification {
     spaceId,
     presentation,
     suppressWhenViewingTarget,
+    wait,
   );
+}
+
+/// Identifies the agent wait an [AppNotification] announces.
+class NotificationWait {
+  /// Creates a [NotificationWait]. [id] is the server's wait id: the pending
+  /// approval's id, the credential block's id or the question's message id.
+  NotificationWait({required this.id, required this.kind}) {
+    if (id.isEmpty) {
+      throw ArgumentError('id must not be empty');
+    }
+  }
+
+  /// The server's wait id, the same `wait_id` the feed row carries.
+  final String id;
+
+  /// What the agent waits for. Null for a kind this client does not know (a
+  /// newer server). Such a wait still notifies, but without actions.
+  final AgentInputKind? kind;
+
+  /// Whether the notification can answer the wait with Approve and Deny.
+  bool get approvable => kind == AgentInputKind.approval;
+
+  /// The OS notification identifier shared by the original notification, its
+  /// reminders and the withdrawal when the wait ends.
+  String get notificationId => 'wait-$id';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NotificationWait && id == other.id && kind == other.kind;
+
+  @override
+  int get hashCode => Object.hash(id, kind);
 }

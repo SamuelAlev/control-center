@@ -323,10 +323,12 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
     // sighted user can still identify the destination. The tooltip opens to the
     // RIGHT of the rail — the sidebar hugs the window's left edge, so that is
     // the only side with room, and opening below would cover the items under
-    // it.
+    // it. A [CcSidebarToolbar] overrides this through the scope.
     if (collapsed) {
       return CcTooltip(
-        placement: CcTooltipPlacement.end,
+        placement:
+            CcSidebarScope.tooltipPlacementOf(context) ??
+            CcTooltipPlacement.end,
         message: label,
         child: result,
       );

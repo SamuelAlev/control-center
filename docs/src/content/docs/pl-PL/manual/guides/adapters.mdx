@@ -2,7 +2,7 @@
 title: Zarządzaj adapterami i modelami
 description: Połącz dostawców modeli, wybierz model, na którym działa agent, i sprawdź, jakie CLI runnerów agenta ma host serwera.
 slug: pl-PL/podrecznik/poradniki/adaptery
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Ten poradnik pokazuje, jak połączyć dostawców modeli i wybrać, na czym działa agent.
@@ -69,12 +69,18 @@ Dołączony katalog [models.dev](https://models.dev) dostarcza cenę i okno kont
 Identyfikatory modeli dla wbudowanego adaptera mają postać `provider/model` i mogą nieść łańcuch zapasowy rozdzielony znakiem `|`. W przypadku łańcucha zapasowego koszt jest liczony według modelu, który faktycznie obsłużył turę, a nie tego, o który poproszono.
 
 :::note[Agent bez adaptera działa na wbudowanej pętli]
-Każdy obszar roboczy tworzy pięciu agentów — CEO oraz `qa`, `architect`, `engineer` i `librarian` — bez adaptera i bez modelu. Wysyłanie zadań cofa się do **Control Center (built-in)**, a nie do ustawienia **Domyślne runnery** na tej stronie, które jest preferencją klienta nigdy nieodczytywaną przez ścieżkę wysyłania. Dziennik uruchomień zapisuje `cc-harness` dla takich uruchomień, więc transkrypt podaje, co faktycznie zostało uruchomione.
+Każdy obszar roboczy tworzy sześciu agentów — CEO oraz `qa`, `architect`, `engineer`, `librarian` i `content-synthesizer` — bez adaptera i bez modelu. Wysyłanie zadań cofa się do **Control Center (built-in)**; nie ma domyślnego runnera ani dla obszaru roboczego, ani dla urządzenia. Dziennik uruchomień zapisuje `cc-harness` dla takich uruchomień, więc transkrypt podaje, co faktycznie zostało uruchomione.
 
 Gdy nie ma też modelu, wbudowana pętla pyta Anthropic o jego model domyślny. Agent pozostawiony całkowicie bez ustawień uruchomi się więc, jeśli masz połączone konto Anthropic, a w przeciwnym razie zakończy się błędem `No credential for provider "anthropic"`.
 
-Ukończenie kroku adaptera w onboardingu uzupełnia **każdego** agenta, któremu wciąż brakuje adaptera lub modelu — CEO i specjalistów, we wszystkich obszarach roboczych istniejących w tym momencie — wybraną parą. Obszary robocze utworzone później wciąż tworzą tych pięciu bez ustawień. Ustaw adapter i model jawnie dla każdego agenta, którego zamierzasz używać.
+Ukończenie kroku adaptera w onboardingu uzupełnia **każdego** agenta, któremu wciąż brakuje adaptera lub modelu — CEO i specjalistów, we wszystkich obszarach roboczych istniejących w tym momencie — wybraną parą. Obszary robocze utworzone później wciąż tworzą tych sześciu bez ustawień. Ustaw adapter i model jawnie dla każdego agenta, którego zamierzasz używać.
 :::
+
+## Personalizacja tytułów i podsumowań
+
+Agent **Content synthesizer** pisze tekst, który Control Center generuje wokół rozmowy: tytuł, odpowiedzi `/btw`, dokumenty `/handoff` i wywiad o celu `/goal`. Za każdym razem wykonuje jedno dopełnienie bez narzędzi, na własnym adapterze i modelu, więc przydziel mu mały, szybki model.
+
+Edytuj jego **personę** w **Ustawienia → Obszar roboczy → Agenci**, aby zmienić sposób, w jaki brzmi ten tekst: długość tytułu, język, ton, przykłady, których się trzyma. Format odpowiedzi, który każda funkcja analizuje (jednowierszowy tytuł, sekcje celu), jest stały i stosowany po Twojej personie. Usuń agenta, aby wyłączyć te funkcje; nie zostanie on przywrócony automatycznie.
 
 ## Zainstaluj CLI runnera
 

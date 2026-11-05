@@ -21,7 +21,7 @@ dependencies:
   # `Meta` and `$`-prefixed stories), from which widgetbook's own builders
   # (build_runner; the old widgetbook_generator is merged into widgetbook)
   # generate the `*.stories.g.dart` parts and `lib/components.g.dart`.
-  widgetbook: 4.0.0-beta.14
+  widgetbook: 4.0.0-beta.15
   # Live accessibility checker overlay for the gallery (a BuilderAddon in
   # main.dart). Built on material_ui. Debug-only.
   accessibility_tools: ^3.0.0

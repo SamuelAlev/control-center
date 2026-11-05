@@ -548,7 +548,7 @@ abstract final class AppIcons {
     fontPackage: _package,
   );
   static const IconData focus = IconData(
-    0xe626,
+    0xe492,
     fontFamily: _family,
     fontPackage: _package,
   );
@@ -845,6 +845,11 @@ abstract final class AppIcons {
   );
   static const IconData micOff = IconData(
     0xe328,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
+  static const IconData minimize2 = IconData(
+    0xe1ce,
     fontFamily: _family,
     fontPackage: _package,
   );

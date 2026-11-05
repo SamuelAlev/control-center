@@ -2,7 +2,7 @@
 title: Sandbox și securitate
 description: Ce limitează de fapt un agent în Control Center astăzi, până unde ajunge sandbox-ul de sistem și ce granițe rezistă pe o gazdă care nu are niciun backend.
 slug: ro-RO/manual/concepte/sandbox-si-securitate
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Unde ajunge sandbox-ul de sistem și unde nu ajunge]
@@ -204,7 +204,7 @@ la `(allow default)` și decupează interdicții: citiri ale căilor secrete, o 
 resetată la refuz cu permisiuni explicite deasupra, blocarea ștergerii (unlink) pe fiecare cale
 interzisă și pe strămoșii ei, astfel încât o redenumire să nu poată ocoli o interdicție de
 scriere, interdicții de execuție pentru binarele mereu periculoase și pentru orice este copiat
-într-un director inscriptibil, și rețeaua restricționată la porturile proxy de loopback plus DNS.
+într-un director inscriptibil, și rețeaua restricționată la porturile proxy de loopback plus DNS. Instalările de toolchain din directorul home (pnpm din corepack, managerii de versiuni node, browserele Playwright, rustup, fvm, uv și altele asemenea) rămân executabile în interiorul acelui bloc de exec, astfel încât agenții le pot folosi fără ocolirii. Interdicțiile pentru binarele mereu periculoase se aplică în continuare și în interiorul lui. Fiecare sesiune primește și propriul `TMPDIR` privat. Este singurul director temporar în care agentul poate rula programe pe care le-a compilat sau poate deschide socketuri Unix.
 
 Consecința practică: pe Linux, vederea agentului asupra sistemului de fișiere este îngustată; pe
 macOS, agentul poate în continuare _citi_ cea mai mare parte a gazdei, iar checkout-urile tale

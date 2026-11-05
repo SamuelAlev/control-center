@@ -2,7 +2,7 @@
 title: Backend del sandbox
 description: I backend del sandbox, dove vengono applicati e ogni value object usato dal runtime del sandbox.
 slug: it-IT/manuale/riferimento/backend-sandbox
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Se un'esecuzione è racchiusa in un sandbox dipende dall'host]
@@ -52,8 +52,8 @@ Il profilo generato è **permissivo per impostazione predefinita** (`(allow defa
 
 - **Letture del filesystem**: negate per i percorsi segreti (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` e il resto dell'insieme delle letture negate)
 - **Scritture del filesystem**: riportate a deny, poi consentite esplicitamente su singoli sottopercorsi, con i percorsi a diniego obbligatorio (file rc della shell, `.git/hooks`, configurazione di Claude, checkout protetti) bloccati anche dentro una radice scrivibile. `file-write-unlink` è negato su ogni percorso negato e sui suoi antenati, così una rinomina non può aggirare un diniego di scrittura
-- **Processi**: dinieghi `process-exec` per i binari sempre pericolosi, più un blocco sull'esecuzione di qualsiasi cosa da una directory scrivibile
-- **Rete**: limitata alle porte dei proxy in-process più il DNS — il loopback non è consentito in modo indiscriminato e i socket Unix non sono ammessi. I proxy applicano la lista di autorizzazione dei domini per sessione (vedi [Egress di rete](#egress-di-rete))
+- **Processi**: dinieghi `process-exec` per i binari sempre pericolosi, più un blocco sull'esecuzione di qualsiasi cosa da una directory scrivibile. Gli alberi di installazione di toolchain noti nella home (corepack, cache di npx e `pnpm dlx`, gestori di versioni di node, browser Playwright, rustup e cargo, Go, fvm e la pub cache, pyenv, uv e pipx, rbenv, sdkman, mise, asdf e `~/.local/bin`) vengono riaperti sotto quel blocco. Anche le directory temporanee condivise sono bloccate. Ogni sessione riceve invece un `TMPDIR` privato sotto `/private/tmp`, dove possono essere eseguiti i programmi che compila (un binario di `go test`, una build di cargo). I dinieghi per i binari sempre pericolosi vengono applicati dopo questi permessi
+- **Rete**: limitata alle porte dei proxy in-process più il DNS — il loopback non è consentito in modo indiscriminato e l'ascolto TCP è negato. I socket Unix sono ammessi solo all'interno del `TMPDIR` privato della sessione, che copre strumenti come tsx e Chrome che tengono lì un socket IPC; il tuo SSH agent e gli altri socket restano irraggiungibili. I proxy applicano la lista di autorizzazione dei domini per sessione (vedi [Egress di rete](#egress-di-rete))
 - **Configurazione**: i profili vengono generati a ogni avvio dal `SandboxSpec`
 
 Requisiti:

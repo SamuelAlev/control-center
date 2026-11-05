@@ -2,7 +2,7 @@
 title: Backend-uri sandbox
 description: Backend-urile sandbox, unde se aplică și fiecare obiect-valoare folosit de runtime-ul sandbox-ului.
 slug: ro-RO/manual/referinta/backend-uri-sandbox
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Dacă o rulare este sandboxată depinde de gazdă]
@@ -61,8 +61,8 @@ Profilul generat este **permisiv implicit** (`(allow default)`) și decupează i
 
 - **Citirile din sistemul de fișiere**: interzise pentru căile secrete (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` și restul setului cu citire interzisă)
 - **Scrierile în sistemul de fișiere**: resetate la refuz, apoi permisiuni explicite pe subcăi, cu căile cu interdicție obligatorie (fișierele rc ale shell-ului, `.git/hooks`, configurația Claude, checkout-urile protejate) blocate chiar și în interiorul unei rădăcini inscriptibile. `file-write-unlink` este interzis pe fiecare cale interzisă și pe strămoșii ei, așa că o redenumire nu poate ocoli o interdicție de scriere
-- **Procese**: `process-exec` interzice binarele mereu periculoase, plus o blocare a execuției oricărui lucru dintr-un director inscriptibil
-- **Rețea**: restricționată la porturile proxy din proces plus DNS — loopback nu este permis în bloc, iar socketurile Unix nu sunt permise. Proxy-urile impun lista de permisiuni de domenii per sesiune (vezi [Ieșirea în rețea](#ieșirea-în-rețea))
+- **Procese**: `process-exec` interzice binarele mereu periculoase, plus o blocare a execuției oricărui lucru dintr-un director inscriptibil. Directoarele de instalare cunoscute ale toolchain-urilor din directorul home (corepack, cache-urile `npx` și `pnpm dlx`, managerii de versiuni node, browserele Playwright, rustup și cargo, Go, fvm și cache-ul pub, pyenv, uv și pipx, rbenv, sdkman, mise, asdf și `~/.local/bin`) sunt redeschise sub acea blocare. Directoarele temporare partajate sunt și ele blocate. În schimb, fiecare sesiune primește un `TMPDIR` privat sub `/private/tmp`, unde pot rula programele construite de agent (un binar `go test`, un build cargo). Interdicțiile pentru binarele mereu periculoase se aplică după aceste permisiuni
+- **Rețea**: restricționată la porturile proxy din proces plus DNS — loopback nu este permis în bloc, iar ascultarea TCP este interzisă. Socketurile Unix sunt permise doar în interiorul `TMPDIR`-ului privat al sesiunii, care acoperă unelte precum tsx și Chrome ce păstrează acolo un socket IPC; agentul tău SSH și celelalte socketuri rămân inaccesibile. Proxy-urile impun lista de permisiuni de domenii per sesiune (vezi [Ieșirea în rețea](#ieșirea-în-rețea))
 - **Configurare**: profilurile sunt generate la fiecare lansare din `SandboxSpec`
 
 Cerințe:

@@ -306,8 +306,6 @@
   "serverConnection": "Connexion au serveur",
   "serverModeLocal": "Exécuter dans cette application",
   "serverModeLocalDescription": "Control Center exécute son propre serveur sur cet ordinateur et conserve vos données en local.",
-  "serverModeRemote": "Se connecter à une instance distante",
-  "serverModeRemoteDescription": "Connectez-vous à un serveur Control Center exécuté ailleurs. Vos données résident sur ce serveur.",
   "serverRemoteUrl": "URL du serveur",
   "serverRemoteDeviceId": "Identifiant de l'appareil",
   "serverRemotePairingKey": "Clé d'appairage",
@@ -376,8 +374,6 @@
   "pairScanQr": "Scannez ce QR code avec l'appareil photo de votre téléphone pour l'associer.",
   "pairServerUnreachableTitle": "Inaccessible",
   "pairServerUnreachable": "Les autres appareils ne peuvent pas joindre ce serveur directement, donc un nouveau client ne peut pas se connecter. Définissez l'URL publique du serveur pour associer d'autres clients.",
-  "serverSetupTitle": "Comment exécuter Control Center ?",
-  "serverSetupSubtitle": "Control Center a besoin d'un serveur qui détient vos données. Exécutez-en un dans cette application ou connectez-vous à une instance exécutée ailleurs.",
   "serverSetupRunLocal": "Exécuter dans cette application",
   "serverSetupConnect": "Se connecter",
   "serverSetupInvalidUrl": "Saisissez une URL de serveur ws:// ou wss:// valide.",
@@ -1206,7 +1202,6 @@
     }
   },
   "configureAgentIdentities": "Configurer les identités, prompts, compétences des agents et voir les exécutions.",
-  "configureDefaultRunners": "Configurez l'adaptateur et le modèle utilisés pour les nouvelles conversations et la génération de titres.",
   "configuredLabel": "Configuré.",
   "confirmedBy": "Confirmé par",
   "@confirmedBy": {
@@ -1284,8 +1279,6 @@
   "@deactivate": {
     "description": "Button to deactivate a policy"
   },
-  "defaultChat": "Chat par défaut",
-  "defaultRunners": "Exécuteurs par défaut",
   "delete": "Supprimer",
   "deleteAgent": "Supprimer l'agent",
   "deleteAgentConfirm": "Supprimer « {name} » ? Cette action est irréversible.",
@@ -1519,10 +1512,6 @@
   "filterSkillsPlaceholder": "Filtrer les compétences…",
   "finish": "Terminer",
   "fix": "Corriger",
-  "focusModeActiveTooltip": "Mode concentration actif — appuyez pour terminer",
-  "@focusModeActiveTooltip": {
-    "description": "Tooltip on the focus mode chip in title bar"
-  },
   "focusModeBlockNotifications": "Bloquer les notifications",
   "@focusModeBlockNotifications": {
     "description": "Toggle label for blocking notifications during focus"
@@ -2327,6 +2316,9 @@
   "notificationGroupTickets": "Tickets",
   "notificationGroupCalendar": "Agenda",
   "notificationGroupMachines": "Machines",
+  "notificationSectionSound": "Son",
+  "notificationSectionSchedule": "Planification",
+  "notificationSectionEvents": "Événements",
   "notificationsMutedRepos": "Dépôts en sourdine",
   "notificationsMutedReposCount": "{count, plural, =0{Aucun dépôt en sourdine} =1{1 dépôt en sourdine} other{{count} dépôts en sourdine}}",
   "@notificationsMutedReposCount": {
@@ -2655,7 +2647,6 @@
   "settingsLabel": "Paramètres",
   "settingsLanguage": "Langue",
   "settingsLanguageDescription": "Choisir la langue de l'application.",
-  "shortTask": "Tâche courte",
   "showNativeNotifications": "Afficher les notifications système pour les événements.",
   "showSuperseded": "Afficher remplacés",
   "@showSuperseded": {
@@ -7021,12 +7012,6 @@
       }
     }
   },
-  "webConnectTitle": "Se connecter à Control Center",
-  "webConnectSubtitle": "Contactez un cc-server en cours d'exécution via WebSocket. Votre clé reste sur cet appareil.",
-  "webConnectServerLabel": "Serveur",
-  "webConnectDeviceIdLabel": "Identifiant de l'appareil",
-  "webConnectPairingKeyLabel": "Clé d'appairage",
-  "webConnectPairingKeyHint": "collez la PSK",
   "webConnectStayConnected": "Rester connecté sur cet appareil",
   "webConnectStayConnectedDetail": "Rester connecté sur cet appareil (votre clé est stockée dans ce navigateur)",
   "failedToCreateWorkspace": "Échec de la création de l'espace de travail : {error}",
@@ -7036,8 +7021,8 @@
   "newConversation": "Nouvelle conversation",
   "untitledConversation": "Conversation sans titre",
   "conversationTitleOptionalHint": "Facultatif — laissez vide et le modèle de titres le nomme automatiquement",
-  "shortTaskOff": "Désactivé",
-  "shortTaskUnavailable": "Choisissez un modèle de tâches courtes dans Paramètres → Adaptateurs pour l'utiliser",
+  "contentSynthesizerUnavailable": "L'agent Content synthesizer est absent ou n'a pas de runner fonctionnel",
+  "conversationNeedsAgent": "Mentionnez un agent avec @ pour démarrer cette conversation",
   "conversationTitleGenerate": "Générer",
   "conversationTitleNoMessages": "Envoyez d'abord un message. Le titre est généré à partir de celui-ci.",
   "conversationTitleGenerateFailed": "Impossible de générer un titre. Réessayez.",
@@ -7196,8 +7181,6 @@
     }
   },
   "adapterArgumentsDescription": "Ajoutés à la ligne de commande du runner à chaque lancement.",
-  "defaultChatDescription": "Exécute les nouvelles conversations et tout agent sans runner propre.",
-  "shortTaskDescription": "Exécute les petites tâches d’arrière-plan comme les titres et les résumés. Un modèle plus léger a sa place ici.",
   "settingsStateFailed": "Échec",
   "providerAppsGroupServer": "Agir en tant que serveur",
   "providerAppsGroupServerDescription": "Utilisé par les espaces de travail qui héritent de la GitHub App de cette installation. Un espace avec sa propre App ou un PAT se configure sous Espace de travail → Général.",
@@ -7617,6 +7600,8 @@
   "handoffTitle": "Transmission",
   "asideTitle": "Question annexe",
   "attachFilesOrDrop": "Joindre des fichiers — ou déposez-les ici",
+  "composerExpand": "Agrandir l’éditeur ({shortcut})",
+  "composerCollapse": "Réduire l’éditeur ({shortcut})",
   "guidedGoalTitle": "Affiner l'objectif",
   "guidedGoalIntro": "Un agent qui travaille sans supervision doit savoir précisément quand il a terminé. Quelques questions d'abord.",
   "guidedGoalAnswerHint": "Votre réponse",
@@ -8045,6 +8030,7 @@
   "notificationAgentAskedQuestionUnnamed": "Un agent a une question",
   "notificationAgentBlockedOnCredential": "{agent} est bloqué par des identifiants",
   "notificationAgentBlockedOnCredentialUnnamed": "Un agent est bloqué par des identifiants",
+  "notificationWaitReminder": "Toujours en attente : {title}",
   "killTerminal": "Fermer le terminal",
   "stopAgentCommand": "Arrêter la commande",
   "agentCommandStopping": "Arrêt…",
@@ -8165,5 +8151,28 @@
   "transcriptClaudeSignInExpiredTitle": "Connexion à Claude Code expirée",
   "transcriptClaudeSignInExpiredBody": "L'exécution s'est arrêtée car son compte ne s'authentifie plus. Reconnectez-vous, puis relancez le tour.",
   "transcriptSignInExpiredTitle": "Connexion au fournisseur expirée",
-  "transcriptSignInExpiredBody": "L'exécution s'est arrêtée car les identifiants de son fournisseur ne fonctionnent plus. Reconnectez-le dans Paramètres → Fournisseurs, puis relancez le tour."
+  "transcriptSignInExpiredBody": "L'exécution s'est arrêtée car les identifiants de son fournisseur ne fonctionnent plus. Reconnectez-le dans Paramètres → Fournisseurs, puis relancez le tour.",
+  "helpMenuLabel": "Aide",
+  "helpWhatsNew": "Nouveautés",
+  "helpReportProblem": "Signaler un problème",
+  "helpCreateGitHubIssue": "Créer un ticket GitHub",
+  "changelogInstalled": "Installée",
+  "changelogGroupNew": "Nouveau",
+  "changelogGroupImproved": "Amélioré",
+  "changelogGroupFixed": "Corrigé",
+  "changelogLoadFailed": "Impossible de charger les notes de version.",
+  "changelogOpenWebsite": "Ouvrir sur le site web",
+  "connectWelcomeTitle": "Bienvenue dans Control Center",
+  "connectWelcomeSubtitle": "Exécutez-le ici ou connectez-vous à un serveur existant.",
+  "connectWelcomeSubtitleWeb": "Connectez-vous à votre serveur pour commencer.",
+  "connectToServer": "Se connecter à un serveur",
+  "connectToServerIntro": "Saisissez l'adresse d'un serveur Control Center.",
+  "connectUsePairingKey": "Utiliser une clé d'appairage",
+  "connectPasteLink": "Coller un lien d'appairage",
+  "connectPasteLinkIntro": "Collez le lien d'invitation ou d'appairage que vous avez reçu.",
+  "connectPasteLinkLabel": "Lien d'invitation ou d'appairage",
+  "connectPasteLinkInvalid": "Ce n'est pas un lien d'invitation ou d'appairage Control Center. Copiez le lien entier et réessayez.",
+  "connectPasteLinkTarget": "Se connecte à",
+  "focusModeEnd": "Terminer la session de concentration",
+  "focusModeRemaining": "{minutes} min restantes"
 }

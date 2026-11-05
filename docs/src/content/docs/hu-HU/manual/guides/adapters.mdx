@@ -2,7 +2,7 @@
 title: Adapterek és modellek kezelése
 description: Csatlakoztassa a modellszolgáltatókat, válassza ki, melyik modellen fut az ügynök, és nézze meg, milyen ügynökfuttató CLI-k vannak a szervergépen.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Ez az útmutató bemutatja, hogyan csatlakoztathat modellszolgáltatókat, és hogyan
@@ -99,11 +99,10 @@ esetén a költség annak a modellnek az árán számolódik, amelyik tényleges
 kiszolgálta a kört, nem annak, amelyiket kérte.
 
 :::note[Az adapter nélküli ügynök a beépített cikluson fut]
-Minden munkaterület öt ügynököt hoz létre — egy CEO-t, valamint a `qa`,
-`architect`, `engineer` és `librarian` ügynököt —, adapter és modell nélkül. Az
-indítás a **Control Center (beépített)** adapterre esik vissza, nem az ezen az
-oldalon található **Alapértelmezett futtatók** beállításra, amely kliensoldali
-preferencia, és az indítási útvonal soha nem olvassa. A futtatási napló ezeknél a
+Minden munkaterület hat ügynököt hoz létre — egy CEO-t, valamint a `qa`,
+`architect`, `engineer`, `librarian` és `content-synthesizer` ügynököt —, adapter és
+modell nélkül. Az indítás a **Control Center (beépített)** adapterre esik vissza;
+munkaterület- vagy eszközszintű alapértelmezett futtató nincs. A futtatási napló ezeknél a
 futásoknál `cc-harness`-t rögzít, így az átirat megnevezi, mi futott valójában.
 
 Ha modell sincs beállítva, a beépített ciklus az Anthropic alapértelmezett
@@ -114,10 +113,16 @@ csatlakoztatott egy Anthropic-fiókot, egyébként pedig meghiúsul a
 A kezdeti beállítás adapterlépésének befejezése utólag **minden** olyan ügynökre
 ráírja az Ön által választott párost, amelyből még hiányzik az adapter vagy a
 modell — a CEO-ra és a szakértőkre egyaránt, minden abban a pillanatban létező
-munkaterületen. A később létrehozott munkaterületek továbbra is mind az ötöt
+munkaterületen. A később létrehozott munkaterületek továbbra is mind a hatot
 beállítatlanul hozzák létre. Minden használni kívánt ügynökön állítsa be
 kifejezetten az adaptert és a modellt.
 :::
+
+## Címek és összefoglalók testreszabása
+
+A **Content synthesizer** ügynök írja azt a szöveget, amelyet a Control Center a beszélgetés körül generál: a címét, a `/btw` válaszait, a `/handoff` dokumentumokat és a `/goal` célinterjút. Minden alkalommal egyetlen, eszközök nélküli kiegészítést futtat a saját adapterén és modelljén, ezért adjon neki egy kicsi, gyors modellt.
+
+Szerkessze a **Persona** beállítását a **Beállítások → Munkaterület → Ügynökök** alatt, ha meg szeretné változtatni, hogyan fogalmazza meg ezt a szöveget: a cím hosszát, a nyelvet, a hangnemet és a követett példákat. Az egyes funkciók által feldolgozott válaszformátum (egysoros cím, a cél szakaszai) rögzített, és a persona-beállítás után alkalmazódik. Az ügynök törlésével kikapcsolhatja ezeket a funkciókat; nem kerül vissza automatikusan.
 
 ## Futtató CLI telepítése
 

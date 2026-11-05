@@ -2,7 +2,7 @@
 title: Controlo remoto e telemóvel
 description: Como o telemóvel chega ao seu servidor através de ligações diretas ou intermediadas com cifragem ponto a ponto, e o modelo de acesso em camadas que mantém esse alcance restrito.
 slug: pt-PT/manual/conceitos/controlo-remoto
-sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
+sourceHash: cb6a1ecae8bc1c410e872649d26d3cae127003f6
 ---
 
 O Control Center é uma aplicação de computador, mas o trabalho que acompanha não
@@ -101,7 +101,9 @@ Existem duas formas de carga útil e **não são intermutáveis**. O QR para
 telemóvel emitido a partir do painel de emparelhamento da aplicação é o
 `PairingPayload` v2 acima, apontado ao anfitrião da PWA Remote. O comando
 `cc_server pair --client-url` emite um link v1 (`{s, i, k}` — URL do servidor,
-id do dispositivo, chave) destinado apenas ao cliente **web**. São formatos de
+id do dispositivo, chave) destinado aos clientes **web** e de **ambiente de trabalho**:
+abra-o num navegador ou cole-o em **Colar um link de emparelhamento** na aplicação de
+ambiente de trabalho. São formatos de
 dados de emparelhamento, e não alternativas de transporte: ambos os clientes têm
 de suportar o protocolo de sessão cifrada atual.
 

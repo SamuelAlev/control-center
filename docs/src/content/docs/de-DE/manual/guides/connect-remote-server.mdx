@@ -2,7 +2,7 @@
 title: Mit einem Remote-Server verbinden
 description: Richte die Desktop-App oder den Web-Client auf einen cc_server aus, der woanders läuft, und wechsle zwischen Servern, ohne neu zu starten.
 slug: de-DE/handbuch/anleitungen/remote-server-verbinden
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Jeder Client ist eine Darstellung über einem `cc_server`, dem die Daten gehören. Der
@@ -14,7 +14,7 @@ der woanders läuft — ein kleiner Rechner, eine Cloud-VM, ein Build-Server.
 ## Voraussetzungen
 
 - Ein laufender `cc_server`. Hast du noch keinen, siehe [Einen Headless-Server betreiben](/de-DE/handbuch/anleitungen/headless-server-betreiben/).
-- Entweder die drei Kopplungswerte, die der Server ausgestellt hat — die **Server-URL** (`ws://…/rpc` oder `wss://…/rpc`), eine **Geräte-ID** und ein **Kopplungsschlüssel** — **oder** ein einmaliger **Einladungscode** von einem Admin des Arbeitsbereichs. Einen Einladungscode einzulösen legt deinen Benutzer an, trägt deine Mitgliedschaft ein und stellt die Zugangsberechtigung dieses Clients für dich aus, sodass du nie eine Geräte-ID oder einen Schlüssel anfasst. Beziehe sie über einen vertrauenswürdigen Kanal und prüfe den Server-Fingerabdruck beim ersten Verbinden gegen einen vertrauenswürdigen QR-Code oder einen bekannten Pin.
+- Entweder die drei Kopplungswerte, die der Server ausgestellt hat — die **Server-URL** (`ws://…/rpc` oder `wss://…/rpc`), eine **Geräte-ID** und ein **Kopplungsschlüssel** — **oder** ein einmaliger **Einladungscode** von einem Admin des Arbeitsbereichs, **oder** ein Einladungs- oder Kopplungslink, der sie enthält. Einen Einladungscode einzulösen legt deinen Benutzer an, trägt deine Mitgliedschaft ein und stellt die Zugangsberechtigung dieses Clients für dich aus, sodass du nie eine Geräte-ID oder einen Schlüssel anfasst. Beziehe sie über einen vertrauenswürdigen Kanal und prüfe den Server-Fingerabdruck beim ersten Verbinden gegen einen vertrauenswürdigen QR-Code oder einen bekannten Pin.
 
 ### Prüfe, ob der Server erreichbar ist
 
@@ -43,14 +43,16 @@ trägst du deren Origin in `--allowed-origins` ein. Der Vorgabewert ist nur
 
 Bei einer frischen Installation:
 
-1. Starte Control Center. Der Bildschirm beim ersten Start fragt **Wie soll Control Center laufen?**
-2. Statt **In dieser App ausführen** füllst du die Verbindungsfelder aus: die Server-URL und entweder einen Einladungscode oder eine Geräte-ID und einen Kopplungsschlüssel.
+1. Starte Control Center. Der Bildschirm beim ersten Start zeigt **Willkommen bei Control Center**.
+2. Klicke auf **Mit einem Server verbinden** und gib die Server-URL ein und entweder einen Einladungscode oder, unter **Kopplungsschlüssel verwenden**, eine Geräte-ID und einen Kopplungsschlüssel.
 3. Klicke auf **Verbinden**. Control Center wählt den Server an und landet im Posteingang des Arbeitsbereichs.
+
+Hast du einen Einladungs- oder Kopplungslink, klicke stattdessen auf **Kopplungslink einfügen** und füge ihn ein. Der Dialog zeigt, zu welchem Server der Link führt. Prüfe das und klicke dann auf **Verbinden**: Das Einfügen allein verbindet nie. Schlägt eine Verbindung fehl, bleibt der Dialog mit dem Fehler und allem, was du eingegeben hast, offen.
 
 Auf einem Desktop, der schon seinen eigenen Server ausführt:
 
 1. Öffne **Einstellungen → Server → Verbindung und Status**.
-2. Klicke auf **Server hinzufügen**. Gib die Server-URL ein (`wss://host:9030/rpc`) und entweder einen Einladungscode oder eine Geräte-ID und einen Kopplungsschlüssel. Die Schaltfläche am Ende des URL-Felds entdeckt `cc_server`-Instanzen in deinem LAN oder Tailnet.
+2. Klicke auf **Server hinzufügen**. Gib die Server-URL ein (`wss://host:9030/rpc`) und entweder einen Einladungscode oder, unter **Kopplungsschlüssel verwenden**, eine Geräte-ID und einen Kopplungsschlüssel. Die Schaltfläche am Ende des URL-Felds entdeckt `cc_server`-Instanzen in deinem LAN oder Tailnet.
 3. Klicke auf **Verbinden**, dann auf **Wechseln** in der Zeile des neuen Servers.
 
 Der Wechsel ist sofort wirksam: Die App baut sich an Ort und Stelle um die neue
@@ -68,10 +70,12 @@ WebSocket-Sitzung; derselbe Schutz gilt über Loopback und über das Relay.
 Der Web-Build ist immer entfernt.
 
 1. Öffne [app.usectrl.dev](https://app.usectrl.dev) oder deine eigene Kopie des Web-Builds.
-2. Gib die Server-URL ein und entweder einen Einladungscode oder eine Geräte-ID und einen Kopplungsschlüssel.
-3. Der Client wählt den Server an und zeichnet dieselbe Oberfläche wie der Desktop.
+2. Klicke auf **Mit einem Server verbinden** und gib die Server-URL ein und entweder einen Einladungscode oder, unter **Kopplungsschlüssel verwenden**, eine Geräte-ID und einen Kopplungsschlüssel. **Kopplungslink einfügen** nimmt stattdessen einen Einladungs- oder Kopplungslink an.
+3. Klicke auf **Verbinden**. Der Client wählt den Server an und zeichnet dieselbe Oberfläche wie der Desktop.
 
-Steht ein Kopplungs-Deep-Link in der URL, sind die Felder vorausgefüllt. Der
+Steht ein Kopplungs-Deep-Link in der URL, öffnet sich der Verbindungsdialog mit
+ausgefüllten Feldern, sodass du den Server prüfen kannst, bevor du auf **Verbinden**
+klickst. Der
 Kopplungsschlüssel reist im **URL-Fragment**, das Browser nie an den Server
 schicken, der die Seite ausliefert. Behandle den Link wie ein Geheimnis und
 vertraue der Seite, die den Web-Client ausliefert: Das Fragment schützt nicht

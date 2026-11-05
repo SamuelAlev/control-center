@@ -2,7 +2,7 @@
 title: Backendy sandboxu
 description: Backendy sandboxu, kde se uplatňují, a každý hodnotový objekt, který runtime sandboxu používá.
 slug: cs-CZ/prirucka/referencni-prirucka/backendy-sandboxu
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Jestli je běh v sandboxu, záleží na hostiteli]
@@ -60,8 +60,8 @@ Vygenerovaný profil je **ve výchozím stavu permisivní** (`(allow default)`) 
 
 - **Čtení souborového systému**: zakázané pro tajné cesty (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` a zbytek sady zákazů čtení)
 - **Zápis do souborového systému**: nejdřív se vrátí na zákaz, pak se výslovně povolí podcesty, přičemž cesty s povinným zákazem (rc soubory shellu, `.git/hooks`, konfigurace Claude, chráněné checkouty) jsou blokované i uvnitř zapisovatelného kořene. `file-write-unlink` je zakázaný na každé zakázané cestě a jejích předcích, takže přejmenování zákaz zápisu neobejde
-- **Proces**: `process-exec` zakazuje binárky, které jsou vždy nebezpečné, a k tomu blokuje spuštění čehokoli ze zapisovatelného adresáře
-- **Síť**: omezená na porty proxy v procesu a na DNS — loopback není povolený plošně a Unix sockety povolené nejsou. Proxy vynucují seznam povolených domén dané relace (viz [Odchozí síť](#odchozí-síť))
+- **Proces**: `process-exec` zakazuje binárky, které jsou vždy nebezpečné, a k tomu blokuje spuštění čehokoli ze zapisovatelného adresáře. Známé stromy instalací nástrojů ve vašem domovském adresáři (cache corepacku, npx a `pnpm dlx`, správci verzí node, prohlížeče Playwright, rustup a cargo, Go, fvm a cache pubu, pyenv, uv a pipx, rbenv, sdkman, mise, asdf a `~/.local/bin`) jsou pod tímto blokem znovu otevřené. Sdílené dočasné adresáře jsou také blokované. Každá relace místo toho dostane soukromý `TMPDIR` pod `/private/tmp`, kde mohou běžet programy, které sestaví (binárka `go test`, sestavení cargo). Zákazy pro vždy nebezpečné binárky se uplatní až po těchto povoleních
+- **Síť**: omezená na porty proxy v procesu a na DNS — loopback není povolený plošně a TCP naslouchání je zakázané. Unix sockety jsou povolené jen uvnitř soukromého `TMPDIR` relace, což pokrývá nástroje jako tsx a Chrome, které tam drží IPC socket; váš SSH agent a ostatní sockety zůstávají nedosažitelné. Proxy vynucují seznam povolených domén dané relace (viz [Odchozí síť](#odchozí-síť))
 - **Konfigurace**: profily se generují pro každý start ze `SandboxSpec`
 
 Požadavky:

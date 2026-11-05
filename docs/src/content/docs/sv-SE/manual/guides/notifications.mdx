@@ -2,7 +2,7 @@
 title: Konfigurera aviseringar
 description: Slå på eller av kategorier, ställ in tysta timmar och ett ljud och få veta vilka aviseringar som når dig var.
 slug: sv-SE/handbok/how-to-guider/aviseringar
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Den här guiden visar hur du konfigurerar aviseringar och vad varje inställning
@@ -49,11 +49,28 @@ Telefonklienten har ingen aviseringsyta alls.
 Allt utanför den här listan går varken att avisera om eller filtrera — det finns
 ingen kategori för ”allt annat”.
 
-**En agent väntar på dig** utlöses en gång per väntan, när den börjar: ett
-väntande godkännande (inklusive exekveringsbeviljanden i sandlådan och
+**En agent väntar på dig** utlöses när en väntan börjar: ett väntande
+godkännande (inklusive exekveringsbeviljanden i sandlådan och
 verktygsgodkännanden i Claude Code), en `ask_user`-fråga eller en körning som
 hålls kvar eftersom dess inloggningsuppgifter inte kan betjäna den. Aviseringen
 öppnar ytan där du svarar och håller tyst medan du redan tittar på den ytan.
+
+På skrivbordet beter sig de här aviseringarna annorlunda än resten:
+
+- **De är tidskänsliga.** På macOS kan de ta sig igenom ett fokusläge som
+  tillåter tidskänsliga aviseringar från Control Center.
+- **Ett godkännande kan besvaras direkt från aviseringen.** **Godkänn** och
+  **Neka** skickar ditt svar utan att appen öppnas. Servern kontrollerar det på
+  samma sätt som kortet i appen. Om du i stället vill godkänna under en viss
+  tid öppnar du kortet.
+- **En obesvarad väntan påminner dig.** Om ingen svarar kommer aviseringen
+  tillbaka som **Väntar fortfarande: …** 3, 10, 25 och 45 minuter efter att
+  väntan började. Varje påminnelse ersätter den föregående aviseringen i
+  stället för att lägga till en ny. Påminnelser hoppas över medan ett
+  Control Center-fönster har fokus, eftersom godkännandekortet och klockan
+  redan finns framför dig.
+- **Den försvinner när väntan tar slut**, oavsett hur den besvarades, så du
+  trycker aldrig på en knapp för en begäran som redan är avgjord.
 
 Dessa inställningar följer din användare mellan enheter, så en telefon och en
 bärbar dator håller sig i takt. Volymen är det medvetna undantaget och hålls per
@@ -95,7 +112,8 @@ En avisering tappas bort, tyst, när något av följande stämmer:
 - Aviseringar är avstängda globalt, eller så är kategorin avstängd
 - Du är redan på den rutt den skulle ta dig till — och, för ett meddelande, redan
   i den ytan
-- Fokusläge är aktivt och kategorin är inte brådskande
+- En fokussession med **Blockera aviseringar** påslaget pågår och kategorin är
+  inte brådskande
 - Tysta timmar är aktiva och kategorin är inte brådskande
 
 De kontrollerna gäller OS-toastar. Den beständiga klockan registrerar fortfarande
@@ -139,6 +157,15 @@ på de **50** nyaste och popovern visar upp till **15** av dem. Historik bortom 
 Behörighet begärs nativt när appen startar. Om du nekade den återaktiverar du
 Control Center under Systeminställningar → Aviseringar; det finns ingen
 uppmaning i appen för att utlösa den igen.
+
+### Jag missar hela tiden aviseringar om godkännanden på macOS
+
+Som standard visar macOS Control Centers aviseringar som banderoller, och en
+banderoll försvinner efter några sekunder. Om du vill att de ska stanna kvar på
+skärmen tills du agerar ställer du in Control Centers aviseringsstil på
+**Beständig** under Systeminställningar → Aviseringar. Ett obesvarat
+godkännande kommer dessutom tillbaka som en påminnelse (se
+[Slå på eller av kategorier](#slå-på-eller-av-kategorier)).
 
 ### Ingenting kommer fram i webbversionen
 

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:cc_ui/cc_ui.dart';
@@ -6,7 +8,6 @@ import 'package:control_center/core/infrastructure/clipboard/host_clipboard.dart
 import 'package:control_center/core/infrastructure/speech/dictation_controller.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/attachments/open_attachment_preview.dart';
 import 'package:control_center/shared/widgets/composer/attachment_upload_controller.dart';
 import 'package:control_center/shared/widgets/composer/attachments/attachment_media.dart';
@@ -17,12 +18,13 @@ import 'package:control_center/shared/widgets/composer/composer_draft.dart';
 import 'package:control_center/shared/widgets/composer/composer_history.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
+import 'package:control_center/shared/widgets/composer/composer_toolbar.dart';
 import 'package:control_center/shared/widgets/composer/demo_file_picker.dart';
 import 'package:control_center/shared/widgets/composer/file_reference.dart';
+import 'package:control_center/shared/widgets/composer/long_paste.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_popup.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_source.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_trigger.dart';
-import 'package:control_center/shared/widgets/composer/voice/voice_button.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
@@ -38,6 +40,10 @@ import 'package:path/path.dart' as p;
 /// instead of guessing the inset — they used to hug the pane edge, which read as
 /// unrelated to the composer below them.
 const double composerHorizontalMargin = 12;
+
+/// Smallest height cap the text area accepts from [Composer.maxInputHeight],
+/// so a short pane still shows a few lines before the field scrolls.
+const double _minInputCap = 88;
 
 /// The composer box's own outer margin.
 ///
@@ -65,8 +71,10 @@ class Composer extends ConsumerStatefulWidget {
     this.enableFilePicker = true,
     this.controller,
     this.draft,
-    this.maxLines = 6,
+    this.maxInputHeight,
     this.minLines = 1,
+    this.expanded = false,
+    this.onExpandedChanged,
     this.trailing,
     this.leading,
     this.autofocus = false,
@@ -79,6 +87,7 @@ class Composer extends ConsumerStatefulWidget {
     this.focusNode,
     this.banner,
     this.clearOnSubmit = true,
+    this.submitGuard,
     this.onEscape,
     this.attachmentUpload,
     this.attachmentDiscard,
@@ -106,11 +115,29 @@ class Composer extends ConsumerStatefulWidget {
   /// Mutually exclusive with [controller]; omit both for a transient composer.
   final ComposerDraft? draft;
 
-  /// Maximum number of lines for the input field.
-  final int maxLines;
+  /// Tallest the text area grows before it scrolls, in logical pixels.
+  ///
+  /// A prompt is often long, so the cap is a share of the space the composer
+  /// lives in rather than a line count: hosts pass ~40% of their pane. Null
+  /// falls back to 40% of the window, which is right only for a composer that
+  /// spans most of it.
+  final double? maxInputHeight;
 
   /// Minimum number of lines for the input field.
   final int minLines;
+
+  /// Whether the composer fills the height its host gives it, for writing a
+  /// long prompt. The host owns this (it has to give the composer that height)
+  /// and hears requests to change it through [onExpandedChanged].
+  ///
+  /// Needs a bounded height from the host; without one the composer stays at
+  /// its collapsed size.
+  final bool expanded;
+
+  /// Asks the host to expand or collapse the composer: the toolbar toggle,
+  /// ⌘/Ctrl+Shift+E, Escape while expanded, and a successful send (which
+  /// collapses). Null turns the feature off.
+  final ValueChanged<bool>? onExpandedChanged;
 
   /// Optional widgets rendered in the bottom toolbar, left/right of the
   /// built-in actions (useful for model picker, reasoning chip, etc.).
@@ -183,6 +210,10 @@ class Composer extends ConsumerStatefulWidget {
   /// An edit session turns this off: the host restores the parked draft itself.
   final bool clearOnSubmit;
 
+  /// Decides whether a submission may be sent. False keeps the draft as it is
+  /// and skips [onSubmit]; the guard tells the person why. Null sends all.
+  final bool Function(ComposerSubmission submission)? submitGuard;
+
   /// Called instead of blurring when Escape is pressed and the mention popup
   /// is closed. History recall still yields to this, so a session that owns
   /// Escape (editing a message) can cancel itself.
@@ -218,6 +249,10 @@ class _ComposerState extends ConsumerState<Composer> {
   bool _sending = false;
   bool _composerFocused = false;
   bool _isEmpty = true;
+  bool _isLong = false;
+  late final LongPasteFormatter _longPaste = LongPasteFormatter(
+    onLongPaste: _divertLongPaste,
+  );
   AttachmentUploadConfiguration? _uploadConfiguration;
   int _localAttachmentId = 0;
 
@@ -260,6 +295,7 @@ class _ComposerState extends ConsumerState<Composer> {
     widget.draft?.addListener(_onDraftStateChanged);
     _bindRefStyling();
     _isEmpty = _controller.text.trim().isEmpty;
+    _isLong = _isLongDraft(_controller.text);
     _bindFocusNode(widget.focusNode);
     _configureUploads();
     if (widget.autofocus) {
@@ -326,6 +362,7 @@ class _ComposerState extends ConsumerState<Composer> {
       _attachments = widget.draft?.attachments ?? [];
       _picked = widget.draft?.mentions ?? [];
       _isEmpty = _controller.text.trim().isEmpty;
+      _isLong = _isLongDraft(_controller.text);
       _sending = false;
       _resetDictationSpan();
       _activeQuery = null;
@@ -430,6 +467,7 @@ class _ComposerState extends ConsumerState<Composer> {
     final caret = _controller.selection.baseOffset;
     final query = detectMentionQuery(text, caret);
     final isEmpty = text.trim().isEmpty;
+    final isLong = _isLongDraft(text);
     // A programmatic replace (an edit session swapping the draft out and
     // back) must not be read as the user deleting tokens. The flag is set
     // for the assignment that invoked this listener.
@@ -440,10 +478,14 @@ class _ComposerState extends ConsumerState<Composer> {
       _picked.removeWhere((p) => !_tokenSurvives(text, p.token));
     }
     final droppedRefs = preserving ? false : _pruneDeletedRefs(text);
-    if (query != _activeQuery || isEmpty != _isEmpty || droppedRefs) {
+    if (query != _activeQuery ||
+        isEmpty != _isEmpty ||
+        isLong != _isLong ||
+        droppedRefs) {
       setState(() {
         _activeQuery = query;
         _isEmpty = isEmpty;
+        _isLong = isLong;
       });
     }
     if (query != null && !_popupCtrl.isShowing) {
@@ -623,10 +665,104 @@ class _ComposerState extends ConsumerState<Composer> {
     // Text-only drops (a selection dragged out of a browser or an editor) are
     // inserted verbatim — a drop is a paste with a destination.
     if (drop.attachments.isEmpty && text != null && text.isNotEmpty) {
-      _insertAtCaret(text.trim());
+      final trimmed = text.trim();
+      if (!(isLongPaste(trimmed) && _attachPastedText(trimmed))) {
+        _insertAtCaret(trimmed);
+      }
       return;
     }
     _attach(drop.attachments);
+  }
+
+  /// Whether the draft is long enough that the expand toggle earns its place
+  /// in the toolbar: a few lines, or a paragraph that wraps to them.
+  static bool _isLongDraft(String text) {
+    if (text.length >= 240) {
+      return true;
+    }
+    var breaks = 0;
+    for (var i = 0; i < text.length; i++) {
+      if (text.codeUnitAt(i) == 0x0A && ++breaks >= 3) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Receives a long insertion from [LongPasteFormatter] and attaches it once
+  /// the field has settled back on its previous value.
+  ///
+  /// Only composers that can upload a file take this path; elsewhere the text
+  /// lands inline, where it can at least still be sent.
+  bool _divertLongPaste(String text) {
+    if (_uploadConfiguration == null) {
+      return false;
+    }
+    // The formatter runs inside the field's own edit; writing the controller
+    // there would be overwritten by the value the formatter returns.
+    scheduleMicrotask(() {
+      if (mounted) {
+        _attachPastedText(text);
+      }
+    });
+    return true;
+  }
+
+  /// Attaches [text] as a plain-text file, referenced at the caret like any
+  /// other attachment, so the agent opens it as a file instead of the prompt
+  /// burying the question under it. Returns false when this composer cannot
+  /// upload one.
+  bool _attachPastedText(String text) {
+    if (_uploadConfiguration == null) {
+      return false;
+    }
+    final bytes = utf8.encode(text);
+    _attach([
+      ComposerAttachment(
+        id: 'paste:$_nextAttachmentId',
+        kind: 'file',
+        label: kLongPasteFileName,
+        bytes: bytes,
+        mimeType: 'text/plain',
+        sizeBytes: bytes.length,
+      ),
+    ]);
+    return true;
+  }
+
+  /// ⌘/Ctrl+Shift+V: pastes the clipboard's text inline whatever its length,
+  /// for the times a long paste belongs in the prompt itself.
+  Future<void> _pasteInline() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text;
+    if (!mounted || text == null || text.isEmpty) {
+      return;
+    }
+    final value = _controller.value;
+    final selection = value.selection;
+    final start = selection.isValid
+        ? selection.start.clamp(0, value.text.length)
+        : value.text.length;
+    final end = selection.isValid
+        ? selection.end.clamp(start, value.text.length)
+        : value.text.length;
+    final caret = start + text.length;
+    _controller.value = TextEditingValue(
+      text: value.text.replaceRange(start, end, text),
+      selection: TextSelection.collapsed(offset: caret),
+    );
+    _revealCaret(caret);
+  }
+
+  /// Asks the host to expand or collapse, keeping the caret in the field —
+  /// clicking the toggle would otherwise leave focus on the button.
+  void _setExpanded(bool expanded) {
+    final onChanged = widget.onExpandedChanged;
+    if (onChanged == null || widget.expanded == expanded) {
+      return;
+    }
+    onChanged(expanded);
+    _focus.requestFocus();
   }
 
   void _onFocusChanged() {
@@ -999,6 +1135,9 @@ class _ComposerState extends ConsumerState<Composer> {
       if (submission.isEmpty) {
         return;
       }
+      if (widget.submitGuard?.call(submission) == false) {
+        return;
+      }
       // Keep the draft while the host confirms its send. A failure must leave
       // the attachment and its upload ready for a retry, not lose either.
       await widget.onSubmit(submission);
@@ -1029,6 +1168,10 @@ class _ComposerState extends ConsumerState<Composer> {
         if (mounted && identical(_controller, controller)) {
           _history.reset();
           _resetDictationSpan();
+          // The long prompt is sent; the conversation gets its room back.
+          if (widget.expanded) {
+            widget.onExpandedChanged?.call(false);
+          }
         }
       }
     } finally {
@@ -1133,11 +1276,17 @@ class _ComposerState extends ConsumerState<Composer> {
     if (event is! KeyDownEvent) {
       return KeyEventResult.ignored;
     }
-    // Esc closes the popup if open; abandons a history recall, restoring the
-    // parked draft; otherwise blurs the field.
+    // Esc closes the popup if open; collapses an expanded composer; abandons
+    // a history recall, restoring the parked draft; otherwise blurs the field.
     if (event.logicalKey == LogicalKeyboardKey.escape) {
       if (_popupCtrl.isShowing) {
         _dismissPopup();
+        return KeyEventResult.handled;
+      }
+      // Before the host's own Escape: collapsing is the smaller step back, and
+      // a second press still reaches an edit session's cancel.
+      if (widget.expanded && widget.onExpandedChanged != null) {
+        _setExpanded(false);
         return KeyEventResult.handled;
       }
       // A host that owns Escape (the edit session) cancels itself before
@@ -1156,15 +1305,32 @@ class _ComposerState extends ConsumerState<Composer> {
       node.unfocus();
       return KeyEventResult.handled;
     }
+    final kb = HardwareKeyboard.instance;
+    final command = kb.isMetaPressed || kb.isControlPressed;
+    // ⌘/Ctrl+Shift+E grows the composer to its pane for a long prompt, and
+    // back.
+    if (command &&
+        kb.isShiftPressed &&
+        event.logicalKey == LogicalKeyboardKey.keyE &&
+        widget.onExpandedChanged != null) {
+      _setExpanded(!widget.expanded);
+      return KeyEventResult.handled;
+    }
+    // ⌘/Ctrl+Shift+V pastes text inline even when it is long enough that a
+    // plain paste would attach it as a file.
+    if (command &&
+        kb.isShiftPressed &&
+        event.logicalKey == LogicalKeyboardKey.keyV) {
+      unawaited(_pasteInline());
+      return KeyEventResult.handled;
+    }
     // Cmd/Ctrl+V with an IMAGE on the clipboard becomes an attachment rather
     // than a paste. Flutter's own paste only knows plain text, so without this
     // a screenshot on the clipboard pastes as nothing at all — the keystroke
     // looks broken. Text pastes are deliberately left to the field: this
     // returns `ignored` unless an image is actually found, so the normal path
     // is untouched (and stays synchronous, which the async read here is not).
-    if (event.logicalKey == LogicalKeyboardKey.keyV &&
-        (HardwareKeyboard.instance.isMetaPressed ||
-            HardwareKeyboard.instance.isControlPressed)) {
+    if (event.logicalKey == LogicalKeyboardKey.keyV && command) {
       unawaited(_tryPasteAttachments());
       return KeyEventResult.ignored;
     }
@@ -1212,8 +1378,8 @@ class _ComposerState extends ConsumerState<Composer> {
   /// Applied on the controller so Enter can stay "send". The field only
   /// scrolls the caret into view for edits that arrive through
   /// `EditableText.userUpdateTextEditingValue`, and this path skips that —
-  /// once the draft is taller than [Composer.maxLines] the new line sits
-  /// below the viewport and the caret disappears.
+  /// once the draft is taller than [Composer.maxInputHeight] the new line
+  /// sits below the viewport and the caret disappears.
   void _insertNewline() {
     final text = _controller.text;
     final sel = _controller.selection;
@@ -1222,7 +1388,13 @@ class _ComposerState extends ConsumerState<Composer> {
       text: '${text.substring(0, sel.start)}\n${text.substring(sel.end)}',
       selection: TextSelection.collapsed(offset: caret),
     );
-    final position = TextPosition(offset: caret);
+    _revealCaret(caret);
+  }
+
+  /// Scrolls [offset] into the field's viewport after the next layout, for
+  /// edits made on the controller (which skip the field's own reveal).
+  void _revealCaret(int offset) {
+    final position = TextPosition(offset: offset);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -1354,187 +1526,160 @@ class _ComposerState extends ConsumerState<Composer> {
         // The same value the box below uses as its margin, handed over
         // rather than copied, so the drop ring cannot drift off the border.
         insets: margin,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          margin: margin,
-          decoration: BoxDecoration(
-            color: ds.bgPrimary,
-            borderRadius: AppRadii.brMd,
-            border: Border.all(
-              // The accent is the focus color everywhere else (it is what
-              // `CcInputTokens.borderFocused` resolves to), so the composer —
-              // the most-focused surface in the app — uses it too rather than
-              // going ink-black on its own.
-              color: _composerFocused ? ds.accent : ds.borderSecondary,
-              width: 1,
-            ),
-            boxShadow: [
-              // A calm focus cue: a soft, low-alpha bloom rather than a loud
-              // glow, so the composer stays composed when active.
-              if (_composerFocused)
-                BoxShadow(
-                  color: ds.accent.withValues(alpha: 0.12),
-                  blurRadius: 5,
-                ),
-              ...AppShadows.soft,
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.banner != null) ...[
-                  widget.banner!,
-                  const SizedBox(height: 6),
-                ],
-                if (visibleAttachments.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(bottom: 6),
-                    child: AttachmentStrip(
-                      attachments: visibleAttachments,
-                      onRemove: _removeAttachment,
-                      onRetry: _retryAttachment,
-                      onOpen: (a) =>
-                          unawaited(openAttachmentPreview(context, ref, a)),
-                    ),
-                  ),
-                if (blockedMessage != null)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(
-                      bottom: 6,
-                      start: 4,
-                    ),
-                    child: Text(
-                      blockedMessage,
-                      style: CcTypography.caption.copyWith(
-                        color: ds.textSecondary,
-                      ),
-                    ),
-                  ),
-                CompositedTransformTarget(
-                  link: _link,
-                  child: Focus(
-                    onKeyEvent: _onFieldKey,
-                    // Notes that the next caret move came from a POINTER, which
-                    // is what separates clicking a reference from arrowing over
-                    // it. Listener, not GestureDetector: this must observe
-                    // without entering the arena, where it would compete with
-                    // the field's own tap-to-place-caret recognizer.
-                    child: Listener(
-                      onPointerUp: _onPointerUp,
-                      child: CcTextField(
-                        controller: _controller,
-                        focusNode: _focus,
-                        maxLines: widget.maxLines,
-                        minLines: widget.minLines,
-                        textInputAction: TextInputAction.send,
-                        textStyle: CcTypography.body.copyWith(
-                          color: ds.textPrimary,
-                        ),
-                        onSubmitted: (_) => _submit(),
-                        hintText: widget.hint,
-                        chromeless: true,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                _Toolbar(
-                  leading: widget.leading,
-                  trailing: widget.trailing,
-                  sending: _isSending,
-                  showStop:
-                      widget.isBusy &&
-                      _isEmpty &&
-                      _attachments.isEmpty &&
-                      widget.onStop != null,
-                  onStop: widget.onStop,
-                  enableFilePicker: widget.enableFilePicker,
-                  onPickFiles: _pickFiles,
-                  onSubmit: _submit,
-                  blockedMessage: blockedMessage,
-                  composerFocused: _composerFocused,
-                  onDictationPartial: _applyDictationPartial,
-                ),
-              ],
-            ),
+        child: LayoutBuilder(
+          // Expanded, the box fills the height its host hands it; that needs a
+          // bounded height, so a host that cannot give one gets the collapsed
+          // layout instead of an unbounded-flex error. Always present, so
+          // toggling never restructures the tree above the field.
+          builder: (context, constraints) => _buildBox(
+            context,
+            ds: ds,
+            margin: margin,
+            fill: widget.expanded && constraints.hasBoundedHeight,
+            visibleAttachments: visibleAttachments,
+            blockedMessage: blockedMessage,
           ),
         ),
       ),
     );
   }
-}
 
-class _Toolbar extends StatelessWidget {
-  const _Toolbar({
-    required this.leading,
-    required this.trailing,
-    required this.sending,
-    required this.showStop,
-    required this.onStop,
-    required this.enableFilePicker,
-    required this.onPickFiles,
-    required this.onSubmit,
-    required this.blockedMessage,
-    required this.composerFocused,
-    required this.onDictationPartial,
-  });
-
-  final Widget? leading;
-  final Widget? trailing;
-  final bool sending;
-  final bool showStop;
-  final Future<void> Function()? onStop;
-  final bool enableFilePicker;
-  final VoidCallback onPickFiles;
-  final VoidCallback onSubmit;
-  final bool composerFocused;
-  final void Function(String text, {required bool isFinal}) onDictationPartial;
-  final String? blockedMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    final sendButton = CcButton(
-      onPressed: sending || blockedMessage != null ? null : onSubmit,
-      child: sending
-          ? const CcSpinner(size: 14)
-          : const Icon(AppIcons.arrowUp, size: 16),
-    );
-    return Row(
-      children: [
-        ?leading,
-        const Spacer(),
-        if (trailing != null) ...[trailing!, const SizedBox(width: 6)],
-        if (enableFilePicker)
-          CcIconButton(
-            icon: AppIcons.plus,
-            onPressed: onPickFiles,
-            // Names the drag-and-drop affordance too. A drop target that only
-            // announces itself once a drag is already in flight is one nobody
-            // discovers on a quiet screen.
-            tooltip: AppLocalizations.of(context).attachFilesOrDrop,
+  Widget _buildBox(
+    BuildContext context, {
+    required DesignSystemTokens ds,
+    required EdgeInsets margin,
+    required bool fill,
+    required List<ComposerAttachment> visibleAttachments,
+    required String? blockedMessage,
+  }) {
+    final field = CompositedTransformTarget(
+      link: _link,
+      child: Focus(
+        onKeyEvent: _onFieldKey,
+        // Notes that the next caret move came from a POINTER, which is what
+        // separates clicking a reference from arrowing over it. Listener, not
+        // GestureDetector: this must observe without entering the arena, where
+        // it would compete with the field's own tap-to-place-caret recognizer.
+        child: Listener(
+          onPointerUp: _onPointerUp,
+          child: CcTextField(
+            controller: _controller,
+            focusNode: _focus,
+            // Unbounded lines: the box below caps the HEIGHT, so the field
+            // grows line by line to a share of the pane and scrolls past it.
+            maxLines: null,
+            minLines: fill ? null : widget.minLines,
+            expands: fill,
+            textInputAction: TextInputAction.send,
+            textStyle: CcTypography.body.copyWith(color: ds.textPrimary),
+            inputFormatters: [_longPaste],
+            onSubmitted: (_) => _submit(),
+            hintText: widget.hint,
+            chromeless: true,
           ),
-        VoiceButton(
-          onPartial: onDictationPartial,
-          composerFocused: composerFocused,
         ),
-        const SizedBox(width: 6),
-        if (showStop)
-          CcTooltip(
-            message: AppLocalizations.of(context).stopAgent,
-            child: CcButton(
-              variant: CcButtonVariant.destructive,
-              onPressed: onStop,
-              child: const Icon(AppIcons.square, size: 14),
+      ),
+    );
+    final maxInputHeight = math.max(
+      _minInputCap,
+      widget.maxInputHeight ?? MediaQuery.sizeOf(context).height * 0.4,
+    );
+    return AnimatedContainer(
+      duration: CcMotion.fast,
+      margin: margin,
+      decoration: BoxDecoration(
+        color: ds.bgPrimary,
+        borderRadius: AppRadii.brMd,
+        border: Border.all(
+          // Focus strengthens the hairline to a neutral that clears 3:1 rather
+          // than switching to the accent. The composer is focused for most of
+          // a session, and a standing orange frame spent one of the screen's
+          // two accent uses on chrome; the caret plus this edge already say
+          // where typing goes.
+          color: _composerFocused ? ds.textPlaceholder : ds.borderSecondary,
+          width: 1,
+        ),
+        boxShadow: AppShadows.soft,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
+          children: [
+            if (widget.banner != null) ...[
+              widget.banner!,
+              const SizedBox(height: 6),
+            ],
+            if (visibleAttachments.isNotEmpty)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(bottom: 6),
+                child: AttachmentStrip(
+                  attachments: visibleAttachments,
+                  onRemove: _removeAttachment,
+                  onRetry: _retryAttachment,
+                  onOpen: (a) =>
+                      unawaited(openAttachmentPreview(context, ref, a)),
+                ),
+              ),
+            if (blockedMessage != null)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(bottom: 6, start: 4),
+                child: Text(
+                  blockedMessage,
+                  style: CcTypography.caption.copyWith(color: ds.textSecondary),
+                ),
+              ),
+            // One wrapper either way, so the field (and its text input
+            // connection) stays mounted when the host toggles expansion: flex 0
+            // lays out at content size under the cap; flex 1 fills the box.
+            Flexible(
+              flex: fill ? 1 : 0,
+              fit: FlexFit.tight,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: fill ? double.infinity : maxInputHeight,
+                ),
+                // Text sits on the input inset DESIGN.md sets (12px from the
+                // border, 10px from the top); the toolbar's square buttons
+                // keep the box's tighter 8px so their edges frame the corner.
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(4, 2, 4, 0),
+                  child: field,
+                ),
+              ),
             ),
-          )
-        else if (blockedMessage != null)
-          CcTooltip(message: blockedMessage!, child: sendButton)
-        else
-          sendButton,
-      ],
+            const SizedBox(height: 6),
+            ComposerToolbar(
+              leading: widget.leading,
+              trailing: widget.trailing,
+              sending: _isSending,
+              canSend:
+                  !_isEmpty ||
+                  _attachments.isNotEmpty ||
+                  _dictationBase != null,
+              showStop:
+                  widget.isBusy &&
+                  _isEmpty &&
+                  _attachments.isEmpty &&
+                  widget.onStop != null,
+              onStop: widget.onStop,
+              enableFilePicker: widget.enableFilePicker,
+              onPickFiles: _pickFiles,
+              onSubmit: _submit,
+              blockedMessage: blockedMessage,
+              composerFocused: _composerFocused,
+              onDictationPartial: _applyDictationPartial,
+              expanded: widget.expanded,
+              onToggleExpanded:
+                  widget.onExpandedChanged != null &&
+                      (widget.expanded || _isLong)
+                  ? () => _setExpanded(!widget.expanded)
+                  : null,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

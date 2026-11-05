@@ -2,7 +2,7 @@
 title: Control remoto y móvil
 description: Cómo llega el teléfono a tu servidor a través de conexiones directas o intermediadas cifradas de extremo a extremo, y el modelo de acceso por capas que mantiene ese alcance reducido.
 slug: es-ES/manual/conceptos/control-remoto
-sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
+sourceHash: cb6a1ecae8bc1c410e872649d26d3cae127003f6
 ---
 
 Control Center es una app de escritorio, pero el trabajo que sigue no se detiene
@@ -99,8 +99,9 @@ secreto.
 Hay dos formas de carga útil y **no son intercambiables**. El QR para teléfono
 generado desde el panel de emparejamiento de la app es el `PairingPayload` v2
 anterior, apuntado al host de la PWA de Remote. `cc_server pair --client-url` emite un enlace v1
-(`{s, i, k}` — URL del servidor, id de dispositivo, clave) pensado solo para el
-cliente **web**. Son formatos de datos de emparejamiento, no alternativas de
+(`{s, i, k}` — URL del servidor, id de dispositivo, clave) para los clientes
+**web** y de **escritorio**: ábrelo en un navegador o pégalo en
+**Pegar un enlace de emparejamiento** en el escritorio. Son formatos de datos de emparejamiento, no alternativas de
 transporte: ambos clientes deben admitir el protocolo de sesión cifrada actual.
 
 También difieren en su vida útil, algo que es fácil equivocar:

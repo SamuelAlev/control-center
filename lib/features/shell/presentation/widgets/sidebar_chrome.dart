@@ -81,3 +81,58 @@ class SidebarHairline extends StatelessWidget {
     );
   }
 }
+
+/// A compact 34px square ghost icon button for the sidebar header. Tints only
+/// on hover, or while the surface it opens is [active].
+class SidebarHeaderIconButton extends StatelessWidget {
+  /// Creates a [SidebarHeaderIconButton].
+  const SidebarHeaderIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.active = false,
+    super.key,
+  });
+
+  /// The 16px glyph.
+  final IconData icon;
+
+  /// The tooltip and accessible label.
+  final String tooltip;
+
+  /// The tap handler.
+  final VoidCallback onPressed;
+
+  /// Whether the surface this button opens is showing.
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final rail = CcSidebarScope.collapsedOf(context) ?? false;
+    return CcTooltip(
+      // The rail opens toward the content like its items' tooltips. Expanded,
+      // the header's buttons sit side by side, so opening sideways would cover
+      // the neighbour.
+      placement: rail ? CcTooltipPlacement.end : CcTooltipPlacement.bottom,
+      message: tooltip,
+      child: CcTappable(
+        onPressed: onPressed,
+        semanticLabel: tooltip,
+        borderRadius: AppRadii.brSm,
+        builder: (context, states) => Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active || states.contains(WidgetState.hovered)
+                ? t.bgPrimaryHover
+                : const Color(0x00000000),
+            borderRadius: AppRadii.brSm,
+          ),
+          child: Icon(icon, size: 16, color: t.fgTertiary),
+        ),
+      ),
+    );
+  }
+}

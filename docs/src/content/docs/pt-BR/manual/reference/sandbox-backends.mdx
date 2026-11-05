@@ -2,7 +2,7 @@
 title: Backends de sandbox
 description: Os backends de sandbox, onde eles são aplicados e cada objeto de valor que o runtime do sandbox usa.
 slug: pt-BR/manual/referencia/backends-de-sandbox
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[Se uma execução roda em sandbox depende do host]
@@ -60,8 +60,8 @@ O perfil gerado é **permissivo por padrão** (`(allow default)`) e recorta nega
 
 - **Leituras do sistema de arquivos**: negadas para os caminhos secretos (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` e o resto do conjunto de leitura negada)
 - **Escritas no sistema de arquivos**: redefinidas para negar e depois permitidas em subcaminhos explícitos, com os caminhos de negação obrigatória (arquivos rc do shell, `.git/hooks`, a configuração do Claude, checkouts protegidos) bloqueados mesmo dentro de uma raiz gravável. `file-write-unlink` é negado em todo caminho negado e em seus ancestrais, de modo que uma renomeação não pode contornar uma negação de escrita
-- **Processos**: negações de `process-exec` para os binários sempre perigosos, além de um bloqueio à execução de qualquer coisa a partir de um diretório gravável
-- **Rede**: restrita às portas do proxy em processo mais o DNS — o loopback não é permitido de forma irrestrita e sockets Unix não são permitidos. Os proxies aplicam a lista de permissões de domínios por sessão (veja [Saída de rede](#saída-de-rede))
+- **Processos**: negações de `process-exec` para os binários sempre perigosos, além de um bloqueio à execução de qualquer coisa a partir de um diretório gravável. Os diretórios de instalação de toolchains conhecidos sob o seu home (corepack, caches de `npx` e `pnpm dlx`, gerenciadores de versão do node, navegadores do Playwright, rustup e cargo, Go, fvm e o cache do pub, pyenv, uv e pipx, rbenv, sdkman, mise, asdf e `~/.local/bin`) são reabertos sob esse bloqueio. Os diretórios temporários compartilhados também são bloqueados. Em vez disso, cada sessão recebe um `TMPDIR` privado em `/private/tmp`, onde podem rodar os programas que ela compila (um binário de `go test`, um build do cargo). As negações sempre perigosas são aplicadas depois dessas permissões
+- **Rede**: restrita às portas do proxy em processo mais o DNS — o loopback não é permitido de forma irrestrita e a escuta TCP é negada. Sockets Unix são permitidos somente dentro do `TMPDIR` privado da sessão, que cobre ferramentas como tsx e Chrome que mantêm um socket IPC ali; o seu agente SSH e os demais sockets continuam inacessíveis. Os proxies aplicam a lista de permissões de domínios por sessão (veja [Saída de rede](#saída-de-rede))
 - **Configuração**: os perfis são gerados a cada inicialização a partir do `SandboxSpec`
 
 Requisitos:

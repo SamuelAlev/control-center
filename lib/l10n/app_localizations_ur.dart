@@ -724,13 +724,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'Control Center اس مشین پر اپنا سرور چلاتا ہے اور آپ کا ڈیٹا مقامی طور پر رکھتا ہے۔';
 
   @override
-  String get serverModeRemote => 'ریموٹ انسٹینس سے منسلک ہوں';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'کہیں اور چلنے والے Control Center سرور سے منسلک ہوں۔ آپ کا ڈیٹا اسی سرور پر رہتا ہے۔';
-
-  @override
   String get serverRemoteUrl => 'سرور URL';
 
   @override
@@ -951,13 +944,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'دوسری ڈیوائسز اس سرور تک براہِ راست نہیں پہنچ سکتیں، اس لیے نیا کلائنٹ منسلک نہیں ہو سکتا۔ مزید کلائنٹس پیئر کرنے کے لیے سرور کا پبلک URL سیٹ کریں۔';
-
-  @override
-  String get serverSetupTitle => 'Control Center کیسے چلے؟';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center کو ایک سرور چاہیے جو آپ کا ڈیٹا رکھے۔ اسے اس ایپ کے اندر چلائیں، یا کہیں اور چلنے والے انسٹینس سے منسلک ہوں۔';
 
   @override
   String get serverSetupRunLocal => 'اس ایپ میں چلائیں';
@@ -3012,10 +2998,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'ایجنٹ شناختیں، پرامپٹس، مہارتیں کنفیگر کریں اور رنز دیکھیں۔';
 
   @override
-  String get configureDefaultRunners =>
-      'نئی اسپیسز اور عنوان تخلیق کے لیے کون سا اڈاپٹر اور ماڈل استعمال ہو، کنفیگر کریں۔';
-
-  @override
   String get configuredLabel => 'کنفیگر شدہ۔';
 
   @override
@@ -3114,12 +3096,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get deactivate => 'غیر فعال کریں';
-
-  @override
-  String get defaultChat => 'ڈیفالٹ چیٹ';
-
-  @override
-  String get defaultRunners => 'ڈیفالٹ رنرز';
 
   @override
   String get delete => 'حذف کریں';
@@ -4421,6 +4397,15 @@ class AppLocalizationsUr extends AppLocalizations {
   String get notificationGroupMachines => 'مشینیں';
 
   @override
+  String get notificationSectionSound => 'آواز';
+
+  @override
+  String get notificationSectionSchedule => 'شیڈول';
+
+  @override
+  String get notificationSectionEvents => 'واقعات';
+
+  @override
   String get notificationsMutedRepos => 'خاموش ریپوزٹریز';
 
   @override
@@ -4971,9 +4956,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'ایپ کی زبان منتخب کریں۔';
-
-  @override
-  String get shortTask => 'مختصر کام';
 
   @override
   String get showNativeNotifications => 'ایونٹس کے لیے سسٹم اطلاعات دکھائیں۔';
@@ -5559,10 +5541,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'بار پر چھوٹا کریں';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'فوکس موڈ فعال — ختم کرنے کے لیے ٹیپ کریں';
 
   @override
   String get dismiss => 'برطرف کریں';
@@ -12945,25 +12923,6 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Control Center سے منسلک ہوں';
-
-  @override
-  String get webConnectSubtitle =>
-      'چلتے cc-server سے WebSocket پر ڈائل کریں۔ آپ کی کلید اس ڈیوائس پر رہتی ہے۔';
-
-  @override
-  String get webConnectServerLabel => 'سرور';
-
-  @override
-  String get webConnectDeviceIdLabel => 'ڈیوائس ID';
-
-  @override
-  String get webConnectPairingKeyLabel => 'پیئرنگ کلید';
-
-  @override
-  String get webConnectPairingKeyHint => 'PSK پیسٹ کریں';
-
-  @override
   String get webConnectStayConnected => 'اس ڈیوائس پر منسلک رہیں';
 
   @override
@@ -13005,11 +12964,12 @@ class AppLocalizationsUr extends AppLocalizations {
       'اختیاری — خالی چھوڑیں تو عنوان ماڈل خود نام دے گا';
 
   @override
-  String get shortTaskOff => 'آف';
+  String get contentSynthesizerUnavailable =>
+      'Content synthesizer ایجنٹ موجود نہیں یا اس کے پاس کام کرنے والا رنر نہیں';
 
   @override
-  String get shortTaskUnavailable =>
-      'اسے استعمال کرنے کے لیے ترتیبات ← اڈاپٹرز میں مختصر کام کا ماڈل منتخب کریں';
+  String get conversationNeedsAgent =>
+      'یہ گفتگو شروع کرنے کے لیے @ سے کسی ایجنٹ کا ذکر کریں';
 
   @override
   String get conversationTitleGenerate => 'بنائیں';
@@ -13474,14 +13434,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'ہر لانچ پر رنر کی کمانڈ لائن کے ساتھ جڑتا ہے۔';
-
-  @override
-  String get defaultChatDescription =>
-      'نئی گفتگوئیں اور وہ ایجنٹ چلاتا ہے جن کا اپنا رنر نہیں۔';
-
-  @override
-  String get shortTaskDescription =>
-      'عنوانات اور خلاصوں جیسا فوری پس منظر کام چلاتا ہے۔ چھوٹا ماڈل یہاں ہے۔';
 
   @override
   String get settingsStateFailed => 'ناکام';
@@ -14221,6 +14173,16 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'فائلیں منسلک کریں — یا یہاں چھوڑیں';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'ایڈیٹر پھیلائیں ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'ایڈیٹر سمیٹیں ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'مقصد تیز کریں';
@@ -15382,6 +15344,11 @@ class AppLocalizationsUr extends AppLocalizations {
       'ایجنٹ اسناد کی وجہ سے رکا ہوا ہے';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'اب بھی منتظر: $title';
+  }
+
+  @override
   String get killTerminal => 'ٹرمینل بند کریں';
 
   @override
@@ -15841,4 +15808,79 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'رن رک گیا کیونکہ فراہم کنندہ کی اسناد اب کام نہیں کرتیں۔ اسے ترتیبات ← فراہم کنندگان میں دوبارہ جوڑیں، پھر یہ باری دوبارہ آزمائیں۔';
+
+  @override
+  String get helpMenuLabel => 'مدد';
+
+  @override
+  String get helpWhatsNew => 'نیا کیا ہے';
+
+  @override
+  String get helpReportProblem => 'مسئلے کی اطلاع دیں';
+
+  @override
+  String get helpCreateGitHubIssue => 'GitHub پر issue بنائیں';
+
+  @override
+  String get changelogInstalled => 'انسٹال شدہ';
+
+  @override
+  String get changelogGroupNew => 'نیا';
+
+  @override
+  String get changelogGroupImproved => 'بہتر';
+
+  @override
+  String get changelogGroupFixed => 'درست شدہ';
+
+  @override
+  String get changelogLoadFailed => 'ریلیز نوٹس لوڈ نہیں ہو سکے۔';
+
+  @override
+  String get changelogOpenWebsite => 'ویب سائٹ پر کھولیں';
+
+  @override
+  String get connectWelcomeTitle => 'Control Center میں خوش آمدید';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'اسے یہیں چلائیں، یا اپنے موجودہ سرور سے منسلک ہوں۔';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'شروع کرنے کے لیے اپنے سرور سے منسلک ہوں۔';
+
+  @override
+  String get connectToServer => 'سرور سے منسلک ہوں';
+
+  @override
+  String get connectToServerIntro => 'Control Center سرور کا پتہ درج کریں۔';
+
+  @override
+  String get connectUsePairingKey => 'پیئرنگ کلید استعمال کریں';
+
+  @override
+  String get connectPasteLink => 'پیئرنگ لنک چسپاں کریں';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'آپ کو ملا ہوا دعوتی یا پیئرنگ لنک چسپاں کریں۔';
+
+  @override
+  String get connectPasteLinkLabel => 'دعوتی یا پیئرنگ لنک';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'یہ Control Center کا دعوتی یا پیئرنگ لنک نہیں ہے۔ پورا لنک کاپی کر کے دوبارہ کوشش کریں۔';
+
+  @override
+  String get connectPasteLinkTarget => 'اس سے منسلک ہوگا';
+
+  @override
+  String get focusModeEnd => 'فوکس سیشن ختم کریں';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return '$minutes منٹ باقی';
+  }
 }

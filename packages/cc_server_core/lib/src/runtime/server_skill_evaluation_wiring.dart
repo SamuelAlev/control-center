@@ -58,6 +58,7 @@ SkillEvaluationService buildSkillEvaluationService({
   required DomainEventBus eventBus,
   required ProviderCredentialStore credentials,
   required ClaudeAccountStore claudeAccounts,
+  required AcpModelsService claudeModels,
   required Future<ProviderCredential> Function(ProviderCredential)
   refreshCredential,
   required Future<ModelInfo?> Function(String qualified) resolveModel,
@@ -164,7 +165,6 @@ SkillEvaluationService buildSkillEvaluationService({
     );
   }
 
-  final claudeModels = AcpModelsService();
   Future<Map<String, dynamic>> validateModel(
     SkillEvaluationSettings settings,
   ) async {

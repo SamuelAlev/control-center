@@ -2,7 +2,7 @@
 title: Installera
 description: Använd Control Center i webbläsaren eller installera skrivbordsappen, ställ in en agentbackend och välj var servern körs.
 slug: sv-SE/handbok/installera
-sourceHash: 964d8f7e730f6486e4a407662b3e8580e6c362f4
+sourceHash: 3003e8f07d2501b9c9125d7441f7516f01b920ec
 ---
 
 Control Center kan köras på två sätt: som en **webbapp** på
@@ -134,10 +134,11 @@ Onboardingens första steg är den här anslutningen. Därefter är samma kort p
 
 Control Center är en tunn klient ovanpå en headless `cc_server`-process som äger databasen och utför allt arbete; [Driftsättning och klienter](/sv-SE/handbok/koncept/driftsattning/) förklarar vad den uppdelningen betyder för skrivbord, webb och telefon.
 
-Vid första starten frågar skrivbordsappen **"Hur ska Control Center köras?"**:
+Vid första starten visar skrivbordsappen **Välkommen till Control Center** och erbjuder tre vägar in. Inställningsknappen i hörnet ändrar språk och tema.
 
 - **Kör i den här appen**: skrivbordsappen startar och övervakar en `cc_server` på den här maskinen och pratar med den över loopback. Inget annat att konfigurera. Det är den konfiguration som [Snabbstart](/sv-SE/handbok/snabbstart/) utgår från.
-- **Anslut till en fjärrinstans**: peka skrivbordsappen mot en `cc_server` som körs någon annanstans med dess WebSocket-URL, ett enhets-id och antingen en parkopplingsnyckel eller en engångsinbjudningskod. Den servern äger datan; den här skrivbordsappen visar den bara.
+- **Anslut till en server**: peka skrivbordsappen mot en `cc_server` som körs någon annanstans med dess WebSocket-URL och logga sedan in med enkel inloggning om servern erbjuder det, eller ange en engångsinbjudningskod, eller ett enhets-id och en parkopplingsnyckel under **Använd en parkopplingsnyckel**. Den servern äger datan; den här skrivbordsappen visar den bara.
+- **Klistra in en parkopplingslänk**: klistra in en inbjudnings- eller parkopplingslänk. Dialogen visar vilken server länken leder till och ansluter först när du klickar på **Anslut**.
 
 Lägg till eller byt server senare under **Inställningar → Server → Anslutning och status**. Att byta återansluter på plats — ingen omstart. En webbläsare kan inte köra en server, så webbklienten är alltid fjärransluten; se [Anslut till en fjärrserver](/sv-SE/handbok/how-to-guider/anslut-fjarrserver/).
 

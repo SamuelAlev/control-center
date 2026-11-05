@@ -2,7 +2,7 @@
 title: 沙箱後端
 description: 各個沙箱後端、它們各自在何處生效，以及沙箱執行階段用到的每一個值物件。
 slug: zh-TW/手冊/參考/沙箱後端
-sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
+sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
 ---
 
 :::caution[一次執行是否受到沙箱包裝取決於主機]
@@ -52,8 +52,8 @@ sourceHash: 6df2756a5293edf08df7b69f642f6a04ddbe7f48
 
 - **檔案系統讀取**：對機密路徑（`~/.ssh`、`~/.aws`、`~/.gnupg`、`~/.config/gh`、`~/Library/Keychains` 以及拒絕讀取集合中的其餘路徑）拒絕
 - **檔案系統寫入**：先重設為拒絕，再明確允許子路徑，其中強制拒絕的路徑（shell rc 檔、`.git/hooks`、Claude 設定、受保護的簽出）即使在可寫根目錄內也會被封鎖。`file-write-unlink` 在每一條被拒絕的路徑及其上層路徑上都會被拒絕，因此重新命名無法繞過寫入拒絕
-- **行程**：對永遠危險的執行檔套用 `process-exec` 拒絕，並阻擋從任何可寫目錄執行任何東西
-- **網路**：限制在行程內代理連接埠加上 DNS——回送並非一律允許，Unix 通訊端也不允許。這些代理會強制執行按工作階段的網域允許清單（請見[網路對外連線](#網路對外連線)）
+- **行程**：對永遠危險的執行檔套用 `process-exec` 拒絕，並阻擋從任何可寫目錄執行任何東西。主目錄下已知的工具鏈安裝目錄（corepack、npx 與 `pnpm dlx` 快取、Node 版本管理工具、Playwright 瀏覽器、rustup 與 cargo、Go、fvm 與 pub 快取、pyenv、uv 與 pipx、rbenv、sdkman、mise、asdf 以及 `~/.local/bin`）會在該阻擋之下重新開放。共用的暫存目錄也一併阻擋。改為每個工作階段獲得 `/private/tmp` 下的私有 `TMPDIR`，供其建置的程式（例如 `go test` 二進位檔、cargo 建置結果）執行。永遠危險的拒絕規則在這些允許之後套用
+- **網路**：限制在行程內代理連接埠加上 DNS——回送並非一律允許，且禁止 TCP 監聽。Unix 通訊端僅允許在工作階段的私有 `TMPDIR` 內使用，涵蓋 tsx、Chrome 等將 IPC 通訊端放在該處的工具；你的 SSH agent 與其他通訊端仍無法存取。這些代理會強制執行按工作階段的網域允許清單（請見[網路對外連線](#網路對外連線)）
 - **設定**：設定檔在每次啟動時依 `SandboxSpec` 產生
 
 需求：

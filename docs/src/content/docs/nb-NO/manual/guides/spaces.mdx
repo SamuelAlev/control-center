@@ -2,7 +2,7 @@
 title: Bruk områder
 description: Opprett områder, sett modusen deres, administrer deltakere og autonomi, og åpne samtaler og tråder.
 slug: nb-NO/handbok/slik-gjor-du/omrader
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Denne veiledningen viser hvordan du bruker områder. Et **område** er
@@ -26,6 +26,11 @@ agenter åpner for å snakke med hverandre — se
    worktrees for. Alle er valgt som standard; velger du bort alle repoene,
    opprettes et område der ingenting er sjekket ut
 6. Bekreft
+
+Bare en agent svarer på en melding, så et område uten agent starter ingenting:
+komponeringsfeltet sier fra og beholder meldingen din til du @-nevner en agent,
+som legger den til i området og sender. Det finnes ingen standardkjører bak et
+tomt område.
 
 Områder er avgrenset til arbeidsområdet: du ser bare agenter fra det gjeldende
 arbeidsområdet, og et område viser aldri data fra et annet arbeidsområde.
@@ -101,7 +106,7 @@ opprettes en varig samtale uten tittel.
 Samtaler vises som faner i redigereren, og som nestede rader under området i
 sidestolpen så snart det er mer enn én. **Ny samtale** ligger i redigererens
 meny for nye faner og oppretter en samtale uten tittel, uten å spørre om tittel
-— tittemodellen navngir den etter den første meldingen. Bruk én til å kjøre
+— Content synthesizer-agenten navngir den etter den første meldingen. Bruk én til å kjøre
 parallelt arbeid med samme agent og samme worktree.
 
 Hver samtale beholder sin egen meldingshistorikk og sine egne agentsesjoner,

@@ -2,7 +2,7 @@
 title: Gunakan space
 description: Buat space, atur modenya, kelola peserta dan otonomi, lalu buka percakapan dan thread.
 slug: id-ID/panduan-pengguna/panduan-praktis/space
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Panduan ini menunjukkan cara menggunakan space. **Space** adalah permukaan
@@ -26,6 +26,11 @@ bawah.
    oleh space ini. Semua terpilih secara bawaan; membatalkan centang semua repo
    akan membuat space tanpa apa pun yang di-checkout
 6. Konfirmasi
+
+Hanya agen yang menjawab pesan, jadi space tanpa agen tidak memulai apa pun:
+composer memberi tahu hal itu dan menyimpan pesan Anda sampai Anda @-menyebut
+agen, yang lalu menambahkannya ke space dan mengirim. Tidak ada runner default
+di balik space yang kosong.
 
 Space bercakupan ruang kerja: Anda hanya melihat agen dari ruang kerja saat ini
 dan sebuah space tidak pernah menampilkan data dari ruang kerja lain.
@@ -100,7 +105,7 @@ belum memilikinya akan membuat percakapan tetap tanpa judul.
 Percakapan muncul sebagai tab editor, dan sebagai baris bertingkat di bawah space
 di bilah sisi begitu jumlahnya lebih dari satu. **Percakapan baru** berada di
 menu tab baru editor dan membuat percakapan tanpa judul tanpa permintaan
-pemberian judul — model judul menamainya berdasarkan pesan pertama. Gunakan satu
+pemberian judul — agen Content synthesizer menamainya berdasarkan pesan pertama. Gunakan satu
 percakapan untuk menjalankan pekerjaan paralel dengan agen dan worktree yang
 sama.
 

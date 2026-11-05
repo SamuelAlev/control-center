@@ -13,10 +13,13 @@ import 'package:control_center/features/meetings/presentation/widgets/meeting_co
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_links.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
+
+part 'meeting_notes_enhanced_tag.dart';
 
 /// Which version of the notes the Notes tab is showing.
 enum MeetingNotesMode {
@@ -302,37 +305,10 @@ class _EnhancedNotes extends StatelessWidget {
           options: githubMarkdownOptions,
           builders: githubMarkdownBuilders,
           imageBuilder: appMarkdownImageBuilder,
+          onTapLink: openMarkdownLink,
           codeBuilder: sharedCodeBuilder(),
         ),
       ],
-    );
-  }
-}
-
-class _EnhancedTag extends StatelessWidget {
-  const _EnhancedTag({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: context.mAccentSoft,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(AppIcons.sparkles, size: 12, color: context.mAccent),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: meetingMono(context, fontSize: 11, color: context.mAccent),
-          ),
-        ],
-      ),
     );
   }
 }

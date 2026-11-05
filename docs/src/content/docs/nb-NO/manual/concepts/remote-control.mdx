@@ -2,7 +2,7 @@
 title: Fjernstyring og mobil
 description: Hvordan telefonen når serveren din over direkte eller formidlede ende-til-ende-krypterte tilkoblinger, og den lagdelte tilgangsmodellen som holder den rekkevidden smal.
 slug: nb-NO/handbok/konsepter/fjernstyring
-sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
+sourceHash: cb6a1ecae8bc1c410e872649d26d3cae127003f6
 ---
 
 Control Center er en skrivebordsapp, men arbeidet den følger med på, stopper
@@ -95,8 +95,9 @@ hemmelighet.
 Det finnes to former for nyttelast, og de er **ikke utbyttbare**. Telefon-QR-en
 som utstedes fra paringspanelet i appen, er v2-`PairingPayload` over, rettet mot
 Remote PWA-verten. `cc_server pair --client-url` sender ut en v1-lenke
-(`{s, i, k}` — server-URL, enhets-id, nøkkel) som bare er ment for
-**nett**klienten. Dette er paringsdataformater, ikke transportreserver: begge
+(`{s, i, k}` — server-URL, enhets-id, nøkkel) for **nett**- og
+**skrivebords**klientene: åpne den i en nettleser, eller lim den inn i
+**Lim inn en paringslenke** i skrivebordsappen. Dette er paringsdataformater, ikke transportreserver: begge
 klientene må støtte den gjeldende krypterte øktprotokollen.
 
 De skiller seg også i levetid, noe det er lett å ta feil av:

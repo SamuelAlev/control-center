@@ -2,7 +2,7 @@
 title: Gérer les adaptateurs et les modèles
 description: Connectez des fournisseurs de modèles, choisissez le modèle sur lequel un agent s’exécute et vérifiez quelles CLI d’exécuteur d’agents se trouvent sur l’hôte du serveur.
 slug: fr-FR/manuel/guides/adaptateurs
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Ce guide vous montre comment connecter des fournisseurs de modèles et choisir
@@ -99,11 +99,10 @@ En cas de repli, le coût est calculé d’après le modèle qui a réellement s
 tour, et non celui que vous aviez demandé.
 
 :::note[Un agent sans adaptateur s’exécute sur la boucle intégrée]
-Chaque espace de travail amorce cinq agents — un CEO plus `qa`, `architect`,
-`engineer` et `librarian` — sans adaptateur ni modèle. Le lancement retombe sur
-**Control Center (built-in)**, et non sur le réglage **Exécuteurs par défaut** de
-cette page, qui est une préférence de client que le chemin de lancement ne lit
-jamais. Le journal d’exécution consigne `cc-harness` pour ces exécutions, de
+Chaque espace de travail amorce six agents — un CEO plus `qa`, `architect`,
+`engineer`, `librarian` et `content-synthesizer` — sans adaptateur ni modèle. Le
+lancement retombe sur **Control Center (built-in)** ; il n’existe aucun exécuteur
+par défaut à l’échelle de l’espace de travail ou de l’appareil. Le journal d’exécution consigne `cc-harness` pour ces exécutions, de
 sorte que la transcription nomme ce qui s’est réellement exécuté.
 
 Sans modèle non plus, la boucle intégrée demande à Anthropic son modèle par
@@ -115,9 +114,15 @@ Lorsque vous terminez l’étape Adaptateur de la configuration initiale, la pai
 que vous avez choisie est appliquée rétroactivement à **chaque** agent à qui il
 manque encore un adaptateur ou un modèle — CEO et spécialistes, dans chaque
 espace de travail qui existe à ce moment-là. Les espaces de travail créés plus
-tard amorcent encore les cinq agents sans configuration. Définissez explicitement
+tard amorcent encore les six agents sans configuration. Définissez explicitement
 l’adaptateur et le modèle de chaque agent que vous comptez utiliser.
 :::
+
+## Personnaliser les titres et les résumés
+
+L’agent **Content synthesizer** rédige le texte que Control Center génère autour d’une conversation : son titre, les réponses de `/btw`, les documents `/handoff` et l’entretien d’objectif de `/goal`. Il exécute à chaque fois une complétion sans outils, sur son propre adaptateur et modèle ; donnez-lui donc un petit modèle rapide.
+
+Modifiez sa **persona** dans **Paramètres → Espace de travail → Agents** pour changer la façon dont ce texte est rédigé : longueur des titres, langue, ton et exemples suivis. Le format de réponse que chaque fonctionnalité analyse (un titre sur une ligne, les sections de l’objectif) est fixe et appliqué après votre persona. Supprimez l’agent pour désactiver ces fonctionnalités ; il n’est pas recréé automatiquement.
 
 ## Installer une CLI d’exécuteur
 

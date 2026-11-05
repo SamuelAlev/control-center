@@ -2,7 +2,7 @@
 title: Koble til en enhet
 description: Koble telefonen din (eller en ekstra nettleser eller skrivebordsapp) til Control Center-serveren din, slik at du kan følge flåten eksternt.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-enhet
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Denne guiden viser deg hvordan du parer en telefon med Control Center, slik at
@@ -40,11 +40,12 @@ velg typen — **Nettleser**, **Skrivebordsapp** eller **Telefon** — og klikk
 **Par**.
 
 - For en **telefon** vises en QR-kode. Skann den med telefonens kamera, eller kopier lenken og åpne den i en hvilken som helst nettleser. Den peker Remote-appen mot serveren din og inneholder legitimasjonen.
-- For en **nettleser** eller **skrivebordsapp** kopierer du i stedet den viste lenken (eller enhets-id-en og paringsnøkkelen) inn i den nye klienten. Ett-trykks-lenken tilbys bare når du parer fra nettklienten, siden en skrivebordsbinær ikke har noe nettopphav å bygge den fra.
+- For en **nettleser** eller **skrivebordsapp** kopierer du i stedet den viste lenken (eller enhets-id-en og paringsnøkkelen) inn i den nye klienten. Åpne lenken i en nettleser, eller lim den inn i **Lim inn en paringslenke** i skrivebordsappen. Når du parer fra skrivebordsappen, bygges lenken fra serverens egen URL, så den vises bare når serveren har en URL andre enheter kan nå.
 
 Telefon-QR-en og lenken `cc_server pair --client-url` skriver ut på
 kommandolinjen, er **forskjellige nyttelaster og kan ikke byttes om**:
-CLI-lenken fyller ut nettklientens tilkoblingsskjema, mens denne QR-en
+CLI-lenken fyller ut nettklientens tilkoblingsdialog eller limes inn i
+skrivebordsappen, mens denne QR-en
 inneholder serverens fulle tilkoblingsbeskrivelse og identitetsfingeravtrykk for
 Remote-PWA-en.
 

@@ -52,14 +52,14 @@ QEMU_SOCKS_PROXY_ADDR="10.0.2.101:1080"
 
 # Keep the release in step with `kSmolvmExecImage` in
 # packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart (currently
-# `ubuntu:24.04`). The two images boot different hypervisors, but a desktop rig
+# `ubuntu:26.04`). The two images boot different hypervisors, but a desktop rig
 # and a terminal rig running different userlands is a confusing way to debug a
 # guest. This is the only place the desktop pin lives — nothing in Dart reads
 # it, so it cannot drift silently against a constant; it drifts against that
 # OCI tag.
-UBUNTU_RELEASE="release-20260814"
-BASE_URL="https://cloud-images.ubuntu.com/releases/noble/${UBUNTU_RELEASE}"
-BASE_IMG="ubuntu-24.04-server-cloudimg-${ARCH}.img"
+UBUNTU_RELEASE="release-20261016"
+BASE_URL="https://cloud-images.ubuntu.com/releases/resolute/${UBUNTU_RELEASE}"
+BASE_IMG="ubuntu-26.04-server-cloudimg-${ARCH}.img"
 
 OUT_DIR="${RIG_IMAGE_OUT:-$PWD/build/rig-images}"
 WORK_DIR="$(mktemp -d)"
@@ -112,7 +112,7 @@ qemu-img resize "$OUT_IMG" 16G >/dev/null
 # tab and a terminal tab should not disagree about what "a basic toolchain"
 # means. Language toolcaches (Node, Go, Java) and Docker stay out: those
 # are versioned, huge, and Docker needs a nested daemon this VM does not
-# run. `netcat` is virtual on Ubuntu 24.04; `netcat-openbsd` is the package.
+# run. `netcat` is virtual on Ubuntu 26.04; `netcat-openbsd` is the package.
 COMMON_PACKAGES="openssh-server python3-pil \
 acl aria2 autoconf automake binutils bison brotli bzip2 \
 ca-certificates cmake curl dnsutils dpkg-dev fakeroot file flex \

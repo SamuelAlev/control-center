@@ -2,7 +2,7 @@
 title: Quản lý adapter và mô hình
 description: Kết nối nhà cung cấp mô hình, chọn mô hình mà agent chạy trên đó và kiểm tra máy chủ có những CLI runner agent nào.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/adapter
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Hướng dẫn này chỉ cách kết nối nhà cung cấp mô hình và chọn thứ mà agent chạy
@@ -94,12 +94,11 @@ thể mang chuỗi dự phòng phân tách bằng `|`. Khi dùng dự phòng, ch
 theo mô hình thực sự phục vụ lượt chạy, không phải mô hình bạn yêu cầu.
 
 :::note[Agent không có adapter sẽ chạy trên vòng lặp tích hợp sẵn]
-Mỗi không gian làm việc tạo sẵn năm agent — một CEO cùng `qa`, `architect`,
-`engineer` và `librarian` — không có adapter và không có mô hình. Việc điều phối
-sẽ quay về **Control Center (tích hợp sẵn)**, chứ không dùng cài đặt **Runner
-mặc định** trên trang này, vốn là tùy chọn của máy khách mà luồng điều phối
-không bao giờ đọc. Nhật ký chạy ghi `cc-harness` cho những lần chạy đó, nên bản
-ghi nêu rõ thứ thực sự đã chạy.
+Mỗi không gian làm việc tạo sẵn sáu agent — một CEO cùng `qa`, `architect`,
+`engineer`, `librarian` và `content-synthesizer` — không có adapter và không có mô
+hình. Việc điều phối sẽ quay về **Control Center (tích hợp sẵn)**; không có runner
+mặc định ở cấp không gian làm việc hay thiết bị. Nhật ký chạy ghi `cc-harness` cho
+những lần chạy đó, nên bản ghi nêu rõ thứ thực sự đã chạy.
 
 Khi cũng không có mô hình, vòng lặp tích hợp sẵn sẽ hỏi Anthropic mô hình mặc
 định của nó. Vì vậy một agent để trống hoàn toàn sẽ chạy nếu bạn đã kết nối tài
@@ -108,9 +107,22 @@ khoản Anthropic, còn nếu không thì thất bại với `No credential for 
 Khi hoàn tất bước adapter trong quá trình thiết lập ban đầu, hệ thống sẽ gán bù
 cặp bạn đã chọn cho **mọi** agent vẫn còn thiếu adapter hoặc mô hình — cả CEO
 lẫn các agent chuyên môn, trong mọi không gian làm việc tồn tại tại thời điểm
-đó. Những không gian làm việc tạo sau vẫn tạo sẵn cả năm agent ở trạng thái chưa
+đó. Những không gian làm việc tạo sau vẫn tạo sẵn cả sáu agent ở trạng thái chưa
 đặt. Hãy đặt adapter và mô hình một cách rõ ràng cho mọi agent bạn định dùng.
 :::
+
+## Tùy chỉnh tiêu đề và tóm tắt
+
+Agent **Content synthesizer** viết phần văn bản mà Control Center tạo ra xung quanh
+một cuộc trò chuyện: tiêu đề, câu trả lời `/btw`, tài liệu `/handoff` và phần
+phỏng vấn mục tiêu `/goal`. Mỗi lần nó chạy một lượt hoàn thành không dùng công cụ,
+trên adapter và mô hình riêng của nó, vì vậy hãy cấp cho nó một mô hình nhỏ và nhanh.
+
+Chỉnh sửa **persona** của nó trong **Cài đặt → Không gian làm việc → Agent** để đổi
+cách văn bản này được viết: độ dài tiêu đề, ngôn ngữ, giọng điệu, các ví dụ nó làm
+theo. Định dạng phản hồi mà mỗi tính năng phân tích (tiêu đề một dòng, các mục của
+mục tiêu) là cố định và được áp dụng sau persona của bạn. Xóa agent để tắt các tính
+năng này; agent sẽ không được tạo lại.
 
 ## Cài đặt CLI runner
 

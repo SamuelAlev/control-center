@@ -91,6 +91,15 @@ void main() {
         expect(settings['attribution'], {'commit': '', 'pr': ''});
       });
 
+      test('turns Claude Code auto-memory off even if settings enable it', () {
+        final args = ClaudeCliBackend.buildClaudeArgs(
+          settingsJson: jsonEncode({'autoMemoryEnabled': true}),
+        );
+        final settings =
+            jsonDecode(args[args.indexOf('--settings') + 1]) as Map;
+        expect(settings['autoMemoryEnabled'], isFalse);
+      });
+
       test('adds --model when modelId provided', () {
         final args = ClaudeCliBackend.buildClaudeArgs(modelId: 'opus');
         final i = args.indexOf('--model');

@@ -2,7 +2,7 @@
 title: Anslut till en fjärrserver
 description: Rikta skrivbordsappen eller webbklienten mot en cc_server som körs någon annanstans och byt mellan servrar utan att starta om.
 slug: sv-SE/handbok/how-to-guider/anslut-fjarrserver
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Varje klient är en renderare över en `cc_server` som äger datan. Skrivbordsappen
@@ -14,7 +14,7 @@ liten burk, en moln-VM, en byggserver.
 ## Förutsättningar
 
 - En `cc_server` som körs. Har du ingen, se [Kör en headless-server](/sv-SE/handbok/how-to-guider/kor-headless-server/).
-- Antingen de tre parkopplingsvärden som servern har skapat — **server-URL:en** (`ws://…/rpc` eller `wss://…/rpc`), ett **enhets-ID** och en **parkopplingsnyckel** — **eller** en engångs-**inbjudningskod** från en admin för arbetsytan. Att lösa in en inbjudan skapar din användare, registrerar ditt medlemskap och utfärdar den här klientens autentiseringsuppgift åt dig, så du hanterar aldrig ett enhets-ID eller en nyckel. Skaffa dessa via en betrodd kanal och kontrollera serverns fingeravtryck mot en betrodd QR-kod eller en känd pin vid första anslutningen.
+- Antingen de tre parkopplingsvärden som servern har skapat — **server-URL:en** (`ws://…/rpc` eller `wss://…/rpc`), ett **enhets-ID** och en **parkopplingsnyckel** — **eller** en engångs-**inbjudningskod** från en admin för arbetsytan, **eller** en inbjudnings- eller parkopplingslänk som innehåller dem. Att lösa in en inbjudan skapar din användare, registrerar ditt medlemskap och utfärdar den här klientens autentiseringsuppgift åt dig, så du hanterar aldrig ett enhets-ID eller en nyckel. Skaffa dessa via en betrodd kanal och kontrollera serverns fingeravtryck mot en betrodd QR-kod eller en känd pin vid första anslutningen.
 
 ### Se till att servern är nåbar
 
@@ -42,14 +42,16 @@ standard; loopback och inbyggda klienter är alltid tillåtna.
 
 Vid en ny installation:
 
-1. Starta Control Center. Skärmen vid första starten frågar **Hur ska Control Center köras?**
-2. I stället för **Kör i den här appen** fyller du i anslutningsfälten: server-URL:en, plus antingen en inbjudningskod eller ett enhets-ID och en parkopplingsnyckel.
+1. Starta Control Center. Skärmen vid första starten visar **Välkommen till Control Center**.
+2. Klicka på **Anslut till en server** och ange server-URL:en, plus antingen en inbjudningskod eller, under **Använd en parkopplingsnyckel**, ett enhets-ID och en parkopplingsnyckel.
 3. Klicka på **Anslut**. Control Center ringer upp servern och landar i arbetsytans inkorg.
+
+Om du har en inbjudnings- eller parkopplingslänk klickar du i stället på **Klistra in en parkopplingslänk** och klistrar in den. Dialogen visar vilken server länken leder till. Kontrollera den och klicka sedan på **Anslut**: att klistra in ansluter aldrig av sig självt. Om en anslutning misslyckas förblir dialogen öppen med felet och allt du har angett.
 
 På en skrivbordsapp som redan kör sin egen server:
 
 1. Öppna **Inställningar → Server → Anslutning och status**.
-2. Klicka på **Lägg till server**. Ange server-URL:en (`wss://host:9030/rpc`) och antingen en inbjudningskod eller ett enhets-ID och en parkopplingsnyckel. Knappen i slutet av URL-fältet upptäcker `cc_server`-instanser i ditt LAN eller tailnet.
+2. Klicka på **Lägg till server**. Ange server-URL:en (`wss://host:9030/rpc`) och antingen en inbjudningskod eller, under **Använd en parkopplingsnyckel**, ett enhets-ID och en parkopplingsnyckel. Knappen i slutet av URL-fältet upptäcker `cc_server`-instanser i ditt LAN eller tailnet.
 3. Klicka på **Anslut** och sedan på **Byt** i den nya serverns rad.
 
 Bytet sker live: appen bygger om sig själv kring den nya sessionen på plats, utan
@@ -66,10 +68,10 @@ skydd gäller över loopback och över reläet.
 Webbbygget är alltid fjärranslutet.
 
 1. Öppna [app.usectrl.dev](https://app.usectrl.dev), eller din egen kopia av webbbygget.
-2. Ange server-URL:en plus antingen en inbjudningskod eller ett enhets-ID och en parkopplingsnyckel.
-3. Klienten ringer upp servern och renderar samma gränssnitt som skrivbordsappen.
+2. Klicka på **Anslut till en server** och ange server-URL:en, plus antingen en inbjudningskod eller, under **Använd en parkopplingsnyckel**, ett enhets-ID och en parkopplingsnyckel. **Klistra in en parkopplingslänk** tar i stället en inbjudnings- eller parkopplingslänk.
+3. Klicka på **Anslut**. Klienten ringer upp servern och renderar samma gränssnitt som skrivbordsappen.
 
-Om en parkopplings-deep-link finns i URL:en är fälten förifyllda.
+Om en parkopplings-deep-link finns i URL:en öppnas anslutningsdialogen med fälten ifyllda, så att du kan kontrollera servern innan du klickar på **Anslut**.
 Parkopplingsnyckeln färdas i URL-**fragmentet**, som webbläsare aldrig skickar
 till servern som hostar sidan. Behandla länken som en hemlighet och lita på sidan
 som betjänar webbklienten: fragmentet skyddar inte mot skadlig sidkod.

@@ -2,7 +2,7 @@
 title: Benachrichtigungen konfigurieren
 description: Schalte Kategorien ein oder aus, lege Quiet hours und einen Ton fest und erkenne, welche Benachrichtigungen dich wo erreichen.
 slug: de-DE/handbuch/anleitungen/benachrichtigungen
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Diese Anleitung zeigt, wie du Benachrichtigungen konfigurierst und was jede
@@ -51,12 +51,30 @@ Benachrichtigungsfläche.
 Alles außerhalb dieser Liste wird weder gemeldet noch gefiltert. Eine Kategorie
 „alles andere“ gibt es nicht.
 
-**Agent wartet auf dich** meldet sich einmal pro Wartezeit, und zwar wenn sie
-beginnt: bei einer ausstehenden Freigabe (auch Ausführungsfreigaben der Sandbox
+**Agent wartet auf dich** meldet sich, sobald eine Wartezeit beginnt: bei
+einer ausstehenden Freigabe (auch Ausführungsfreigaben der Sandbox
 und Tool-Freigaben von Claude Code), bei einer `ask_user`-Frage oder bei einem
 Lauf, der angehalten ist, weil seine Zugangsdaten ihn nicht bedienen können. Die
 Benachrichtigung öffnet den Bereich, in dem du antwortest, und bleibt still,
 solange du dir diesen Bereich schon ansiehst.
+
+Auf dem Desktop verhalten sich diese Benachrichtigungen anders als die übrigen:
+
+- **Sie sind dringlich.** Unter macOS können sie einen Fokus durchbrechen, der
+  dringliche Mitteilungen von Control Center erlaubt.
+- **Eine Freigabe lässt sich direkt in der Benachrichtigung beantworten.**
+  **Genehmigen** und **Verweigern** senden deine Antwort, ohne die App zu
+  öffnen. Der Server prüft sie genauso wie bei der Karte in der App. Willst du
+  stattdessen für eine bestimmte Zeit freigeben, öffne die Karte.
+- **Eine unbeantwortete Wartezeit erinnert dich.** Antwortet niemand, kommt die
+  Benachrichtigung 3, 10, 25 und 45 Minuten nach Beginn der Wartezeit als
+  **Wartet noch: …** zurück. Jede Erinnerung ersetzt die vorherige
+  Benachrichtigung, statt eine weitere hinzuzufügen. Solange ein Fenster von
+  Control Center den Fokus hat, entfallen die Erinnerungen, weil du die
+  Freigabekarte und die Glocke ohnehin vor dir hast.
+- **Sie verschwindet, sobald die Wartezeit endet**, ganz gleich, wie sie
+  beantwortet wurde. So drückst du nie einen Knopf bei einer Anfrage, die schon
+  erledigt ist.
 
 Diese Einstellungen folgen deinem Benutzer auf jedes Gerät, deshalb bleiben
 Smartphone und Laptop auf demselben Stand. Die Lautstärke ist die bewusste
@@ -99,7 +117,8 @@ Eine Benachrichtigung wird still verworfen, wenn eines davon zutrifft:
 - Benachrichtigungen sind global aus, oder ihre Kategorie ist aus
 - Du bist schon auf der Route, zu der sie dich führen würde, und bei einer
   Nachricht schon in diesem Bereich
-- Der Fokusmodus ist aktiv und die Kategorie ist nicht dringend
+- Eine Fokus-Sitzung mit eingeschaltetem **Benachrichtigungen blockieren** läuft
+  und die Kategorie ist nicht dringend
 - Quiet hours sind aktiv und die Kategorie ist nicht dringend
 
 Diese Prüfungen gelten für Betriebssystem-Toasts. Die dauerhafte Glocke schreibt
@@ -145,6 +164,15 @@ Die Berechtigung wird beim Start der App nativ angefragt. Hast du sie
 abgelehnt, aktiviere Control Center wieder unter Systemeinstellungen →
 Mitteilungen. In der App gibt es keinen Hinweis, der die Anfrage erneut
 auslöst.
+
+### Ich verpasse unter macOS immer wieder Freigabe-Benachrichtigungen
+
+macOS zeigt die Mitteilungen von Control Center standardmäßig als Banner an, und
+ein Banner verschwindet nach ein paar Sekunden. Damit sie auf dem Bildschirm
+bleiben, bis du reagierst, stelle den Hinweisstil von Control Center unter
+Systemeinstellungen → Mitteilungen auf **Dauerhaft**. Eine unbeantwortete
+Freigabe kommt außerdem als Erinnerung zurück (siehe
+[Kategorien ein- oder ausschalten](#kategorien-ein--oder-ausschalten)).
 
 ### Auf dem Web-Build kommt nichts an
 

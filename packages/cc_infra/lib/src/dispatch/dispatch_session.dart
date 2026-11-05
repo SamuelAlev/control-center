@@ -50,7 +50,6 @@ import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
 import 'package:cc_infra/src/context/snapcompact_compactor.dart';
-import 'package:cc_infra/src/detection/acp_models_service.dart';
 import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
@@ -1820,29 +1819,42 @@ class DispatchSession implements SteeringSessionView {
   /// Forcefully terminates the session by marking the run as failed,
   /// revoking credentials, cancelling event subscriptions and closing the
   /// controller.
-  Future<void> terminate() async {
+  Future<void> terminate() => _abortRun(
+    reason: 'terminate',
+    failure: 'Terminated by user request',
+    logError: 'terminated by user request',
+    debugLine: '[sandbox] dispatch $dispatchId terminated by request',
+  );
+
+  /// The one stop sequence for a run ended from outside its process: a user
+  /// [terminate] or the silence watchdog. [failure] is the run's only
+  /// transcript error. [debugLine] stays in the run log; emitting it as an
+  /// error too rendered two error rows for one stop.
+  Future<void> _abortRun({
+    required String reason,
+    required String failure,
+    required String logError,
+    required String debugLine,
+  }) async {
     _cancelSilenceWatchdog();
     // Cancel the built-in harness loop and any in-flight subagent loops (they
-    // share this token) before tearing the session down.
-    _cancelSource.cancel('terminated');
+    // share this token) before tearing the session down. The CLI runners also
+    // read it to drop the dying process's `exited with code -15` line.
+    _cancelSource.cancel(reason);
     // Record the stop before yielding: killing the child can complete `run()`
     // and close the transcript while process teardown is still in progress.
-    _failRun('Terminated by user request');
+    _failRun(failure);
     _claudeParser = null;
     unawaited(_closeClaudeSubagents());
     await _teardownAcp();
-    addEvent(
-      DebugEvent(
-        content: '[sandbox] dispatch $dispatchId terminated by request',
-      ),
-    );
+    addEvent(DebugEvent(content: debugLine));
     // Actually stop the agent. `_failRun` only stamps the DB row; without this
-    // the CLI kept running after "terminate", ignored by everything.
-    await _killActiveProcess('terminate');
+    // the CLI kept running after the stop, ignored by everything.
+    await _killActiveProcess(reason);
     // Close the run log too: it finalizes the DEBOUNCED `lastOutputAt` write
     // (otherwise the last timestamp dies in the debounce window) and writes the
     // NDJSON `end` record. Idempotent — the normal completion path calls it too.
-    await _closeRunLog(error: 'terminated by user request');
+    await _closeRunLog(error: logError);
     await _releaseRunCredentials();
     if (!emittedDone) {
       addEvent(DoneEvent());
@@ -1941,27 +1953,15 @@ class DispatchSession implements SteeringSessionView {
           : last;
       if (activeSince != null &&
           clock.now().difference(activeSince) >= threshold) {
-        _cancelSilenceWatchdog();
-        addEvent(
-          ErrorEvent(
-            content:
-                '[sandbox] Agent silent for '
-                '${threshold.inMinutes} min — terminating',
+        final minutes = threshold.inMinutes;
+        unawaited(
+          _abortRun(
+            reason: 'silence watchdog',
+            failure: 'Silent run (no output for $minutes min)',
+            logError: 'silent for $minutes min',
+            debugLine: '[sandbox] Agent silent for $minutes min — terminating',
           ),
         );
-        // "terminating" has to mean it: kill the child before stamping the
-        // run, or the silent CLI keeps running (and holding its sandbox)
-        // forever while the UI shows the run as failed.
-        unawaited(() async {
-          await _killActiveProcess('silence watchdog');
-          // Finalizes the debounced `lastOutputAt` + writes the NDJSON `end`.
-          await _closeRunLog(error: 'silent for ${threshold.inMinutes} min');
-          _failRun(
-            'Silent run (no output for '
-            '${threshold.inMinutes} min)',
-          );
-          _closeController();
-        }());
       }
     });
   }

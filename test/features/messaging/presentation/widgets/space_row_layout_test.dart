@@ -112,4 +112,50 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 100));
   });
+
+  testWidgets('the trailing caption sits flush at the end for any title', (
+    tester,
+  ) async {
+    Widget row(String label) => SpaceRow(
+      leading: const SpaceStatusMark(),
+      label: label,
+      trailingLabel: '5d',
+      selected: false,
+      status: SpaceStatus.idle,
+      unread: false,
+      leadingHandlesRunning: true,
+      onPress: () {},
+    );
+    await tester.pumpWidget(
+      testWrap(
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 280,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                KeyedSubtree(key: const ValueKey('short'), child: row('Hi')),
+                KeyedSubtree(
+                  key: const ValueKey('long'),
+                  child: row(
+                    'A conversation title long enough to need an ellipsis',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    Rect caption(String key) => tester.getRect(
+      find.descendant(of: find.byKey(ValueKey(key)), matching: find.text('5d')),
+    );
+    expect(caption('short').right, closeTo(caption('long').right, 0.5));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 100));
+  });
 }

@@ -2,7 +2,7 @@
 title: Hantera adapters och modeller
 description: Anslut modellleverantörer, välj vilken modell en agent körs på och se vilka CLI-verktyg för agentkörare som finns på servervärden.
 slug: sv-SE/handbok/how-to-guider/adapters
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Den här guiden visar hur du ansluter modellleverantörer och väljer vad en agent
@@ -95,12 +95,11 @@ bära en fallback-kedja separerad med `|`. Vid en fallback prissätts kostnaden 
 den modell som faktiskt betjänade turen, inte den du bad om.
 
 :::note[En agent utan adapter körs på den inbyggda loopen]
-Varje arbetsyta seedar fem agenter — en CEO plus `qa`, `architect`, `engineer`
-och `librarian` — utan adapter och utan modell. Dispatchen faller tillbaka på
-**Control Center (inbyggd)**, inte på inställningen **Standardkörare** på den här
-sidan, som är en klientinställning som dispatchvägen aldrig läser. Körningsloggen
-registrerar `cc-harness` för de körningarna, så transkriptet namnger vad som
-faktiskt kördes.
+Varje arbetsyta seedar sex agenter — en CEO plus `qa`, `architect`, `engineer`,
+`librarian` och `content-synthesizer` — utan adapter och utan modell. Dispatchen
+faller tillbaka på **Control Center (inbyggd)**; det finns ingen standardkörare
+på arbetsytenivå eller enhetsnivå. Körningsloggen registrerar `cc-harness` för de
+körningarna, så transkriptet namnger vad som faktiskt kördes.
 
 Om inte heller en modell är satt frågar den inbyggda loopen Anthropic efter dess
 standardmodell. En agent som lämnas helt oinställd körs därför om du har anslutit
@@ -110,9 +109,22 @@ ett Anthropic-konto, och misslyckas annars med
 När du slutför onboardingens adaptersteg uppdateras i efterhand **varje** agent
 som fortfarande saknar adapter eller modell — CEO och specialister, i varje
 arbetsyta som finns i det ögonblicket — med det par du valde. Arbetsytor som
-skapas senare seedar fortfarande alla fem oinställda. Ange adapter och modell
+skapas senare seedar fortfarande alla sex oinställda. Ange adapter och modell
 uttryckligen på varje agent du tänker använda.
 :::
+
+## Anpassa titlar och sammanfattningar
+
+Agenten **Content synthesizer** skriver texten som Control Center genererar
+kring en konversation: dess titel, `/btw`-svar, `/handoff`-dokument och
+intervjun för `/goal`-målet. Den kör ett verktygsfritt slutförande varje gång,
+på sin egen adapter och modell, så ge den en liten och snabb modell.
+
+Redigera dess **persona** i **Inställningar → Arbetsyta → Agenter** för att
+ändra hur texten låter: titellängd, språk, ton, exemplen den följer. Svarsformatet
+som varje funktion tolkar (en enradstitel, målets avsnitt) är fast och tillämpas
+efter din persona. Ta bort agenten för att stänga av dessa funktioner; den
+återskapas inte.
 
 ## Installera ett körar-CLI
 

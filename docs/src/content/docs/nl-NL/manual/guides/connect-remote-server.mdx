@@ -2,7 +2,7 @@
 title: Verbinden met een externe server
 description: Wijs de desktopapp of de webclient naar een cc_server die ergens anders draait en wissel tussen servers zonder opnieuw te starten.
 slug: nl-NL/handleiding/gidsen/externe-server-verbinden
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Elke client is een renderer bovenop een `cc_server` die de gegevens bezit. De
@@ -14,7 +14,7 @@ cloud-VM, een buildserver.
 ## Vereisten
 
 - Een draaiende `cc_server`. Heb je er geen, zie [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-draaien/).
-- Ofwel de drie koppelingswaarden die de server heeft aangemaakt — de **server-URL** (`ws://…/rpc` of `wss://…/rpc`), een **apparaat-id** en een **koppelingssleutel** — **ofwel** een eenmalige **uitnodigingscode** van een werkruimtebeheerder. Als je een uitnodiging inwisselt, wordt je gebruiker ingericht, je lidmaatschap vastgelegd en de referentie van deze client voor je aangemaakt, zodat je nooit zelf een apparaat-id of sleutel hoeft te verwerken. Verkrijg deze via een vertrouwd kanaal en controleer bij de eerste verbinding de vingerafdruk van de server aan de hand van een vertrouwde QR-code of een bekende pin.
+- Ofwel de drie koppelingswaarden die de server heeft aangemaakt — de **server-URL** (`ws://…/rpc` of `wss://…/rpc`), een **apparaat-id** en een **koppelingssleutel** — **ofwel** een eenmalige **uitnodigingscode** van een werkruimtebeheerder, **ofwel** een uitnodigings- of koppelingslink die ze bevat. Als je een uitnodiging inwisselt, wordt je gebruiker ingericht, je lidmaatschap vastgelegd en de referentie van deze client voor je aangemaakt, zodat je nooit zelf een apparaat-id of sleutel hoeft te verwerken. Verkrijg deze via een vertrouwd kanaal en controleer bij de eerste verbinding de vingerafdruk van de server aan de hand van een vertrouwde QR-code of een bekende pin.
 
 ### Zorg dat de server bereikbaar is
 
@@ -42,14 +42,16 @@ voeg dan de origin daarvan toe aan `--allowed-origins`, dat standaard alleen
 
 Bij een nieuwe installatie:
 
-1. Start Control Center. Het eerste scherm vraagt **Hoe moet Control Center draaien?**
-2. Vul in plaats van **In deze app uitvoeren** de verbindingsvelden in: de server-URL, plus een uitnodigingscode of een apparaat-id en koppelingssleutel.
+1. Start Control Center. Het eerste scherm toont **Welkom bij Control Center**.
+2. Klik op **Verbinden met een server** en voer de server-URL in, plus een uitnodigingscode of, onder **Een koppelingssleutel gebruiken**, een apparaat-id en koppelingssleutel.
 3. Klik op **Verbinden**. Control Center maakt verbinding met de server en komt uit in het postvak van de werkruimte.
+
+Heb je een uitnodigings- of koppelingslink, klik dan in plaats daarvan op **Een koppelingslink plakken** en plak hem. Het dialoogvenster toont naar welke server de link leidt. Controleer die en klik dan op **Verbinden**: plakken alleen maakt nooit verbinding. Als een verbinding mislukt, blijft het dialoogvenster open met de fout en alles wat je hebt ingevoerd.
 
 Op een desktop die al zijn eigen server draait:
 
 1. Open **Instellingen → Server → Verbinding en status**.
-2. Klik op **Server toevoegen**. Voer de server-URL in (`wss://host:9030/rpc`) en een uitnodigingscode of een apparaat-id en koppelingssleutel. Met de knop aan het einde van het URL-veld worden `cc_server`-instanties op je LAN of tailnet ontdekt.
+2. Klik op **Server toevoegen**. Voer de server-URL in (`wss://host:9030/rpc`) en een uitnodigingscode of, onder **Een koppelingssleutel gebruiken**, een apparaat-id en koppelingssleutel. Met de knop aan het einde van het URL-veld worden `cc_server`-instanties op je LAN of tailnet ontdekt.
 3. Klik op **Verbinden** en daarna op **Wisselen** in de rij van de nieuwe server.
 
 Wisselen gebeurt live: de app wordt ter plaatse rond de nieuwe sessie opnieuw
@@ -66,11 +68,12 @@ WebSocket-sessie; dezelfde bescherming geldt via loopback en via de relay.
 De webbuild is altijd extern.
 
 1. Open [app.usectrl.dev](https://app.usectrl.dev), of je eigen kopie van de webbuild.
-2. Voer de server-URL in plus een uitnodigingscode of een apparaat-id en koppelingssleutel.
-3. De client maakt verbinding met de server en rendert dezelfde interface als de desktop.
+2. Klik op **Verbinden met een server** en voer de server-URL in, plus een uitnodigingscode of, onder **Een koppelingssleutel gebruiken**, een apparaat-id en koppelingssleutel. **Een koppelingslink plakken** accepteert in plaats daarvan een uitnodigings- of koppelingslink.
+3. Klik op **Verbinden**. De client maakt verbinding met de server en rendert dezelfde interface als de desktop.
 
-Als er een koppelingsdeeplink in de URL staat, zijn de velden al ingevuld. De
-koppelingssleutel reist mee in het **fragment** van de URL, dat browsers nooit naar
+Als er een koppelingsdeeplink in de URL staat, opent het verbindingsdialoogvenster met
+de velden al ingevuld, zodat je de server kunt controleren voordat je op **Verbinden**
+klikt. De koppelingssleutel reist mee in het **fragment** van de URL, dat browsers nooit naar
 de server sturen die de pagina host. Behandel de link als een geheim en vertrouw de
 pagina die de webclient serveert: het fragment beschermt niet tegen kwaadwillende
 pagina-code.

@@ -23,6 +23,11 @@ each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
    space with nothing checked out
 6. Confirm
 
+Only an agent answers a message, so a space with no agent in it starts nothing:
+the composer says so and keeps your message until you @-mention an agent, which
+adds it to the space and sends. There is no default runner behind an empty
+space.
+
 Spaces are workspace-scoped: you only see agents from the current workspace and
 a space never surfaces data from another workspace.
 
@@ -94,7 +99,7 @@ untitled standing conversation.
 Conversations appear as editor tabs, and as nested rows under the space in the
 sidebar once there is more than one. **New conversation** lives in the editor's
 new-tab menu and creates an untitled conversation with no title prompt — the
-title model names it after the first message. Use one to run parallel work with
+Content synthesizer agent names it after the first message. Use one to run parallel work with
 the same agent and worktree.
 
 Each conversation keeps its own message history and agent sessions while sharing

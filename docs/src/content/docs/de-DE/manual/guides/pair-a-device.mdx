@@ -2,7 +2,7 @@
 title: Ein Gerät koppeln
 description: Kopple dein Telefon (oder einen zweiten Browser oder Desktop) mit deinem Control Center-Server, damit du die Flotte aus der Ferne verfolgen kannst.
 slug: de-DE/handbuch/anleitungen/geraet-koppeln
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Diese Anleitung zeigt, wie du ein Telefon mit Control Center koppelst, damit du
@@ -41,11 +41,12 @@ Bezeichnung ein (z. B. „Mein Telefon“), wähle den Typ — **Webbrowser**,
 **Desktop-App** oder **Telefon** — und klicke auf **Koppeln**.
 
 - Bei einem **Telefon** erscheint ein QR-Code. Scanne ihn mit der Kamera des Telefons, oder kopiere den Link und öffne ihn in einem beliebigen Browser. Er richtet die Remote-App auf deinen Server aus und trägt die Zugangsdaten.
-- Bei einem **Browser** oder **Desktop** kopierst du stattdessen den angezeigten Link (oder die Geräte-ID und den Kopplungsschlüssel) in den neuen Client. Den Link zum direkten Öffnen gibt es nur, wenn du vom Web-Client aus koppelst, weil eine Desktop-Binärdatei keinen Web-Origin hat, aus dem sie einen bauen könnte.
+- Bei einem **Browser** oder **Desktop** kopierst du stattdessen den angezeigten Link (oder die Geräte-ID und den Kopplungsschlüssel) in den neuen Client. Öffne den Link in einem Browser, oder füge ihn in der Desktop-App unter **Kopplungslink einfügen** ein. Beim Koppeln vom Desktop aus entsteht der Link aus der eigenen URL des Servers, er erscheint also nur, wenn der Server eine hat, die andere Geräte erreichen können.
 
 Der Telefon-QR und der Link, den `cc_server pair --client-url` auf der CLI
 ausgibt, sind **verschiedene Payloads und nicht austauschbar**: Der CLI-Link
-füllt das Verbindungsformular des Web-Clients, während dieser QR den
+füllt den Verbindungsdialog des Web-Clients oder lässt sich in die Desktop-App
+einfügen, während dieser QR den
 vollständigen Verbindungsdeskriptor und den Identitäts-Fingerabdruck des Servers
 für die Remote-PWA trägt.
 

@@ -4,6 +4,7 @@ import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -287,6 +288,54 @@ void main() {
       expect(find.byKey(kCodeBlockHeaderKey), findsOneWidget);
       // Body is horizontally scrollable.
       expect(find.byType(SingleChildScrollView), findsWidgets);
+    });
+
+    testWidgets('an overflowing line gets a draggable horizontal scrollbar', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildTestApp((context) {
+          return Directionality(
+            textDirection: TextDirection.ltr,
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 300,
+                child: buildSharedCodeBlock(
+                  context,
+                  'final x = ${'a' * 400};',
+                  'dart',
+                ),
+              ),
+            ),
+          );
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      final scrollbar = find.byType(CcScrollbar);
+      expect(scrollbar, findsOneWidget);
+      final scrollView = tester.widget<SingleChildScrollView>(
+        find.descendant(
+          of: scrollbar,
+          matching: find.byType(SingleChildScrollView),
+        ),
+      );
+      final position = scrollView.controller!.position;
+      expect(position.maxScrollExtent, greaterThan(0));
+      expect(position.pixels, 0);
+
+      // The thumb sits on the bottom edge at the leading end; dragging it
+      // toward the trailing end scrolls the code.
+      final body = tester.getRect(scrollbar);
+      final gesture = await tester.startGesture(
+        Offset(body.left + 10, body.bottom - 3),
+        kind: PointerDeviceKind.mouse,
+      );
+      await gesture.moveBy(const Offset(100, 0));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(position.pixels, greaterThan(0));
     });
 
     testWidgets('renders dart code tokenized into coloured spans', (

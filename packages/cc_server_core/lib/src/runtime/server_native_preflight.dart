@@ -1,3 +1,6 @@
+import 'package:cc_domain/core/domain/ports/media_render_port.dart'
+    show MediaRenderException;
+import 'package:cc_infra/cc_infra.dart' show BundledMediaTools;
 import 'package:cc_natives/cc_natives.dart'
     show
         CcSaml,
@@ -98,6 +101,24 @@ List<NativeRequirement> buildNativeRequirements({
     nativeRequirement(
       '${platformLibraryFileName('tree-sitter')} (code graph indexing)',
       () async => dylibProbe('tree-sitter')(),
+    ),
+    // Subprocess executables rather than dylibs, but the same contract: they
+    // ship in `<bundle>/bin/media/` and `render_media` has no system-tool
+    // fallback, so a miss would otherwise surface only on an agent's first
+    // media read. Plain `dart build cli` does not stage them;
+    // `scripts/build_server.sh` and the release packagers do.
+    nativeRequirement(
+      'media/ ffmpeg, ffprobe, cc_pdf_render and cc_svg_render (render_media '
+      'video, PDF, SVG and image rendering; stage with scripts/build_server.sh '
+      '— searched ${BundledMediaTools.searchDirectories(appSupportRoot: dataDir).join(', ')})',
+      () async {
+        try {
+          BundledMediaTools.locate(appSupportRoot: dataDir);
+          return true;
+        } on MediaRenderException {
+          return false;
+        }
+      },
     ),
     for (final languageId in kLanguageByExtension.values.toSet())
       nativeRequirement(

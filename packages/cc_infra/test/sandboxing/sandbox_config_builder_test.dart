@@ -296,6 +296,53 @@ void main() {
       }
     });
 
+    test('opens existing toolchain installs inside the home only', () async {
+      final home = Directory.systemTemp.createTempSync('cc-sbx-tool-');
+      addTearDown(() => home.deleteSync(recursive: true));
+      for (final rel in [
+        '.cache/node/corepack',
+        '.cargo/bin',
+        'fvm/versions',
+      ]) {
+        Directory(p.join(home.path, rel)).createSync(recursive: true);
+      }
+      // Not a toolchain tree: must never be re-opened.
+      Directory(p.join(home.path, 'Downloads')).createSync();
+
+      final cfg = await builder.build(
+        SandboxPolicySpec(
+          sessionId: 's-toolchain',
+          denyRead: const [],
+          allowWrite: const [],
+          denyWrite: const [],
+          denyExecutables: const [],
+          allowedDomains: const [],
+          deniedDomains: const [],
+          networkOn: false,
+          homeDir: home.path,
+        ),
+      );
+      final real = home.resolveSymbolicLinksSync();
+      for (final rel in [
+        '.cache/node/corepack',
+        '.cargo/bin',
+        'fvm/versions',
+      ]) {
+        expect(cfg.toolchainExecRoots, contains(p.join(real, rel)));
+      }
+      final inHome = cfg.toolchainExecRoots
+          .where((r) => r == home.path || p.isWithin(home.path, r))
+          .map((r) => p.relative(r, from: home.path))
+          .toSet();
+      expect(inHome, isNot(contains('Downloads')));
+      expect(inHome, isNot(contains('.')), reason: 'never the home itself');
+      expect(
+        cfg.toolchainExecRoots.where((r) => r.endsWith('.rustup/toolchains')),
+        isEmpty,
+        reason: 'missing trees are not emitted',
+      );
+    });
+
     test(
       'resolves a real deny token (rm) to its absolute path',
       () async {

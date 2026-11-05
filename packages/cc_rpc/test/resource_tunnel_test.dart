@@ -503,4 +503,89 @@ void main() {
     await server.done;
     await client.close();
   });
+
+  // The bug this guards: a newsfeed grid opens more image transfers at once
+  // than the tunnel has lanes. Overflow used to throw, which the loopback
+  // facade reported as a 502, so tiles settled on their error fallback until
+  // they were scrolled away and rebuilt.
+  test('queues requests past the lane limit instead of failing them', () async {
+    final (serverChannel, clientChannel) = InProcessRpcChannel.pair();
+    final held = <Completer<void>>[];
+    final arrivals = <String>[];
+    final server = RemoteResourceServer(
+      serverChannel,
+      onRequest: (request) async {
+        arrivals.add(request.uri.path);
+        final release = Completer<void>();
+        held.add(release);
+        await release.future;
+        return RemoteResourceResponse(
+          statusCode: 200,
+          headers: const {},
+          body: Stream<Uint8List>.value(Uint8List.fromList([1])),
+        );
+      },
+      onWebSocket: (_) => throw StateError('Unexpected websocket'),
+    );
+    final client = RemoteResourceClient(clientChannel);
+
+    const total = 60;
+    final results = [
+      for (var i = 0; i < total; i++)
+        client
+            .request('GET', Uri.parse('/media/$i'))
+            .then((response) => response.body.drain<void>()),
+    ];
+    await _settle();
+
+    // Below the peer's own 32, which it enforces by failing the channel.
+    expect(arrivals.length, lessThan(32));
+    final admitted = arrivals.length;
+    expect(admitted, greaterThan(0));
+
+    while (arrivals.length < total || held.isNotEmpty) {
+      final batch = held.toList();
+      held.clear();
+      for (final release in batch) {
+        release.complete();
+      }
+      await _settle();
+      expect(held.length, lessThanOrEqualTo(admitted));
+    }
+
+    await Future.wait(results).timeout(const Duration(seconds: 5));
+    expect(arrivals, [for (var i = 0; i < total; i++) '/media/$i']);
+    await client.close();
+    await server.close();
+    await clientChannel.close();
+  });
+
+  test('closing the client fails requests still waiting for a lane', () async {
+    final (serverChannel, clientChannel) = InProcessRpcChannel.pair();
+    final server = RemoteResourceServer(
+      serverChannel,
+      onRequest: (request) async {
+        await request.cancelled;
+        throw StateError('Cancelled');
+      },
+      onWebSocket: (_) => throw StateError('Unexpected websocket'),
+    );
+    final client = RemoteResourceClient(clientChannel);
+
+    final outcomes = [
+      for (var i = 0; i < 40; i++)
+        client
+            .request('GET', Uri.parse('/media/$i'))
+            .then<Object?>((_) => null, onError: (Object error) => error),
+    ];
+    await _settle();
+    await client.close();
+
+    final settled = await Future.wait(
+      outcomes,
+    ).timeout(const Duration(seconds: 5));
+    expect(settled, everyElement(isNotNull));
+    await server.close();
+    await clientChannel.close();
+  });
 }

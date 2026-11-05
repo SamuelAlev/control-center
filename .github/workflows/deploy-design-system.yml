@@ -36,7 +36,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: d7dccdb80e94309a90054ed9c182ba05
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -77,4 +77,4 @@ jobs:
         working-directory: apps/cc_gallery
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: npx --yes wrangler@4.151.0 deploy
+        run: npx --yes wrangler@4.158.0 deploy

@@ -284,6 +284,24 @@ void main() {
     },
   );
 
+  // Claude Code's auto-memory would write per-project notes into the account
+  // dir, shared across workspaces and invisible to Control Center. The env
+  // var is checked before settings, so both must say off.
+  test('the child runs with Claude Code auto-memory off', () async {
+    File('${account.path}/.credentials.json').writeAsStringSync('{}');
+    final run = await _dispatchClaude(
+      cwd: temp.path,
+      claudeConfigDir: account.path,
+    );
+    expect(
+      run.sandbox.execEnvs.single?['CLAUDE_CODE_DISABLE_AUTO_MEMORY'],
+      '1',
+    );
+    final argv = run.sandbox.execArgs.single;
+    final settings = jsonDecode(argv[argv.indexOf('--settings') + 1]) as Map;
+    expect(settings['autoMemoryEnabled'], isFalse);
+  });
+
   // The env alone is not the fix. On macOS the account dir can sit inside a
   // region the profile denies (the data dir under a checkout), and the CLI
   // REWRITES `.credentials.json` when it renews the token — so the same path

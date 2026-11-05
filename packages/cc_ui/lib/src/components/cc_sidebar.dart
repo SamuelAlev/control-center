@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_ui/src/components/cc_tooltip.dart';
 import 'package:cc_ui/src/foundation/cc_depth_switcher.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
@@ -47,6 +48,7 @@ class CcSidebarScope extends InheritedWidget {
   const CcSidebarScope({
     required this.collapsed,
     this.transitioning = false,
+    this.tooltipPlacement = CcTooltipPlacement.end,
     required super.child,
     super.key,
   });
@@ -56,6 +58,11 @@ class CcSidebarScope extends InheritedWidget {
 
   /// Whether the sidebar is mid-animation between expanded and collapsed.
   final bool transitioning;
+
+  /// Where an icon-only item's label tooltip opens. The rail opens toward the
+  /// content, the only side with room; a horizontal strip opens above, so the
+  /// tooltip never covers the item beside it.
+  final CcTooltipPlacement tooltipPlacement;
 
   /// The nearest sidebar's collapsed flag, or null when there is no
   /// [CcSidebarScope] ancestor.
@@ -68,10 +75,17 @@ class CcSidebarScope extends InheritedWidget {
       .dependOnInheritedWidgetOfExactType<CcSidebarScope>()
       ?.transitioning;
 
+  /// The nearest sidebar's tooltip placement, or null when there is no
+  /// [CcSidebarScope] ancestor.
+  static CcTooltipPlacement? tooltipPlacementOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<CcSidebarScope>()
+      ?.tooltipPlacement;
+
   @override
   bool updateShouldNotify(CcSidebarScope oldWidget) =>
       collapsed != oldWidget.collapsed ||
-      transitioning != oldWidget.transitioning;
+      transitioning != oldWidget.transitioning ||
+      tooltipPlacement != oldWidget.tooltipPlacement;
 }
 
 /// Vertical app-shell nav: optional [header], scrolling [children], optional

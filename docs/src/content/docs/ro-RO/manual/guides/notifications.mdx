@@ -2,7 +2,7 @@
 title: Configurează notificările
 description: Activează sau dezactivează categorii, setează orele de liniște și un sunet și află ce notificări te ajung și unde.
 slug: ro-RO/manual/ghiduri-practice/notificari
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Acest ghid arată cum să configurezi notificările și ce controlează de fapt
@@ -50,11 +50,28 @@ suprafață de notificări.
 Orice în afara acestei liste nu poate fi notificat sau filtrat — nu există o
 categorie „toate celelalte”.
 
-**Un agent te așteaptă** se declanșează o singură dată pentru fiecare așteptare,
-când aceasta începe: o aprobare în așteptare (inclusiv acordările de execuție în
-sandbox și aprobările de instrumente Claude Code), o întrebare `ask_user` sau o
-rulare oprită pentru că credențialele ei nu o pot deservi. Notificarea deschide
-spațiul în care răspunzi și nu apare cât timp te uiți deja la acel spațiu.
+**Un agent te așteaptă** se declanșează când începe o așteptare: o aprobare în
+așteptare (inclusiv acordările de execuție în sandbox și aprobările de
+instrumente Claude Code), o întrebare `ask_user` sau o rulare oprită pentru că
+credențialele ei nu o pot deservi. Notificarea deschide spațiul în care răspunzi
+și nu apare cât timp te uiți deja la acel spațiu.
+
+Pe desktop, aceste notificări se comportă altfel decât restul:
+
+- **Sunt sensibile la timp.** Pe macOS pot trece de un mod Concentrare care
+  permite notificările sensibile la timp de la Control Center.
+- **Poți răspunde la o aprobare direct din notificare.** **Aprobă** și
+  **Refuză** trimit răspunsul fără să deschidă aplicația. Serverul îl verifică
+  la fel ca pe cardul din aplicație. Ca să aprobi pentru o perioadă, deschide
+  cardul.
+- **O așteptare fără răspuns îți amintește de ea.** Dacă nu răspunde nimeni,
+  notificarea revine ca **Încă așteaptă: …** la 3, 10, 25 și 45 de minute după
+  începutul așteptării. Fiecare memento înlocuiește notificarea anterioară, în
+  loc să mai adauge una. Mementourile sunt omise cât timp o fereastră Control
+  Center este activă, pentru că ai deja în față cardul de aprobare și
+  clopoțelul.
+- **Dispare când se încheie așteptarea**, indiferent cum s-a răspuns la ea, așa
+  că nu apeși niciodată un buton pe o cerere deja rezolvată.
 
 Aceste preferințe te însoțesc pe toate dispozitivele, așa că telefonul și
 laptopul rămân în pas. Volumul este excepția deliberată și rămâne per dispozitiv.
@@ -98,7 +115,8 @@ adevărată:
 - Notificările sunt oprite global sau categoria ei este oprită
 - Ești deja pe ruta către care te-ar duce — și, pentru un mesaj, deja în acel
   spațiu
-- Modul focus este activ și categoria nu este urgentă
+- Rulează o sesiune de focus cu **Blochează notificările** activat și categoria
+  nu este urgentă
 - Orele de liniște sunt active și categoria nu este urgentă
 
 Aceste verificări se aplică toast-urilor OS. Clopoțelul durabil înregistrează
@@ -144,6 +162,14 @@ starea de citire.
 Autorizarea este solicitată nativ la lansarea aplicației. Dacă ai refuzat-o,
 reactivează Control Center din Setări sistem → Notificări; nu există niciun
 prompt în aplicație care să o declanșeze din nou.
+
+### Tot ratez notificările de aprobare pe macOS
+
+Implicit, macOS afișează notificările Control Center ca bannere, iar un banner
+dispare după câteva secunde. Ca să rămână pe ecran până reacționezi, setează
+stilul de alertă al Control Center la **Persistent** din Setări sistem →
+Notificări. O aprobare fără răspuns revine oricum ca memento (vezi
+[Activează sau dezactivează categorii](#activează-sau-dezactivează-categorii)).
 
 ### Nu ajunge nimic în versiunea web
 

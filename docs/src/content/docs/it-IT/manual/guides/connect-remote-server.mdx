@@ -2,7 +2,7 @@
 title: Connettiti a un server remoto
 description: Punta l'app desktop o il client web su un cc_server in esecuzione altrove e passa da un server all'altro senza riavviare.
 slug: it-IT/manuale/guide/connetti-server-remoto
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Ogni client è un renderer sopra un `cc_server` che possiede i dati. Il desktop può
@@ -14,7 +14,7 @@ macchinetta, una VM nel cloud, un server di build.
 ## Prerequisiti
 
 - Un `cc_server` in esecuzione. Se non ne hai uno, vedi [Esegui un server headless](/it-IT/manuale/guide/esegui-server-headless/).
-- O i tre valori di abbinamento generati dal server — l'**URL del server** (`ws://…/rpc` o `wss://…/rpc`), un **ID dispositivo** e una **chiave di abbinamento** — **oppure** un **codice di invito** monouso da un amministratore dello spazio di lavoro. Riscattare un invito esegue il provisioning del tuo utente, registra la tua appartenenza e genera per te la credenziale di questo client, quindi non devi mai gestire un ID dispositivo o una chiave. Ottieni questi valori tramite un canale attendibile e verifica l'impronta del server rispetto a un QR attendibile o a un pin noto alla prima connessione.
+- O i tre valori di abbinamento generati dal server — l'**URL del server** (`ws://…/rpc` o `wss://…/rpc`), un **ID dispositivo** e una **chiave di abbinamento** — **oppure** un **codice di invito** monouso da un amministratore dello spazio di lavoro, **oppure** un link di invito o di abbinamento che li contiene. Riscattare un invito esegue il provisioning del tuo utente, registra la tua appartenenza e genera per te la credenziale di questo client, quindi non devi mai gestire un ID dispositivo o una chiave. Ottieni questi valori tramite un canale attendibile e verifica l'impronta del server rispetto a un QR attendibile o a un pin noto alla prima connessione.
 
 ### Assicurati che il server sia raggiungibile
 
@@ -43,14 +43,16 @@ nativi sono sempre consentiti.
 
 Su un'installazione nuova:
 
-1. Avvia Control Center. La schermata di primo avvio chiede **Come eseguire Control Center?**
-2. Invece di **Esegui in questa app**, compila i campi di connessione: l'URL del server e, in alternativa, un codice di invito oppure un ID dispositivo e una chiave di abbinamento.
+1. Avvia Control Center. La schermata di primo avvio mostra **Benvenuto in Control Center**.
+2. Fai clic su **Connetti a un server** e inserisci l'URL del server e, in alternativa, un codice di invito oppure, in **Usa una chiave di abbinamento**, un ID dispositivo e una chiave di abbinamento.
 3. Fai clic su **Connetti**. Control Center contatta il server e atterra sulla posta in arrivo dello spazio di lavoro.
+
+Se hai un link di invito o di abbinamento, fai invece clic su **Incolla un link di abbinamento** e incollalo. La finestra di dialogo mostra a quale server porta il link. Controllalo, poi fai clic su **Connetti**: incollare da solo non avvia mai la connessione. Se una connessione non riesce, la finestra di dialogo resta aperta con l'errore e tutto ciò che hai inserito.
 
 Su un desktop che esegue già un proprio server:
 
 1. Apri **Impostazioni → Server → Connessione e stato**.
-2. Fai clic su **Aggiungi server**. Inserisci l'URL del server (`wss://host:9030/rpc`) e, in alternativa, un codice di invito oppure un ID dispositivo e una chiave di abbinamento. Il pulsante di suffisso del campo URL rileva le istanze di `cc_server` sulla tua LAN o sul tuo tailnet.
+2. Fai clic su **Aggiungi server**. Inserisci l'URL del server (`wss://host:9030/rpc`) e, in alternativa, un codice di invito oppure, in **Usa una chiave di abbinamento**, un ID dispositivo e una chiave di abbinamento. Il pulsante di suffisso del campo URL rileva le istanze di `cc_server` sulla tua LAN o sul tuo tailnet.
 3. Fai clic su **Connetti**, poi su **Passa** nella riga del nuovo server.
 
 Il passaggio è dal vivo: l'app si ricostruisce attorno alla nuova sessione sul
@@ -67,11 +69,12 @@ end-to-end; la stessa protezione vale su loopback e tramite il relay.
 La build web è sempre remota.
 
 1. Apri [app.usectrl.dev](https://app.usectrl.dev) o la tua copia della build web.
-2. Inserisci l'URL del server e, in alternativa, un codice di invito oppure un ID dispositivo e una chiave di abbinamento.
-3. Il client contatta il server e mostra la stessa interfaccia del desktop.
+2. Fai clic su **Connetti a un server** e inserisci l'URL del server e, in alternativa, un codice di invito oppure, in **Usa una chiave di abbinamento**, un ID dispositivo e una chiave di abbinamento. **Incolla un link di abbinamento** accetta invece un link di invito o di abbinamento.
+3. Fai clic su **Connetti**. Il client contatta il server e mostra la stessa interfaccia del desktop.
 
-Se nell'URL è presente un deep link di abbinamento, i campi sono precompilati.
-La chiave di abbinamento viaggia nel **frammento** dell'URL, che i browser non
+Se nell'URL è presente un deep link di abbinamento, la finestra di dialogo di
+connessione si apre con i campi già compilati, così puoi controllare il server prima
+di fare clic su **Connetti**. La chiave di abbinamento viaggia nel **frammento** dell'URL, che i browser non
 inviano mai al server che ospita la pagina. Tratta il link come un segreto e
 fidati della pagina che serve il client web: il frammento non protegge da codice
 di pagina malevolo.

@@ -734,13 +734,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Control Center запускает собственный сервер на этом компьютере и хранит данные локально.';
 
   @override
-  String get serverModeRemote => 'Подключиться к удалённому экземпляру';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'Подключение к серверу Control Center на другом компьютере. Данные хранятся на этом сервере.';
-
-  @override
   String get serverRemoteUrl => 'URL сервера';
 
   @override
@@ -963,13 +956,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'Другие устройства не могут достучаться до этого сервера напрямую, поэтому новый клиент не подключится. Укажите публичный URL сервера, чтобы привязать ещё клиенты.';
-
-  @override
-  String get serverSetupTitle => 'Как запускать Control Center?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center нужен сервер, который хранит ваши данные. Запустите его в этом приложении или подключитесь к уже работающему экземпляру.';
 
   @override
   String get serverSetupRunLocal => 'Запустить в этом приложении';
@@ -3052,10 +3038,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Настройте личности агентов, промпты, навыки и просматривайте запуски.';
 
   @override
-  String get configureDefaultRunners =>
-      'Настройте адаптер и модель для новых пространств и генерации заголовков.';
-
-  @override
   String get configuredLabel => 'Настроено.';
 
   @override
@@ -3157,12 +3139,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get deactivate => 'Деактивировать';
-
-  @override
-  String get defaultChat => 'Чат по умолчанию';
-
-  @override
-  String get defaultRunners => 'Раннеры по умолчанию';
 
   @override
   String get delete => 'Удалить';
@@ -4485,6 +4461,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get notificationGroupMachines => 'Машины';
 
   @override
+  String get notificationSectionSound => 'Звук';
+
+  @override
+  String get notificationSectionSchedule => 'Расписание';
+
+  @override
+  String get notificationSectionEvents => 'События';
+
+  @override
   String get notificationsMutedRepos => 'Репозитории без уведомлений';
 
   @override
@@ -5048,9 +5033,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'Выберите язык приложения.';
-
-  @override
-  String get shortTask => 'Короткая задача';
 
   @override
   String get showNativeNotifications =>
@@ -5641,10 +5623,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'Свернуть на панель';
-
-  @override
-  String get focusModeActiveTooltip =>
-      'Режим фокуса активен — нажмите, чтобы завершить';
 
   @override
   String get dismiss => 'Закрыть';
@@ -13156,25 +13134,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'Подключиться к Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'Подключитесь к запущенному cc-server по WebSocket. Ключ остаётся на этом устройстве.';
-
-  @override
-  String get webConnectServerLabel => 'Сервер';
-
-  @override
-  String get webConnectDeviceIdLabel => 'ID устройства';
-
-  @override
-  String get webConnectPairingKeyLabel => 'Ключ сопряжения';
-
-  @override
-  String get webConnectPairingKeyHint => 'вставьте PSK';
-
-  @override
   String get webConnectStayConnected =>
       'Оставаться подключённым на этом устройстве';
 
@@ -13219,11 +13178,12 @@ class AppLocalizationsRu extends AppLocalizations {
       'Необязательно — оставьте пустым, и модель заголовков назовёт его автоматически';
 
   @override
-  String get shortTaskOff => 'Выкл.';
+  String get contentSynthesizerUnavailable =>
+      'Агента Content synthesizer нет, или у него нет рабочего раннера';
 
   @override
-  String get shortTaskUnavailable =>
-      'Чтобы это использовать, выберите модель для коротких задач в Настройки → Адаптеры';
+  String get conversationNeedsAgent =>
+      'Упомяните агента через @, чтобы начать этот разговор';
 
   @override
   String get conversationTitleGenerate => 'Сгенерировать';
@@ -13694,14 +13654,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'Добавляются к командной строке раннера при каждом запуске.';
-
-  @override
-  String get defaultChatDescription =>
-      'Запускает новые беседы и любого агента без собственного раннера.';
-
-  @override
-  String get shortTaskDescription =>
-      'Выполняет быструю фоновую работу: заголовки и сводки. Сюда подходит меньшая модель.';
 
   @override
   String get settingsStateFailed => 'Сбой';
@@ -14456,6 +14408,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'Прикрепите файлы — или перетащите сюда';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'Развернуть редактор ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'Свернуть редактор ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'Уточните цель';
@@ -15636,6 +15598,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'Агент остановлен из-за учётных данных';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'Всё ещё ждёт: $title';
+  }
+
+  @override
   String get killTerminal => 'Завершить терминал';
 
   @override
@@ -16095,4 +16062,81 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Запуск остановлен, потому что учётные данные провайдера больше не работают. Переподключите его в Настройки → Провайдеры, затем повторите ход.';
+
+  @override
+  String get helpMenuLabel => 'Справка';
+
+  @override
+  String get helpWhatsNew => 'Что нового';
+
+  @override
+  String get helpReportProblem => 'Сообщить о проблеме';
+
+  @override
+  String get helpCreateGitHubIssue => 'Создать issue на GitHub';
+
+  @override
+  String get changelogInstalled => 'Установлена';
+
+  @override
+  String get changelogGroupNew => 'Новое';
+
+  @override
+  String get changelogGroupImproved => 'Улучшено';
+
+  @override
+  String get changelogGroupFixed => 'Исправлено';
+
+  @override
+  String get changelogLoadFailed =>
+      'Не удалось загрузить примечания к выпуску.';
+
+  @override
+  String get changelogOpenWebsite => 'Открыть на сайте';
+
+  @override
+  String get connectWelcomeTitle => 'Добро пожаловать в Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'Запустите его здесь или подключитесь к уже имеющемуся серверу.';
+
+  @override
+  String get connectWelcomeSubtitleWeb =>
+      'Подключитесь к своему серверу, чтобы начать.';
+
+  @override
+  String get connectToServer => 'Подключиться к серверу';
+
+  @override
+  String get connectToServerIntro => 'Введите адрес сервера Control Center.';
+
+  @override
+  String get connectUsePairingKey => 'Использовать ключ сопряжения';
+
+  @override
+  String get connectPasteLink => 'Вставить ссылку сопряжения';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'Вставьте полученную ссылку-приглашение или ссылку сопряжения.';
+
+  @override
+  String get connectPasteLinkLabel =>
+      'Ссылка-приглашение или ссылка сопряжения';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'Это не ссылка-приглашение и не ссылка сопряжения Control Center. Скопируйте ссылку целиком и повторите попытку.';
+
+  @override
+  String get connectPasteLinkTarget => 'Подключение к';
+
+  @override
+  String get focusModeEnd => 'Завершить сеанс фокусировки';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'Осталось $minutes мин';
+  }
 }

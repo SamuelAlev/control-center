@@ -365,7 +365,11 @@ class _CcTextFieldState extends State<CcTextField>
     // Hint sits behind the editable text while empty.
     final showHint = widget.hintText != null && _controller.text.isEmpty;
 
+    // An expanding field passes its height straight through to the
+    // EditableText, which sizes to its content under loose constraints and to
+    // the box only under tight ones.
     final Widget field = Stack(
+      fit: widget.expands ? StackFit.passthrough : StackFit.loose,
       children: [
         if (showHint)
           Positioned.fill(
@@ -390,7 +394,9 @@ class _CcTextFieldState extends State<CcTextField>
     );
 
     final Widget row = Row(
-      crossAxisAlignment: widget.isMultiline
+      crossAxisAlignment: widget.expands
+          ? CrossAxisAlignment.stretch
+          : widget.isMultiline
           ? CrossAxisAlignment.start
           : CrossAxisAlignment.center,
       children: [

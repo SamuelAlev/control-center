@@ -10,6 +10,7 @@ import 'package:control_center/features/auth/providers/oauth_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/language_picker.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -127,8 +128,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
+    await tester.tap(find.byType(OnboardingSettingsButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
     final field = find.descendant(
-      of: find.byType(OnboardingLanguagePicker),
+      of: find.byType(LanguagePicker),
       matching: find.byType(EditableText),
     );
     await tester.tap(field);
@@ -140,7 +144,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     final french = await AppLocalizations.delegate.load(const Locale('fr'));
-    expect(find.text(french.signedOutTitle), findsOneWidget);
+    expect(find.text(french.navSettings), findsWidgets);
     expect(prefs.getString(localeKey), 'fr-FR');
 
     await tester.tap(field);
@@ -151,8 +155,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     final english = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.text(english.signedOutTitle), findsOneWidget);
     expect(prefs.getString(localeKey), isNull);
+
+    await tester.tap(find.text(english.back));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text(english.signedOutTitle), findsOneWidget);
   });
 
   testWidgets('the background moves the window — nothing else here can', (

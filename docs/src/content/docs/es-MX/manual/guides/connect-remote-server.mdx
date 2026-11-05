@@ -2,7 +2,7 @@
 title: Conectarte a un servidor remoto
 description: Apunta la aplicación de escritorio o el cliente web a un cc_server que se ejecuta en otro lugar y cambia entre servidores sin reiniciar.
 slug: es-MX/manual/guias/conectar-servidor-remoto
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Todo cliente es un renderizador sobre un `cc_server` que es el propietario de los
@@ -15,7 +15,7 @@ pequeña, una VM en la nube, un servidor de compilación.
 ## Requisitos previos
 
 - Un `cc_server` en ejecución. Si no tienes uno, consulta [Ejecutar un servidor headless](/es-MX/manual/guias/ejecutar-servidor-headless/).
-- Los tres valores de emparejamiento que emitió el servidor —la **URL del servidor** (`ws://…/rpc` o `wss://…/rpc`), un **id de dispositivo** y una **clave de emparejamiento**— **o** un **código de invitación** de un solo uso de un administrador del espacio de trabajo. Canjear una invitación aprovisiona a tu usuario, registra tu pertenencia y emite por ti la credencial de este cliente, así que nunca manejas un id de dispositivo ni una clave. Obtén estos valores por un canal confiable y verifica la huella del servidor contra un QR de confianza o un fijado conocido en la primera conexión.
+- Los tres valores de emparejamiento que emitió el servidor —la **URL del servidor** (`ws://…/rpc` o `wss://…/rpc`), un **id de dispositivo** y una **clave de emparejamiento**— **o** un **código de invitación** de un solo uso de un administrador del espacio de trabajo, **o** un enlace de invitación o de emparejamiento que los incluya. Canjear una invitación aprovisiona a tu usuario, registra tu pertenencia y emite por ti la credencial de este cliente, así que nunca manejas un id de dispositivo ni una clave. Obtén estos valores por un canal confiable y verifica la huella del servidor contra un QR de confianza o un fijado conocido en la primera conexión.
 
 ### Asegúrate de que el servidor sea accesible
 
@@ -44,14 +44,16 @@ nativos siempre están permitidos.
 
 En una instalación nueva:
 
-1. Inicia Control Center. La pantalla de primera ejecución pregunta **¿Cómo debe ejecutarse Control Center?**
-2. En lugar de **Ejecutar en esta aplicación**, completa los campos de conexión: la URL del servidor y, además, un código de invitación o bien un id de dispositivo y una clave de emparejamiento.
+1. Inicia Control Center. La pantalla de primera ejecución muestra **Te damos la bienvenida a Control Center**.
+2. Haz clic en **Conectar a un servidor** e introduce la URL del servidor y, además, un código de invitación o bien, en **Usar una clave de emparejamiento**, un id de dispositivo y una clave de emparejamiento.
 3. Haz clic en **Conectar**. Control Center marca al servidor y llega a la bandeja de entrada del espacio de trabajo.
+
+Si tienes un enlace de invitación o de emparejamiento, haz clic en **Pegar un enlace de emparejamiento** y pégalo. El diálogo muestra a qué servidor lleva el enlace. Verifícalo y luego haz clic en **Conectar**: pegar sin más nunca conecta. Si una conexión falla, el diálogo sigue abierto con el error y todo lo que introdujiste.
 
 En un escritorio que ya ejecuta su propio servidor:
 
 1. Abre **Ajustes → Servidor → Conexión y estado**.
-2. Haz clic en **Añadir servidor**. Introduce la URL del servidor (`wss://host:9030/rpc`) y un código de invitación o bien un id de dispositivo y una clave de emparejamiento. El botón del sufijo del campo de URL descubre instancias de `cc_server` en tu LAN o tailnet.
+2. Haz clic en **Añadir servidor**. Introduce la URL del servidor (`wss://host:9030/rpc`) y un código de invitación o bien, en **Usar una clave de emparejamiento**, un id de dispositivo y una clave de emparejamiento. El botón del sufijo del campo de URL descubre instancias de `cc_server` en tu LAN o tailnet.
 3. Haz clic en **Conectar** y luego en **Cambiar** en la fila del nuevo servidor.
 
 El cambio es en vivo: la aplicación se reconstruye alrededor de la nueva sesión
@@ -70,11 +72,12 @@ y a través del relevo.
 La versión web siempre es remota.
 
 1. Abre [app.usectrl.dev](https://app.usectrl.dev) o tu propia copia de la versión web.
-2. Introduce la URL del servidor y, además, un código de invitación o bien un id de dispositivo y una clave de emparejamiento.
-3. El cliente marca al servidor y renderiza la misma interfaz que el escritorio.
+2. Haz clic en **Conectar a un servidor** e introduce la URL del servidor y, además, un código de invitación o bien, en **Usar una clave de emparejamiento**, un id de dispositivo y una clave de emparejamiento. **Pegar un enlace de emparejamiento** acepta en su lugar un enlace de invitación o de emparejamiento.
+3. Haz clic en **Conectar**. El cliente marca al servidor y renderiza la misma interfaz que el escritorio.
 
-Si hay un enlace profundo de emparejamiento en la URL, los campos vienen
-rellenados de antemano. La clave de emparejamiento viaja en el **fragmento** de
+Si hay un enlace profundo de emparejamiento en la URL, el diálogo de conexión se
+abre con sus campos rellenados, para que puedas verificar el servidor antes de hacer
+clic en **Conectar**. La clave de emparejamiento viaja en el **fragmento** de
 la URL, que los navegadores nunca envían al servidor que aloja la página. Trata
 el enlace como un secreto y confía en la página que sirve el cliente web: el
 fragmento no protege contra código malicioso de la página.

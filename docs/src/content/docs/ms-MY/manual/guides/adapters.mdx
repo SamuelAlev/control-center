@@ -2,7 +2,7 @@
 title: Urus penyesuai dan model
 description: Sambungkan penyedia model, pilih model yang dijalankan oleh ejen dan semak CLI pelari ejen yang ada pada hos pelayan.
 slug: ms-MY/manual-pengguna/panduan-cara/penyesuai
-sourceHash: 36bec9fbb4f6461de83be4038d905fdf7f4ddfe8
+sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
 ---
 
 Panduan ini menunjukkan cara menyambungkan penyedia model dan memilih apa yang
@@ -94,11 +94,10 @@ berdasarkan model yang sebenarnya menyajikan giliran itu, bukan model yang anda
 minta.
 
 :::note[Ejen tanpa penyesuai berjalan pada gelung terbina]
-Setiap ruang kerja membenihkan lima ejen — seorang CEO serta `qa`, `architect`,
-`engineer` dan `librarian` — tanpa penyesuai dan tanpa model. Penghantaran jatuh
-kembali kepada **Control Center (built-in)**, bukan kepada tetapan **Pelari
-lalai** pada halaman ini, yang merupakan keutamaan klien yang tidak pernah
-dibaca oleh laluan penghantaran. Log larian merekodkan `cc-harness` bagi larian
+Setiap ruang kerja membenihkan enam ejen — seorang CEO serta `qa`, `architect`,
+`engineer`, `librarian` dan `content-synthesizer` — tanpa penyesuai dan tanpa
+model. Penghantaran jatuh kembali kepada **Control Center (built-in)**; tiada
+pelari lalai untuk ruang kerja mahupun peranti. Log larian merekodkan `cc-harness` bagi larian
 tersebut, jadi transkrip menamakan apa yang sebenarnya berjalan.
 
 Dengan tiada model juga, gelung terbina meminta model lalai daripada Anthropic.
@@ -109,9 +108,15 @@ menyambungkan akaun Anthropic, dan jika tidak ia gagal dengan
 Menamatkan langkah penyesuai dalam pengenalan menampal semula **setiap** ejen
 yang masih tiada penyesuai atau model — CEO dan pakar, merentas setiap ruang
 kerja yang wujud pada masa itu — dengan pasangan yang anda pilih. Ruang kerja
-yang dicipta kemudian masih membenihkan kelima-limanya tanpa tetapan. Tetapkan
+yang dicipta kemudian masih membenihkan keenam-enamnya tanpa tetapan. Tetapkan
 penyesuai dan model secara eksplisit pada setiap ejen yang anda ingin gunakan.
 :::
+
+## Peribadikan tajuk dan ringkasan
+
+Ejen **Content synthesizer** menulis teks yang dijana oleh Control Center di sekeliling sesuatu perbualan: tajuknya, jawapan `/btw`, dokumen `/handoff` dan temu bual objektif `/goal`. Ia menjalankan satu penyiapan tanpa alat setiap kali, pada penyesuai dan modelnya sendiri, jadi berikan model yang kecil dan pantas.
+
+Sunting **persona** ejen ini dalam **Tetapan → Ruang kerja → Ejen** untuk menukar cara teks itu dibaca — panjang tajuk, bahasa, nada, contoh yang diikutinya. Format balasan yang dihuraikan oleh setiap ciri (tajuk satu baris, bahagian objektif) adalah tetap dan digunakan selepas persona anda. Padamkan ejen untuk mematikan ciri-ciri ini; ia tidak akan disemai semula.
 
 ## Pasang CLI pelari
 

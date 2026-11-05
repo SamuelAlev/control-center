@@ -1,4 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/shell/presentation/widgets/notification_bell.dart';
+import 'package:control_center/features/shell/presentation/widgets/sidebar_chrome.dart';
 import 'package:control_center/features/shell/presentation/widgets/title_bar_workspace_chip.dart';
 import 'package:control_center/features/shell/providers/command_palette_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -8,11 +10,11 @@ import 'package:flutter/widgets.dart';
 
 /// The global sidebar's header, shared by the app shell (`AppSidebar`) and
 /// workspace-agnostic surfaces such as the "Manage workspaces" page: a single
-/// row holding the workspace switcher and, optionally, a search
-/// (command-palette) affordance.
+/// row holding the workspace switcher and, optionally, the search
+/// (command-palette) and notification affordances.
 ///
 /// In [collapsed] (icon-only rail) mode the header stacks vertically instead:
-/// workspace mark, then search.
+/// workspace mark, search, then notifications.
 ///
 /// On a workspace-agnostic route no workspace is active, so the switcher chip
 /// renders its empty placeholder inviting the operator to select one.
@@ -27,11 +29,11 @@ class AppSidebarHeader extends StatelessWidget {
   /// Set on workspace-agnostic routes ("Manage workspaces"), where no
   /// workspace is selected: the workspace switcher renders its "select a
   /// workspace" placeholder (even though a last-active id persists) and the
-  /// workspace-scoped command-palette affordance is left out.
+  /// workspace-scoped command palette and notifications are left out.
   final bool workspaceAgnostic;
 
   /// Whether the sidebar is in its collapsed icon-only rail mode: the header
-  /// stacks vertically (workspace mark, search) instead of the expanded chip
+  /// stacks vertically (mark, search, notifications) instead of the expanded chip
   /// row. Inside a [CcSidebar] the (deferred, animation-aware) scope value
   /// wins over this flag.
   final bool collapsed;
@@ -43,7 +45,8 @@ class AppSidebarHeader extends StatelessWidget {
     final transitioning = CcSidebarScope.transitioningOf(context) ?? false;
 
     if (effectiveCollapsed) {
-      // Rail mode: a centered vertical stack — workspace mark, then search.
+      // Rail mode: a centered vertical stack — workspace mark, search, then
+      // notifications.
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
@@ -57,11 +60,12 @@ class AppSidebarHeader extends StatelessWidget {
           ),
           if (!workspaceAgnostic) ...[
             const SizedBox(height: AppSpacing.xs),
-            _HeaderIconButton(
+            SidebarHeaderIconButton(
               icon: AppIcons.search,
               tooltip: l10n.commandPalette,
               onPressed: () => showCommandPalette(context, buildGlobalCommands),
             ),
+            const NotificationBell(),
           ],
           // Matches the expanded header's bottom inset so the first nav group
           // starts at the same offset in both modes.
@@ -76,7 +80,7 @@ class AppSidebarHeader extends StatelessWidget {
       // the settled RAIL (x=9 from the sidebar edge); the settled expanded
       // chip's 10px internal padding puts it 9px further right (its left edge
       // on the x=18 group-label line), so the mark glides those 9px as the
-      // animation lands. Name and search stay out of the way (they would
+      // animation lands. Name and buttons stay out of the way (they would
       // overflow the narrowing row).
       return const Padding(
         padding: EdgeInsets.only(bottom: AppSpacing.xs),
@@ -87,7 +91,7 @@ class AppSidebarHeader extends StatelessWidget {
       );
     }
 
-    // One row: workspace chip (left, ellipsizing) then search. The chip's
+    // One row: workspace chip (left, ellipsizing), search, bell. The chip's
     // hover pill spans the full content width like the nav-item pills below;
     // the name lines up with those labels from the chip's own 10px internal
     // horizontal padding (see _ChipButton), not from an outer inset.
@@ -101,8 +105,8 @@ class AppSidebarHeader extends StatelessWidget {
       child: Row(
         children: [
           // The chooser stretches the row's free width (name ellipsizes, caret
-          // pinned to the trailing edge); the square command-palette search
-          // button sits at its right.
+          // pinned to the trailing edge); the square search and notification
+          // buttons sit at its right.
           Expanded(
             child: TitleBarWorkspaceChip(
               // 36px logo + 4px vertical chip padding either side lands the
@@ -113,58 +117,14 @@ class AppSidebarHeader extends StatelessWidget {
           ),
           if (!workspaceAgnostic) ...[
             const SizedBox(width: AppSpacing.xs),
-            _HeaderIconButton(
+            SidebarHeaderIconButton(
               icon: AppIcons.search,
               tooltip: l10n.commandPalette,
               onPressed: () => showCommandPalette(context, buildGlobalCommands),
             ),
+            const NotificationBell(),
           ],
         ],
-      ),
-    );
-  }
-}
-
-/// A compact 34px square ghost icon button used in the sidebar header. Tints
-/// only on hover (e.g. the command-palette search affordance).
-class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-
-    // Opens to the right like the rail items' tooltips below — the header
-    // button only ever lives in the sidebar.
-    return CcTooltip(
-      placement: CcTooltipPlacement.end,
-      message: tooltip,
-      child: CcTappable(
-        onPressed: onPressed,
-        semanticLabel: tooltip,
-        borderRadius: AppRadii.brSm,
-        builder:
-            (context, states) => Container(
-              width: 34,
-              height: 34,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color:
-                    states.contains(WidgetState.hovered)
-                        ? t.bgPrimaryHover
-                        : const Color(0x00000000),
-                borderRadius: AppRadii.brSm,
-              ),
-              child: Icon(icon, size: 16, color: t.fgTertiary),
-            ),
       ),
     );
   }

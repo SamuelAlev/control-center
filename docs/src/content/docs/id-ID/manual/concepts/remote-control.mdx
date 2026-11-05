@@ -2,7 +2,7 @@
 title: Kontrol jarak jauh dan seluler
 description: Bagaimana ponsel menjangkau server Anda melalui koneksi terenkripsi ujung ke ujung, baik langsung maupun dengan perantara, dan model akses berlapis yang menjaga jangkauan itu tetap sempit.
 slug: id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh
-sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
+sourceHash: cb6a1ecae8bc1c410e872649d26d3cae127003f6
 ---
 
 Control Center adalah aplikasi desktop, tetapi pekerjaan yang dilacaknya tidak
@@ -99,8 +99,9 @@ aplikasi yang tepercaya dan perlakukan tautannya sebagai rahasia.
 Ada dua bentuk payload dan keduanya **tidak dapat dipertukarkan**. QR ponsel
 yang dibuat dari panel pairing di dalam aplikasi adalah `PairingPayload` v2 di
 atas, yang diarahkan ke host PWA Remote. `cc_server pair --client-url`
-menghasilkan tautan v1 (`{s, i, k}` — URL server, id perangkat, kunci) yang
-ditujukan hanya untuk klien **web**. Keduanya adalah format data pairing, bukan
+menghasilkan tautan v1 (`{s, i, k}` — URL server, id perangkat, kunci) untuk klien
+**web** dan **desktop**: buka di peramban, atau tempelkan ke **Tempel tautan pairing**
+di desktop. Keduanya adalah format data pairing, bukan
 fallback transport: kedua klien harus mendukung protokol sesi terenkripsi yang
 berlaku saat ini.
 

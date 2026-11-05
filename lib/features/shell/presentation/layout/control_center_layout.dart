@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/keybindings/keybinding_providers.dart';
+import 'package:control_center/features/changelog/presentation/widgets/changelog_after_update.dart';
 import 'package:control_center/features/chat_bridges/providers/chat_bridge_space_auto_open.dart';
 import 'package:control_center/features/demo/presentation/widgets/demo_shell_overlay.dart';
 import 'package:control_center/features/dispatch/presentation/widgets/credential_gate_overlay.dart';
@@ -158,6 +159,9 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
               // streams the server-generated ambience and persists across
               // navigation. Renders nothing (SizedBox.shrink).
               const SoundscapeAudioHost(),
+              // Opens What's new on the first launch of a new version. Renders
+              // nothing.
+              const ChangelogAfterUpdate(),
             ],
           ),
         ),

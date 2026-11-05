@@ -91,7 +91,8 @@ secret.
 There are two payload shapes and they are **not interchangeable**. The phone QR
 minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
 at the Remote PWA host. `cc_server pair --client-url` emits a v1 link
-(`{s, i, k}` — server URL, device id, key) intended for the **web** client only.
+(`{s, i, k}` — server URL, device id, key) for the **web** and **desktop** clients:
+open it in a browser, or paste it into **Paste a pairing link** on the desktop.
 These are pairing data formats, not transport fallbacks: both clients must
 support the current encrypted session protocol.
 

@@ -21,6 +21,7 @@ import 'package:cc_persistence/cc_persistence.dart'
 import 'package:cc_server_core/src/agents/agent_create_rpc.dart';
 import 'package:cc_server_core/src/backup/backup_rpc.dart';
 import 'package:cc_server_core/src/catalog/account_pool_ops.dart';
+import 'package:cc_server_core/src/catalog/changelog_ops.dart';
 import 'package:cc_server_core/src/catalog/conversation_title_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
 import 'package:cc_server_core/src/catalog/provider_oauth_ops.dart';
@@ -54,6 +55,7 @@ typedef ExtraOpsResult = ({List<RepoOp> ops, List<WatchQuery> watches});
 /// reads as "what does the catalog receive?" rather than "how is every
 /// list-builder invoked?".
 ExtraOpsResult buildServerExtraOps({
+  required ChangelogFetcher fetchChangelog,
   required List<RepoOp> fleetOps,
   required List<WatchQuery> fleetWatchQueries,
   required DaoAgentRepository agentRepository,
@@ -96,6 +98,7 @@ ExtraOpsResult buildServerExtraOps({
     ),
     ...buildContextOps(inspection: contextInspection),
     ...buildWeatherOps(weatherService),
+    ...buildChangelogOps(fetchChangelog),
     ...buildFontsOps(fontCatalog),
     ...buildFilterListOps(filterLists),
     ...buildModelsDevOps(source: modelsDevSource, catalog: modelCatalogService),

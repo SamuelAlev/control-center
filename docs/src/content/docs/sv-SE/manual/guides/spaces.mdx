@@ -2,7 +2,7 @@
 title: Använd ytor
 description: Skapa ytor, ange deras läge, hantera deltagare och autonomi och öppna samtal och trådar.
 slug: sv-SE/handbok/how-to-guider/ytor
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Den här guiden visar hur du använder ytor. En **yta** är meddelandeytan i
@@ -26,6 +26,11 @@ nedan.
    worktrees för. Alla är valda från början; avmarkerar du varje repo skapas en
    yta där inget är utcheckat
 6. Bekräfta
+
+Endast en agent svarar på ett meddelande, så en yta utan agent startar ingenting:
+kompositören säger det och behåller ditt meddelande tills du @-nämner en agent,
+vilket lägger till den på ytan och skickar det. Det finns ingen standardkörare
+bakom en tom yta.
 
 Ytor hör till en arbetsyta: du ser bara agenter från den aktuella arbetsytan,
 och en yta visar aldrig data från en annan arbetsyta.
@@ -98,7 +103,7 @@ namnlöst bestående samtal.
 Samtal visas som flikar i redigeraren och, när det finns fler än ett, som
 kapslade rader under ytan i sidofältet. **Nytt samtal** finns i redigerarens
 meny för ny flik och skapar ett namnlöst samtal utan fråga om titel —
-titelmodellen namnger det efter det första meddelandet. Använd ett för att köra
+agenten Content synthesizer namnger det efter det första meddelandet. Använd ett för att köra
 parallellt arbete med samma agent och worktree.
 
 Varje samtal behåller sin egen meddelandehistorik och sina egna agentsessioner

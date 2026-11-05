@@ -2,7 +2,7 @@
 title: Sandbox e segurança
 description: O que realmente limita um agente no Control Center atualmente, até onde chega a sandbox do sistema operativo e que fronteiras se mantêm num anfitrião sem backend.
 slug: pt-PT/manual/conceitos/sandbox-e-seguranca
-sourceHash: 222d997ffe8294f266ef8b72dc011bcd10cfc59d
+sourceHash: ba9ce1ae942391fa5d61a9c3e89bfb1a3b10665e
 ---
 
 :::note[Onde a sandbox do sistema operativo chega e onde não chega]
@@ -214,7 +214,7 @@ a enumerar não é prático. O perfil do macOS parte, por isso, de
 reposta em negação com autorizações explícitas por cima, bloqueio de unlink em todos os caminhos negados
 e nos seus ascendentes, para que uma renomeação não consiga contornar uma negação de escrita, negações de execução para
 binários sempre perigosos e para tudo o que seja copiado para um diretório gravável e
-rede restrita às portas do proxy de loopback, mais o DNS.
+rede restrita às portas do proxy de loopback, mais o DNS. As instalações de toolchains na sua pasta pessoal (o pnpm do corepack, gestores de versões do node, browsers do Playwright, rustup, fvm, uv e semelhantes) continuam executáveis dentro desse bloco de execução, para que os agentes as possam usar sem soluções alternativas. As negações sempre perigosas continuam a aplicar-se dentro dele. Cada sessão recebe também um `TMPDIR` privado próprio. É o único diretório temporário onde o agente pode executar programas que compilou ou abrir sockets Unix.
 
 A consequência prática: no Linux, a visão do sistema de ficheiros do agente é
 estreitada; no macOS, o agente ainda consegue _ler_ a maior parte do anfitrião e os seus

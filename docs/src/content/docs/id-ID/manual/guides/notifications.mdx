@@ -2,7 +2,7 @@
 title: Konfigurasi notifikasi
 description: Nyalakan atau matikan kategori, atur Quiet hours dan suara, serta ketahui notifikasi mana yang sampai kepada Anda dan di mana.
 slug: id-ID/panduan-pengguna/panduan-praktis/notifikasi
-sourceHash: c75955f9926894dd79edaa0c138f189b5a76e10d
+sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
 ---
 
 Panduan ini menunjukkan cara mengonfigurasi notifikasi dan apa yang sebenarnya
@@ -49,11 +49,28 @@ ponsel sama sekali tidak memiliki permukaan notifikasi.
 Apa pun di luar daftar ini tidak dapat dinotifikasi atau difilter — tidak ada
 kategori "segala hal lainnya".
 
-**Agen menunggu Anda** memicu sekali untuk setiap penantian, saat penantian itu
-dimulai: persetujuan yang tertunda (termasuk hibah eksekusi sandbox dan
+**Agen menunggu Anda** memicu saat sebuah penantian dimulai: persetujuan yang tertunda (termasuk hibah eksekusi sandbox dan
 persetujuan alat Claude Code), pertanyaan `ask_user`, atau run yang ditahan
 karena kredensialnya tidak dapat melayaninya. Notifikasi ini membuka space
 tempat Anda menjawab, dan tetap diam selama Anda sedang melihat space tersebut.
+
+Di desktop, notifikasi ini berperilaku berbeda dari yang lain:
+
+- **Notifikasi ini sensitif waktu.** Di macOS, notifikasi ini dapat menembus
+  Fokus yang mengizinkan notifikasi sensitif waktu dari Control Center.
+- **Persetujuan dapat dijawab dari notifikasi.** **Setujui** dan **Tolak**
+  mengirim jawaban Anda tanpa membuka aplikasi. Server memeriksanya dengan cara
+  yang sama seperti kartu di dalam aplikasi. Untuk menyetujui selama jangka waktu
+  tertentu, buka kartunya.
+- **Penantian yang tidak dijawab akan mengingatkan Anda.** Jika tidak ada yang
+  menjawab, notifikasi muncul kembali sebagai **Masih menunggu: …** 3, 10, 25,
+  dan 45 menit setelah penantian dimulai. Setiap pengingat menggantikan
+  notifikasi sebelumnya alih-alih menambah yang baru. Pengingat dilewati selama
+  jendela Control Center sedang aktif, karena kartu persetujuan dan lonceng
+  sudah ada di depan Anda.
+- **Notifikasi hilang saat penantian berakhir**, bagaimanapun cara penantian itu
+  dijawab, sehingga Anda tidak pernah menekan tombol pada permintaan yang sudah
+  selesai.
 
 Preferensi ini mengikuti pengguna Anda lintas perangkat, sehingga ponsel dan
 laptop tetap selaras. Volume adalah pengecualian yang disengaja dan tetap per
@@ -96,7 +113,8 @@ Sebuah notifikasi dibuang, secara senyap, ketika salah satu dari ini benar:
 - Notifikasi dimatikan secara global, atau kategorinya dimatikan
 - Anda sudah berada di rute yang akan dituju olehnya — dan, untuk sebuah pesan,
   sudah berada di space tersebut
-- Mode fokus aktif dan kategorinya tidak mendesak
+- Sesi fokus dengan **Blokir notifikasi** aktif sedang berjalan dan kategorinya
+  tidak mendesak
 - Quiet hours aktif dan kategorinya tidak mendesak
 
 Pemeriksaan itu berlaku untuk toast OS. Lonceng yang tahan lama tetap mencatat
@@ -142,6 +160,15 @@ baca.
 Izin diminta secara native saat aplikasi diluncurkan. Jika Anda menolaknya,
 aktifkan kembali Control Center di Pengaturan Sistem → Notifikasi; tidak ada
 perintah di dalam aplikasi untuk memicunya lagi.
+
+### Saya terus melewatkan notifikasi persetujuan di macOS
+
+Secara default, macOS menampilkan notifikasi Control Center sebagai banner, dan
+banner menghilang setelah beberapa detik. Agar notifikasi tetap di layar sampai
+Anda menindaklanjutinya, atur gaya peringatan Control Center ke **Tetap** di
+Pengaturan Sistem → Notifikasi. Persetujuan yang belum dijawab juga muncul
+kembali sebagai pengingat (lihat
+[Nyalakan atau matikan kategori](#nyalakan-atau-matikan-kategori)).
 
 ### Tidak ada yang tiba di build web
 

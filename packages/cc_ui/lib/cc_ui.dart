@@ -58,6 +58,7 @@ export 'package:cc_ui/src/components/cc_sidebar.dart';
 export 'package:cc_ui/src/components/cc_sidebar_branch.dart';
 export 'package:cc_ui/src/components/cc_sidebar_group.dart';
 export 'package:cc_ui/src/components/cc_sidebar_item.dart';
+export 'package:cc_ui/src/components/cc_sidebar_toolbar.dart';
 export 'package:cc_ui/src/components/cc_slider.dart';
 export 'package:cc_ui/src/components/cc_spinner.dart';
 export 'package:cc_ui/src/components/cc_status_tag.dart';

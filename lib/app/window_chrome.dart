@@ -164,10 +164,8 @@ void styleWindowOnShow(Window window, AppPreferences prefs) {
         _restoreMainWindowGeometry(window, prefs);
       }
     case serverSetupWindowTitle:
-      // The setup form is taller than many laptop work areas once the remote
-      // fields and an error are showing, so fit it to the display and centre it
-      // rather than letting macOS hang the bottom (and the connect button) off
-      // screen.
+      // Fit it to the display and centre it rather than letting macOS hang
+      // the bottom (and the connect button) off a short screen.
       if (_geometryRestoredWindowIds.add(window.id)) {
         _placeServerSetupWindow(window);
       }

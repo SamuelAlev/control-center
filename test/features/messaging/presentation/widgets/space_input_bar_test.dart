@@ -3,7 +3,9 @@ import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
+import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -13,7 +15,6 @@ import 'package:control_center/features/messaging/presentation/widgets/space_inp
 import 'package:control_center/features/messaging/providers/editing_message_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/space_attachment_upload_provider.dart';
-import 'package:control_center/features/settings/providers/adapter_preferences_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -35,10 +36,26 @@ class _PlanMode extends ActiveSpaceModeNotifier {
   Mode build() => Mode.plan;
 }
 
-class _ClaudeAdapter extends DefaultChatAdapterNotifier {
-  @override
-  String? build() => 'claude-code';
-}
+Agent _agent(String id, {String name = 'architect', String? adapterId}) =>
+    Agent(
+      id: id,
+      name: name,
+      title: 'Architect',
+      agentMdPath: '/path',
+      workspaceId: 'ws-1',
+      skills: AgentSkills(const []),
+      adapterId: adapterId,
+      createdAt: DateTime(2024),
+    );
+
+SpaceParticipant _agentParticipant(String agentId) => SpaceParticipant(
+  id: 'p-$agentId',
+  spaceId: 'ch-1',
+  principalId: agentId,
+  participantType: PrincipalType.agent,
+  role: 'member',
+  joinedAt: DateTime(2024),
+);
 
 /// Records what the composer sent, without implementing the other ~30 members
 /// of [MessagingPort]. `noSuchMethod` covers the rest: this test is about ONE
@@ -286,13 +303,13 @@ void main() {
               () => _TestActiveWorkspaceNotifier('ws-1'),
             ),
             activeSpaceModeProvider.overrideWith(_PlanMode.new),
-            defaultChatAdapterProvider.overrideWith(_ClaudeAdapter.new),
-            workspaceAgentsProvider(
-              'ws-1',
-            ).overrideWith((ref) => Stream.value(const [])),
+            workspaceAgentsProvider('ws-1').overrideWith(
+              (ref) =>
+                  Stream.value([_agent('a1', adapterId: 'claude-code')]),
+            ),
             spaceParticipantsProvider(
               'ch-1',
-            ).overrideWith((ref) => Stream.value(const [])),
+            ).overrideWith((ref) => Stream.value([_agentParticipant('a1')])),
           ],
           child: CcTheme(
             data: CcThemeData.light(),
@@ -396,6 +413,109 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(sender.sentWorkspaceId, 'ws-1');
+    });
+
+    Future<_RecordingMessagingPort> pumpRoom(
+      WidgetTester tester, {
+      required List<SpaceParticipant> participants,
+      List<Agent> roster = const [],
+    }) async {
+      tester.view.physicalSize = const Size(800, 200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+      final sender = _RecordingMessagingPort();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._composerOverrides,
+            agentsProvider.overrideWithValue(AsyncData(roster)),
+            spacesProvider.overrideWithValue(const AsyncData([])),
+            activeWorkspaceIdProvider.overrideWith(
+              () => _TestActiveWorkspaceNotifier('ws-1'),
+            ),
+            messagingServiceProvider.overrideWithValue(sender),
+            spaceParticipantsProvider(
+              'ch-1',
+            ).overrideWith((ref) => Stream.value(participants)),
+          ],
+          child: CcTheme(
+            data: CcThemeData.light(),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: CcToastScope(
+                  child: SpaceInputBar(
+                    spaceId: 'ch-1',
+                    conversationId: 'conv-1',
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      return sender;
+    }
+
+    Future<void> typeAndSend(WidgetTester tester, String text) async {
+      await tester.enterText(find.byType(CcTextField), text);
+      await tester.pump();
+      await tester.tap(find.byIcon(AppIcons.arrowUp));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    testWidgets('a conversation with no agent starts nothing', (tester) async {
+      final sender = await pumpRoom(tester, participants: const []);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // The placeholder says what is missing before anything is typed.
+      expect(find.text(l10n.conversationNeedsAgent), findsOneWidget);
+
+      await typeAndSend(tester, 'Hello');
+
+      expect(sender.sentContent, isNull);
+      // Refused, not lost: the draft is still there to add a mention to, and
+      // the toast says why (the placeholder is hidden behind the text now).
+      expect(_fieldText(tester), 'Hello');
+      expect(find.text(l10n.conversationNeedsAgent), findsOneWidget);
+      // Let the toast time out so no timer outlives the test.
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump(const Duration(seconds: 1));
+    });
+
+    testWidgets('mentioning an agent starts the conversation', (tester) async {
+      final sender = await pumpRoom(
+        tester,
+        participants: const [],
+        roster: [_agent('a1')],
+      );
+
+      await typeAndSend(tester, '@architect review this');
+
+      expect(sender.sentContent, '@architect review this');
+    });
+
+    testWidgets('an agent in the conversation answers a plain message', (
+      tester,
+    ) async {
+      final sender = await pumpRoom(
+        tester,
+        participants: [_agentParticipant('a1')],
+        roster: [_agent('a1')],
+      );
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      expect(find.text(l10n.conversationNeedsAgent), findsNothing);
+      await typeAndSend(tester, 'Hello');
+
+      expect(sender.sentContent, 'Hello');
     });
 
     testWidgets('does not show mentions when no @ in text', (tester) async {

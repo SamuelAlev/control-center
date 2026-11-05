@@ -8,7 +8,6 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/mode_enforcement_badge.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/space_adapter_enforcement_provider.dart';
-import 'package:control_center/features/settings/providers/adapter_preferences_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/gestures.dart';
@@ -25,13 +24,6 @@ const _spaceId = 'ch-1';
 class _FakeActiveWorkspaceId extends ActiveWorkspaceIdNotifier {
   @override
   String? build() => _workspaceId;
-}
-
-class _FakeDefaultChatAdapter extends DefaultChatAdapterNotifier {
-  _FakeDefaultChatAdapter(this._id);
-  final String? _id;
-  @override
-  String? build() => _id;
 }
 
 Agent _agent(String id, String? adapterId) => Agent(
@@ -68,12 +60,8 @@ Widget _wrap(Widget child) {
 List<Override> _overrides({
   required List<Agent> agents,
   required List<SpaceParticipant> participants,
-  String? defaultAdapterId,
 }) => [
   activeWorkspaceIdProvider.overrideWith(_FakeActiveWorkspaceId.new),
-  defaultChatAdapterProvider.overrideWith(
-    () => _FakeDefaultChatAdapter(defaultAdapterId),
-  ),
   workspaceAgentsProvider(
     _workspaceId,
   ).overrideWith((ref) => Stream.value(agents)),
@@ -110,14 +98,9 @@ Future<void> _pumpBadge(
 Future<ProviderContainer> _primed({
   required List<Agent> agents,
   required List<SpaceParticipant> participants,
-  String? defaultAdapterId,
 }) async {
   final container = ProviderContainer(
-    overrides: _overrides(
-      agents: agents,
-      participants: participants,
-      defaultAdapterId: defaultAdapterId,
-    ),
+    overrides: _overrides(agents: agents, participants: participants),
   );
   addTearDown(container.dispose);
   // Both sources are autoDispose, so a bare `read(...future)` would tear the
@@ -143,22 +126,19 @@ void main() {
       final container = await _primed(
         agents: [_agent('a1', 'claude-code')],
         participants: [_participant('a1')],
-        defaultAdapterId: 'cc-harness',
       );
 
       final resolved = container.read(
         spaceAdapterEnforcementProvider(_spaceId),
       );
-      // The agent's own adapterId wins over the configured default.
       expect(resolved?.adapter.id, 'claude-code');
       expect(resolved?.enforcement.enforcesModeGuarantees, isFalse);
     });
 
-    test('falls back to the default adapter for an unknown agent', () async {
+    test('an agent missing from the roster runs on the built-in loop', () async {
       final container = await _primed(
         agents: const [],
         participants: [_participant('ghost')],
-        defaultAdapterId: 'cc-harness',
       );
 
       final resolved = container.read(
@@ -182,16 +162,27 @@ void main() {
       expect(resolved?.enforcement.enforcesModeGuarantees, isFalse);
     });
 
-    test('falls back to the built-in loop when nothing names an adapter', () async {
+    test('an agent with no runner of its own reports the built-in loop', () async {
       // Which is what dispatch does with an agent that has no adapter set, so
       // the badge cannot claim one thing while the run does another.
-      final container = await _primed(agents: const [], participants: const []);
+      final container = await _primed(
+        agents: [_agent('a1', null)],
+        participants: [_participant('a1')],
+      );
 
       final resolved = container.read(
         spaceAdapterEnforcementProvider(_spaceId),
       );
       expect(resolved?.adapter.id, 'cc-harness');
       expect(resolved?.enforcement.enforcesModeGuarantees, isTrue);
+    });
+
+    test('is null for a space with no agent in it', () async {
+      // Nothing runs there until an agent is mentioned in, so there is no
+      // guarantee to qualify — and no device default to pretend with.
+      final container = await _primed(agents: const [], participants: const []);
+
+      expect(container.read(spaceAdapterEnforcementProvider(_spaceId)), isNull);
     });
 
     test('is null while the roster is still loading', () async {
@@ -213,9 +204,8 @@ void main() {
         tester,
         mode: Mode.plan,
         overrides: _overrides(
-          agents: const [],
-          participants: const [],
-          defaultAdapterId: 'claude-code',
+          agents: [_agent('a1', 'claude-code')],
+          participants: [_participant('a1')],
         ),
       );
 
@@ -238,9 +228,8 @@ void main() {
         tester,
         mode: Mode.chat,
         overrides: _overrides(
-          agents: const [],
-          participants: const [],
-          defaultAdapterId: 'claude-code',
+          agents: [_agent('a1', 'claude-code')],
+          participants: [_participant('a1')],
         ),
       );
 
@@ -252,16 +241,15 @@ void main() {
         tester,
         mode: Mode.plan,
         overrides: _overrides(
-          agents: const [],
-          participants: const [],
-          defaultAdapterId: 'cc-harness',
+          agents: [_agent('a1', 'cc-harness')],
+          participants: [_participant('a1')],
         ),
       );
 
       expect(find.text('Degraded'), findsNothing);
     });
 
-    testWidgets('stays silent while the adapter is unresolved', (tester) async {
+    testWidgets('stays silent with no agent in the space', (tester) async {
       await _pumpBadge(
         tester,
         mode: Mode.plan,
@@ -276,9 +264,8 @@ void main() {
         tester,
         mode: Mode.orchestrate,
         overrides: _overrides(
-          agents: const [],
-          participants: const [],
-          defaultAdapterId: 'claude-code',
+          agents: [_agent('a1', 'claude-code')],
+          participants: [_participant('a1')],
         ),
       );
 
@@ -298,9 +285,8 @@ void main() {
         tester,
         mode: Mode.plan,
         overrides: _overrides(
-          agents: const [],
-          participants: const [],
-          defaultAdapterId: 'claude-code',
+          agents: [_agent('a1', 'claude-code')],
+          participants: [_participant('a1')],
         ),
       );
 

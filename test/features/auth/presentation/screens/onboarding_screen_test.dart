@@ -12,6 +12,7 @@ import 'package:control_center/core/infrastructure/embedding/embedding_model_con
 import 'package:control_center/core/infrastructure/speech/voice_model_control.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/features/auth/presentation/screens/onboarding_chrome.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
@@ -19,6 +20,7 @@ import 'package:control_center/features/sandboxing/providers/sandboxing_provider
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/server_activity_panel.dart';
+import 'package:control_center/shared/widgets/server_connect/pre_app_settings.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -504,28 +506,22 @@ void main() {
   });
 
   // =========================================================================
-  // Theme toggle
+  // Settings
   // =========================================================================
 
-  testWidgets('renders theme toggle button', (tester) async {
+  testWidgets('the corner opens language and theme, and back returns', (
+    tester,
+  ) async {
     await pumpOnboarding(tester, authenticated: false);
-    // Light theme → moon icon (AppIcons.moon). The toggle is an CcButton.icon
-    // inside a Positioned widget. Verify at least one Icon widget exists.
-    expect(find.byType(Icon), findsWidgets);
-  });
-
-  testWidgets('theme toggle is tappable without errors', (tester) async {
-    await pumpOnboarding(tester, authenticated: false);
-    // Find the theme toggle CcButton.icon near the top-right of the screen.
-    // It's inside a Positioned widget. Tap the last CcButton.
-    final toggleFinder = find.byType(CcIconButton).last;
-    expect(toggleFinder, findsOneWidget);
-
-    await tester.tap(toggleFinder);
-    // Pump to let the tappable animation timers settle.
+    await tester.tap(find.byType(OnboardingSettingsButton));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-    // Tapping must not throw. Just verifying the screen is still present.
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(PreAppSettingsPage), findsOneWidget);
+
+    await tester.tap(find.text('Back'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(PreAppSettingsPage), findsNothing);
     expect(find.text("Let's plug in your tools."), findsOneWidget);
   });
 

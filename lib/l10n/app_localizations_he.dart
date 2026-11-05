@@ -724,13 +724,6 @@ class AppLocalizationsHe extends AppLocalizations {
       'Control Center מריץ שרת משלו במחשב זה ומחזיק בנתונים שלך באופן מקומי.';
 
   @override
-  String get serverModeRemote => 'התחבר למופע מרוחק';
-
-  @override
-  String get serverModeRemoteDescription =>
-      'התחבר לשרת Control Center שרץ במקום אחר. הנתונים שלך נמצאים בשרת ההוא.';
-
-  @override
   String get serverRemoteUrl => 'כתובת URL של השרת';
 
   @override
@@ -946,13 +939,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get pairServerUnreachable =>
       'מכשירים אחרים אינם יכולים להגיע לשרת זה ישירות, ולכן לקוח חדש לא יכול להתחבר. הגדר את כתובת ה-URL הציבורית של השרת כדי לצמד לקוחות נוספים.';
-
-  @override
-  String get serverSetupTitle => 'כיצד להריץ את Control Center?';
-
-  @override
-  String get serverSetupSubtitle =>
-      'Control Center זקוק לשרת שמחזיק בנתונים שלך. הרץ אחד בתוך האפליקציה הזו, או התחבר למופע שרץ במקום אחר.';
 
   @override
   String get serverSetupRunLocal => 'הרץ באפליקציה זו';
@@ -3015,10 +3001,6 @@ class AppLocalizationsHe extends AppLocalizations {
       'הגדירו זהויות, הנחיות ומיומנויות של סוכנים וצפו בהרצות.';
 
   @override
-  String get configureDefaultRunners =>
-      'הגדירו איזה מתאם ומודל ישמשו למרחבים חדשים וליצירת כותרות.';
-
-  @override
   String get configuredLabel => 'הוגדר.';
 
   @override
@@ -3119,12 +3101,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get deactivate => 'השבתה';
-
-  @override
-  String get defaultChat => 'צ׳אט ברירת מחדל';
-
-  @override
-  String get defaultRunners => 'מריצי ברירת מחדל';
 
   @override
   String get delete => 'מחיקה';
@@ -4421,6 +4397,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get notificationGroupMachines => 'מכונות';
 
   @override
+  String get notificationSectionSound => 'צליל';
+
+  @override
+  String get notificationSectionSchedule => 'לוח זמנים';
+
+  @override
+  String get notificationSectionEvents => 'אירועים';
+
+  @override
   String get notificationsMutedRepos => 'מאגרים מושתקים';
 
   @override
@@ -4981,9 +4966,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription => 'בחר את שפת היישום.';
-
-  @override
-  String get shortTask => 'משימה קצרה';
 
   @override
   String get showNativeNotifications => 'הצג התראות מערכת על אירועים.';
@@ -5568,9 +5550,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get focusModeFloat => 'מזעור לסרגל';
-
-  @override
-  String get focusModeActiveTooltip => 'מצב ריכוז פעיל — הקישו לסיום';
 
   @override
   String get dismiss => 'סגירה';
@@ -12994,25 +12973,6 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get webConnectTitle => 'התחברות ל-Control Center';
-
-  @override
-  String get webConnectSubtitle =>
-      'התחברו ל-cc-server פעיל דרך WebSocket. המפתח שלכם נשאר במכשיר הזה.';
-
-  @override
-  String get webConnectServerLabel => 'שרת';
-
-  @override
-  String get webConnectDeviceIdLabel => 'מזהה מכשיר';
-
-  @override
-  String get webConnectPairingKeyLabel => 'מפתח צימוד';
-
-  @override
-  String get webConnectPairingKeyHint => 'הדביקו את ה-PSK';
-
-  @override
   String get webConnectStayConnected => 'להישאר מחוברים במכשיר הזה';
 
   @override
@@ -13056,11 +13016,12 @@ class AppLocalizationsHe extends AppLocalizations {
       'אופציונלי — השאירו ריק ומודל הכותרות ייתן שם אוטומטית';
 
   @override
-  String get shortTaskOff => 'כבוי';
+  String get contentSynthesizerUnavailable =>
+      'הסוכן Content synthesizer חסר או שאין לו מריץ תקין';
 
   @override
-  String get shortTaskUnavailable =>
-      'כדי להשתמש בזה, בחרו מודל למשימות קצרות בהגדרות ← מתאמים';
+  String get conversationNeedsAgent =>
+      'אזכרו סוכן עם @ כדי להתחיל את השיחה הזו';
 
   @override
   String get conversationTitleGenerate => 'יצירה';
@@ -13524,14 +13485,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get adapterArgumentsDescription =>
       'מצורף לשורת הפקודה של המריץ בכל הפעלה.';
-
-  @override
-  String get defaultChatDescription =>
-      'מריץ שיחות חדשות וכל סוכן שאין לו מריץ משלו.';
-
-  @override
-  String get shortTaskDescription =>
-      'מריץ עבודות רקע מהירות כמו כותרות ותקצירים. מודל קטן יותר מתאים לכאן.';
 
   @override
   String get settingsStateFailed => 'נכשל';
@@ -14278,6 +14231,16 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get attachFilesOrDrop => 'צירוף קבצים — או גררו אותם לכאן';
+
+  @override
+  String composerExpand(String shortcut) {
+    return 'הרחבת העורך ($shortcut)';
+  }
+
+  @override
+  String composerCollapse(String shortcut) {
+    return 'כיווץ העורך ($shortcut)';
+  }
 
   @override
   String get guidedGoalTitle => 'חידוד המטרה';
@@ -15434,6 +15397,11 @@ class AppLocalizationsHe extends AppLocalizations {
       'סוכן חסום בגלל פרטי גישה';
 
   @override
+  String notificationWaitReminder(String title) {
+    return 'עדיין ממתין: $title';
+  }
+
+  @override
   String get killTerminal => 'סגירת המסוף';
 
   @override
@@ -15891,4 +15859,78 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'הריצה נעצרה כי פרטי ההתחברות של הספק כבר לא עובדים. חברו אותו מחדש בהגדרות ← ספקים ואז נסו שוב את התור.';
+
+  @override
+  String get helpMenuLabel => 'עזרה';
+
+  @override
+  String get helpWhatsNew => 'מה חדש';
+
+  @override
+  String get helpReportProblem => 'דיווח על בעיה';
+
+  @override
+  String get helpCreateGitHubIssue => 'יצירת issue ב-GitHub';
+
+  @override
+  String get changelogInstalled => 'מותקנת';
+
+  @override
+  String get changelogGroupNew => 'חדש';
+
+  @override
+  String get changelogGroupImproved => 'שיפורים';
+
+  @override
+  String get changelogGroupFixed => 'תיקונים';
+
+  @override
+  String get changelogLoadFailed => 'לא ניתן לטעון את הערות הגרסה.';
+
+  @override
+  String get changelogOpenWebsite => 'פתיחה באתר';
+
+  @override
+  String get connectWelcomeTitle => 'ברוכים הבאים ל-Control Center';
+
+  @override
+  String get connectWelcomeSubtitle =>
+      'הפעילו אותו כאן, או התחברו לשרת שכבר יש לכם.';
+
+  @override
+  String get connectWelcomeSubtitleWeb => 'התחברו לשרת שלכם כדי להתחיל.';
+
+  @override
+  String get connectToServer => 'התחברות לשרת';
+
+  @override
+  String get connectToServerIntro => 'הזינו כתובת של שרת Control Center.';
+
+  @override
+  String get connectUsePairingKey => 'שימוש במפתח צימוד';
+
+  @override
+  String get connectPasteLink => 'הדבקת קישור צימוד';
+
+  @override
+  String get connectPasteLinkIntro =>
+      'הדביקו את קישור ההזמנה או הצימוד שקיבלתם.';
+
+  @override
+  String get connectPasteLinkLabel => 'קישור הזמנה או צימוד';
+
+  @override
+  String get connectPasteLinkInvalid =>
+      'זה לא קישור הזמנה או צימוד של Control Center. העתיקו את הקישור המלא ונסו שוב.';
+
+  @override
+  String get connectPasteLinkTarget => 'יתחבר אל';
+
+  @override
+  String get focusModeEnd => 'סיום סשן ריכוז';
+
+  @override
+  String focusModeRemaining(int minutes) {
+    return 'נותרו $minutes דק׳';
+  }
 }

@@ -2,7 +2,7 @@
 title: Ligar a um servidor remoto
 description: Aponte a aplicação de ambiente de trabalho ou o cliente web a um cc_server a correr noutro sítio e alterne entre servidores sem reiniciar.
 slug: pt-PT/manual/guias/ligar-servidor-remoto
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Todos os clientes são um renderizador sobre um `cc_server` que detém os dados. A
@@ -15,7 +15,7 @@ uma VM na nuvem, um servidor de build.
 ## Pré-requisitos
 
 - Um `cc_server` a correr. Se não tiver um, consulte [Executar um servidor headless](/pt-PT/manual/guias/executar-servidor-headless/).
-- Ou os três valores de emparelhamento que o servidor emitiu — o **URL do servidor** (`ws://…/rpc` ou `wss://…/rpc`), um **ID do dispositivo** e uma **chave de emparelhamento** — **ou** um **código de convite** de utilização única de um administrador do espaço de trabalho. Resgatar um convite aprovisiona o seu utilizador, regista a sua pertença e emite a credencial deste cliente por si, para que nunca tenha de tratar de um ID do dispositivo nem de uma chave. Obtenha estes valores através de um canal fidedigno e verifique a impressão digital do servidor contra um QR fidedigno ou uma fixação conhecida na primeira ligação.
+- Ou os três valores de emparelhamento que o servidor emitiu — o **URL do servidor** (`ws://…/rpc` ou `wss://…/rpc`), um **ID do dispositivo** e uma **chave de emparelhamento** — **ou** um **código de convite** de utilização única de um administrador do espaço de trabalho, **ou** um link de convite ou de emparelhamento que os contenha. Resgatar um convite aprovisiona o seu utilizador, regista a sua pertença e emite a credencial deste cliente por si, para que nunca tenha de tratar de um ID do dispositivo nem de uma chave. Obtenha estes valores através de um canal fidedigno e verifique a impressão digital do servidor contra um QR fidedigno ou uma fixação conhecida na primeira ligação.
 
 ### Certifique-se de que o servidor está acessível
 
@@ -44,14 +44,16 @@ permitidos.
 
 Numa instalação nova:
 
-1. Inicie o Control Center. O ecrã da primeira execução pergunta **Como o Control Center deve ser executado?**
-2. Em vez de **Executar nesta aplicação**, preencha os campos de ligação: o URL do servidor e, além disso, um código de convite ou um ID do dispositivo e uma chave de emparelhamento.
+1. Inicie o Control Center. O ecrã da primeira execução mostra **Boas-vindas ao Control Center**.
+2. Clique em **Ligar a um servidor** e introduza o URL do servidor e, além disso, um código de convite ou, em **Usar uma chave de emparelhamento**, um ID do dispositivo e uma chave de emparelhamento.
 3. Clique em **Ligar**. O Control Center liga-se ao servidor e abre na caixa de entrada do espaço de trabalho.
+
+Se tiver um link de convite ou de emparelhamento, clique antes em **Colar um link de emparelhamento** e cole-o. A caixa de diálogo mostra a que servidor o link conduz. Confirme-o e depois clique em **Ligar**: colar, por si só, nunca estabelece a ligação. Se uma ligação falhar, a caixa de diálogo permanece aberta com o erro e tudo o que introduziu.
 
 Num ambiente de trabalho que já executa o seu próprio servidor:
 
 1. Abra **Definições → Servidor → Ligação e status**.
-2. Clique em **Adicionar servidor**. Introduza o URL do servidor (`wss://host:9030/rpc`) e um código de convite ou um ID do dispositivo e uma chave de emparelhamento. O botão de sufixo do campo URL deteta instâncias do `cc_server` na sua LAN ou tailnet.
+2. Clique em **Adicionar servidor**. Introduza o URL do servidor (`wss://host:9030/rpc`) e um código de convite ou, em **Usar uma chave de emparelhamento**, um ID do dispositivo e uma chave de emparelhamento. O botão de sufixo do campo URL deteta instâncias do `cc_server` na sua LAN ou tailnet.
 3. Clique em **Ligar** e depois em **Alternar** na linha do novo servidor.
 
 A alternância é imediata: a aplicação reconstrói-se à volta da nova sessão no
@@ -69,11 +71,12 @@ e através do relay.
 A build web é sempre remota.
 
 1. Abra [app.usectrl.dev](https://app.usectrl.dev) ou a sua própria cópia da build web.
-2. Introduza o URL do servidor e, além disso, um código de convite ou um ID do dispositivo e uma chave de emparelhamento.
-3. O cliente liga-se ao servidor e apresenta a mesma interface que a aplicação de ambiente de trabalho.
+2. Clique em **Ligar a um servidor** e introduza o URL do servidor e, além disso, um código de convite ou, em **Usar uma chave de emparelhamento**, um ID do dispositivo e uma chave de emparelhamento. **Colar um link de emparelhamento** aceita antes um link de convite ou de emparelhamento.
+3. Clique em **Ligar**. O cliente liga-se ao servidor e apresenta a mesma interface que a aplicação de ambiente de trabalho.
 
-Se houver um link direto de emparelhamento no URL, os campos são preenchidos
-previamente. A chave de emparelhamento viaja no **fragmento** do URL, que os
+Se houver um link direto de emparelhamento no URL, a caixa de diálogo de ligação
+abre com os campos preenchidos, para que possa confirmar o servidor antes de clicar
+em **Ligar**. A chave de emparelhamento viaja no **fragmento** do URL, que os
 navegadores nunca enviam ao servidor que aloja a página. Trate o link como um
 segredo e confie na página que serve o cliente web: o fragmento não protege contra
 código malicioso da página.

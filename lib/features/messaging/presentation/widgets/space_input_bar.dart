@@ -1,9 +1,11 @@
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/messaging_mention_sources.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/space_message_composer.dart';
 import 'package:control_center/features/messaging/presentation/widgets/mode_dropdown.dart';
 import 'package:control_center/features/messaging/presentation/widgets/mode_enforcement_badge.dart';
+import 'package:control_center/features/messaging/providers/conversation_agent_gate.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/space_composer_draft_provider.dart';
 import 'package:control_center/features/messaging/providers/space_composer_submit.dart';
@@ -13,6 +15,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/composer/composer_draft.dart';
+import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,6 +36,7 @@ class SpaceInputBar extends ConsumerStatefulWidget {
     required this.spaceId,
     required this.conversationId,
     this.autofocus = false,
+    this.maxInputHeight,
   });
 
   /// The space ID this bar sends to.
@@ -46,6 +50,10 @@ class SpaceInputBar extends ConsumerStatefulWidget {
 
   /// Whether the composer takes focus; see [SpaceMessageComposer.autofocus].
   final bool autofocus;
+
+  /// Tallest the field grows before it scrolls; see
+  /// [SpaceMessageComposer.maxInputHeight].
+  final double? maxInputHeight;
 
   @override
   ConsumerState<SpaceInputBar> createState() => _SpaceInputBarState();
@@ -157,6 +165,16 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
       )).select((queue) => queue.isNotEmpty),
     );
 
+    // Only an agent answers a message, so a conversation with none in it
+    // starts nothing until one is mentioned (which adds it). Unknown while the
+    // participants load: the composer must not claim an empty room it has not
+    // seen yet.
+    final needsAgent =
+        ref
+            .watch(spaceParticipantsProvider(spaceId))
+            .whenOrNull(data: (participants) => !spaceHasAgent(participants)) ??
+        false;
+
     return SpaceMessageComposer(
       key: ObjectKey(draft),
       spaceId: spaceId,
@@ -169,8 +187,14 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
       // turn — the hint says what Enter will do.
       hint: activeRunIds.isNotEmpty
           ? l10n.messageQueueHint
+          : needsAgent
+          ? l10n.conversationNeedsAgent
           : l10n.messagePlaceholder,
-      minLines: 3,
+      submitGuard: needsAgent
+          ? (submission) => _reachesAnAgent(submission, workspaceId)
+          : null,
+      minLines: 2,
+      maxInputHeight: widget.maxInputHeight,
       history: historyAsync.value,
       historyKey: conversationId,
       // Shift+Tab toggles plan mode (PRD 17 §8). It flips `spaces.mode` —
@@ -206,6 +230,22 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
         submission: submission,
       ),
     );
+  }
+
+  /// Whether [submission] brings an agent into this agent-less conversation;
+  /// says why not, keeping the draft, when it does not.
+  bool _reachesAnAgent(ComposerSubmission submission, String? workspaceId) {
+    final roster = workspaceId == null
+        ? null
+        : ref.read(workspaceAgentsProvider(workspaceId)).value;
+    if (submissionReachesAnAgent(submission, roster: roster ?? const [])) {
+      return true;
+    }
+    CcToastScope.maybeOf(context)?.show(
+      AppLocalizations.of(context).conversationNeedsAgent,
+      variant: CcToastVariant.warning,
+    );
+    return false;
   }
 
   /// Stops every agent currently working in this space. Multi-agent rooms can

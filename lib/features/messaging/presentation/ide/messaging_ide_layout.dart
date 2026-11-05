@@ -2258,7 +2258,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
   }
 
   /// Renames the conversation a chat [tab] shows. The dialog can ask the
-  /// workspace's short-task runner for a title; the tab label follows the
+  /// workspace's content synthesizer for a title; the tab label follows the
   /// live conversation watch.
   Future<void> _renameConversation(EditorTab tab) async {
     final workspaceId = _workspaceId;

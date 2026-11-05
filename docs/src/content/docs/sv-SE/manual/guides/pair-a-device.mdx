@@ -2,7 +2,7 @@
 title: Para en enhet
 description: Parkoppla din telefon (eller en andra webbläsare eller skrivbordsapp) med din Control Center-server så att du kan följa flottan på distans.
 slug: sv-SE/handbok/how-to-guider/para-enhet
-sourceHash: 04cacd6557a1b370ec53a1ce12105c0920e4d1fa
+sourceHash: 0f4800656af827d5470db17dac06efaec673be53
 ---
 
 Den här guiden visar hur du parkopplar en telefon med Control Center, så att du
@@ -40,11 +40,11 @@ telefon"), välj typ — **Webbläsare**, **Skrivbordsapp** eller **Telefon** �
 klicka på **Parkoppla**.
 
 - För en **telefon** visas en QR-kod. Skanna den med telefonens kamera, eller kopiera länken och öppna den i valfri webbläsare. Den riktar Remote-appen mot din server och bär autentiseringsuppgiften.
-- För en **webbläsare** eller **skrivbordsapp** kopierar du i stället in den visade länken (eller enhets-ID:t och parkopplingsnyckeln) i den nya klienten. Länken som kopplar upp i ett klick erbjuds bara när du parkopplar från webbklienten, eftersom en skrivbordsbinär inte har någon webb-origin att bygga den från.
+- För en **webbläsare** eller **skrivbordsapp** kopierar du i stället in den visade länken (eller enhets-ID:t och parkopplingsnyckeln) i den nya klienten. Öppna länken i en webbläsare, eller klistra in den i **Klistra in en parkopplingslänk** i skrivbordsappen. Vid parkoppling från skrivbordsappen byggs länken från serverns egen URL, så den visas bara när servern har en URL som andra enheter kan nå.
 
 Telefonens QR-kod och länken som `cc_server pair --client-url` skriver ut i CLI:t
 är **olika nyttolaster och går inte att byta mot varandra**: CLI-länken fyller i
-webbklientens anslutningsformulär, medan den här QR-koden bär serverns
+webbklientens anslutningsdialog eller klistras in i skrivbordsappen, medan den här QR-koden bär serverns
 fullständiga anslutningsbeskrivning och identitetsfingeravtryck för Remote-PWA:n.
 
 På telefonsidan parkopplar det inte tyst när du öppnar en parkopplingslänk.

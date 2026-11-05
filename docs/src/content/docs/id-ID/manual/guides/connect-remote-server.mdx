@@ -2,7 +2,7 @@
 title: Hubungkan ke server jarak jauh
 description: Arahkan aplikasi desktop atau klien web ke cc_server yang berjalan di tempat lain dan beralih antar server tanpa memulai ulang.
 slug: id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Setiap klien adalah perender di atas `cc_server` yang memiliki data. Aplikasi
@@ -15,7 +15,7 @@ build.
 ## Prasyarat
 
 - `cc_server` yang berjalan. Jika Anda belum memilikinya, lihat [Jalankan server headless](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless/).
-- Salah satu dari tiga nilai pairing yang dibuat server — **URL server** (`ws://…/rpc` atau `wss://…/rpc`), **ID perangkat**, dan **kunci pairing** — **atau** **kode undangan** sekali pakai dari admin ruang kerja. Menukarkan undangan akan memprovisikan pengguna Anda, mencatat keanggotaan Anda, dan membuat kredensial klien ini untuk Anda, sehingga Anda tidak pernah menangani ID perangkat atau kunci. Dapatkan nilai-nilai ini melalui saluran tepercaya dan periksa sidik jari server terhadap QR tepercaya atau penyematan yang dikenal pada koneksi pertama.
+- Salah satu dari tiga nilai pairing yang dibuat server — **URL server** (`ws://…/rpc` atau `wss://…/rpc`), **ID perangkat**, dan **kunci pairing** — **atau** **kode undangan** sekali pakai dari admin ruang kerja, **atau** tautan undangan atau pairing yang memuatnya. Menukarkan undangan akan memprovisikan pengguna Anda, mencatat keanggotaan Anda, dan membuat kredensial klien ini untuk Anda, sehingga Anda tidak pernah menangani ID perangkat atau kunci. Dapatkan nilai-nilai ini melalui saluran tepercaya dan periksa sidik jari server terhadap QR tepercaya atau penyematan yang dikenal pada koneksi pertama.
 
 ### Pastikan server dapat dijangkau
 
@@ -43,14 +43,16 @@ loopback dan native selalu diizinkan.
 
 Pada instalasi baru:
 
-1. Jalankan Control Center. Layar pertama kali dijalankan menanyakan **Bagaimana Control Center harus dijalankan?**
-2. Alih-alih **Jalankan di aplikasi ini**, isi kolom koneksi: URL server, plus kode undangan atau ID perangkat dan kunci pairing.
+1. Jalankan Control Center. Layar pertama kali dijalankan menampilkan **Selamat datang di Control Center**.
+2. Klik **Hubungkan ke server** dan masukkan URL server, plus kode undangan atau, di bawah **Gunakan kunci pairing**, ID perangkat dan kunci pairing.
 3. Klik **Hubungkan**. Control Center menghubungi server dan mendarat di kotak masuk ruang kerja.
+
+Jika Anda memiliki tautan undangan atau pairing, klik **Tempel tautan pairing** dan tempelkan tautannya. Dialog menampilkan server yang dituju tautan itu. Periksa, lalu klik **Hubungkan**: menempel saja tidak pernah menghubungkan. Jika koneksi gagal, dialog tetap terbuka dengan pesan galat dan semua yang Anda masukkan.
 
 Pada desktop yang sudah menjalankan servernya sendiri:
 
 1. Buka **Pengaturan → Server → Koneksi & status**.
-2. Klik **Tambah server**. Masukkan URL server (`wss://host:9030/rpc`) dan kode undangan atau ID perangkat dan kunci pairing. Tombol sufiks pada kolom URL menemukan instans `cc_server` di LAN atau tailnet Anda.
+2. Klik **Tambah server**. Masukkan URL server (`wss://host:9030/rpc`) dan kode undangan atau, di bawah **Gunakan kunci pairing**, ID perangkat dan kunci pairing. Tombol sufiks pada kolom URL menemukan instans `cc_server` di LAN atau tailnet Anda.
 3. Klik **Hubungkan**, lalu **Alihkan** pada baris server baru.
 
 Pengalihan berlangsung langsung: aplikasi dibangun ulang di sekitar sesi baru di
@@ -69,10 +71,11 @@ melalui relay.
 Build web selalu jarak jauh.
 
 1. Buka [app.usectrl.dev](https://app.usectrl.dev), atau salinan build web Anda sendiri.
-2. Masukkan URL server plus kode undangan atau ID perangkat dan kunci pairing.
-3. Klien menghubungi server dan menampilkan antarmuka yang sama dengan desktop.
+2. Klik **Hubungkan ke server** dan masukkan URL server, plus kode undangan atau, di bawah **Gunakan kunci pairing**, ID perangkat dan kunci pairing. **Tempel tautan pairing** menerima tautan undangan atau pairing sebagai gantinya.
+3. Klik **Hubungkan**. Klien menghubungi server dan menampilkan antarmuka yang sama dengan desktop.
 
-Jika ada tautan mendalam pairing di URL, kolom-kolomnya sudah terisi otomatis.
+Jika ada tautan mendalam pairing di URL, dialog koneksi terbuka dengan kolom yang
+sudah terisi, sehingga Anda dapat memeriksa server sebelum mengklik **Hubungkan**.
 Kunci pairing berada di **fragmen** URL, yang tidak dikirim peramban ke server
 yang menghosting halaman. Perlakukan tautan itu sebagai rahasia dan percayai
 halaman yang menyajikan klien web: fragmen tidak melindungi dari kode halaman yang

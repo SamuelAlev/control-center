@@ -2,7 +2,7 @@
 title: Používejte prostory
 description: Založ prostory, nastav jim režim, spravuj účastníky a autonomii a otevírej konverzace a vlákna.
 slug: cs-CZ/prirucka/navody/prostory
-sourceHash: 2a15ab9409706c1b048cfb24d4fa7ca5923d4bcf
+sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
 ---
 
 Tenhle návod ukáže, jak používat prostory. **Prostor** je plocha pro zprávy v
@@ -26,6 +26,8 @@ otevřou, aby mluvili mezi sebou. Viz
    připraví worktree. Ve výchozím stavu jsou vybrané všechny. Když zrušíš výběr
    u všech, vznikne prostor, který nemá vycheckoutovaný žádný repozitář
 6. Potvrď
+
+Na zprávu odpovídá jen agent, takže prostor bez agenta nic nespustí: pole pro zprávy to řekne a zprávu ponechá, dokud nezmíníte agenta přes @. Ten se přidá do prostoru a zpráva se odešle. Za prázdným prostorem není žádný výchozí runner.
 
 Prostory patří k pracovnímu prostoru: vidíš jen agenty z aktuálního pracovního
 prostoru a prostor nikdy neukáže data z jiného.
@@ -98,7 +100,7 @@ nepojmenovanou konverzaci, která v něm zůstane.
 Konverzace se ukazují jako záložky editoru a, jakmile je jich víc než jedna,
 jako vnořené řádky pod prostorem v postranním panelu. **Nová konverzace** je v
 nabídce nové záložky editoru a založí nepojmenovanou konverzaci bez výzvy k
-názvu. Model názvu ji pojmenuje podle první zprávy. Použij ji na paralelní
+názvu. Agent Content synthesizer ji pojmenuje podle první zprávy. Použij ji na paralelní
 práci se stejným agentem a stejným worktree.
 
 Každá konverzace si drží vlastní historii zpráv a relace agenta a přitom sdílí

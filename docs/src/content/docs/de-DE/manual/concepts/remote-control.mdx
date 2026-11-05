@@ -2,7 +2,7 @@
 title: Fernsteuerung und Mobil
 description: Wie das Telefon deinen Server über direkte oder vermittelte Ende-zu-Ende-verschlüsselte Verbindungen erreicht und das geschichtete Zugriffsmodell, das diesen Weg eng hält.
 slug: de-DE/handbuch/konzepte/fernsteuerung
-sourceHash: d88623a4f711ffd7863b185755c6b4ffe4fdac36
+sourceHash: cb6a1ecae8bc1c410e872649d26d3cae127003f6
 ---
 
 Control Center ist eine Desktop-App, aber die Arbeit, die sie verfolgt, hört
@@ -106,7 +106,9 @@ Es gibt zwei Payload-Formen, und sie sind **nicht austauschbar**. Der
 Telefon-QR aus dem Kopplungsbereich in der App ist der v2-`PairingPayload`
 oben und zeigt auf den Host der Remote-PWA. `cc_server pair --client-url`
 gibt einen v1-Link aus (`{s, i, k}` — Server-URL,
-Geräte-ID, Schlüssel), der nur für den **Web**-Client gedacht ist. Dies sind
+Geräte-ID, Schlüssel), der für den **Web**- und den **Desktop**-Client gedacht ist:
+Öffne ihn in einem Browser, oder füge ihn auf dem Desktop unter
+**Kopplungslink einfügen** ein. Dies sind
 Kopplungsdatenformate, keine Transport-Fallbacks: Beide Clients müssen das
 aktuelle verschlüsselte Sitzungsprotokoll unterstützen.
 

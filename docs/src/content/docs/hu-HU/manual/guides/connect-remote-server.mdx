@@ -2,7 +2,7 @@
 title: Csatlakozás távoli szerverhez
 description: Irányítsa az asztali alkalmazást vagy a webes klienst egy máshol futó cc_server felé, és váltson szerverek között újraindítás nélkül.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez
-sourceHash: 3b8df632f1f9685859429d175e0845c49b90bb62
+sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
 ---
 
 Minden kliens csupán megjelenítő réteg egy `cc_server` fölött, amely az adatokat
@@ -15,7 +15,7 @@ VM-re, egy buildszerverre.
 ## Előfeltételek
 
 - Egy futó `cc_server`. Ha még nincs ilyen, lásd a [Headless szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa/) oldalt.
-- Vagy a szerver által kiadott három párosítási érték — a **szerver URL** (`ws://…/rpc` vagy `wss://…/rpc`), egy **Eszköz-ID** és egy **Párosítási kulcs** —, **vagy** egy munkaterület-adminisztrátortól kapott, egyszer használatos **Meghívókód**. Egy meghívó beváltása provisionálja a felhasználóját, rögzíti a tagságát, és kiállítja az ehhez a klienshez tartozó hitelesítő adatot, így Önnek soha nem kell eszköz-ID-t vagy kulcsot kezelnie. Ezeket megbízható csatornán keresztül szerezze be, és az első csatlakozáskor ellenőrizze a szerver ujjlenyomatát egy megbízható QR-kóddal vagy egy ismert pinnel szemben.
+- Vagy a szerver által kiadott három párosítási érték — a **szerver URL** (`ws://…/rpc` vagy `wss://…/rpc`), egy **Eszköz-ID** és egy **Párosítási kulcs** —, **vagy** egy munkaterület-adminisztrátortól kapott, egyszer használatos **Meghívókód**, **vagy** egy ezeket hordozó meghívó- vagy párosítási hivatkozás. Egy meghívó beváltása provisionálja a felhasználóját, rögzíti a tagságát, és kiállítja az ehhez a klienshez tartozó hitelesítő adatot, így Önnek soha nem kell eszköz-ID-t vagy kulcsot kezelnie. Ezeket megbízható csatornán keresztül szerezze be, és az első csatlakozáskor ellenőrizze a szerver ujjlenyomatát egy megbízható QR-kóddal vagy egy ismert pinnel szemben.
 
 ### Győződjön meg arról, hogy a szerver elérhető
 
@@ -44,14 +44,16 @@ alapértelmezésben csak a `https://app.usectrl.dev` címet tartalmazza; a loopb
 
 Friss telepítés esetén:
 
-1. Indítsa el a Control Centert. Az első indítás képernyője azt kérdezi: **Hogyan fusson a Control Center?**
-2. A **Futtatás ebben az alkalmazásban** helyett töltse ki a csatlakozási mezőket: a szerver URL-t, valamint vagy egy meghívókódot, vagy egy eszköz-ID-t és egy párosítási kulcsot.
+1. Indítsa el a Control Centert. Az első indítás képernyőjén ez látható: **Üdvözli a Control Center**.
+2. Kattintson a **Csatlakozás szerverhez** elemre, és adja meg a szerver URL-t, valamint vagy egy meghívókódot, vagy a **Párosítási kulcs használata** alatt egy eszköz-ID-t és egy párosítási kulcsot.
 3. Kattintson a **Csatlakozás** elemre. A Control Center tárcsázza a szervert, és a munkaterület Beérkezett nézetében köt ki.
+
+Ha meghívó- vagy párosítási hivatkozása van, inkább kattintson a **Párosítási hivatkozás beillesztése** elemre, és illessze be. A párbeszédablak megmutatja, melyik szerverhez vezet a hivatkozás. Ellenőrizze, majd kattintson a **Csatlakozás** elemre: a beillesztés önmagában soha nem csatlakozik. Ha a csatlakozás sikertelen, a párbeszédablak nyitva marad a hibával és mindennel, amit megadott.
 
 Egy olyan asztali gépen, amely már futtatja a saját szerverét:
 
 1. Nyissa meg a **Beállítások → Szerver → Kapcsolat és állapot** részt.
-2. Kattintson a **Szerver hozzáadása** elemre. Adja meg a szerver URL-t (`wss://host:9030/rpc`), valamint vagy egy meghívókódot, vagy egy eszköz-ID-t és egy párosítási kulcsot. Az URL-mező végén lévő gomb felderíti a `cc_server` példányokat az Ön LAN-ján vagy tailnetjén.
+2. Kattintson a **Szerver hozzáadása** elemre. Adja meg a szerver URL-t (`wss://host:9030/rpc`), valamint vagy egy meghívókódot, vagy a **Párosítási kulcs használata** alatt egy eszköz-ID-t és egy párosítási kulcsot. Az URL-mező végén lévő gomb felderíti a `cc_server` példányokat az Ön LAN-ján vagy tailnetjén.
 3. Kattintson a **Csatlakozás** elemre, majd az új szerver sorában a **Váltás** elemre.
 
 A váltás élő: az alkalmazás helyben épül újra az új munkamenet köré,
@@ -70,11 +72,12 @@ relén keresztül is.
 A webes build mindig távoli.
 
 1. Nyissa meg az [app.usectrl.dev](https://app.usectrl.dev) címet, vagy a webes build saját példányát.
-2. Adja meg a szerver URL-t, valamint vagy egy meghívókódot, vagy egy eszköz-ID-t és egy párosítási kulcsot.
-3. A kliens tárcsázza a szervert, és ugyanazt a felületet rendereli, mint az asztali alkalmazás.
+2. Kattintson a **Csatlakozás szerverhez** elemre, és adja meg a szerver URL-t, valamint vagy egy meghívókódot, vagy a **Párosítási kulcs használata** alatt egy eszköz-ID-t és egy párosítási kulcsot. A **Párosítási hivatkozás beillesztése** ehelyett meghívó- vagy párosítási hivatkozást fogad.
+3. Kattintson a **Csatlakozás** elemre. A kliens tárcsázza a szervert, és ugyanazt a felületet rendereli, mint az asztali alkalmazás.
 
-Ha a URL-ben párosítási deep link szerepel, a mezők előre ki vannak töltve. A
-párosítási kulcs az URL **töredékében** utazik, amelyet a böngészők soha nem
+Ha a URL-ben párosítási deep link szerepel, a csatlakozási párbeszédablak kitöltött
+mezőkkel nyílik meg, így a **Csatlakozás** elemre kattintás előtt ellenőrizheti a
+szervert. A párosítási kulcs az URL **töredékében** utazik, amelyet a böngészők soha nem
 küldenek el az oldalt üzemeltető szervernek. Kezelje a hivatkozást titokként, és
 bízzon meg a webes klienst kiszolgáló oldalban: a töredék nem véd a rosszindulatú
 oldalkód ellen.
