@@ -49,6 +49,11 @@ final $CollapsibleGroups = _Story(
 
 final $Expanded = _Story(args: _Args.fixed(preview: ccSidebarExpandedStory));
 
+final $FooterToolbar = _Story(
+  name: 'Footer toolbar',
+  args: _Args.fixed(preview: ccSidebarFooterToolbarStory),
+);
+
 final $NestedBranch = _Story(
   name: 'Nested branch',
   args: _Args.fixed(preview: ccSidebarNestedBranchStory),
@@ -190,6 +195,59 @@ Widget ccSidebarCollapsibleGroupsStory(BuildContext context) {
             children: [
               CcSidebarItem(icon: CcIcons.workflow, label: 'Pipelines'),
               CcSidebarItem(icon: CcIcons.folderGit2, label: 'Repos'),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// The footer as one [CcSidebarToolbar] strip: icon-only items at either end,
+/// labelled by tooltips above the strip.
+Widget ccSidebarFooterToolbarStory(BuildContext context) {
+  return Padding(
+    padding: const EdgeInsets.all(24),
+    child: SizedBox(
+      height: 460,
+      child: CcSidebar(
+        header: _header(context),
+        footer: CcSidebarToolbar(
+          leading: [
+            CcSidebarItem(
+              icon: CcIcons.search,
+              label: 'Search',
+              onPressed: () {},
+            ),
+            CcSidebarItem(
+              icon: CcIcons.inbox,
+              label: 'Inbox',
+              onPressed: () {},
+            ),
+          ],
+          trailing: [
+            CcSidebarItem(
+              icon: CcIcons.activity,
+              label: 'Activity',
+              onPressed: () {},
+            ),
+            CcSidebarItem(
+              icon: CcIcons.settings,
+              label: 'Settings',
+              onPressed: () {},
+            ),
+          ],
+        ),
+        children: const [
+          CcSidebarGroup(
+            label: 'Workspace',
+            children: [
+              CcSidebarItem(
+                icon: CcIcons.layoutDashboard,
+                label: 'Dashboard',
+                selected: true,
+              ),
+              CcSidebarItem(icon: CcIcons.users, label: 'Agents'),
             ],
           ),
         ],

@@ -2,7 +2,7 @@
 title: Sichern und wiederherstellen
 description: Erstelle eine Momentaufnahme der Installation, verschiebe einen Arbeitsbereich zwischen Rechnern, stelle einen oder alle wieder her und bewahre Kopien an einem anderen Ort auf.
 slug: de-DE/handbuch/anleitungen/sichern-und-wiederherstellen
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Diese Anleitung deckt die fünf Dinge ab, die du mit Sicherungen tatsächlich tust:
@@ -17,7 +17,7 @@ Alles hier liegt unter **Einstellungen → Server → Sicherung und Wiederherste
 
 - Ein **vollständiger Client**, also die Desktop- oder Web-App. Ein gekoppeltes Telefon löst davon nichts aus. Das ist so gewollt.
 - Eine **Momentaufnahme der Installation** erstellen, auflisten, herunterladen oder löschen darf der **Eigentümer** der Installation.
-- Bei Aktionen an einem Arbeitsbereich: **Admin** dieses Arbeitsbereichs für den Export, **Eigentümer** für Import oder Löschen.
+- Bei Aktionen an einem Arbeitsbereich: **Admin** dieses Arbeitsbereichs für den Export oder um seine geplanten Sicherungen aufzulisten und herunterzuladen, **Eigentümer** für Import oder Löschen oder um eine seiner Sicherungen zu löschen.
 - Zum Herunterladen und Hochladen: ein gekoppelter vollständiger Client, entweder direkt oder über das vermittelte Relay verbunden. Beide Wege tragen die Dateibytes durch denselben authentifizierten, Ende-zu-Ende verschlüsselten Ressourcen-Tunnel; das Relay kann sie nicht lesen.
 
 :::caution[Momentaufnahmen der Installation sind manuell]
@@ -93,13 +93,37 @@ Arbeitsbereichssicherungen liegen auf dem Server unter
 Aufbewahrungsschritt löscht nur alte Sicherungen dieses Arbeitsbereichs.
 Momentaufnahmen der Installation und Sicherungen anderer Arbeitsbereiche fasst
 er nicht an. Diese Dateien sind nur die Datenbank. Für die Aufbewahrung
-außerhalb des Rechners kopierst du sie selbst.
+außerhalb des Rechners lädst du sie herunter oder kopierst sie selbst.
 
-Diese Sicherungen stehen getrennt von der Liste **Momentaufnahmen der
-Installation**. Zum Wiederherstellen nimmst du **Arbeitsbereichsdaten →
-Importieren** und den serverseitigen Pfad der `workspace.db`. Der Import
-ersetzt die aktuelle Datenbank dieses Arbeitsbereichs. Exportiere sie vorher,
-wenn du die Wiederherstellung rückgängig machen können willst.
+## Eine geplante Sicherung finden und wiederherstellen
+
+**Geplante Sicherungen** steht zwischen **Momentaufnahmen der Installation** und
+**Arbeitsbereichsdaten**, mit einer Zeile je Arbeitsbereich: wann seine letzte
+Sicherung lief, wie viele er aufbewahrt hat und wie viel Platz sie belegen. Bei einem
+Arbeitsbereich, dessen Pipeline noch nichts erzeugt hat, steht **Noch keine Sicherungen**.
+Bist du in einem Arbeitsbereich nicht Admin, steht das in seiner Zeile, und seine
+Sicherungen werden nicht aufgelistet.
+
+Klappe eine Zeile auf, um jede Sicherung zu sehen, die neueste zuerst:
+
+- **Wiederherstellen** ersetzt die aktuelle Datenbank des Arbeitsbereichs durch diese Sicherung. Exportiere den Arbeitsbereich vorher, wenn du das rückgängig machen können willst. Erfordert **Eigentümer**.
+- **Herunterladen** speichert die Datei auf dem Rechner, den du gerade benutzt. Die Sicherung bleibt auf dem Server.
+- **Pfad kopieren** kopiert ihren Speicherort auf dem Server.
+- **Löschen** entfernt diese Sicherung endgültig, sobald du den Namen des Arbeitsbereichs eingibst. Erfordert **Eigentümer**.
+
+### Sicherungen eines gelöschten Arbeitsbereichs
+
+Wird ein Arbeitsbereich gelöscht, bleiben seine geplanten Sicherungen auf dem Server.
+Weil sein Zeitplan damit endet, endet auch die Aufbewahrung: Die Sicherungen bleiben, bis
+jemand sie entfernt. Der **Eigentümer** der Installation sieht sie in derselben Liste,
+markiert mit **Arbeitsbereich gelöscht**, und kann sie dort herunterladen oder löschen.
+Sonst sieht niemand diese Zeilen.
+
+Sie haben kein **Wiederherstellen**, weil es keinen Arbeitsbereich gibt, in den sich
+wiederherstellen ließe. Um eine davon zurückzuholen, lade sie herunter, erstelle einen
+Arbeitsbereich und lade die Datei hoch, wie unter
+[Einen Arbeitsbereich auf eine andere Installation verschieben](#einen-arbeitsbereich-auf-eine-andere-installation-verschieben)
+beschrieben.
 
 ## Eine Momentaufnahme der Installation löschen
 
@@ -117,14 +141,17 @@ das nicht der Rechner ist, an dem du sitzt, nimm die Schaltflächen
 
 - Neben jedem **Arbeitsbereich** unter **Arbeitsbereichsdaten** → **Herunterladen**, für eine `.db`-Datei.
 - Neben jeder **Momentaufnahme** unter **Momentaufnahmen der Installation** → **Herunterladen**, für die ganze Momentaufnahme als `.zip`.
+- Neben jeder Sicherung unter **Geplante Sicherungen** → **Herunterladen**, für die `.db`-Datei dieser Sicherung.
 
 Auf dem Desktop wählst du, wo die Datei landet, und die Meldung nennt den Pfad.
-Im Web geht sie in die Downloads des Browsers. Beides meldet den Fortschritt in
-Bytes, weil das die beiden Nutzlasten sind, die in den Gigabyte-Bereich laufen.
+Im Web geht sie in die Downloads des Browsers. Alle drei melden den Fortschritt in
+Bytes, weil diese Nutzlasten in den Gigabyte-Bereich laufen.
 
-Beide erzeugen im Moment des Klicks eine frische Kopie, streamen sie und
-löschen die Kopie auf dem Server danach. Ein Download holt nicht die Datei, die
-ein früherer Export angelegt hat.
+Die Downloads von Arbeitsbereichen und Momentaufnahmen erzeugen im Moment des Klicks
+eine frische Kopie, streamen sie und löschen die Kopie auf dem Server danach. Ein
+Download holt nicht die Datei, die ein früherer Export angelegt hat. Eine geplante
+Sicherung ist die Ausnahme: Du bekommst die gespeicherte Datei, und sie bleibt auf dem
+Server.
 
 Ein entpacktes Archiv der Momentaufnahme stellt ihr Layout genau wieder her.
 Deshalb ist das Wiederherstellen ein Zurückkopieren.

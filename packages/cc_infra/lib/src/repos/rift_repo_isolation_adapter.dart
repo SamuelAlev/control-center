@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -7,6 +8,7 @@ import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart'
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/git/working_tree_capture.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/repos/space_provisioning_log.dart';
 import 'package:cc_natives/cc_natives.dart';
 import 'package:path/path.dart' as p;
 
@@ -52,6 +54,10 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
   /// worktree must not turn every GC into a long copy.
   static const _rescueByteBudget = 64 * 1024 * 1024;
 
+  /// How often a CoW copy reports it is still going. rift has no progress to
+  /// forward, and a large checkout copies for minutes.
+  static const _copyHeartbeat = Duration(seconds: 15);
+
   @override
   bool get isCowAvailable => _rift.isAvailable;
 
@@ -85,6 +91,21 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     'fetch',
     '--no-tags',
     '--force',
+  ];
+
+  /// [_fetchCmd], asking git for the progress it withholds from a pipe.
+  List<String> _fetchArgs(void Function(String line)? onOutput) => [
+    ..._fetchCmd,
+    if (onOutput != null) '--progress',
+  ];
+
+  /// `checkout --force -B`, with progress when someone is reading it.
+  List<String> _checkoutArgs(void Function(String line)? onOutput) => [
+    ..._noCred,
+    'checkout',
+    '--force',
+    if (onOutput != null) '--progress',
+    '-B',
   ];
 
   /// Splits an `authUrl` of the form `https://x-access-token:TOKEN@github.com/…`
@@ -123,6 +144,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   }) async {
     cancel?.throwIfCancelled();
     await Directory(destParentDir).create(recursive: true);
@@ -149,6 +171,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
         headRef: headRef,
         pristine: pristine,
         cancel: cancel,
+        onOutput: onOutput,
       );
     }
 
@@ -157,7 +180,11 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     // into the user's repo, which is not a fallback worth having.
     final String copyPath;
     try {
-      copyPath = await _riftCreate(sourcePath, destParentDir, name);
+      copyPath = await _copyReportingProgress(
+        sourcePath,
+        onOutput,
+        () => _riftCreate(sourcePath, destParentDir, name),
+      );
     } on RiftException catch (e) {
       _explainNoFallback(e, sourcePath, destParentDir);
       rethrow;
@@ -173,14 +200,43 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
       authEnv: auth.env,
       headRef: headRef,
       cancel: cancel,
+      onOutput: onOutput,
     );
     if (pristine) {
+      onOutput?.call('Removing untracked files');
       await _scrubToHead(copyPath, cancel: cancel);
     }
     return RepoIsolationResult(
       path: copyPath,
       backend: RepoIsolationBackend.rift,
     );
+  }
+
+  /// Runs [copy], narrating it: rift reports nothing until it returns, so the
+  /// start, a heartbeat and the time taken are all there is to show.
+  Future<String> _copyReportingProgress(
+    String sourcePath,
+    void Function(String line)? onOutput,
+    Future<String> Function() copy,
+  ) async {
+    if (onOutput == null) {
+      return copy();
+    }
+    onOutput('Copying $sourcePath (copy-on-write)');
+    final elapsed = Stopwatch()..start();
+    final heartbeat = Timer.periodic(
+      _copyHeartbeat,
+      (_) => onOutput(
+        'Still copying (${provisioningElapsed(elapsed.elapsed)})',
+      ),
+    );
+    try {
+      final path = await copy();
+      onOutput('Copied in ${provisioningElapsed(elapsed.elapsed)}');
+      return path;
+    } finally {
+      heartbeat.cancel();
+    }
   }
 
   /// The ref a new branch starts from, read out of [workdir].
@@ -444,6 +500,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     required Map<String, String> authEnv,
     String? headRef,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   }) async {
     // Everything below runs `git` with [worktree] as the working directory, and
     // `checkout --force -B` there would move the ENCLOSING repo's HEAD and
@@ -467,10 +524,12 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
       if (authUrl == null || authUrl.isEmpty) {
         throw StateError('Cannot check out $headRef without an auth URL');
       }
+      onOutput?.call('Fetching $headRef');
       final fetch = await _git.run(
-        [..._fetchCmd, authUrl, headRef],
+        [..._fetchArgs(onOutput), authUrl, headRef],
         workdir: worktree,
         env: authEnv,
+        onProgress: onOutput,
         cancel: cancel,
       );
       // A killed fetch reports as a failure; say what actually happened rather
@@ -481,10 +540,12 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
       }
       // `-B` (re)creates [branch] at FETCH_HEAD even if it already exists or is
       // the current branch, guaranteeing the working tree matches the PR head.
+      onOutput?.call('Checking out $branch');
       final checkout = await _git.run(
-        [..._noCred, 'checkout', '--force', '-B', branch, 'FETCH_HEAD'],
+        [..._checkoutArgs(onOutput), branch, 'FETCH_HEAD'],
         workdir: worktree,
         env: _baseEnv,
+        onProgress: onOutput,
         cancel: cancel,
       );
       cancel?.throwIfCancelled();
@@ -502,6 +563,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
       authEnv: authEnv,
       ref: baseRef,
       cancel: cancel,
+      onOutput: onOutput,
     );
     cancel?.throwIfCancelled();
 
@@ -514,11 +576,13 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
       'refs/remotes/origin/$baseRef',
       if (baseRef.isNotEmpty) baseRef,
     ];
+    onOutput?.call('Checking out $branch');
     for (final start in startPoints) {
       final res = await _git.run(
-        [..._noCred, 'checkout', '--force', '-B', branch, start],
+        [..._checkoutArgs(onOutput), branch, start],
         workdir: worktree,
         env: _baseEnv,
+        onProgress: onOutput,
         cancel: cancel,
       );
       cancel?.throwIfCancelled();
@@ -576,6 +640,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     required Map<String, String> authEnv,
     required String ref,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   }) async {
     if (ref.isEmpty) {
       return false;
@@ -584,15 +649,18 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     if (url == null) {
       return false;
     }
+    onOutput?.call('Fetching $ref');
     final fetch = await _git.run(
-      [..._fetchCmd, url, ref],
+      [..._fetchArgs(onOutput), url, ref],
       workdir: workdir,
       env: authEnv,
+      onProgress: onOutput,
       cancel: cancel,
     );
     cancel?.throwIfCancelled();
     if (!fetch.isSuccess) {
       CcInfraLog.warning('fetch of $ref failed: ${fetch.stderr.trim()}');
+      onOutput?.call('Could not fetch $ref; using what the copy already has');
     }
     return fetch.isSuccess;
   }
@@ -611,6 +679,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   }) async {
     cancel?.throwIfCancelled();
     final destPath = p.join(destParentDir, name);
@@ -625,10 +694,12 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
       if (authUrl == null || authUrl.isEmpty) {
         throw StateError('Cannot check out $headRef without an auth URL');
       }
+      onOutput?.call('Fetching $headRef');
       final fetch = await _git.run(
-        [..._fetchCmd, authUrl, headRef],
+        [..._fetchArgs(onOutput), authUrl, headRef],
         workdir: sourcePath,
         env: authEnv,
+        onProgress: onOutput,
         cancel: cancel,
       );
       cancel?.throwIfCancelled();
@@ -641,10 +712,12 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
       // named after the PR head-ref in the SOURCE repo's shared branch
       // namespace — that could reset/delete the user's same-named local branch
       // on teardown. (The rift path keeps a real branch; it's an isolated copy.)
+      onOutput?.call('Creating worktree $destPath');
       final add = await _git.run(
         ['worktree', 'add', '--force', '--detach', destPath, 'FETCH_HEAD'],
         workdir: sourcePath,
         env: _baseEnv,
+        onProgress: onOutput,
         cancel: cancel,
       );
       cancel?.throwIfCancelled();
@@ -656,6 +729,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
       // A fresh `git worktree add` checkout carries no untracked cruft, but scrub
       // anyway when pristine is requested so hooks-generated files can't linger.
       if (pristine) {
+        onOutput?.call('Removing untracked files');
         await _scrubToHead(destPath, cancel: cancel);
       }
       CcInfraLog.warning(
@@ -678,6 +752,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
       authEnv: authEnv,
       ref: baseRef,
       cancel: cancel,
+      onOutput: onOutput,
     );
     cancel?.throwIfCancelled();
 
@@ -687,6 +762,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
       if (baseRef.isNotEmpty) baseRef,
       'HEAD',
     ];
+    onOutput?.call('Creating worktree $destPath');
     for (final start in startPoints) {
       if (start == 'HEAD') {
         CcInfraLog.warning(
@@ -698,6 +774,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
         ['worktree', 'add', '-b', branch, destPath, start],
         workdir: sourcePath,
         env: _baseEnv,
+        onProgress: onOutput,
         cancel: cancel,
       );
       cancel?.throwIfCancelled();

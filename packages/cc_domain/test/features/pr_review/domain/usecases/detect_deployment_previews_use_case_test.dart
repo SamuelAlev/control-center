@@ -29,7 +29,7 @@ void main() {
       final previews = detector.detect(
         statuses: [
           const CommitStatus(
-            context: 'netlify/test-web-app/deploy-preview',
+            context: 'netlify/test-shop-ui/deploy-preview',
             state: CommitStatusState.success,
             targetUrl: 'https://deploy-preview-2803.usectrl.dev',
           ),
@@ -44,7 +44,7 @@ void main() {
       expect(previews, hasLength(2));
       expect(
         previews.map((p) => p.siteName),
-        containsAll(['test-web-app', 'test-backend']),
+        containsAll(['test-shop-ui', 'test-backend']),
       );
       expect(
         previews.every((p) => p.source == DeploymentPreviewSource.commitStatus),
@@ -153,7 +153,7 @@ void main() {
       final previews = detector.detect(
         statuses: [
           const CommitStatus(
-            context: 'netlify/test-web-app/deploy-preview',
+            context: 'netlify/test-shop-ui/deploy-preview',
             state: CommitStatusState.success,
             targetUrl: 'https://deploy-preview-2803.usectrl.dev',
           ),

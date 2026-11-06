@@ -107,7 +107,10 @@ The backup operations live under **Settings → Server → Backup & restore**:
 complete and lets the install owner delete one after confirmation, and each
 workspace offers export and import. The built-in **Workspace backup** pipeline
 takes only that workspace's database on a weekly schedule and deletes its own
-backups older than the configured retention age. Restoring a workspace from an
+backups older than the configured retention age. Those backups are listed on the
+same page per workspace, where each can be restored, downloaded or deleted. Deleting
+a workspace leaves its backups behind for the install owner to collect or remove,
+since its schedule and retention stop with it. Restoring a workspace from an
 install snapshot is `workspace.import` pointed at the snapshot's
 `<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
 copy-back of the snapshot directory.
@@ -116,11 +119,11 @@ What none of them carry is the rest of the workspace directory. A workspace accu
 
 ## Moving a backup between the server and your device
 
-Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Three signed transfer routes — [`/backup/workspace`, `/backup/snapshot` and `/backup/restore`](/manual/reference/backup/#transfer-routes) — carry the bytes for every other topology through the authenticated, encrypted resource tunnel, on direct connections and over the relay. The public HTTP routes do not serve readable backup bytes, and signed paths still require authorization. On the page this is a **Download** button beside each export and each snapshot (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
+Every op above speaks in paths on the **server**, which is a complete answer only when the server is your own machine. Four signed transfer routes — [`/backup/workspace`, `/backup/snapshot`, `/backup/stored` and `/backup/restore`](/manual/reference/backup/#transfer-routes) — carry the bytes for every other topology through the authenticated, encrypted resource tunnel, on direct connections and over the relay. The public HTTP routes do not serve readable backup bytes, and signed paths still require authorization. On the page this is a **Download** button beside each export, each snapshot and each scheduled backup (you pick where it lands), and **Choose a file and upload** to restore from a file sitting on the machine you are using. The upload works when the server is not your machine: `workspace.import` needs the file to already be on the host, and this is how it gets there.
 
 Three properties are worth knowing:
 
-- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not.
+- **A download mints a fresh copy and the server keeps none of it.** Downloading is not "fetch the file the export button made" — it exports again, streams that, and deletes it. The response is `no-store` with `Accept-Ranges: none` for the same reason: a resumed range would splice two different exports into one file that looks valid and is not. A scheduled backup is the exception: it already exists, so downloading one streams that file and leaves it on the server.
 - **An upload is streamed to disk, never buffered**, on both ends, and the staged copy is deleted on every path out — including a refusal. A workspace database is not a screenshot.
 - **Transfer works over the relay too.** Downloads and uploads use the same encrypted resource tunnel as direct connections; a direct HTTP origin is not required.
 

@@ -2,7 +2,7 @@
 title: Backup, export en import
 description: De indeling van de momentopname, het manifest, elke back-upbewerking en overdrachtsroute, en precies welke bestanden een back-up wel en niet bevat.
 slug: nl-NL/handleiding/referentie/backup
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Alles wat Control Center kan kopiëren, overdragen of overnemen, en de exacte vorm van elk
@@ -51,7 +51,12 @@ Ze bevatten geen manifest of `global.db` en zijn geen installatiemomentopnamen.
 De bewaarstap van de wekelijkse pipeline verwijdert alleen back-ups van zijn eigen werkruimte
 die ouder zijn dan de ingestelde leeftijd (standaard 30 dagen); handmatig gemaakte
 installatiemomentopnamen worden door die stap nooit verwijderd. `server.listBackups` vermeldt
-alleen installatiemomentopnamen, ook onvolledige.
+alleen installatiemomentopnamen, ook onvolledige; `workspace.listBackups` vermeldt de
+geplande back-ups van één werkruimte.
+
+Een werkruimte verwijderen laat deze map staan. Het schema van de werkruimte stopt samen
+met de werkruimte, dus niets roteert die back-ups meer, en ze blijven staan tot de
+eigenaar van de installatie ze verwijdert. `server.listOrphanedBackups` meldt ze.
 
 
 ### `manifest.json`
@@ -131,6 +136,10 @@ aangesloten, zoals de demoserver.
 | `server.backupNow`   | mutate | Installatie | **eigenaar** van de installatie | geen    | `{ok, path}`                  |
 | `server.listBackups` | read   | Installatie | **eigenaar** van de installatie | geen    | `{backups: [...]}`            |
 | `server.deleteBackup` | mutate | Installatie | **eigenaar** van de installatie | `name` | `{ok}` |
+| `server.listOrphanedBackups` | read | Installatie | **eigenaar** van de installatie | geen | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | mutate | Installatie | **eigenaar** van de installatie | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | read | Werkruimte | `admin` | geen | `{backups: [...]}` |
+| `workspace.deleteBackup` | mutate | Werkruimte | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Werkruimte | `admin`      | geen          | `{ok, path}`                  |
 | `workspace.import`   | mutate | Werkruimte | `owner`      | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | Installatie* | `owner`    | `id`          | registerrij gemarkeerd als verwijderd |
@@ -140,6 +149,14 @@ register staat; zijn handler controleert het lidmaatschap van de aanroeper van d
 werkruimte en vereist `owner`.
 
 `path` in elk antwoord is een pad op de **serverhost**.
+
+`server.listOrphanedBackups` retourneert één item per werkruimte die niet meer actief is:
+`workspace_id`, `workspace_name` als het register die nog kent, en `backups`. Een
+verwijderde werkruimte kan geen rolcontrole van de werkruimte meer doorstaan, dus de
+back-ups ervan behoren toe aan de eigenaar van de installatie.
+`server.deleteOrphanedBackup` weigert een actieve werkruimte, waarvan de back-ups achter
+`workspace.deleteBackup` en de eigen rollen van die werkruimte blijven. Beide
+verwijderoperaties accepteren alleen een vermelde mapnaam met tijdstempel, geen pad.
 
 :::note[Een momentopname van de hele installatie is op beide banen alleen voor de eigenaar]
 `server.backupNow`, `server.listBackups` en `server.deleteBackup` vereisen de
@@ -222,27 +239,33 @@ doeltekenreeks met zijn koppelings-PSK en de rol hieronder.
 | ----------------------- | ------- | --------------- | ------------------------------ | ----------------------- |
 | `/backup/workspace`     | GET     | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Werkruimte-**beheerder** |
 | `/backup/snapshot`      | GET     | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Installatie-**eigenaar** |
+| `/backup/stored`        | GET     | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Werkruimte-**beheerder**; installatie-**eigenaar** zodra de werkruimte is verwijderd |
 | `/backup/restore`       | POST    | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Werkruimte-**eigenaar**  |
 
-`w` is een werkruimte-id, `n` een naam van een momentopnamemap, `d` het id van het aanroepende
-apparaat, `s` de handtekening. `n` wordt herleid tegen de back-uplijst in plaats van aan de
-backups-root te worden geplakt, zodat de route niet kan worden gericht op een map die de lijst
-niet zou hebben getoond.
+`w` is een werkruimte-id, `n` de mapnaam van een momentopname of geplande back-up, `d` het id
+van het aanroepende apparaat, `s` de handtekening. Bij `/backup/snapshot` wordt `n` herleid
+tegen de back-uplijst in plaats van aan de backups-root te worden geplakt, zodat de route niet
+kan worden gericht op een map die de lijst niet zou hebben getoond. Bij `/backup/stored` moet
+het een tijdstempelnaam zijn, en moet het bestand een echt bestand zijn binnen de eigen
+back-upmap van die werkruimte.
 
 | Status | Oorzaak                                                                              |
 | ------ | ------------------------------------------------------------------------------------ |
-| `400`  | Een vereiste queryparameter ontbreekt, of de body van een upload is leeg             |
+| `400`  | Een vereiste queryparameter ontbreekt, een back-upnaam is ongeldig, of de body van een upload is leeg |
 | `403`  | Onbekend of ingetrokken apparaat, slechte handtekening, of de aanroeper mist de rol   |
-| `404`  | Geen back-uppoort op deze host, of de genoemde momentopname/het genoemde werkruimtebestand bestaat niet |
+| `404`  | Geen back-uppoort op deze host, of het genoemde bestand van de momentopname, back-up of werkruimte bestaat niet |
 | `405`  | `/backup/restore` aangeroepen met iets anders dan `POST`                             |
 | `413`  | De uploadbody is groter dan 8 GiB, volgens de opgegeven content-length of volgens de werkelijk gelezen bytes |
 | `426`  | Elk rechtstreeks verzoek aan een overdrachtspad op de openbare HTTP-listener; gebruik de versleutelde brontunnel van een gekoppelde client |
 | `500`  | De export of het archief is aan de serverkant mislukt                                |
 
-Beide downloads antwoorden met `Cache-Control: no-store` en `Accept-Ranges: none`. Elk verzoek
-maakt een **nieuwe** kopie aan en verwijdert die zodra hij is gestreamd, dus een uit de cache
-gehaald of hervat antwoord zou bytes van twee verschillende exports aaneenrijgen tot één bestand
-dat geldig lijkt en het niet is.
+Alle drie de downloads antwoorden met `Cache-Control: no-store` en `Accept-Ranges: none`.
+`/backup/workspace` en `/backup/snapshot` maken per verzoek een **nieuwe** kopie aan en
+verwijderen die zodra hij is gestreamd, dus een uit de cache gehaald of hervat antwoord zou
+bytes van twee verschillende exports aaneenrijgen tot één bestand dat geldig lijkt en het niet is.
+
+`/backup/stored` is de uitzondering: die route streamt een geplande back-up als
+`<workspaceId>-<name>.db` en laat het bestand staan, omdat dat bestand de back-up is.
 
 `/backup/snapshot` retourneert `<name>.zip`, met items ten opzichte van de hoofdmap van de
 momentopname, zodat uitpakken `manifest.json` + `global.db` + `<workspaceId>/workspace.db`
@@ -271,12 +294,12 @@ transports versleutelt de resulterende back-upbestanden in rust.
 | Staging voor overdrachten      | `<dataDir>/backups/transfer/` — een werkbank, opgeruimd door de route die hem schrijft |
 | Naam van het momentopnamearchief | `<snapshot directory name>.zip`                            |
 | Uploadplafond                  | 8 GiB per versleutelde `/backup/restore`-upload              |
-| Bewaring                       | Installatiemomentopnamen: handmatige verwijdering. Werkruimteback-ups: wekelijkse pipeline, standaard 30 dagen |
+| Bewaring                       | Installatiemomentopnamen: handmatige verwijdering. Werkruimteback-ups: wekelijkse pipeline, standaard 30 dagen, of handmatige verwijdering. Back-ups van een verwijderde werkruimte: alleen handmatige verwijdering |
 
 De mappen `exports/`, `transfer/` en `workspace-backups/` zijn geen
 installatiemomentopnamen en zijn uitgesloten van `server.listBackups`. Alleen de laatste
-map heeft geplande bewaring; het verwijderen van een installatiemomentopname vereist een
-expliciete actie van de eigenaar van de installatie.
+map heeft geplande bewaring, en alleen zolang de werkruimte bestaat; het verwijderen van
+een installatiemomentopname vereist een expliciete actie van de eigenaar van de installatie.
 
 ## Zie ook
 

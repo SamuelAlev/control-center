@@ -47,22 +47,6 @@ class ReposTable extends Table {
   /// When the repo was added to this workspace (the ordering tiebreak).
   DateTimeColumn get linkedAt => dateTime().withDefault(currentDateAndTime)();
 
-  /// Per-repo lifecycle SETUP script body, or null when unset.
-  ///
-  /// Server-executed shell (run via `bash -lc` in a space's worktree of this
-  /// repo, right after the worktree is provisioned). Deliberately NOT part of
-  /// the `Repo` domain entity/DTO: scripts are code the server runs, so they
-  /// travel on their own admin-gated op (`repos.setScripts`) instead of the
-  /// member-level `repos.upsert`. Whitespace-only means unset.
-  TextColumn get setupScript => text().nullable()();
-
-  /// Per-repo lifecycle ARCHIVE script body, or null when unset.
-  ///
-  /// Runs right before a space's worktree of this repo is destroyed or
-  /// garbage-collected, best-effort (a failure is recorded but never blocks
-  /// deletion). Same security note as [setupScript].
-  TextColumn get archiveScript => text().nullable()();
-
   /// Creation timestamp.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 

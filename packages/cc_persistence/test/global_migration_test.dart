@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cc_domain/features/environments/domain/entities/environment_lease.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
@@ -194,5 +195,57 @@ void main() {
         expect(row.autoPublishReview, isTrue);
       },
     );
+  });
+
+  group('v6 -> v7: environment port leases', () {
+    test('creates the table with its unique keys', () async {
+      final seeded = GlobalDatabase.forTesting(NativeDatabase(file));
+      await seeded.workspaceRegistryDao.upsertWorkspace(
+        WorkspacesTableCompanion.insert(id: 'ws-1', name: 'Alpha'),
+      );
+      await seeded.close();
+      sqlite3.sqlite3.open(file.path)
+        ..execute('DROP TABLE environment_slot_leases')
+        ..execute('PRAGMA user_version = 6')
+        ..close();
+
+      final migrated = open();
+      expect(await migrated.workspaceRegistryDao.getById('ws-1'), isNotNull);
+      final repository = DaoEnvironmentLeaseRepository(
+        migrated.environmentLeaseDao,
+      );
+      EnvironmentLease lease(int block, String spaceId) => EnvironmentLease(
+        block: block,
+        firstPort: 42000 + block * 32,
+        size: 32,
+        workspaceId: 'ws-1',
+        spaceId: spaceId,
+        definitionId: 'def-1',
+        createdAt: DateTime.utc(2026),
+      );
+      expect(await repository.tryInsert(lease(0, 'space-1')), isTrue);
+      expect(await repository.tryInsert(lease(0, 'space-2')), isFalse);
+    });
+
+    test('re-entering the step keeps existing leases', () async {
+      final seeded = GlobalDatabase.forTesting(NativeDatabase(file));
+      await seeded.environmentLeaseDao.tryInsert(
+        EnvironmentSlotLeasesTableCompanion.insert(
+          block: const Value(3),
+          firstPort: 42096,
+          size: 32,
+          workspaceId: 'ws-1',
+          spaceId: 'space-1',
+          definitionId: 'def-1',
+          createdAt: DateTime.utc(2026),
+        ),
+      );
+      await seeded.close();
+      sqlite3.sqlite3.open(file.path)
+        ..execute('PRAGMA user_version = 6')
+        ..close();
+
+      expect(await open().environmentLeaseDao.all(), hasLength(1));
+    });
   });
 }

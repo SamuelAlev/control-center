@@ -428,6 +428,41 @@ void main() {
       expect(controller.threads.first.entries.first.body, 'Updated body');
     });
 
+    test('updateEntry keeps everything but the body', () {
+      final thread = controller.create(
+        filePath: 'lib/main.dart',
+        line: 1,
+        side: 'RIGHT',
+        kind: PrInlineThreadKind.comment,
+        originalCode: 'old',
+        suggestedCode: 'old',
+        authorBody: 'Original body',
+      );
+      final entry = PrInlineEntry(
+        id: 'e1',
+        author: 'ada',
+        authorAvatarUrl: 'https://example.com/ada.png',
+        body: 'Original body',
+        createdAt: DateTime(2024, 6, 15),
+      );
+      controller.state = controller.state.copyWith(
+        threads: [
+          thread.copyWith(entries: [entry]),
+        ],
+      );
+
+      controller.updateEntry(
+        threadId: thread.id,
+        entryId: 'e1',
+        newBody: 'Updated body',
+      );
+
+      final updated = controller.threads.first.entries.first;
+      expect(updated.body, 'Updated body');
+      expect(updated.authorAvatarUrl, 'https://example.com/ada.png');
+      expect(updated.createdAt, DateTime(2024, 6, 15));
+    });
+
     test('updateEntry ignores nonexistent threadId', () {
       controller.create(
         filePath: 'lib/main.dart',
@@ -629,8 +664,12 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final c1 = container.read(prInlineCommentsControllerProvider(_prRefA).notifier);
-      final c2 = container.read(prInlineCommentsControllerProvider(_prRefB).notifier);
+      final c1 = container.read(
+        prInlineCommentsControllerProvider(_prRefA).notifier,
+      );
+      final c2 = container.read(
+        prInlineCommentsControllerProvider(_prRefB).notifier,
+      );
 
       expect(identical(c1, c2), false);
     });
@@ -639,7 +678,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           activeRepoProvider.overrideWithValue(null),
-          prDetailProvider(_prRef42).overrideWith((ref) => const Stream.empty()),
+          prDetailProvider(
+            _prRef42,
+          ).overrideWith((ref) => const Stream.empty()),
           prReviewRepositoryProvider.overrideWith(
             (ref) => const EmptyPrReviewRepository(),
           ),
@@ -647,8 +688,12 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final a = container.read(prInlineCommentsControllerProvider(_prRef42).notifier);
-      final b = container.read(prInlineCommentsControllerProvider(_prRef42).notifier);
+      final a = container.read(
+        prInlineCommentsControllerProvider(_prRef42).notifier,
+      );
+      final b = container.read(
+        prInlineCommentsControllerProvider(_prRef42).notifier,
+      );
 
       expect(identical(a, b), true);
     });

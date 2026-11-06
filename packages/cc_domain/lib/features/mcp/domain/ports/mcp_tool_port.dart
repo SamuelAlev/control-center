@@ -234,6 +234,12 @@ abstract class McpTool {
   /// tool can execute. Model-supplied arguments cannot fill missing context.
   Set<String> get requiredScopeKeys => const {};
 
+  /// Whether an HTTP caller must prove which run it is.
+  ///
+  /// True for tools that reach the host. They refuse a call whose identity
+  /// rests only on `X-CC-*` headers; see `McpCallScope.attested`.
+  bool get requiresRunGrant => false;
+
   /// The unified-guardrail effect classes this tool can produce (PRD 24 §1).
   /// Every MCP tool DECLARES its worst-case classes; a ratchet test holds the
   /// line. Default is empty (a pure read/query tool); mutating tools (PR

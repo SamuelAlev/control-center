@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/events/environment_events.dart';
 import 'package:cc_domain/core/domain/events/meeting_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/observability_events.dart';
@@ -152,6 +153,59 @@ class EventPayloadMapper {
     if (event is SpaceDeleted) {
       return {'workspace_id': event.workspaceId, 'space_id': event.spaceId};
     }
+    if (event is SpaceArchived) {
+      return {'workspace_id': event.workspaceId, 'space_id': event.spaceId};
+    }
+    if (event is SpaceProvisioningChanged) {
+      return {
+        'workspace_id': event.workspaceId,
+        'space_id': event.spaceId,
+        'status': event.status.toDbValue(),
+      };
+    }
+    if (event is PrHeadChanged) {
+      return {
+        'workspace_id': event.workspaceId,
+        'repo_owner': event.repoOwner,
+        'repo_name': event.repoName,
+        'pr_number': event.prNumber,
+        'pr_title': event.prTitle,
+        'previous_head_sha': event.previousHeadSha,
+        'head_sha': event.headSha,
+      };
+    }
+    if (event is EnvironmentStatusChanged) {
+      return {
+        'workspace_id': event.workspaceId,
+        'space_id': event.spaceId,
+        'environment_id': event.environmentId,
+        'status': event.status,
+      };
+    }
+    if (event is EnvironmentReady) {
+      return {
+        'workspace_id': event.workspaceId,
+        'space_id': event.spaceId,
+        'environment_id': event.environmentId,
+        if (event.url != null) 'url': event.url,
+      };
+    }
+    if (event is EnvironmentDestroyed) {
+      return {
+        'workspace_id': event.workspaceId,
+        'space_id': event.spaceId,
+        'environment_id': event.environmentId,
+      };
+    }
+    if (event is EnvironmentProcessExited) {
+      return {
+        'workspace_id': event.workspaceId,
+        'space_id': event.spaceId,
+        'environment_id': event.environmentId,
+        'component_id': event.componentId,
+        'exit_code': event.exitCode,
+      };
+    }
     return null;
   }
 
@@ -178,6 +232,13 @@ class EventPayloadMapper {
     'MeetingRecordingStopped',
     'SkillUpdated',
     'SpaceDeleted',
+    'SpaceArchived',
+    'SpaceProvisioningChanged',
+    'PrHeadChanged',
+    'EnvironmentStatusChanged',
+    'EnvironmentReady',
+    'EnvironmentDestroyed',
+    'EnvironmentProcessExited',
   ];
 
   /// Idempotency key for [event], or null if the event has no natural key.
@@ -240,6 +301,22 @@ class EventPayloadMapper {
       // Content-addressed per skill: re-writing identical bytes (e.g. a
       // no-op re-save) doesn't deserve a second analysis run.
       return '${event.workspaceId}:${event.slug}:${event.computedHash}';
+    }
+    if (event is SpaceProvisioningChanged) {
+      return '${event.spaceId}:${event.status.toDbValue()}';
+    }
+    if (event is PrHeadChanged) {
+      return '${event.repoOwner}/${event.repoName}#${event.prNumber}:'
+          '${event.headSha}';
+    }
+    if (event is EnvironmentStatusChanged) {
+      return '${event.environmentId}:${event.status}';
+    }
+    if (event is EnvironmentReady) {
+      return event.environmentId;
+    }
+    if (event is EnvironmentDestroyed) {
+      return event.environmentId;
     }
     return null;
   }

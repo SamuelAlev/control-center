@@ -54,6 +54,7 @@ class SandboxSpec {
     this.runnerStateDirs = const [],
     this.execGrantRoots = const [],
     this.loopbackPorts = const [],
+    this.environmentScope,
   });
 
   /// Stable id for the sandbox session (typically the space id).
@@ -131,6 +132,10 @@ class SandboxSpec {
   /// network namespace, so each port is bridged in at the same number.
   final List<int> loopbackPorts;
 
+  /// `<workspaceId>/<spaceId>` when the run's space has an environment
+  /// definition. Lets the run's own proxy admit that environment's hostnames.
+  final String? environmentScope;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -162,7 +167,11 @@ class SandboxSpec {
             execGrantRoots,
             other.execGrantRoots,
           ) &&
-          const ListEquality<int>().equals(loopbackPorts, other.loopbackPorts);
+          const ListEquality<int>().equals(
+            loopbackPorts,
+            other.loopbackPorts,
+          ) &&
+          environmentScope == other.environmentScope;
 
   @override
   int get hashCode => Object.hash(
@@ -178,5 +187,6 @@ class SandboxSpec {
     Object.hashAll(runnerStateDirs),
     Object.hashAll(execGrantRoots),
     Object.hashAll(loopbackPorts),
+    environmentScope,
   );
 }

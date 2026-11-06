@@ -21,6 +21,9 @@ import 'package:cc_infra/src/rigs/rig_ports.dart' show kRigPortMuxGuestPort;
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
+part 'smolvm_environment.dart';
+part 'smolvm_packs.dart';
+
 /// The OCI image every exec (terminal) rig boots, pinned by digest.
 ///
 /// Ubuntu 26.04 — the same userland the desktop qcow2 boots, so the
@@ -364,6 +367,9 @@ String smolvmPackVariantFor(RigSpec spec) {
   if (spec.isExec) {
     return kSmolvmExecPackVariant;
   }
+  if (spec.isEnvironment) {
+    return kSmolvmEnvironmentPackVariant;
+  }
   if (spec.surface != RigSurface.browser) {
     return '';
   }
@@ -678,13 +684,19 @@ class SmolvmLaunchPlan {
   /// Whether this is a terminal/exec machine rather than a browser one.
   bool get isExec => spec.isExec;
 
+  /// Whether this machine runs an environment.
+  bool get isEnvironment => spec.isEnvironment;
+
+  /// Whether this is a browser machine.
+  bool get isBrowser => !isExec && !isEnvironment;
+
   /// Which browser this machine boots, when it is a browser machine.
   RigBrowserEngine get engine => spec.browserEngine;
 
   /// Whether this machine installs its browser on first start rather than
   /// booting a fully baked image.
   bool get warmsPackages =>
-      !isExec && kBrowserEnginePackages.containsKey(engine);
+      isBrowser && kBrowserEnginePackages.containsKey(engine);
 }
 
 /// Builds the `smolvm machine create` argument vector for [plan].
@@ -697,6 +709,32 @@ class SmolvmLaunchPlan {
 /// as a persisted env value.
 List<String> buildSmolvmCreateArgs(SmolvmLaunchPlan plan) {
   final isExec = plan.isExec;
+  final isEnvironment = plan.isEnvironment;
+  final worktree = plan.spec.worktreePath;
+  final environmentStorageGb =
+      plan.spec.storageGb ?? kSmolvmEnvironmentMaxStorageGb;
+  if (isEnvironment && environmentStorageGb > kSmolvmEnvironmentMaxStorageGb) {
+    throw ArgumentError.value(
+      environmentStorageGb,
+      'spec.storageGb',
+      'smolvm cannot restart an environment machine with more than '
+          '$kSmolvmEnvironmentMaxStorageGb GiB of storage.',
+    );
+  }
+  if (isEnvironment &&
+      (worktree == null ||
+          [
+            worktree,
+            ...plan.spec.extraMounts.keys,
+            ...plan.spec.extraMounts.values,
+          ].any((path) => path.contains(':')))) {
+    // `-v` splits on colons, so such a path would mount something else.
+    throw ArgumentError.value(
+      worktree,
+      'spec.worktreePath',
+      'An environment rig mounts its worktree, and -v cannot carry a colon.',
+    );
+  }
   final dropped = <String>[];
   final allowlist = plan.spec.unrestrictedNetwork
       ? const <String>{}
@@ -718,6 +756,9 @@ List<String> buildSmolvmCreateArgs(SmolvmLaunchPlan plan) {
           // Same class, one step further along: every browser pack installs
           // its engine plus the shared audio capture dependencies.
           if (plan.warmsPackages) ...kBrowserRigAptMirrors,
+          // A pack already holds what this would install.
+          if (isEnvironment && plan.packPath == null)
+            ...kEnvironmentRigApkMirrors,
         };
   if (dropped.isNotEmpty) {
     // Said out loud, because a silently missing host reads to whoever hits it
@@ -749,7 +790,19 @@ List<String> buildSmolvmCreateArgs(SmolvmLaunchPlan plan) {
     // overlay to install INTO, and without one the apt write fails inside a
     // guest whose only symptom is a browser that never appears. A baked
     // browser image needs neither.
-    if (isExec) ...[
+    if (isEnvironment) ...[
+      '--storage',
+      '$environmentStorageGb',
+      '--overlay',
+      '$kSmolvmEnvironmentOverlayGb',
+      // Read-only, and enforced by the host: a guest root that unmounts or
+      // remounts it still cannot write (measured). The writable view is an
+      // overlay mounted after boot, whose writes stay on the guest's disk.
+      for (final target in environmentRigMountTargets(plan.spec).entries) ...[
+        '-v',
+        '${target.value}:${smolvmEnvironmentLowerDir(target.key)}:ro',
+      ],
+    ] else if (isExec) ...[
       '--storage',
       '8',
       '--overlay',
@@ -765,8 +818,17 @@ List<String> buildSmolvmCreateArgs(SmolvmLaunchPlan plan) {
     '--label', '$kSmolvmOwnerLabel=$kSmolvmOwnerValue',
     '--label', '$kSmolvmDataDirLabel=${plan.dataDir}',
     '--label', '$kSmolvmRigLabel=${plan.rigId}',
-    '--label', 'cc-surface=${isExec ? 'exec' : 'browser'}',
-    if (!isExec) ...['--label', 'cc-engine=${plan.engine.wire}'],
+    '--label',
+    'cc-surface=${isEnvironment
+        ? 'environment'
+        : isExec
+        ? 'exec'
+        : 'browser'}',
+    if (plan.isBrowser) ...['--label', 'cc-engine=${plan.engine.wire}'],
+    if (plan.spec.netBackend != null) ...[
+      '--net-backend',
+      plan.spec.netBackend!.wire,
+    ],
     if (plan.spec.unrestrictedNetwork)
       '--net'
     else ...[
@@ -794,14 +856,19 @@ List<String> buildSmolvmCreateArgs(SmolvmLaunchPlan plan) {
     // Browser guests warm their engine-specific pack once per host. Chromium's
     // browser and relay remain baked; its warm step adds only the shared audio
     // lane. Firefox and WebKit install their engine and audio packages.
-    if (isExec) ...[
+    if (isEnvironment) ...[
+      '--init',
+      smolvmEnvironmentInit(),
+      '--',
+      ...kSmolvmEnvironmentWorkload,
+    ] else if (isExec) ...[
       '--init',
       smolvmExecInit(),
     ] else ...[
       '--init',
       smolvmBrowserInitFor(plan.engine),
     ],
-    if (!isExec) ...[
+    if (plan.isBrowser) ...[
       '--',
       ...buildSmolvmBrowserWorkloadFor(
         plan.engine,
@@ -895,8 +962,13 @@ class SmolvmMachine implements RigMachine {
   final String name;
 
   /// The held `machine exec` sentinel whose exit reports the machine's death.
+  /// Replaced when a stopped machine resumes.
   @override
-  final Process process;
+  Process process;
+
+  /// Whether the VM is stopped with its disks kept, so a sentinel exit is
+  /// expected rather than a death.
+  bool stopped = false;
 
   @override
   final String guestSecret;
@@ -1040,7 +1112,7 @@ class SmolvmEnclosureBackend {
     return RigBackendCapabilities(
       backend: EnclosureBackend.smolvm,
       available: true,
-      surfaces: const {RigSurface.browser},
+      surfaces: const {RigSurface.browser, RigSurface.environment},
       // All three, on any host that has smolvm. Nothing about an engine is a
       // host property here — each one is an image pull plus, for two of them,
       // a package install, both of which happen inside the guest. A host that
@@ -1083,6 +1155,9 @@ class SmolvmEnclosureBackend {
     }
     final binary = _resolvedBinary!;
     final isExec = spec.isExec;
+    final isEnvironment = spec.isEnvironment;
+    // A shell-shaped machine: reached by `machine exec` and the port mux.
+    final isHeadless = isExec || isEnvironment;
     final name = smolvmMachineNameFor(rigId);
 
     onProgress?.call('Preparing the machine');
@@ -1100,9 +1175,11 @@ class SmolvmEnclosureBackend {
     await _chmod('600', secretPath);
 
     final engine = spec.browserEngine;
-    final devtoolsPort = isExec ? null : await _freePort();
-    final portMuxHostPort = isExec ? await _freePort() : null;
-    final defaultImage = isExec
+    final devtoolsPort = isHeadless ? null : await _freePort();
+    final portMuxHostPort = isHeadless ? await _freePort() : null;
+    final defaultImage = isEnvironment
+        ? kSmolvmEnvironmentImage
+        : isExec
         ? kSmolvmExecImage
         : smolvmBrowserImageFor(engine);
     // A workspace's own image, when one is configured AND passes the same
@@ -1111,7 +1188,9 @@ class SmolvmEnclosureBackend {
     // write through generic ops — this string becomes a host command line,
     // and "the client validated it" is not a boundary.
     String image;
-    if (imageOverride == null) {
+    if (imageOverride == null || isEnvironment) {
+      // No override for an environment: the workload is dockerd, so another
+      // image would be a machine that never comes up.
       image = defaultImage;
     } else if (!isExec && engine != RigBrowserEngine.chromium) {
       // A workspace's custom BROWSER image is a Chromium-oriented image: the
@@ -1152,8 +1231,10 @@ class SmolvmEnclosureBackend {
       packPath: usePack ? packPath : null,
       devtoolsHostPort: devtoolsPort,
       portMuxHostPort: portMuxHostPort,
-      secretFilePath: secretPath,
-      credentialPort: credentialPort,
+      // An environment guest runs code nobody reviewed, so it gets no secret
+      // and no way to the credential broker.
+      secretFilePath: isEnvironment ? null : secretPath,
+      credentialPort: isEnvironment ? null : credentialPort,
       devTlsSpkiFingerprint: devTlsSpkiFingerprint,
     );
 
@@ -1189,7 +1270,7 @@ class SmolvmEnclosureBackend {
       onProgress?.call(
         usePack
             ? 'Starting the microVM (cached image)'
-            : isExec
+            : isHeadless
             ? 'Starting the microVM (pulling the image and installing tools)'
             : 'Starting the microVM (the first boot pulls its image)',
       );
@@ -1211,16 +1292,37 @@ class SmolvmEnclosureBackend {
             binary,
             image,
             variant: packVariant,
-            warmInit: isExec ? smolvmExecInit() : smolvmBrowserInitFor(engine),
-            warmMirrors: isExec ? kExecRigAptMirrors : kBrowserRigAptMirrors,
-            warmProbe: isExec
+            warmInit: isEnvironment
+                ? smolvmEnvironmentInit()
+                : isExec
+                ? smolvmExecInit()
+                : smolvmBrowserInitFor(engine),
+            warmMirrors: isEnvironment
+                ? kEnvironmentRigApkMirrors
+                : isExec
+                ? kExecRigAptMirrors
+                : kBrowserRigAptMirrors,
+            warmProbe: isEnvironment
+                ? kSmolvmEnvironmentWarmProbe
+                : isExec
                 ? smolvmExecWarmProbe()
                 : _browserWarmProbe(engine),
+            // The image's own entrypoint would start a stock dockerd in the
+            // template, whose default storage fails on the guest rootfs.
+            warmWorkload: isEnvironment
+                ? const ['tail', '-f', '/dev/null']
+                : null,
+            warmStorageGb: isEnvironment ? kSmolvmEnvironmentMaxStorageGb : 8,
+            warmOverlayGb: isEnvironment ? kSmolvmEnvironmentOverlayGb : 16,
           ),
         );
       }
 
-      if (isExec) {
+      if (isEnvironment) {
+        await _awaitExec(binary, name, onProgress: onProgress);
+        await _awaitDocker(binary, name, onProgress: onProgress);
+        await _mountEnvironmentOverlays(binary, name, spec);
+      } else if (isExec) {
         await _awaitExec(binary, name, onProgress: onProgress);
         if (credentialPort != null) {
           await _installCredentialHelper(binary, name, rigId);
@@ -1239,22 +1341,7 @@ class SmolvmEnclosureBackend {
         );
       }
 
-      // The death sentinel: the CLI spawns the VMM detached, so there is no
-      // child process of ours whose exit means "the machine died". A held
-      // `machine exec` connection is the next best thing — when the VMM goes,
-      // it drops.
-      final sentinel = await Process.start(binary, [
-        'machine',
-        'exec',
-        '--name',
-        name,
-        '--',
-        'sh',
-        '-c',
-        'while :; do sleep 3600; done',
-      ]);
-      unawaited(sentinel.stdout.drain<void>());
-      unawaited(sentinel.stderr.drain<void>());
+      final sentinel = await _startSentinel(binary, name);
 
       onProgress?.call('Ready');
       return SmolvmMachine(
@@ -1265,7 +1352,7 @@ class SmolvmEnclosureBackend {
         runtimeDir: runtimeDir.path,
         display: spec.display,
         devtoolsPort: devtoolsPort,
-        automationGuestPort: isExec ? null : browserRigEndpointPort(engine),
+        automationGuestPort: isHeadless ? null : browserRigEndpointPort(engine),
         portMuxHostPort: portMuxHostPort,
         engine: engine,
       );
@@ -1278,6 +1365,96 @@ class SmolvmEnclosureBackend {
       await _deleteDirQuietly(runtimeDir.path);
       rethrow;
     }
+  }
+
+  /// The death sentinel: the CLI spawns the VMM detached, so there is no child
+  /// process of ours whose exit means "the machine died". A held `machine exec`
+  /// connection is the next best thing: when the VMM goes, it drops.
+  Future<Process> _startSentinel(String binary, String name) async {
+    final sentinel = await Process.start(binary, [
+      'machine',
+      'exec',
+      '--name',
+      name,
+      '--',
+      'sh',
+      '-c',
+      'while :; do sleep 3600; done',
+    ]);
+    unawaited(sentinel.stdout.drain<void>());
+    unawaited(sentinel.stderr.drain<void>());
+    return sentinel;
+  }
+
+  /// Stops [machine]'s VM and keeps its disks, so pulled images survive.
+  ///
+  /// The sentinel goes first and [SmolvmMachine.stopped] before it, or its exit
+  /// reads as the machine dying.
+  Future<void> stopKeepingDisks(SmolvmMachine machine) async {
+    final binary = _resolvedBinary;
+    if (binary == null) {
+      throw StateError('smolvm is not resolved on this host.');
+    }
+    machine.stopped = true;
+    machine.process.kill(ProcessSignal.sigkill);
+    await _runChecked(binary, [
+      'machine',
+      'stop',
+      '--name',
+      machine.name,
+    ], timeout: _deleteTimeout);
+  }
+
+  /// Starts a machine [stopKeepingDisks] stopped, and waits for Docker.
+  Future<void> resume(
+    SmolvmMachine machine, {
+    required RigSpec spec,
+    void Function(String step)? onProgress,
+  }) async {
+    final binary = _resolvedBinary;
+    if (binary == null) {
+      throw StateError('smolvm is not resolved on this host.');
+    }
+    await _runChecked(binary, [
+      'machine',
+      'start',
+      '--name',
+      machine.name,
+    ], timeout: _startTimeout);
+    await _awaitExec(binary, machine.name, onProgress: onProgress);
+    await _awaitDocker(binary, machine.name, onProgress: onProgress);
+    await _mountEnvironmentOverlays(binary, machine.name, spec);
+    machine.process = await _startSentinel(binary, machine.name);
+    machine.stopped = false;
+  }
+
+  /// Runs [argv] in [machine] and waits for it.
+  ///
+  /// Not through a shell: an argument stays one argument. [environment]
+  /// travels on the host command line, so it must hold no secrets.
+  Future<ProcessResult> exec(
+    SmolvmMachine machine,
+    List<String> argv, {
+    String? workdir,
+    Map<String, String> environment = const {},
+    Duration timeout = const Duration(minutes: 10),
+  }) {
+    final binary = _resolvedBinary;
+    if (binary == null) {
+      throw StateError('smolvm is not resolved on this host.');
+    }
+    return _run(
+      binary,
+      buildSmolvmExecArgs(
+        machine.name,
+        argv,
+        workdir: workdir,
+        environment: environment,
+        timeout: timeout,
+      ),
+      // The CLI's own limit fires first and says so; this is the backstop.
+      timeout: timeout + const Duration(seconds: 15),
+    );
   }
 
   /// Stops [machine] and discards its disks.
@@ -1384,7 +1561,6 @@ class SmolvmEnclosureBackend {
     return removed;
   }
 
-
   /// Where the pre-extracted image packs live.
   String get _packsDir => p.join(_dataDir, 'rigs', 'smolvm-packs');
 
@@ -1410,227 +1586,6 @@ class SmolvmEnclosureBackend {
   /// Packs currently being built, so two first-boots of one image cannot
   /// race two builders.
   final Set<String> _packsBuilding = {};
-
-  /// Builds the pack for [image] in the background.
-  ///
-  /// After the image is already in smolvm's cache (so no second download).
-  /// Written beside the destination and renamed in — a killed build must not
-  /// leave a file a later boot trusts. Best-effort: pack failures must not
-  /// surface near a boot.
-  /// Browser image packs directly (fully baked). Exec packs a warmed
-  /// throwaway template after init installs the toolset — no secrets,
-  /// worktree, or per-rig state — so later boots skip apt and mirrors.
-  Future<void> _buildPack(
-    String binary,
-    String image, {
-    String variant = '',
-    String? warmInit,
-    List<String> warmMirrors = const [],
-    String? warmProbe,
-  }) async {
-    final destination = packPathFor(image, variant: variant);
-    // Keyed on image AND variant, like the pack itself: Firefox and WebKit
-    // share a base image, and keying on the image alone would have the
-    // first of them to boot block the other's pack from ever being built.
-    final key = '$image#$variant';
-    if (!_packsBuilding.add(key)) {
-      return;
-    }
-    try {
-      if (File(destination).existsSync()) {
-        return;
-      }
-      await Directory(_packsDir).create(recursive: true);
-      // `pack create -o X` writes an executable stub at X and the actual
-      // artifact at X.smolmachine; only the artifact is kept. X must NOT end
-      // in `.smolmachine` — the tool refuses an output named like the
-      // sidecar it is about to create.
-      final stub = p.join(
-        _packsDir,
-        '.building-${p.basenameWithoutExtension(destination)}',
-      );
-      final warms = warmInit != null && warmProbe != null;
-      final ProcessResult result;
-      if (warms) {
-        final template = await _buildWarmTemplate(
-          binary,
-          image,
-          init: warmInit,
-          mirrors: warmMirrors,
-          probe: warmProbe,
-        );
-        if (template == null) {
-          return;
-        }
-        try {
-          result = await _run(binary, [
-            'pack',
-            'create',
-            '--from-vm',
-            template,
-            '-o',
-            stub,
-          ], timeout: _packTimeout);
-        } finally {
-          await _deleteQuietly(binary, template);
-        }
-      } else {
-        result = await _run(binary, [
-          'pack',
-          'create',
-          '--image',
-          image,
-          '-o',
-          stub,
-        ], timeout: _packTimeout);
-      }
-      if (result.exitCode != 0) {
-        CcInfraLog.warning(
-          'rig/smolvm: pack build for $image failed (exit ${result.exitCode}):'
-          ' ${result.stderr}',
-        );
-        return;
-      }
-      await File('$stub.smolmachine').rename(destination);
-      await _deleteFileQuietly(stub);
-      CcInfraLog.info(
-        'rig/smolvm: cached $image as a pre-extracted pack '
-        '(${p.basename(destination)}) — later machines skip the pull'
-        '${warms ? ' and the first-start package install' : ''}',
-      );
-    } on Object catch (e) {
-      CcInfraLog.warning('rig/smolvm: pack build for $image failed: $e');
-    } finally {
-      _packsBuilding.remove(key);
-    }
-  }
-
-  /// Boots a pristine template of [image], lets [init] warm the overlay,
-  /// verifies with [probe] that the warm actually took, and returns the
-  /// STOPPED machine's name ready to snapshot — or null on any failure.
-  ///
-  /// Used for both kinds of warm start: the exec image's toolset and a
-  /// browser engine's own packages. The template carries NO secrets, NO
-  /// worktree and no per-rig state — it never gets any: no broker secret, no
-  /// port forwards, nothing synced in — so the snapshot is safe to share
-  /// across every later rig and conversation.
-  ///
-  /// The caller deletes the machine; a builder that dies mid-flight leaves a
-  /// labelled machine the next start's orphan sweep collects.
-  Future<String?> _buildWarmTemplate(
-    String binary,
-    String image, {
-    required String init,
-    required String probe,
-    List<String> mirrors = const [],
-  }) async {
-    // Unique per attempt: two servers with different data dirs share one
-    // global machine store, and a fixed name would have them fighting over
-    // one record.
-    final template =
-        'ccpack-tmpl-${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}';
-    try {
-      await _runChecked(binary, [
-        'machine', 'create',
-        '--name', template,
-        '--image', image,
-        '--cpus', '2',
-        '--mem', '1024',
-        // The same disk shape real exec rigs get, so the snapshot's layout
-        // matches what boots from it.
-        '--storage', '8', '--overlay', '16',
-        // Owned like every rig machine, so a crashed builder's template is
-        // swept at the next service start instead of leaking forever.
-        '--label', '$kSmolvmOwnerLabel=$kSmolvmOwnerValue',
-        '--label', '$kSmolvmDataDirLabel=$_dataDir',
-        '--label', 'cc-surface=pack-template',
-        // Exactly the egress a real exec rig's warm-up needs and nothing
-        // else: apt mirrors for the install, the image's own registry for
-        // the pull.
-        '--outbound-localhost-only',
-        for (final host in {
-          ...mirrors,
-          ...registryHostsForImageRef(image),
-        }) ...['--allow-host', host],
-        '--init', init,
-      ]);
-      // Start blocks until init finishes, but verify anyway: an apt failure
-      // exits init non-fatally and a snapshot of a HALF-warm template would
-      // cache the breakage for every later rig.
-      await _runChecked(binary, [
-        'machine',
-        'start',
-        '--name',
-        template,
-      ], timeout: _startTimeout);
-      final check = await _run(binary, [
-        'machine',
-        'exec',
-        '--name',
-        template,
-        '--timeout',
-        '30s',
-        '--',
-        'sh',
-        '-c',
-        probe,
-      ]);
-      if (check.exitCode != 0) {
-        CcInfraLog.warning(
-          'rig/smolvm: the template for $image never warmed (are the apt '
-          'mirrors reachable?); keeping the plain-boot path',
-        );
-        await _deleteQuietly(binary, template);
-        return null;
-      }
-      // A snapshot needs a stopped machine.
-      await _runChecked(binary, [
-        'machine',
-        'stop',
-        '--name',
-        template,
-      ], timeout: _deleteTimeout);
-      return template;
-    } on Object catch (e) {
-      CcInfraLog.warning('rig/smolvm: template build for $image failed: $e');
-      await _deleteQuietly(binary, template);
-      return null;
-    }
-  }
-
-  /// Removes pack files no pinned image references any more (an image bump
-  /// changes the pack name) and the debris of interrupted builds.
-  Future<void> _prunePacks() async {
-    final dir = Directory(_packsDir);
-    if (!dir.existsSync()) {
-      return;
-    }
-    final wanted = {
-      smolvmPackFileName(
-        kSmolvmExecImage,
-        variant: smolvmPackVariantFor(RigSpec.exec(conversationId: '_pack')),
-      ),
-      for (final engine in RigBrowserEngine.values)
-        smolvmPackFileName(
-          smolvmBrowserImageFor(engine),
-          variant: smolvmPackVariantFor(
-            RigSpec(
-              surface: RigSurface.browser,
-              conversationId: '_pack',
-              browserEngine: engine,
-            ),
-          ),
-        ),
-    };
-    await for (final entity in dir.list(followLinks: false)) {
-      if (entity is File && !wanted.contains(p.basename(entity.path))) {
-        CcInfraLog.info(
-          'rig/smolvm: pruning stale pack ${p.basename(entity.path)}',
-        );
-        await _deleteFileQuietly(entity.path);
-      }
-    }
-  }
 
   Future<void> _deleteFileQuietly(String path) async {
     try {

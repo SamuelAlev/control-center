@@ -92,10 +92,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get keybindingPushToTalk => 'Bas konuş';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'İleti kutusunda sesli dikteyi basılı tutun veya açıp kapatın';
-
-  @override
   String get agentPermissions => 'Ajan izinleri';
 
   @override
@@ -192,6 +188,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'iOS Simülatörü';
+
+  @override
+  String get rigSurfaceAppWindow => 'Uygulama penceresi';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -464,6 +463,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'Canlı görünüm bu makinede ffmpeg gerektirir. ffmpeg kurun ve sekmeyi yeniden açın.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'Canlı görünüm için Ekran Kaydı gerekir. Sistem Ayarları\'nda Control Center\'a izin verin ve sekmeyi yeniden açın.';
 
   @override
   String get rigStreamEnded => 'Canlı görünüm sona erdi.';
@@ -1568,10 +1571,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'Filtre menüsünü aç';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'Pull request filtre menüsünü aç';
 
   @override
   String countSelected(int count) {
@@ -2846,19 +2845,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get cancelEdit => 'Düzenlemeyi iptal et';
 
   @override
-  String get categoryCreation => 'Oluşturma';
-
-  @override
-  String get categoryEditing => 'Düzenleme';
-
-  @override
   String get categoryNavigation => 'Gezinme';
-
-  @override
-  String get categorySystem => 'Sistem';
-
-  @override
-  String get categoryView => 'Kategori görünümü';
 
   @override
   String get change => 'Değiştir';
@@ -3678,31 +3665,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get keepSandboxing => 'Sandboxing\'i koru';
 
   @override
-  String get keybindingAddARepositoryDescription => 'Depo ekle';
-
-  @override
   String get keybindingAddRepository => 'Depo ekle';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'Seçili makaleyi yer imlerine ekle veya kaldır';
 
   @override
   String get keybindingCommandPalette => 'Komut paleti';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'Yeni ajan oluştur';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'Yeni çalışma alanı oluştur';
-
-  @override
   String get keybindingFocusSearch => 'Aramaya odaklan';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'Pull request arama alanına odaklan';
 
   @override
   String get keybindingNewAgent => 'Yeni ajan';
@@ -3723,34 +3692,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get keybindingOpenArticle => 'Makaleyi aç';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'Kenar çubuğundaki çalışma alanı değiştirici penceresini aç veya kapat';
-
-  @override
   String get keybindingOpenPr => 'PR aç';
 
   @override
   String get keybindingOpenSettings => 'Ayarları aç';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'Uygulama ayarlarını aç';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription => 'Komut paletini aç';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'Seçili makaleyi aç';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'Seçili pull request\'i aç';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'Seçili çalışma alanını aç';
 
   @override
   String get keybindingOpenWorkspace => 'Çalışma alanını aç';
@@ -3768,84 +3713,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get keybindingRefresh => 'Yenile';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'Tüm akışları yenile';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'Pull request listesini yenile';
-
-  @override
-  String get keybindingRescanForAdaptersDescription =>
-      'Bağdaştırıcıları yeniden tara';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription =>
-      'Sonraki makaleyi seç';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription => 'Sonraki alanı seç';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'Önceki makaleyi seç';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription => 'Önceki alanı seç';
-
-  @override
   String get keybindingSendMessage => 'Mesaj gönder';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'Geçerli mesajı gönder';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'Açık ve koyu tema arasında geç';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'Sekizinci çalışma alanına geç';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'Beşinci çalışma alanına geç';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'İlk çalışma alanına geç';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'Dördüncü çalışma alanına geç';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'Sonraki çalışma alanına geç';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'Dokuzuncu çalışma alanına geç';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'Önceki çalışma alanına geç';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'İkinci çalışma alanına geç';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'Yedinci çalışma alanına geç';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'Altıncı çalışma alanına geç';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'Üçüncü çalışma alanına geç';
 
   @override
   String get keybindingToggleBookmark => 'Yer imini aç/kapat';
@@ -3883,13 +3751,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'Çalışma alanı 9';
-
-  @override
-  String get keybindings => 'Kısayollar';
-
-  @override
-  String get keybindingsDescription =>
-      'Tüm klavye kısayolları. Kısayollar sabittir ve yeniden atanamaz.';
 
   @override
   String get killRunning => 'Çalışanı sonlandır';
@@ -4157,11 +4018,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get noSavedArticlesBody => 'Kaydettiğiniz makaleler burada görünür.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return '\"$query\" ile eşleşen kısayol yok';
-  }
 
   @override
   String get noSystemFonts => 'Sistem yazı tipi algılanmadı.';
@@ -4898,12 +4754,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'Ara…';
-
-  @override
-  String get searchShortcuts => 'Kısayol ara…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'Tarayıcıda kullanılamaz';
 
   @override
   String get searching => 'Aranıyor…';
@@ -6692,6 +6542,27 @@ class AppLocalizationsTr extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'Space silindi';
 
   @override
+  String get triggerEventSpaceArchived => 'Space arşivlendi';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged => 'Space hazırlığı değişti';
+
+  @override
+  String get triggerEventPrHeadChanged => 'PR head\'i değişti';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => 'Ortam durumu değişti';
+
+  @override
+  String get triggerEventEnvironmentReady => 'Ortam hazır';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'Ortam yok edildi';
+
+  @override
+  String get triggerEventEnvironmentProcessExited => 'Ortam süreci sonlandı';
+
+  @override
   String get triggerExternalPrHelp =>
       'Kod barındırıcısında açılan bir pull request, Control Center\'dan değil.';
 
@@ -6752,6 +6623,32 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'Bir konuşma alanı silinir.';
+
+  @override
+  String get triggerSpaceArchivedHelp => 'Bir konuşma alanı arşivlenir.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'Bir alanın çalışma ağaçlarının hazırlığı başlar, biter veya başarısız olur.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'Açık bir pull request\'e yeni commit\'ler gönderilir.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'Bir alan ortamı yeni bir duruma geçer.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'Bir alan ortamı başladı ve kullanılabilir.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp => 'Bir alan ortamı kaldırılır.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'Bir ortamın çalıştırdığı süreç sonlanır.';
 
   @override
   String get navTickets => 'Biletler';
@@ -8959,19 +8856,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'Kullanım ve maliyet';
-
-  @override
-  String get usageAndCostDescription =>
-      'Ajanlarınızın son 7 gündeki harcaması, gözlemlenen çalışma maliyetlerine göre.';
-
-  @override
-  String get noUsageYet => 'Henüz kullanım kaydı yok.';
-
-  @override
-  String get spentThisWeek => 'bu hafta harcandı';
-
-  @override
   String get subscriptionUsage => 'Abonelik kullanımı';
 
   @override
@@ -9185,10 +9069,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get keybindingNewSpace => 'Yeni çalışma alanı';
 
   @override
-  String get keybindingCreateANewSpaceDescription =>
-      'Yeni bir çalışma alanı oluştur';
-
-  @override
   String get jumpToLatest => 'En sona git';
 
   @override
@@ -9362,71 +9242,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get preparingWorkspace => 'Çalışma alanı hazırlanıyor…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return '$repo için kurulum betiği çalıştırılıyor…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'Betikler';
-
-  @override
-  String get repoScriptsTooltip => 'Yaşam döngüsü betiklerini yapılandır';
-
-  @override
-  String get repoScriptsSetupLabel => 'Kurulum betiği';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'Alan oluşturulduktan hemen sonra çalışma ağacında çalışır — bağımlılıkları yükle, dosya üret. Başarısızlık alanı başarısız işaretler; yeniden deneme betiği tekrar çalıştırır.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'Arşiv betiği';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'Alan çalışma ağacı silinmeden hemen önce çalışır — çalışma ağacı dışındaki kaynakları temizle. Başarısızlık silmeyi asla engellemez.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'Çalışma ağacından bash ile çalışır; CC_WORKSPACE_PATH (çalışma ağacı), CC_ROOT_PATH (repo kökü), CC_SPACE_ID, CC_SPACE_NAME ve CC_REPO_NAME tanımlıdır.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'ör. pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'ör. docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => 'Son çalıştırmalar';
-
-  @override
-  String get repoScriptsNoRuns => 'Henüz çalıştırma yok';
-
-  @override
-  String get repoScriptsSaved => 'Betikler kaydedildi';
-
-  @override
-  String get repoScriptsRunKindSetup => 'Kurulum';
-
-  @override
-  String get repoScriptsRunKindArchive => 'Arşiv';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'Çalışıyor';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'Başarılı';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'Başarısız';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'Zaman aşımı';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'Çıkış kodu $code';
+  String provisioningRunningTasks(String repo) {
+    return '$repo için worktree görevleri çalıştırılıyor…';
   }
 
   @override
@@ -10231,10 +10048,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get keybindingCheatSheet => 'Klavye kısayolları';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'Geçerli ekranın klavye kısayolu listesini göster';
-
-  @override
   String get runPlaybookLabel => 'Playbook çalıştır';
 
   @override
@@ -10245,14 +10058,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'Yinele';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'Son geri alınabilir eylemi geri al';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'Son geri alınan eylemi yinele';
 
   @override
   String get undone => 'Geri alındı';
@@ -14107,6 +13912,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get newSkill => 'Yeni beceri';
 
   @override
+  String get newItemAction => 'Yeni';
+
+  @override
   String get zoomIn => 'Yakınlaştır';
 
   @override
@@ -14321,6 +14129,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get steerNow => 'Yönlendir';
 
   @override
+  String get steerForce => 'Durdur ve gönder';
+
+  @override
   String get steeringQueueLabel => 'Kuyruktaki yönlendirme mesajları';
 
   @override
@@ -14368,16 +14179,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'Bir ajanın bu kopyadan bir program çalıştırması gerektiğinde yeniden sorulacak.';
-
-  @override
-  String get repoScriptsTest => 'Test';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'Bu taslağı deponun geçici bir klonunda çalıştır';
-
-  @override
-  String get repoScriptsRunKindTest => 'Test';
 
   @override
   String get demoBadgeLabel => 'Demo';
@@ -14593,6 +14394,50 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'Sunucudaki yol';
+
+  @override
+  String get backupScheduledLabel => 'Zamanlanmış yedekler';
+
+  @override
+  String get backupScheduledExplainer =>
+      'Her çalışma alanının yedekleme işlem hattının kaydettiği kopyalar. Zamanlamayı ve saklama süresini işlem hattı şablonunda ayarlayın.';
+
+  @override
+  String get backupScheduledNone => 'Henüz yedek yok';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count yedek',
+      one: '1 yedek',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'Son yedek: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'Bu çalışma alanının yedeklerini görmek için yönetici rolüne ihtiyacınız var.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'Bu yedek silinsin mi?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return '$name için $date tarihli yedek sunucudan silinsin mi? Bu işlem geri alınamaz.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'Yedek silindi.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'Çalışma alanı silindi';
 
   @override
   String get backupRestoreAction => 'Geri yükle';
@@ -15212,14 +15057,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get ideQuickOpen => 'Dosyaya git';
 
   @override
-  String get ideQuickOpenDescription =>
-      'Konuşmanın dosyalarını ada göre arayın ve birini sekmede açın';
-
-  @override
-  String get prQuickOpenDescription =>
-      'Pull request\'in dosyalarını ada göre arayın ve birini sekmede açın';
-
-  @override
   String get ideQuickOpenHint => 'Dosyaları ada göre ara';
 
   @override
@@ -15548,6 +15385,15 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'Zorunlu yükleme';
+
+  @override
+  String get skillEvalHashLabel => 'Paket hash\'i';
+
+  @override
+  String get skillEvalProgressLabel => 'İlerleme';
+
+  @override
+  String get skillEvalUpdatesToggle => 'Güncelleme değerlendirmeleri';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -15938,4 +15784,706 @@ class AppLocalizationsTr extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return '$minutes dk kaldı';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'Ortamlar ana makinede gerçek süreçler çalıştırır, bu yüzden demoda hiç yoktur.';
+
+  @override
+  String get environmentChecksFailing =>
+      'Bazı kontroller sunucuda başarısız oluyor';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'Uç noktalar: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'Hizmetler: $names';
+  }
+
+  @override
+  String get environmentCopied => 'Kopyalandı';
+
+  @override
+  String get environmentCopyCommand => 'Komutu kopyala';
+
+  @override
+  String get environmentCopyUrl => 'URL\'yi kopyala';
+
+  @override
+  String get environmentDefinition => 'Tanım';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tanım',
+      one: '1 tanım',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'Yok et';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name ve verileri kaldırılır. Başlat yeni bir tane oluşturur.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'Bu ortam yok edilsin mi?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'Bir hizmette çalıştır';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'Çıkış kodu $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => 'Bunun sunucuda kurulması gerekiyor';
+
+  @override
+  String get environmentKindApp => 'Uygulama';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'Süreç';
+
+  @override
+  String get environmentKindTask => 'Görev';
+
+  @override
+  String get environmentLaunch => 'Aç';
+
+  @override
+  String get environmentLogsGone => 'Bu günlükler artık kullanılamıyor.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'Günlükler: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'Çıktı bekleniyor';
+
+  @override
+  String get environmentMoreActions => 'Diğer ortam işlemleri';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'Bir değişiklik bu ortamın yeniden oluşturulmasını gerektiriyor.';
+
+  @override
+  String get environmentNoStack =>
+      'Yalnızca worktree görevlerini çalıştırır, bu yüzden başlatılacak bir şey yok.';
+
+  @override
+  String get environmentOnTheServer => 'Sunucuda';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Browser (VM) içinde aç';
+
+  @override
+  String get environmentOpenViewer => 'Görüntüleyiciyi aç';
+
+  @override
+  String get environmentPlacementRig => 'Bir VM\'de';
+
+  @override
+  String get environmentPreviewTab => 'Ortam';
+
+  @override
+  String get environmentRebuildRelaunch => 'Yeniden derle ve aç';
+
+  @override
+  String get environmentRecreate => 'Yeniden oluştur';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name yok edilir ve aynı seçeneklerle yeniden başlatılır. Verileri kaybolur.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'Bu ortam yeniden oluşturulsun mu?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name başlangıç durumuna döner. O zamandan beri oluşturulan veriler kaybolur.';
+  }
+
+  @override
+  String get environmentResetData => 'Verileri sıfırla';
+
+  @override
+  String get environmentResetTitle => 'Veriler sıfırlansın mı?';
+
+  @override
+  String get environmentRestart => 'Yeniden başlat';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count yeniden başlatma',
+      one: '1 yeniden başlatma',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'Çalıştır';
+
+  @override
+  String get environmentRunInTerminal => 'Terminalde çalıştır';
+
+  @override
+  String get environmentSectionTitle => 'Ortam';
+
+  @override
+  String get environmentService => 'Hizmet';
+
+  @override
+  String environmentServiceActions(String name) {
+    return '$name için işlemler';
+  }
+
+  @override
+  String get environmentStartTitle => 'Ortamı başlat';
+
+  @override
+  String get environmentStateCrashed => 'Çöktü';
+
+  @override
+  String get environmentStatusDegraded => 'Düşük performans';
+
+  @override
+  String get environmentStatusDestroying => 'Yok ediliyor';
+
+  @override
+  String get environmentStatusGone => 'Kayboldu';
+
+  @override
+  String get environmentStatusStopping => 'Durduruluyor';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return '$name durdurulursa verileri kaybolur ve Başlat bunları geri getirmez.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'Durdur ve verileri kaybet';
+
+  @override
+  String get environmentStopTitle => 'Bu ortam durdurulsun mu?';
+
+  @override
+  String get environmentTaskNeverRun => 'Henüz çalıştırılmadı';
+
+  @override
+  String get environmentsAddCheck => 'Kontrol ekle';
+
+  @override
+  String get environmentsAddOption => 'Seçenek ekle';
+
+  @override
+  String get environmentsAddRole => 'Rol ekle';
+
+  @override
+  String get environmentsAdminOnly =>
+      'Tanımları yalnızca çalışma alanı yöneticileri değiştirebilir.';
+
+  @override
+  String get environmentsAfter => 'Bu bileşenleri bekle';
+
+  @override
+  String get environmentsAnchor => 'Çapa';
+
+  @override
+  String get environmentsAutoCreate => 'Otomatik başlat';
+
+  @override
+  String get environmentsAutoCreateAll => 'Her uygun alanda';
+
+  @override
+  String get environmentsAutoCreateOff => 'Asla';
+
+  @override
+  String get environmentsAutoCreatePrs => 'Pull request alanlarında';
+
+  @override
+  String get environmentsBlank => 'Boş tanım';
+
+  @override
+  String get environmentsCheckFix => 'Düzeltme komutu';
+
+  @override
+  String get environmentsCheckHint => 'İpucu';
+
+  @override
+  String get environmentsCommandHelp =>
+      'Bağımsız değişkenler boşlukla ayrılır. Boşluk içereni tırnak içine alın.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bileşen',
+      one: '1 bileşen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'Başlangıçta imajları derle';
+
+  @override
+  String get environmentsComposeFile => 'Compose dosyası';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Compose dosyası okunamadı. Hizmet adları yine de JSON görünümüne yazılabilir.';
+
+  @override
+  String get environmentsComposeServices => 'Hizmetler';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'Hepsini çalıştırmak için tüm hizmetleri işaretsiz bırakın.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'Bu komutun koşullu bağımsız değişkenleri var. JSON görünümünde düzenleyin.';
+
+  @override
+  String get environmentsCwdPath => 'Çalışma yolu';
+
+  @override
+  String get environmentsCwdRole => 'Çalışma rolü';
+
+  @override
+  String get environmentsDeleteBody =>
+      'Alanlar artık bunu başlatamaz. Çalışan ortamlar durdurulana kadar çalışmaya devam eder.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return '$name silinsin mi?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'Her alanın neleri başlatabileceği ve worktree\'lerinin hangi görevleri çalıştırdığı.';
+
+  @override
+  String get environmentsDraftFromRepo => 'Depodan taslak oluştur';
+
+  @override
+  String get environmentsEmpty => 'Henüz tanım yok';
+
+  @override
+  String get environmentsEnabledWhen => 'Şu durumda etkin';
+
+  @override
+  String get environmentsEndpointRole => 'Uç nokta rolü';
+
+  @override
+  String get environmentsFollowPrHead => 'Pull request\'in head\'ini izle';
+
+  @override
+  String get environmentsForkApproval => 'Her başlatma için yönetici gerekir';
+
+  @override
+  String get environmentsForkDeny => 'Reddedildi';
+
+  @override
+  String get environmentsForkPrs => 'Fork pull request\'leri';
+
+  @override
+  String get environmentsForkRig => 'Bir VM\'de çalıştır';
+
+  @override
+  String get environmentsIdleStop => 'Boşta kalma dakikasından sonra durdur';
+
+  @override
+  String get environmentsIsolateHome => 'Uygulamaya özel bir ana dizin ver';
+
+  @override
+  String get environmentsIssues => 'Kaydetmeden önce bunları düzeltin';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'Geçersiz JSON: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'Durdurulunca verilerini korur';
+
+  @override
+  String get environmentsLinkConfirm => 'Bağla ve onayla';
+
+  @override
+  String get environmentsLinkFile => 'Depo dosyası bağla';
+
+  @override
+  String get environmentsLinkHelp =>
+      'Yalnızca varsayılan daldan okunur ve yalnızca onaylandıktan sonra çalıştırılır.';
+
+  @override
+  String get environmentsLinkPath => 'Yol';
+
+  @override
+  String get environmentsMaxRunning => 'Aynı anda çalışan';
+
+  @override
+  String get environmentsNamingProject => 'Proje';
+
+  @override
+  String get environmentsNamingTemplate => 'Ad şablonu';
+
+  @override
+  String get environmentsNew => 'Yeni tanım';
+
+  @override
+  String get environmentsNewDefinitionName => 'Yeni ortam';
+
+  @override
+  String get environmentsNoChecks => 'Bu tanımın kontrolü yok.';
+
+  @override
+  String get environmentsNoRuns => 'Henüz test çalıştırması yok';
+
+  @override
+  String get environmentsOnChange => 'İzlenecek yollar';
+
+  @override
+  String get environmentsOptionBool => 'Evet veya hayır';
+
+  @override
+  String get environmentsOptionEnum => 'Şunlardan biri';
+
+  @override
+  String get environmentsOptionMulti => 'Şunlardan birkaçı';
+
+  @override
+  String get environmentsOptionValues => 'Değerler';
+
+  @override
+  String get environmentsPlacement => 'Yerleşim';
+
+  @override
+  String get environmentsPlacementHost => 'Ana makinede';
+
+  @override
+  String get environmentsPlacementRig => 'Bir VM\'de';
+
+  @override
+  String get environmentsPrepareTask => 'Hazırlık görevi';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'Birincil uç nokta';
+
+  @override
+  String get environmentsReadyHttp => 'Bu URL yanıt verdiğinde hazır';
+
+  @override
+  String get environmentsRestartAlways => 'Her zaman';
+
+  @override
+  String get environmentsRestartNever => 'Asla';
+
+  @override
+  String get environmentsRestartOn => 'Bu yollar değişince yeniden başlat';
+
+  @override
+  String get environmentsRestartOnFailure => 'Hata durumunda';
+
+  @override
+  String get environmentsRestartPolicy => 'Yeniden başlat';
+
+  @override
+  String get environmentsRigTtl => 'Saat cinsinden VM ömrü';
+
+  @override
+  String get environmentsRunChecks => 'Yeniden çalıştır';
+
+  @override
+  String get environmentsRunTest => 'Testi çalıştır';
+
+  @override
+  String get environmentsSaved => 'Tanım kaydedildi';
+
+  @override
+  String get environmentsSectionComponents => 'Bileşenler';
+
+  @override
+  String get environmentsSectionOptions => 'Başlatma seçenekleri';
+
+  @override
+  String get environmentsSectionSeedFiles => 'Başlangıç dosyaları';
+
+  @override
+  String get environmentsSectionVariables => 'Değişkenler';
+
+  @override
+  String get environmentsSeedHelp =>
+      'Her satıra bir yol, kayıtlı checkout\'tan kopyalanır. Fork pull request\'leri bunları asla almaz.';
+
+  @override
+  String get environmentsShellHelp =>
+      'Yer tutucular burada genişletilmez. Bunun yerine CC_ENV_* değişkenlerini okuyun.';
+
+  @override
+  String get environmentsSourceApprove => 'Bu sürümü onayla';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path onaylı sürümle eşleşiyor.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'Bunu onaylayana kadar onaylı sürüm çalışmaya devam eder.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'Kaynak';
+
+  @override
+  String get environmentsTestHelp =>
+      'Tek kullanımlık bir ortamı baştan sona çalıştırır: kontrol et, başlat, hazır olmasını bekle, yok et.';
+
+  @override
+  String get environmentsTestSaveFirst => 'Önce tanımı kaydedin.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'Saniye cinsinden zaman aşımı';
+
+  @override
+  String get environmentsTitle => 'Ortamlar';
+
+  @override
+  String get environmentsTriggerArchive => 'Worktree silinmeden önce';
+
+  @override
+  String get environmentsTriggerChange => 'İzlenen yollar değiştiğinde';
+
+  @override
+  String get environmentsTriggerCreate => 'Ortam başına bir kez';
+
+  @override
+  String get environmentsTriggerManual => 'İstek üzerine';
+
+  @override
+  String get environmentsTriggerProvision => 'Worktree oluşturulduğunda';
+
+  @override
+  String get environmentsTriggerStart => 'Her başlatmada';
+
+  @override
+  String get environmentsTriggers => 'Çalışır';
+
+  @override
+  String get environmentsUnreadable => 'Bu istemci bu tanımı okuyamıyor.';
+
+  @override
+  String get environmentsUpdateAvailable => 'Güncelleme var';
+
+  @override
+  String get environmentsUseShell => 'Kabuk komutu kullan';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'Araç bu durumda kendi checkout\'unuzda çalışır. Salt okunur kabul edin.';
+
+  @override
+  String get environmentsWhenMissing => 'Bir alanda yoksa';
+
+  @override
+  String get environmentsWhenMissingAdd => 'Alana ekle';
+
+  @override
+  String get environmentsWhenMissingSkip => 'Atla';
+
+  @override
+  String get environmentsWhenMissingSource => 'Kayıtlı checkout\'u kullan';
+
+  @override
+  String get environmentsUnsupported => 'Bu sunucu ortamları desteklemiyor.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'Görüntüleyici yok: sunucu bu pencereyi yakalayamıyor. Sunucuda Control Center için ekran kaydına izin verin.';
+
+  @override
+  String get environmentHealthHealthy => 'Sağlıklı';
+
+  @override
+  String get environmentHealthUnhealthy => 'Sağlıksız';
+
+  @override
+  String get environmentTerminalStale =>
+      'Bu terminal ortam başlamadan önce açıldı, bu yüzden değişkenleri yok.';
+
+  @override
+  String get environmentTerminalFresh => 'Yeni terminal aç';
+
+  @override
+  String get environmentsShellStays =>
+      'Çok satırlı bir betik kabuk komutu olarak kalır: satırları yapısıdır.';
+
+  @override
+  String get environmentsOverrides => 'Çalışma alanı geçersiz kılmaları';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'Dosyanın kendi ayarları burada salt okunurdur. Rollerini bu çalışma alanının depolarına bağlayın veya herhangi bir alanı JSON olarak geçersiz kılın.';
+
+  @override
+  String get environmentsReposHelp =>
+      'Bu ortamın kullandığı depolar; her biri bir role bağlıdır.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'Ortamın çalıştırdıkları, başlatma sırasıyla.';
+
+  @override
+  String get environmentsOptionsHelp => 'Ortam başlatılırken sunulan seçimler.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'Görevlerde, işlemlerde, uygulamalarda ve alan terminallerinde ayarlanır.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'Bu ortamın çalışması için ana makinenin ihtiyaç duyduğu şeyler.';
+
+  @override
+  String get environmentsIdleStopHelp => '0 hiç durdurmaz.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'Bu depoyu içeren bir alan ortamı başlatabilir.';
+
+  @override
+  String get environmentsRequiredHelp => 'Ortam bu olmadan çalışamaz.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'Pull request\'in head\'i değiştiğinde eşitle ve yenile.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'Düzeltilmeli';
+
+  @override
+  String get environmentsCheckFile => 'Dosya';
+
+  @override
+  String get environmentsDiscardBody =>
+      'Bu tanımdaki değişiklikleriniz kaybolacak.';
+
+  @override
+  String get environmentsWorktreeRuns => 'Worktree görev çalıştırmaları';
+
+  @override
+  String get environmentsNoWorktreeRuns =>
+      'Henüz hiçbir worktree görevi çalışmadı.';
+
+  @override
+  String get environmentsLinkRoles => 'Bu dosyadaki roller';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'Dosya depodan okunamadı. Roller bağlandıktan sonra atanabilir.';
+
+  @override
+  String get guardrailClassHostExecution => 'Ana makinede komut çalıştır';
+
+  @override
+  String get environmentUrls => 'URL\'ler';
+
+  @override
+  String get environmentScripts => 'Betikler';
+
+  @override
+  String get environmentNoneForSpace => 'Bu alan için ortam yok';
+
+  @override
+  String get environmentNoneForPr => 'Bu pull request için ortam yok';
+
+  @override
+  String get environmentSetupBody =>
+      'Ortam, bir deponun hizmetlerini, betiklerini ve URL\'lerini tek bir alan için çalıştırır. Bir kez kurun, deponun her alanı onu başlatabilsin.';
+
+  @override
+  String get environmentSetUp => 'Ortamı kur';
+
+  @override
+  String get environmentEditDefinition => 'Tanımı düzenle';
+
+  @override
+  String get environmentOpenPanel => 'Ortamı aç';
+
+  @override
+  String get environmentNeedsSetup => 'Kurulum gerekli';
+
+  @override
+  String get environmentContinueInTerminal => 'Terminalde devam et';
+
+  @override
+  String get environmentSetupHint =>
+      'Araç, parola veya bir soru için sizi terminalde bekliyor. Bittiğinde başlatma devam eder.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'Başlatma sizi beklediği için bu terminal açıldı';
+
+  @override
+  String get environmentSetupTab => 'Ortam kurulumu';
+
+  @override
+  String get environmentsNothingRunning => 'Bu tanımdan çalışan bir şey yok.';
+
+  @override
+  String get searchPoliciesHint => 'Politikalarda ara...';
+
+  @override
+  String get noPoliciesMatch => 'Aramanızla eşleşen politika yok';
+
+  @override
+  String get memoryPolicyActive => 'Etkin';
+
+  @override
+  String get memoryFactType => 'Tür';
+
+  @override
+  String get memoryTimesRecalled => 'Hatırlanma sayısı';
+
+  @override
+  String get memorySourceFacts => 'Kaynak bilgiler';
+
+  @override
+  String get spaceSetupLogs => 'Kurulum günlükleri';
 }

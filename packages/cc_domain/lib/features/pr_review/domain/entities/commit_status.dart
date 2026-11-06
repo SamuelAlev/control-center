@@ -49,7 +49,7 @@ class CommitStatus {
     this.updatedAt,
   });
 
-  /// The status context, e.g. `netlify/test-web-app/deploy-preview`.
+  /// The status context, e.g. `netlify/test-shop-ui/deploy-preview`.
   final String context;
 
   /// The status state.

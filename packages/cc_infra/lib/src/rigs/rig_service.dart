@@ -3,7 +3,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Process;
+import 'dart:io' show Process, ProcessResult;
 import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart' show NotFoundException;
@@ -12,6 +12,7 @@ import 'package:cc_domain/core/domain/events/rig_events.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/rigs/domain/entities/rig.dart';
 import 'package:cc_domain/features/rigs/domain/entities/rig_action_log_entry.dart';
+import 'package:cc_domain/features/rigs/domain/ports/host_window_port.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_ports_port.dart';
 import 'package:cc_domain/features/rigs/domain/repositories/rig_repository.dart';
@@ -35,6 +36,7 @@ import 'package:cc_infra/src/rigs/browser_engine_attach.dart';
 import 'package:cc_infra/src/rigs/browser_engine_client.dart';
 import 'package:cc_infra/src/rigs/guest_agent_client.dart';
 import 'package:cc_infra/src/rigs/guest_credential_service.dart';
+import 'package:cc_infra/src/rigs/host_window_rig_driver.dart';
 import 'package:cc_infra/src/rigs/ios_rig_driver.dart';
 import 'package:cc_infra/src/rigs/ios_simulator_backend.dart';
 import 'package:cc_infra/src/rigs/qemu_enclosure_backend.dart';
@@ -44,12 +46,16 @@ import 'package:cc_infra/src/rigs/rig_file_transfer.dart';
 import 'package:cc_infra/src/rigs/rig_image_store.dart';
 import 'package:cc_infra/src/rigs/rig_machine.dart';
 import 'package:cc_infra/src/rigs/rig_port_service.dart';
+import 'package:cc_infra/src/rigs/rig_ports.dart' show kEnvironmentRouterPort;
 import 'package:cc_infra/src/rigs/smolvm_enclosure_backend.dart';
 import 'package:cc_infra/src/rigs/worktree_sync.dart';
 import 'package:crypto/crypto.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
+part 'rig_service_environments.dart';
+part 'rig_service_host_windows.dart';
+part 'rig_service_live_rig.dart';
 part 'smolvm_browser_microphone.dart';
 
 /// Releases a pin taken with [RigService.pin]. Idempotent.
@@ -71,107 +77,6 @@ typedef RigSmolvmImageResolver =
 typedef RigBrowserEgressResolver =
     Future<List<String>> Function(String workspaceId);
 
-/// One live rig: its record, its machine and its driver.
-class _LiveRig {
-  _LiveRig({required this.rig});
-
-  Rig rig;
-  RigMachine? machine;
-  IosSimulatorSession? iosSession;
-
-  /// The surface driver. It also owns the watch-lane stream: disposing it is
-  /// what ends a viewer's frames, so there is no separate viewer registry to
-  /// keep in sync.
-  RigDriver? driver;
-
-  /// The resident memory this rig holds, whether running or parked. Parking
-  /// stops the vCPUs; it does not hand the RAM back.
-  int get residentMb => rig.spec.memoryMb;
-
-  /// Attached consumers that make this rig "in use" even when no action has
-  /// arrived: an open terminal, a viewer watching the stream.
-  ///
-  /// Idle is measured from the last ACTION, and a terminal's keystrokes never
-  /// reach this service — they go down an SSH connection the host opened. So
-  /// without a pin an exec rig freezes mid-keystroke at its idle timeout and
-  /// is destroyed (with the user's uncommitted work) at twice that, which is
-  /// precisely the case `RigSpec.exec`'s longer grace period was meant to
-  /// protect.
-  int pins = 0;
-
-  bool get isPinned => pins > 0;
-
-  /// Open watch lanes (video + audio) currently being consumed.
-  ///
-  /// A person watching a guest work sends no ACTIONS, so idle time is not
-  /// evidence that nobody is there: without this the rig somebody was looking
-  /// at parked at its idle timeout, was destroyed at twice that, and was
-  /// LRU-evicted in between — under the viewer, mid-frame.
-  int watchers = 0;
-
-  /// Capture session currently allowed to feed the guest microphone.
-  ///
-  /// Set before forwarding `start=1`, so every later chunk/end is checked at
-  /// the authoritative server even when the installed guest image predates
-  /// guest-side session gating.
-  String? microphoneSessionId;
-
-  /// Completion tail for guest microphone writes.
-  ///
-  /// Each microphone-capable surface owns one playback process. Keeping start,
-  /// chunks, and end on one ordered lane prevents an already-forwarded old end
-  /// from overtaking the replacement start.
-  Future<void> microphoneForwarding = Future<void>.value();
-
-  Future<T> serializeMicrophone<T>(Future<T> Function() operation) {
-    final result = microphoneForwarding.then((_) => operation());
-    microphoneForwarding = result.then<void>(
-      (_) {},
-      onError: (Object _, StackTrace _) {},
-    );
-    return result;
-  }
-
-  /// Whether a consumer is attached: a pinned terminal or an open watch lane.
-  /// The hard TTL ignores this — "somebody is using it", not "it may live
-  /// forever".
-  bool get isInUse => pins > 0 || watchers > 0;
-
-  /// Set the moment teardown starts, BEFORE its first await.
-  ///
-  /// The window where a rig owns a hypervisor it cannot reach is the inside of
-  /// `launch()`: [machine] is still null, so a teardown finds nothing to
-  /// destroy and the machine that arrives a minute later is assigned to an
-  /// object nobody holds. The boot path re-reads this after `launch` returns
-  /// and destroys the machine itself instead.
-  bool closing = false;
-
-  /// Completes when the launch has either handed its machine to [machine] or
-  /// failed. Teardown waits on it so `disposeAll` does not return while a
-  /// hypervisor is still being born.
-  Future<void>? launched;
-
-  /// When the activity timestamp last reached the DATABASE. The in-memory
-  /// timestamp updates on every action (the reaper reads that one); writing
-  /// each of a hover stream's ~30 moves/second through SQLite would not.
-  DateTime lastTouchWrite = DateTime.fromMillisecondsSinceEpoch(0);
-
-  /// When a bare pointer move last landed in the action log.
-  DateTime lastMoveLog = DateTime.fromMillisecondsSinceEpoch(0);
-
-  /// When the browser rig's URL last reached the DATABASE. Same discipline as
-  /// [lastTouchWrite]: the in-memory row is always current, the write is not.
-  DateTime lastUrlWrite = DateTime.fromMillisecondsSinceEpoch(0);
-
-  /// Whether the in-memory URL is ahead of the stored one.
-  bool pendingUrlWrite = false;
-
-  /// The trailing write scheduled for the end of a navigation burst, so a
-  /// redirect chain's FINAL destination is persisted even though the ones
-  /// before it were coalesced away.
-  Timer? urlWriteTimer;
-}
-
 /// The server-side [RigPort]: boots enclosures, drives them, reaps them.
 ///
 /// One instance per server. It owns every live machine, so it is also what
@@ -189,6 +94,7 @@ class RigService implements RigPort, RigPortsPort {
     required this._smolvm,
     required this._images,
     this._ios,
+    this._hostWindows,
     this._credentials,
     this._eventBus,
     String? dataDir,
@@ -204,6 +110,9 @@ class RigService implements RigPort, RigPortsPort {
   final SmolvmEnclosureBackend _smolvm;
   final RigImageStore _images;
   final IosSimulatorBackend? _ios;
+
+  /// OS window access for desktop apps, or null when the host wired none.
+  final HostWindowPort? _hostWindows;
   final GuestCredentialService? _credentials;
   final DomainEventBus? _eventBus;
 
@@ -249,6 +158,7 @@ class RigService implements RigPort, RigPortsPort {
   RigPortsService get ports => _ports;
 
   late final RigPortsService _ports = RigPortsService(
+    routerPort: kEnvironmentRouterPort,
     runInGuest: (machineName, command) async {
       final binary = _smolvm.resolvedBinary;
       if (binary == null) {
@@ -348,6 +258,7 @@ class RigService implements RigPort, RigPortsPort {
       await _qemu.probe(),
       _androidProbe ??= await _probeAndroid(),
       if (ios != null) await ios.probe(),
+      if (_hostWindows != null) await _probeHostWindows(_hostWindows),
     ];
     return RigCapabilities(backends: backends);
   }
@@ -472,6 +383,14 @@ class RigService implements RigPort, RigPortsPort {
     if (_disposed) {
       throw StateError('The rig service is shutting down.');
     }
+    if (spec.surface == RigSurface.window) {
+      throw ArgumentError.value(
+        spec.surface.wire,
+        'spec.surface',
+        'A window rig has nothing to boot. It opens against running processes '
+            'through openHostWindowRig.',
+      );
+    }
     // The workspace's own egress hosts join the caller's allowlist HERE, at
     // the one chokepoint every open path (RPC op, `browser_use` tool, internal
     // callers) funnels through — a caller that forgets them cannot strip a
@@ -536,7 +455,9 @@ class RigService implements RigPort, RigPortsPort {
     final routed = switch (spec.surface) {
       RigSurface.mobile => EnclosureBackend.androidEmulator,
       RigSurface.ios => EnclosureBackend.iosSimulator,
+      RigSurface.window => EnclosureBackend.hostWindow,
       RigSurface.browser => EnclosureBackend.smolvm,
+      RigSurface.environment => EnclosureBackend.smolvm,
       RigSurface.computer when spec.isExec => EnclosureBackend.smolvm,
       RigSurface.computer => (await _qemu.probe()).backend,
     };
@@ -1751,6 +1672,9 @@ class RigService implements RigPort, RigPortsPort {
           await _bootMobile(live);
         case EnclosureBackend.iosSimulator:
           await _bootIos(live);
+        case EnclosureBackend.hostWindow:
+          // `open` refuses this surface before anything reaches a boot.
+          throw StateError('A window rig has nothing to boot.');
         case EnclosureBackend.smolvm:
           await _bootSmolvm(live);
         case EnclosureBackend.qemuHvf:
@@ -1906,6 +1830,10 @@ class RigService implements RigPort, RigPortsPort {
         if (!_isCurrent(live)) {
           return;
         }
+        // Stopped on purpose, with its disks kept. Resuming re-arms this.
+        if (machine is SmolvmMachine && machine.stopped) {
+          return;
+        }
         CcInfraLog.warning(
           'rig/${live.rig.id}: machine exited unexpectedly (code $code)',
         );
@@ -1933,10 +1861,12 @@ class RigService implements RigPort, RigPortsPort {
     // not stop terminals from opening.
     String? imageOverride;
     try {
-      imageOverride = await _smolvmImageOverride?.call(
-        rig.workspaceId,
-        exec: rig.spec.isExec,
-      );
+      imageOverride = rig.spec.isEnvironment
+          ? null
+          : await _smolvmImageOverride?.call(
+              rig.workspaceId,
+              exec: rig.spec.isExec,
+            );
     } on Object catch (e) {
       CcInfraLog.warning(
         'rig/${rig.id}: could not read the workspace image override: $e',
@@ -1964,27 +1894,32 @@ class RigService implements RigPort, RigPortsPort {
 
     _watchMachineDeath(live, machine);
 
-    _credentials?.registerRig(
-      rigId: rig.id,
-      workspaceId: rig.workspaceId,
-      conversationId: rig.conversationId ?? rig.id,
-      secret: machine.guestSecret,
-      // Same floor as the QEMU path: the rig's OWN scope, so an agent-opened
-      // rig reads by default.
-      scope: rig.spec.forgeTokenScope,
-      repoOwner: rig.spec.repoOwner,
-      repoName: rig.spec.repoName,
-      // Whose forge access the guest's credentials are bounded by. The spec's
-      // scope is a ceiling, not an authorization.
-      actingUserId: rig.spec.openedByUserId,
-      // The credential allowlist and the egress allowlist are one policy: a
-      // host the guest cannot reach must never be one we hand it a token for.
-      allowedHosts: rig.spec.egressAllowlist
-          .where((h) => !h.startsWith('*'))
-          .toSet(),
-    );
+    // An environment guest runs compose files nobody here reviewed, so it is
+    // never registered: it holds no secret and can mint nothing.
+    if (!rig.spec.isEnvironment) {
+      _credentials?.registerRig(
+        rigId: rig.id,
+        workspaceId: rig.workspaceId,
+        conversationId: rig.conversationId ?? rig.id,
+        secret: machine.guestSecret,
+        // Same floor as the QEMU path: the rig's OWN scope, so an agent-opened
+        // rig reads by default.
+        scope: rig.spec.forgeTokenScope,
+        repoOwner: rig.spec.repoOwner,
+        repoName: rig.spec.repoName,
+        // Whose forge access the guest's credentials are bounded by. The spec's
+        // scope is a ceiling, not an authorization.
+        actingUserId: rig.spec.openedByUserId,
+        // The credential allowlist and the egress allowlist are one policy: a
+        // host the guest cannot reach must never be one we hand it a token for.
+        allowedHosts: rig.spec.egressAllowlist
+            .where((h) => !h.startsWith('*'))
+            .toSet(),
+      );
+    }
 
-    if (rig.spec.worktreePath != null) {
+    // An environment's worktree is a live mount, not a copy.
+    if (rig.spec.worktreePath != null && !rig.spec.isEnvironment) {
       final binary = _smolvm.resolvedBinary;
       if (binary != null) {
         final sync = WorktreeSync.smolvm(
@@ -2050,7 +1985,7 @@ class RigService implements RigPort, RigPortsPort {
         machineName: machine.name,
         muxHostPort: muxPort,
         conversationId: rig.conversationId,
-        brokerPort: _smolvm.credentialPort,
+        brokerPort: rig.spec.isEnvironment ? null : _smolvm.credentialPort,
       );
     } else if (rig.surface == RigSurface.browser) {
       _ports.attachBrowser(
@@ -2699,6 +2634,11 @@ class RigService implements RigPort, RigPortsPort {
     final now = DateTime.now();
     for (final live in _live.values.toList()) {
       final rig = live.rig;
+      // Someone may be using the app with no rig action in sight, and closing
+      // the rig would reclaim nothing. Its opener owns its lifetime.
+      if (rig.surface == RigSurface.window) {
+        continue;
+      }
       try {
         if (rig.isExpired(now)) {
           await _teardown(live, RigCloseReason.ttlExpired);
@@ -2805,7 +2745,9 @@ class RigService implements RigPort, RigPortsPort {
       // Never evict one somebody is driving, has a terminal in, or is
       // watching: reclaiming memory from under an open viewer trades a
       // measurable resource for an unexplainable disappearance.
-      if (live.rig.isHumanControlled || live.isInUse) {
+      if (live.rig.isHumanControlled ||
+          live.isInUse ||
+          live.rig.surface == RigSurface.window) {
         continue;
       }
       CcInfraLog.info(

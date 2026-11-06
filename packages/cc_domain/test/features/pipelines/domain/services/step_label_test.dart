@@ -7,10 +7,10 @@ void main() {
       expect(
         renderStepLabel(
           'Code analysis · {{repo_name}}',
-          state: {'repo_name': 'web-app'},
+          state: {'repo_name': 'shop-ui'},
           fallback: 'space',
         ),
-        'Code analysis · web-app',
+        'Code analysis · shop-ui',
       );
     });
 

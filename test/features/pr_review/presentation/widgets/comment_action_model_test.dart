@@ -45,10 +45,14 @@ void main() {
   });
 
   group('canEditComment', () {
-    test('only the author of a published comment can edit it', () {
+    test('only the author can edit a published comment', () {
       expect(canEditComment(isAuthor: true, published: true), isTrue);
-      expect(canEditComment(isAuthor: true, published: false), isFalse);
       expect(canEditComment(isAuthor: false, published: true), isFalse);
+    });
+
+    test('a draft is editable even before its author resolves', () {
+      expect(canEditComment(isAuthor: true, published: false), isTrue);
+      expect(canEditComment(isAuthor: false, published: false), isTrue);
     });
   });
 

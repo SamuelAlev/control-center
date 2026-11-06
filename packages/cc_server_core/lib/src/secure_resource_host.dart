@@ -16,6 +16,7 @@ bool isSecureResourcePath(String path) =>
       '/blob',
       '/backup/workspace',
       '/backup/snapshot',
+      '/backup/stored',
       '/backup/restore',
       '/soundscape/stream',
       '/soundscape/playlist.m3u8',

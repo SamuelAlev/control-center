@@ -21,6 +21,7 @@ String guardrailClassLabel(AppLocalizations l10n, ActionClass cls) =>
       ActionClass.processSpawn => l10n.guardrailClassProcessSpawn,
       ActionClass.workspaceMutation => l10n.guardrailClassWorkspaceMutation,
       ActionClass.enclosureControl => l10n.guardrailClassEnclosureControl,
+      ActionClass.hostExecution => l10n.guardrailClassHostExecution,
     };
 
 /// Localized decision label (allow / ask first / deny).
@@ -48,9 +49,9 @@ List<CcSelectOption<ActionDecision>> guardrailDecisionOptions(
     CcSelectOption(value: d, label: guardrailDecisionLabel(l10n, d)),
 ];
 
-/// The thirteen action classes, grouped by the kind of damage they do.
+/// The fourteen action classes, grouped by the kind of damage they do.
 ///
-/// A flat list of thirteen is a list you read; four families of two to five are
+/// A flat list of fourteen is a list you read; four families of two to five are
 /// something you scan. The families also carry the real distinction: "can it
 /// touch my files" and "can it reach the network" are different questions an
 /// operator answers with different appetites, and interleaving them in wire
@@ -77,6 +78,7 @@ kGuardrailFamilies = [
     label: _familyMachine,
     classes: [
       ActionClass.processSpawn,
+      ActionClass.hostExecution,
       ActionClass.packageInstall,
       ActionClass.networkEgress,
       ActionClass.enclosureControl,

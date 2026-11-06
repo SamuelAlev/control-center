@@ -33,6 +33,14 @@ enum EnclosureBackend {
   /// network-isolates. Each rig owns an ephemeral simulator device.
   iosSimulator('ios-simulator', 'iOS Simulator'),
 
+  /// Windows of an app already running on the server host, through the
+  /// `cc_window` native.
+  ///
+  /// The opposite of containment: there is no guest, and the app has whatever
+  /// access its user account has. Only the set of windows reachable through
+  /// the rig is bounded.
+  hostWindow('host-window', 'Host window'),
+
   /// A smolvm microVM: libkrun over Hypervisor.framework (macOS), KVM (Linux)
   /// or WHP (Windows), booting a digest-pinned OCI image. Hosts the exec
   /// (terminal) and browser surfaces — neither needs a display device, and
@@ -67,7 +75,8 @@ enum EnclosureBackend {
   /// descriptions say so rather than implying parity.
   bool get hasEnforcedEgress =>
       this != EnclosureBackend.androidEmulator &&
-      this != EnclosureBackend.iosSimulator;
+      this != EnclosureBackend.iosSimulator &&
+      this != EnclosureBackend.hostWindow;
 
   /// Parses [value] back into a backend, or null when unknown.
   static EnclosureBackend? fromWire(String? value) {

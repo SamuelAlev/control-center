@@ -235,22 +235,6 @@ class OutputContractViolationException extends AppException {
   String toString() => message;
 }
 
-/// Thrown when a repo's lifecycle setup script fails (non-zero exit, timeout,
-/// or spawn error). Propagates out of worktree provisioning so the space is
-/// marked `failed` — retryable, since the worktree is left in place for the
-/// retry to resume a half-finished install. The [outputTail] carries the last
-/// lines of combined output so the failure names itself.
-class RepoScriptException extends AppException {
-  /// Creates a [RepoScriptException].
-  const RepoScriptException(super.message, {this.outputTail, super.code});
-
-  /// Last lines of combined stdout/stderr, for display.
-  final String? outputTail;
-
-  @override
-  String toString() => message;
-}
-
 /// Thrown when the forge refuses to merge a pull request: GitHub answers the
 /// merge `PUT` with `405` and a reason (merge conflicts, a required check, a
 /// protection rule). Typed so the reason reaches the client instead of dying

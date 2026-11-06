@@ -2,7 +2,7 @@
 title: Rig’ler
 description: Her rig yüzeyi, arka ucu, eylem fiili, yaşam döngüsü durumu, portu, varsayılanı ve sözleşmesi — eksiksiz olgusal katalog.
 slug: tr-TR/kilavuz/referans/rigler
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Yalnızca olgular. Bunların arkasındaki model için [Rig’ler ve yalıtılmış
@@ -18,6 +18,8 @@ için [rehberi](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/) izleyin.
 | Bilgisayar | X11 masaüstü: girdi hipervizör üzerinden, yakalama misafir ajanı üzerinden | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (hızlandırmasız yedek, asla otomatik seçilmez) | Evet |
 | Android | ADB üzerinden Android | Google’ın emülatörü | `android-emulator` | **Hayır** — emülatör kendi ağını kendisi yönetir |
 | iOS | WebDriverAgent üzerinden iOS Simülatörü | CoreSimulator | `ios-simulator` | **Hayır** — ağ ana Mac’i izler |
+| Uygulama penceresi | Bir ortamdan başlatılan masaüstü uygulamasının pencereleri, işletim sistemi üzerinden | Ana makine penceresi | `host-window` | **Hayır** — uygulama, sunucu kullanıcısının erişimiyle ana makinede çalışır |
+| Ortam | `rig` yerleşimli bir [ortamın](/tr-TR/kilavuz/nasil-yapilir/ortamlar/) compose yığını ve görevleri | microVM | `smolvm` | Evet |
 
 Terminal ile `computer_use` yüzeyi `computer` yüzey değerini paylaşır; terminal,
 kendi exec imaj işaretiyle ayırt edilir ve asla sürülebilir bir masaüstü olarak

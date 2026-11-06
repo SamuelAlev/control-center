@@ -2,7 +2,7 @@
 title: Kopia zapasowa i przywracanie
 description: Wykonaj migawkę instalacji, przenieś obszar roboczy między maszynami, przywróć jeden obszar roboczy lub wszystkie i zachowaj kopie w innym miejscu.
 slug: pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Ten poradnik obejmuje pięć rzeczy, które faktycznie robi się z kopiami zapasowymi:
@@ -18,7 +18,7 @@ przywracanie**.
 
 - **Pełny klient** — aplikacja desktopowa lub webowa. Sparowany telefon celowo nie może wywołać żadnej z tych operacji.
 - Aby wykonać, wyświetlić, pobrać lub usunąć **migawkę instalacji**: rola **właściciela** instalacji.
-- W przypadku działań w obrębie poszczególnych obszarów roboczych: **administrator** tego obszaru roboczego może eksportować, a **właściciel** — importować go lub usuwać.
+- W przypadku działań w obrębie poszczególnych obszarów roboczych: **administrator** tego obszaru roboczego może eksportować go oraz wyświetlać i pobierać jego zaplanowane kopie zapasowe, a **właściciel** — importować go lub usuwać oraz usuwać jego kopie zapasowe.
 - Do pobierania i wysyłania: sparowany pełny klient, w połączeniu bezpośrednim albo przez przekaźnik. Obie ścieżki przenoszą bajty pliku przez ten sam uwierzytelniony, szyfrowany end-to-end tunel zasobów; przekaźnik nie może ich odczytać.
 
 :::caution[Migawki instalacji wykonuje się ręcznie]
@@ -88,12 +88,36 @@ Kopie obszarów roboczych leżą na serwerze pod
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Węzeł retencji usuwa
 tylko stare kopie tego obszaru roboczego; nigdy nie usuwa migawek instalacji ani kopii
 innych obszarów roboczych. Te pliki zawierają wyłącznie bazy danych. Aby przechowywać je
-poza maszyną, kopiuj je niezależnie.
+poza maszyną, pobieraj je lub kopiuj niezależnie.
 
-Te kopie są odrębne od listy **Migawki instalacji**. Aby przywrócić jedną z nich, użyj
-**Dane obszaru roboczego → Importuj**, podając ścieżkę `workspace.db` kopii po stronie
-serwera. Import zastępuje bieżącą bazę danych tego obszaru roboczego, więc najpierw go
-wyeksportuj, jeśli przywrócenie może wymagać cofnięcia.
+## Wyszukiwanie i przywracanie zaplanowanej kopii zapasowej
+
+Sekcja **Zaplanowane kopie zapasowe** znajduje się między sekcjami **Migawki instalacji**
+i **Dane obszaru roboczego**, z jednym wierszem na obszar roboczy: kiedy wykonano ostatnią
+kopię, ile kopii zachowano i ile miejsca zajmują. Obszar roboczy, którego potok niczego
+jeszcze nie utworzył, pokazuje **Nie ma jeszcze kopii zapasowych**. Obszar roboczy, w którym
+nie jesteś administratorem, informuje o tym w swoim wierszu zamiast wyświetlać kopie
+zapasowe.
+
+Rozwiń wiersz, aby zobaczyć każdą kopię zapasową, od najnowszej:
+
+- **Przywróć** zastępuje bieżącą bazę danych obszaru roboczego tą kopią zapasową. Najpierw wyeksportuj obszar roboczy, jeśli może to wymagać cofnięcia. Wymaga roli **właściciela**.
+- **Pobierz** zapisuje plik na maszynie, której używasz. Kopia zapasowa pozostaje na serwerze.
+- **Kopiuj ścieżkę** kopiuje jej lokalizację na serwerze.
+- **Usuń** trwale usuwa tę kopię zapasową po wpisaniu nazwy obszaru roboczego. Wymaga roli **właściciela**.
+
+### Kopie zapasowe usuniętego obszaru roboczego
+
+Usunięcie obszaru roboczego pozostawia jego zaplanowane kopie zapasowe na serwerze, a
+ponieważ jego harmonogram zatrzymuje się wraz z nim, zatrzymuje się też retencja: kopie
+pozostają, dopóki ktoś ich nie usunie. **Właściciel** instalacji widzi je na tej samej
+liście, oznaczone jako **Obszar roboczy usunięty**, i może je tam pobrać lub usunąć. Nikt
+inny nie widzi tych wierszy.
+
+Nie mają opcji **Przywróć**, bo nie ma obszaru roboczego, do którego można by je przywrócić.
+Aby odzyskać taką kopię, pobierz ją, utwórz obszar roboczy i wyślij plik zgodnie z opisem w
+sekcji
+[Przenoszenie obszaru roboczego do innej instalacji](#przenoszenie-obszaru-roboczego-do-innej-instalacji).
 
 ## Usuwanie migawki instalacji
 
@@ -109,14 +133,16 @@ Jeśli to nie ta maszyna, przy której siedzisz, skorzystaj z przycisków **Pobi
 
 - Przy każdym **obszarze roboczym** w sekcji **Dane obszaru roboczego** → **Pobierz**, dla jednego pliku `.db`.
 - Przy każdej **migawce** w sekcji **Migawki instalacji** → **Pobierz**, dla całej migawki jako pliku `.zip`.
+- Przy każdej kopii zapasowej w sekcji **Zaplanowane kopie zapasowe** → **Pobierz**, dla pliku `.db` tej kopii.
 
 W aplikacji desktopowej wybierasz miejsce zapisu pliku, a toast podaje jego nazwę;
-w wersji webowej plik trafia do pobranych w przeglądarce. W obu przypadkach postęp jest
-raportowany w bajtach, bo to dwa ładunki, które dochodzą do gigabajtów.
+w wersji webowej plik trafia do pobranych w przeglądarce. W obu przypadkach wszystkie trzy
+raportują postęp w bajtach, bo te ładunki dochodzą do gigabajtów.
 
-Oba tworzą świeżą kopię w momencie naciśnięcia przycisku, przesyłają ją strumieniowo,
-a następnie usuwają kopię po stronie serwera — pobieranie nie polega na „pobraniu pliku
-utworzonego wcześniej przez przycisk eksportu”.
+Pobieranie obszaru roboczego i migawki tworzy świeżą kopię w momencie naciśnięcia przycisku,
+przesyła ją strumieniowo, a następnie usuwa kopię po stronie serwera — pobieranie nie polega
+na „pobraniu pliku utworzonego wcześniej przez przycisk eksportu”. Wyjątkiem jest zaplanowana
+kopia zapasowa: otrzymujesz zapisany plik, a on pozostaje na serwerze.
 
 Rozpakowanie archiwum migawki odtwarza dokładnie układ migawki, dzięki czemu przywrócenie
 jej to zwykłe skopiowanie z powrotem.

@@ -253,20 +253,32 @@ while (( SECONDS < deadline )); do
             break
           fi
           echo "==> checking Chromium reaches the public internet directly"
-          # Same proof as Firefox: dump-dom hangs under the windowed wrapper's
-          # SwiftShader flags, so screenshot the binary with a headless ozone.
+          # The launcher and the session a rig really uses, asked over DevTools
+          # for the page title, which only the fetched page can supply. Chrome's
+          # one-shot --screenshot and --dump-dom cannot prove this: they never
+          # exit in this guest, even on about:blank, while a real window loads.
           if ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
                -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
                -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
                cc@127.0.0.1 \
-               'test -x /opt/chromium/chrome && \
-                test -x /usr/local/bin/cc-chromium && \
-                timeout 90 /opt/chromium/chrome --headless=new --no-sandbox \
-                  --disable-gpu --ozone-platform=headless \
-                  --user-data-dir=/tmp/cc-chrome-verify \
-                  --screenshot=/tmp/cc-chrome.png https://example.com \
-                  >/tmp/cc-chrome.out 2>/tmp/cc-chrome.err && \
-                test -s /tmp/cc-chrome.png'; then
+               'test -x /opt/chromium/chrome || exit 1
+                test -x /usr/local/bin/cc-chromium || exit 1
+                DISPLAY=:0 timeout 90 /usr/local/bin/cc-chromium \
+                  --remote-debugging-port=9333 \
+                  --user-data-dir=/tmp/cc-chrome-verify https://example.com \
+                  >/tmp/cc-chrome.out 2>/tmp/cc-chrome.err &
+                browser=$!
+                loaded=1
+                for _ in $(seq 1 80); do
+                  if curl -fsS -m 2 http://127.0.0.1:9333/json/list 2>/dev/null |
+                     grep -q "\"title\": \"Example Domain\""; then
+                    loaded=0
+                    break
+                  fi
+                  sleep 1
+                done
+                kill "$browser" 2>/dev/null
+                exit "$loaded"'; then
             echo "==> Chromium internet access works"
           else
             echo "==> FAILED: Chromium cannot reach https://example.com." >&2
@@ -274,7 +286,7 @@ while (( SECONDS < deadline )); do
               -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
               -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
               cc@127.0.0.1 \
-              'ls -l /opt/chromium/chrome /usr/local/bin/cc-chromium /tmp/cc-chrome.png; \
+              'ls -l /opt/chromium/chrome /usr/local/bin/cc-chromium; \
                /opt/chromium/chrome --version; \
                tail -n 40 /tmp/cc-chrome.err' >&2 || true
             exit 1

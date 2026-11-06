@@ -337,7 +337,7 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     _enqueue(
       _isIos
           ? rigIosClipboardKeyAction(letter)
-          : _isComputer
+          : _speaksComputerInput
           ? {'action': 'key', 'text': 'ctrl+$letter'}
           : {
               'action': 'key',
@@ -464,6 +464,12 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
   }
 
   bool get _isComputer => widget.rig.surfaceKind == RigSurface.computer;
+
+  /// Whether input goes out as `computer_use` verbs. An app window shares that
+  /// vocabulary, but not the rest of [_isComputer]: it has no guest clipboard
+  /// or drag selection, and its frames carry no cursor of their own.
+  bool get _speaksComputerInput =>
+      _isComputer || widget.rig.surfaceKind == RigSurface.window;
 
   bool get _isIos => widget.rig.surfaceKind == RigSurface.ios;
 
@@ -630,7 +636,7 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
       // The verb differs per surface, the intent does not: open the context
       // menu at that point.
       _enqueue(
-        _isComputer
+        _speaksComputerInput
             ? {
                 'action': 'right_click',
                 'coordinate': [point.$1, point.$2],
@@ -643,7 +649,7 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
       );
     } else if (buttons & kMiddleMouseButton != 0) {
       _enqueue(
-        _isComputer
+        _speaksComputerInput
             ? {
                 'action': 'middle_click',
                 'coordinate': [point.$1, point.$2],
@@ -668,7 +674,7 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     if (point == null) {
       return;
     }
-    if (_isComputer) {
+    if (_speaksComputerInput) {
       final dy = event.scrollDelta.dy;
       final dx = event.scrollDelta.dx;
       final vertical = dy.abs() >= dx.abs();
@@ -744,7 +750,7 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     }
 
     final character = event.character;
-    if (_isComputer) {
+    if (_speaksComputerInput) {
       if (character != null &&
           character.isNotEmpty &&
           !ctrl &&
@@ -978,7 +984,7 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
   Future<void> _cancelGuestDrag() async {
     _leftDown = false;
     _enqueue(
-      _isComputer
+      _speaksComputerInput
           ? {'action': 'key', 'text': 'Escape'}
           : {'action': 'key', 'key': 'Escape'},
     );
@@ -1007,7 +1013,7 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
         final pushed = await bridge.pushToGuest(snapshot);
         if (pushed.ok) {
           _enqueue(
-            _isComputer
+            _speaksComputerInput
                 ? {'action': 'key', 'text': 'ctrl+v'}
                 : {
                     'action': 'key',

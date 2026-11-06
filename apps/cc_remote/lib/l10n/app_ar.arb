@@ -974,5 +974,6 @@
   "transcriptClaudeSignInExpiredTitle": "انتهت صلاحية تسجيل الدخول إلى Claude Code",
   "transcriptClaudeSignInExpiredBody": "توقف التشغيل لأن حسابه لم يعد يجتاز المصادقة. سجّل الدخول مرة أخرى، ثم أعد محاولة الدور.",
   "transcriptSignInExpiredTitle": "انتهت صلاحية تسجيل الدخول إلى المزوّد",
-  "transcriptSignInExpiredBody": "توقف التشغيل لأن بيانات اعتماد المزوّد لم تعد تعمل. أعد ربطه من الإعدادات ← المزوّدون، ثم أعد محاولة الدور."
+  "transcriptSignInExpiredBody": "توقف التشغيل لأن بيانات اعتماد المزوّد لم تعد تعمل. أعد ربطه من الإعدادات ← المزوّدون، ثم أعد محاولة الدور.",
+  "permissionHostExecution": "تشغيل الأوامر على المضيف"
 }

@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_domain/cc_domain.dart' show NotFoundException;
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
+import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/rigs/domain/entities/rig.dart';
 import 'package:cc_domain/features/rigs/domain/entities/rig_action_log_entry.dart';
+import 'package:cc_domain/features/rigs/domain/ports/host_window_port.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
 import 'package:cc_domain/features/rigs/domain/repositories/rig_repository.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_action.dart';
@@ -17,18 +20,28 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_capabilities.da
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_clipboard.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_file_transfer.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/rig_image_settings.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/window_action.dart';
+import 'package:cc_infra/src/environments/compose_plan.dart';
+import 'package:cc_infra/src/environments/environment_service_ports.dart';
 import 'package:cc_infra/src/rigs/cdp_client.dart';
+import 'package:cc_infra/src/rigs/environment_rig_host.dart';
 import 'package:cc_infra/src/rigs/guest_agent_client.dart';
+import 'package:cc_infra/src/rigs/host_window_rig_driver.dart';
 import 'package:cc_infra/src/rigs/qemu_enclosure_backend.dart';
 import 'package:cc_infra/src/rigs/qmp_client.dart';
 import 'package:cc_infra/src/rigs/rig_drivers.dart';
 import 'package:cc_infra/src/rigs/rig_image_store.dart';
 import 'package:cc_infra/src/rigs/rig_service.dart';
 import 'package:cc_infra/src/rigs/smolvm_enclosure_backend.dart';
+import 'package:cc_natives/cc_natives.dart'
+    show RigWorktreeGuard, RigWorktreeTampered;
 import 'package:test/test.dart';
+
+import 'fake_host_window_port.dart';
 
 /// An in-memory [RigRepository].
 class _FakeRigRepository implements RigRepository {
@@ -217,6 +230,56 @@ class _FakeSmolvm extends SmolvmEnclosureBackend {
   @override
   Future<void> destroy(SmolvmMachine machine) async =>
       destroyed.add(machine.rigId);
+
+  /// The argv of each [exec], in order.
+  final List<List<String>> execs = [];
+
+  /// The workdir of each [exec], in order.
+  final List<String?> execDirs = [];
+
+  int stops = 0;
+  int resumes = 0;
+
+  /// What `docker compose ps` prints.
+  String composePs = '';
+
+  /// How `docker compose up` exits.
+  int composeUpExit = 0;
+
+  @override
+  Future<ProcessResult> exec(
+    SmolvmMachine machine,
+    List<String> argv, {
+    String? workdir,
+    Map<String, String> environment = const {},
+    Duration timeout = const Duration(minutes: 10),
+  }) async {
+    execs.add(argv);
+    execDirs.add(workdir);
+    if (argv.contains('ps')) {
+      return ProcessResult(1, 0, composePs, '');
+    }
+    if (argv.contains('up')) {
+      return ProcessResult(1, composeUpExit, '', 'err');
+    }
+    return ProcessResult(1, 0, 'out', 'err');
+  }
+
+  @override
+  Future<void> stopKeepingDisks(SmolvmMachine machine) async {
+    stops++;
+    machine.stopped = true;
+  }
+
+  @override
+  Future<void> resume(
+    SmolvmMachine machine, {
+    required RigSpec spec,
+    void Function(String step)? onProgress,
+  }) async {
+    resumes++;
+    machine.stopped = false;
+  }
 
   @override
   Future<int> sweepOrphanedRuntimes() async => 0;
@@ -2104,6 +2167,767 @@ void main() {
       final state = await service.browserState(workspaceId: 'ws1', rigId: 'r1');
 
       expect(state!.loading, isTrue);
+    });
+  });
+
+  group('environment rigs', () {
+    late _FakeSmolvm smolvm;
+    late RigEnvironmentHost host;
+    late Directory worktree;
+    late EnvironmentDefinition definition;
+
+    RigService withBudget(int maxResidentMb) => RigService(
+      repository: repository,
+      qemu: QemuEnclosureBackend(
+        dataDir: '/nonexistent-rig-root',
+        images: RigImageStore(dataDir: '/nonexistent-rig-root'),
+      ),
+      smolvm: smolvm,
+      images: RigImageStore(dataDir: '/nonexistent-rig-root'),
+      maxResidentMb: maxResidentMb,
+      reapInterval: const Duration(hours: 1),
+    );
+
+    RigEnvironmentHost hostOver(RigService rigs) => RigEnvironmentHost(
+      rigs,
+      spaceWorktrees: (_, _) async => [worktree.path],
+      pollInterval: const Duration(milliseconds: 1),
+      forwardTimeout: const Duration(milliseconds: 5),
+    );
+
+    EnvironmentDefinition compose({int ttlHours = 24}) =>
+        EnvironmentDefinition.fromJson({
+          'id': 'def-1',
+          'name': 'Acme',
+          'repos': {
+            'app': {'repoId': 'repo-1', 'anchor': true},
+          },
+          'components': [
+            {'kind': 'compose', 'id': 'stack'},
+          ],
+          'policy': {'rigTtlHours': ttlHours},
+        });
+
+    Future<EnvironmentRigInstance> startEnvironment({
+      String environmentId = 'env-1',
+      EnvironmentDefinition? using,
+    }) => host.start(
+      workspaceId: 'ws1',
+      spaceId: 'space-1',
+      environmentId: environmentId,
+      definition: using ?? definition,
+      worktrees: {'app': worktree.path},
+      environment: const {'ACME': '1'},
+    );
+
+    void writeCompose(String image) => File(
+      '${worktree.path}/compose.yaml',
+    ).writeAsStringSync('services:\n  web:\n    image: $image\n');
+
+    setUp(() {
+      smolvm = _FakeSmolvm();
+      service = withBudget(12288);
+      worktree = Directory.systemTemp.createTempSync('cc_env_rig');
+      host = hostOver(service);
+      writeCompose('nginx:1.27-alpine');
+      definition = compose();
+      smolvm.composePs =
+          '{"Service":"web","State":"running","Health":"","ExitCode":0}';
+    });
+
+    tearDown(() {
+      RigWorktreeGuard.forceRelease(worktree.path);
+      worktree.deleteSync(recursive: true);
+    });
+
+    test('mounts nothing outside the space\'s worktrees', () async {
+      final outside = Directory.systemTemp.createTempSync('cc_env_outside');
+      addTearDown(() => outside.deleteSync(recursive: true));
+      File(
+        '${outside.path}/compose.yaml',
+      ).writeAsStringSync('services:\n  web:\n    image: nginx:1\n');
+      await expectLater(
+        host.start(
+          workspaceId: 'ws1',
+          spaceId: 'space-1',
+          environmentId: 'env-1',
+          definition: definition,
+          worktrees: {'app': outside.path},
+          environment: const {},
+        ),
+        throwsA(
+          isA<EnvironmentRigStackFailure>().having(
+            (e) => e.message,
+            'message',
+            contains('not one of this space'),
+          ),
+        ),
+      );
+      expect(smolvm.launched, isEmpty);
+    });
+
+    test('a symlink into another directory is not a worktree', () async {
+      final outside = Directory.systemTemp.createTempSync('cc_env_outside');
+      addTearDown(() => outside.deleteSync(recursive: true));
+      File(
+        '${outside.path}/compose.yaml',
+      ).writeAsStringSync('services:\n  web:\n    image: nginx:1\n');
+      final link = Link('${worktree.path}-link')..createSync(outside.path);
+      addTearDown(link.deleteSync);
+      await expectLater(
+        host.start(
+          workspaceId: 'ws1',
+          spaceId: 'space-1',
+          environmentId: 'env-1',
+          definition: definition,
+          worktrees: {'app': link.path},
+          environment: const {},
+        ),
+        throwsA(isA<EnvironmentRigStackFailure>()),
+      );
+      expect(smolvm.launched, isEmpty);
+    });
+
+    test('with nothing to vouch for a mount, nothing boots', () async {
+      host = RigEnvironmentHost(service);
+      await expectLater(
+        startEnvironment(),
+        throwsA(isA<EnvironmentRigStackFailure>()),
+      );
+      expect(smolvm.launched, isEmpty);
+    });
+
+    test(
+      'quarantines the worktree it mounts, and releases it on destroy',
+      () async {
+        Directory('${worktree.path}/.git').createSync();
+        File('${worktree.path}/.git/config').writeAsStringSync('[core]\n');
+        final instance = await startEnvironment();
+        expect(
+          RigWorktreeGuard.gitArgs(const [
+            'status',
+          ], workingDirectory: worktree.path),
+          [...RigWorktreeGuard.hardening, 'status'],
+        );
+        await host.destroy(workspaceId: 'ws1', rigId: instance.rigId);
+        expect(
+          RigWorktreeGuard.gitArgs(const [
+            'status',
+          ], workingDirectory: worktree.path),
+          ['status'],
+        );
+      },
+    );
+
+    test('a worktree whose git metadata changed stays quarantined', () async {
+      Directory('${worktree.path}/.git').createSync();
+      File('${worktree.path}/.git/config').writeAsStringSync('[core]\n');
+      final instance = await startEnvironment();
+      File(
+        '${worktree.path}/.git/config',
+      ).writeAsStringSync('[core]\n\tfsmonitor = /tmp/evil\n');
+      await host.destroy(workspaceId: 'ws1', rigId: instance.rigId);
+      expect(
+        () => RigWorktreeGuard.gitArgs(const [
+          'status',
+        ], workingDirectory: worktree.path),
+        throwsA(isA<RigWorktreeTampered>()),
+      );
+    });
+
+    test('boots on smolvm with the egress of its images', () async {
+      final instance = await startEnvironment();
+      final rig = repository.rigs[instance.rigId]!;
+      expect(rig.backend, EnclosureBackend.smolvm);
+      expect(rig.status, isA<RigReady>());
+      expect(smolvm.specs.single.isEnvironment, isTrue);
+      expect(smolvm.specs.single.egressAllowlist, contains('docker.io'));
+      expect(smolvm.specs.single.worktreePath, worktree.path);
+    });
+
+    test('runs the file unmodified, with no override and no --wait', () async {
+      await startEnvironment();
+      final up = smolvm.execs.first;
+      expect(up.take(6), [
+        'docker',
+        'compose',
+        '-p',
+        composeProjectName('env-1'),
+        '-f',
+        '$kSmolvmEnvironmentWorkdir/compose.yaml',
+      ]);
+      expect(up.sublist(6), ['up', '-d', '--build']);
+      expect(up.join(' '), isNot(contains('override')));
+    });
+
+    test('takes its TTL from the definition', () async {
+      await startEnvironment(using: compose(ttlHours: 48));
+      expect(smolvm.specs.single.ttl, const Duration(hours: 48));
+    });
+
+    test('a private registry is refused before anything boots', () async {
+      writeCompose('registry.acme.test/shop:1');
+      await expectLater(
+        startEnvironment(),
+        throwsA(isA<RigPrivateRegistryException>()),
+      );
+      expect(smolvm.launched, isEmpty);
+    });
+
+    test('a service that fails is named', () async {
+      smolvm.composePs =
+          '{"Service":"web","State":"exited","Health":"","ExitCode":3}';
+      await expectLater(
+        startEnvironment(),
+        throwsA(
+          isA<EnvironmentRigStackFailure>().having(
+            (e) => e.message,
+            'message',
+            contains('web failed'),
+          ),
+        ),
+      );
+    });
+
+    test('a failed up reports the guest\'s own words', () async {
+      smolvm.composeUpExit = 1;
+      await expectLater(
+        startEnvironment(),
+        throwsA(
+          isA<EnvironmentRigStackFailure>().having(
+            (e) => e.message,
+            'message',
+            contains('err'),
+          ),
+        ),
+      );
+    });
+
+    test('starting twice is one machine', () async {
+      final first = await startEnvironment();
+      final second = await startEnvironment();
+      expect(second.rigId, first.rigId);
+      expect(smolvm.launched, hasLength(1));
+    });
+
+    test('two environments in a space are two machines', () async {
+      final first = await startEnvironment();
+      final other = await startEnvironment(environmentId: 'env-2');
+      expect(other.rigId, isNot(first.rigId));
+    });
+
+    test('tasks run in the worktree by default', () async {
+      final instance = await startEnvironment();
+      final result = await host.exec(
+        workspaceId: 'ws1',
+        spaceId: 'space-1',
+        rigId: instance.rigId,
+        argv: const ['make', 'test'],
+      );
+      expect(smolvm.execs.last, ['make', 'test']);
+      expect(smolvm.execDirs.last, kSmolvmEnvironmentWorkdir);
+      expect(result.exitCode, 0);
+      expect(result.stdout, 'out');
+    });
+
+    test('with no rig id, exec finds the space\'s machine', () async {
+      await startEnvironment();
+      await host.exec(
+        workspaceId: 'ws1',
+        spaceId: 'space-1',
+        argv: const ['true'],
+      );
+      expect(smolvm.launched, hasLength(1));
+      expect(smolvm.execs.last, ['true']);
+    });
+
+    test('with no machine, exec boots one that may reach nothing', () async {
+      host = RigEnvironmentHost(
+        service,
+        worktreeOf: (_, _) async => worktree.path,
+        spaceWorktrees: (_, _) async => [worktree.path],
+        pollInterval: const Duration(milliseconds: 1),
+      );
+      await host.exec(
+        workspaceId: 'ws1',
+        spaceId: 'space-1',
+        argv: const ['true'],
+      );
+      expect(smolvm.specs.single.isEnvironment, isTrue);
+      expect(smolvm.specs.single.egressAllowlist, isEmpty);
+    });
+
+    test('with no machine and no way to boot one, exec says so', () async {
+      await expectLater(
+        host.exec(workspaceId: 'ws1', spaceId: 'space-1', argv: const ['true']),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('stop keeps the machine, and start resumes it', () async {
+      final instance = await startEnvironment();
+      await host.stop(workspaceId: 'ws1', rigId: instance.rigId);
+      expect(smolvm.stops, 1);
+      expect(smolvm.destroyed, isEmpty);
+      expect(repository.rigs[instance.rigId]!.status, isA<RigParked>());
+      await expectLater(
+        host.exec(
+          workspaceId: 'ws1',
+          spaceId: 'space-1',
+          rigId: instance.rigId,
+          argv: const ['true'],
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      final resumed = await startEnvironment();
+      expect(resumed.rigId, instance.rigId);
+      expect(smolvm.resumes, 1);
+      expect(smolvm.launched, hasLength(1));
+      expect(repository.rigs[instance.rigId]!.status, isA<RigReady>());
+    });
+
+    test('destroy discards the machine', () async {
+      final instance = await startEnvironment();
+      await host.destroy(workspaceId: 'ws1', rigId: instance.rigId);
+      expect(smolvm.destroyed, [instance.rigId]);
+      expect(repository.rigs[instance.rigId]!.status, isA<RigClosed>());
+    });
+
+    test('is not reaped at the usual idle timeout', () async {
+      final instance = await startEnvironment();
+      service.debugRegister(
+        repository.rigs[instance.rigId]!.copyWith(
+          lastActivityAt: DateTime.now().subtract(const Duration(hours: 3)),
+        ),
+      );
+      await service.debugReap();
+      expect(repository.rigs[instance.rigId]!.status, isNot(isA<RigClosed>()));
+    });
+
+    test('is reaped at its policy TTL', () async {
+      final instance = await startEnvironment(using: compose(ttlHours: 1));
+      final rig = repository.rigs[instance.rigId]!;
+      final old = DateTime.now().subtract(const Duration(hours: 2));
+      service.debugRegister(
+        Rig(
+          id: rig.id,
+          workspaceId: rig.workspaceId,
+          surface: rig.surface,
+          backend: rig.backend,
+          status: rig.status,
+          spec: rig.spec,
+          createdBy: rig.createdBy,
+          conversationId: rig.conversationId,
+          createdAt: old,
+          lastActivityAt: old,
+        ),
+      );
+      await service.debugReap();
+      expect(repository.rigs[rig.id]!.status, isA<RigClosed>());
+    });
+
+    test(
+      'counts in the resident budget, and can be evicted for room',
+      () async {
+        service = withBudget(5000);
+        host = hostOver(service);
+        final instance = await startEnvironment();
+        await service.open(
+          workspaceId: 'ws1',
+          spec: RigSpec.exec(conversationId: 'space-2', memoryMb: 4096),
+          openedBy: const UserPrincipal('u1'),
+        );
+        expect(repository.rigs[instance.rigId]!.status, isA<RigClosed>());
+      },
+    );
+
+    test('a terminal in the same space is a different machine', () async {
+      final instance = await startEnvironment();
+      expect(service.execRigFor('ws1', 'space-1'), isNull);
+      final terminal = await service.open(
+        workspaceId: 'ws1',
+        spec: RigSpec.exec(conversationId: 'space-1'),
+        openedBy: const UserPrincipal('u1'),
+      );
+      expect(terminal.id, isNot(instance.rigId));
+    });
+
+    test('has no surface to act on', () async {
+      final instance = await startEnvironment();
+      final result = await service.act(
+        workspaceId: 'ws1',
+        rigId: instance.rigId,
+        action: const ComputerScreenshot(),
+        actor: const AgentPrincipal('a1'),
+      );
+      expect(result.isError, isTrue);
+    });
+
+    test('exec refuses any other kind of rig', () async {
+      seed(id: 'vm-1', driver: _FakeDriver());
+      await expectLater(
+        service.execInEnvironmentRig(
+          workspaceId: 'ws1',
+          rigId: 'vm-1',
+          argv: const ['true'],
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('a foreign workspace reads as absent', () async {
+      final instance = await startEnvironment();
+      final before = smolvm.execs.length;
+      await expectLater(
+        service.execInEnvironmentRig(
+          workspaceId: 'ws2',
+          rigId: instance.rigId,
+          argv: const ['true'],
+        ),
+        throwsA(isA<NotFoundException>()),
+      );
+      expect(smolvm.execs, hasLength(before));
+      expect(service.environmentRigFor('ws2', 'space-1', 'env-1'), isNull);
+      expect(service.environmentRigIn('ws2', 'space-1'), isNull);
+    });
+  });
+
+  group('host window rigs', () {
+    late FakeHostWindowPort windows;
+
+    RigService withWindows({int maxResidentMb = 12288}) => RigService(
+      repository: repository,
+      qemu: QemuEnclosureBackend(
+        dataDir: '/nonexistent-rig-root',
+        images: RigImageStore(dataDir: '/nonexistent-rig-root'),
+      ),
+      smolvm: _FakeSmolvm(),
+      images: RigImageStore(dataDir: '/nonexistent-rig-root'),
+      hostWindows: windows,
+      maxResidentMb: maxResidentMb,
+      reapInterval: const Duration(hours: 1),
+    );
+
+    Future<Rig> openApp({String? slotId, Set<int> pids = const {4242}}) =>
+        service.openHostWindowRig(
+          workspaceId: 'ws1',
+          pids: pids,
+          openedBy: const UserPrincipal('u1'),
+          conversationId: 'space-1',
+          slotId: slotId,
+        );
+
+    setUp(() {
+      windows = FakeHostWindowPort(windows: [fakeWindow()]);
+      service = withWindows();
+    });
+
+    test('is ready on return, with no boot step', () async {
+      final rig = await openApp();
+      expect(rig.surface, RigSurface.window);
+      expect(rig.backend, EnclosureBackend.hostWindow);
+      expect(rig.status, isA<RigReady>());
+      expect(rig.readyAt, isNotNull);
+      expect(rig.display, RigDisplaySize(800, 600));
+      expect(repository.rigs[rig.id]!.status, isA<RigReady>());
+    });
+
+    test('opens before the app has mapped a window', () async {
+      windows.windows = [];
+      final rig = await openApp();
+      expect(rig.status, isA<RigReady>());
+      final result = await service.act(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        action: const ComputerScreenshot(),
+        actor: const AgentPrincipal('a1'),
+      );
+      expect(result.isError, isTrue);
+      expect(result.text, contains('no open window'));
+    });
+
+    test('open() refuses the surface: nothing boots', () async {
+      await expectLater(
+        service.open(
+          workspaceId: 'ws1',
+          spec: RigSpec(surface: RigSurface.window),
+          openedBy: const UserPrincipal('u1'),
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('needs a process set that can own something', () async {
+      await expectLater(openApp(pids: const {}), throwsArgumentError);
+      await expectLater(openApp(pids: const {1}), throwsArgumentError);
+    });
+
+    test('a server with no port says so', () async {
+      await expectLater(
+        RigService(
+          repository: repository,
+          qemu: QemuEnclosureBackend(
+            dataDir: '/nonexistent-rig-root',
+            images: RigImageStore(dataDir: '/nonexistent-rig-root'),
+          ),
+          smolvm: _FakeSmolvm(),
+          images: RigImageStore(dataDir: '/nonexistent-rig-root'),
+        ).openHostWindowRig(
+          workspaceId: 'ws1',
+          pids: const {4242},
+          openedBy: const UserPrincipal('u1'),
+        ),
+        throwsStateError,
+      );
+    });
+
+    test('act refuses an agent while a person has control', () async {
+      final rig = await openApp();
+      await service.takeControl(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        actor: const UserPrincipal('u1'),
+      );
+      for (final action in const <RigAction>[
+        ComputerClick(button: RigMouseButton.left, x: 5, y: 5),
+        ComputerType('hello'),
+        WindowSelect(100),
+      ]) {
+        final refused = await service.act(
+          workspaceId: 'ws1',
+          rigId: rig.id,
+          action: action,
+          actor: const AgentPrincipal('a1'),
+        );
+        expect(refused.isError, isTrue, reason: action.verb);
+        expect(refused.text, contains('A person has taken control'));
+      }
+      expect(windows.inputs, isEmpty);
+    });
+
+    test('an agent can still look while a person has control', () async {
+      final rig = await openApp();
+      await service.takeControl(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        actor: const UserPrincipal('u1'),
+      );
+      for (final action in const <RigAction>[
+        ComputerScreenshot(),
+        WindowList(),
+      ]) {
+        final result = await service.act(
+          workspaceId: 'ws1',
+          rigId: rig.id,
+          action: action,
+          actor: const AgentPrincipal('a1'),
+        );
+        expect(result.isError, isFalse, reason: action.verb);
+      }
+    });
+
+    test('the person who took control can drive', () async {
+      final rig = await openApp();
+      await service.takeControl(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        actor: const UserPrincipal('u1'),
+      );
+      final result = await service.act(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        action: const ComputerType('hello'),
+        actor: const UserPrincipal('u1'),
+      );
+      expect(result.isError, isFalse);
+      expect(windows.inputs, hasLength(1));
+    });
+
+    test('a foreign workspace reads as absent', () async {
+      final rig = await openApp();
+      final result = await service.act(
+        workspaceId: 'ws2',
+        rigId: rig.id,
+        action: const ComputerScreenshot(),
+        actor: const AgentPrincipal('a1'),
+      );
+      expect(result.isError, isTrue);
+      expect(windows.captures, isEmpty);
+      await expectLater(
+        service.updateHostWindowPids(
+          workspaceId: 'ws2',
+          rigId: rig.id,
+          pids: const {5555},
+        ),
+        throwsA(isA<NotFoundException>()),
+      );
+    });
+
+    test(
+      'one rig per slot, and a repeat open takes the new processes',
+      () async {
+        final first = await openApp();
+        windows.windows = [fakeWindow(id: 300, pid: 5555)];
+        final again = await openApp(pids: const {5555});
+        expect(again.id, first.id);
+        final result = await service.act(
+          workspaceId: 'ws1',
+          rigId: first.id,
+          action: const WindowList(),
+          actor: const AgentPrincipal('a1'),
+        );
+        expect(result.text, contains('window_id=300'));
+      },
+    );
+
+    test('two components in one space are two rigs', () async {
+      final desktop = await openApp(slotId: 'desktop');
+      final tray = await openApp(slotId: 'tray', pids: const {5555});
+      expect(tray.id, isNot(desktop.id));
+    });
+
+    test('updateHostWindowPids carries a rig across a relaunch', () async {
+      final rig = await openApp();
+      windows.windows = [fakeWindow(id: 300, pid: 5555)];
+      await service.updateHostWindowPids(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        pids: const {5555},
+      );
+      final result = await service.act(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        action: const ComputerScreenshot(),
+        actor: const AgentPrincipal('a1'),
+      );
+      expect(result.isError, isFalse);
+    });
+
+    test('updateHostWindowPids refuses any other rig', () async {
+      seed(id: 'vm-1', driver: _FakeDriver());
+      await expectLater(
+        service.updateHostWindowPids(
+          workspaceId: 'ws1',
+          rigId: 'vm-1',
+          pids: const {5555},
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('a resized window reaches the row the viewer reads', () async {
+      final rig = await openApp();
+      windows.windows = [fakeWindow(width: 1024, height: 768)];
+      await service.act(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        action: const ComputerScreenshot(),
+        actor: const AgentPrincipal('a1'),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(repository.rigs[rig.id]!.display, RigDisplaySize(1024, 768));
+    });
+
+    test('the reaper leaves it alone, however idle or old', () async {
+      final rig = await openApp();
+      final old = DateTime.now().subtract(const Duration(days: 30));
+      service.debugRegister(
+        rig.copyWith(lastActivityAt: old),
+        driver: HostWindowRigDriver(
+          port: windows,
+          scope: HostWindowScope(pids: {4242}),
+        ),
+      );
+      await service.debugReap();
+      final result = await service.act(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        action: const WindowList(),
+        actor: const AgentPrincipal('a1'),
+      );
+      expect(result.isError, isFalse);
+    });
+
+    test('commits no memory, and is never evicted for a VM', () async {
+      service = withWindows(maxResidentMb: 256);
+      final rig = await openApp();
+      // Over budget with nothing evictable: the refusal proves the window rig
+      // was neither counted nor closed to make room.
+      await expectLater(
+        service.open(
+          workspaceId: 'ws1',
+          spec: RigSpec(surface: RigSurface.computer, memoryMb: 1024),
+          openedBy: const UserPrincipal('u1'),
+        ),
+        throwsStateError,
+      );
+      final result = await service.act(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        action: const WindowList(),
+        actor: const AgentPrincipal('a1'),
+      );
+      expect(result.isError, isFalse);
+    });
+
+    test('closing ends the rig without touching the app', () async {
+      final rig = await openApp();
+      await service.close(workspaceId: 'ws1', rigId: rig.id);
+      expect(repository.rigs[rig.id]!.status, isA<RigClosed>());
+      expect(windows.inputs, isEmpty);
+      final result = await service.act(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        action: const ComputerScreenshot(),
+        actor: const AgentPrincipal('a1'),
+      );
+      expect(result.isError, isTrue);
+    });
+
+    test('the watch lane negotiates the codec the driver emits', () async {
+      final rig = await openApp();
+      final stream = await service.watchStream(
+        workspaceId: 'ws1',
+        rigId: rig.id,
+        request: RigWatchRequest(size: RigDisplaySize(1000, 700)),
+      );
+      expect(stream!.negotiated.codec, RigStreamCodec.mpng);
+      expect(stream.displaySize, RigDisplaySize(800, 600));
+      await stream.bytes.first;
+    });
+
+    group('probe', () {
+      RigBackendCapabilities backendIn(RigCapabilities capabilities) =>
+          capabilities.backends.firstWhere(
+            (b) => b.backend == EnclosureBackend.hostWindow,
+          );
+
+      test('offers the surface when the permissions are in place', () async {
+        final backend = backendIn(await service.probe());
+        expect(backend.supports(RigSurface.window), isTrue);
+        expect(backend.note, contains('Nothing contains'));
+      });
+
+      test('names the permission that is missing', () async {
+        windows.granted = const HostWindowPermissions(
+          screenCapture: HostWindowPermission.denied,
+          input: HostWindowPermission.denied,
+          accessibility: HostWindowPermission.denied,
+        );
+        final backend = backendIn(await service.probe());
+        expect(backend.available, isFalse);
+        expect(backend.note, contains('Screen Recording and Accessibility'));
+      });
+
+      test('a platform without the permissions needs none', () async {
+        windows.granted = const HostWindowPermissions(
+          screenCapture: HostWindowPermission.notRequired,
+          input: HostWindowPermission.notRequired,
+          accessibility: HostWindowPermission.notRequired,
+        );
+        expect(backendIn(await service.probe()).available, isTrue);
+      });
     });
   });
 }

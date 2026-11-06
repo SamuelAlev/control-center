@@ -58,7 +58,6 @@
   "dictationHoldToTalkTitle": "Manter para falar",
   "dictationHoldToTalkDescription": "Mantenha o botão do microfone ou o atalho para ditar e solte para parar. Quando desativado, prima uma vez para iniciar e novamente para parar.",
   "keybindingPushToTalk": "Premir para falar",
-  "keybindingPushToTalkDescription": "Manter ou alternar o ditado por voz no compositor de mensagens",
   "agentPermissions": "Permissões dos agentes",
   "agentPermissionsSettingsDescription": "Decida o que os agentes podem fazer sozinhos, o que devem perguntar primeiro ou o que nunca podem fazer — por espaço de trabalho, agente ou espaço.",
   "agentPermissionsMatrixDescription": "Defina uma decisão para cada tipo de efeito. As regras têm precedência: o espaço sobrepõe-se ao agente, que se sobrepõe ao espaço de trabalho.",
@@ -90,6 +89,7 @@
   "rigSurfaceBrowser": "Navegador",
   "rigSurfaceAndroid": "Android",
   "rigSurfaceIosSimulator": "Simulador de iOS",
+  "rigSurfaceAppWindow": "Janela do app",
   "rigSurfaceBrowserEngine": "{engine}",
   "rigBrowserEngineHint": "Um {engine} descartável, isolado da sua máquina. Abra outro motor para comparar a mesma página lado a lado.",
   "rigPhaseReady": "Pronto",
@@ -195,6 +195,7 @@
   "rigStreamNotAllowed": "Não tem acesso a este rig.",
   "rigStreamNotRunning": "Este rig já não está em execução.",
   "rigStreamNeedsFfmpeg": "A vista em direto precisa de ffmpeg neste anfitrião. Instala o ffmpeg e reabre o separador.",
+  "rigStreamNeedsScreenCapture": "A visualização ao vivo precisa de Gravação de Tela. Conceda ao Control Center nos Ajustes do Sistema e reabra a aba.",
   "rigStreamEnded": "A vista em direto terminou.",
   "rigStreamFailed": "Não foi possível abrir a vista em direto.",
   "rigStreamDisconnected": "Sem ligação a um servidor.",
@@ -563,7 +564,6 @@
   "prPropertyDiff": "Diff",
   "prPropertyComments": "Comentários",
   "keybindingOpenFilterMenu": "Abrir o menu de filtros",
-  "keybindingOpenThePullRequestFilterMenuDescription": "Abrir o menu de filtros de PR",
   "countSelected": "{count, plural, =1{1 selecionada} other{{count} selecionadas}}",
   "summary": "Resumo",
   "kbMove": "mover",
@@ -1126,14 +1126,7 @@
   "@cancelEdit": {
     "description": "Tooltip to cancel editing a suggestion"
   },
-  "categoryCreation": "Criação",
-  "categoryEditing": "Edição",
   "categoryNavigation": "Navegação",
-  "categorySystem": "Sistema",
-  "categoryView": "Visualização",
-  "@categoryView": {
-    "description": "Locale string for categoryView"
-  },
   "change": "Alterar",
   "changesRequested": "Alterações solicitadas",
   "spacesMentionSection": "Espaços",
@@ -1608,37 +1601,17 @@
   "isolateAgentExecution": "Isolar a execução de agentes.",
   "justNow": "agora mesmo",
   "keepSandboxing": "Manter sandboxing",
-  "keybindingAddARepositoryDescription": "Adicionar um repositório",
-  "@keybindingAddARepositoryDescription": {
-    "description": "Locale string for keybindingAddARepositoryDescription"
-  },
   "keybindingAddRepository": "Adicionar repositório",
   "@keybindingAddRepository": {
     "description": "Locale string for keybindingAddRepository"
-  },
-  "keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription": "Marcar ou desmarcar o artigo selecionado",
-  "@keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription": {
-    "description": "Locale string for keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription"
   },
   "keybindingCommandPalette": "Palete de comandos",
   "@keybindingCommandPalette": {
     "description": "Locale string for keybindingCommandPalette"
   },
-  "keybindingCreateANewAgentDescription": "Criar um novo agente",
-  "@keybindingCreateANewAgentDescription": {
-    "description": "Locale string for keybindingCreateANewAgentDescription"
-  },
-  "keybindingCreateANewWorkspaceDescription": "Criar um novo espaço de trabalho",
-  "@keybindingCreateANewWorkspaceDescription": {
-    "description": "Locale string for keybindingCreateANewWorkspaceDescription"
-  },
   "keybindingFocusSearch": "Focar na busca",
   "@keybindingFocusSearch": {
     "description": "Locale string for keybindingFocusSearch"
-  },
-  "keybindingFocusThePullRequestSearchFieldDescription": "Focar no campo de busca de pull requests",
-  "@keybindingFocusThePullRequestSearchFieldDescription": {
-    "description": "Locale string for keybindingFocusThePullRequestSearchFieldDescription"
   },
   "keybindingNewAgent": "Novo agente",
   "@keybindingNewAgent": {
@@ -1664,10 +1637,6 @@
   "@keybindingOpenArticle": {
     "description": "Locale string for keybindingOpenArticle"
   },
-  "keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription": "Abrir ou fechar o popup do seletor de espaço na barra lateral",
-  "@keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription": {
-    "description": "Locale string for keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription"
-  },
   "keybindingOpenPr": "Abrir PR",
   "@keybindingOpenPr": {
     "description": "Locale string for keybindingOpenPr"
@@ -1675,26 +1644,6 @@
   "keybindingOpenSettings": "Abrir definições",
   "@keybindingOpenSettings": {
     "description": "Locale string for keybindingOpenSettings"
-  },
-  "keybindingOpenTheApplicationSettingsDescription": "Abrir as definições da aplicação",
-  "@keybindingOpenTheApplicationSettingsDescription": {
-    "description": "Locale string for keybindingOpenTheApplicationSettingsDescription"
-  },
-  "keybindingOpenTheCommandPaletteDescription": "Abrir a palete de comandos",
-  "@keybindingOpenTheCommandPaletteDescription": {
-    "description": "Locale string for keybindingOpenTheCommandPaletteDescription"
-  },
-  "keybindingOpenTheSelectedArticleDescription": "Abrir o artigo selecionado",
-  "@keybindingOpenTheSelectedArticleDescription": {
-    "description": "Locale string for keybindingOpenTheSelectedArticleDescription"
-  },
-  "keybindingOpenTheSelectedPullRequestDescription": "Abrir a pull request selecionada",
-  "@keybindingOpenTheSelectedPullRequestDescription": {
-    "description": "Locale string for keybindingOpenTheSelectedPullRequestDescription"
-  },
-  "keybindingOpenTheSelectedWorkspaceDescription": "Abrir o espaço de trabalho selecionado",
-  "@keybindingOpenTheSelectedWorkspaceDescription": {
-    "description": "Locale string for keybindingOpenTheSelectedWorkspaceDescription"
   },
   "keybindingOpenWorkspace": "Abrir espaço de trabalho",
   "@keybindingOpenWorkspace": {
@@ -1716,89 +1665,9 @@
   "@keybindingRefresh": {
     "description": "Locale string for keybindingRefresh"
   },
-  "keybindingRefreshAllFeedsDescription": "Atualizar todos os feeds",
-  "@keybindingRefreshAllFeedsDescription": {
-    "description": "Locale string for keybindingRefreshAllFeedsDescription"
-  },
-  "keybindingRefreshThePullRequestListDescription": "Atualizar a lista de pull requests",
-  "@keybindingRefreshThePullRequestListDescription": {
-    "description": "Locale string for keybindingRefreshThePullRequestListDescription"
-  },
-  "keybindingRescanForAdaptersDescription": "Reprocurar adaptadores",
-  "@keybindingRescanForAdaptersDescription": {
-    "description": "Locale string for keybindingRescanForAdaptersDescription"
-  },
-  "keybindingSelectTheNextArticleDescription": "Selecionar o artigo seguinte",
-  "@keybindingSelectTheNextArticleDescription": {
-    "description": "Locale string for keybindingSelectTheNextArticleDescription"
-  },
-  "keybindingSelectTheNextSpaceDescription": "Selecionar o espaço seguinte",
-  "@keybindingSelectTheNextSpaceDescription": {
-    "description": "Locale string for keybindingSelectTheNextSpaceDescription"
-  },
-  "keybindingSelectThePreviousArticleDescription": "Selecionar o artigo anterior",
-  "@keybindingSelectThePreviousArticleDescription": {
-    "description": "Locale string for keybindingSelectThePreviousArticleDescription"
-  },
-  "keybindingSelectThePreviousSpaceDescription": "Selecionar o espaço anterior",
-  "@keybindingSelectThePreviousSpaceDescription": {
-    "description": "Locale string for keybindingSelectThePreviousSpaceDescription"
-  },
   "keybindingSendMessage": "Enviar mensagem",
   "@keybindingSendMessage": {
     "description": "Locale string for keybindingSendMessage"
-  },
-  "keybindingSendTheCurrentMessageDescription": "Enviar a mensagem atual",
-  "@keybindingSendTheCurrentMessageDescription": {
-    "description": "Locale string for keybindingSendTheCurrentMessageDescription"
-  },
-  "keybindingSwitchBetweenLightAndDarkModeDescription": "Alternar entre modo claro e escuro",
-  "@keybindingSwitchBetweenLightAndDarkModeDescription": {
-    "description": "Locale string for keybindingSwitchBetweenLightAndDarkModeDescription"
-  },
-  "keybindingSwitchToTheEighthWorkspaceDescription": "Mudar para o oitavo espaço de trabalho",
-  "@keybindingSwitchToTheEighthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheEighthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheFifthWorkspaceDescription": "Mudar para o quinto espaço de trabalho",
-  "@keybindingSwitchToTheFifthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheFifthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheFirstWorkspaceDescription": "Mudar para o primeiro espaço de trabalho",
-  "@keybindingSwitchToTheFirstWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheFirstWorkspaceDescription"
-  },
-  "keybindingSwitchToTheFourthWorkspaceDescription": "Mudar para o quarto espaço de trabalho",
-  "@keybindingSwitchToTheFourthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheFourthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheNextWorkspaceDescription": "Mudar para o espaço de trabalho seguinte",
-  "@keybindingSwitchToTheNextWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheNextWorkspaceDescription"
-  },
-  "keybindingSwitchToTheNinthWorkspaceDescription": "Mudar para o nono espaço de trabalho",
-  "@keybindingSwitchToTheNinthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheNinthWorkspaceDescription"
-  },
-  "keybindingSwitchToThePreviousWorkspaceDescription": "Mudar para o espaço de trabalho anterior",
-  "@keybindingSwitchToThePreviousWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToThePreviousWorkspaceDescription"
-  },
-  "keybindingSwitchToTheSecondWorkspaceDescription": "Mudar para o segundo espaço de trabalho",
-  "@keybindingSwitchToTheSecondWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheSecondWorkspaceDescription"
-  },
-  "keybindingSwitchToTheSeventhWorkspaceDescription": "Mudar para o sétimo espaço de trabalho",
-  "@keybindingSwitchToTheSeventhWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheSeventhWorkspaceDescription"
-  },
-  "keybindingSwitchToTheSixthWorkspaceDescription": "Mudar para o sexto espaço de trabalho",
-  "@keybindingSwitchToTheSixthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheSixthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheThirdWorkspaceDescription": "Mudar para o terceiro espaço de trabalho",
-  "@keybindingSwitchToTheThirdWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheThirdWorkspaceDescription"
   },
   "keybindingToggleBookmark": "Alternar marcador",
   "@keybindingToggleBookmark": {
@@ -1848,8 +1717,6 @@
   "@keybindingWorkspace9": {
     "description": "Locale string for keybindingWorkspace9"
   },
-  "keybindings": "Atalhos de teclado",
-  "keybindingsDescription": "Todos os atalhos de teclado. Os atalhos são fixos e não podem ser reatribuídos.",
   "killRunning": "Encerrar em execução",
   "languageSystem": "Sistema",
   "leaveACommentEllipsis": "Deixe um comentário...",
@@ -2026,7 +1893,6 @@
   "@noSavedArticlesBody": {
     "description": "Locale string for noSavedArticlesBody"
   },
-  "noShortcutsMatch": "Nenhum atalho corresponde a \"{query}\"",
   "noSystemFonts": "Nenhuma fonte do sistema detectada.",
   "noTokenSet": "Nenhum token definido — o acesso é irrestrito.",
   "@noTokenSet": {
@@ -2605,8 +2471,6 @@
   "@searchPlaceholder": {
     "description": "Locale string for searchPlaceholder"
   },
-  "searchShortcuts": "Pesquisar atalhos…",
-  "shortcutUnavailableInBrowser": "Indisponível no navegador",
   "searching": "A procurar...",
   "@searching": {
     "description": "Locale string for searching"
@@ -3734,6 +3598,13 @@
   "triggerEventMeetingRecordingStopped": "Gravação da reunião interrompida",
   "triggerEventSkillUpdated": "Habilidade atualizada",
   "triggerEventSpaceDeleted": "Espaço excluído",
+  "triggerEventSpaceArchived": "Espaço arquivado",
+  "triggerEventSpaceProvisioningChanged": "Provisionamento do espaço alterado",
+  "triggerEventPrHeadChanged": "Head da PR alterado",
+  "triggerEventEnvironmentStatusChanged": "Status do ambiente alterado",
+  "triggerEventEnvironmentReady": "Ambiente pronto",
+  "triggerEventEnvironmentDestroyed": "Ambiente destruído",
+  "triggerEventEnvironmentProcessExited": "Processo do ambiente encerrado",
   "triggerExternalPrHelp": "Um pull request aberto no host de código, não no Control Center.",
   "triggerPrPublishedHelp": "Um pull request aberto no Control Center ou por um agente.",
   "triggerPrStatusChangedHelp": "Mesclado, fechado, aberto, reaberto ou aprovado. Filtre por status no inspetor.",
@@ -3751,6 +3622,13 @@
   "triggerMeetingRecordingStoppedHelp": "A gravação de uma reunião termina.",
   "triggerSkillUpdatedHelp": "Uma habilidade é instalada ou atualizada.",
   "triggerSpaceDeletedHelp": "Um espaço de conversa é excluído.",
+  "triggerSpaceArchivedHelp": "Um espaço de conversa é arquivado.",
+  "triggerSpaceProvisioningChangedHelp": "O provisionamento dos worktrees de um espaço começa, termina ou falha.",
+  "triggerPrHeadChangedHelp": "Novos commits são enviados a uma pull request aberta.",
+  "triggerEnvironmentStatusChangedHelp": "Um ambiente de espaço passa para um novo status.",
+  "triggerEnvironmentReadyHelp": "Um ambiente de espaço foi iniciado e pode ser usado.",
+  "triggerEnvironmentDestroyedHelp": "Um ambiente de espaço é desmontado.",
+  "triggerEnvironmentProcessExitedHelp": "Um processo executado por um ambiente é encerrado.",
   "navTickets": "Tickets",
   "ticketsTitle": "Tickets",
   "newTicket": "Novo ticket",
@@ -4388,10 +4266,6 @@
   "enabledViaEnv": "Ativado via {key}",
   "costPerMillion": "{input} / {output} por 1M",
   "contextTokens": "contexto {tokens}",
-  "usageAndCost": "Uso e custo",
-  "usageAndCostDescription": "Gastos dos seus agentes nos últimos 7 dias, com base nos custos de execução observados.",
-  "noUsageYet": "Nenhum uso registrado ainda.",
-  "spentThisWeek": "gastos esta semana",
   "subscriptionUsage": "Uso da assinatura",
   "subscriptionUsageUnavailable": "Indisponível",
   "subscriptionUsageExhausted": "Quota esgotada",
@@ -4458,7 +4332,6 @@
   "syncPrHeadFailed": "Não foi possível sincronizar com a PR",
   "spaceLabel": "Espaço",
   "keybindingNewSpace": "Novo espaço",
-  "keybindingCreateANewSpaceDescription": "Criar um novo espaço",
   "jumpToLatest": "Ir para o mais recente",
   "streaming": "Transmitindo",
   "newMessages": "Novo",
@@ -4523,37 +4396,11 @@
   "providerLocalReady": "Local · pronto",
   "providerNotConnected": "Não conectado",
   "preparingWorkspace": "Preparando espaço de trabalho…",
-  "provisioningRunningSetupScript": "Executando o script de configuração de {repo}…",
-  "@provisioningRunningSetupScript": {
+  "provisioningRunningTasks": "Executando tarefas do worktree de {repo}…",
+  "@provisioningRunningTasks": {
     "placeholders": {
       "repo": {
         "type": "String"
-      }
-    }
-  },
-  "repoScriptsTitle": "Scripts",
-  "repoScriptsTooltip": "Configurar scripts do ciclo de vida",
-  "repoScriptsSetupLabel": "Script de configuração",
-  "repoScriptsSetupHelp": "É executado no worktree do espaço logo após sua criação — instalar dependências, gerar arquivos. Uma falha marca o espaço como falho; tentar novamente o executa de novo.",
-  "repoScriptsArchiveLabel": "Script de arquivamento",
-  "repoScriptsArchiveHelp": "É executado pouco antes da exclusão do worktree de um espaço — limpa recursos fora do worktree. Uma falha nunca bloqueia a exclusão.",
-  "repoScriptsEnvHelp": "É executado via bash a partir do worktree, com CC_WORKSPACE_PATH (o worktree), CC_ROOT_PATH (a raiz do repositório), CC_SPACE_ID, CC_SPACE_NAME e CC_REPO_NAME definidos.",
-  "repoScriptsSetupPlaceholder": "ex.: pnpm install",
-  "repoScriptsArchivePlaceholder": "ex.: docker compose -p $CC_SPACE_ID down",
-  "repoScriptsRecentRuns": "Execuções recentes",
-  "repoScriptsNoRuns": "Ainda sem execuções",
-  "repoScriptsSaved": "Scripts salvos",
-  "repoScriptsRunKindSetup": "Configuração",
-  "repoScriptsRunKindArchive": "Arquivamento",
-  "repoScriptsRunStatusRunning": "Em andamento",
-  "repoScriptsRunStatusSucceeded": "Concluído",
-  "repoScriptsRunStatusFailed": "Falhou",
-  "repoScriptsRunStatusTimedOut": "Expirou",
-  "repoScriptsExitCode": "Código de saída {code}",
-  "@repoScriptsExitCode": {
-    "placeholders": {
-      "code": {
-        "type": "int"
       }
     }
   },
@@ -5328,13 +5175,10 @@
   "cheatSheetThisScreen": "Esta tela",
   "cheatSheetReservedInBrowser": "Reservado pelo navegador",
   "keybindingCheatSheet": "Atalhos de teclado",
-  "keybindingShowKeyboardShortcutsDescription": "Mostrar a folha de referência de atalhos de teclado da tela atual",
   "runPlaybookLabel": "Executar playbook",
   "playbooksLabel": "Playbooks",
   "keybindingUndo": "Desfazer",
   "keybindingRedo": "Refazer",
-  "keybindingUndoLastActionDescription": "Desfazer sua última ação reversível",
-  "keybindingRedoLastActionDescription": "Refazer a última ação desfeita",
   "undone": "Desfeito",
   "redone": "Refeito",
   "undoFailed": "Não foi possível desfazer",
@@ -7550,6 +7394,7 @@
   "resetToDefault": "Repor predefinições",
   "newAgent": "Novo agente",
   "newSkill": "Nova competência",
+  "newItemAction": "Novo",
   "zoomIn": "Aproximar",
   "zoomOut": "Afastar",
   "resetZoom": "Repor o zoom",
@@ -7627,6 +7472,7 @@
   "dumpCopied": "Transcrição copiada para a área de transferência",
   "messageQueueHint": "Continue digitando para enfileirar os próximos ajustes",
   "steerNow": "Orientar",
+  "steerForce": "Parar e enviar",
   "steeringQueueLabel": "Mensagens de orientação na fila",
   "steeringDeliverUnavailable": "Nenhum agente em execução pode recebê-lo agora — ele fica na fila.",
   "reorderSteeringCard": "Reordenar mensagem na fila",
@@ -7642,9 +7488,6 @@
   "sandboxExecGrantBlocked": "Bloqueado",
   "sandboxExecGrantRevokeConfirmTitle": "Revogar esta decisão?",
   "sandboxExecGrantRevokeConfirmBody": "Serás questionado novamente da próxima vez que um agente precisar de executar um programa a partir desta cópia.",
-  "repoScriptsTest": "Testar",
-  "repoScriptsTestTooltip": "Executar este rascunho em um clone descartável do repositório",
-  "repoScriptsRunKindTest": "Teste",
   "demoBadgeLabel": "Demo",
   "demoFilePickerTitle": "Arquivos da demo",
   "@demoFilePickerTitle": {
@@ -7714,6 +7557,16 @@
   "backupSnapshotWorkspaces": "{count, plural, =0{Nenhum espaço de trabalho} =1{1 espaço de trabalho} other{{count} espaços de trabalho}}",
   "backupSnapshotSkipped": "{count, plural, =1{1 espaço de trabalho não capturado} other{{count} espaços de trabalho não capturados}}",
   "backupServerPathLabel": "Caminho no servidor",
+  "backupScheduledLabel": "Backups agendados",
+  "backupScheduledExplainer": "Cópias salvas pelo pipeline de backup de cada espaço de trabalho. Defina o agendamento e a retenção no modelo do pipeline.",
+  "backupScheduledNone": "Ainda não há backups",
+  "backupScheduledCount": "{count, plural, =1{1 backup} other{{count} backups}}",
+  "backupScheduledLast": "Último backup: {time}",
+  "backupListForbidden": "Você precisa da função de administrador neste espaço de trabalho para ver os backups.",
+  "backupScheduledDeleteTitle": "Excluir este backup?",
+  "backupScheduledDeleteBody": "Excluir do servidor o backup de {date} de {name}? Esta ação não pode ser desfeita.",
+  "backupScheduledDeleteDone": "Backup excluído.",
+  "backupScheduledWorkspaceDeleted": "Espaço de trabalho excluído",
   "backupRestoreAction": "Restaurar",
   "backupRestoreTitle": "Restaurar espaço de trabalho",
   "backupRestoreBody": "Isto substitui tudo em {name} pela cópia guardada neste instantâneo. Tudo o que esse espaço de trabalho fez desde então é perdido, e não dá para desfazer.",
@@ -7997,8 +7850,6 @@
   "continueWithoutSandbox": "Continuar sem sandbox",
   "sandboxCheckAgain": "Verificar novamente",
   "ideQuickOpen": "Ir para o arquivo",
-  "ideQuickOpenDescription": "Pesquise os arquivos da conversa pelo nome e abra um em uma aba",
-  "prQuickOpenDescription": "Pesquise os arquivos da pull request pelo nome e abra um em uma aba",
   "ideQuickOpenHint": "Pesquisar arquivos por nome",
   "ideQuickOpenRecentlyOpened": "Aberto recentemente",
   "ideQuickOpenOpenToSide": "Abrir ao lado",
@@ -8074,6 +7925,9 @@
   "skillEvalFailed": "Falhou",
   "skillEvalForced": "Carregamento forçado vs. ausente",
   "skillEvalForcedEvent": "Carregamento forçado",
+  "skillEvalHashLabel": "Hash do pacote",
+  "skillEvalProgressLabel": "Progresso",
+  "skillEvalUpdatesToggle": "Avaliações de atualização",
   "skillEvalHashUnavailable": "Hash do pacote indisponível neste servidor. A avaliação está desativada.",
   "skillEvalHistory": "Histórico de revisões",
   "skillEvalImproved": "Melhorou",
@@ -8177,5 +8031,212 @@
   "connectPasteLinkInvalid": "Esse não é um link de convite ou de pareamento do Control Center. Copie o link inteiro e tente novamente.",
   "connectPasteLinkTarget": "Conecta a",
   "focusModeEnd": "Encerrar sessão de foco",
-  "focusModeRemaining": "Faltam {minutes} min"
+  "focusModeRemaining": "Faltam {minutes} min",
+  "demoUnavailableEnvironments": "Os ambientes executam processos reais no host, então a demo não tem nenhum.",
+  "environmentChecksFailing": "Algumas verificações estão falhando no servidor",
+  "environmentCliEndpoints": "Endpoints: {names}",
+  "environmentCliServices": "Serviços: {names}",
+  "environmentCopied": "Copiado",
+  "environmentCopyCommand": "Copiar comando",
+  "environmentCopyUrl": "Copiar URL",
+  "environmentDefinition": "Definição",
+  "environmentDefinitionCount": "{count, plural, =1{1 definição} other{{count} definições}}",
+  "environmentDestroy": "Destruir",
+  "environmentDestroyBody": "{name} e seus dados são removidos. Iniciar cria um novo.",
+  "environmentDestroyTitle": "Destruir este ambiente?",
+  "environmentExec": "Exec",
+  "environmentExecTitle": "Executar em um serviço",
+  "environmentExitCode": "Código de saída {code}",
+  "environmentHostSetupNeeded": "Isso precisa ser configurado no servidor",
+  "environmentKindApp": "App",
+  "environmentKindCli": "CLI",
+  "environmentKindCompose": "Compose",
+  "environmentKindProcess": "Processo",
+  "environmentKindTask": "Tarefa",
+  "environmentLaunch": "Abrir app",
+  "environmentLogsGone": "Estes logs não estão mais disponíveis.",
+  "environmentLogsTab": "Logs: {name}",
+  "environmentLogsWaiting": "Aguardando saída",
+  "environmentMoreActions": "Mais ações do ambiente",
+  "environmentNeedsRecreate": "Uma alteração exige recriar este ambiente.",
+  "environmentNoStack": "Executa apenas tarefas do worktree, então não há nada para iniciar.",
+  "environmentOnTheServer": "No servidor",
+  "environmentOpenInBrowserVm": "Abrir no Browser (VM)",
+  "environmentOpenViewer": "Abrir visualizador",
+  "environmentPlacementRig": "Em uma VM",
+  "environmentPreviewTab": "Ambiente",
+  "environmentRebuildRelaunch": "Recompilar e reabrir",
+  "environmentRecreate": "Recriar",
+  "environmentRecreateBody": "{name} é destruído e iniciado novamente com as mesmas opções. Seus dados são perdidos.",
+  "environmentRecreateTitle": "Recriar este ambiente?",
+  "environmentResetBody": "{name} volta ao estado base. Os dados criados desde então são perdidos.",
+  "environmentResetData": "Redefinir dados",
+  "environmentResetTitle": "Redefinir dados?",
+  "environmentRestart": "Reiniciar",
+  "environmentRestarts": "{count, plural, =1{1 reinício} other{{count} reinícios}}",
+  "environmentRun": "Executar",
+  "environmentRunInTerminal": "Executar no terminal",
+  "environmentSectionTitle": "Ambiente",
+  "environmentService": "Serviço",
+  "environmentServiceActions": "Ações de {name}",
+  "environmentStartTitle": "Iniciar ambiente",
+  "environmentStateCrashed": "Travou",
+  "environmentStatusDegraded": "Degradado",
+  "environmentStatusDestroying": "Destruindo",
+  "environmentStatusGone": "Removido",
+  "environmentStatusStopping": "Parando",
+  "environmentStopDataLoss": "Parar {name} perde seus dados, e Iniciar não os traz de volta.",
+  "environmentStopLoseData": "Parar e perder dados",
+  "environmentStopTitle": "Parar este ambiente?",
+  "environmentTaskNeverRun": "Ainda não executada",
+  "environmentsAddCheck": "Adicionar verificação",
+  "environmentsAddOption": "Adicionar opção",
+  "environmentsAddRole": "Adicionar papel",
+  "environmentsAdminOnly": "Somente administradores do workspace podem alterar definições.",
+  "environmentsAfter": "Aguardar estes componentes",
+  "environmentsAnchor": "Âncora",
+  "environmentsAutoCreate": "Iniciar automaticamente",
+  "environmentsAutoCreateAll": "Em todo espaço elegível",
+  "environmentsAutoCreateOff": "Nunca",
+  "environmentsAutoCreatePrs": "Em espaços de pull request",
+  "environmentsBlank": "Definição em branco",
+  "environmentsCheckFix": "Comando de correção",
+  "environmentsCheckHint": "Dica",
+  "environmentsCommandHelp": "Os argumentos são separados por espaços. Coloque entre aspas o que tiver um espaço.",
+  "environmentsComponentCount": "{count, plural, =1{1 componente} other{{count} componentes}}",
+  "environmentsComponentId": "ID",
+  "environmentsComposeBuild": "Compilar imagens ao iniciar",
+  "environmentsComposeFile": "Arquivo compose",
+  "environmentsComposeHttp": "HTTP",
+  "environmentsComposeNoFile": "Não foi possível ler um arquivo compose. Os nomes de serviço ainda podem ir na visualização JSON.",
+  "environmentsComposeServices": "Serviços",
+  "environmentsComposeServicesHint": "Deixe todos os serviços desmarcados para executar todos.",
+  "environmentsConditionalArgs": "Este comando tem argumentos condicionais. Edite-o na visualização JSON.",
+  "environmentsCwdPath": "Caminho de trabalho",
+  "environmentsCwdRole": "Papel de trabalho",
+  "environmentsDeleteBody": "Os espaços não poderão mais iniciá-lo. Ambientes em execução continuam até serem parados.",
+  "environmentsDeleteTitle": "Excluir {name}?",
+  "environmentsDescription": "O que cada espaço pode iniciar e as tarefas que seus worktrees executam.",
+  "environmentsDraftFromRepo": "Criar rascunho do repo",
+  "environmentsEmpty": "Nenhuma definição ainda",
+  "environmentsEnabledWhen": "Ativado quando",
+  "environmentsEndpointRole": "Papel do endpoint",
+  "environmentsFollowPrHead": "Seguir o head do pull request",
+  "environmentsForkApproval": "Cada início precisa de um administrador",
+  "environmentsForkDeny": "Recusado",
+  "environmentsForkPrs": "Pull requests de forks",
+  "environmentsForkRig": "Executar em uma VM",
+  "environmentsIdleStop": "Parar após minutos ociosos",
+  "environmentsIsolateHome": "Dar ao app uma home privada",
+  "environmentsIssues": "Corrija isto antes de salvar",
+  "environmentsJsonInvalid": "JSON inválido: {error}",
+  "environmentsKeepsData": "Mantém seus dados ao parar",
+  "environmentsLinkConfirm": "Vincular e aprovar",
+  "environmentsLinkFile": "Vincular um arquivo do repo",
+  "environmentsLinkHelp": "Lido apenas da branch padrão e executado só depois de aprovado.",
+  "environmentsLinkPath": "Caminho",
+  "environmentsMaxRunning": "Em execução ao mesmo tempo",
+  "environmentsNamingProject": "Projeto",
+  "environmentsNamingTemplate": "Modelo de nome",
+  "environmentsNew": "Nova definição",
+  "environmentsNewDefinitionName": "Novo ambiente",
+  "environmentsNoChecks": "Esta definição não tem verificações.",
+  "environmentsNoRuns": "Nenhuma execução de teste ainda",
+  "environmentsOnChange": "Caminhos a observar",
+  "environmentsOptionBool": "Sim ou não",
+  "environmentsOptionEnum": "Um de",
+  "environmentsOptionMulti": "Vários de",
+  "environmentsOptionValues": "Valores",
+  "environmentsPlacement": "Localização",
+  "environmentsPlacementHost": "No host",
+  "environmentsPlacementRig": "Em uma VM",
+  "environmentsPrepareTask": "Tarefa de preparação",
+  "environmentsPrimaryEndpoint": "Endpoint principal",
+  "environmentsReadyHttp": "Pronto quando esta URL responder",
+  "environmentsRestartAlways": "Sempre",
+  "environmentsRestartNever": "Nunca",
+  "environmentsRestartOn": "Reiniciar quando estes caminhos mudarem",
+  "environmentsRestartOnFailure": "Em caso de falha",
+  "environmentsRestartPolicy": "Reiniciar",
+  "environmentsRigTtl": "Vida útil da VM em horas",
+  "environmentsRunChecks": "Executar novamente",
+  "environmentsRunTest": "Executar teste",
+  "environmentsSaved": "Definição salva",
+  "environmentsSectionComponents": "Componentes",
+  "environmentsSectionOptions": "Opções de início",
+  "environmentsSectionSeedFiles": "Arquivos semente",
+  "environmentsSectionVariables": "Variáveis",
+  "environmentsSeedHelp": "Um caminho por linha, copiado do checkout registrado. Pull requests de forks nunca os recebem.",
+  "environmentsShellHelp": "Os marcadores não são expandidos aqui. Leia as variáveis CC_ENV_*.",
+  "environmentsSourceApprove": "Aprovar esta versão",
+  "environmentsSourceCurrent": "{path} corresponde à versão aprovada.",
+  "environmentsSourceNotice": "A versão aprovada continua em execução até você aprovar esta.",
+  "environmentsTabJson": "JSON",
+  "environmentsTabSource": "Origem",
+  "environmentsTestHelp": "Executa um ambiente descartável de ponta a ponta: verificar, iniciar, aguardar ficar pronto, destruir.",
+  "environmentsTestSaveFirst": "Salve a definição primeiro.",
+  "environmentsTimeoutSeconds": "Tempo limite em segundos",
+  "environmentsTitle": "Ambientes",
+  "environmentsTriggerArchive": "Antes de o worktree ser excluído",
+  "environmentsTriggerChange": "Quando os caminhos observados mudam",
+  "environmentsTriggerCreate": "Uma vez por ambiente",
+  "environmentsTriggerManual": "Sob demanda",
+  "environmentsTriggerProvision": "Quando o worktree é criado",
+  "environmentsTriggerStart": "A cada início",
+  "environmentsTriggers": "Executa",
+  "environmentsUnreadable": "Este cliente não consegue ler esta definição.",
+  "environmentsUpdateAvailable": "Atualização disponível",
+  "environmentsUseShell": "Usar um comando de shell",
+  "environmentsUseSourceWarning": "A ferramenta então roda no seu próprio checkout. Trate-o como somente leitura.",
+  "environmentsWhenMissing": "Quando falta a um espaço",
+  "environmentsWhenMissingAdd": "Adicionar ao espaço",
+  "environmentsWhenMissingSkip": "Ignorar",
+  "environmentsWhenMissingSource": "Usar o checkout registrado",
+  "environmentsUnsupported": "Este servidor não suporta ambientes.",
+  "environmentViewerUnavailable": "Sem visualizador: o servidor não consegue capturar esta janela. Permita a gravação de tela para o Control Center no servidor.",
+  "environmentHealthHealthy": "Saudável",
+  "environmentHealthUnhealthy": "Com falha",
+  "environmentTerminalStale": "Este terminal foi aberto antes de o ambiente iniciar, então não tem as variáveis dele.",
+  "environmentTerminalFresh": "Abrir um terminal novo",
+  "environmentsShellStays": "Um script de várias linhas continua sendo um comando de shell: as linhas são a estrutura dele.",
+  "environmentsOverrides": "Substituições do workspace",
+  "environmentsOverridesHelp": "As configurações do próprio arquivo são somente leitura aqui. Vincule os papéis dele aos repos deste workspace ou substitua qualquer campo como JSON.",
+  "environmentsReposHelp": "Os repositórios que este ambiente usa, cada um vinculado a um papel.",
+  "environmentsComponentsHelp": "O que o ambiente executa, na ordem de início.",
+  "environmentsOptionsHelp": "Escolhas oferecidas ao iniciar o ambiente.",
+  "environmentsVariablesHelp": "Definidas em tarefas, processos, apps e terminais do espaço.",
+  "environmentsChecksHelp": "O que o host precisa para este ambiente funcionar.",
+  "environmentsIdleStopHelp": "Com 0 nunca para.",
+  "environmentsAnchorHelp": "Um espaço com este repositório pode iniciar o ambiente.",
+  "environmentsRequiredHelp": "O ambiente não funciona sem ele.",
+  "environmentsFollowPrHeadHelp": "Sincronizar e atualizar quando o head do pull request mudar.",
+  "environmentsRecordNeedsFix": "Precisa de correção",
+  "environmentsCheckFile": "Arquivo",
+  "environmentsDiscardBody": "Suas edições nesta definição serão perdidas.",
+  "environmentsWorktreeRuns": "Execuções de tarefas do worktree",
+  "environmentsNoWorktreeRuns": "Nenhuma tarefa do worktree foi executada ainda.",
+  "environmentsLinkRoles": "Papéis neste arquivo",
+  "environmentsLinkNoFile": "Não foi possível ler esse arquivo do repo. Os papéis podem ser vinculados depois.",
+  "guardrailClassHostExecution": "Executar comandos no host",
+  "environmentUrls": "URLs",
+  "environmentScripts": "Scripts",
+  "environmentNoneForSpace": "Nenhum ambiente para este espaço",
+  "environmentNoneForPr": "Nenhum ambiente para este pull request",
+  "environmentSetupBody": "Um ambiente executa os serviços, scripts e URLs de um repositório para um espaço. Configure-o uma vez e qualquer espaço do repositório poderá iniciá-lo.",
+  "environmentSetUp": "Configurar ambiente",
+  "environmentEditDefinition": "Editar definição",
+  "environmentOpenPanel": "Abrir ambiente",
+  "environmentNeedsSetup": "Requer configuração",
+  "environmentContinueInTerminal": "Continuar no terminal",
+  "environmentSetupHint": "A ferramenta precisa de você em um terminal para uma senha ou pergunta. O início continua quando terminar.",
+  "environmentSetupTabReason": "Este terminal abriu porque o início precisa de você",
+  "environmentSetupTab": "Configuração do ambiente",
+  "environmentsNothingRunning": "Nada está em execução a partir desta definição.",
+  "searchPoliciesHint": "Pesquisar políticas...",
+  "noPoliciesMatch": "Nenhuma política corresponde à sua pesquisa",
+  "memoryPolicyActive": "Ativa",
+  "memoryFactType": "Tipo",
+  "memoryTimesRecalled": "Vezes recuperado",
+  "memorySourceFacts": "Fatos de origem",
+  "spaceSetupLogs": "Logs de configuração"
 }

@@ -82,6 +82,7 @@ class DemoProfile {
     ActionClass.packageInstall,
     ActionClass.processSpawn,
     ActionClass.enclosureControl,
+    ActionClass.hostExecution,
   };
 
   /// Prefixes refused wholesale: execution, credentials, identity, the forge,
@@ -97,6 +98,11 @@ class DemoProfile {
     'connectivity.',
     'credentials.',
     'dictation.',
+    // Environments run compose stacks, CLIs and desktop apps on the host, so a
+    // demo has none. The client gates on `isDemoServerProvider` and never
+    // calls these.
+    'environment.',
+    'environments.',
     // Chat transports (Slack/Discord): every verb dials a third party.
     'chat.',
     // Evals: `runSuite` executes agents against golden recordings, and the
@@ -233,6 +239,8 @@ class DemoProfile {
     // fixtures, but it is a whole-database read on a public endpoint and there
     // is no reason a demo needs one.
     'workspace.export',
+    // Names backup files on the server's disk; the demo keeps none.
+    'workspace.listBackups',
     // The only calendar READ that is about reaching a provider rather than
     // reading the seeded calendar.
     'calendar.connectInfo',
@@ -549,15 +557,11 @@ class DemoProfile {
     // row, the workspace serves its logo. Every MUTATION in them is named here
     // instead.
     //
-    // Repos: adding or deleting a checkout, reordering, staging, and running
-    // or saving a lifecycle script. `getScripts` stays readable so the script
-    // dialog can still SHOW what a repo would run.
+    // Repos: adding or deleting a checkout, reordering and staging.
     'repos.addFromPath',
     'repos.upsert',
     'repos.delete',
     'repos.reorder',
-    'repos.setScripts',
-    'repos.testScript',
     'repos.stage',
     'repos.unstage',
     // Newsfeed: the feed LIST is fixed for a visitor. Per-article read/saved
@@ -588,6 +592,7 @@ class DemoProfile {
     'workspace.create',
     'workspace.delete',
     'workspace.import',
+    'workspace.deleteBackup',
     'workspace.reorder',
     'workspace.setReposForWorkspace',
     'workspace.unlinkRepoFromWorkspace',
@@ -639,6 +644,12 @@ class DemoProfile {
     // Chat transports are never connected on a demo, so this streams a link
     // set that cannot exist.
     'chat.watchUserLinks',
+    // A demo runs no environments, so these stream state that can't exist.
+    'environment.watch',
+    'environment.watchLogs',
+    'environment.watchRuns',
+    // A demo prepares no worktrees, so there is no output to follow.
+    'messaging.watchSpaceProvisioningLog',
   };
 
   /// The reviewed snapshot of every watch query a demo visitor may subscribe
@@ -787,7 +798,6 @@ class DemoProfile {
     'questions.watchPending',
     'reactions.watchForSpace',
     'repos.watchAll',
-    'repos.watchScriptRuns',
     'review_space.watchAllBySpace',
     'review_space.watchByPr',
     'review_space.watchBySpace',

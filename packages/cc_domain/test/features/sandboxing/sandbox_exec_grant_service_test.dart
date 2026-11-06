@@ -60,7 +60,7 @@ class _FakePort implements ConfirmationPort {
 
 void main() {
   const worktree = '/data/spaces/s1/repos';
-  const tool = '$worktree/web-app/node_modules/.bin/husky';
+  const tool = '$worktree/shop-ui/node_modules/.bin/husky';
   // The provisioner's layout: <spaceRoot>/repos beside
   // <spaceRoot>/agents/<overlay>.
   const spaceRoot = '/data/spaces/s1';
@@ -295,7 +295,7 @@ void main() {
       final service = serviceWith(port);
       for (final (path, decision) in [
         (worktree, SandboxExecGrantDecision.allow),
-        ('$worktree/web-app', SandboxExecGrantDecision.deny),
+        ('$worktree/shop-ui', SandboxExecGrantDecision.deny),
       ]) {
         await repo.upsert(
           SandboxExecGrant(
@@ -337,7 +337,7 @@ void main() {
         SandboxExecGrant(
           id: 'g-deny',
           workspaceId: 'ws1',
-          path: '$worktree/web-app',
+          path: '$worktree/shop-ui',
           decision: SandboxExecGrantDecision.deny,
           createdAt: DateTime.utc(2026, 1, 1),
         ),
@@ -439,7 +439,7 @@ void main() {
         SandboxExecGrant(
           id: 'g-deny',
           workspaceId: 'ws1',
-          path: '$worktree/web-app',
+          path: '$worktree/shop-ui',
           decision: SandboxExecGrantDecision.deny,
           createdAt: DateTime.utc(2026, 1, 1),
         ),

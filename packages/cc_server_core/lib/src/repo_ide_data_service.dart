@@ -355,7 +355,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
   }) async {
     const env = {'GIT_TERMINAL_PROMPT': '0', 'GIT_ASKPASS': 'echo'};
     Future<ProcessResult> git(List<String> args) =>
-        Process.run('git', args, workingDirectory: root, environment: env);
+        _hostGit(root, args, environment: env);
 
     final headBranch =
         ((await git(['rev-parse', '--abbrev-ref', 'HEAD'])).stdout as String)
@@ -542,12 +542,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
       'GIT_CONFIG_NOSYSTEM': '1',
     };
     Future<String> read(List<String> args) async {
-      final res = await Process.run(
-        'git',
-        args,
-        workingDirectory: root,
-        environment: env,
-      );
+      final res = await _hostGit(root, args, environment: env);
       return res.exitCode == 0 ? (res.stdout as String).trim() : '';
     }
 
@@ -595,7 +590,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
 
     final process = await Process.start(
       'git',
-      [
+      RigWorktreeGuard.gitArgs([
         '-c',
         'credential.helper=',
         'fetch',
@@ -604,7 +599,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
         '--no-write-fetch-head',
         remote,
         '+refs/heads/$remoteBranch:refs/remotes/$remote/$remoteBranch',
-      ],
+      ], workingDirectory: root),
       workingDirectory: root,
       environment: {...env, ...authEnv},
     );
@@ -639,17 +634,13 @@ class RepoIdeDataService with _WorktreeChangeGate {
     final root = p.normalize(worktree.path);
     final ProcessResult res;
     if (paths.isEmpty) {
-      res = await Process.run('git', ['add', '-A'], workingDirectory: root);
+      res = await _hostGit(root, ['add', '-A']);
     } else {
       final safe = _confinePaths(root, paths);
       if (safe.isEmpty) {
         return true;
       }
-      res = await Process.run('git', [
-        'add',
-        '--',
-        ...safe,
-      ], workingDirectory: root);
+      res = await _hostGit(root, ['add', '--', ...safe]);
     }
     return res.exitCode == 0;
   }
@@ -668,23 +659,13 @@ class RepoIdeDataService with _WorktreeChangeGate {
     final root = p.normalize(worktree.path);
     final ProcessResult res;
     if (paths.isEmpty) {
-      res = await Process.run('git', [
-        'reset',
-        '-q',
-        'HEAD',
-      ], workingDirectory: root);
+      res = await _hostGit(root, ['reset', '-q', 'HEAD']);
     } else {
       final safe = _confinePaths(root, paths);
       if (safe.isEmpty) {
         return true;
       }
-      res = await Process.run('git', [
-        'reset',
-        '-q',
-        'HEAD',
-        '--',
-        ...safe,
-      ], workingDirectory: root);
+      res = await _hostGit(root, ['reset', '-q', 'HEAD', '--', ...safe]);
     }
     return res.exitCode == 0;
   }
@@ -923,11 +904,22 @@ class RepoIdeDataService with _WorktreeChangeGate {
     if (entries.isEmpty) {
       return;
     }
-    final process = await Process.start('git', const [
-      'check-ignore',
-      '--stdin',
-      '-z',
-    ], workingDirectory: root);
+    final List<String> arguments;
+    try {
+      arguments = RigWorktreeGuard.gitArgs(const [
+        'check-ignore',
+        '--stdin',
+        '-z',
+      ], workingDirectory: root);
+    } on RigWorktreeTampered {
+      // The listing stands without git: it just keeps what git would hide.
+      return;
+    }
+    final process = await Process.start(
+      'git',
+      arguments,
+      workingDirectory: root,
+    );
     final batch = StringBuffer();
     for (final entry in entries) {
       batch
@@ -1321,7 +1313,12 @@ class RepoIdeDataService with _WorktreeChangeGate {
       return const [];
     }
     // exit 0 = matches, 1 = no matches; anything else is a real error.
-    final result = await Process.run('git', grepArgs, workingDirectory: root);
+    final ProcessResult result;
+    try {
+      result = await _hostGit(root, grepArgs);
+    } on RigWorktreeTampered {
+      return const [];
+    }
     if (result.exitCode != 0 && result.exitCode != 1) {
       return const [];
     }
@@ -1586,22 +1583,17 @@ class RepoIdeDataService with _WorktreeChangeGate {
       // `ls-files --error-unmatch` exits non-zero for untracked files: those
       // can't be reverted by checkout-index (they have no index entry) and are
       // reported back so the client can show "untracked file".
-      final tracked = await Process.run('git', [
+      final tracked = await _hostGit(root, [
         'ls-files',
         '--error-unmatch',
         '--',
         rel,
-      ], workingDirectory: root);
+      ]);
       if (tracked.exitCode != 0) {
         skipped.add(rel);
         continue;
       }
-      final restore = await Process.run('git', [
-        'checkout-index',
-        '-f',
-        '--',
-        rel,
-      ], workingDirectory: root);
+      final restore = await _hostGit(root, ['checkout-index', '-f', '--', rel]);
       if (restore.exitCode == 0) {
         reverted++;
         // checkout-index restores content but does not remove a file that was
@@ -1694,12 +1686,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
       'GIT_CONFIG_NOSYSTEM': '1',
     };
     Future<ProcessResult> git(List<String> args, {Map<String, String>? env}) =>
-        Process.run(
-          'git',
-          args,
-          workingDirectory: root,
-          environment: {...baseEnv, ...?env},
-        );
+        _hostGit(root, args, environment: {...baseEnv, ...?env});
 
     // Stage the explicit paths (if any). With real staging the client stages via
     // `repos.stage` and commits with NO paths — we then commit the index AS-IS
@@ -1848,12 +1835,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
       'GIT_CONFIG_NOSYSTEM': '1',
     };
     Future<ProcessResult> git(List<String> args, {Map<String, String>? env}) =>
-        Process.run(
-          'git',
-          args,
-          workingDirectory: root,
-          environment: {...baseEnv, ...?env},
-        );
+        _hostGit(root, args, environment: {...baseEnv, ...?env});
 
     final branch = (branchOverride?.trim().isNotEmpty ?? false)
         ? branchOverride!.trim()
@@ -1941,12 +1923,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
       'GIT_EDITOR': 'true',
     };
     Future<ProcessResult> git(List<String> args, {Map<String, String>? env}) =>
-        Process.run(
-          'git',
-          args,
-          workingDirectory: root,
-          environment: {...baseEnv, ...?env},
-        );
+        _hostGit(root, args, environment: {...baseEnv, ...?env});
 
     var branch = worktree.branch.trim();
     if (branch.isEmpty) {
@@ -2317,7 +2294,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
     }
     final root = p.normalize(worktree.path);
     Future<ProcessResult> git(List<String> args, {Map<String, String>? env}) =>
-        Process.run('git', args, workingDirectory: root, environment: env);
+        _hostGit(root, args, environment: env);
 
     // Never clobber uncommitted work — bail out and let the client warn.
     final status = await git(['status', '--porcelain']);
@@ -2424,15 +2401,27 @@ class RepoIdeDataService with _WorktreeChangeGate {
     ];
   }
 
-  Future<ProcessResult> _git(String root, List<String> args) => Process.run(
-    'git',
+  Future<ProcessResult> _git(String root, List<String> args) => _hostGit(
+    root,
     args,
-    workingDirectory: root,
     environment: const {
       'GIT_TERMINAL_PROMPT': '0',
       'GIT_ASKPASS': 'echo',
       'GIT_CONFIG_NOSYSTEM': '1',
     },
+  );
+
+  /// Host git in [root], which a rig may have mounted: hardened there, and
+  /// throws [RigWorktreeTampered] when the rig changed its git metadata.
+  Future<ProcessResult> _hostGit(
+    String root,
+    List<String> args, {
+    Map<String, String>? environment,
+  }) => Process.run(
+    'git',
+    RigWorktreeGuard.gitArgs(args, workingDirectory: root),
+    workingDirectory: root,
+    environment: environment,
   );
 
   Future<IsolatedRepo?> _worktreeFor(

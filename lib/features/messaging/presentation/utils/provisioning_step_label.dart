@@ -20,7 +20,7 @@ String provisioningStepLabel(
     SpaceProvisioningStepKind.prCheckout => l10n.provisioningCheckingOutPr(
       step.subject,
     ),
-    SpaceProvisioningStepKind.script => l10n.provisioningRunningSetupScript(
+    SpaceProvisioningStepKind.provisionTasks => l10n.provisioningRunningTasks(
       step.subject,
     ),
     SpaceProvisioningStepKind.agent => l10n.provisioningSettingUpAgent(

@@ -43,13 +43,8 @@ class ExternalMcpSection extends ConsumerWidget {
     return SectionCard(
       label: l10n.mcpExternalServers,
       subtitle: Text(l10n.mcpExternalServersDescription),
-      padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-      headerPadding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        0,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      headerPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -82,6 +77,7 @@ class ExternalMcpSection extends ConsumerWidget {
                   label: l10n.mcpApprovalMode,
                   description: l10n.mcpApprovalModeDescription,
                   controlWidth: 220,
+                  trailingControl: true,
                   child: CcSelect<ApprovalMode>(
                     options: [
                       CcSelectOption(

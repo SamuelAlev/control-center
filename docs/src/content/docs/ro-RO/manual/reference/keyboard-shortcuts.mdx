@@ -2,10 +2,10 @@
 title: Scurtături de tastatură
 description: Registrul complet de scurtături, pe domenii de aplicare, cu condițiile în care se declanșează fiecare scurtătură.
 slug: ro-RO/manual/referinta/scurtaturi-de-tastatura
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Scurtăturile provin dintr-un singur registru `const`, `KeybindingRegistry` din `lib/core/constants/keybindings.dart`. El conține **49 de scurtături**. Setări → Tu → Scurtături afișează acel registru ca **referință doar în citire**: nu există interfață de reatribuire și niciun fișier de scurtături al utilizatorului.
+Scurtăturile provin dintr-un singur registru `const`, `KeybindingRegistry` din `lib/core/constants/keybindings.dart`. El conține **49 de scurtături**. Dialogul **Scurtături de tastatură** (apasă `?` sau deschide-l din meniul Ajutor) afișează scurtăturile globale și pe cele ale ecranului curent. Este o **referință doar în citire**: nu există interfață de reatribuire și niciun fișier de scurtături al utilizatorului.
 
 `Cmd` de mai jos este modificatorul principal de comandă — ⌘ pe macOS, Ctrl pe Windows și Linux. O scurtătură se declanșează doar când comanda ei are un handler înregistrat pe ecranul curent și clauza ei `when` este îndeplinită; `!textInputFocus` înseamnă că tasta este transmisă mai departe unui câmp de text focusat.
 
@@ -41,7 +41,7 @@ Domeniul `/pull-requests`. Toate cer `route == '/pull-requests'` și niciun câm
 | `Enter`    | Deschide PR              |
 | `F`        | Deschide meniul de filtre |
 
-`Enter` (`pr.list-open`) este declarat în registru și apare în referința de scurtături, dar **ecranul de listă nu înregistrează un handler pentru el**, așa că momentan nu se declanșează. `F` deschide meniul de filtre (`pr.list-open-filter`), nu căutarea.
+`Enter` (`pr.list-open`) este declarat în registru și apare în dialogul **Scurtături de tastatură**, dar **ecranul de listă nu înregistrează un handler pentru el**, așa că momentan nu se declanșează. `F` deschide meniul de filtre (`pr.list-open-filter`), nu căutarea.
 
 ## Detaliu de pull request (2)
 
@@ -90,7 +90,7 @@ Domeniul `/spaces`. Clauzele `when` folosesc o expresie regulată, așa că se d
 
 „Accesează fișierul” deschide un selector peste fișierele conversației. Fără text introdus, listează fișierele deschise cel mai recent; tastarea caută în toate fișierele din worktree-urile conversației. `Enter` deschide fișierul selectat într-o filă nouă, `Cmd/Ctrl + Enter` sau butonul de împărțire de pe rând îl deschide într-un panou în dreapta, iar `×` de pe un rând recent îl elimină din listă.
 
-Trimiterea cu Enter aparține câmpului de text al compozitorului; apăsarea pentru a vorbi aparține butonului de microfon al compozitorului (care are propriul handler de tastatură hardware). Ambele sunt listate în registru pentru referința din setări.
+Trimiterea cu Enter aparține câmpului de text al compozitorului; apăsarea pentru a vorbi aparține butonului de microfon al compozitorului (care are propriul handler de tastatură hardware). Ambele sunt listate în registru pentru ca dialogul **Scurtături de tastatură** să le poată afișa.
 
 ## Selectorul de spații de lucru (2)
 
@@ -127,7 +127,7 @@ Domeniul `/newsfeed`. Toate cer `route == '/newsfeed'` și niciun câmp de text 
 
 ## Scurtături ale vizualizatorului de diff din afara registrului
 
-Vizualizatorul de diff pentru PR le gestionează singur (`PrDiffKeyboardHandler`). Căutarea, marcarea ca vizualizat și plierea sunt listate în comentariile registrului doar pentru referința din setări — nu este înregistrat niciun handler în dispatcher, așa că dispatcherul le lasă în seama vizualizării de diff. Ele nu apar ca rânduri separate în referința de scurtături.
+Vizualizatorul de diff pentru PR le gestionează singur (`PrDiffKeyboardHandler`). Căutarea, marcarea ca vizualizat și plierea sunt doar menționate în comentariile registrului: nu este înregistrat niciun handler în dispatcher, așa că dispatcherul le lasă în seama vizualizării de diff. Ele nu apar ca rânduri separate în dialogul **Scurtături de tastatură**.
 
 | Scurtătură      | Acțiune                                              |
 | --------------- | ---------------------------------------------------- |

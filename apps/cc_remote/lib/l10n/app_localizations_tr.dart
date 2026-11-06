@@ -2624,4 +2624,7 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Sağlayıcının kimlik bilgisi artık çalışmadığı için çalışma durdu. Ayarlar → Sağlayıcılar bölümünden yeniden bağlayın, ardından turu yeniden deneyin.';
+
+  @override
+  String get permissionHostExecution => 'Ana makinede komut çalıştır';
 }

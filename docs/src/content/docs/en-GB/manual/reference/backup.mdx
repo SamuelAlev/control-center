@@ -2,7 +2,7 @@
 title: Backup, export and import
 description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
 slug: en-GB/manual/reference/backup
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Everything Control Center can copy, hand over or adopt, and the exact shape of each
@@ -50,7 +50,12 @@ They do not include a manifest or `global.db` and are not install snapshots.
 The weekly pipeline's retention step removes only backups of its own workspace
 older than its configured age (30 days by default); manually created install
 snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones.
+snapshots, including incomplete ones; `workspace.listBackups` lists one workspace's
+scheduled backups.
+
+Deleting a workspace leaves this directory in place. The workspace's schedule stops with
+it, so nothing rotates those backups any more, and they stay until the install owner
+removes them. `server.listOrphanedBackups` reports them.
 
 
 ### `manifest.json`
@@ -129,6 +134,10 @@ missing — on a server with no backup port wired, such as the demo server.
 | `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
 | `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
 | `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
+| `server.listOrphanedBackups` | read | Install | install **owner** | none | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | mutate | Install | install **owner** | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | read | Workspace | `admin` | none | `{backups: [...]}` |
+| `workspace.deleteBackup` | mutate | Workspace | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
 | `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
@@ -138,6 +147,13 @@ registry; its handler checks the caller's membership of the named workspace
 and requires `owner`.
 
 `path` in every response is a path on the **server host**.
+
+`server.listOrphanedBackups` returns one entry per workspace that is no longer live:
+`workspace_id`, `workspace_name` when the registry still knows it, and `backups`.
+A deleted workspace can no longer pass a workspace role check, so its backups belong to
+the install owner. `server.deleteOrphanedBackup` refuses a live workspace, whose
+backups stay behind `workspace.deleteBackup` and that workspace's own roles. Both delete
+ops accept only a listed timestamp directory name, not a path.
 
 :::note[A whole-install snapshot is owner-gated on both lanes]
 `server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
@@ -219,25 +235,32 @@ device's signature over its target string using its pairing PSK and the role bel
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Workspace **admin**; install **owner** once the workspace is deleted |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
 
-`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
-signature. `n` is resolved against the backup listing rather than joined onto the backups
-root, so the route cannot be aimed at a directory the listing would not have shown.
+`w` is a workspace id, `n` a snapshot or scheduled backup directory name, `d` the calling
+device id, `s` the signature. On `/backup/snapshot`, `n` is resolved against the backup
+listing rather than joined onto the backups root, so the route cannot be aimed at a
+directory the listing would not have shown. On `/backup/stored` it must be a timestamp
+name, and the file must be a real file inside that workspace's own backup directory.
 
 | Status | Cause                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, or an upload body is empty                   |
+| `400`  | A required query parameter is missing, a backup name is invalid, or an upload body is empty |
 | `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
-| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
+| `404`  | No backup port on this host, or the named snapshot, backup or workspace file does not exist |
 | `405`  | `/backup/restore` called with anything but `POST`                                   |
 | `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
 | `426`  | Any direct request to a transfer path on the public HTTP listener; use a paired client's encrypted resource tunnel |
 | `500`  | The export or archive failed server-side                                            |
 
-Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
-mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
-would splice bytes from two different exports into one file that looks valid and is not.
+All three downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`.
+`/backup/workspace` and `/backup/snapshot` mint a **fresh** copy per request and delete it
+once streamed, so a cached or resumed response would splice bytes from two different
+exports into one file that looks valid and is not.
+
+`/backup/stored` is the exception: it streams a scheduled backup as `<workspaceId>-<name>.db`
+and leaves the file in place, because that file is the backup.
 
 `/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
 unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
@@ -266,12 +289,12 @@ transport encrypts the resulting backup files at rest.
 | Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
 | Snapshot archive name          | `<snapshot directory name>.zip`                              |
 | Upload ceiling                 | 8 GiB per encrypted `/backup/restore` upload                |
-| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
+| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default, or manual deletion. Backups of a deleted workspace: manual deletion only |
 
 The `exports/`, `transfer/`, and `workspace-backups/` directories are not
 install snapshots and are excluded from `server.listBackups`. Only the last
-directory has scheduled retention; deleting an install snapshot requires the
-install owner's explicit action.
+directory has scheduled retention, and only while its workspace exists; deleting an
+install snapshot requires the install owner's explicit action.
 
 ## See also
 

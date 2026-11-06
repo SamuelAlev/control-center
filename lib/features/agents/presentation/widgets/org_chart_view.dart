@@ -38,8 +38,14 @@ class OrgChartView extends ConsumerStatefulWidget {
   /// Height of the connector band between a card and its reports.
   static const double _connectorHeight = 28;
 
-  /// How far past the chart the canvas may be panned.
-  static const double _boundaryMargin = 240;
+  /// The pan leash, shared with the wheel rewrite so a drag and a wheel agree.
+  ///
+  /// Infinite on purpose: most charts are shorter than the pane, and the viewer
+  /// zeroes any axis whose boundary is smaller than the viewport, so a finite
+  /// margin threw the fitted chart to the top on the first drag and locked that
+  /// axis. No fixed margin avoids it, because the viewport grows in scene units
+  /// as the chart zooms out. "Fit to view" is the way back.
+  static const double _boundaryMargin = double.infinity;
 
   static const double _minScale = 0.3;
   static const double _maxScale = 2.5;
@@ -128,13 +134,8 @@ class _OrgChartViewState extends ConsumerState<OrgChartView> {
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       child: SectionCard(
         label: l10n.orgChart,
-        padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-        headerPadding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          0,
-          AppSpacing.lg,
-          AppSpacing.md,
-        ),
+        padding: const EdgeInsets.only(top: AppSpacing.md),
+        headerPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         expands: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -163,10 +164,6 @@ class _OrgChartViewState extends ConsumerState<OrgChartView> {
         ),
       );
     }
-
-    final chartWidth =
-        roots.map(OrgChartView.subtreeWidth).reduce((a, b) => a + b) +
-        OrgChartView._siblingGap * 2 * (roots.length - 1);
 
     return ClipRect(
       child: Stack(
@@ -205,10 +202,8 @@ class _OrgChartViewState extends ConsumerState<OrgChartView> {
                 onPointerSignal: (event) => _wheelPan.onPointerSignal(
                   event,
                   viewport: constraints.biggest,
-                  // Height is unknown until layout; the wheel leash only needs
-                  // an honest lower bound, and the boundary margin supplies the
-                  // slack past it.
-                  canvas: Size(chartWidth, constraints.maxHeight),
+                  // The leash is infinite, so the chart's size plays no part.
+                  canvas: Size.zero,
                   boundaryMargin: OrgChartView._boundaryMargin,
                 ),
                 child: InteractiveViewer(

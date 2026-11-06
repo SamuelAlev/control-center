@@ -71,7 +71,7 @@ class SlashCommandSource extends SyncMentionSource {
   /// Whether [name] matches what has been typed so far.
   ///
   /// A namespaced name matches on any of its `:`-suffixes, not just the whole
-  /// string: `skill:web-app:testing` is found by typing `skill:`, `web-app:` or
+  /// string: `skill:shop-ui:testing` is found by typing `skill:`, `shop-ui:` or
   /// plain `testing`. Without the suffixes the namespace that keeps skills out
   /// of the builtin vocabulary would also hide them — you would have to know
   /// both the prefix and the repo before you could search for the skill.

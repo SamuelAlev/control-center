@@ -1,6 +1,8 @@
 /// SharedPreferences storage keys.
 library;
 
+import 'package:cc_domain/core/domain/value_objects/editor_layout_cache_kinds.dart';
+
 /// Storage key for the GitHub token.
 const String githubTokenKey = 'github_token';
 
@@ -96,6 +98,10 @@ const String prListMergedWindowKey = 'pr_list_merged_window';
 /// the strip's overflow menu.
 const String ideSidebarPinnedViewsKey = 'ide_sidebar_pinned_views';
 
+/// Every IDE sidebar view the strip knew when [ideSidebarPinnedViewsKey] was
+/// last saved, so a view added later starts pinned.
+const String ideSidebarKnownViewsKey = 'ide_sidebar_known_views';
+
 /// SharedPreferences key for whether crash/error diagnostics are sent to the
 /// error-reporting service (Sentry). Defaults to `true` (enabled).
 ///
@@ -132,13 +138,13 @@ const String calendarViewModeKey = 'calendar_view_mode';
 /// Cache `kind` for the messaging IDE editor split layout, persisted per
 /// conversation (the cache `key` is the space id) so each conversation
 /// restores its own panes/tabs/sizes on restart. See `editor_layout_snapshot`.
-const String editorLayoutCacheKind = 'editor_layout_v1';
+const String editorLayoutCacheKind = EditorLayoutCacheKinds.space;
 
 /// Cache `kind` for the PR workbench editor split layout, persisted per PR (the
 /// cache `key` is `owner/repo#number`) so each PR restores its own workbench
 /// panes/tabs/sizes on restart. Kept distinct from [editorLayoutCacheKind] so
 /// PR layouts never collide with messaging's space-keyed entries.
-const String prEditorLayoutCacheKind = 'pr_editor_layout_v1';
+const String prEditorLayoutCacheKind = EditorLayoutCacheKinds.pullRequest;
 
 //
 // Nothing here: OAuth lives entirely on the HOST (device-code grant). The

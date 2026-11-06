@@ -451,6 +451,28 @@ void main() {
       expect(find.text('Claude Code accounts'), findsNothing);
     });
 
+    testWidgets('the pane actions share the end edge of the detail pane', (
+      tester,
+    ) async {
+      await _pump(tester, const [_claudeCode]);
+
+      final section = find.byType(ClaudeAccountsSection);
+      final add = find.widgetWithText(CcButton, 'Add account');
+      final heading = find.descendant(
+        of: section,
+        matching: find.text('Accounts'),
+      );
+
+      // Add account sits in the group header, level with the heading.
+      expect(tester.getTopRight(add).dx, tester.getTopRight(section).dx);
+      expect(tester.getTopLeft(add).dy, tester.getTopLeft(heading).dy);
+      // The environment button lands on the same vertical line.
+      expect(
+        tester.getTopRight(find.widgetWithText(CcButton, 'None set')).dx,
+        tester.getTopRight(add).dx,
+      );
+    });
+
     testWidgets('other runners do not show Claude Code accounts', (
       tester,
     ) async {

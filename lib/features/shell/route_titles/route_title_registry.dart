@@ -74,6 +74,9 @@ final Map<String, RouteTitleBuilder> routeTitleRegistry = {
   // they are foreign features that merely live under `/settings`.
   for (final entry in kSettingsNavItems)
     entry.route(workspaceIdParam): (_, _, l10n) => entry.label(l10n),
+  for (final entry in kSettingsNavItems)
+    for (final detail in entry.detailRoutes)
+      detail(workspaceIdParam): (_, _, l10n) => entry.label(l10n),
   settingsPipelinesRoute(workspaceIdParam): (_, _, l10n) =>
       l10n.pipelineTemplatesTitle,
   '${settingsPipelinesRoute(workspaceIdParam)}/:templateId': (_, _, l10n) =>

@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/environments/presentation/environment_panel.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/ide_sidebar_view_strip.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/agent_run_target.dart';
@@ -203,6 +204,14 @@ class _IdeSidebarState extends ConsumerState<IdeSidebar> {
                 onViewSource: widget.onViewSource,
                 onRevertFiles: widget.onRevertFiles,
               ),
+              // An environment belongs to a space; without one there is none.
+              IdeSidebarView.environment =>
+                widget.spaceId == null
+                    ? const SizedBox.shrink()
+                    : EnvironmentPanel(
+                        workspaceId: widget.workspaceId,
+                        spaceId: widget.spaceId!,
+                      ),
               IdeSidebarView.notes => NotesPanel(
                 workspaceId: widget.workspaceId,
                 spaceId: widget.spaceId,

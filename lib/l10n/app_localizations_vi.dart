@@ -91,10 +91,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get keybindingPushToTalk => 'Nhấn để nói';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'Giữ hoặc bật/tắt đọc chính tả trong trình soạn tin nhắn';
-
-  @override
   String get agentPermissions => 'Quyền của agent';
 
   @override
@@ -193,6 +189,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'Trình mô phỏng iOS';
+
+  @override
+  String get rigSurfaceAppWindow => 'Cửa sổ ứng dụng';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -467,6 +466,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'Xem trực tiếp cần ffmpeg trên host này. Cài ffmpeg rồi mở lại tab.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'Chế độ xem trực tiếp cần quyền Ghi màn hình. Hãy cấp quyền cho Control Center trong Cài đặt hệ thống rồi mở lại tab.';
 
   @override
   String get rigStreamEnded => 'Xem trực tiếp đã kết thúc.';
@@ -1567,10 +1570,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'Mở menu bộ lọc';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'Mở menu bộ lọc pull request';
 
   @override
   String countSelected(int count) {
@@ -2843,19 +2842,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get cancelEdit => 'Hủy chỉnh sửa';
 
   @override
-  String get categoryCreation => 'Tạo';
-
-  @override
-  String get categoryEditing => 'Chỉnh sửa';
-
-  @override
   String get categoryNavigation => 'Điều hướng';
-
-  @override
-  String get categorySystem => 'Hệ thống';
-
-  @override
-  String get categoryView => 'Xem theo danh mục';
 
   @override
   String get change => 'Thay đổi';
@@ -3673,31 +3660,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get keepSandboxing => 'Giữ sandbox';
 
   @override
-  String get keybindingAddARepositoryDescription => 'Thêm kho lưu trữ';
-
-  @override
   String get keybindingAddRepository => 'Thêm kho lưu trữ';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'Gắn hoặc bỏ đánh dấu bài đã chọn';
 
   @override
   String get keybindingCommandPalette => 'Bảng lệnh';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'Tạo agent mới';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'Tạo không gian làm việc mới';
-
-  @override
   String get keybindingFocusSearch => 'Tập trung ô tìm kiếm';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'Tập trung ô tìm kiếm pull request';
 
   @override
   String get keybindingNewAgent => 'Agent mới';
@@ -3718,34 +3687,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get keybindingOpenArticle => 'Mở bài viết';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'Mở hoặc đóng cửa sổ bật lên chuyển không gian làm việc trên thanh bên';
-
-  @override
   String get keybindingOpenPr => 'Mở PR';
 
   @override
   String get keybindingOpenSettings => 'Mở cài đặt';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'Mở cài đặt ứng dụng';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription => 'Mở bảng lệnh';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'Mở bài viết đã chọn';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'Mở pull request đã chọn';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'Mở không gian làm việc đã chọn';
 
   @override
   String get keybindingOpenWorkspace => 'Mở không gian làm việc';
@@ -3763,85 +3708,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get keybindingRefresh => 'Làm mới';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'Làm mới tất cả nguồn cấp';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'Làm mới danh sách pull request';
-
-  @override
-  String get keybindingRescanForAdaptersDescription => 'Quét lại adapter';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription =>
-      'Chọn bài viết tiếp theo';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription =>
-      'Chọn không gian tiếp theo';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'Chọn bài viết trước';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription =>
-      'Chọn không gian trước';
-
-  @override
   String get keybindingSendMessage => 'Gửi tin nhắn';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'Gửi tin nhắn hiện tại';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'Chuyển giữa chế độ sáng và tối';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'Chuyển sang không gian làm việc thứ tám';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'Chuyển sang không gian làm việc thứ năm';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'Chuyển sang không gian làm việc đầu tiên';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'Chuyển sang không gian làm việc thứ tư';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'Chuyển sang không gian làm việc tiếp theo';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'Chuyển sang không gian làm việc thứ chín';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'Chuyển sang không gian làm việc trước';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'Chuyển sang không gian làm việc thứ hai';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'Chuyển sang không gian làm việc thứ bảy';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'Chuyển sang không gian làm việc thứ sáu';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'Chuyển sang không gian làm việc thứ ba';
 
   @override
   String get keybindingToggleBookmark => 'Bật/tắt dấu trang';
@@ -3879,13 +3746,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'Không gian làm việc 9';
-
-  @override
-  String get keybindings => 'Phím tắt';
-
-  @override
-  String get keybindingsDescription =>
-      'Tất cả phím tắt. Phím tắt cố định và không thể gán lại.';
 
   @override
   String get killRunning => 'Hủy đang chạy';
@@ -4155,11 +4015,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get noSavedArticlesBody => 'Các bài viết bạn lưu sẽ xuất hiện ở đây.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'Không có phím tắt khớp \"$query\"';
-  }
 
   @override
   String get noSystemFonts => 'Không phát hiện font hệ thống.';
@@ -4897,12 +4752,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'Tìm kiếm…';
-
-  @override
-  String get searchShortcuts => 'Tìm phím tắt…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'Không dùng được trên trình duyệt';
 
   @override
   String get searching => 'Đang tìm…';
@@ -6685,6 +6534,30 @@ class AppLocalizationsVi extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'Không gian đã xóa';
 
   @override
+  String get triggerEventSpaceArchived => 'Không gian đã lưu trữ';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged =>
+      'Chuẩn bị không gian đã đổi';
+
+  @override
+  String get triggerEventPrHeadChanged => 'Head của PR đã đổi';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged =>
+      'Trạng thái môi trường đã đổi';
+
+  @override
+  String get triggerEventEnvironmentReady => 'Môi trường sẵn sàng';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'Môi trường đã hủy';
+
+  @override
+  String get triggerEventEnvironmentProcessExited =>
+      'Tiến trình môi trường đã thoát';
+
+  @override
   String get triggerExternalPrHelp =>
       'Một pull request được mở trên máy chủ mã, không phải từ Control Center.';
 
@@ -6747,6 +6620,34 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'Một không gian hội thoại bị xóa.';
+
+  @override
+  String get triggerSpaceArchivedHelp =>
+      'Một không gian hội thoại được lưu trữ.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'Việc chuẩn bị cây làm việc của không gian bắt đầu, hoàn tất hoặc thất bại.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'Commit mới được đẩy lên một pull request đang mở.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'Một môi trường không gian chuyển sang trạng thái mới.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'Một môi trường không gian đã khởi động và có thể sử dụng.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp =>
+      'Một môi trường không gian bị gỡ bỏ.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'Một tiến trình do môi trường chạy đã thoát.';
 
   @override
   String get navTickets => 'Phiếu';
@@ -8950,19 +8851,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'Sử dụng và chi phí';
-
-  @override
-  String get usageAndCostDescription =>
-      'Chi phí các agent trong 7 ngày qua, từ chi phí chạy ghi nhận được.';
-
-  @override
-  String get noUsageYet => 'Chưa ghi nhận mức sử dụng.';
-
-  @override
-  String get spentThisWeek => 'đã chi tuần này';
-
-  @override
   String get subscriptionUsage => 'Sử dụng gói đăng ký';
 
   @override
@@ -9174,9 +9062,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get keybindingNewSpace => 'Không gian mới';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'Tạo không gian mới';
-
-  @override
   String get jumpToLatest => 'Chuyển tới mới nhất';
 
   @override
@@ -9348,71 +9233,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get preparingWorkspace => 'Đang chuẩn bị không gian làm việc…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'Đang chạy script thiết lập cho $repo…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'Script';
-
-  @override
-  String get repoScriptsTooltip => 'Cấu hình script vòng đời';
-
-  @override
-  String get repoScriptsSetupLabel => 'Script thiết lập';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'Chạy trong cây làm việc của không gian ngay sau khi được tạo — cài dependency, sinh file. Thất bại đánh dấu không gian là thất bại; thử lại sẽ chạy lại.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'Script lưu trữ';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'Chạy ngay trước khi cây làm việc của không gian bị xóa — dọn tài nguyên ngoài cây làm việc. Thất bại không bao giờ chặn việc xóa.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'Chạy qua bash từ cây làm việc, với CC_WORKSPACE_PATH (cây làm việc), CC_ROOT_PATH (thư mục gốc của repo), CC_SPACE_ID, CC_SPACE_NAME và CC_REPO_NAME được đặt.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'vd. pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'vd. docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => 'Lần chạy gần đây';
-
-  @override
-  String get repoScriptsNoRuns => 'Chưa có lần chạy nào';
-
-  @override
-  String get repoScriptsSaved => 'Đã lưu script';
-
-  @override
-  String get repoScriptsRunKindSetup => 'Thiết lập';
-
-  @override
-  String get repoScriptsRunKindArchive => 'Lưu trữ';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'Đang chạy';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'Thành công';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'Thất bại';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'Hết thời gian';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'Mã thoát $code';
+  String provisioningRunningTasks(String repo) {
+    return 'Đang chạy tác vụ worktree cho $repo…';
   }
 
   @override
@@ -10219,10 +10041,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get keybindingCheatSheet => 'Phím tắt';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'Hiện bảng phím tắt cho màn hình hiện tại';
-
-  @override
   String get runPlaybookLabel => 'Chạy playbook';
 
   @override
@@ -10233,14 +10051,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'Làm lại';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'Hoàn tác thao tác có thể đảo ngược gần nhất';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'Làm lại thao tác vừa hoàn tác';
 
   @override
   String get undone => 'Đã hoàn tác';
@@ -14084,6 +13894,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get newSkill => 'Skill mới';
 
   @override
+  String get newItemAction => 'Mới';
+
+  @override
   String get zoomIn => 'Phóng to';
 
   @override
@@ -14299,6 +14112,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get steerNow => 'Điều hướng';
 
   @override
+  String get steerForce => 'Dừng và gửi';
+
+  @override
   String get steeringQueueLabel => 'Tin nhắn điều hướng đang chờ';
 
   @override
@@ -14346,16 +14162,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'Bạn sẽ được hỏi lại lần sau khi agent cần chạy chương trình từ bản sao này.';
-
-  @override
-  String get repoScriptsTest => 'Kiểm thử';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'Chạy bản nháp này trên bản sao tạm của repo';
-
-  @override
-  String get repoScriptsRunKindTest => 'Kiểm thử';
 
   @override
   String get demoBadgeLabel => 'Demo';
@@ -14570,6 +14376,49 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'Đường dẫn trên máy chủ';
+
+  @override
+  String get backupScheduledLabel => 'Sao lưu theo lịch';
+
+  @override
+  String get backupScheduledExplainer =>
+      'Các bản sao do pipeline sao lưu của mỗi không gian làm việc lưu lại. Đặt lịch và thời gian lưu giữ trong mẫu pipeline.';
+
+  @override
+  String get backupScheduledNone => 'Chưa có bản sao lưu';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bản sao lưu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'Sao lưu gần nhất: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'Bạn cần vai trò quản trị viên trong không gian làm việc này để xem các bản sao lưu.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'Xóa bản sao lưu này?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'Xóa bản sao lưu ngày $date của $name khỏi máy chủ? Không thể hoàn tác thao tác này.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'Đã xóa bản sao lưu.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'Không gian làm việc đã xóa';
 
   @override
   String get backupRestoreAction => 'Khôi phục';
@@ -15185,14 +15034,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get ideQuickOpen => 'Đi tới tệp';
 
   @override
-  String get ideQuickOpenDescription =>
-      'Tìm tệp của cuộc trò chuyện theo tên và mở một tệp trong thẻ';
-
-  @override
-  String get prQuickOpenDescription =>
-      'Tìm tệp của pull request theo tên và mở một tệp trong thẻ';
-
-  @override
   String get ideQuickOpenHint => 'Tìm tệp theo tên';
 
   @override
@@ -15520,6 +15361,15 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'Buộc tải';
+
+  @override
+  String get skillEvalHashLabel => 'Hash gói';
+
+  @override
+  String get skillEvalProgressLabel => 'Tiến độ';
+
+  @override
+  String get skillEvalUpdatesToggle => 'Đánh giá khi cập nhật';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -15912,4 +15762,711 @@ class AppLocalizationsVi extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return 'Còn $minutes phút';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'Môi trường chạy các tiến trình thật trên máy chủ, nên bản demo không có môi trường nào.';
+
+  @override
+  String get environmentChecksFailing =>
+      'Một số kiểm tra đang thất bại trên máy chủ';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'Điểm cuối: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'Dịch vụ: $names';
+  }
+
+  @override
+  String get environmentCopied => 'Đã sao chép';
+
+  @override
+  String get environmentCopyCommand => 'Sao chép lệnh';
+
+  @override
+  String get environmentCopyUrl => 'Sao chép URL';
+
+  @override
+  String get environmentDefinition => 'Định nghĩa';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count định nghĩa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'Hủy bỏ';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name và dữ liệu của nó sẽ bị xóa. Bắt đầu sẽ tạo cái mới.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'Hủy bỏ môi trường này?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'Chạy trong một dịch vụ';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'Mã thoát $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded =>
+      'Cần thiết lập việc này trên máy chủ';
+
+  @override
+  String get environmentKindApp => 'Ứng dụng';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'Tiến trình';
+
+  @override
+  String get environmentKindTask => 'Tác vụ';
+
+  @override
+  String get environmentLaunch => 'Khởi chạy';
+
+  @override
+  String get environmentLogsGone => 'Các nhật ký này không còn khả dụng.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'Nhật ký: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'Đang chờ đầu ra';
+
+  @override
+  String get environmentMoreActions => 'Thêm thao tác môi trường';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'Một thay đổi yêu cầu tạo lại môi trường này.';
+
+  @override
+  String get environmentNoStack =>
+      'Chỉ chạy tác vụ worktree, nên không có gì để bắt đầu.';
+
+  @override
+  String get environmentOnTheServer => 'Trên máy chủ';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Mở trong Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'Mở trình xem';
+
+  @override
+  String get environmentPlacementRig => 'Trong VM';
+
+  @override
+  String get environmentPreviewTab => 'Môi trường';
+
+  @override
+  String get environmentRebuildRelaunch => 'Dựng lại và khởi chạy lại';
+
+  @override
+  String get environmentRecreate => 'Tạo lại';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name sẽ bị hủy và khởi động lại với cùng tùy chọn. Dữ liệu sẽ mất.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'Tạo lại môi trường này?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name trở về trạng thái gốc. Dữ liệu tạo từ đó sẽ mất.';
+  }
+
+  @override
+  String get environmentResetData => 'Đặt lại dữ liệu';
+
+  @override
+  String get environmentResetTitle => 'Đặt lại dữ liệu?';
+
+  @override
+  String get environmentRestart => 'Khởi động lại';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lần khởi động lại',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'Chạy';
+
+  @override
+  String get environmentRunInTerminal => 'Chạy trong terminal';
+
+  @override
+  String get environmentSectionTitle => 'Môi trường';
+
+  @override
+  String get environmentService => 'Dịch vụ';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'Thao tác cho $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'Bắt đầu môi trường';
+
+  @override
+  String get environmentStateCrashed => 'Đã sập';
+
+  @override
+  String get environmentStatusDegraded => 'Suy giảm';
+
+  @override
+  String get environmentStatusDestroying => 'Đang hủy';
+
+  @override
+  String get environmentStatusGone => 'Đã mất';
+
+  @override
+  String get environmentStatusStopping => 'Đang dừng';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'Dừng $name sẽ mất dữ liệu, và Bắt đầu không khôi phục được.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'Dừng và mất dữ liệu';
+
+  @override
+  String get environmentStopTitle => 'Dừng môi trường này?';
+
+  @override
+  String get environmentTaskNeverRun => 'Chưa chạy';
+
+  @override
+  String get environmentsAddCheck => 'Thêm kiểm tra';
+
+  @override
+  String get environmentsAddOption => 'Thêm tùy chọn';
+
+  @override
+  String get environmentsAddRole => 'Thêm vai trò';
+
+  @override
+  String get environmentsAdminOnly =>
+      'Chỉ quản trị viên không gian làm việc mới có thể thay đổi định nghĩa.';
+
+  @override
+  String get environmentsAfter => 'Chờ các thành phần này';
+
+  @override
+  String get environmentsAnchor => 'Neo';
+
+  @override
+  String get environmentsAutoCreate => 'Tự động bắt đầu';
+
+  @override
+  String get environmentsAutoCreateAll => 'Trong mọi không gian đủ điều kiện';
+
+  @override
+  String get environmentsAutoCreateOff => 'Không bao giờ';
+
+  @override
+  String get environmentsAutoCreatePrs => 'Trong không gian pull request';
+
+  @override
+  String get environmentsBlank => 'Định nghĩa trống';
+
+  @override
+  String get environmentsCheckFix => 'Lệnh sửa lỗi';
+
+  @override
+  String get environmentsCheckHint => 'Gợi ý';
+
+  @override
+  String get environmentsCommandHelp =>
+      'Các đối số cách nhau bằng dấu cách. Đặt đối số chứa dấu cách trong dấu ngoặc kép.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count thành phần',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'Dựng image khi bắt đầu';
+
+  @override
+  String get environmentsComposeFile => 'Tệp compose';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Không đọc được tệp compose. Vẫn có thể nhập tên dịch vụ trong chế độ xem JSON.';
+
+  @override
+  String get environmentsComposeServices => 'Dịch vụ';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'Bỏ chọn mọi dịch vụ để chạy tất cả.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'Lệnh này có đối số điều kiện. Hãy sửa trong chế độ xem JSON.';
+
+  @override
+  String get environmentsCwdPath => 'Đường dẫn làm việc';
+
+  @override
+  String get environmentsCwdRole => 'Vai trò làm việc';
+
+  @override
+  String get environmentsDeleteBody =>
+      'Các không gian sẽ không thể bắt đầu nó nữa. Môi trường đang chạy tiếp tục cho đến khi bị dừng.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'Xóa $name?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'Những gì mỗi không gian có thể bắt đầu và tác vụ worktree của nó chạy.';
+
+  @override
+  String get environmentsDraftFromRepo => 'Tạo bản nháp từ repo';
+
+  @override
+  String get environmentsEmpty => 'Chưa có định nghĩa';
+
+  @override
+  String get environmentsEnabledWhen => 'Bật khi';
+
+  @override
+  String get environmentsEndpointRole => 'Vai trò điểm cuối';
+
+  @override
+  String get environmentsFollowPrHead => 'Theo head của pull request';
+
+  @override
+  String get environmentsForkApproval =>
+      'Mỗi lần bắt đầu cần một quản trị viên';
+
+  @override
+  String get environmentsForkDeny => 'Bị từ chối';
+
+  @override
+  String get environmentsForkPrs => 'Pull request từ fork';
+
+  @override
+  String get environmentsForkRig => 'Chạy trong VM';
+
+  @override
+  String get environmentsIdleStop => 'Dừng sau số phút rảnh';
+
+  @override
+  String get environmentsIsolateHome => 'Cấp cho ứng dụng thư mục home riêng';
+
+  @override
+  String get environmentsIssues => 'Sửa các mục này trước khi lưu';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'JSON không hợp lệ: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'Giữ dữ liệu khi dừng';
+
+  @override
+  String get environmentsLinkConfirm => 'Liên kết và phê duyệt';
+
+  @override
+  String get environmentsLinkFile => 'Liên kết tệp repo';
+
+  @override
+  String get environmentsLinkHelp =>
+      'Chỉ đọc từ nhánh mặc định và chỉ chạy sau khi được phê duyệt.';
+
+  @override
+  String get environmentsLinkPath => 'Đường dẫn';
+
+  @override
+  String get environmentsMaxRunning => 'Chạy cùng lúc';
+
+  @override
+  String get environmentsNamingProject => 'Dự án';
+
+  @override
+  String get environmentsNamingTemplate => 'Mẫu tên';
+
+  @override
+  String get environmentsNew => 'Định nghĩa mới';
+
+  @override
+  String get environmentsNewDefinitionName => 'Môi trường mới';
+
+  @override
+  String get environmentsNoChecks => 'Định nghĩa này không có kiểm tra.';
+
+  @override
+  String get environmentsNoRuns => 'Chưa có lần chạy thử';
+
+  @override
+  String get environmentsOnChange => 'Đường dẫn cần theo dõi';
+
+  @override
+  String get environmentsOptionBool => 'Có hoặc không';
+
+  @override
+  String get environmentsOptionEnum => 'Một trong';
+
+  @override
+  String get environmentsOptionMulti => 'Một vài trong';
+
+  @override
+  String get environmentsOptionValues => 'Giá trị';
+
+  @override
+  String get environmentsPlacement => 'Vị trí đặt';
+
+  @override
+  String get environmentsPlacementHost => 'Trên máy chủ';
+
+  @override
+  String get environmentsPlacementRig => 'Trong VM';
+
+  @override
+  String get environmentsPrepareTask => 'Tác vụ chuẩn bị';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'Điểm cuối chính';
+
+  @override
+  String get environmentsReadyHttp => 'Sẵn sàng khi URL này phản hồi';
+
+  @override
+  String get environmentsRestartAlways => 'Luôn luôn';
+
+  @override
+  String get environmentsRestartNever => 'Không bao giờ';
+
+  @override
+  String get environmentsRestartOn =>
+      'Khởi động lại khi các đường dẫn này thay đổi';
+
+  @override
+  String get environmentsRestartOnFailure => 'Khi thất bại';
+
+  @override
+  String get environmentsRestartPolicy => 'Khởi động lại';
+
+  @override
+  String get environmentsRigTtl => 'Thời gian tồn tại của VM tính bằng giờ';
+
+  @override
+  String get environmentsRunChecks => 'Chạy lại';
+
+  @override
+  String get environmentsRunTest => 'Chạy kiểm thử';
+
+  @override
+  String get environmentsSaved => 'Đã lưu định nghĩa';
+
+  @override
+  String get environmentsSectionComponents => 'Thành phần';
+
+  @override
+  String get environmentsSectionOptions => 'Tùy chọn bắt đầu';
+
+  @override
+  String get environmentsSectionSeedFiles => 'Tệp khởi tạo';
+
+  @override
+  String get environmentsSectionVariables => 'Biến';
+
+  @override
+  String get environmentsSeedHelp =>
+      'Mỗi dòng một đường dẫn, sao chép từ checkout đã đăng ký. Pull request từ fork không bao giờ nhận được các tệp này.';
+
+  @override
+  String get environmentsShellHelp =>
+      'Trình giữ chỗ không được mở rộng ở đây. Hãy đọc các biến CC_ENV_*.';
+
+  @override
+  String get environmentsSourceApprove => 'Phê duyệt phiên bản này';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path khớp với phiên bản đã phê duyệt.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'Phiên bản đã phê duyệt vẫn chạy cho đến khi bạn phê duyệt bản này.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'Nguồn';
+
+  @override
+  String get environmentsTestHelp =>
+      'Chạy một môi trường dùng một lần từ đầu đến cuối: kiểm tra, bắt đầu, chờ sẵn sàng, hủy.';
+
+  @override
+  String get environmentsTestSaveFirst => 'Hãy lưu định nghĩa trước.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'Thời gian chờ tính bằng giây';
+
+  @override
+  String get environmentsTitle => 'Môi trường';
+
+  @override
+  String get environmentsTriggerArchive => 'Trước khi xóa worktree';
+
+  @override
+  String get environmentsTriggerChange => 'Khi các đường dẫn theo dõi thay đổi';
+
+  @override
+  String get environmentsTriggerCreate => 'Một lần cho mỗi môi trường';
+
+  @override
+  String get environmentsTriggerManual => 'Theo yêu cầu';
+
+  @override
+  String get environmentsTriggerProvision => 'Khi tạo worktree';
+
+  @override
+  String get environmentsTriggerStart => 'Mỗi lần bắt đầu';
+
+  @override
+  String get environmentsTriggers => 'Chạy';
+
+  @override
+  String get environmentsUnreadable =>
+      'Ứng dụng khách này không đọc được định nghĩa này.';
+
+  @override
+  String get environmentsUpdateAvailable => 'Có bản cập nhật';
+
+  @override
+  String get environmentsUseShell => 'Dùng lệnh shell';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'Khi đó công cụ chạy trên checkout của bạn. Hãy xem nó là chỉ đọc.';
+
+  @override
+  String get environmentsWhenMissing => 'Khi không gian thiếu nó';
+
+  @override
+  String get environmentsWhenMissingAdd => 'Thêm vào không gian';
+
+  @override
+  String get environmentsWhenMissingSkip => 'Bỏ qua';
+
+  @override
+  String get environmentsWhenMissingSource => 'Dùng checkout đã đăng ký';
+
+  @override
+  String get environmentsUnsupported => 'Máy chủ này không hỗ trợ môi trường.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'Không có trình xem: máy chủ không thể ghi lại cửa sổ này. Hãy cho phép Control Center ghi màn hình trên máy chủ.';
+
+  @override
+  String get environmentHealthHealthy => 'Khỏe';
+
+  @override
+  String get environmentHealthUnhealthy => 'Lỗi';
+
+  @override
+  String get environmentTerminalStale =>
+      'Terminal này được mở trước khi môi trường khởi động nên thiếu các biến của nó.';
+
+  @override
+  String get environmentTerminalFresh => 'Mở terminal mới';
+
+  @override
+  String get environmentsShellStays =>
+      'Script nhiều dòng vẫn là lệnh shell: các dòng chính là cấu trúc của nó.';
+
+  @override
+  String get environmentsOverrides => 'Ghi đè của không gian làm việc';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'Thiết lập riêng của tệp ở đây là chỉ đọc. Gắn các vai trò của nó với repo của không gian làm việc này, hoặc ghi đè bất kỳ trường nào bằng JSON.';
+
+  @override
+  String get environmentsReposHelp =>
+      'Các kho lưu trữ môi trường này dùng, mỗi kho gắn với một vai trò.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'Những gì môi trường chạy, theo thứ tự bắt đầu.';
+
+  @override
+  String get environmentsOptionsHelp =>
+      'Các lựa chọn hiển thị khi bắt đầu môi trường.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'Đặt trên tác vụ, tiến trình, ứng dụng và terminal của không gian.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'Những gì máy chủ cần để chạy môi trường này.';
+
+  @override
+  String get environmentsIdleStopHelp => 'Giá trị 0 không bao giờ dừng nó.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'Không gian có kho lưu trữ này có thể bắt đầu môi trường.';
+
+  @override
+  String get environmentsRequiredHelp =>
+      'Môi trường không thể chạy nếu thiếu nó.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'Đồng bộ và làm mới khi head của pull request thay đổi.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'Cần sửa';
+
+  @override
+  String get environmentsCheckFile => 'Tệp';
+
+  @override
+  String get environmentsDiscardBody =>
+      'Các chỉnh sửa của bạn với định nghĩa này sẽ mất.';
+
+  @override
+  String get environmentsWorktreeRuns => 'Các lần chạy tác vụ worktree';
+
+  @override
+  String get environmentsNoWorktreeRuns => 'Chưa có tác vụ worktree nào chạy.';
+
+  @override
+  String get environmentsLinkRoles => 'Vai trò trong tệp này';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'Không đọc được tệp từ repo. Có thể gắn vai trò sau khi liên kết.';
+
+  @override
+  String get guardrailClassHostExecution => 'Chạy lệnh trên máy chủ';
+
+  @override
+  String get environmentUrls => 'URL';
+
+  @override
+  String get environmentScripts => 'Tập lệnh';
+
+  @override
+  String get environmentNoneForSpace =>
+      'Không có môi trường cho không gian này';
+
+  @override
+  String get environmentNoneForPr => 'Không có môi trường cho pull request này';
+
+  @override
+  String get environmentSetupBody =>
+      'Môi trường chạy các dịch vụ, tập lệnh và URL của một kho cho một không gian. Thiết lập một lần và mọi không gian trên kho đều có thể khởi động nó.';
+
+  @override
+  String get environmentSetUp => 'Thiết lập môi trường';
+
+  @override
+  String get environmentEditDefinition => 'Sửa định nghĩa';
+
+  @override
+  String get environmentOpenPanel => 'Mở môi trường';
+
+  @override
+  String get environmentNeedsSetup => 'Cần thiết lập';
+
+  @override
+  String get environmentContinueInTerminal => 'Tiếp tục trong terminal';
+
+  @override
+  String get environmentSetupHint =>
+      'Công cụ cần bạn nhập mật khẩu hoặc trả lời trong terminal. Quá trình khởi động sẽ tiếp tục khi xong.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'Terminal này đã mở vì quá trình khởi động cần bạn';
+
+  @override
+  String get environmentSetupTab => 'Thiết lập môi trường';
+
+  @override
+  String get environmentsNothingRunning =>
+      'Không có gì đang chạy từ định nghĩa này.';
+
+  @override
+  String get searchPoliciesHint => 'Tìm chính sách...';
+
+  @override
+  String get noPoliciesMatch =>
+      'Không có chính sách nào khớp với tìm kiếm của bạn';
+
+  @override
+  String get memoryPolicyActive => 'Đang hoạt động';
+
+  @override
+  String get memoryFactType => 'Loại';
+
+  @override
+  String get memoryTimesRecalled => 'Số lần truy hồi';
+
+  @override
+  String get memorySourceFacts => 'Dữ kiện nguồn';
+
+  @override
+  String get spaceSetupLogs => 'Nhật ký thiết lập';
 }

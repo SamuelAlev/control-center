@@ -2,7 +2,7 @@
 title: Alat MCP
 description: Katalog lengkap alat MCP yang didaftarkan `cc_server`, per keluarga.
 slug: id-ID/panduan-pengguna/referensi/alat-mcp
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` menghosting satu registri alat MCP (JSON-RPC 2.0), yang dilayani pada port server utama (bawaan `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien menjangkau registri yang sama: desktop, build web, klien MCP eksternal, dan runtime agen bawaan. Server MCP eksternal dapat dijembatani ke registri yang sama sebagai lapisan dinamis.
@@ -256,6 +256,8 @@ tidak mendeklarasikan apa pun — ia hanya membaca status ruang kerja. Kosakata 
 | `ios_use`      | Kendalikan Simulator iOS melalui WebDriverAgent/CoreSimulator: periksa/masukkan, tangkapan layar, pasang/mulai/hentikan/copot pemasangan aplikasi, deep link, dan proses simulator berbentuk argv |
 | `rig_list`     | Tampilkan daftar rig sebuah ruang kerja beserta permukaan, status, ukuran layar, dan pengendalinya |
 | `rig_close`    | Hancurkan rig dan buang status mesin yang dimilikinya                                            |
+
+`app_use` adalah alat use kelima: alat ini mengendalikan jendela aplikasi desktop yang diluncurkan di space, langsung di host dan bukan di VM, serta juga mendeklarasikan `fileWriteOutsideWorktree` dan `fileDelete`. Alat ini dan alat `environment_*` dijelaskan di [Menyiapkan lingkungan](/id-ID/panduan-pengguna/panduan-praktis/lingkungan/).
 
 ## Tidak diekspos melalui MCP
 

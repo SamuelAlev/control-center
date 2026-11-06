@@ -2,10 +2,10 @@
 title: Pintasan papan kekunci
 description: Daftar penuh ikatan kekunci, mengikut skop, dengan syarat setiap pintasan berfungsi.
 slug: ms-MY/manual-pengguna/rujukan/pintasan-papan-kekunci
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Pintasan datang daripada satu daftar `const`, `KeybindingRegistry` dalam `lib/core/constants/keybindings.dart`. Ia mengandungi **49 ikatan**. Tetapan → Anda → Ikatan kekunci memaparkan daftar itu sebagai **rujukan baca sahaja**: tiada UI pengikatan semula dan tiada fail ikatan kekunci pengguna.
+Pintasan datang daripada satu daftar `const`, `KeybindingRegistry` dalam `lib/core/constants/keybindings.dart`. Ia mengandungi **49 ikatan**. Dialog **Pintasan papan kekunci** (tekan `?`, atau bukanya dari menu Bantuan) memaparkan pintasan global dan pintasan untuk skrin semasa. Ia ialah **rujukan baca sahaja**: tiada UI pengikatan semula dan tiada fail ikatan kekunci pengguna.
 
 `Cmd` di bawah ialah pengubah arahan utama — ⌘ pada macOS, Ctrl pada Windows dan Linux. Sesuatu ikatan hanya berfungsi apabila perintahnya mempunyai pengendali berdaftar pada skrin semasa dan klausa `when`-nya dipenuhi; `!textInputFocus` bermaksud kekunci itu diserahkan kepada medan teks yang difokuskan.
 
@@ -41,7 +41,7 @@ Skop `/pull-requests`. Semuanya memerlukan `route == '/pull-requests'` dan tiada
 | `Enter`  | Buka PR          |
 | `F`      | Buka menu penapis |
 
-`Enter` (`pr.list-open`) diisytiharkan dalam daftar dan muncul pada rujukan ikatan kekunci, tetapi **skrin senarai tidak mendaftarkan pengendali untuknya**, jadi ia tidak berfungsi buat masa ini. `F` membuka menu penapis (`pr.list-open-filter`), bukan carian.
+`Enter` (`pr.list-open`) diisytiharkan dalam daftar dan muncul dalam dialog **Pintasan papan kekunci**, tetapi **skrin senarai tidak mendaftarkan pengendali untuknya**, jadi ia tidak berfungsi buat masa ini. `F` membuka menu penapis (`pr.list-open-filter`), bukan carian.
 
 ## Butiran pull request (2)
 
@@ -90,7 +90,7 @@ Skop `/spaces`. Klausa `when` menggunakan regex supaya ia berfungsi pada senarai
 
 Pergi ke fail membuka pemilih bagi fail perbualan. Tanpa menaip apa-apa, ia menyenaraikan fail yang paling baru anda buka; menaip akan mencari setiap fail dalam worktree perbualan. `Enter` membuka fail yang dipilih dalam tab baharu, `Cmd/Ctrl + Enter` atau butang pisah pada baris membukanya dalam anak tetingkap di sebelah kanan, dan `×` pada baris fail terbaru mengalih keluarnya daripada senarai.
 
-Hantar dengan Enter dimiliki oleh medan teks komposer; tekan untuk bercakap dimiliki oleh butang mikrofon komposer (pengendali papan kekunci perkakasan tersendiri). Kedua-duanya disenaraikan dalam daftar untuk rujukan tetapan.
+Hantar dengan Enter dimiliki oleh medan teks komposer; tekan untuk bercakap dimiliki oleh butang mikrofon komposer (pengendali papan kekunci perkakasan tersendiri). Kedua-duanya disenaraikan dalam daftar supaya dialog **Pintasan papan kekunci** boleh memaparkannya.
 
 ## Pemilih ruang kerja (2)
 
@@ -127,7 +127,7 @@ Skop `/newsfeed`. Semuanya memerlukan `route == '/newsfeed'` dan tiada medan tek
 
 ## Kekunci paparan diff di luar daftar
 
-Paparan diff PR mengendalikannya sendiri (`PrDiffKeyboardHandler`). Carian/dilihat/kuncup disenaraikan dalam komen daftar untuk rujukan tetapan sahaja — tiada pengendali penghantar berdaftar, jadi penghantar menyerahkannya kepada paparan diff. Ia tidak muncul sebagai baris tersendiri pada rujukan ikatan kekunci.
+Paparan diff PR mengendalikannya sendiri (`PrDiffKeyboardHandler`). Carian/dilihat/kuncup hanya dicatatkan dalam komen daftar: tiada pengendali penghantar berdaftar, jadi penghantar menyerahkannya kepada paparan diff. Ia tidak muncul sebagai baris tersendiri dalam dialog **Pintasan papan kekunci**.
 
 | Pintasan        | Tindakan                                             |
 | --------------- | ---------------------------------------------------- |

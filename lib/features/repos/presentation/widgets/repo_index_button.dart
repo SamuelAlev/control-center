@@ -6,6 +6,7 @@ import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/repos/providers/repo_index_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_hover_reveal.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -15,11 +16,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Compact per-repo "index code" action: a button that starts the `index_code`
 /// pipeline, becomes a small progress loader (N/M files) while it runs, then a
 /// status icon — indexed ✓ / grammars-missing ⚠ / failed ⚠. Tapping re-runs.
+///
+/// Sits among a row's hover actions, but only the resting states wait for
+/// [rowActive]: a queued or running index and a warning are news the user
+/// should not have to hover to find.
 class RepoIndexButton extends ConsumerStatefulWidget {
   /// Creates a [RepoIndexButton].
   const RepoIndexButton({
     required this.repo,
     required this.workspaceId,
+    required this.rowActive,
     super.key,
   });
 
@@ -28,6 +34,9 @@ class RepoIndexButton extends ConsumerStatefulWidget {
 
   /// Workspace whose `index_code` template to run.
   final String workspaceId;
+
+  /// Whether the row holding this button is hovered or focused.
+  final bool rowActive;
 
   @override
   ConsumerState<RepoIndexButton> createState() => _RepoIndexButtonState();
@@ -105,11 +114,14 @@ class _RepoIndexButtonState extends ConsumerState<RepoIndexButton> {
     final l10n = AppLocalizations.of(context);
     final tokens = context.ds;
 
-    Widget idleButton() => _IconAction(
-      icon: AppIcons.scanSearch,
-      color: tokens.textTertiary,
-      tooltip: l10n.indexCode,
-      onPress: _start,
+    Widget idleButton() => SettingsHoverReveal(
+      active: widget.rowActive,
+      child: _IconAction(
+        icon: AppIcons.scanSearch,
+        color: tokens.textTertiary,
+        tooltip: l10n.indexCode,
+        onPress: _start,
+      ),
     );
 
     if (_starting && _runId == null) {
@@ -186,11 +198,14 @@ class _RepoIndexButtonState extends ConsumerState<RepoIndexButton> {
         : 0;
 
     if (run.status == PipelineRunStatus.completed && nativeAvailable) {
-      return _IconAction(
-        icon: AppIcons.circleCheck,
-        color: tokens.textPrimary,
-        tooltip: l10n.indexedSymbolsCount(symbols),
-        onPress: _start,
+      return SettingsHoverReveal(
+        active: widget.rowActive,
+        child: _IconAction(
+          icon: AppIcons.circleCheck,
+          color: tokens.textPrimary,
+          tooltip: l10n.indexedSymbolsCount(symbols),
+          onPress: _start,
+        ),
       );
     }
     if (run.status == PipelineRunStatus.completed) {
@@ -228,14 +243,12 @@ class _IconAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CcTooltip(
-      message: tooltip,
-      child: CcButton(
-        variant: CcButtonVariant.ghost,
-        size: CcButtonSize.sm,
-        onPressed: onPress,
-        child: Icon(icon, size: 16, color: color),
-      ),
+    return CcIconButton(
+      icon: icon,
+      color: color,
+      size: CcButtonSize.sm,
+      tooltip: tooltip,
+      onPressed: onPress,
     );
   }
 }

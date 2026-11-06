@@ -465,8 +465,9 @@ class _SoundRow extends ConsumerWidget {
             Expanded(
               child: Text(
                 l10n.notificationVolume,
-                style: CcTypography.caption.copyWith(
-                  color: context.ds.textTertiary,
+                style: CcTypography.body.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: context.ds.textPrimary,
                 ),
               ),
             ),

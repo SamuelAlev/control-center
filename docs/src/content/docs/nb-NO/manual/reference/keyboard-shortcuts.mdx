@@ -2,10 +2,10 @@
 title: Tastatursnarveier
 description: Det komplette registeret over tastaturbindinger, etter omfang, med betingelsene for når hver snarvei utløses.
 slug: nb-NO/handbok/referanse/tastatursnarveier
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Snarveiene kommer fra ett `const`-register, `KeybindingRegistry` i `lib/core/constants/keybindings.dart`. Det inneholder **49 bindinger**. Innstillinger → Deg → Hurtigtaster viser dette registeret som en **skrivebeskyttet referanse**: det finnes ingen grensesnitt for å tilordne på nytt, og ingen fil for egne tastatursnarveier.
+Snarveiene kommer fra ett `const`-register, `KeybindingRegistry` i `lib/core/constants/keybindings.dart`. Det inneholder **49 bindinger**. Dialogen **Tastatursnarveier** (trykk `?`, eller åpne den fra Hjelp-menyen) viser de globale snarveiene og snarveiene for gjeldende skjerm. Den er en **skrivebeskyttet referanse**: det finnes ingen grensesnitt for å tilordne på nytt, og ingen fil for egne tastatursnarveier.
 
 `Cmd` nedenfor er den primære kommandomodifikatoren — ⌘ på macOS, Ctrl på Windows og Linux. En binding utløses bare når kommandoen har en registrert behandler på gjeldende skjerm, og `when`-klausulen er oppfylt; `!textInputFocus` betyr at tasten i stedet sendes videre til et tekstfelt som har fokus.
 
@@ -41,7 +41,7 @@ Omfanget er `/pull-requests`. Alle krever `route == '/pull-requests'` og ingen t
 | `Enter` | Åpne PR           |
 | `F`     | Åpne filtermeny   |
 
-`Enter` (`pr.list-open`) er deklarert i registeret og vises i referansen over tastaturbindinger, men **listeskjermen registrerer ingen behandler for den**, så den utløses foreløpig ikke. `F` åpner filtermenyen (`pr.list-open-filter`), ikke søket.
+`Enter` (`pr.list-open`) er deklarert i registeret og vises i dialogen **Tastatursnarveier**, men **listeskjermen registrerer ingen behandler for den**, så den utløses foreløpig ikke. `F` åpner filtermenyen (`pr.list-open-filter`), ikke søket.
 
 ## Pull request-detaljer (2)
 
@@ -90,7 +90,7 @@ Omfanget er `/spaces`. `when`-klausulene bruker et regex, så de utløses både 
 
 «Gå til fil» åpner en velger over samtalens filer. Uten inntastet tekst viser den filene du åpnet sist; når du skriver, søker den i alle filene i samtalens worktrær. `Enter` åpner den valgte filen i en ny fane, `Cmd/Ctrl + Enter` eller deleknappen på raden åpner den i et panel til høyre, og `×` på en nylig rad fjerner den fra listen.
 
-Sending med Enter hører til tekstfeltet i meldingsfeltet; trykk-for-å-snakke hører til mikrofonknappen i meldingsfeltet, som har sin egen behandler for fysisk tastatur. Begge står i registeret for at innstillingsreferansen skal føre dem opp.
+Sending med Enter hører til tekstfeltet i meldingsfeltet; trykk-for-å-snakke hører til mikrofonknappen i meldingsfeltet, som har sin egen behandler for fysisk tastatur. Begge står i registeret slik at dialogen **Tastatursnarveier** kan vise dem.
 
 ## Arbeidsområdevelger (2)
 
@@ -127,7 +127,7 @@ Omfanget er `/newsfeed`. Alle krever `route == '/newsfeed'` og ingen tekstfelt m
 
 ## Taster i diff-visningen utenfor registeret
 
-PR-diff-visningen håndterer disse selv (`PrDiffKeyboardHandler`). Søk/vist/sammenfold står i registerets kommentarer bare for innstillingsreferansen — ingen behandler i dispatcheren er registrert, så dispatcheren overlater dem til diff-visningen. De vises ikke som egne rader i referansen over tastaturbindinger.
+PR-diff-visningen håndterer disse selv (`PrDiffKeyboardHandler`). Søk/vist/sammenfold er bare nevnt i registerets kommentarer: ingen behandler i dispatcheren er registrert, så dispatcheren overlater dem til diff-visningen. De vises ikke som egne rader i dialogen **Tastatursnarveier**.
 
 | Snarvei         | Handling                                                       |
 | --------------- | -------------------------------------------------------------- |

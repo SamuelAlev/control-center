@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/editor_layout_cache_kinds.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
@@ -134,6 +135,29 @@ void main() {
       expect(remaining.map((r) => r.idempotencyKey), ['fresh']);
     },
   );
+
+  test('runOnce ages out cache rows but keeps editor layouts', () async {
+    final db = dbs.of('ws-1');
+    Future<void> seedCache(String kind, String key) => db
+        .into(db.cachesTable)
+        .insert(
+          CachesTableCompanion(
+            workspaceId: const Value('ws-1'),
+            kind: Value(kind),
+            key: Value(key),
+            payload: const Value('{}'),
+            updatedAt: Value(at(100)),
+          ),
+        );
+    await seedCache('prDetail', '42');
+    await seedCache(EditorLayoutCacheKinds.space, 'user:u-1:space-1');
+    await seedCache(EditorLayoutCacheKinds.pullRequest, 'user:u-1:o/r#1');
+
+    expect(await service().runOnce(), 1);
+
+    final remaining = await db.select(db.cachesTable).get();
+    expect(remaining.map((r) => r.kind).toSet(), EditorLayoutCacheKinds.all);
+  });
 
   group('index_code runs', () {
     // The code-graph watcher publishes a run per background reindex, so this is

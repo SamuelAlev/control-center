@@ -47,7 +47,7 @@ void main() {
       expect(
         classifier.classify(
           'for ref in main release; do git push '
-          r'https://x-access-token:${GH_TOKEN}@github.com:443/Frontify/web-app.git '
+          r'https://x-access-token:${GH_TOKEN}@github.com:443/Acme/shop-ui.git '
           r'"$ref"; done',
         ),
         {ActionClass.gitPush},

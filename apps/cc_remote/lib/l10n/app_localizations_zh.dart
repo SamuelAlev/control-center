@@ -2513,6 +2513,9 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       '运行已停止，因为其提供方凭据已失效。请在 设置 → 提供方 中重新连接，然后重试此轮。';
+
+  @override
+  String get permissionHostExecution => '在主机上运行命令';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -2521,6 +2524,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get failureUnreachable => '無法透過任何路徑連到你的伺服器 — 請確認伺服器正在執行，或改用相同網絡再試';
+
+  @override
+  String get permissionHostExecution => '在主機上執行指令';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -5033,4 +5039,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get transcriptSignInExpiredBody =>
       '執行已停止，因為其提供者憑證已失效。請在 設定 → 提供者 中重新連線，然後重試此回合。';
+
+  @override
+  String get permissionHostExecution => '在主機上執行指令';
 }

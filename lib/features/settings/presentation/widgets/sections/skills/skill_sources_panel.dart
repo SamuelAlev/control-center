@@ -11,6 +11,8 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+part 'skill_sources_rail.dart';
+
 /// Settings → Skills → "Sources": the GitHub repositories the operator
 /// registered as skill catalogs (the skills.sh registry replacement).
 ///
@@ -60,8 +62,8 @@ class _SkillSourcesPanelState extends ConsumerState<SkillSourcesPanel> {
       child: SectionCard(
         label: l10n.skills,
         expands: true,
-        padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-        headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 8),
+        padding: const EdgeInsets.only(top: AppSpacing.md),
+        headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -98,7 +100,7 @@ class _SkillSourcesPanelState extends ConsumerState<SkillSourcesPanel> {
                   }
                   return SettingsMasterDetail(
                   railWidth: 250,
-                  railPadding: const EdgeInsetsDirectional.fromSTEB(12, 12, 8, 12),
+                  railPadding: const EdgeInsetsDirectional.fromSTEB(12, 12, 0, 0),
                   rail: _SourceRail(
                     sources: sources,
                     selectedSourceId: _selectedSourceId,
@@ -130,100 +132,6 @@ class _SkillSourcesPanelState extends ConsumerState<SkillSourcesPanel> {
 }
 
 /// The left rail: the "add repository" action and the registered sources.
-class _SourceRail extends ConsumerWidget {
-  const _SourceRail({
-    required this.sources,
-    required this.selectedSourceId,
-    required this.workspaceId,
-    required this.onSelect,
-    required this.onAdded,
-  });
-
-  final List<SkillSourceDto> sources;
-  final String? selectedSourceId;
-  final String workspaceId;
-  final ValueChanged<String?> onSelect;
-  final ValueChanged<String> onAdded;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        CcButton(
-          size: CcButtonSize.sm,
-          icon: AppIcons.plus,
-          onPressed: () => _addSource(context, ref),
-          child: Text(l10n.skillSourceAdd),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        if (sources.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.sm),
-            child: SettingsRailEmptyNote(message: l10n.skillSourcesEmptyHint),
-          )
-        else
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              itemCount: sources.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 2),
-              itemBuilder: (context, index) {
-                final source = sources[index];
-                return SettingsRailItem(
-                  label: source.fullName,
-                  icon: AppIcons.gitBranch,
-                  selected: source.id == selectedSourceId,
-                  onPressed: () => onSelect(source.id),
-                  trailing: Text(
-                    '${source.skillCount}',
-                    style: CcTypography.caption.copyWith(
-                      color: context.designSystem?.textTertiary,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
-
-  Future<void> _addSource(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final url = await showCcDialog<String>(
-      context: context,
-      builder: (_) => const _AddSourceDialog(),
-    );
-    if (url == null || url.trim().isEmpty) {
-      return;
-    }
-    try {
-      final (source, alreadyExists) = await ref
-          .read(skillSourceControlProvider)
-          .addSource(url.trim());
-      ref.invalidate(skillSourcesProvider(workspaceId));
-      onAdded(source.id);
-      if (context.mounted) {
-        CcToastScope.of(context).show(
-          alreadyExists
-              ? l10n.skillSourceAlreadyAdded(source.fullName)
-              : l10n.skillSourceAdded(source.fullName),
-          variant:
-              alreadyExists ? CcToastVariant.neutral : CcToastVariant.success,
-        );
-      }
-    } on Object catch (e) {
-      if (context.mounted) {
-        CcToastScope.of(
-          context,
-        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
-      }
-    }
-  }
-}
-
 /// The add-repository dialog: one URL field. The server parses + validates the
 /// URL (owner/repo) and rejects unknown repositories.
 class _AddSourceDialog extends ConsumerStatefulWidget {
@@ -504,7 +412,7 @@ class _SourceBrowsePaneState extends ConsumerState<_SourceBrowsePane> {
               const SizedBox(width: 8),
               CcIconButton(
                 icon: AppIcons.trash2,
-                variant: CcButtonVariant.secondary,
+                variant: CcButtonVariant.destructive,
                 size: CcButtonSize.sm,
                 tooltip: l10n.skillSourceRemove,
                 semanticLabel: l10n.skillSourceRemove,
@@ -942,7 +850,7 @@ class _SkillDetailViewState extends ConsumerState<_SkillDetailView> {
         const SizedBox(width: 8),
         if (listing?.installed == true) ...[
           CcButton(
-            variant: CcButtonVariant.secondary,
+            variant: CcButtonVariant.destructive,
             size: CcButtonSize.sm,
             icon: AppIcons.trash2,
             loading: _busy,

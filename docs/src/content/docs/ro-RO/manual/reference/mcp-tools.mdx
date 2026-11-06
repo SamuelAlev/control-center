@@ -2,7 +2,7 @@
 title: Instrumente MCP
 description: Catalog complet al instrumentelor MCP pe care le înregistrează cc_server, pe familii.
 slug: ro-RO/manual/referinta/instrumente-mcp
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` găzduiește un singur registru de instrumente MCP (JSON-RPC 2.0), servit pe portul principal al serverului (implicit `9030`) la `POST /mcp` și `GET /sse`, versiunea de protocol `2024-11-05`. Fiecare client ajunge la același registru: aplicația desktop, versiunea web, clienții MCP externi și runtime-ul de agenți încorporat. Serverele MCP externe pot fi conectate în același registru ca un strat dinamic.
@@ -258,6 +258,8 @@ spațiului de lucru. Vocabularul complet de verbe pentru fiecare suprafață se 
 | `ios_use`      | Conduce simulatorul iOS prin WebDriverAgent/CoreSimulator: inspectare/intrare, capturi de ecran, instalare/pornire/oprire/dezinstalare de aplicații, link-uri profunde și procese de simulator în forma argv |
 | `rig_list`     | Listează stațiile unui spațiu de lucru cu suprafața, starea, dimensiunea afișajului și controlerul |
 | `rig_close`    | Distruge o stație și aruncă starea mașinii pe care o deține                                        |
+
+`app_use` este un al cincilea instrument use: controlează ferestrele unei aplicații desktop lansate într-un spațiu, direct pe gazdă și nu într-o VM, și declară în plus `fileWriteOutsideWorktree` și `fileDelete`. Acesta și instrumentele `environment_*` sunt descrise în [Configurarea mediilor](/ro-RO/manual/ghiduri-practice/medii/).
 
 ## Nu sunt expuse prin MCP
 

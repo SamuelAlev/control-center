@@ -231,7 +231,7 @@ void main() {
       'pr_review.watchPullRequest', 'pr_review.watchReviewComments',
       'pr_review.watchReviewers', 'pr_review.watchReviews',
       'pr_review.watchTimelineEvents', 'project.watchForWorkspace',
-      'repos.watchAll', 'repos.watchScriptRuns',
+      'repos.watchAll',
       'review_space.watchAllBySpace', 'review_space.watchByPr',
       'review_space.watchBySpace', 'review_space.watchByWorkspace',
       'review_studio.watchAxisResults', 'review_studio.watchCohorts',
@@ -254,6 +254,8 @@ void main() {
       'terminal.output',
       'terminal.titles', 'soundscape.watchScene', 'weather.watchCurrent',
       'fleet.watchJobs', 'fleet.watchPlacements',
+      'environment.watch', 'environment.watchLogs', 'environment.watchRuns',
+      'messaging.watchSpaceProvisioningLog',
     };
 
     // Unscoped watches with no serverAuthority: each must self-scope (to the

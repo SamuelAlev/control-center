@@ -2,7 +2,7 @@
 title: "Rigs"
 description: "Todas las superficies, los backends, los verbos de acción, los estados del ciclo de vida, los puertos, los valores predeterminados y los contratos de un rig: el catálogo factual completo."
 slug: es-ES/manual/referencia/rigs
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Solo hechos. Para el modelo que hay detrás, lee [Rigs y
@@ -18,6 +18,8 @@ guía](/es-ES/manual/guias/usar-rigs/).
 | Ordenador | Escritorio X11: entrada a través del hipervisor, captura a través del agente del huésped | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (alternativa sin aceleración, nunca elegida automáticamente) | Sí |
 | Android | Android sobre ADB | El emulador de Google | `android-emulator` | **No** — el emulador gestiona su propia red |
 | iOS | Simulador de iOS a través de WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — la red sigue al Mac anfitrión |
+| Ventana de aplicación | Las ventanas de una aplicación de escritorio lanzada desde un entorno, mediante el sistema operativo | Ventana del host | `host-window` | **No** — la aplicación se ejecuta en el host con el acceso del usuario del servidor |
+| Entorno | La pila compose y las tareas de un [entorno](/es-ES/manual/guias/entornos/) en ubicación `rig` | microVM | `smolvm` | Sí |
 
 El terminal y la superficie `computer_use` comparten el valor de superficie
 `computer`; el terminal se distingue por su marcador de imagen exec y nunca se

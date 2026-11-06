@@ -2,7 +2,7 @@
 title: Cópia de segurança, exportação e importação
 description: A estrutura do instantâneo, o manifesto, todas as operações de cópia de segurança e rotas de transferência, e exatamente que ficheiros uma cópia de segurança contém e não contém.
 slug: pt-PT/manual/referencia/copia-de-seguranca
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Tudo o que o Control Center consegue copiar, entregar ou adotar, e a forma exata de cada
@@ -53,7 +53,12 @@ Não incluem um manifesto nem o `global.db` e não são instantâneos da instala
 O passo de retenção do pipeline semanal remove apenas cópias de segurança do seu próprio
 espaço de trabalho mais antigas do que a idade configurada (30 dias por predefinição); os
 instantâneos da instalação criados manualmente nunca são rodados por esse passo. O
-`server.listBackups` lista apenas instantâneos da instalação, incluindo os incompletos.
+`server.listBackups` lista apenas instantâneos da instalação, incluindo os incompletos; o
+`workspace.listBackups` lista as cópias de segurança agendadas de um espaço de trabalho.
+
+Eliminar um espaço de trabalho mantém este diretório no lugar. O agendamento do espaço de
+trabalho para com ele, pelo que nada volta a rodar essas cópias de segurança, e estas ficam
+até o proprietário da instalação as remover. O `server.listOrphanedBackups` comunica-as.
 
 
 ### `manifest.json`
@@ -135,6 +140,10 @@ de cópia de segurança ligada, como o servidor de demonstração.
 | `server.backupNow`    | mutação | Instalação         | **proprietário** da instalação    | nenhum        | `{ok, path}`                  |
 | `server.listBackups`  | leitura | Instalação         | **proprietário** da instalação    | nenhum        | `{backups: [...]}`            |
 | `server.deleteBackup` | mutação | Instalação         | **proprietário** da instalação    | `name`        | `{ok}`                        |
+| `server.listOrphanedBackups` | leitura | Instalação | **proprietário** da instalação | nenhum | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | mutação | Instalação | **proprietário** da instalação | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | leitura | Espaço de trabalho | `admin` | nenhum | `{backups: [...]}` |
+| `workspace.deleteBackup` | mutação | Espaço de trabalho | `owner` | `name` | `{ok}` |
 | `workspace.export`    | leitura | Espaço de trabalho | `admin`                           | nenhum        | `{ok, path}`                  |
 | `workspace.import`    | mutação | Espaço de trabalho | `owner`                           | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`    | mutação | Instalação*        | `owner`                           | `id`          | linha do registo marcada como eliminada |
@@ -143,6 +152,15 @@ de cópia de segurança ligada, como o servidor de demonstração.
 handler verifica a pertença do chamador ao espaço de trabalho indicado e exige `owner`.
 
 O `path` em todas as respostas é um caminho no **anfitrião do servidor**.
+
+O `server.listOrphanedBackups` devolve uma entrada por cada espaço de trabalho que já não
+está ativo: `workspace_id`, `workspace_name` quando o registo ainda o conhece, e `backups`.
+Um espaço de trabalho eliminado já não consegue passar numa verificação de papel do espaço
+de trabalho, pelo que as suas cópias de segurança pertencem ao proprietário da instalação. O
+`server.deleteOrphanedBackup` recusa um espaço de trabalho ativo, cujas cópias de segurança
+continuam atrás de `workspace.deleteBackup` e dos papéis próprios desse espaço de trabalho.
+Ambas as ops de eliminação aceitam apenas um nome de diretório com data e hora listado, não
+um caminho.
 
 :::note[Um instantâneo da instalação inteira exige o proprietário nas duas vias]
 O `server.backupNow`, o `server.listBackups` e o `server.deleteBackup` exigem o
@@ -228,27 +246,35 @@ sua cadeia de destino usando a sua PSK de emparelhamento e o papel abaixo.
 | ----------------------- | ------ | --------------- | -------------------------------- | ------------------------------ |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **Admin** do espaço de trabalho |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **Proprietário** da instalação  |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **Admin** do espaço de trabalho; **proprietário** da instalação depois de o espaço de trabalho ser eliminado |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **Proprietário** do espaço de trabalho |
 
-O `w` é um id de espaço de trabalho, o `n` um nome de diretório de instantâneo, o `d` o id do
-dispositivo que chama e o `s` a assinatura. O `n` é resolvido em relação à listagem de cópias
-de segurança e não concatenado à raiz das cópias, pelo que a rota não pode ser apontada a um
-diretório que a listagem não teria mostrado.
+O `w` é um id de espaço de trabalho, o `n` um nome de diretório de instantâneo ou de cópia de
+segurança agendada, o `d` o id do dispositivo que chama e o `s` a assinatura. Em
+`/backup/snapshot`, o `n` é resolvido em relação à listagem de cópias de segurança e não
+concatenado à raiz das cópias, pelo que a rota não pode ser apontada a um diretório que a
+listagem não teria mostrado. Em `/backup/stored`, tem de ser um nome com data e hora, e o
+ficheiro tem de ser um ficheiro real dentro do diretório de cópias de segurança desse próprio
+espaço de trabalho.
 
 | Estado | Causa                                                                               |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | Falta um parâmetro de query obrigatório, ou o corpo de um envio está vazio           |
+| `400`  | Falta um parâmetro de query obrigatório, um nome de cópia de segurança é inválido, ou o corpo de um envio está vazio |
 | `403`  | Dispositivo desconhecido ou revogado, assinatura inválida, ou o chamador não tem o papel |
-| `404`  | Não há porta de cópia de segurança neste anfitrião, ou o instantâneo/o ficheiro de espaço de trabalho indicado não existe |
+| `404`  | Não há porta de cópia de segurança neste anfitrião, ou o ficheiro de instantâneo, cópia de segurança ou espaço de trabalho indicado não existe |
 | `405`  | `/backup/restore` chamado com algo que não `POST`                                   |
 | `413`  | O corpo do envio excede 8 GiB, pelo content-length declarado ou pelos bytes realmente lidos |
 | `426`  | Qualquer pedido direto a uma rota de transferência no listener HTTP público; use o túnel de recursos cifrado de um cliente emparelhado |
 | `500`  | A exportação ou o arquivo falhou do lado do servidor                                |
 
-Ambos os descarregamentos respondem com `Cache-Control: no-store` e `Accept-Ranges: none`.
-Cada pedido cria uma cópia **nova** e elimina-a assim que é transmitida em fluxo, pelo que
-uma resposta em cache ou retomada juntaria bytes de duas exportações diferentes num ficheiro
-que parece válido e não é.
+Os três descarregamentos respondem com `Cache-Control: no-store` e `Accept-Ranges: none`.
+`/backup/workspace` e `/backup/snapshot` criam uma cópia **nova** por pedido e eliminam-na
+assim que é transmitida em fluxo, pelo que uma resposta em cache ou retomada juntaria bytes
+de duas exportações diferentes num ficheiro que parece válido e não é.
+
+`/backup/stored` é a exceção: transmite em fluxo uma cópia de segurança agendada como
+`<workspaceId>-<name>.db` e mantém o ficheiro no lugar, porque esse ficheiro é a cópia de
+segurança.
 
 O `/backup/snapshot` devolve `<name>.zip`, com entradas relativas à raiz do instantâneo, pelo
 que descompactar reproduz `manifest.json` + `global.db` + `<workspaceId>/workspace.db`. As
@@ -279,12 +305,12 @@ resultantes.
 | Preparação de transferências                | `<dataDir>/backups/transfer/` — uma bancada de trabalho, limpa pela rota que a escreve |
 | Nome do arquivo do instantâneo              | `<snapshot directory name>.zip`                              |
 | Limite de envio                             | 8 GiB por envio cifrado para `/backup/restore`               |
-| Retenção                                    | Instantâneos da instalação: eliminação manual. Cópias de segurança de espaços de trabalho: pipeline semanal, predefinição de 30 dias |
+| Retenção                                    | Instantâneos da instalação: eliminação manual. Cópias de segurança de espaços de trabalho: pipeline semanal, predefinição de 30 dias, ou eliminação manual. Cópias de segurança de um espaço de trabalho eliminado: apenas eliminação manual |
 
 Os diretórios `exports/`, `transfer/` e `workspace-backups/` não são instantâneos da
 instalação e estão excluídos do `server.listBackups`. Só o último diretório tem retenção
-agendada; eliminar um instantâneo da instalação exige a ação explícita do proprietário da
-instalação.
+agendada, e apenas enquanto o seu espaço de trabalho existir; eliminar um instantâneo da
+instalação exige a ação explícita do proprietário da instalação.
 
 ## Ver também
 

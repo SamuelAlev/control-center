@@ -30,6 +30,7 @@ class NavigationHistoryState {
 class NavigationHistoryController extends Notifier<NavigationHistoryState> {
   VoidCallback? _onGoBack;
   VoidCallback? _onGoForward;
+  void Function(String location)? _onReplace;
 
   @override
   NavigationHistoryState build() => const NavigationHistoryState();
@@ -40,15 +41,26 @@ class NavigationHistoryController extends Notifier<NavigationHistoryState> {
   /// Triggers the registered forward-navigation callback.
   void goForward() => _onGoForward?.call();
 
+  /// Moves to [location] in place of the current entry, so Back skips the page
+  /// being left: `/new` becoming the id it was saved under.
+  void replace(String location) => _onReplace?.call(location);
+
+  /// Steps back out of a page opened from [parent]: to wherever it was reached
+  /// from, or to [parent] when nothing came before it (a restored or linked
+  /// URL).
+  void backOr(String parent) => state.canGoBack ? goBack() : replace(parent);
+
   /// Updates the navigation state and callbacks.
   void update({
     required bool canBack,
     required bool canForward,
     VoidCallback? onGoBack,
     VoidCallback? onGoForward,
+    void Function(String location)? onReplace,
   }) {
     _onGoBack = onGoBack;
     _onGoForward = onGoForward;
+    _onReplace = onReplace;
     if (state.canGoBack != canBack || state.canGoForward != canForward) {
       Future.microtask(() {
         state = NavigationHistoryState(
@@ -90,6 +102,7 @@ class _MouseNavigationHandlerState extends State<MouseNavigationHandler> {
   final List<String> _forwardStack = [];
   String? _currentRoute;
   bool _navigating = false;
+  String? _replacing;
 
   bool _autoScrolling = false;
   Offset? _autoScrollOrigin;
@@ -119,6 +132,7 @@ class _MouseNavigationHandlerState extends State<MouseNavigationHandler> {
       canForward: _forwardStack.isNotEmpty,
       onGoBack: _goBack,
       onGoForward: _goForward,
+      onReplace: _replace,
     );
   }
 
@@ -137,6 +151,7 @@ class _MouseNavigationHandlerState extends State<MouseNavigationHandler> {
     }
     _currentRoute = location;
     _navigating = false;
+    _replacing = null;
     _syncController();
 
     return Listener(
@@ -219,6 +234,17 @@ class _MouseNavigationHandlerState extends State<MouseNavigationHandler> {
       _navigating = true;
       router.go(target);
     }
+  }
+
+  void _replace(String location) {
+    if (!mounted || location == _currentRoute || location == _replacing) {
+      return;
+    }
+    final router = GoRouter.of(context);
+    _replacing = location;
+    _navigating = true;
+    // Neglected so the browser's own history drops the entry too.
+    Router.neglect(context, () => router.go(location));
   }
 
   void _startAutoScroll(Offset position) {

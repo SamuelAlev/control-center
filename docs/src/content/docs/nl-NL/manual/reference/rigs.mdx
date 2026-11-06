@@ -2,7 +2,7 @@
 title: Rigs
 description: Elk rig-oppervlak, elke backend, elk actiewerkwoord, elke levenscyclusstatus, poort, standaardwaarde en elk contract — de complete, feitelijke catalogus.
 slug: nl-NL/handleiding/referentie/rigs
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Alleen feiten. Lees [Rigs en omhullingen](/nl-NL/handleiding/concepten/rigs/)
@@ -18,6 +18,8 @@ gids](/nl-NL/handleiding/gidsen/rigs-gebruiken/) om een machine te openen.
 | Computer | X11-desktop: invoer via de hypervisor, beeldopname via de gastagent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (niet-versnelde terugvaloptie, nooit automatisch gekozen) | Ja |
 | Android | Android via ADB | Google's emulator | `android-emulator` | **Nee** — de emulator beheert zijn eigen netwerk |
 | iOS | iOS Simulator via WebDriverAgent | CoreSimulator | `ios-simulator` | **Nee** — het netwerk volgt de host-Mac |
+| App-venster | De vensters van een desktop-app die vanuit een omgeving is gestart, via het besturingssysteem | Hostvenster | `host-window` | **Nee** — de app draait op de host met de toegang van de servergebruiker |
+| Omgeving | De compose-stack en taken van een [omgeving](/nl-NL/handleiding/gidsen/omgevingen/) met `rig`-plaatsing | microVM | `smolvm` | Ja |
 
 De terminal en het `computer_use`-oppervlak delen de oppervlakwaarde
 `computer`; de terminal is te herkennen aan zijn exec-imagemarker en wordt

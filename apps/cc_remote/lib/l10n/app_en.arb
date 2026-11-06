@@ -2058,5 +2058,7 @@
   "transcriptSignInExpiredTitle": "Provider sign-in expired",
   "@transcriptSignInExpiredTitle": {"description": "Title of the notice in a turn that failed because its model provider credential stopped working"},
   "transcriptSignInExpiredBody": "The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.",
-  "@transcriptSignInExpiredBody": {"description": "Body of the notice in a turn that failed because its model provider credential stopped working"}
+  "@transcriptSignInExpiredBody": {"description": "Body of the notice in a turn that failed because its model provider credential stopped working"},
+  "permissionHostExecution": "Run commands on the host",
+  "@permissionHostExecution": {"description": "Permission class: running commands on the host outside any sandbox, at an agent's request"}
 }

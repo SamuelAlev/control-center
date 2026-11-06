@@ -288,6 +288,10 @@ String rigDropDirectory({required RigSurface surface, required bool exec}) {
     RigSurface.ios => throw UnsupportedError(
       'iOS Simulator does not expose a guest drop directory.',
     ),
+    RigSurface.window => throw UnsupportedError(
+      'An app window has no guest to drop files into.',
+    ),
+    RigSurface.environment => '/tmp/cc-drops',
   };
 }
 

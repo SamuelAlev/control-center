@@ -27,6 +27,7 @@ class PrOverviewTab extends ConsumerStatefulWidget {
     required this.onOpenFileInDiff,
     required this.onOpenCommit,
     required this.onOpenReview,
+    this.onOpenEnvironment,
   });
 
   /// The pull request being shown.
@@ -45,6 +46,9 @@ class PrOverviewTab extends ConsumerStatefulWidget {
 
   /// Focuses the PR review artifact tab (see [PrDetailActions.onOpenReview]).
   final VoidCallback onOpenReview;
+
+  /// Focuses the PR's Environment tab.
+  final VoidCallback? onOpenEnvironment;
 
   @override
   ConsumerState<PrOverviewTab> createState() => _PrOverviewTabState();
@@ -114,6 +118,7 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
       canEdit: canEdit,
       optimisticMyState: optimisticMyState,
       onOpenFileInDiff: widget.onOpenFileInDiff,
+      onOpenEnvironment: widget.onOpenEnvironment,
     );
 
     return ColoredBox(

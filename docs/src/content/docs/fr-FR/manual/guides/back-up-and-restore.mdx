@@ -2,7 +2,7 @@
 title: Sauvegarder et restaurer
 description: Créez un instantané de l'installation, déplacez un espace de travail entre machines, restaurez un espace de travail ou tous, et conservez des copies ailleurs.
 slug: fr-FR/manuel/guides/sauvegarder-et-restaurer
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Ce guide couvre les cinq choses que l'on fait réellement avec les sauvegardes : en créer
@@ -16,7 +16,7 @@ Tout ce qui suit se trouve sous **Paramètres → Serveur → Sauvegarde et rest
 
 - Un **client complet** — l'application de bureau ou web. Un téléphone associé ne peut déclencher aucune de ces opérations, par conception.
 - Pour créer, lister, télécharger ou supprimer un **instantané de l'installation** : le **propriétaire** de l'installation.
-- Pour les actions par espace de travail : le rôle **admin** de cet espace de travail pour exporter, **propriétaire** pour l'importer ou le supprimer.
+- Pour les actions par espace de travail : le rôle **admin** de cet espace de travail pour l'exporter ou pour lister et télécharger ses sauvegardes planifiées, **propriétaire** pour l'importer ou le supprimer ou pour supprimer une de ses sauvegardes.
 - Pour les téléchargements et les envois : un client complet associé, sur une connexion directe ou via le relais intermédié. Les deux chemins transportent les octets du fichier par le même tunnel de ressources authentifié et chiffré de bout en bout ; le relais ne peut pas les lire.
 
 :::caution[Les instantanés de l'installation sont manuels]
@@ -87,14 +87,37 @@ Les sauvegardes d'espace de travail résident sur le serveur sous
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Le nœud de rétention
 ne supprime que les anciennes sauvegardes de cet espace de travail ; il ne supprime jamais
 les instantanés de l'installation ni les sauvegardes d'autres espaces de travail. Ces
-fichiers ne contiennent que des bases de données. Pour une rétention hors machine, copiez-les
-indépendamment.
+fichiers ne contiennent que des bases de données. Pour une rétention hors machine, téléchargez-les
+ou copiez-les indépendamment.
 
-Ces sauvegardes sont distinctes de la liste **Instantanés de l'installation**. Pour en
-restaurer une, utilisez **Données des espaces de travail → Importer** avec le chemin
-`workspace.db` côté serveur de la sauvegarde. L'import remplace la base de données actuelle
-de cet espace de travail : exportez-la d'abord si vous risquez d'avoir besoin d'annuler la
-restauration.
+## Trouver et restaurer une sauvegarde planifiée
+
+**Sauvegardes planifiées** se trouve entre **Instantanés de l'installation** et
+**Données des espaces de travail**, avec une ligne par espace de travail : quand sa
+dernière sauvegarde a eu lieu, combien il en a conservé et la place qu'elles occupent.
+Un espace de travail dont le pipeline n'a rien produit affiche
+**Aucune sauvegarde pour l'instant**. Un espace de travail dont vous n'êtes pas admin
+l'indique sur sa ligne au lieu de lister ses sauvegardes.
+
+Dépliez une ligne pour voir chaque sauvegarde, de la plus récente à la plus ancienne :
+
+- **Restaurer** remplace la base de données actuelle de l'espace de travail par cette sauvegarde. Exportez d'abord l'espace de travail si vous risquez d'avoir besoin d'annuler l'opération. Requiert le rôle **propriétaire**.
+- **Télécharger** enregistre le fichier sur la machine que vous utilisez. La sauvegarde reste sur le serveur.
+- **Copier le chemin** copie son emplacement sur le serveur.
+- **Supprimer** retire définitivement cette sauvegarde, une fois que vous avez saisi le nom de l'espace de travail. Requiert le rôle **propriétaire**.
+
+### Sauvegardes d'un espace de travail supprimé
+
+Supprimer un espace de travail laisse ses sauvegardes planifiées sur le serveur et, comme
+sa planification s'arrête avec lui, la rétention s'arrête aussi : elles restent jusqu'à
+ce que quelqu'un les retire. Le **propriétaire** de l'installation les voit dans la même
+liste, marquées **Espace de travail supprimé**, et peut les y télécharger ou les
+supprimer. Personne d'autre ne voit ces lignes.
+
+Elles n'ont pas de **Restaurer**, puisqu'il n'y a aucun espace de travail dans lequel
+restaurer. Pour en récupérer une, téléchargez-la, créez un espace de travail et envoyez le
+fichier comme décrit dans
+[Déplacer un espace de travail vers une autre installation](#déplacer-un-espace-de-travail-vers-une-autre-installation).
 
 ## Supprimer un instantané de l'installation
 
@@ -111,14 +134,17 @@ ce n'est pas la machine sur laquelle vous êtes, utilisez les boutons **Téléch
 
 - À côté de chaque **espace de travail**, sous **Données des espaces de travail** → **Télécharger**, pour un seul fichier `.db`.
 - À côté de chaque **instantané**, sous **Instantanés de l'installation** → **Télécharger**, pour l'instantané entier sous forme de `.zip`.
+- À côté de chaque sauvegarde, sous **Sauvegardes planifiées** → **Télécharger**, pour le fichier `.db` de cette sauvegarde.
 
 Sur ordinateur, vous choisissez où le fichier atterrit et la notification l'indique ; sur le
-web, il va dans les téléchargements du navigateur. Dans les deux cas, la progression est
-indiquée en octets, parce que ce sont les deux charges utiles qui atteignent les gigaoctets.
+web, il va dans les téléchargements du navigateur. Dans les deux cas, les trois indiquent
+la progression en octets, parce que ces charges utiles atteignent les gigaoctets.
 
-Les deux génèrent une copie fraîche au moment où vous appuyez sur le bouton, la diffusent
-en flux, puis suppriment la copie du serveur — un téléchargement ne consiste pas à
-« récupérer le fichier créé plus tôt par le bouton d'export ».
+Les téléchargements d'espace de travail et d'instantané génèrent une copie fraîche au
+moment où vous appuyez sur le bouton, la diffusent en flux, puis suppriment la copie du
+serveur — un téléchargement ne consiste pas à « récupérer le fichier créé plus tôt par
+le bouton d'export ». Une sauvegarde planifiée fait exception : vous obtenez le
+fichier stocké, et il reste sur le serveur.
 
 Décompresser une archive d'instantané reproduit exactement l'arborescence de l'instantané,
 et c'est ce qui fait de sa restauration une simple copie en retour.

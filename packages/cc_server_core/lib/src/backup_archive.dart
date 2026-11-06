@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
+import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:path/path.dart' as p;
 
 /// Packs a backup snapshot directory into one zip for download.
@@ -22,7 +23,10 @@ class BackupSnapshotArchiveBuilder {
   /// a timestamp. The caller resolves it against the backup listing rather than
   /// letting it reach a path: this method never joins a caller-supplied string
   /// onto a root, so there is nothing here to traverse out of.
-  Future<File?> build({required Directory snapshot, required String name}) async {
+  Future<File?> build({
+    required Directory snapshot,
+    required String name,
+  }) async {
     if (!snapshot.existsSync()) {
       return null;
     }
@@ -41,7 +45,9 @@ class BackupSnapshotArchiveBuilder {
       // Entries are relative to the snapshot directory, so unpacking yields
       // `manifest.json` + `global.db` + `<id>/workspace.db` — the same shape as
       // the live data directory, which is what makes a restore a copy back.
-      for (final entity in snapshot.listSync(followLinks: false)..sort(_byPath)) {
+      for (final entity in snapshot.listSync(
+        followLinks: false,
+      )..sort(_byPath)) {
         if (entity is File) {
           await encoder.addFile(entity, p.basename(entity.path));
         } else if (entity is Directory) {
@@ -64,3 +70,33 @@ class BackupSnapshotArchiveBuilder {
   static int _byPath(FileSystemEntity a, FileSystemEntity b) =>
       a.path.compareTo(b.path);
 }
+
+/// The `GET /backup/snapshot` lookup, or null on a host with no backup port.
+Future<File?> Function({required String name})? snapshotArchiveWriter(
+  DatabaseBackupPort? backups, {
+  required String stagingDir,
+}) => backups == null
+    ? null
+    : ({required name}) async {
+        // Resolved through the LISTING rather than by joining `name` onto the
+        // backups root: the client names a snapshot, never a path, so this
+        // route cannot be aimed at a directory the listing would not have shown
+        // it.
+        final snapshots = await backups.listBackups();
+        final match = snapshots.where((s) => s.name == name).firstOrNull;
+        if (match == null) {
+          return null;
+        }
+        return BackupSnapshotArchiveBuilder(
+          stagingDir: stagingDir,
+        ).build(snapshot: Directory(match.path), name: name);
+      };
+
+/// The `GET /backup/stored` lookup, or null on a host with no backup port.
+Future<File?> Function({required String workspaceId, required String name})?
+storedBackupReader(DatabaseBackupPort? backups) => backups == null
+    ? null
+    : ({required workspaceId, required name}) async {
+        final path = await backups.workspaceBackupFile(workspaceId, name);
+        return path == null ? null : File(path);
+      };

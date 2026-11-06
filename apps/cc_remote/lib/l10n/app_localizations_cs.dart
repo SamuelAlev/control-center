@@ -2647,4 +2647,7 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Běh se zastavil, protože přihlašovací údaje poskytovatele už nefungují. Znovu jej připojte v Nastavení → Poskytovatelé a pak tah zopakujte.';
+
+  @override
+  String get permissionHostExecution => 'Spouštět příkazy na hostiteli';
 }

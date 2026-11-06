@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
@@ -67,6 +68,21 @@ class _RecordingMessagingPort implements MessagingPort {
 
   /// Body of the last send, or null if it never sent.
   String? sentContent;
+
+  /// Body of the last queued steering card, or null if nothing queued.
+  String? steeredContent;
+
+  @override
+  Future<({String messageId, bool steerable})?> enqueueSteering({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    required String content,
+    List<Map<String, dynamic>> attachments = const [],
+  }) async {
+    steeredContent = content;
+    return (messageId: 'steer-1', steerable: true);
+  }
 
   @override
   Future<void> sendAndDispatch(
@@ -304,8 +320,7 @@ void main() {
             ),
             activeSpaceModeProvider.overrideWith(_PlanMode.new),
             workspaceAgentsProvider('ws-1').overrideWith(
-              (ref) =>
-                  Stream.value([_agent('a1', adapterId: 'claude-code')]),
+              (ref) => Stream.value([_agent('a1', adapterId: 'claude-code')]),
             ),
             spaceParticipantsProvider(
               'ch-1',
@@ -419,6 +434,7 @@ void main() {
       WidgetTester tester, {
       required List<SpaceParticipant> participants,
       List<Agent> roster = const [],
+      List<AgentRunLog> activeRuns = const [],
     }) async {
       tester.view.physicalSize = const Size(800, 200);
       tester.view.devicePixelRatio = 1.0;
@@ -440,6 +456,10 @@ void main() {
             spaceParticipantsProvider(
               'ch-1',
             ).overrideWith((ref) => Stream.value(participants)),
+            conversationActiveRunsProvider((
+              workspaceId: 'ws-1',
+              conversationId: 'conv-1',
+            )).overrideWith((ref) => Stream.value(activeRuns)),
           ],
           child: CcTheme(
             data: CcThemeData.light(),
@@ -500,6 +520,70 @@ void main() {
       await typeAndSend(tester, '@architect review this');
 
       expect(sender.sentContent, '@architect review this');
+    });
+
+    testWidgets('an @ naming nobody does not bring an agent in', (
+      tester,
+    ) async {
+      final sender = await pumpRoom(
+        tester,
+        participants: const [],
+        roster: [_agent('a1')],
+      );
+
+      await typeAndSend(tester, 'assign @acme/platform to this');
+
+      expect(sender.sentContent, isNull);
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump(const Duration(seconds: 1));
+    });
+
+    final liveRun = AgentRunLog(
+      id: 'run-1',
+      agentId: 'a1',
+      workspaceId: 'ws-1',
+      conversationId: 'conv-1',
+      startedAt: DateTime(2026, 7, 1),
+      status: RunStatus.running,
+    );
+
+    for (final text in [
+      'change the codeowner from @acme/platform to the core team',
+      'also remove @src/modules/workflow/repository',
+    ]) {
+      testWidgets('"$text" queues behind the running agent', (tester) async {
+        final sender = await pumpRoom(
+          tester,
+          participants: [_agentParticipant('a1')],
+          roster: [_agent('a1')],
+          activeRuns: [liveRun],
+        );
+
+        await typeAndSend(tester, text);
+
+        expect(sender.steeredContent, text);
+        expect(
+          sender.sentContent,
+          isNull,
+          reason: 'a send would start a second run beside the first',
+        );
+      });
+    }
+
+    testWidgets('mentioning a real agent mid-run starts its own turn', (
+      tester,
+    ) async {
+      final sender = await pumpRoom(
+        tester,
+        participants: [_agentParticipant('a1')],
+        roster: [_agent('a1')],
+        activeRuns: [liveRun],
+      );
+
+      await typeAndSend(tester, '@architect take a look');
+
+      expect(sender.sentContent, '@architect take a look');
+      expect(sender.steeredContent, isNull);
     });
 
     testWidgets('an agent in the conversation answers a plain message', (

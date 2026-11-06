@@ -2636,4 +2636,7 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Kjøringen stoppet fordi leverandørens legitimasjon ikke lenger virker. Koble den til på nytt under Innstillinger → Leverandører, og prøv turen igjen.';
+
+  @override
+  String get permissionHostExecution => 'Kjør kommandoer på verten';
 }

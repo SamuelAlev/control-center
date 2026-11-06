@@ -82,6 +82,34 @@ void main() {
       },
     );
 
+    test('releaseSlot reopens only the released slot', () async {
+      final released = DateTime.utc(2025, 1, 1, 0, 15);
+      final kept = DateTime.utc(2025, 1, 1, 0, 30);
+      for (final (id, slot) in [('ce-1', released), ('ce-2', kept)]) {
+        await db.cronExecutionDao.claimSlot(
+          id: id,
+          workspaceId: 'w-1',
+          triggerId: 'trig-1',
+          plannedAt: slot,
+        );
+      }
+
+      await db.cronExecutionDao.releaseSlot(
+        triggerId: 'trig-1',
+        plannedAt: released,
+      );
+
+      Future<bool> reclaim(String id, DateTime slot) =>
+          db.cronExecutionDao.claimSlot(
+            id: id,
+            workspaceId: 'w-1',
+            triggerId: 'trig-1',
+            plannedAt: slot,
+          );
+      expect(await reclaim('ce-3', released), isTrue);
+      expect(await reclaim('ce-4', kept), isFalse);
+    });
+
     test('forTrigger is workspace-scoped', () async {
       await db.cronExecutionDao.claimSlot(
         id: 'ce-1',

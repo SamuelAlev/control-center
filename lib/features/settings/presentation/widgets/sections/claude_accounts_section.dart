@@ -50,6 +50,13 @@ class ClaudeAccountsSection extends ConsumerWidget {
       description: l10n.claudeAccountsDescription,
       showRule: true,
       separator: SettingsGroupSeparator.none,
+      trailing: CcButton(
+        variant: CcButtonVariant.secondary,
+        size: CcButtonSize.sm,
+        icon: AppIcons.plus,
+        onPressed: () => _addAccount(context, ref),
+        child: Text(l10n.claudeAccountAdd),
+      ),
       children: [
         if (rows != null)
           rows.isEmpty
@@ -80,17 +87,6 @@ class ClaudeAccountsSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
             child: Center(child: CcSpinner()),
           ),
-        const SizedBox(height: AppSpacing.md),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: CcButton(
-            variant: CcButtonVariant.secondary,
-            size: CcButtonSize.sm,
-            icon: AppIcons.plus,
-            onPressed: () => _addAccount(context, ref),
-            child: Text(l10n.claudeAccountAdd),
-          ),
-        ),
         // Rotation sits below the roster because it is a statement ABOUT
         // that roster — which of those accounts runs get spent on, and in
         // what order. Shown by the rule every pool editor shares: two or more

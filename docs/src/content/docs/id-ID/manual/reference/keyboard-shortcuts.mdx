@@ -2,10 +2,10 @@
 title: Pintasan keyboard
 description: Registri binding yang lengkap, menurut cakupan, beserta kondisi yang memicu setiap pintasan.
 slug: id-ID/panduan-pengguna/referensi/pintasan-keyboard
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Pintasan berasal dari satu registri `const`, `KeybindingRegistry` di `lib/core/constants/keybindings.dart`. Registri ini memuat **49 binding**. Pengaturan → Anda → Pintasan keyboard menampilkan registri tersebut sebagai **referensi hanya-baca**: tidak ada UI untuk mengubah binding dan tidak ada berkas binding milik pengguna.
+Pintasan berasal dari satu registri `const`, `KeybindingRegistry` di `lib/core/constants/keybindings.dart`. Registri ini memuat **49 binding**. Dialog **Pintasan keyboard** (tekan `?`, atau buka dari menu Bantuan) menampilkan pintasan global dan pintasan untuk layar saat ini. Dialog ini adalah **referensi hanya-baca**: tidak ada UI untuk mengubah binding dan tidak ada berkas binding milik pengguna.
 
 `Cmd` di bawah ini adalah modifikator perintah utama — ⌘ di macOS, Ctrl di Windows dan Linux. Sebuah binding hanya terpicu bila perintahnya memiliki handler terdaftar di layar saat ini dan klausa `when`-nya terpenuhi; `!textInputFocus` berarti tombol tersebut diteruskan ke kolom teks yang sedang difokuskan.
 
@@ -41,7 +41,7 @@ Cakupan `/pull-requests`. Semuanya mensyaratkan `route == '/pull-requests'` dan 
 | `Enter`  | Buka PR          |
 | `F`      | Buka menu filter |
 
-`Enter` (`pr.list-open`) dideklarasikan di registri dan muncul di referensi pintasan keyboard, tetapi **layar daftar tidak mendaftarkan handler untuknya**, jadi saat ini pintasan itu tidak terpicu. `F` membuka menu filter (`pr.list-open-filter`), bukan pencarian.
+`Enter` (`pr.list-open`) dideklarasikan di registri dan muncul di dialog **Pintasan keyboard**, tetapi **layar daftar tidak mendaftarkan handler untuknya**, jadi saat ini pintasan itu tidak terpicu. `F` membuka menu filter (`pr.list-open-filter`), bukan pencarian.
 
 ## Detail pull request (2)
 
@@ -90,7 +90,7 @@ Cakupan `/spaces`. Klausa `when`-nya memakai regex sehingga terpicu baik di daft
 
 Buka file membuka pemilih atas file percakapan. Tanpa mengetik apa pun, pemilih menampilkan file yang terakhir Anda buka; mengetik akan mencari di semua file di worktree percakapan. `Enter` membuka file yang dipilih di tab baru, `Cmd/Ctrl + Enter` atau tombol pisah di baris membukanya di panel sebelah kanan, dan `×` di baris file terbaru menghapusnya dari daftar.
 
-Kirim dengan Enter ditangani oleh kolom teks composer; tekan untuk bicara ditangani oleh tombol mikrofon composer (handler keyboard perangkat kerasnya sendiri). Keduanya tercantum di registri untuk referensi pengaturan.
+Kirim dengan Enter ditangani oleh kolom teks composer; tekan untuk bicara ditangani oleh tombol mikrofon composer (handler keyboard perangkat kerasnya sendiri). Keduanya tercantum di registri agar dialog **Pintasan keyboard** dapat menampilkannya.
 
 ## Pemilih ruang kerja (2)
 
@@ -127,7 +127,7 @@ Cakupan `/newsfeed`. Semuanya mensyaratkan `route == '/newsfeed'` dan tidak ada 
 
 ## Tombol penampil diff di luar registri
 
-Penampil diff PR menangani tombol-tombol ini sendiri (`PrDiffKeyboardHandler`). Pencarian/dilihat/menguncupkan hanya tercantum di komentar registri untuk referensi pengaturan — tidak ada handler dispatcher yang terdaftar, sehingga dispatcher menyerahkannya ke tampilan diff. Tombol-tombol itu tidak muncul sebagai baris tersendiri di referensi pintasan keyboard.
+Penampil diff PR menangani tombol-tombol ini sendiri (`PrDiffKeyboardHandler`). Pencarian/dilihat/menguncupkan hanya dicatat di komentar registri: tidak ada handler dispatcher yang terdaftar, sehingga dispatcher menyerahkannya ke tampilan diff. Tombol-tombol itu tidak muncul sebagai baris tersendiri di dialog **Pintasan keyboard**.
 
 | Pintasan        | Tindakan                                                 |
 | --------------- | -------------------------------------------------------- |

@@ -2,7 +2,7 @@
 title: Ruang kerja dan pengasingan
 description: Mengapa ruang kerja ialah sempadan penyewa yang tegas, bagaimana pemisahan pangkalan data menjadikan sempadan itu bersifat struktur dan apa yang sengaja melintasinya.
 slug: ms-MY/manual-pengguna/konsep/ruang-kerja
-sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
+sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
 ---
 
 ## Apakah itu ruang kerja?
@@ -110,7 +110,10 @@ mana yang lengkap dan membenarkan pemilik pemasangan memadam satu selepas
 pengesahan, dan setiap ruang kerja menawarkan eksport dan import. Pipeline
 **Workspace backup** terbina hanya mengambil pangkalan data ruang kerja itu
 mengikut jadual mingguan dan memadam sandarannya sendiri yang lebih lama
-daripada usia pengekalan yang dikonfigurasikan. Memulihkan satu ruang kerja
+daripada usia pengekalan yang dikonfigurasikan. Sandaran itu disenaraikan mengikut
+ruang kerja pada halaman yang sama, dan setiap satu boleh dipulihkan, dimuat turun atau
+dipadam. Memadam ruang kerja meninggalkan sandarannya untuk dikumpul atau dibuang oleh
+pemilik pemasangan, kerana jadual dan pengekalannya berhenti bersamanya. Memulihkan satu ruang kerja
 daripada snapshot pemasangan ialah `workspace.import` yang ditunjuk ke
 `<workspaceId>/workspace.db` snapshot itu; memulihkan seluruh pemasangan kekal
 sebagai penyalinan kembali direktori snapshot dengan pelayan dihentikan.
@@ -119,11 +122,11 @@ Apa yang tidak dibawa oleh mana-mana daripadanya ialah seluruh direktori ruang k
 
 ## Memindahkan sandaran antara pelayan dan peranti anda
 
-Setiap operasi di atas bercakap dalam laluan pada **pelayan**, yang merupakan jawapan lengkap hanya apabila pelayan itu mesin anda sendiri. Tiga laluan pemindahan bertandatangan — [`/backup/workspace`, `/backup/snapshot` dan `/backup/restore`](/ms-MY/manual-pengguna/rujukan/sandaran/#laluan-pemindahan) — membawa bait untuk setiap topologi lain melalui terowong sumber yang disahkan dan disulitkan, pada sambungan langsung dan melalui geganti. Laluan HTTP awam tidak menyajikan bait sandaran yang boleh dibaca, dan laluan bertandatangan masih memerlukan kebenaran. Pada halaman, ini ialah butang **Muat turun** di sebelah setiap eksport dan setiap snapshot (anda pilih tempat ia disimpan), dan **Pilih fail dan muat naik** untuk memulihkan daripada fail yang berada pada mesin yang anda gunakan. Muat naik berfungsi apabila pelayan bukan mesin anda: `workspace.import` memerlukan fail itu sudah berada pada hos, dan inilah caranya ia sampai ke sana.
+Setiap operasi di atas bercakap dalam laluan pada **pelayan**, yang merupakan jawapan lengkap hanya apabila pelayan itu mesin anda sendiri. Empat laluan pemindahan bertandatangan — [`/backup/workspace`, `/backup/snapshot`, `/backup/stored` dan `/backup/restore`](/ms-MY/manual-pengguna/rujukan/sandaran/#laluan-pemindahan) — membawa bait untuk setiap topologi lain melalui terowong sumber yang disahkan dan disulitkan, pada sambungan langsung dan melalui geganti. Laluan HTTP awam tidak menyajikan bait sandaran yang boleh dibaca, dan laluan bertandatangan masih memerlukan kebenaran. Pada halaman, ini ialah butang **Muat turun** di sebelah setiap eksport, setiap snapshot dan setiap sandaran berjadual (anda pilih tempat ia disimpan), dan **Pilih fail dan muat naik** untuk memulihkan daripada fail yang berada pada mesin yang anda gunakan. Muat naik berfungsi apabila pelayan bukan mesin anda: `workspace.import` memerlukan fail itu sudah berada pada hos, dan inilah caranya ia sampai ke sana.
 
 Tiga sifat wajar diketahui:
 
-- **Muat turun menghasilkan salinan baharu dan pelayan tidak menyimpan satu pun daripadanya.** Memuat turun bukan "ambil fail yang dihasilkan butang eksport" — ia mengeksport semula, menstrim hasilnya dan memadamnya. Responsnya ialah `no-store` dengan `Accept-Ranges: none` atas sebab yang sama: julat yang disambung semula akan mencantumkan dua eksport berbeza menjadi satu fail yang kelihatan sah tetapi sebenarnya tidak.
+- **Muat turun menghasilkan salinan baharu dan pelayan tidak menyimpan satu pun daripadanya.** Memuat turun bukan "ambil fail yang dihasilkan butang eksport" — ia mengeksport semula, menstrim hasilnya dan memadamnya. Responsnya ialah `no-store` dengan `Accept-Ranges: none` atas sebab yang sama: julat yang disambung semula akan mencantumkan dua eksport berbeza menjadi satu fail yang kelihatan sah tetapi sebenarnya tidak. Sandaran berjadual ialah pengecualian: ia sudah wujud, jadi memuat turunnya menstrim fail itu dan meninggalkannya pada pelayan.
 - **Muat naik distrim ke cakera, tidak pernah melalui penimbal**, pada kedua-dua hujung, dan salinan pentas dipadam pada setiap laluan keluar — termasuk penolakan. Pangkalan data ruang kerja bukan tangkapan skrin.
 - **Pemindahan turut berfungsi melalui geganti.** Muat turun dan muat naik menggunakan terowong sumber tersulit yang sama seperti sambungan langsung; asal HTTP langsung tidak diperlukan.
 

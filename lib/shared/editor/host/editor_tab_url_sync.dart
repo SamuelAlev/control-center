@@ -17,12 +17,10 @@ import 'package:uuid/uuid.dart';
 /// whatever the seeded / restored layout selected.
 const String editorTabQueryParam = 'tab';
 
-/// A tab's URL identity: its [EditorTab.dedupKey] when it has one, else its
-/// kind. The kind fallback is ambiguous between same-kind siblings, so a kind
-/// that can stack (terminals, web browsers) mints a per-tab key with
-/// [instanceTabKey]; only singleton kinds and tabs restored from a layout
-/// saved before that rely on the fallback.
-String editorTabKey(EditorTab tab) => tab.dedupKey ?? tab.kind;
+/// A tab's URL identity: its [EditorTab.id]. A kind that can stack
+/// (terminals, web browsers) mints a per-tab key with [instanceTabKey] so the
+/// id is unique; only singleton kinds rely on the kind fallback.
+String editorTabKey(EditorTab tab) => tab.id;
 
 /// A fresh, unique `?tab=` key for one tab of a stackable [kind] — a terminal
 /// or web browser, where every open is a new tab rather than a refocus. Being

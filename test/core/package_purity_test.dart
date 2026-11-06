@@ -146,7 +146,7 @@ void main() {
       'package:drift',
       'package:sqlite3',
     ],
-    // Pure-Dart app-server composition. cc_natives IS now allowed here: the
+    // Pure-Dart server composition. cc_natives IS now allowed here: the
     // native-composing DaoCodeGraphRepository (uses cc_natives' content-addressed
     // codeSymbolId/codeEdgeId helpers + cc_persistence DAOs) landed in this
     // package — the documented re-allow condition (review §3). cc_natives is

@@ -37,6 +37,54 @@ void main() {
       await git(['config', 'user.name', 'Test']);
     });
 
+    group('that a rig has mounted', () {
+      late File ran;
+
+      setUp(() async {
+        // A sibling, so the walker's own listing never sees it.
+        final scratch = await Directory.systemTemp.createTemp('walker_rig');
+        addTearDown(() => scratch.delete(recursive: true));
+        ran = File(p.join(scratch.path, 'ran'));
+        final script = File(p.join(scratch.path, 'planted.sh'))
+          ..writeAsStringSync('#!/bin/sh\ntouch "${ran.path}"\n');
+        await Process.run('chmod', ['755', script.path]);
+        await git(['config', 'core.fsmonitor', script.path]);
+        await write('lib/a.dart', 'void a() {}\n');
+        await write('.gitignore', 'ignored.dart\n');
+        await write('ignored.dart', 'void b() {}\n');
+        RigWorktreeGuard.debugReset();
+        addTearDown(() {
+          RigWorktreeGuard.forceRelease(tmp.path);
+          RigWorktreeGuard.debugReset();
+        });
+      });
+
+      test('the planted fsmonitor runs without the guard', () async {
+        await git(['add', '-A']);
+        await git(['status']);
+        expect(ran.existsSync(), isTrue);
+      });
+
+      test('an intact quarantine lists without running it', () async {
+        RigWorktreeGuard.quarantine(tmp.path);
+        final files = await const SourceFileWalker().walk(tmp.path);
+        expect(rels(files), contains('lib/a.dart'));
+        expect(rels(files), isNot(contains('ignored.dart')));
+        expect(ran.existsSync(), isFalse);
+      });
+
+      test('a tampered quarantine walks by hand without git', () async {
+        RigWorktreeGuard.quarantine(tmp.path);
+        File(p.join(tmp.path, '.git', 'config')).writeAsStringSync(
+          '[alias]\n\tplanted = !true\n',
+          mode: FileMode.append,
+        );
+        final files = await const SourceFileWalker().walk(tmp.path);
+        expect(rels(files), contains('lib/a.dart'));
+        expect(ran.existsSync(), isFalse);
+      });
+    });
+
     test('excludes paths matched by .gitignore', () async {
       await write('.gitignore', 'node_modules/\nbuild/\n*.log\n');
       await write('lib/main.dart', 'void main() {}');

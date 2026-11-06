@@ -243,6 +243,28 @@ class MediaProxyConfig {
     ).toString();
   }
 
+  /// Builds the `GET /backup/stored` URL that downloads scheduled backup [name]
+  /// of [workspaceId].
+  ///
+  /// The host streams the backup's own file and leaves it in place. It requires
+  /// the signer to be an ADMIN of the workspace, or the install's OPERATOR once
+  /// the workspace is deleted. The signed target is
+  /// `backup-stored:<workspaceId>:<name>`.
+  String backupStoredUrl({required String workspaceId, required String name}) {
+    return resourceUri(
+      '/backup/stored',
+      queryParameters: {
+        'w': workspaceId,
+        'n': name,
+        'd': deviceId,
+        's': RemoteControlCrypto.signProxyTarget(
+          'backup-stored:$workspaceId:$name',
+          psk,
+        ),
+      },
+    ).toString();
+  }
+
   /// Builds the `POST /backup/restore` URL that uploads a workspace database
   /// file and has the host adopt it as [workspaceId]'s.
   ///

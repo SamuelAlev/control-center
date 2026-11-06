@@ -1,5 +1,5 @@
 name: cc_server_core
-description: "Pure-Dart app-server composition for Control Center — the repo-RPC catalog (tickets/messaging/newsfeed), the WebSocket RPC server (LocalRpcServer), live event forwarding and the paired-device secrets port. Shared by the headless cc_server binary and (transitionally) the desktop's in-process server. No Flutter."
+description: "Pure-Dart server composition for Control Center — the repo-RPC catalog (tickets/messaging/newsfeed), the WebSocket RPC server (LocalRpcServer), live event forwarding and the paired-device secrets port. Shared by the headless cc_server binary and (transitionally) the desktop's in-process server. No Flutter."
 publish_to: "none"
 version: 0.0.1
 

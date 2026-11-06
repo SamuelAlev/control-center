@@ -196,6 +196,11 @@ void main() {
         // as most-restrictive, so it can only tighten what a workspace
         // decided. See ManagedActionPoliciesTable's doc comment.
         'ManagedActionPoliciesTable',
+        // Environment port leases: TCP ports belong to the HOST, so two
+        // workspaces must never be handed the same block, and only one shared
+        // table can enforce that. Rows carry ids and port numbers, never
+        // workspace content. See EnvironmentSlotLeasesTable's doc comment.
+        'EnvironmentSlotLeasesTable',
       }),
       reason:
           'The global table set changed. A table here is visible to EVERY '

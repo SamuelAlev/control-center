@@ -7,6 +7,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_commen
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/send_comment_to_agent.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,9 +15,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// A comment plus the hover toolbar Linear's threads use.
 ///
 /// Resolve is offered only for a thread the forge can resolve. Edit is
-/// offered only to the author of a published comment. Delete is offered to
-/// the author, to a writer or admin, and for an unpublished draft. Everyone
-/// else does not see the row.
+/// offered to the author of a published comment and for an unpublished draft.
+/// Delete is offered to the author, to a writer or admin, and for an
+/// unpublished draft. Everyone else does not see the row.
 class PrCommentActions extends ConsumerStatefulWidget {
   /// Creates a [PrCommentActions].
   const PrCommentActions({
@@ -89,7 +90,7 @@ class PrCommentActions extends ConsumerStatefulWidget {
   /// Marks the thread resolved or reopened.
   final VoidCallback? onResolve;
 
-  /// Opens an editor. Gated again on authorship.
+  /// Opens an editor. Gated again by [canEditComment].
   final VoidCallback? onEdit;
 
   /// Discards an unpublished draft. Published comments go through the forge.
@@ -298,6 +299,7 @@ class EditableCommentSlot extends StatefulWidget {
     required this.repo,
     required this.onSave,
     required this.builder,
+    this.controller,
   });
 
   /// The body shown, and the text the editor opens with.
@@ -311,6 +313,11 @@ class EditableCommentSlot extends StatefulWidget {
 
   /// Persists the edited body. A non-null return is an error message.
   final Future<String?> Function(String body) onSave;
+
+  /// Session-owned text for an edit that must outlive this widget, as in the
+  /// virtualised diff, where scrolling a card away disposes it. Text already
+  /// in here reopens the editor. Null keeps the edit in this widget's state.
+  final TextEditingController? controller;
 
   /// Builds the comment. The editor widget is non-null while editing; the
   /// callback opens the field.
@@ -326,21 +333,32 @@ class EditableCommentSlot extends StatefulWidget {
 }
 
 class _EditableCommentSlotState extends State<EditableCommentSlot> {
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _ownController =
+      ComposerTextController.markdownOnly();
   final FocusNode _focus = FocusNode();
-  bool _editing = false;
+  late bool _editing = _controller.text.isNotEmpty;
   bool _saving = false;
+
+  TextEditingController get _controller => widget.controller ?? _ownController;
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ownController.dispose();
     _focus.dispose();
     super.dispose();
   }
 
   void _start() {
+    if (_editing) {
+      return;
+    }
     _controller.text = widget.initialBody;
     setState(() => _editing = true);
+  }
+
+  void _close() {
+    _controller.clear();
+    setState(() => _editing = false);
   }
 
   Future<void> _save() async {
@@ -354,7 +372,7 @@ class _EditableCommentSlotState extends State<EditableCommentSlot> {
     }
     setState(() => _saving = false);
     if (error == null) {
-      setState(() => _editing = false);
+      _close();
       return;
     }
     CcToastScope.of(context).show(
@@ -389,16 +407,21 @@ class _EditableCommentSlotState extends State<EditableCommentSlot> {
                     CcButton(
                       variant: CcButtonVariant.secondary,
                       size: CcButtonSize.sm,
-                      onPressed: _saving
-                          ? null
-                          : () => setState(() => _editing = false),
+                      onPressed: _saving ? null : _close,
                       child: Text(l10n.cancel),
                     ),
                     const SizedBox(width: 8),
-                    CcButton(
-                      size: CcButtonSize.sm,
-                      onPressed: _saving ? null : _save,
-                      child: Text(l10n.save),
+                    // The forge rejects a blank comment, and a queued one
+                    // would fail the whole review when it is submitted.
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _controller,
+                      builder: (context, value, _) => CcButton(
+                        size: CcButtonSize.sm,
+                        onPressed: _saving || value.text.trim().isEmpty
+                            ? null
+                            : _save,
+                        child: Text(l10n.save),
+                      ),
                     ),
                   ],
                 ),

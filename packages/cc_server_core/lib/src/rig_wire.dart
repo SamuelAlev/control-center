@@ -5,6 +5,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/ios_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/mobile_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/window_action.dart';
 
 /// The wire form of a [Rig] for the `rig.*` ops.
 ///
@@ -74,4 +75,8 @@ RigActionParse parseRigAction(
   RigSurface.browser => BrowserAction.parse(arguments),
   RigSurface.mobile => MobileAction.parse(arguments),
   RigSurface.ios => IosAction.parse(arguments),
+  RigSurface.window => WindowAction.parse(arguments),
+  RigSurface.environment => const RigActionInvalid(
+    'An environment rig has no surface to act on.',
+  ),
 };

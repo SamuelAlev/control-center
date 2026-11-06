@@ -2,7 +2,7 @@
 title: Fazer cópia de segurança e restaurar
 description: Tire um instantâneo da instalação, mova um espaço de trabalho entre máquinas, restaure um espaço de trabalho ou todos eles e mantenha cópias noutro local.
 slug: pt-PT/manual/guias/copia-de-seguranca-e-restauro
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Este guia aborda as cinco coisas que as pessoas fazem realmente com cópias de
@@ -16,7 +16,7 @@ Está tudo em **Definições → Servidor → Backup e restauração**.
 
 - Um **cliente completo** — a aplicação para computador ou a aplicação Web. Um telemóvel emparelhado não consegue desencadear nada disto, por conceção.
 - Para tirar, listar, descarregar ou eliminar um **instantâneo da instalação**: o **proprietário** da instalação.
-- Para ações por espaço de trabalho: **admin** desse espaço de trabalho para exportar, **proprietário** para o importar ou eliminar.
+- Para ações por espaço de trabalho: **admin** desse espaço de trabalho para o exportar ou para listar e descarregar as suas cópias de segurança agendadas, **proprietário** para o importar ou eliminar ou para eliminar uma das suas cópias de segurança.
 - Para descarregamentos e envios: um cliente completo emparelhado, numa ligação direta ou pelo relay intermediário. Ambos os caminhos transportam os bytes do ficheiro pelo mesmo túnel de recursos autenticado e cifrado ponto a ponto; o relay não os consegue ler.
 
 :::caution[Os instantâneos da instalação são manuais]
@@ -86,14 +86,35 @@ As cópias de segurança de espaços de trabalho ficam no servidor em
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. O nó de retenção
 elimina apenas cópias de segurança antigas deste espaço de trabalho; nunca elimina
 instantâneos da instalação nem cópias de segurança de outros espaços de trabalho. Estes
-ficheiros contêm apenas bases de dados. Para retenção fora da máquina, copie-os em
-separado.
+ficheiros contêm apenas bases de dados. Para retenção fora da máquina, descarregue-os ou
+copie-os em separado.
 
-Estas cópias de segurança são distintas da lista **Instantâneos da instalação**. Para
-restaurar uma, use **Dados do espaço de trabalho → Importar** com o caminho
-`workspace.db` da cópia de segurança no lado do servidor. A importação substitui a base
-de dados atual desse espaço de trabalho, por isso exporte-a primeiro se puder precisar de
-desfazer o restauro.
+## Encontrar e restaurar uma cópia de segurança agendada
+
+**Backups agendados** fica entre **Instantâneos da instalação** e
+**Dados do espaço de trabalho**, com uma linha por espaço de trabalho: quando foi executada a
+última cópia de segurança, quantas foram mantidas e o espaço que ocupam. Um espaço de trabalho cujo pipeline
+ainda não produziu nada mostra **Ainda não há backups**. Um espaço de trabalho do qual não é
+admin indica-o na própria linha em vez de listar as cópias de segurança.
+
+Expanda uma linha para ver cada cópia de segurança, da mais recente para a mais antiga:
+
+- **Restaurar** substitui a base de dados atual do espaço de trabalho por esta cópia de segurança. Exporte primeiro o espaço de trabalho se puder precisar de desfazer a operação. Requer **proprietário**.
+- **Descarregar** guarda o ficheiro na máquina que está a utilizar. A cópia de segurança continua no servidor.
+- **Copiar caminho** copia a sua localização no servidor.
+- **Eliminar** remove esta cópia de segurança permanentemente, depois de escrever o nome do espaço de trabalho. Requer **proprietário**.
+
+### Cópias de segurança de um espaço de trabalho eliminado
+
+Eliminar um espaço de trabalho deixa as suas cópias de segurança agendadas no servidor e,
+como o agendamento para com ele, a retenção também para: ficam lá até alguém as remover. O
+**proprietário** da instalação vê-as na mesma lista, marcadas com
+**Espaço de trabalho excluído**, e pode descarregá-las ou eliminá-las aí. Mais ninguém vê
+essas linhas.
+
+Não têm **Restaurar**, porque não há espaço de trabalho para onde restaurar. Para recuperar
+uma, descarregue-a, crie um espaço de trabalho e envie o ficheiro como descrito em
+[Mover um espaço de trabalho para outra instalação](#mover-um-espaço-de-trabalho-para-outra-instalação).
 
 ## Eliminar um instantâneo da instalação
 
@@ -110,14 +131,16 @@ não é a máquina onde está sentado, use os botões **Descarregar**:
 
 - Junto a cada **espaço de trabalho**, em **Dados do espaço de trabalho** → **Descarregar**, para um ficheiro `.db`.
 - Junto a cada **instantâneo**, em **Instantâneos da instalação** → **Descarregar**, para o instantâneo inteiro como um `.zip`.
+- Junto a cada cópia de segurança, em **Backups agendados** → **Descarregar**, para o ficheiro `.db` dessa cópia de segurança.
 
 Na aplicação para computador, escolhe onde o ficheiro fica e a notificação indica-o; na
-Web, vai para as descargas do navegador. De qualquer forma, ambos comunicam o progresso
-em bytes, porque estas são as duas cargas que chegam à ordem dos gigabytes.
+Web, vai para as descargas do navegador. De qualquer forma, os três comunicam o progresso
+em bytes, porque estas cargas chegam à ordem dos gigabytes.
 
-Ambos criam uma cópia nova no momento em que prime o botão, transmitem-na em fluxo e
-eliminam depois a cópia do servidor — um descarregamento não é “ir buscar o ficheiro que
-o botão de exportação criou antes”.
+Os descarregamentos de espaços de trabalho e de instantâneos criam uma cópia nova no momento
+em que prime o botão, transmitem-na em fluxo e eliminam depois a cópia do servidor — um
+descarregamento não é “ir buscar o ficheiro que o botão de exportação criou antes”. Uma cópia
+de segurança agendada é a exceção: recebe o ficheiro guardado, e este continua no servidor.
 
 Descompactar um arquivo de instantâneo reproduz exatamente a estrutura do instantâneo, e
 é isso que faz do restauro uma cópia de volta.

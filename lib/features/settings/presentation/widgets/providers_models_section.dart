@@ -75,13 +75,8 @@ class _ProvidersModelsSectionState
       label: l10n.providersAndModels,
       count: providersAsync.asData?.value.length,
       subtitle: Text(l10n.providersAndModelsDescription),
-      padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-      headerPadding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        0,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      headerPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       trailing: CcIconButton(
         icon: AppIcons.refreshCw,
         size: CcButtonSize.sm,

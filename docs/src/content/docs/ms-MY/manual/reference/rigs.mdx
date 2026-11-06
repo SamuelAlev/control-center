@@ -2,7 +2,7 @@
 title: Stesen
 description: Setiap permukaan stesen, bahagian belakang, kata kerja tindakan, keadaan kitaran hayat, port, lalai dan kontrak — katalog fakta yang lengkap.
 slug: ms-MY/manual-pengguna/rujukan/stesen
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Fakta sahaja. Untuk model di sebaliknya, baca [Stesen dan persekitaran
@@ -18,6 +18,8 @@ terasing](/ms-MY/manual-pengguna/konsep/stesen/); untuk membuka mesin, ikut
 | Komputer | Desktop X11: input melalui hipervisor, tangkapan melalui ejen tetamu | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (sandaran tanpa pecutan, tidak pernah dipilih secara automatik) | Ya |
 | Android | Android melalui ADB | Emulator Google | `android-emulator` | **Tidak** — emulator menguruskan rangkaian sendiri |
 | iOS | Simulator iOS melalui WebDriverAgent | CoreSimulator | `ios-simulator` | **Tidak** — rangkaian mengikut Mac hos |
+| Tetingkap apl | Tetingkap apl desktop yang dilancarkan daripada persekitaran, melalui OS | Tetingkap hos | `host-window` | **Tidak** — apl berjalan pada hos dengan akses pengguna pelayan |
+| Persekitaran | Stack compose dan tugasan [persekitaran](/ms-MY/manual-pengguna/panduan-cara/persekitaran/) dengan peletakan `rig` | microVM | `smolvm` | Ya |
 
 Terminal dan permukaan `computer_use` berkongsi nilai permukaan `computer`;
 terminal dibezakan oleh penanda imej execnya dan tidak pernah digunakan semula

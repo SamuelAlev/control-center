@@ -351,6 +351,14 @@ void main() {
     return router;
   }
 
+  testWidgets('the sidebar seam rests on the sidebar\'s own hairline', (
+    tester,
+  ) async {
+    await pumpShellAt(tester, inboxRoute('ws-1'));
+    final resizable = tester.widget<CcResizable>(find.byType(CcResizable));
+    expect(resizable.dividerThickness, 0);
+  });
+
   for (final direction in TextDirection.values) {
     testWidgets(
       'resize survives collapsing and reopening the sidebar ($direction)',

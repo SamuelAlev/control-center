@@ -2634,4 +2634,7 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'توقف التشغيل لأن بيانات اعتماد المزوّد لم تعد تعمل. أعد ربطه من الإعدادات ← المزوّدون، ثم أعد محاولة الدور.';
+
+  @override
+  String get permissionHostExecution => 'تشغيل الأوامر على المضيف';
 }

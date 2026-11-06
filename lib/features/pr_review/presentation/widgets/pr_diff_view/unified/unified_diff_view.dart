@@ -46,6 +46,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_inline
 import 'package:control_center/features/pr_review/presentation/widgets/reaction_label.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/sticky_header.dart';
 import 'package:control_center/features/pr_review/providers/diff_view_settings_provider.dart';
+import 'package:control_center/features/pr_review/providers/pr_comment_draft_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/send_comment_to_agent.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -1770,7 +1771,9 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       authorBody: body,
       batched: batched,
     );
-    final draft = ref.read(textDraftControllerProvider(_commentDraftKey(req)));
+    final draft = ref.read(
+      prCommentDraftControllerProvider(_commentDraftKey(req)),
+    );
     if (draft.text == req.initialComment) {
       draft.clear();
     }

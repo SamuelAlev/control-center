@@ -59,6 +59,7 @@ class SsoAccessGroup extends StatelessWidget {
           label: l10n.ssoDefaultRoleShortLabel,
           description: l10n.ssoDefaultRoleDescription,
           controlWidth: 220,
+          trailingControl: true,
           child: CcSelect<String>(
             options: roleOptions,
             value: roleOptions.any((o) => o.value == defaultRole)
@@ -148,6 +149,7 @@ class SsoAdvancedGroup extends StatelessWidget {
             label: l10n.ssoClockSkewShortLabel,
             description: l10n.ssoClockSkewDescription,
             controlWidth: 140,
+            trailingControl: true,
             child: SsoTextField(
               value: '$skew',
               enabled: !busy,

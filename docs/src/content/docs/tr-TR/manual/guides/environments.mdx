@@ -1,0 +1,411 @@
+---
+title: Ortamları kurma
+description: Her alana ve pull request'e compose, özel bir CLI, denetlenen süreçler veya masaüstü uygulamasıyla kendi çalışan yığınını verin.
+slug: tr-TR/kilavuz/nasil-yapilir/ortamlar
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+**Ortam**, bir alanın çalışan yığınıdır: bir dalın ihtiyaç duyduğu servisler, diğer tüm alanlardan yalıtılmış, kenar çubuğunda görünür ve ajanların erişebileceği biçimde. Pull request'ler de bir tane alır, çünkü bir PR'ın zaten kendi alanı vardır.
+
+Bir çalışma alanı yöneticisi bir kez **tanım** yazar. Üyeler ardından bir alanın veya PR'ın kenar çubuğundaki **Ortam** bölümünde **Başlat** düğmesine basar. Tanımlar çalışma alanının veritabanında durur, bu yüzden bir özellik dalı Control Center'ın ne çalıştırdığını asla değiştirmez; yine de araçlar o dalın kodunu çalıştırır.
+
+## Tanım oluşturma
+
+1. **Ayarlar → Çalışma alanı → Ortamlar** yolunu açın. Tanımları yalnızca çalışma alanı yöneticileri değiştirebilir.
+2. **Yeni tanım** düğmesine, ardından **Boş tanım** veya **Depodan taslak oluştur** seçeneğine tıklayın. Taslak, depoda compose dosyaları, bir `Procfile` ve `package.json` betikleri arar; sonucu siz gözden geçirirsiniz.
+3. Formu doldurun veya **JSON** sekmesini kullanın. Bu sayfadaki örnekler o JSON'dur.
+4. **Testi çalıştır** düğmesine tıklayın. Tek kullanımlık bir ortam başlatır, hazır olmasını bekler ve onu yok eder.
+
+Bir tanımı depoda tutmak için **Depo dosyası bağla** seçeneğini kullanın. Control Center dosyayı yalnızca varsayılan daldan okur ve yalnızca bir yöneticinin onayladığı sürümü çalıştırır. Daha yeni bir sürüm **Güncelleme var** gösterir ve onaylanana kadar hiçbir şeyi değiştirmez.
+
+## En küçük tanım
+
+Basit bir compose deposu için bu kadarı yeterlidir:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+Geri kalan her şeyin varsayılanı vardır: compose dosyası bulunur, tüm servisler çalışır, bağlantı noktaları atanır, HTTP uç noktaları algılanır ve ortam adını daldan alır.
+
+## Bileşen türleri
+
+Ortam, sıralı bir bileşen listesidir. `after` başkalarını belirtmedikçe her biri bir öncekinin hazır olmasını bekler ve durdurma ters sırada gerçekleşir. `enabledWhen` bir bileşeni bir seçeneğe veya role bağlar; örneğin `opt.seed`, `!opt.seed` veya `repo.web`.
+
+| Tür | Kim çalıştırır | Ne için |
+| --- | --- | --- |
+| `compose` | Control Center'ın compose sürücüsü | Her compose dosyası, ortam başına bir tane |
+| `cli` | Aracınız. Control Center eşlenen fiilleri çağırır ve JSON okur | Yaşam döngüsünü, alan adlarını ve verisini kendi yöneten bir araç |
+| `process` | Control Center, denetlenen bir terminal oturumunda | Geliştirme sunucuları ve worker'lar |
+| `task` | Control Center, tetikleyici başına bir kez | Kurulumlar, geçişler, testler |
+| `app` | Control Center, biri **Aç** düğmesine bastığında | Bir masaüstü uygulaması |
+
+`task` bileşenleri bir `when` listesi alır:
+
+| Tetikleyici | Ne zaman çalışır |
+| --- | --- |
+| `provision` | Worktree oluşturulduğunda (aşağıdaki worktree görevlerine bakın) |
+| `create` | Ortam başına bir kez ve sıfırlamadan sonra yeniden |
+| `start` | Her başlatmada |
+| `change` | Eşitlemeden sonra, değişen bir yol `onChange` ile eşleştiğinde |
+| `manual` | İstek üzerine: **Çalıştır**, `cc-env run <id>` veya `environment_run_task` |
+| `archive` | Worktree yok edilmeden hemen önce |
+
+Dizi olarak verilen bir komut argv'dir, bu nedenle seçenek değerleri asla bir kabuktan geçmez. Bir dize veya satır dizisi içeren `script`, `bash -lc` altında çalışır. `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` ve `{url.<role>}` gibi yer tutucular yalnızca argv içinde genişletilir. Kabuk komutları aynı değerleri `$CC_ENV_PORT_WEB` gibi `CC_ENV_*` değişkenlerinden okur.
+
+Her komut ve alan terminali ayrıca `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` ve PR alanlarında `CC_PR_NUMBER` ile `CC_PR_IS_FORK` alır. Bir compose bileşeniyle `COMPOSE_PROJECT_NAME` ve `COMPOSE_FILE` de gelir; böylece bir görevdeki `docker compose exec` doğru projeye ulaşır.
+
+## Roller ve çalışma dizini
+
+Tanım, **rolleri** çalışma alanı depolarına bağlar; böylece bir yığın birden çok depoyu kapsayabilir:
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`: bir alan en az bir çapa rolü içeriyorsa ortamı başlatabilir. İki tanım eşleşirse başlatan kişi seçer.
+- `required`: yığın bu depo olmadan çalışamaz.
+- `whenMissing`: alanda rol eksik olduğunda ne olacağı. `addToSpace` depoyu varsayılan dalında ekler ve `required` rollerin varsayılanıdır. `useSource` kayıtlı kopyanızı aktarır; bunu salt okunur kabul etmelisiniz. `skip` değişkeni boş bırakır ve diğer durumlarda varsayılandır.
+- Başlatmak için alandaki bir çapa deposunda `write` izni ve bağlı diğer tüm depolarda okuma erişimi gerekir.
+
+Bir komut, `repos` içinde alanın sahip olduğu ilk rolde çalışır; bu yüzden tek depolu bir tanım bundan hiç söz etmez. Her bileşen bunu `"cwd": { "role": "e2e", "path": "packages/ui" }` ile değiştirebilir. Her iki alan da isteğe bağlıdır.
+
+## Bağlantı noktaları ve URL'ler
+
+Control Center, bir şey başlamadan önce ana makine bağlantı noktalarını tüm ana makine için ortak bir aralıktan atar (varsayılan olarak 42000-49999, 32'lik bloklar halinde). Bir bağlantı noktası ortamın ömrü boyunca aynı kalır ve compose bağlantı noktaları yalnızca `127.0.0.1` adresine bağlanır.
+
+- Compose bağlantı noktalarının bildirilmesi gerekmez. Bunları `{port.postgres.5432}` veya `CC_ENV_PORT_POSTGRES_5432` olarak okuyun.
+- Diğer bağlantı noktaları kullanıldıkları yerde `"port": "web"` veya `"ports": ["web", "hmr"]` ile bildirilir ve `{port.web}` olarak okunur. Bağlantı noktası olan bir süreç ayrıca `PORT` ve `HOST=127.0.0.1` alır.
+
+HTTP uç noktaları, tek bir loopback bağlantı noktasını dinleyen sunucu yönlendiricisinde bir URL alır:
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>`, dalın slug halidir veya bir PR alanında `pr-<n>` olur. `<project>`, `naming.project` değeridir; yoksa tanımın adıdır.
+- `*.localhost` adları loopback'e çözümlenir, bu yüzden hosts girdisi veya DNS gerekmez ve ana makine adı ortamlar arasında çerezleri ayrı tutar.
+- HTTP yanıtı veren compose bağlantı noktaları algılanır ve bileşendeki `http` bu tahminin yerini alır. Bir süreç `"endpoint": { "role": "web", "primary": true }` gerektirir; bu aynı zamanda `{url.web}` değerini kullanılabilir yapar.
+- Tarayıcıda (VM) **Browser (VM) içinde aç** seçeneğini kullanın. `https://web--fix-login--shop.localhost/` orada aynı rotaya ulaşır.
+- Etiketin tamamı 63 karakteri aşmaz, bu yüzden uzun adlar bir karma ile kısaltılır.
+- İki uç noktanın ortak üst alan adı yoktur. İkisinde tek çerez isteyen bir uygulama onları tek uç noktadan sunmalıdır.
+
+OAuth yönlendirmeleri gibi önceden kaydedilmesi gereken URL'ler için `"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` sabit bir ad kümesi sağlar.
+
+`policy`, ortamların ne zaman çalışacağına karar verir. `autoCreate` değeri `off`, `prSpaces` veya `allSpaces` olur, `idleStopMinutes` varsayılan olarak 240'tır, `followPrHead` head'i hareket ettiğinde PR ortamını eşitler ve `maxRunning` (varsayılan 6) sayesinde **Başlat** en uzun süredir kullanılmayan ortamı durdurmayı önerir.
+
+## Örnek: compose uygulaması
+
+Tek bir compose dosyasından bir web uygulaması ve Postgres; git tarafından yok sayılan bir `.env`, geçişler ve bir test görevi ile. `seedFiles`, adı verilen dosyaları kayıtlı kopyanızdan her yeni worktree'ye kopyalar.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+`healthchecks`, kendi sağlık denetimi olmayan bir servisin sonraki bileşeni bekletmesini sağlar. Bu olmadan çalışan bir kapsayıcı hazır sayılır ve geçişler hâlâ başlamakta olan bir veritabanının önüne geçebilir.
+
+## Örnek: özel CLI
+
+Kapsayıcılarını, alan adlarını ve TLS'ini kendi yöneten uydurma bir `acme` aracı. Control Center `{name}` değerini sağlar ve geri kalan her şeyi `status` çıktısından öğrenir. Bir aracın ana makine adlarını asla türetmez ve `/etc/hosts` dosyasını asla düzenlemez.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create`, `status` ve `destroy` zorunludur. Control Center, okuduğu duruma göre `create` veya `start` seçer. Her fiil argv yerine `{ "shell": "…" }` olabilir.
+- `statusMap`, aracın kendi JSON'unu JSON işaretçileriyle okur; `*` her öğeyle eşleşir. Durum kuralları sıralıdır ve ilk eşleşme kazanır. Bir koşul `equals` ile `path` ya da `where` ile `any` veya `none` şeklindedir.
+- `keepsDataOnStop: false` boşta durdurmayı kapatır ve **Durdur** işlemine veri kaybı uyarısı ekler. Durdurma veri kaybettiriyorsa bunu ayarlayın.
+- `routing.mode: "tool"` aracın ana makine adlarını tarayıcıya (VM) ve ajanlara bağlar. Alan adı `.test`, `.localhost` veya `.internal` ile bitmelidir ve bunun dışında bildirilen bir URL atılır.
+
+Size ait bir araç `statusMap` kullanmadan bu sayfanın sonunda açıklanan durum sözleşmesini yazdırabilir.
+
+## Örnek: pnpm monorepo
+
+Yalnızca süreçler ve görevler, kapsayıcı yok. Web uygulaması API'yi `{url.api}` üzerinden bulur.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- Her süreç, açıp okuyabileceğiniz ve içine yazabileceğiniz bir terminal sekmesidir. Sekmeyi kapatmak süreci durdurmaz.
+- `ready`, `http`, `tcp` veya `logMatch` alır. `restart`, `on-failure` (varsayılan), `always` veya `never` olur. `restartOn`, değişen bir yol eşleştiğinde süreci yeniden başlatır.
+- `options`, **Başlat** üzerinde bir forma dönüşür ve `agentDefault` bir ajanın başlattığı çalıştırmalar için geçerlidir.
+
+## Örnek: masaüstü uygulaması
+
+Derleme adımı olan bir masaüstü uygulaması. Bir uygulama neyle yapılmış olursa olsun aynı şekilde çalışır, çünkü Control Center işletim sistemi pencere düzeyinde çalışır ve uygulamada kanca ya da SDK gerektirmez.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+Bir uygulama ortamla birlikte başlamaz. Biri **Aç** düğmesine basar ve önce `prepare` çalışır. **Yeniden derle ve aç** bu ikiliyi yeniden çalıştırır. Temiz bir çıkış kapalı olarak görünür, bir çökme son günlük satırlarını gösterir ve yeniden başlatmaz, sunucunun yeniden başlaması uygulamayı asla tekrar açmaz ve boşta durdurma çalışan bir uygulamaya dokunmaz.
+
+### Masaüstü uygulaması izinleri ve sınırları
+
+- macOS'ta Control Center'a Sistem Ayarları'ndan bir kez **Ekran Kaydı** ve **Erişilebilirlik** izni verin. Sunucu ana makinesi bir grafik oturumu gerektirir: başsız bir sunucu uygulama başlatmayı reddeder.
+- İkili dosyayı doğrudan başlatın. `open -a` uygulamayı LaunchServices'e verir ve uygulama Control Center'ın izlediği süreç ağacından çıkar. `"window": { "match": { "bundleId": "…" } }` bu durumu kapsar, ancak yalnızca tek kopya çalışırken güvenlidir.
+- Pencereler bir ekranda kalır. macOS tüm ekranların dışına park edilmiş bir pencereyi yakalamaz, bu yüzden bir ajanın kullandığı uygulama sunucunun ekranında görünür. Odak gerekmez.
+- `"isolate": "home"`, `HOME`, `XDG_*` ve `CFFIXED_USER_HOME` üzerinden uygulamaya özel bir ana dizin verir; böylece iki alandan kopyalar yan yana çalışabilir. `NSUserDefaults` yalıtılmaz, bu yüzden Cocoa tercihleri ve Flutter'ın `shared_preferences` deposu kopyalar arasında paylaşılır.
+- `isolate` yalnızca başlatılan süreç için geçerlidir. `flutter run` gibi bir araç zinciri başlatıcısı gerçek ana dizine ihtiyaç duyar, bu yüzden `isolate` seçeneğini derlenmiş bir ikili dosyayla kullanın. Uygulamanın `--user-data-dir` gibi kendi ayarı varsa onu tercih edin.
+- Ajanlar pencereyi yalnızca bu ortamın süreç ağacına ulaşabilen `app_use` ile yönetir. Ajan masaüstünü değil, pencereyi görür. Ajan başlatmaları eylem ilkesinden geçer ve varsayılan olarak sorar; bir kişi denetimi elindeyken ajan girdisi durur.
+- `"input": "background"` (varsayılan) olayları sürece gönderir. `"foreground"` pencereyi etkinleştirir ve imleci devralır.
+
+## Worktree görevleri depo betiklerinin yerini alıyor
+
+`provision` ve `archive` görevleri, depo başına eski kurulum ve arşiv betiklerinin yerini alır. **Mevcut betikler otomatik olarak taşındı:** betiği olan her deponun artık kendi adını taşıyan, aynı betik metnini içeren `setup` ve `archive` görevlerine sahip bir tanımı var. **Ayarlar → Çalışma alanı → Depolar** bölümünde bir deponun satırındaki simge bunu açar. Geçmiş betik çalıştırmaları salt okunur geçmiş olarak kalır.
+
+Bu görevler ortamı değil worktree'yi izler, bu yüzden kimsenin **Başlat** düğmesine basmadığı alanlarda da çalışır:
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| Çalışır | Rolün worktree'si oluşturulduğunda, herhangi bir alanda | O worktree yok edilmeden hemen önce |
+| Hata durumunda | Hazırlama başarısız olur ve worktree yok edilir | Kaydedilir, silmeyi asla engellemez |
+| Varsayılan zaman aşımı | 5 dakika | 2 dakika |
+| Görür | `CC_WORKSPACE_PATH`, `CC_ROOT_PATH`, `CC_SPACE_*`, `CC_REPO_NAME` | Aynısı |
+
+Yığını olmayan bir deponun yalnızca görevlerini içeren bir tanıma ihtiyacı vardır. Başlatılacak bir şey olmadığından çapa rolü gerekmez:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- Henüz ortam yoktur, bu yüzden bu görevler `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` veya `enabledWhen` kullanamaz ve tanımın `env` değerini almaz.
+- Bir depo için `provision` ve `archive` görevlerini yalnızca bir tanım içerebilir. Diğerleri onu geri kalan her şey için bağlayabilir.
+- `"when": ["provision", "change"]` bir kilit dosyası değiştiğinde de yeniden kurar; kurulum betikleri bunu hiç yapmıyordu.
+- Bir görev kendi `cwd` rolünün worktree'si için çalışır, bu yüzden çok depolu bir tanım her depoyu ayrı ayrı kurabilir.
+- Test çalıştırması `CC_SCRIPT_TEST=1` ayarlar. Yeniden deneme temiz bir worktree'den başlar, bu yüzden yeniden çalıştırmaya dayanan görevler yazın.
+
+## Ajanlar
+
+Ajanlar Docker soketini asla almaz. Uygun bir tanımı olan alanda bir çalıştırma, kendi `PATH` yolunda `cc-env` alır. Alan çalıştırmadan gelir, bu yüzden bir ajan yalnızca kendi ortamında işlem yapabilir ve her komut eylem ilkesinden geçer.
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+Bir compose bileşeniyle, bir `docker` shim'i `ps`, `logs`, `exec`, `port`, `restart` ve `top` ile `docker compose` kullanımına da izin verir. Fiilden önce bayrak gelemez, `logs` çıktıyı izleyemez ve `exec` yalnızca `-T` alır. Diğer her şey 5 koduyla ve "not available in Control Center agent runs" iletisiyle çıkar.
+
+Skill'leri kendi aracını çağıran bir depo bunu sürdürebilir. Bir `cli` bileşenindeki `agentPassthrough` bloğu, ajanların hangi komutları çalıştırabileceğini bildirir:
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+`maps`, ilkesi uygulanacak işlemi adlandırır. `positionalName` o bağımsız değişkeni bu alanın ortamına zorlar, `nameFilter` JSON çıktısını ona göre süzer ve her `pathFlags` değeri çalıştırmanın worktree'lerinin içine çözümlenmelidir. Hiçbir kuralla eşleşmeyen komut 5 koduyla çıkar.
+
+Aynı işlemler araç olarak da vardır: `environment_status`, `environment_up`, `environment_down`, `environment_reset`, `environment_destroy`, `environment_restart`, `environment_exec`, `environment_logs`, `environment_run_task`, `environment_launch_app` ve `environment_stop_app`. Korumalı alandaki ajanlar bağlantı noktalarına doğrudan, ortamlarının ana makine adlarına ise çalıştırmanın proxy'si üzerinden ulaşır; bu yüzden onlara URL tahmin etmek yerine uç noktaları `environment_status` çıktısından okumalarını söyleyin.
+
+## Fork pull request'leri
+
+Bir fork PR'ının koduna güvenilmez ve ana makine yerleşiminde sunucunun işletim sistemi kullanıcısı olarak çalışır. Ne olacağına `policy.forkPrs` karar verir:
+
+| Değer | Etki | Varsayılan olduğu yer |
+| --- | --- | --- |
+| `rig` | Compose dosyası sormadan bir VM'de çalışır | Yalnızca `compose` ve `task` bileşenleri olan tanımlar |
+| `approval` | Her başlatma bir yönetici gerektirir | Diğer tüm tanımlar |
+| `deny` | Reddedilir | Hiçbiri |
+
+- `seedFiles` bir fork için asla kopyalanmaz, çünkü genellikle gizli bilgilerdir. Bunlardan birini bağlayan bir compose dosyası eksik dosyayı adıyla bildirir.
+- `provision` ve `archive` görevleri atlanır; ilke `rig` ise VM'de çalışırlar.
+- Ana makine yerleşiminde bir fork'ta `privileged`, ana makine ad alanları, Docker soketi bağlaması, `devices` ve alanın worktree'leri dışındaki bağlamalar reddedilir. Güvenilir alanlarda yalnızca uyarı verirler.
+
+## Rig yerleşimi
+
+`"placement": "rig"`, `compose` ve `task` bileşenlerini ayrılmış bir microVM içinde çalıştırır. `process`, `cli` veya `app` bileşenleri olan tanımlar uygun değildir. Compose dosyası değiştirilmeden, ana makinenin Docker soketi ve işletmeci kimlik bilgileri olmadan çalışır; ağ erişimi imajlarının ihtiyaç duyduğu kayıt defterleriyle sınırlıdır. Worktree canlı olarak bağlanır.
+
+- **arm64 konuklar.** Konuklar Apple Silicon'da arm64'tür, bu yüzden yalnızca amd64 imajlar çalışmaz.
+- **Özel kayıt defterleri reddedilir.** Konuklarda kayıt defteri kimlik bilgisi yoktur, bu yüzden bilinen genel kayıt defterleri dışındaki bir imaj VM açılmadan önce reddedilir. Genel bir kayıt defterindeki özel depo, konuk onu çektiğinde başarısız olur.
+- **16 GiB depolama.** Yığının tüm imajları ve birimleri tek bir 16 GiB diski paylaşır ve bu artırılamaz.
+- **İlk açılış yavaştır.** İmaj katmanları VM başınadır, bu yüzden ilk açılış her şeyi çeker. Durdurulmuş bir rig diskini korur.
+- **Temel imajlar okunabilir olmalıdır.** Temel imajını bir değişkenle adlandıran bir Dockerfile planlanamaz, çünkü ağ erişimi açılışta sabitlenir.
+- **Ömür.** `policy.rigTtlHours` VM'yi sonlandırır, varsayılan olarak 24 saat sonra.
+
+## Araç yazarları için durum sözleşmesi
+
+`statusMap` içermeyen bir `cli` bileşeni yerel sözleşmeyi, yani `cc-env/1` biçimini bekler. `status` fiili bu nesneyi stdout'a yazdırır:
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- `state` değeri `ready`, `starting`, `stopped`, `failed` veya `missing` olur. `missing`, `create` işlemine; `stopped` ve `failed`, `start` işlemine götürür. `missing` durumunu 0 çıkış koduyla bildirin: başarısız bir `status`, `failed` sayılır.
+- Yalnızca `state` gereklidir. Bilinmeyen alanlar yok sayılır, ayrıştırılamayan çıktı ise ham metin ayrıntı olacak şekilde bozulmuş olarak görünür.
+- URL, loopback, `*.localhost` veya `routing.domain` altında olmalıdır; aksi halde atılır.
+- `needsRecreate: true`, verileri atan **Yeniden oluştur** seçeneğini gösterir. Control Center buna göre asla kendiliğinden işlem yapmaz.
+- `list` fiili, adlardan veya `name` içeren nesnelerden oluşan bir JSON dizisi yazdırır.
+
+Çıkış kodları her fiil için geçerlidir:
+
+| Kod | Anlam |
+| --- | --- |
+| 0 | Tamam |
+| 3 | Ana makine kurulumu gerekli. **Terminalde çalıştır**, komut yazılmış ama çalıştırılmamış bir alan terminali açar, ardından **Yeniden dene** yeniden dener. Control Center asla `sudo` çalıştırmaz |
+| 4 | Kimlik doğrulama gerekli |
+| 5 | Bağımlılık kullanılamıyor |
+| Diğer | Hata |
+
+İlerleme, satırlarla ayrılmış JSON olarak stderr'e gider:
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+`step` satırları canlı bir adım listesi olarak, `note` satırları olduğu gibi gösterilir. `error` türündeki son satır yapılandırılmış bir hataya dönüşür ve `command` kopyalanmak üzere sunulur. Bu yoksa Control Center son 20 stderr satırını gösterir. JSON olmayan her şey düz günlük çıktısıdır.
+
+## İlgili
+
+- [Alanları kullanma](/tr-TR/kilavuz/nasil-yapilir/alanlar/)
+- [Bir terminalden port yönlendirme](/tr-TR/kilavuz/nasil-yapilir/port-yonlendirme/)
+- [Bir ajana test için makine verme](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/)
+- [Korumaları yapılandırma](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/)

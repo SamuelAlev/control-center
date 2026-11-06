@@ -2,7 +2,7 @@
 title: Sikkerhetskopier og gjenopprett
 description: Ta et øyeblikksbilde av installasjonen, flytt et arbeidsområde mellom maskiner, gjenopprett ett arbeidsområde eller alle, og oppbevar kopier et annet sted.
 slug: nb-NO/handbok/slik-gjor-du/sikkerhetskopier-og-gjenopprett
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Denne guiden dekker de fem tingene folk faktisk gjør med sikkerhetskopier: tar én, henter
@@ -16,7 +16,7 @@ Alt her ligger under **Innstillinger → Server → Sikkerhetskopi og gjenoppret
 
 - En **full klient** — skrivebords- eller nettappen. En telefon som er paret, kan ikke utløse noe av dette, og det er med vilje.
 - Å ta, liste opp, laste ned eller slette et **installasjonsøyeblikksbilde**: **eieren** av installasjonen.
-- For handlinger per arbeidsområde: **admin** i det arbeidsområdet for å eksportere, **eier** for å importere eller slette det.
+- For handlinger per arbeidsområde: **admin** i det arbeidsområdet for å eksportere det eller for å liste og laste ned de planlagte sikkerhetskopiene, **eier** for å importere eller slette det eller for å slette en av sikkerhetskopiene.
 - For ned- og opplastinger: en paret fullklient, enten på en direkte eller en relébasert tilkobling. Begge veier frakter filbytene gjennom den samme autentiserte, ende-til-ende-krypterte ressurskanalen; reléet kan ikke lese dem.
 
 :::caution[Installasjonsøyeblikksbilder er manuelle]
@@ -87,12 +87,36 @@ Sikkerhetskopier av arbeidsområder ligger på serveren under
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Oppbevaringsnoden
 sletter bare gamle sikkerhetskopier for dette arbeidsområdet; den sletter aldri
 installasjonsøyeblikksbilder eller sikkerhetskopier for andre arbeidsområder. Disse filene
-er bare databasen. For oppbevaring utenfor maskinen kopierer du dem uavhengig.
+er bare databasen. For oppbevaring utenfor maskinen laster du dem ned eller kopierer dem
+uavhengig.
 
-Disse sikkerhetskopiene er atskilt fra listen **Installasjonsøyeblikksbilder**. For å
-gjenopprette én bruker du **Arbeidsområdedata → Importer** med sikkerhetskopiens
-`workspace.db`-sti på serversiden. Import erstatter arbeidsområdets gjeldende database, så
-eksporter den først hvis du kan komme til å angre gjenopprettingen.
+## Finn og gjenopprett en planlagt sikkerhetskopi
+
+**Planlagte sikkerhetskopier** ligger mellom **Installasjonsøyeblikksbilder** og
+**Arbeidsområdedata**, med én rad per arbeidsområde: når den siste sikkerhetskopien kjørte,
+hvor mange som er beholdt, og hvor mye plass de tar. Et arbeidsområde der pipelinen ikke
+har produsert noe ennå, viser **Ingen sikkerhetskopier ennå**. Et arbeidsområde du ikke er
+admin i, sier det i raden i stedet for å liste sikkerhetskopiene.
+
+Utvid en rad for å se hver sikkerhetskopi, med den nyeste først:
+
+- **Gjenopprett** erstatter arbeidsområdets gjeldende database med denne sikkerhetskopien. Eksporter arbeidsområdet først hvis du kan komme til å angre det. Krever **eier**.
+- **Last ned** lagrer filen på maskinen du bruker. Sikkerhetskopien blir liggende på serveren.
+- **Kopier sti** kopierer plasseringen på serveren.
+- **Slett** fjerner denne sikkerhetskopien permanent når du har skrevet inn navnet på arbeidsområdet. Krever **eier**.
+
+### Sikkerhetskopier av et slettet arbeidsområde
+
+Når du sletter et arbeidsområde, blir de planlagte sikkerhetskopiene liggende på serveren,
+og fordi planen stopper sammen med det, stopper også oppbevaringen: de blir liggende til
+noen fjerner dem. Installasjonens **eier** ser dem i den samme listen, merket
+**Arbeidsområdet er slettet**, og kan laste dem ned eller slette dem der. Ingen andre ser
+de radene.
+
+De har ingen **Gjenopprett**, siden det ikke finnes noe arbeidsområde å gjenopprette til.
+For å få en tilbake laster du den ned, oppretter et arbeidsområde og laster opp filen som
+beskrevet i
+[Flytt et arbeidsområde til en annen installasjon](#flytt-et-arbeidsområde-til-en-annen-installasjon).
 
 ## Slett et installasjonsøyeblikksbilde
 
@@ -108,13 +132,16 @@ sitter ved, bruker du **Last ned**-knappene:
 
 - Ved siden av hvert **arbeidsområde** under **Arbeidsområdedata** → **Last ned**, for én `.db`-fil.
 - Ved siden av hvert **øyeblikksbilde** under **Installasjonsøyeblikksbilder** → **Last ned**, for hele øyeblikksbildet som en `.zip`.
+- Ved siden av hver sikkerhetskopi under **Planlagte sikkerhetskopier** → **Last ned**, for `.db`-filen til den sikkerhetskopien.
 
 På skrivebordet velger du hvor filen havner, og varselet oppgir den; på nett går den til
-nettleserens nedlastinger. Uansett rapporterer begge framdrift i bytes, fordi dette er de
-to nyttelastene som kan bli flere gigabyte.
+nettleserens nedlastinger. Uansett rapporterer alle tre framdrift i bytes, fordi disse
+nyttelastene kan bli flere gigabyte.
 
-Begge lager en fersk kopi i det du trykker på knappen, strømmer den og sletter serverens
-kopi etterpå — en nedlasting er ikke «hent filen eksportknappen lagde tidligere».
+Nedlastingene av arbeidsområder og øyeblikksbilder lager en fersk kopi i det du trykker på
+knappen, strømmer den og sletter serverens kopi etterpå — en nedlasting er ikke «hent filen
+eksportknappen lagde tidligere». En planlagt sikkerhetskopi er unntaket: du får den lagrede
+filen, og den blir liggende på serveren.
 
 Å pakke ut et arkiv med et øyeblikksbilde gjenskaper oppsettet nøyaktig, og det er det som
 gjør gjenopprettingen til en tilbakekopiering.

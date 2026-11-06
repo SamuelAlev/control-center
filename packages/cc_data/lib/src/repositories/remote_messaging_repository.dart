@@ -2,6 +2,7 @@ import 'package:cc_data/cc_data.dart' show RpcMessagingRepository;
 import 'package:cc_data/src/repositories/rpc_messaging_repository.dart'
     show RpcMessagingRepository;
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/ports/space_provisioning_log_port.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
@@ -469,4 +470,22 @@ class RemoteMessagingRepository {
         'workspace_id': workspaceId,
         'space_id': spaceId,
       });
+
+  /// What the preparation of [spaceId] in [workspaceId] printed, then each line
+  /// as it arrives. Attaches and reads only. An event stream: a reconnect
+  /// replays the log, and a repeated `seq` is the same line, possibly rewritten.
+  Stream<SpaceProvisioningLogLine> watchSpaceProvisioningLog(
+    String workspaceId,
+    String spaceId,
+  ) => _client
+      .subscribeEvents('messaging.watchSpaceProvisioningLog', {
+        'workspace_id': workspaceId,
+        'space_id': spaceId,
+      })
+      .map(
+        (data) => SpaceProvisioningLogLine(
+          seq: (data['seq'] as num).toInt(),
+          text: (data['line'] as String?) ?? '',
+        ),
+      );
 }

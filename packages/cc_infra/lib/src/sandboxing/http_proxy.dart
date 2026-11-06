@@ -32,6 +32,14 @@ class SandboxHttpProxy {
   NetworkConfig _network = const NetworkConfig();
   String? _parentProxy;
 
+  /// Maps a hostname this run may reach to a loopback `host:port`.
+  ///
+  /// Read per request, because a tool only reports its hostnames once it is up,
+  /// which can be after the run started. Scoped to this proxy's session, so a
+  /// run can reach only its own space's environment even though the router's
+  /// port is shared.
+  Future<String?> Function(String host)? _environmentHost;
+
   /// One long-lived upstream client for the whole proxy.
   ///
   /// A fresh `HttpClient()` per request, closed with `force: true` right after,
@@ -57,9 +65,14 @@ class SandboxHttpProxy {
 
   /// Updates the active filtering rules. Affects only requests started after
   /// the call returns.
-  void updateConfig({required NetworkConfig network, String? parentProxy}) {
+  void updateConfig({
+    required NetworkConfig network,
+    String? parentProxy,
+    Future<String?> Function(String host)? environmentHost,
+  }) {
     _network = network;
     _parentProxy = parentProxy;
+    _environmentHost = environmentHost;
   }
 
   /// Closes the listener, the upstream connection pool and any in-flight
@@ -89,15 +102,26 @@ class SandboxHttpProxy {
     }
     final host = parts[0];
     final port = int.tryParse(parts[1]) ?? 443;
+    final pinned = await _pinFor(host);
+    if (pinned != null) {
+      // A tunnel is opaque: once it is open the client can send any Host or
+      // SNI, and a shared listener behind the pin would serve another space's
+      // environment. Pins carry plain HTTP only, where the Host is checked.
+      await _denyAndClose(request, 'tunnels to $host are not allowed');
+      return;
+    }
     if (!_isAllowed(host)) {
       await _denyAndClose(request, 'host $host not allowed');
       return;
     }
     final socket = await request.response.detachSocket(writeHeaders: false);
     try {
-      final Socket upstream = _parentProxy != null
-          ? await _connectThroughParent(host, port)
-          : await Socket.connect(host, port);
+      final Socket upstream;
+      if (_parentProxy != null) {
+        upstream = await _connectThroughParent(host, port);
+      } else {
+        upstream = await Socket.connect(host, port);
+      }
       socket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
       await socket.flush();
       _pipeBidirectional(socket, upstream);
@@ -115,6 +139,11 @@ class SandboxHttpProxy {
   Future<void> _handleHttp(HttpRequest request) async {
     final uri = request.uri;
     final host = uri.host;
+    final pinned = host.isEmpty ? null : await _pinFor(host);
+    if (pinned != null) {
+      await _handlePinnedHttp(request, pinned);
+      return;
+    }
     if (host.isEmpty || !_isAllowed(host)) {
       request.response.statusCode = HttpStatus.forbidden;
       request.response.headers.contentType = ContentType.text;
@@ -149,6 +178,74 @@ class SandboxHttpProxy {
       request.response.write('Bad gateway: $e');
       await request.response.close();
     }
+  }
+
+  /// Forwards a plain request to a pinned environment host, keeping the
+  /// original `Host` so the router can route it.
+  Future<void> _handlePinnedHttp(
+    HttpRequest request,
+    ({String host, int port}) pinned,
+  ) async {
+    final uri = request.uri;
+    final target = uri.replace(
+      scheme: 'http',
+      host: pinned.host,
+      port: pinned.port,
+    );
+    try {
+      final upstream = await _upstreamClient.openUrl(request.method, target);
+      upstream.followRedirects = false;
+      request.headers.forEach((name, values) {
+        if (_isHopByHop(name) || name.toLowerCase() == 'host') {
+          return;
+        }
+        for (final v in values) {
+          upstream.headers.add(name, v);
+        }
+      });
+      upstream.headers.set(
+        HttpHeaders.hostHeader,
+        uri.hasPort ? '${uri.host}:${uri.port}' : uri.host,
+      );
+      await upstream.addStream(request);
+      final upstreamResp = await upstream.close();
+      request.response.statusCode = upstreamResp.statusCode;
+      upstreamResp.headers.forEach((name, values) {
+        if (_isHopByHop(name)) {
+          return;
+        }
+        for (final v in values) {
+          request.response.headers.add(name, v);
+        }
+      });
+      await upstreamResp.pipe(request.response);
+    } catch (e) {
+      request.response.statusCode = HttpStatus.badGateway;
+      request.response.write('Bad gateway: $e');
+      await request.response.close();
+    }
+  }
+
+  Future<({String host, int port})?> _pinFor(String host) async {
+    if (matchesAny(host, _network.deniedDomains)) {
+      return null;
+    }
+    final pin = await _environmentHost?.call(host.toLowerCase());
+    if (pin == null) {
+      return null;
+    }
+    final separator = pin.lastIndexOf(':');
+    final port = int.tryParse(pin.substring(separator + 1));
+    if (separator <= 0 || port == null) {
+      return null;
+    }
+    final target = pin.substring(0, separator);
+    // The resolver names loopback services only. Anything else would turn a
+    // pin into an egress bypass, so it is refused here too.
+    if (target != '127.0.0.1' && target != 'localhost') {
+      return null;
+    }
+    return (host: target, port: port);
   }
 
   Future<void> _denyAndClose(HttpRequest request, String reason) async {

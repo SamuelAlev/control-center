@@ -10,6 +10,7 @@ import 'package:cc_domain/features/messaging/domain/entities/space_stack_entry.d
 import 'package:cc_domain/features/messaging/domain/ports/space_stack_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/stack_branch_names.dart';
+import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
 import 'package:uuid/uuid.dart';
 
 /// Runs `git` in a checkout. Tests pass a stand-in; production uses [Process].
@@ -827,7 +828,7 @@ class SpaceStackService implements SpaceStackPort {
   }) async {
     final result = await Process.run(
       'git',
-      args,
+      RigWorktreeGuard.gitArgs(args, workingDirectory: workingDirectory),
       workingDirectory: workingDirectory,
       environment: {
         'GIT_TERMINAL_PROMPT': '0',

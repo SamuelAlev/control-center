@@ -2,7 +2,7 @@
 title: Cadangkan dan pulihkan
 description: Ambil snapshot instalasi, pindahkan ruang kerja antar mesin, pulihkan satu ruang kerja atau semuanya, dan simpan salinannya di tempat lain.
 slug: id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Panduan ini membahas lima hal yang sebenarnya dilakukan orang dengan cadangan: membuatnya,
@@ -16,7 +16,7 @@ Semua yang ada di sini berada di **Pengaturan → Server → Cadangan & pemuliha
 
 - **Klien penuh** — aplikasi desktop atau web. Ponsel yang dipasangkan tidak bisa memicu satu pun dari tindakan ini, memang begitu desainnya.
 - Untuk membuat, menampilkan daftar, mengunduh, atau menghapus **snapshot instalasi**: **pemilik** instalasi.
-- Untuk tindakan per ruang kerja: **admin** ruang kerja itu untuk mengekspor, **pemilik** untuk mengimpor atau menghapusnya.
+- Untuk tindakan per ruang kerja: **admin** ruang kerja itu untuk mengekspornya atau untuk menampilkan daftar dan mengunduh cadangan terjadwalnya, **pemilik** untuk mengimpor atau menghapusnya atau untuk menghapus salah satu cadangannya.
 - Untuk pengunduhan dan pengunggahan: klien penuh yang dipasangkan, baik pada koneksi langsung maupun melalui relay dengan perantara. Kedua jalur membawa byte file melalui terowongan sumber daya terautentikasi dan terenkripsi ujung ke ujung yang sama; relay tidak dapat membacanya.
 
 ::::caution[Snapshot instalasi bersifat manual]
@@ -83,12 +83,35 @@ Cadangan ruang kerja berada di server di bawah
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Node retensi
 hanya menghapus cadangan lama untuk ruang kerja ini; node itu tidak pernah menghapus
 snapshot instalasi atau cadangan ruang kerja lain. File-file ini hanya berisi basis
-data. Untuk retensi di luar mesin, salinlah secara terpisah.
+data. Untuk retensi di luar mesin, unduh atau salinlah secara terpisah.
 
-Cadangan ini terpisah dari daftar **Snapshot instalasi**. Untuk memulihkannya,
-gunakan **Data ruang kerja → Impor** dengan path `workspace.db` cadangan di sisi
-server. Impor menggantikan basis data ruang kerja tersebut saat ini, jadi ekspor dulu
-jika Anda mungkin perlu membatalkan pemulihan.
+## Menemukan dan memulihkan cadangan terjadwal
+
+**Cadangan terjadwal** berada di antara **Snapshot instalasi** dan **Data ruang kerja**,
+dengan satu baris per ruang kerja: kapan cadangan terakhirnya berjalan, berapa banyak yang
+disimpan, dan ruang yang dipakainya. Ruang kerja yang pipeline-nya belum menghasilkan apa
+pun menampilkan **Belum ada cadangan**. Jika Anda bukan admin suatu ruang kerja, barisnya
+menyatakan hal itu alih-alih menampilkan daftar cadangannya.
+
+Bentangkan sebuah baris untuk melihat setiap cadangan, dari yang terbaru:
+
+- **Pulihkan** mengganti basis data ruang kerja saat ini dengan cadangan ini. Ekspor ruang kerja dulu jika Anda mungkin perlu membatalkannya. Memerlukan **pemilik**.
+- **Unduh** menyimpan file di mesin yang sedang Anda gunakan. Cadangan tetap ada di server.
+- **Salin jalur** menyalin lokasinya di server.
+- **Hapus** menghapus cadangan ini secara permanen, setelah Anda mengetik nama ruang kerja. Memerlukan **pemilik**.
+
+### Cadangan ruang kerja yang dihapus
+
+Menghapus ruang kerja membiarkan cadangan terjadwalnya tetap ada di server, dan karena
+jadwalnya ikut berhenti, retensi juga berhenti: cadangan itu tetap ada sampai seseorang
+menghapusnya. **Pemilik** instalasi melihatnya di daftar yang sama, ditandai
+**Ruang kerja dihapus**, dan dapat mengunduh atau menghapusnya di sana. Tidak ada orang lain
+yang melihat baris tersebut.
+
+Cadangan itu tidak memiliki **Pulihkan**, karena tidak ada ruang kerja untuk tujuan
+pemulihan. Untuk mengembalikannya, unduh cadangan itu, buat ruang kerja, lalu unggah
+filenya seperti dijelaskan di
+[Memindahkan ruang kerja ke instalasi lain](#memindahkan-ruang-kerja-ke-instalasi-lain).
 
 ## Menghapus snapshot instalasi
 
@@ -105,14 +128,16 @@ itu bukan mesin yang Anda gunakan, gunakan tombol **Unduh**:
 
 - Di samping setiap **ruang kerja** di bawah **Data ruang kerja** → **Unduh**, untuk satu file `.db`.
 - Di samping setiap **snapshot** di bawah **Snapshot instalasi** → **Unduh**, untuk seluruh snapshot sebagai `.zip`.
+- Di samping setiap cadangan di bawah **Cadangan terjadwal** → **Unduh**, untuk file `.db` cadangan itu.
 
 Di desktop Anda memilih lokasi file disimpan dan notifikasi menyebutkannya; di web file
-masuk ke unduhan browser. Dengan cara apa pun, keduanya melaporkan kemajuan dalam satuan
-byte, karena inilah dua muatan yang bisa mencapai gigabyte.
+masuk ke unduhan browser. Dengan cara apa pun, ketiganya melaporkan kemajuan dalam satuan
+byte, karena muatan ini bisa mencapai gigabyte.
 
-Keduanya membuat salinan baru pada saat Anda menekan tombol, mengalirkannya, lalu
-menghapus salinan di server setelahnya — unduhan bukan "mengambil file yang tadi dibuat
-tombol ekspor".
+Unduhan ruang kerja dan snapshot membuat salinan baru pada saat Anda menekan tombol,
+mengalirkannya, lalu menghapus salinan di server setelahnya — unduhan bukan "mengambil
+file yang tadi dibuat tombol ekspor". Cadangan terjadwal adalah pengecualian: Anda
+mendapatkan file yang tersimpan, dan file itu tetap ada di server.
 
 Mengekstrak arsip snapshot mereproduksi tata letak snapshot dengan persis, itulah yang
 membuat pemulihannya sekadar menyalin kembali.

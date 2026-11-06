@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/entities/git_repo_info.dart';
 import 'package:cc_domain/features/sandboxing/domain/network_baseline.dart';
 import 'package:cc_infra/src/rigs/rig_exec_defaults.dart';
+import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
 import 'package:test/test.dart';
 
 void main() {
@@ -40,6 +41,35 @@ void main() {
       expect(await detectWorktreeForge('/nonexistent/path/xyz'), isNull);
       expect(await detectWorktreeForge(''), isNull);
     });
+
+    test(
+      'a tampered quarantine resolves to null, and git never runs',
+      () async {
+        final dir = await Directory.systemTemp.createTemp('cc-rig-forge-');
+        RigWorktreeGuard.debugReset();
+        addTearDown(() async {
+          RigWorktreeGuard.forceRelease(dir.path);
+          RigWorktreeGuard.debugReset();
+          await dir.delete(recursive: true);
+        });
+        await Process.run('git', ['-C', dir.path, 'init', '-q']);
+        await Process.run('git', [
+          '-C',
+          dir.path,
+          'remote',
+          'add',
+          'origin',
+          'https://github.com/acme/widget.git',
+        ]);
+        RigWorktreeGuard.quarantine(dir.path);
+        expect(await detectWorktreeForge(dir.path), isNotNull);
+        File('${dir.path}/.git/config').writeAsStringSync(
+          '[alias]\n\tplanted = !true\n',
+          mode: FileMode.append,
+        );
+        expect(await detectWorktreeForge(dir.path), isNull);
+      },
+    );
 
     test('reads the origin remote of a real checkout', () async {
       final dir = await Directory.systemTemp.createTemp('cc-rig-forge-');

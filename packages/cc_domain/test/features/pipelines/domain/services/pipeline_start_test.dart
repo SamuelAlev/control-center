@@ -73,6 +73,51 @@ void main() {
     });
   });
 
+  group('pipelineHasSharedTriggerEntry', () {
+    final manual = _row(
+      id: 't-manual',
+      eventType: PipelineTrigger.manualEventType,
+    );
+
+    test('is true for the seeded shared entry', () {
+      final def = _def([
+        _step(id: 'trigger', kind: StepKind.trigger),
+        _step(id: 'end', kind: StepKind.terminal),
+      ]);
+      expect(pipelineHasSharedTriggerEntry(def, [manual]), isTrue);
+    });
+
+    test('is false once the entry is 1:1 with its rows', () {
+      final def = _def([
+        _step(id: 't-manual', kind: StepKind.trigger),
+        _step(id: 'end', kind: StepKind.terminal),
+      ]);
+      expect(pipelineHasSharedTriggerEntry(def, [manual]), isFalse);
+    });
+
+    test('is false when a row owns the trigger id', () {
+      final def = _def([
+        _step(id: 'trigger', kind: StepKind.trigger),
+        _step(id: 'end', kind: StepKind.terminal),
+      ]);
+      expect(
+        pipelineHasSharedTriggerEntry(def, [
+          _row(id: 'trigger', eventType: PipelineTrigger.manualEventType),
+        ]),
+        isFalse,
+      );
+    });
+
+    test('is false for a work step named trigger', () {
+      final def = _def([
+        _step(id: 't-manual', kind: StepKind.trigger),
+        _step(id: 'trigger', kind: StepKind.listen),
+        _step(id: 'end', kind: StepKind.terminal),
+      ]);
+      expect(pipelineHasSharedTriggerEntry(def, [manual]), isFalse);
+    });
+  });
+
   group('syncPipelineTriggerSteps', () {
     test('expands a shared trigger entry onto every start (OR)', () {
       final def = _def([

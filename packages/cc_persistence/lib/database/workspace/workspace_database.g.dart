@@ -94,28 +94,6 @@ class $ReposTableTable extends ReposTable
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
-  static const VerificationMeta _setupScriptMeta = const VerificationMeta(
-    'setupScript',
-  );
-  @override
-  late final GeneratedColumn<String> setupScript = GeneratedColumn<String>(
-    'setup_script',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _archiveScriptMeta = const VerificationMeta(
-    'archiveScript',
-  );
-  @override
-  late final GeneratedColumn<String> archiveScript = GeneratedColumn<String>(
-    'archive_script',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -150,8 +128,6 @@ class $ReposTableTable extends ReposTable
     remoteName,
     position,
     linkedAt,
-    setupScript,
-    archiveScript,
     createdAt,
     updatedAt,
   ];
@@ -221,24 +197,6 @@ class $ReposTableTable extends ReposTable
         linkedAt.isAcceptableOrUnknown(data['linked_at']!, _linkedAtMeta),
       );
     }
-    if (data.containsKey('setup_script')) {
-      context.handle(
-        _setupScriptMeta,
-        setupScript.isAcceptableOrUnknown(
-          data['setup_script']!,
-          _setupScriptMeta,
-        ),
-      );
-    }
-    if (data.containsKey('archive_script')) {
-      context.handle(
-        _archiveScriptMeta,
-        archiveScript.isAcceptableOrUnknown(
-          data['archive_script']!,
-          _archiveScriptMeta,
-        ),
-      );
-    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -292,14 +250,6 @@ class $ReposTableTable extends ReposTable
         DriftSqlType.dateTime,
         data['${effectivePrefix}linked_at'],
       )!,
-      setupScript: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}setup_script'],
-      ),
-      archiveScript: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}archive_script'],
-      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -349,22 +299,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
   /// When the repo was added to this workspace (the ordering tiebreak).
   final DateTime linkedAt;
 
-  /// Per-repo lifecycle SETUP script body, or null when unset.
-  ///
-  /// Server-executed shell (run via `bash -lc` in a space's worktree of this
-  /// repo, right after the worktree is provisioned). Deliberately NOT part of
-  /// the `Repo` domain entity/DTO: scripts are code the server runs, so they
-  /// travel on their own admin-gated op (`repos.setScripts`) instead of the
-  /// member-level `repos.upsert`. Whitespace-only means unset.
-  final String? setupScript;
-
-  /// Per-repo lifecycle ARCHIVE script body, or null when unset.
-  ///
-  /// Runs right before a space's worktree of this repo is destroyed or
-  /// garbage-collected, best-effort (a failure is recorded but never blocks
-  /// deletion). Same security note as [setupScript].
-  final String? archiveScript;
-
   /// Creation timestamp.
   final DateTime createdAt;
 
@@ -379,8 +313,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
     required this.remoteName,
     required this.position,
     required this.linkedAt,
-    this.setupScript,
-    this.archiveScript,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -395,12 +327,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
     map['remote_name'] = Variable<String>(remoteName);
     map['position'] = Variable<int>(position);
     map['linked_at'] = Variable<DateTime>(linkedAt);
-    if (!nullToAbsent || setupScript != null) {
-      map['setup_script'] = Variable<String>(setupScript);
-    }
-    if (!nullToAbsent || archiveScript != null) {
-      map['archive_script'] = Variable<String>(archiveScript);
-    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -416,12 +342,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
       remoteName: Value(remoteName),
       position: Value(position),
       linkedAt: Value(linkedAt),
-      setupScript: setupScript == null && nullToAbsent
-          ? const Value.absent()
-          : Value(setupScript),
-      archiveScript: archiveScript == null && nullToAbsent
-          ? const Value.absent()
-          : Value(archiveScript),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -441,8 +361,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
       remoteName: serializer.fromJson<String>(json['remoteName']),
       position: serializer.fromJson<int>(json['position']),
       linkedAt: serializer.fromJson<DateTime>(json['linkedAt']),
-      setupScript: serializer.fromJson<String?>(json['setupScript']),
-      archiveScript: serializer.fromJson<String?>(json['archiveScript']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -459,8 +377,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
       'remoteName': serializer.toJson<String>(remoteName),
       'position': serializer.toJson<int>(position),
       'linkedAt': serializer.toJson<DateTime>(linkedAt),
-      'setupScript': serializer.toJson<String?>(setupScript),
-      'archiveScript': serializer.toJson<String?>(archiveScript),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -475,8 +391,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
     String? remoteName,
     int? position,
     DateTime? linkedAt,
-    Value<String?> setupScript = const Value.absent(),
-    Value<String?> archiveScript = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => ReposTableData(
@@ -488,10 +402,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
     remoteName: remoteName ?? this.remoteName,
     position: position ?? this.position,
     linkedAt: linkedAt ?? this.linkedAt,
-    setupScript: setupScript.present ? setupScript.value : this.setupScript,
-    archiveScript: archiveScript.present
-        ? archiveScript.value
-        : this.archiveScript,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -509,12 +419,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
           : this.remoteName,
       position: data.position.present ? data.position.value : this.position,
       linkedAt: data.linkedAt.present ? data.linkedAt.value : this.linkedAt,
-      setupScript: data.setupScript.present
-          ? data.setupScript.value
-          : this.setupScript,
-      archiveScript: data.archiveScript.present
-          ? data.archiveScript.value
-          : this.archiveScript,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -531,8 +435,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
           ..write('remoteName: $remoteName, ')
           ..write('position: $position, ')
           ..write('linkedAt: $linkedAt, ')
-          ..write('setupScript: $setupScript, ')
-          ..write('archiveScript: $archiveScript, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -549,8 +451,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
     remoteName,
     position,
     linkedAt,
-    setupScript,
-    archiveScript,
     createdAt,
     updatedAt,
   );
@@ -566,8 +466,6 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
           other.remoteName == this.remoteName &&
           other.position == this.position &&
           other.linkedAt == this.linkedAt &&
-          other.setupScript == this.setupScript &&
-          other.archiveScript == this.archiveScript &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -581,8 +479,6 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
   final Value<String> remoteName;
   final Value<int> position;
   final Value<DateTime> linkedAt;
-  final Value<String?> setupScript;
-  final Value<String?> archiveScript;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -595,8 +491,6 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
     this.remoteName = const Value.absent(),
     this.position = const Value.absent(),
     this.linkedAt = const Value.absent(),
-    this.setupScript = const Value.absent(),
-    this.archiveScript = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -610,8 +504,6 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
     this.remoteName = const Value.absent(),
     this.position = const Value.absent(),
     this.linkedAt = const Value.absent(),
-    this.setupScript = const Value.absent(),
-    this.archiveScript = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -627,8 +519,6 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
     Expression<String>? remoteName,
     Expression<int>? position,
     Expression<DateTime>? linkedAt,
-    Expression<String>? setupScript,
-    Expression<String>? archiveScript,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -642,8 +532,6 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
       if (remoteName != null) 'remote_name': remoteName,
       if (position != null) 'position': position,
       if (linkedAt != null) 'linked_at': linkedAt,
-      if (setupScript != null) 'setup_script': setupScript,
-      if (archiveScript != null) 'archive_script': archiveScript,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -659,8 +547,6 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
     Value<String>? remoteName,
     Value<int>? position,
     Value<DateTime>? linkedAt,
-    Value<String?>? setupScript,
-    Value<String?>? archiveScript,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -674,8 +560,6 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
       remoteName: remoteName ?? this.remoteName,
       position: position ?? this.position,
       linkedAt: linkedAt ?? this.linkedAt,
-      setupScript: setupScript ?? this.setupScript,
-      archiveScript: archiveScript ?? this.archiveScript,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -709,12 +593,6 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
     if (linkedAt.present) {
       map['linked_at'] = Variable<DateTime>(linkedAt.value);
     }
-    if (setupScript.present) {
-      map['setup_script'] = Variable<String>(setupScript.value);
-    }
-    if (archiveScript.present) {
-      map['archive_script'] = Variable<String>(archiveScript.value);
-    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -738,8 +616,6 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
           ..write('remoteName: $remoteName, ')
           ..write('position: $position, ')
           ..write('linkedAt: $linkedAt, ')
-          ..write('setupScript: $setupScript, ')
-          ..write('archiveScript: $archiveScript, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -10456,18 +10332,43 @@ class $CatalogFilesTableTable extends CatalogFilesTable
 
 class CatalogFilesTableData extends DataClass
     implements Insertable<CatalogFilesTableData> {
+  /// Opaque catalog identity; identical bytes can have distinct rows.
   final String id;
+
+  /// Workspace that owns this logical file.
   final String workspaceId;
+
+  /// User who uploaded the file, if it came from an upload.
   final String? uploaderUserId;
+
+  /// Display name supplied for the catalog entry.
   final String name;
+
+  /// Creator identity attached to the catalog entry, when known.
   final String? creatorId;
+
+  /// Storage path or blob reference associated with this logical file.
   final String path;
+
+  /// MIME media type of the stored bytes.
   final String mediaType;
+
+  /// Size of the file in bytes.
   final int bytes;
+
+  /// Origin classification for this catalog entry.
   final String source;
+
+  /// Whether this catalog entry owns the underlying stored bytes.
   final bool ownedBytes;
+
+  /// Lifecycle state used for catalog cleanup.
   final String state;
+
+  /// Time this logical file was cataloged.
   final DateTime createdAt;
+
+  /// Time the catalog metadata last changed.
   final DateTime updatedAt;
   const CatalogFilesTableData({
     required this.id,
@@ -65691,11 +65592,22 @@ class $SkillEvalCampaignsTableTable extends SkillEvalCampaignsTable
 
 class SkillEvalCampaignsTableData extends DataClass
     implements Insertable<SkillEvalCampaignsTableData> {
+  /// Server-assigned campaign identifier.
   final String id;
+
+  /// Workspace that owns this campaign.
   final String workspaceId;
+
+  /// Stable skill identity indexed for campaign history.
   final String skillKey;
+
+  /// Campaign lifecycle state indexed for active campaign queries.
   final String status;
+
+  /// Campaign creation time used for history ordering.
   final DateTime createdAt;
+
+  /// Canonical serialized campaign including configuration and results.
   final String payloadJson;
   const SkillEvalCampaignsTableData({
     required this.id,
@@ -66097,10 +66009,19 @@ class $SkillEvalAttemptsTableTable extends SkillEvalAttemptsTable
 
 class SkillEvalAttemptsTableData extends DataClass
     implements Insertable<SkillEvalAttemptsTableData> {
+  /// Server-assigned attempt identifier.
   final String id;
+
+  /// Workspace that owns this attempt.
   final String workspaceId;
+
+  /// Parent campaign; the foreign key prevents orphaned attempts.
   final String campaignId;
+
+  /// Campaign-wide attempt order used for result listing.
   final int ordinal;
+
+  /// Canonical serialized attempt and redacted evidence.
   final String payloadJson;
   const SkillEvalAttemptsTableData({
     required this.id,
@@ -66463,9 +66384,16 @@ class $SkillEvalPoliciesTableTable extends SkillEvalPoliciesTable
 
 class SkillEvalPoliciesTableData extends DataClass
     implements Insertable<SkillEvalPoliciesTableData> {
+  /// Workspace that opted into this skill's evaluations.
   final String workspaceId;
+
+  /// Stable skill identity governed by the policy.
   final String skillKey;
+
+  /// Whether automatic evaluation is enabled for the skill.
   final bool enabled;
+
+  /// Canonical serialized policy configuration and actor.
   final String payloadJson;
   const SkillEvalPoliciesTableData({
     required this.workspaceId,
@@ -77762,746 +77690,6 @@ class SkillSourcesTableCompanion
   }
 }
 
-class $RepoScriptRunsTableTable extends RepoScriptRunsTable
-    with TableInfo<$RepoScriptRunsTableTable, RepoScriptRunsTableData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $RepoScriptRunsTableTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
-    'workspaceId',
-  );
-  @override
-  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
-    'workspace_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
-    'spaceId',
-  );
-  @override
-  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
-    'space_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _repoIdMeta = const VerificationMeta('repoId');
-  @override
-  late final GeneratedColumn<String> repoId = GeneratedColumn<String>(
-    'repo_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _repoNameMeta = const VerificationMeta(
-    'repoName',
-  );
-  @override
-  late final GeneratedColumn<String> repoName = GeneratedColumn<String>(
-    'repo_name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
-  @override
-  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
-    'kind',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _statusMeta = const VerificationMeta('status');
-  @override
-  late final GeneratedColumn<String> status = GeneratedColumn<String>(
-    'status',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _startedAtMeta = const VerificationMeta(
-    'startedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
-    'started_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _completedAtMeta = const VerificationMeta(
-    'completedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
-    'completed_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _exitCodeMeta = const VerificationMeta(
-    'exitCode',
-  );
-  @override
-  late final GeneratedColumn<int> exitCode = GeneratedColumn<int>(
-    'exit_code',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _errorMeta = const VerificationMeta('error');
-  @override
-  late final GeneratedColumn<String> error = GeneratedColumn<String>(
-    'error',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _outputTextMeta = const VerificationMeta(
-    'outputText',
-  );
-  @override
-  late final GeneratedColumn<String> outputText = GeneratedColumn<String>(
-    'output_text',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    workspaceId,
-    spaceId,
-    repoId,
-    repoName,
-    kind,
-    status,
-    startedAt,
-    completedAt,
-    exitCode,
-    error,
-    outputText,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'repo_script_runs';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<RepoScriptRunsTableData> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('workspace_id')) {
-      context.handle(
-        _workspaceIdMeta,
-        workspaceId.isAcceptableOrUnknown(
-          data['workspace_id']!,
-          _workspaceIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_workspaceIdMeta);
-    }
-    if (data.containsKey('space_id')) {
-      context.handle(
-        _spaceIdMeta,
-        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_spaceIdMeta);
-    }
-    if (data.containsKey('repo_id')) {
-      context.handle(
-        _repoIdMeta,
-        repoId.isAcceptableOrUnknown(data['repo_id']!, _repoIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_repoIdMeta);
-    }
-    if (data.containsKey('repo_name')) {
-      context.handle(
-        _repoNameMeta,
-        repoName.isAcceptableOrUnknown(data['repo_name']!, _repoNameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_repoNameMeta);
-    }
-    if (data.containsKey('kind')) {
-      context.handle(
-        _kindMeta,
-        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_kindMeta);
-    }
-    if (data.containsKey('status')) {
-      context.handle(
-        _statusMeta,
-        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_statusMeta);
-    }
-    if (data.containsKey('started_at')) {
-      context.handle(
-        _startedAtMeta,
-        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_startedAtMeta);
-    }
-    if (data.containsKey('completed_at')) {
-      context.handle(
-        _completedAtMeta,
-        completedAt.isAcceptableOrUnknown(
-          data['completed_at']!,
-          _completedAtMeta,
-        ),
-      );
-    }
-    if (data.containsKey('exit_code')) {
-      context.handle(
-        _exitCodeMeta,
-        exitCode.isAcceptableOrUnknown(data['exit_code']!, _exitCodeMeta),
-      );
-    }
-    if (data.containsKey('error')) {
-      context.handle(
-        _errorMeta,
-        error.isAcceptableOrUnknown(data['error']!, _errorMeta),
-      );
-    }
-    if (data.containsKey('output_text')) {
-      context.handle(
-        _outputTextMeta,
-        outputText.isAcceptableOrUnknown(data['output_text']!, _outputTextMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  RepoScriptRunsTableData map(
-    Map<String, dynamic> data, {
-    String? tablePrefix,
-  }) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return RepoScriptRunsTableData(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      workspaceId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}workspace_id'],
-      )!,
-      spaceId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}space_id'],
-      )!,
-      repoId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}repo_id'],
-      )!,
-      repoName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}repo_name'],
-      )!,
-      kind: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}kind'],
-      )!,
-      status: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}status'],
-      )!,
-      startedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}started_at'],
-      )!,
-      completedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}completed_at'],
-      ),
-      exitCode: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}exit_code'],
-      ),
-      error: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}error'],
-      ),
-      outputText: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}output_text'],
-      ),
-    );
-  }
-
-  @override
-  $RepoScriptRunsTableTable createAlias(String alias) {
-    return $RepoScriptRunsTableTable(attachedDatabase, alias);
-  }
-}
-
-class RepoScriptRunsTableData extends DataClass
-    implements Insertable<RepoScriptRunsTableData> {
-  /// Unique run identifier.
-  final String id;
-
-  /// Owning workspace (never null — the isolation boundary).
-  final String workspaceId;
-
-  /// The space whose worktree the script ran in.
-  final String spaceId;
-
-  /// The registered repo the script belongs to.
-  final String repoId;
-
-  /// Display name of the repo at run time (rows outlive repo renames).
-  final String repoName;
-
-  /// Which lifecycle moment: `setup` | `archive`.
-  final String kind;
-
-  /// Outcome: `running` | `succeeded` | `failed` | `timed_out`.
-  final String status;
-
-  /// When the script started.
-  final DateTime startedAt;
-
-  /// When the script finished, or null while running.
-  final DateTime? completedAt;
-
-  /// Process exit code (null while running or when killed by a signal).
-  final int? exitCode;
-
-  /// Short failure summary (timeout, spawn error); not the output tail.
-  final String? error;
-
-  /// Bounded captured stdout+stderr tail, interleaved.
-  final String? outputText;
-  const RepoScriptRunsTableData({
-    required this.id,
-    required this.workspaceId,
-    required this.spaceId,
-    required this.repoId,
-    required this.repoName,
-    required this.kind,
-    required this.status,
-    required this.startedAt,
-    this.completedAt,
-    this.exitCode,
-    this.error,
-    this.outputText,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['workspace_id'] = Variable<String>(workspaceId);
-    map['space_id'] = Variable<String>(spaceId);
-    map['repo_id'] = Variable<String>(repoId);
-    map['repo_name'] = Variable<String>(repoName);
-    map['kind'] = Variable<String>(kind);
-    map['status'] = Variable<String>(status);
-    map['started_at'] = Variable<DateTime>(startedAt);
-    if (!nullToAbsent || completedAt != null) {
-      map['completed_at'] = Variable<DateTime>(completedAt);
-    }
-    if (!nullToAbsent || exitCode != null) {
-      map['exit_code'] = Variable<int>(exitCode);
-    }
-    if (!nullToAbsent || error != null) {
-      map['error'] = Variable<String>(error);
-    }
-    if (!nullToAbsent || outputText != null) {
-      map['output_text'] = Variable<String>(outputText);
-    }
-    return map;
-  }
-
-  RepoScriptRunsTableCompanion toCompanion(bool nullToAbsent) {
-    return RepoScriptRunsTableCompanion(
-      id: Value(id),
-      workspaceId: Value(workspaceId),
-      spaceId: Value(spaceId),
-      repoId: Value(repoId),
-      repoName: Value(repoName),
-      kind: Value(kind),
-      status: Value(status),
-      startedAt: Value(startedAt),
-      completedAt: completedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(completedAt),
-      exitCode: exitCode == null && nullToAbsent
-          ? const Value.absent()
-          : Value(exitCode),
-      error: error == null && nullToAbsent
-          ? const Value.absent()
-          : Value(error),
-      outputText: outputText == null && nullToAbsent
-          ? const Value.absent()
-          : Value(outputText),
-    );
-  }
-
-  factory RepoScriptRunsTableData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return RepoScriptRunsTableData(
-      id: serializer.fromJson<String>(json['id']),
-      workspaceId: serializer.fromJson<String>(json['workspaceId']),
-      spaceId: serializer.fromJson<String>(json['spaceId']),
-      repoId: serializer.fromJson<String>(json['repoId']),
-      repoName: serializer.fromJson<String>(json['repoName']),
-      kind: serializer.fromJson<String>(json['kind']),
-      status: serializer.fromJson<String>(json['status']),
-      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
-      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
-      exitCode: serializer.fromJson<int?>(json['exitCode']),
-      error: serializer.fromJson<String?>(json['error']),
-      outputText: serializer.fromJson<String?>(json['outputText']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'workspaceId': serializer.toJson<String>(workspaceId),
-      'spaceId': serializer.toJson<String>(spaceId),
-      'repoId': serializer.toJson<String>(repoId),
-      'repoName': serializer.toJson<String>(repoName),
-      'kind': serializer.toJson<String>(kind),
-      'status': serializer.toJson<String>(status),
-      'startedAt': serializer.toJson<DateTime>(startedAt),
-      'completedAt': serializer.toJson<DateTime?>(completedAt),
-      'exitCode': serializer.toJson<int?>(exitCode),
-      'error': serializer.toJson<String?>(error),
-      'outputText': serializer.toJson<String?>(outputText),
-    };
-  }
-
-  RepoScriptRunsTableData copyWith({
-    String? id,
-    String? workspaceId,
-    String? spaceId,
-    String? repoId,
-    String? repoName,
-    String? kind,
-    String? status,
-    DateTime? startedAt,
-    Value<DateTime?> completedAt = const Value.absent(),
-    Value<int?> exitCode = const Value.absent(),
-    Value<String?> error = const Value.absent(),
-    Value<String?> outputText = const Value.absent(),
-  }) => RepoScriptRunsTableData(
-    id: id ?? this.id,
-    workspaceId: workspaceId ?? this.workspaceId,
-    spaceId: spaceId ?? this.spaceId,
-    repoId: repoId ?? this.repoId,
-    repoName: repoName ?? this.repoName,
-    kind: kind ?? this.kind,
-    status: status ?? this.status,
-    startedAt: startedAt ?? this.startedAt,
-    completedAt: completedAt.present ? completedAt.value : this.completedAt,
-    exitCode: exitCode.present ? exitCode.value : this.exitCode,
-    error: error.present ? error.value : this.error,
-    outputText: outputText.present ? outputText.value : this.outputText,
-  );
-  RepoScriptRunsTableData copyWithCompanion(RepoScriptRunsTableCompanion data) {
-    return RepoScriptRunsTableData(
-      id: data.id.present ? data.id.value : this.id,
-      workspaceId: data.workspaceId.present
-          ? data.workspaceId.value
-          : this.workspaceId,
-      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
-      repoId: data.repoId.present ? data.repoId.value : this.repoId,
-      repoName: data.repoName.present ? data.repoName.value : this.repoName,
-      kind: data.kind.present ? data.kind.value : this.kind,
-      status: data.status.present ? data.status.value : this.status,
-      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
-      completedAt: data.completedAt.present
-          ? data.completedAt.value
-          : this.completedAt,
-      exitCode: data.exitCode.present ? data.exitCode.value : this.exitCode,
-      error: data.error.present ? data.error.value : this.error,
-      outputText: data.outputText.present
-          ? data.outputText.value
-          : this.outputText,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('RepoScriptRunsTableData(')
-          ..write('id: $id, ')
-          ..write('workspaceId: $workspaceId, ')
-          ..write('spaceId: $spaceId, ')
-          ..write('repoId: $repoId, ')
-          ..write('repoName: $repoName, ')
-          ..write('kind: $kind, ')
-          ..write('status: $status, ')
-          ..write('startedAt: $startedAt, ')
-          ..write('completedAt: $completedAt, ')
-          ..write('exitCode: $exitCode, ')
-          ..write('error: $error, ')
-          ..write('outputText: $outputText')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    workspaceId,
-    spaceId,
-    repoId,
-    repoName,
-    kind,
-    status,
-    startedAt,
-    completedAt,
-    exitCode,
-    error,
-    outputText,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is RepoScriptRunsTableData &&
-          other.id == this.id &&
-          other.workspaceId == this.workspaceId &&
-          other.spaceId == this.spaceId &&
-          other.repoId == this.repoId &&
-          other.repoName == this.repoName &&
-          other.kind == this.kind &&
-          other.status == this.status &&
-          other.startedAt == this.startedAt &&
-          other.completedAt == this.completedAt &&
-          other.exitCode == this.exitCode &&
-          other.error == this.error &&
-          other.outputText == this.outputText);
-}
-
-class RepoScriptRunsTableCompanion
-    extends UpdateCompanion<RepoScriptRunsTableData> {
-  final Value<String> id;
-  final Value<String> workspaceId;
-  final Value<String> spaceId;
-  final Value<String> repoId;
-  final Value<String> repoName;
-  final Value<String> kind;
-  final Value<String> status;
-  final Value<DateTime> startedAt;
-  final Value<DateTime?> completedAt;
-  final Value<int?> exitCode;
-  final Value<String?> error;
-  final Value<String?> outputText;
-  final Value<int> rowid;
-  const RepoScriptRunsTableCompanion({
-    this.id = const Value.absent(),
-    this.workspaceId = const Value.absent(),
-    this.spaceId = const Value.absent(),
-    this.repoId = const Value.absent(),
-    this.repoName = const Value.absent(),
-    this.kind = const Value.absent(),
-    this.status = const Value.absent(),
-    this.startedAt = const Value.absent(),
-    this.completedAt = const Value.absent(),
-    this.exitCode = const Value.absent(),
-    this.error = const Value.absent(),
-    this.outputText = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  RepoScriptRunsTableCompanion.insert({
-    required String id,
-    required String workspaceId,
-    required String spaceId,
-    required String repoId,
-    required String repoName,
-    required String kind,
-    required String status,
-    required DateTime startedAt,
-    this.completedAt = const Value.absent(),
-    this.exitCode = const Value.absent(),
-    this.error = const Value.absent(),
-    this.outputText = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       workspaceId = Value(workspaceId),
-       spaceId = Value(spaceId),
-       repoId = Value(repoId),
-       repoName = Value(repoName),
-       kind = Value(kind),
-       status = Value(status),
-       startedAt = Value(startedAt);
-  static Insertable<RepoScriptRunsTableData> custom({
-    Expression<String>? id,
-    Expression<String>? workspaceId,
-    Expression<String>? spaceId,
-    Expression<String>? repoId,
-    Expression<String>? repoName,
-    Expression<String>? kind,
-    Expression<String>? status,
-    Expression<DateTime>? startedAt,
-    Expression<DateTime>? completedAt,
-    Expression<int>? exitCode,
-    Expression<String>? error,
-    Expression<String>? outputText,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (workspaceId != null) 'workspace_id': workspaceId,
-      if (spaceId != null) 'space_id': spaceId,
-      if (repoId != null) 'repo_id': repoId,
-      if (repoName != null) 'repo_name': repoName,
-      if (kind != null) 'kind': kind,
-      if (status != null) 'status': status,
-      if (startedAt != null) 'started_at': startedAt,
-      if (completedAt != null) 'completed_at': completedAt,
-      if (exitCode != null) 'exit_code': exitCode,
-      if (error != null) 'error': error,
-      if (outputText != null) 'output_text': outputText,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  RepoScriptRunsTableCompanion copyWith({
-    Value<String>? id,
-    Value<String>? workspaceId,
-    Value<String>? spaceId,
-    Value<String>? repoId,
-    Value<String>? repoName,
-    Value<String>? kind,
-    Value<String>? status,
-    Value<DateTime>? startedAt,
-    Value<DateTime?>? completedAt,
-    Value<int?>? exitCode,
-    Value<String?>? error,
-    Value<String?>? outputText,
-    Value<int>? rowid,
-  }) {
-    return RepoScriptRunsTableCompanion(
-      id: id ?? this.id,
-      workspaceId: workspaceId ?? this.workspaceId,
-      spaceId: spaceId ?? this.spaceId,
-      repoId: repoId ?? this.repoId,
-      repoName: repoName ?? this.repoName,
-      kind: kind ?? this.kind,
-      status: status ?? this.status,
-      startedAt: startedAt ?? this.startedAt,
-      completedAt: completedAt ?? this.completedAt,
-      exitCode: exitCode ?? this.exitCode,
-      error: error ?? this.error,
-      outputText: outputText ?? this.outputText,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (workspaceId.present) {
-      map['workspace_id'] = Variable<String>(workspaceId.value);
-    }
-    if (spaceId.present) {
-      map['space_id'] = Variable<String>(spaceId.value);
-    }
-    if (repoId.present) {
-      map['repo_id'] = Variable<String>(repoId.value);
-    }
-    if (repoName.present) {
-      map['repo_name'] = Variable<String>(repoName.value);
-    }
-    if (kind.present) {
-      map['kind'] = Variable<String>(kind.value);
-    }
-    if (status.present) {
-      map['status'] = Variable<String>(status.value);
-    }
-    if (startedAt.present) {
-      map['started_at'] = Variable<DateTime>(startedAt.value);
-    }
-    if (completedAt.present) {
-      map['completed_at'] = Variable<DateTime>(completedAt.value);
-    }
-    if (exitCode.present) {
-      map['exit_code'] = Variable<int>(exitCode.value);
-    }
-    if (error.present) {
-      map['error'] = Variable<String>(error.value);
-    }
-    if (outputText.present) {
-      map['output_text'] = Variable<String>(outputText.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('RepoScriptRunsTableCompanion(')
-          ..write('id: $id, ')
-          ..write('workspaceId: $workspaceId, ')
-          ..write('spaceId: $spaceId, ')
-          ..write('repoId: $repoId, ')
-          ..write('repoName: $repoName, ')
-          ..write('kind: $kind, ')
-          ..write('status: $status, ')
-          ..write('startedAt: $startedAt, ')
-          ..write('completedAt: $completedAt, ')
-          ..write('exitCode: $exitCode, ')
-          ..write('error: $error, ')
-          ..write('outputText: $outputText, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $RunCallUsagesTableTable extends RunCallUsagesTable
     with TableInfo<$RunCallUsagesTableTable, RunCallUsagesTableData> {
   @override
@@ -79839,6 +79027,2542 @@ class RunCallUsagesTableCompanion
   }
 }
 
+class $EnvironmentDefinitionsTableTable extends EnvironmentDefinitionsTable
+    with
+        TableInfo<
+          $EnvironmentDefinitionsTableTable,
+          EnvironmentDefinitionsTableData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EnvironmentDefinitionsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _definitionJsonMeta = const VerificationMeta(
+    'definitionJson',
+  );
+  @override
+  late final GeneratedColumn<String> definitionJson = GeneratedColumn<String>(
+    'definition_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceRepoIdMeta = const VerificationMeta(
+    'sourceRepoId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceRepoId = GeneratedColumn<String>(
+    'source_repo_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourcePathMeta = const VerificationMeta(
+    'sourcePath',
+  );
+  @override
+  late final GeneratedColumn<String> sourcePath = GeneratedColumn<String>(
+    'source_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _approvedBlobHashMeta = const VerificationMeta(
+    'approvedBlobHash',
+  );
+  @override
+  late final GeneratedColumn<String> approvedBlobHash = GeneratedColumn<String>(
+    'approved_blob_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _overridesJsonMeta = const VerificationMeta(
+    'overridesJson',
+  );
+  @override
+  late final GeneratedColumn<String> overridesJson = GeneratedColumn<String>(
+    'overrides_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    definitionJson,
+    sourceRepoId,
+    sourcePath,
+    approvedBlobHash,
+    overridesJson,
+    createdBy,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'environment_definitions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EnvironmentDefinitionsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('definition_json')) {
+      context.handle(
+        _definitionJsonMeta,
+        definitionJson.isAcceptableOrUnknown(
+          data['definition_json']!,
+          _definitionJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_definitionJsonMeta);
+    }
+    if (data.containsKey('source_repo_id')) {
+      context.handle(
+        _sourceRepoIdMeta,
+        sourceRepoId.isAcceptableOrUnknown(
+          data['source_repo_id']!,
+          _sourceRepoIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_path')) {
+      context.handle(
+        _sourcePathMeta,
+        sourcePath.isAcceptableOrUnknown(data['source_path']!, _sourcePathMeta),
+      );
+    }
+    if (data.containsKey('approved_blob_hash')) {
+      context.handle(
+        _approvedBlobHashMeta,
+        approvedBlobHash.isAcceptableOrUnknown(
+          data['approved_blob_hash']!,
+          _approvedBlobHashMeta,
+        ),
+      );
+    }
+    if (data.containsKey('overrides_json')) {
+      context.handle(
+        _overridesJsonMeta,
+        overridesJson.isAcceptableOrUnknown(
+          data['overrides_json']!,
+          _overridesJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EnvironmentDefinitionsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EnvironmentDefinitionsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      definitionJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}definition_json'],
+      )!,
+      sourceRepoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_repo_id'],
+      ),
+      sourcePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_path'],
+      ),
+      approvedBlobHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}approved_blob_hash'],
+      ),
+      overridesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}overrides_json'],
+      ),
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $EnvironmentDefinitionsTableTable createAlias(String alias) {
+    return $EnvironmentDefinitionsTableTable(attachedDatabase, alias);
+  }
+}
+
+class EnvironmentDefinitionsTableData extends DataClass
+    implements Insertable<EnvironmentDefinitionsTableData> {
+  /// Definition id.
+  final String id;
+
+  /// Display name.
+  final String name;
+
+  /// The definition as JSON text.
+  final String definitionJson;
+
+  /// The repo holding an in-repo definition, or null.
+  final String? sourceRepoId;
+
+  /// Its path in that repo.
+  final String? sourcePath;
+
+  /// The blob hash an admin approved.
+  final String? approvedBlobHash;
+
+  /// Workspace-side overrides, as JSON text.
+  final String? overridesJson;
+
+  /// Who wrote it. Null for a generated definition.
+  final String? createdBy;
+
+  /// When it was created.
+  final DateTime createdAt;
+
+  /// When it last changed.
+  final DateTime updatedAt;
+  const EnvironmentDefinitionsTableData({
+    required this.id,
+    required this.name,
+    required this.definitionJson,
+    this.sourceRepoId,
+    this.sourcePath,
+    this.approvedBlobHash,
+    this.overridesJson,
+    this.createdBy,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['definition_json'] = Variable<String>(definitionJson);
+    if (!nullToAbsent || sourceRepoId != null) {
+      map['source_repo_id'] = Variable<String>(sourceRepoId);
+    }
+    if (!nullToAbsent || sourcePath != null) {
+      map['source_path'] = Variable<String>(sourcePath);
+    }
+    if (!nullToAbsent || approvedBlobHash != null) {
+      map['approved_blob_hash'] = Variable<String>(approvedBlobHash);
+    }
+    if (!nullToAbsent || overridesJson != null) {
+      map['overrides_json'] = Variable<String>(overridesJson);
+    }
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  EnvironmentDefinitionsTableCompanion toCompanion(bool nullToAbsent) {
+    return EnvironmentDefinitionsTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      definitionJson: Value(definitionJson),
+      sourceRepoId: sourceRepoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceRepoId),
+      sourcePath: sourcePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourcePath),
+      approvedBlobHash: approvedBlobHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(approvedBlobHash),
+      overridesJson: overridesJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(overridesJson),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory EnvironmentDefinitionsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EnvironmentDefinitionsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      definitionJson: serializer.fromJson<String>(json['definitionJson']),
+      sourceRepoId: serializer.fromJson<String?>(json['sourceRepoId']),
+      sourcePath: serializer.fromJson<String?>(json['sourcePath']),
+      approvedBlobHash: serializer.fromJson<String?>(json['approvedBlobHash']),
+      overridesJson: serializer.fromJson<String?>(json['overridesJson']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'definitionJson': serializer.toJson<String>(definitionJson),
+      'sourceRepoId': serializer.toJson<String?>(sourceRepoId),
+      'sourcePath': serializer.toJson<String?>(sourcePath),
+      'approvedBlobHash': serializer.toJson<String?>(approvedBlobHash),
+      'overridesJson': serializer.toJson<String?>(overridesJson),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  EnvironmentDefinitionsTableData copyWith({
+    String? id,
+    String? name,
+    String? definitionJson,
+    Value<String?> sourceRepoId = const Value.absent(),
+    Value<String?> sourcePath = const Value.absent(),
+    Value<String?> approvedBlobHash = const Value.absent(),
+    Value<String?> overridesJson = const Value.absent(),
+    Value<String?> createdBy = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => EnvironmentDefinitionsTableData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    definitionJson: definitionJson ?? this.definitionJson,
+    sourceRepoId: sourceRepoId.present ? sourceRepoId.value : this.sourceRepoId,
+    sourcePath: sourcePath.present ? sourcePath.value : this.sourcePath,
+    approvedBlobHash: approvedBlobHash.present
+        ? approvedBlobHash.value
+        : this.approvedBlobHash,
+    overridesJson: overridesJson.present
+        ? overridesJson.value
+        : this.overridesJson,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  EnvironmentDefinitionsTableData copyWithCompanion(
+    EnvironmentDefinitionsTableCompanion data,
+  ) {
+    return EnvironmentDefinitionsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      definitionJson: data.definitionJson.present
+          ? data.definitionJson.value
+          : this.definitionJson,
+      sourceRepoId: data.sourceRepoId.present
+          ? data.sourceRepoId.value
+          : this.sourceRepoId,
+      sourcePath: data.sourcePath.present
+          ? data.sourcePath.value
+          : this.sourcePath,
+      approvedBlobHash: data.approvedBlobHash.present
+          ? data.approvedBlobHash.value
+          : this.approvedBlobHash,
+      overridesJson: data.overridesJson.present
+          ? data.overridesJson.value
+          : this.overridesJson,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EnvironmentDefinitionsTableData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('definitionJson: $definitionJson, ')
+          ..write('sourceRepoId: $sourceRepoId, ')
+          ..write('sourcePath: $sourcePath, ')
+          ..write('approvedBlobHash: $approvedBlobHash, ')
+          ..write('overridesJson: $overridesJson, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    definitionJson,
+    sourceRepoId,
+    sourcePath,
+    approvedBlobHash,
+    overridesJson,
+    createdBy,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EnvironmentDefinitionsTableData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.definitionJson == this.definitionJson &&
+          other.sourceRepoId == this.sourceRepoId &&
+          other.sourcePath == this.sourcePath &&
+          other.approvedBlobHash == this.approvedBlobHash &&
+          other.overridesJson == this.overridesJson &&
+          other.createdBy == this.createdBy &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class EnvironmentDefinitionsTableCompanion
+    extends UpdateCompanion<EnvironmentDefinitionsTableData> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> definitionJson;
+  final Value<String?> sourceRepoId;
+  final Value<String?> sourcePath;
+  final Value<String?> approvedBlobHash;
+  final Value<String?> overridesJson;
+  final Value<String?> createdBy;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const EnvironmentDefinitionsTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.definitionJson = const Value.absent(),
+    this.sourceRepoId = const Value.absent(),
+    this.sourcePath = const Value.absent(),
+    this.approvedBlobHash = const Value.absent(),
+    this.overridesJson = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EnvironmentDefinitionsTableCompanion.insert({
+    required String id,
+    required String name,
+    required String definitionJson,
+    this.sourceRepoId = const Value.absent(),
+    this.sourcePath = const Value.absent(),
+    this.approvedBlobHash = const Value.absent(),
+    this.overridesJson = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       definitionJson = Value(definitionJson),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<EnvironmentDefinitionsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? definitionJson,
+    Expression<String>? sourceRepoId,
+    Expression<String>? sourcePath,
+    Expression<String>? approvedBlobHash,
+    Expression<String>? overridesJson,
+    Expression<String>? createdBy,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (definitionJson != null) 'definition_json': definitionJson,
+      if (sourceRepoId != null) 'source_repo_id': sourceRepoId,
+      if (sourcePath != null) 'source_path': sourcePath,
+      if (approvedBlobHash != null) 'approved_blob_hash': approvedBlobHash,
+      if (overridesJson != null) 'overrides_json': overridesJson,
+      if (createdBy != null) 'created_by': createdBy,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EnvironmentDefinitionsTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? definitionJson,
+    Value<String?>? sourceRepoId,
+    Value<String?>? sourcePath,
+    Value<String?>? approvedBlobHash,
+    Value<String?>? overridesJson,
+    Value<String?>? createdBy,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return EnvironmentDefinitionsTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      definitionJson: definitionJson ?? this.definitionJson,
+      sourceRepoId: sourceRepoId ?? this.sourceRepoId,
+      sourcePath: sourcePath ?? this.sourcePath,
+      approvedBlobHash: approvedBlobHash ?? this.approvedBlobHash,
+      overridesJson: overridesJson ?? this.overridesJson,
+      createdBy: createdBy ?? this.createdBy,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (definitionJson.present) {
+      map['definition_json'] = Variable<String>(definitionJson.value);
+    }
+    if (sourceRepoId.present) {
+      map['source_repo_id'] = Variable<String>(sourceRepoId.value);
+    }
+    if (sourcePath.present) {
+      map['source_path'] = Variable<String>(sourcePath.value);
+    }
+    if (approvedBlobHash.present) {
+      map['approved_blob_hash'] = Variable<String>(approvedBlobHash.value);
+    }
+    if (overridesJson.present) {
+      map['overrides_json'] = Variable<String>(overridesJson.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EnvironmentDefinitionsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('definitionJson: $definitionJson, ')
+          ..write('sourceRepoId: $sourceRepoId, ')
+          ..write('sourcePath: $sourcePath, ')
+          ..write('approvedBlobHash: $approvedBlobHash, ')
+          ..write('overridesJson: $overridesJson, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SpaceEnvironmentsTableTable extends SpaceEnvironmentsTable
+    with TableInfo<$SpaceEnvironmentsTableTable, SpaceEnvironmentsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SpaceEnvironmentsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _definitionIdMeta = const VerificationMeta(
+    'definitionId',
+  );
+  @override
+  late final GeneratedColumn<String> definitionId = GeneratedColumn<String>(
+    'definition_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _placementMeta = const VerificationMeta(
+    'placement',
+  );
+  @override
+  late final GeneratedColumn<String> placement = GeneratedColumn<String>(
+    'placement',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('host'),
+  );
+  static const VerificationMeta _rigIdMeta = const VerificationMeta('rigId');
+  @override
+  late final GeneratedColumn<String> rigId = GeneratedColumn<String>(
+    'rig_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _portsJsonMeta = const VerificationMeta(
+    'portsJson',
+  );
+  @override
+  late final GeneratedColumn<String> portsJson = GeneratedColumn<String>(
+    'ports_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _endpointsJsonMeta = const VerificationMeta(
+    'endpointsJson',
+  );
+  @override
+  late final GeneratedColumn<String> endpointsJson = GeneratedColumn<String>(
+    'endpoints_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _componentsJsonMeta = const VerificationMeta(
+    'componentsJson',
+  );
+  @override
+  late final GeneratedColumn<String> componentsJson = GeneratedColumn<String>(
+    'components_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _optionsJsonMeta = const VerificationMeta(
+    'optionsJson',
+  );
+  @override
+  late final GeneratedColumn<String> optionsJson = GeneratedColumn<String>(
+    'options_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _warningsJsonMeta = const VerificationMeta(
+    'warningsJson',
+  );
+  @override
+  late final GeneratedColumn<String> warningsJson = GeneratedColumn<String>(
+    'warnings_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _lastErrorJsonMeta = const VerificationMeta(
+    'lastErrorJson',
+  );
+  @override
+  late final GeneratedColumn<String> lastErrorJson = GeneratedColumn<String>(
+    'last_error_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _needsRecreateMeta = const VerificationMeta(
+    'needsRecreate',
+  );
+  @override
+  late final GeneratedColumn<bool> needsRecreate = GeneratedColumn<bool>(
+    'needs_recreate',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("needs_recreate" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastUsedAtMeta = const VerificationMeta(
+    'lastUsedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastUsedAt = GeneratedColumn<DateTime>(
+    'last_used_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    spaceId,
+    definitionId,
+    name,
+    status,
+    placement,
+    rigId,
+    portsJson,
+    endpointsJson,
+    componentsJson,
+    optionsJson,
+    warningsJson,
+    lastErrorJson,
+    needsRecreate,
+    createdBy,
+    createdAt,
+    lastUsedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'space_environments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SpaceEnvironmentsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('definition_id')) {
+      context.handle(
+        _definitionIdMeta,
+        definitionId.isAcceptableOrUnknown(
+          data['definition_id']!,
+          _definitionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_definitionIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('placement')) {
+      context.handle(
+        _placementMeta,
+        placement.isAcceptableOrUnknown(data['placement']!, _placementMeta),
+      );
+    }
+    if (data.containsKey('rig_id')) {
+      context.handle(
+        _rigIdMeta,
+        rigId.isAcceptableOrUnknown(data['rig_id']!, _rigIdMeta),
+      );
+    }
+    if (data.containsKey('ports_json')) {
+      context.handle(
+        _portsJsonMeta,
+        portsJson.isAcceptableOrUnknown(data['ports_json']!, _portsJsonMeta),
+      );
+    }
+    if (data.containsKey('endpoints_json')) {
+      context.handle(
+        _endpointsJsonMeta,
+        endpointsJson.isAcceptableOrUnknown(
+          data['endpoints_json']!,
+          _endpointsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('components_json')) {
+      context.handle(
+        _componentsJsonMeta,
+        componentsJson.isAcceptableOrUnknown(
+          data['components_json']!,
+          _componentsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('options_json')) {
+      context.handle(
+        _optionsJsonMeta,
+        optionsJson.isAcceptableOrUnknown(
+          data['options_json']!,
+          _optionsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('warnings_json')) {
+      context.handle(
+        _warningsJsonMeta,
+        warningsJson.isAcceptableOrUnknown(
+          data['warnings_json']!,
+          _warningsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_error_json')) {
+      context.handle(
+        _lastErrorJsonMeta,
+        lastErrorJson.isAcceptableOrUnknown(
+          data['last_error_json']!,
+          _lastErrorJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('needs_recreate')) {
+      context.handle(
+        _needsRecreateMeta,
+        needsRecreate.isAcceptableOrUnknown(
+          data['needs_recreate']!,
+          _needsRecreateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('last_used_at')) {
+      context.handle(
+        _lastUsedAtMeta,
+        lastUsedAt.isAcceptableOrUnknown(
+          data['last_used_at']!,
+          _lastUsedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastUsedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {spaceId, definitionId},
+  ];
+  @override
+  SpaceEnvironmentsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SpaceEnvironmentsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      definitionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}definition_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      placement: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}placement'],
+      )!,
+      rigId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rig_id'],
+      ),
+      portsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ports_json'],
+      )!,
+      endpointsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}endpoints_json'],
+      )!,
+      componentsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}components_json'],
+      )!,
+      optionsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}options_json'],
+      )!,
+      warningsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}warnings_json'],
+      )!,
+      lastErrorJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error_json'],
+      ),
+      needsRecreate: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}needs_recreate'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      lastUsedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_used_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SpaceEnvironmentsTableTable createAlias(String alias) {
+    return $SpaceEnvironmentsTableTable(attachedDatabase, alias);
+  }
+}
+
+class SpaceEnvironmentsTableData extends DataClass
+    implements Insertable<SpaceEnvironmentsTableData> {
+  /// Environment id, a UUID.
+  final String id;
+
+  /// Owning space.
+  final String spaceId;
+
+  /// The definition it was started from.
+  final String definitionId;
+
+  /// Its name.
+  final String name;
+
+  /// Where it stands, as `EnvironmentStatus.wire`.
+  final String status;
+
+  /// `host` or `rig`.
+  final String placement;
+
+  /// The environment rig, at rig placement.
+  final String? rigId;
+
+  /// Port assignments, as a JSON object.
+  final String portsJson;
+
+  /// Endpoints, as a JSON array.
+  final String endpointsJson;
+
+  /// Component states in start order, as a JSON array.
+  final String componentsJson;
+
+  /// Chosen options, as a JSON object.
+  final String optionsJson;
+
+  /// Non-fatal notes, as a JSON array.
+  final String warningsJson;
+
+  /// The last failure as a JSON object, or null.
+  final String? lastErrorJson;
+
+  /// A change needs destroy and start.
+  final bool needsRecreate;
+
+  /// Who started it.
+  final String createdBy;
+
+  /// When it was created.
+  final DateTime createdAt;
+
+  /// When it last saw activity.
+  final DateTime lastUsedAt;
+  const SpaceEnvironmentsTableData({
+    required this.id,
+    required this.spaceId,
+    required this.definitionId,
+    required this.name,
+    required this.status,
+    required this.placement,
+    this.rigId,
+    required this.portsJson,
+    required this.endpointsJson,
+    required this.componentsJson,
+    required this.optionsJson,
+    required this.warningsJson,
+    this.lastErrorJson,
+    required this.needsRecreate,
+    required this.createdBy,
+    required this.createdAt,
+    required this.lastUsedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['space_id'] = Variable<String>(spaceId);
+    map['definition_id'] = Variable<String>(definitionId);
+    map['name'] = Variable<String>(name);
+    map['status'] = Variable<String>(status);
+    map['placement'] = Variable<String>(placement);
+    if (!nullToAbsent || rigId != null) {
+      map['rig_id'] = Variable<String>(rigId);
+    }
+    map['ports_json'] = Variable<String>(portsJson);
+    map['endpoints_json'] = Variable<String>(endpointsJson);
+    map['components_json'] = Variable<String>(componentsJson);
+    map['options_json'] = Variable<String>(optionsJson);
+    map['warnings_json'] = Variable<String>(warningsJson);
+    if (!nullToAbsent || lastErrorJson != null) {
+      map['last_error_json'] = Variable<String>(lastErrorJson);
+    }
+    map['needs_recreate'] = Variable<bool>(needsRecreate);
+    map['created_by'] = Variable<String>(createdBy);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['last_used_at'] = Variable<DateTime>(lastUsedAt);
+    return map;
+  }
+
+  SpaceEnvironmentsTableCompanion toCompanion(bool nullToAbsent) {
+    return SpaceEnvironmentsTableCompanion(
+      id: Value(id),
+      spaceId: Value(spaceId),
+      definitionId: Value(definitionId),
+      name: Value(name),
+      status: Value(status),
+      placement: Value(placement),
+      rigId: rigId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rigId),
+      portsJson: Value(portsJson),
+      endpointsJson: Value(endpointsJson),
+      componentsJson: Value(componentsJson),
+      optionsJson: Value(optionsJson),
+      warningsJson: Value(warningsJson),
+      lastErrorJson: lastErrorJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastErrorJson),
+      needsRecreate: Value(needsRecreate),
+      createdBy: Value(createdBy),
+      createdAt: Value(createdAt),
+      lastUsedAt: Value(lastUsedAt),
+    );
+  }
+
+  factory SpaceEnvironmentsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SpaceEnvironmentsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      definitionId: serializer.fromJson<String>(json['definitionId']),
+      name: serializer.fromJson<String>(json['name']),
+      status: serializer.fromJson<String>(json['status']),
+      placement: serializer.fromJson<String>(json['placement']),
+      rigId: serializer.fromJson<String?>(json['rigId']),
+      portsJson: serializer.fromJson<String>(json['portsJson']),
+      endpointsJson: serializer.fromJson<String>(json['endpointsJson']),
+      componentsJson: serializer.fromJson<String>(json['componentsJson']),
+      optionsJson: serializer.fromJson<String>(json['optionsJson']),
+      warningsJson: serializer.fromJson<String>(json['warningsJson']),
+      lastErrorJson: serializer.fromJson<String?>(json['lastErrorJson']),
+      needsRecreate: serializer.fromJson<bool>(json['needsRecreate']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      lastUsedAt: serializer.fromJson<DateTime>(json['lastUsedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'definitionId': serializer.toJson<String>(definitionId),
+      'name': serializer.toJson<String>(name),
+      'status': serializer.toJson<String>(status),
+      'placement': serializer.toJson<String>(placement),
+      'rigId': serializer.toJson<String?>(rigId),
+      'portsJson': serializer.toJson<String>(portsJson),
+      'endpointsJson': serializer.toJson<String>(endpointsJson),
+      'componentsJson': serializer.toJson<String>(componentsJson),
+      'optionsJson': serializer.toJson<String>(optionsJson),
+      'warningsJson': serializer.toJson<String>(warningsJson),
+      'lastErrorJson': serializer.toJson<String?>(lastErrorJson),
+      'needsRecreate': serializer.toJson<bool>(needsRecreate),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'lastUsedAt': serializer.toJson<DateTime>(lastUsedAt),
+    };
+  }
+
+  SpaceEnvironmentsTableData copyWith({
+    String? id,
+    String? spaceId,
+    String? definitionId,
+    String? name,
+    String? status,
+    String? placement,
+    Value<String?> rigId = const Value.absent(),
+    String? portsJson,
+    String? endpointsJson,
+    String? componentsJson,
+    String? optionsJson,
+    String? warningsJson,
+    Value<String?> lastErrorJson = const Value.absent(),
+    bool? needsRecreate,
+    String? createdBy,
+    DateTime? createdAt,
+    DateTime? lastUsedAt,
+  }) => SpaceEnvironmentsTableData(
+    id: id ?? this.id,
+    spaceId: spaceId ?? this.spaceId,
+    definitionId: definitionId ?? this.definitionId,
+    name: name ?? this.name,
+    status: status ?? this.status,
+    placement: placement ?? this.placement,
+    rigId: rigId.present ? rigId.value : this.rigId,
+    portsJson: portsJson ?? this.portsJson,
+    endpointsJson: endpointsJson ?? this.endpointsJson,
+    componentsJson: componentsJson ?? this.componentsJson,
+    optionsJson: optionsJson ?? this.optionsJson,
+    warningsJson: warningsJson ?? this.warningsJson,
+    lastErrorJson: lastErrorJson.present
+        ? lastErrorJson.value
+        : this.lastErrorJson,
+    needsRecreate: needsRecreate ?? this.needsRecreate,
+    createdBy: createdBy ?? this.createdBy,
+    createdAt: createdAt ?? this.createdAt,
+    lastUsedAt: lastUsedAt ?? this.lastUsedAt,
+  );
+  SpaceEnvironmentsTableData copyWithCompanion(
+    SpaceEnvironmentsTableCompanion data,
+  ) {
+    return SpaceEnvironmentsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      definitionId: data.definitionId.present
+          ? data.definitionId.value
+          : this.definitionId,
+      name: data.name.present ? data.name.value : this.name,
+      status: data.status.present ? data.status.value : this.status,
+      placement: data.placement.present ? data.placement.value : this.placement,
+      rigId: data.rigId.present ? data.rigId.value : this.rigId,
+      portsJson: data.portsJson.present ? data.portsJson.value : this.portsJson,
+      endpointsJson: data.endpointsJson.present
+          ? data.endpointsJson.value
+          : this.endpointsJson,
+      componentsJson: data.componentsJson.present
+          ? data.componentsJson.value
+          : this.componentsJson,
+      optionsJson: data.optionsJson.present
+          ? data.optionsJson.value
+          : this.optionsJson,
+      warningsJson: data.warningsJson.present
+          ? data.warningsJson.value
+          : this.warningsJson,
+      lastErrorJson: data.lastErrorJson.present
+          ? data.lastErrorJson.value
+          : this.lastErrorJson,
+      needsRecreate: data.needsRecreate.present
+          ? data.needsRecreate.value
+          : this.needsRecreate,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastUsedAt: data.lastUsedAt.present
+          ? data.lastUsedAt.value
+          : this.lastUsedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SpaceEnvironmentsTableData(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('definitionId: $definitionId, ')
+          ..write('name: $name, ')
+          ..write('status: $status, ')
+          ..write('placement: $placement, ')
+          ..write('rigId: $rigId, ')
+          ..write('portsJson: $portsJson, ')
+          ..write('endpointsJson: $endpointsJson, ')
+          ..write('componentsJson: $componentsJson, ')
+          ..write('optionsJson: $optionsJson, ')
+          ..write('warningsJson: $warningsJson, ')
+          ..write('lastErrorJson: $lastErrorJson, ')
+          ..write('needsRecreate: $needsRecreate, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastUsedAt: $lastUsedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    spaceId,
+    definitionId,
+    name,
+    status,
+    placement,
+    rigId,
+    portsJson,
+    endpointsJson,
+    componentsJson,
+    optionsJson,
+    warningsJson,
+    lastErrorJson,
+    needsRecreate,
+    createdBy,
+    createdAt,
+    lastUsedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SpaceEnvironmentsTableData &&
+          other.id == this.id &&
+          other.spaceId == this.spaceId &&
+          other.definitionId == this.definitionId &&
+          other.name == this.name &&
+          other.status == this.status &&
+          other.placement == this.placement &&
+          other.rigId == this.rigId &&
+          other.portsJson == this.portsJson &&
+          other.endpointsJson == this.endpointsJson &&
+          other.componentsJson == this.componentsJson &&
+          other.optionsJson == this.optionsJson &&
+          other.warningsJson == this.warningsJson &&
+          other.lastErrorJson == this.lastErrorJson &&
+          other.needsRecreate == this.needsRecreate &&
+          other.createdBy == this.createdBy &&
+          other.createdAt == this.createdAt &&
+          other.lastUsedAt == this.lastUsedAt);
+}
+
+class SpaceEnvironmentsTableCompanion
+    extends UpdateCompanion<SpaceEnvironmentsTableData> {
+  final Value<String> id;
+  final Value<String> spaceId;
+  final Value<String> definitionId;
+  final Value<String> name;
+  final Value<String> status;
+  final Value<String> placement;
+  final Value<String?> rigId;
+  final Value<String> portsJson;
+  final Value<String> endpointsJson;
+  final Value<String> componentsJson;
+  final Value<String> optionsJson;
+  final Value<String> warningsJson;
+  final Value<String?> lastErrorJson;
+  final Value<bool> needsRecreate;
+  final Value<String> createdBy;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> lastUsedAt;
+  final Value<int> rowid;
+  const SpaceEnvironmentsTableCompanion({
+    this.id = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.definitionId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.status = const Value.absent(),
+    this.placement = const Value.absent(),
+    this.rigId = const Value.absent(),
+    this.portsJson = const Value.absent(),
+    this.endpointsJson = const Value.absent(),
+    this.componentsJson = const Value.absent(),
+    this.optionsJson = const Value.absent(),
+    this.warningsJson = const Value.absent(),
+    this.lastErrorJson = const Value.absent(),
+    this.needsRecreate = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastUsedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SpaceEnvironmentsTableCompanion.insert({
+    required String id,
+    required String spaceId,
+    required String definitionId,
+    required String name,
+    required String status,
+    this.placement = const Value.absent(),
+    this.rigId = const Value.absent(),
+    this.portsJson = const Value.absent(),
+    this.endpointsJson = const Value.absent(),
+    this.componentsJson = const Value.absent(),
+    this.optionsJson = const Value.absent(),
+    this.warningsJson = const Value.absent(),
+    this.lastErrorJson = const Value.absent(),
+    this.needsRecreate = const Value.absent(),
+    required String createdBy,
+    required DateTime createdAt,
+    required DateTime lastUsedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       spaceId = Value(spaceId),
+       definitionId = Value(definitionId),
+       name = Value(name),
+       status = Value(status),
+       createdBy = Value(createdBy),
+       createdAt = Value(createdAt),
+       lastUsedAt = Value(lastUsedAt);
+  static Insertable<SpaceEnvironmentsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? spaceId,
+    Expression<String>? definitionId,
+    Expression<String>? name,
+    Expression<String>? status,
+    Expression<String>? placement,
+    Expression<String>? rigId,
+    Expression<String>? portsJson,
+    Expression<String>? endpointsJson,
+    Expression<String>? componentsJson,
+    Expression<String>? optionsJson,
+    Expression<String>? warningsJson,
+    Expression<String>? lastErrorJson,
+    Expression<bool>? needsRecreate,
+    Expression<String>? createdBy,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? lastUsedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (spaceId != null) 'space_id': spaceId,
+      if (definitionId != null) 'definition_id': definitionId,
+      if (name != null) 'name': name,
+      if (status != null) 'status': status,
+      if (placement != null) 'placement': placement,
+      if (rigId != null) 'rig_id': rigId,
+      if (portsJson != null) 'ports_json': portsJson,
+      if (endpointsJson != null) 'endpoints_json': endpointsJson,
+      if (componentsJson != null) 'components_json': componentsJson,
+      if (optionsJson != null) 'options_json': optionsJson,
+      if (warningsJson != null) 'warnings_json': warningsJson,
+      if (lastErrorJson != null) 'last_error_json': lastErrorJson,
+      if (needsRecreate != null) 'needs_recreate': needsRecreate,
+      if (createdBy != null) 'created_by': createdBy,
+      if (createdAt != null) 'created_at': createdAt,
+      if (lastUsedAt != null) 'last_used_at': lastUsedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SpaceEnvironmentsTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? spaceId,
+    Value<String>? definitionId,
+    Value<String>? name,
+    Value<String>? status,
+    Value<String>? placement,
+    Value<String?>? rigId,
+    Value<String>? portsJson,
+    Value<String>? endpointsJson,
+    Value<String>? componentsJson,
+    Value<String>? optionsJson,
+    Value<String>? warningsJson,
+    Value<String?>? lastErrorJson,
+    Value<bool>? needsRecreate,
+    Value<String>? createdBy,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? lastUsedAt,
+    Value<int>? rowid,
+  }) {
+    return SpaceEnvironmentsTableCompanion(
+      id: id ?? this.id,
+      spaceId: spaceId ?? this.spaceId,
+      definitionId: definitionId ?? this.definitionId,
+      name: name ?? this.name,
+      status: status ?? this.status,
+      placement: placement ?? this.placement,
+      rigId: rigId ?? this.rigId,
+      portsJson: portsJson ?? this.portsJson,
+      endpointsJson: endpointsJson ?? this.endpointsJson,
+      componentsJson: componentsJson ?? this.componentsJson,
+      optionsJson: optionsJson ?? this.optionsJson,
+      warningsJson: warningsJson ?? this.warningsJson,
+      lastErrorJson: lastErrorJson ?? this.lastErrorJson,
+      needsRecreate: needsRecreate ?? this.needsRecreate,
+      createdBy: createdBy ?? this.createdBy,
+      createdAt: createdAt ?? this.createdAt,
+      lastUsedAt: lastUsedAt ?? this.lastUsedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (definitionId.present) {
+      map['definition_id'] = Variable<String>(definitionId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (placement.present) {
+      map['placement'] = Variable<String>(placement.value);
+    }
+    if (rigId.present) {
+      map['rig_id'] = Variable<String>(rigId.value);
+    }
+    if (portsJson.present) {
+      map['ports_json'] = Variable<String>(portsJson.value);
+    }
+    if (endpointsJson.present) {
+      map['endpoints_json'] = Variable<String>(endpointsJson.value);
+    }
+    if (componentsJson.present) {
+      map['components_json'] = Variable<String>(componentsJson.value);
+    }
+    if (optionsJson.present) {
+      map['options_json'] = Variable<String>(optionsJson.value);
+    }
+    if (warningsJson.present) {
+      map['warnings_json'] = Variable<String>(warningsJson.value);
+    }
+    if (lastErrorJson.present) {
+      map['last_error_json'] = Variable<String>(lastErrorJson.value);
+    }
+    if (needsRecreate.present) {
+      map['needs_recreate'] = Variable<bool>(needsRecreate.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (lastUsedAt.present) {
+      map['last_used_at'] = Variable<DateTime>(lastUsedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SpaceEnvironmentsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('definitionId: $definitionId, ')
+          ..write('name: $name, ')
+          ..write('status: $status, ')
+          ..write('placement: $placement, ')
+          ..write('rigId: $rigId, ')
+          ..write('portsJson: $portsJson, ')
+          ..write('endpointsJson: $endpointsJson, ')
+          ..write('componentsJson: $componentsJson, ')
+          ..write('optionsJson: $optionsJson, ')
+          ..write('warningsJson: $warningsJson, ')
+          ..write('lastErrorJson: $lastErrorJson, ')
+          ..write('needsRecreate: $needsRecreate, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastUsedAt: $lastUsedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EnvironmentRunsTableTable extends EnvironmentRunsTable
+    with TableInfo<$EnvironmentRunsTableTable, EnvironmentRunsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EnvironmentRunsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _environmentIdMeta = const VerificationMeta(
+    'environmentId',
+  );
+  @override
+  late final GeneratedColumn<String> environmentId = GeneratedColumn<String>(
+    'environment_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _definitionIdMeta = const VerificationMeta(
+    'definitionId',
+  );
+  @override
+  late final GeneratedColumn<String> definitionId = GeneratedColumn<String>(
+    'definition_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _repoIdMeta = const VerificationMeta('repoId');
+  @override
+  late final GeneratedColumn<String> repoId = GeneratedColumn<String>(
+    'repo_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _exitCodeMeta = const VerificationMeta(
+    'exitCode',
+  );
+  @override
+  late final GeneratedColumn<int> exitCode = GeneratedColumn<int>(
+    'exit_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _errorMeta = const VerificationMeta('error');
+  @override
+  late final GeneratedColumn<String> error = GeneratedColumn<String>(
+    'error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _outputTextMeta = const VerificationMeta(
+    'outputText',
+  );
+  @override
+  late final GeneratedColumn<String> outputText = GeneratedColumn<String>(
+    'output_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    spaceId,
+    environmentId,
+    definitionId,
+    repoId,
+    kind,
+    label,
+    status,
+    startedAt,
+    completedAt,
+    exitCode,
+    error,
+    outputText,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'environment_runs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EnvironmentRunsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    }
+    if (data.containsKey('environment_id')) {
+      context.handle(
+        _environmentIdMeta,
+        environmentId.isAcceptableOrUnknown(
+          data['environment_id']!,
+          _environmentIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('definition_id')) {
+      context.handle(
+        _definitionIdMeta,
+        definitionId.isAcceptableOrUnknown(
+          data['definition_id']!,
+          _definitionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('repo_id')) {
+      context.handle(
+        _repoIdMeta,
+        repoId.isAcceptableOrUnknown(data['repo_id']!, _repoIdMeta),
+      );
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('exit_code')) {
+      context.handle(
+        _exitCodeMeta,
+        exitCode.isAcceptableOrUnknown(data['exit_code']!, _exitCodeMeta),
+      );
+    }
+    if (data.containsKey('error')) {
+      context.handle(
+        _errorMeta,
+        error.isAcceptableOrUnknown(data['error']!, _errorMeta),
+      );
+    }
+    if (data.containsKey('output_text')) {
+      context.handle(
+        _outputTextMeta,
+        outputText.isAcceptableOrUnknown(data['output_text']!, _outputTextMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EnvironmentRunsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EnvironmentRunsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      ),
+      environmentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}environment_id'],
+      ),
+      definitionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}definition_id'],
+      ),
+      repoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}repo_id'],
+      ),
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+      exitCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}exit_code'],
+      ),
+      error: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error'],
+      ),
+      outputText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}output_text'],
+      )!,
+    );
+  }
+
+  @override
+  $EnvironmentRunsTableTable createAlias(String alias) {
+    return $EnvironmentRunsTableTable(attachedDatabase, alias);
+  }
+}
+
+class EnvironmentRunsTableData extends DataClass
+    implements Insertable<EnvironmentRunsTableData> {
+  /// Run id.
+  final String id;
+
+  /// Owning workspace.
+  final String workspaceId;
+
+  /// The space, or null for a test on a throwaway clone.
+  final String? spaceId;
+
+  /// The environment, or null for a worktree task.
+  final String? environmentId;
+
+  /// The definition.
+  final String? definitionId;
+
+  /// The repo of a worktree task.
+  final String? repoId;
+
+  /// What ran, as `EnvironmentRunKind.name`.
+  final String kind;
+
+  /// A component id or verb.
+  final String? label;
+
+  /// How it went, as `EnvironmentRunStatus.name`.
+  final String status;
+
+  /// When it started.
+  final DateTime startedAt;
+
+  /// When it finished, or null while running.
+  final DateTime? completedAt;
+
+  /// The exit code.
+  final int? exitCode;
+
+  /// A short failure message; not the output tail.
+  final String? error;
+
+  /// The redacted, bounded output tail.
+  final String outputText;
+  const EnvironmentRunsTableData({
+    required this.id,
+    required this.workspaceId,
+    this.spaceId,
+    this.environmentId,
+    this.definitionId,
+    this.repoId,
+    required this.kind,
+    this.label,
+    required this.status,
+    required this.startedAt,
+    this.completedAt,
+    this.exitCode,
+    this.error,
+    required this.outputText,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    if (!nullToAbsent || spaceId != null) {
+      map['space_id'] = Variable<String>(spaceId);
+    }
+    if (!nullToAbsent || environmentId != null) {
+      map['environment_id'] = Variable<String>(environmentId);
+    }
+    if (!nullToAbsent || definitionId != null) {
+      map['definition_id'] = Variable<String>(definitionId);
+    }
+    if (!nullToAbsent || repoId != null) {
+      map['repo_id'] = Variable<String>(repoId);
+    }
+    map['kind'] = Variable<String>(kind);
+    if (!nullToAbsent || label != null) {
+      map['label'] = Variable<String>(label);
+    }
+    map['status'] = Variable<String>(status);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    if (!nullToAbsent || exitCode != null) {
+      map['exit_code'] = Variable<int>(exitCode);
+    }
+    if (!nullToAbsent || error != null) {
+      map['error'] = Variable<String>(error);
+    }
+    map['output_text'] = Variable<String>(outputText);
+    return map;
+  }
+
+  EnvironmentRunsTableCompanion toCompanion(bool nullToAbsent) {
+    return EnvironmentRunsTableCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      spaceId: spaceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(spaceId),
+      environmentId: environmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(environmentId),
+      definitionId: definitionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(definitionId),
+      repoId: repoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(repoId),
+      kind: Value(kind),
+      label: label == null && nullToAbsent
+          ? const Value.absent()
+          : Value(label),
+      status: Value(status),
+      startedAt: Value(startedAt),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+      exitCode: exitCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exitCode),
+      error: error == null && nullToAbsent
+          ? const Value.absent()
+          : Value(error),
+      outputText: Value(outputText),
+    );
+  }
+
+  factory EnvironmentRunsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EnvironmentRunsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      spaceId: serializer.fromJson<String?>(json['spaceId']),
+      environmentId: serializer.fromJson<String?>(json['environmentId']),
+      definitionId: serializer.fromJson<String?>(json['definitionId']),
+      repoId: serializer.fromJson<String?>(json['repoId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      label: serializer.fromJson<String?>(json['label']),
+      status: serializer.fromJson<String>(json['status']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+      exitCode: serializer.fromJson<int?>(json['exitCode']),
+      error: serializer.fromJson<String?>(json['error']),
+      outputText: serializer.fromJson<String>(json['outputText']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'spaceId': serializer.toJson<String?>(spaceId),
+      'environmentId': serializer.toJson<String?>(environmentId),
+      'definitionId': serializer.toJson<String?>(definitionId),
+      'repoId': serializer.toJson<String?>(repoId),
+      'kind': serializer.toJson<String>(kind),
+      'label': serializer.toJson<String?>(label),
+      'status': serializer.toJson<String>(status),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+      'exitCode': serializer.toJson<int?>(exitCode),
+      'error': serializer.toJson<String?>(error),
+      'outputText': serializer.toJson<String>(outputText),
+    };
+  }
+
+  EnvironmentRunsTableData copyWith({
+    String? id,
+    String? workspaceId,
+    Value<String?> spaceId = const Value.absent(),
+    Value<String?> environmentId = const Value.absent(),
+    Value<String?> definitionId = const Value.absent(),
+    Value<String?> repoId = const Value.absent(),
+    String? kind,
+    Value<String?> label = const Value.absent(),
+    String? status,
+    DateTime? startedAt,
+    Value<DateTime?> completedAt = const Value.absent(),
+    Value<int?> exitCode = const Value.absent(),
+    Value<String?> error = const Value.absent(),
+    String? outputText,
+  }) => EnvironmentRunsTableData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    spaceId: spaceId.present ? spaceId.value : this.spaceId,
+    environmentId: environmentId.present
+        ? environmentId.value
+        : this.environmentId,
+    definitionId: definitionId.present ? definitionId.value : this.definitionId,
+    repoId: repoId.present ? repoId.value : this.repoId,
+    kind: kind ?? this.kind,
+    label: label.present ? label.value : this.label,
+    status: status ?? this.status,
+    startedAt: startedAt ?? this.startedAt,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    exitCode: exitCode.present ? exitCode.value : this.exitCode,
+    error: error.present ? error.value : this.error,
+    outputText: outputText ?? this.outputText,
+  );
+  EnvironmentRunsTableData copyWithCompanion(
+    EnvironmentRunsTableCompanion data,
+  ) {
+    return EnvironmentRunsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      environmentId: data.environmentId.present
+          ? data.environmentId.value
+          : this.environmentId,
+      definitionId: data.definitionId.present
+          ? data.definitionId.value
+          : this.definitionId,
+      repoId: data.repoId.present ? data.repoId.value : this.repoId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      label: data.label.present ? data.label.value : this.label,
+      status: data.status.present ? data.status.value : this.status,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+      exitCode: data.exitCode.present ? data.exitCode.value : this.exitCode,
+      error: data.error.present ? data.error.value : this.error,
+      outputText: data.outputText.present
+          ? data.outputText.value
+          : this.outputText,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EnvironmentRunsTableData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('environmentId: $environmentId, ')
+          ..write('definitionId: $definitionId, ')
+          ..write('repoId: $repoId, ')
+          ..write('kind: $kind, ')
+          ..write('label: $label, ')
+          ..write('status: $status, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('exitCode: $exitCode, ')
+          ..write('error: $error, ')
+          ..write('outputText: $outputText')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    spaceId,
+    environmentId,
+    definitionId,
+    repoId,
+    kind,
+    label,
+    status,
+    startedAt,
+    completedAt,
+    exitCode,
+    error,
+    outputText,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EnvironmentRunsTableData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.spaceId == this.spaceId &&
+          other.environmentId == this.environmentId &&
+          other.definitionId == this.definitionId &&
+          other.repoId == this.repoId &&
+          other.kind == this.kind &&
+          other.label == this.label &&
+          other.status == this.status &&
+          other.startedAt == this.startedAt &&
+          other.completedAt == this.completedAt &&
+          other.exitCode == this.exitCode &&
+          other.error == this.error &&
+          other.outputText == this.outputText);
+}
+
+class EnvironmentRunsTableCompanion
+    extends UpdateCompanion<EnvironmentRunsTableData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String?> spaceId;
+  final Value<String?> environmentId;
+  final Value<String?> definitionId;
+  final Value<String?> repoId;
+  final Value<String> kind;
+  final Value<String?> label;
+  final Value<String> status;
+  final Value<DateTime> startedAt;
+  final Value<DateTime?> completedAt;
+  final Value<int?> exitCode;
+  final Value<String?> error;
+  final Value<String> outputText;
+  final Value<int> rowid;
+  const EnvironmentRunsTableCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.environmentId = const Value.absent(),
+    this.definitionId = const Value.absent(),
+    this.repoId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.label = const Value.absent(),
+    this.status = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.exitCode = const Value.absent(),
+    this.error = const Value.absent(),
+    this.outputText = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EnvironmentRunsTableCompanion.insert({
+    required String id,
+    required String workspaceId,
+    this.spaceId = const Value.absent(),
+    this.environmentId = const Value.absent(),
+    this.definitionId = const Value.absent(),
+    this.repoId = const Value.absent(),
+    required String kind,
+    this.label = const Value.absent(),
+    required String status,
+    required DateTime startedAt,
+    this.completedAt = const Value.absent(),
+    this.exitCode = const Value.absent(),
+    this.error = const Value.absent(),
+    this.outputText = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       kind = Value(kind),
+       status = Value(status),
+       startedAt = Value(startedAt);
+  static Insertable<EnvironmentRunsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? spaceId,
+    Expression<String>? environmentId,
+    Expression<String>? definitionId,
+    Expression<String>? repoId,
+    Expression<String>? kind,
+    Expression<String>? label,
+    Expression<String>? status,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? completedAt,
+    Expression<int>? exitCode,
+    Expression<String>? error,
+    Expression<String>? outputText,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (spaceId != null) 'space_id': spaceId,
+      if (environmentId != null) 'environment_id': environmentId,
+      if (definitionId != null) 'definition_id': definitionId,
+      if (repoId != null) 'repo_id': repoId,
+      if (kind != null) 'kind': kind,
+      if (label != null) 'label': label,
+      if (status != null) 'status': status,
+      if (startedAt != null) 'started_at': startedAt,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (exitCode != null) 'exit_code': exitCode,
+      if (error != null) 'error': error,
+      if (outputText != null) 'output_text': outputText,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EnvironmentRunsTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String?>? spaceId,
+    Value<String?>? environmentId,
+    Value<String?>? definitionId,
+    Value<String?>? repoId,
+    Value<String>? kind,
+    Value<String?>? label,
+    Value<String>? status,
+    Value<DateTime>? startedAt,
+    Value<DateTime?>? completedAt,
+    Value<int?>? exitCode,
+    Value<String?>? error,
+    Value<String>? outputText,
+    Value<int>? rowid,
+  }) {
+    return EnvironmentRunsTableCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      spaceId: spaceId ?? this.spaceId,
+      environmentId: environmentId ?? this.environmentId,
+      definitionId: definitionId ?? this.definitionId,
+      repoId: repoId ?? this.repoId,
+      kind: kind ?? this.kind,
+      label: label ?? this.label,
+      status: status ?? this.status,
+      startedAt: startedAt ?? this.startedAt,
+      completedAt: completedAt ?? this.completedAt,
+      exitCode: exitCode ?? this.exitCode,
+      error: error ?? this.error,
+      outputText: outputText ?? this.outputText,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (environmentId.present) {
+      map['environment_id'] = Variable<String>(environmentId.value);
+    }
+    if (definitionId.present) {
+      map['definition_id'] = Variable<String>(definitionId.value);
+    }
+    if (repoId.present) {
+      map['repo_id'] = Variable<String>(repoId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (exitCode.present) {
+      map['exit_code'] = Variable<int>(exitCode.value);
+    }
+    if (error.present) {
+      map['error'] = Variable<String>(error.value);
+    }
+    if (outputText.present) {
+      map['output_text'] = Variable<String>(outputText.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EnvironmentRunsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('environmentId: $environmentId, ')
+          ..write('definitionId: $definitionId, ')
+          ..write('repoId: $repoId, ')
+          ..write('kind: $kind, ')
+          ..write('label: $label, ')
+          ..write('status: $status, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('exitCode: $exitCode, ')
+          ..write('error: $error, ')
+          ..write('outputText: $outputText, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   _$WorkspaceDatabase(QueryExecutor e) : super(e);
   $WorkspaceDatabaseManager get managers => $WorkspaceDatabaseManager(this);
@@ -80062,10 +81786,14 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
       $RigActionLogTableTable(this);
   late final $SkillSourcesTableTable skillSourcesTable =
       $SkillSourcesTableTable(this);
-  late final $RepoScriptRunsTableTable repoScriptRunsTable =
-      $RepoScriptRunsTableTable(this);
   late final $RunCallUsagesTableTable runCallUsagesTable =
       $RunCallUsagesTableTable(this);
+  late final $EnvironmentDefinitionsTableTable environmentDefinitionsTable =
+      $EnvironmentDefinitionsTableTable(this);
+  late final $SpaceEnvironmentsTableTable spaceEnvironmentsTable =
+      $SpaceEnvironmentsTableTable(this);
+  late final $EnvironmentRunsTableTable environmentRunsTable =
+      $EnvironmentRunsTableTable(this);
   late final Index idxAgentsWorkspaceId = Index(
     'idx_agents_workspaceId',
     'CREATE INDEX idx_agents_workspaceId ON agents (workspace_id)',
@@ -80902,14 +82630,6 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     'idx_skill_sources_workspace',
     'CREATE INDEX idx_skill_sources_workspace ON skill_sources (workspace_id)',
   );
-  late final Index idxRepoScriptRunsRepo = Index(
-    'idx_repo_script_runs_repo',
-    'CREATE INDEX idx_repo_script_runs_repo ON repo_script_runs (workspace_id, repo_id, started_at)',
-  );
-  late final Index idxRepoScriptRunsSpace = Index(
-    'idx_repo_script_runs_space',
-    'CREATE INDEX idx_repo_script_runs_space ON repo_script_runs (workspace_id, space_id)',
-  );
   late final Index idxRunCallUsagesRunId = Index(
     'idx_run_call_usages_runId',
     'CREATE INDEX idx_run_call_usages_runId ON run_call_usages (run_id)',
@@ -80926,13 +82646,18 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     'idx_run_call_usages_started',
     'CREATE INDEX idx_run_call_usages_started ON run_call_usages (workspace_id, started_at)',
   );
+  late final Index idxEnvironmentRunsSpace = Index(
+    'idx_environment_runs_space',
+    'CREATE INDEX idx_environment_runs_space ON environment_runs (space_id, started_at)',
+  );
+  late final Index idxEnvironmentRunsDefinition = Index(
+    'idx_environment_runs_definition',
+    'CREATE INDEX idx_environment_runs_definition ON environment_runs (definition_id, started_at)',
+  );
   late final WorkspaceSettingDao workspaceSettingDao = WorkspaceSettingDao(
     this as WorkspaceDatabase,
   );
   late final RepoDao repoDao = RepoDao(this as WorkspaceDatabase);
-  late final RepoScriptRunDao repoScriptRunDao = RepoScriptRunDao(
-    this as WorkspaceDatabase,
-  );
   late final SpaceRepoDao spaceRepoDao = SpaceRepoDao(
     this as WorkspaceDatabase,
   );
@@ -81099,6 +82824,9 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final WorkspaceRoleDao workspaceRoleDao = WorkspaceRoleDao(
     this as WorkspaceDatabase,
   );
+  late final EnvironmentDao environmentDao = EnvironmentDao(
+    this as WorkspaceDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -81217,8 +82945,10 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     rigSessionsTable,
     rigActionLogTable,
     skillSourcesTable,
-    repoScriptRunsTable,
     runCallUsagesTable,
+    environmentDefinitionsTable,
+    spaceEnvironmentsTable,
+    environmentRunsTable,
     idxAgentsWorkspaceId,
     idxAgentsWorkspaceName,
     idxAgentRunLogsWorkspaceId,
@@ -81428,12 +83158,12 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxRigSessionsConversation,
     idxRigActionLogRig,
     idxSkillSourcesWorkspace,
-    idxRepoScriptRunsRepo,
-    idxRepoScriptRunsSpace,
     idxRunCallUsagesRunId,
     idxRunCallUsagesWorkspace,
     idxRunCallUsagesConversation,
     idxRunCallUsagesStarted,
+    idxEnvironmentRunsSpace,
+    idxEnvironmentRunsDefinition,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -81692,8 +83422,6 @@ typedef $$ReposTableTableCreateCompanionBuilder =
       Value<String> remoteName,
       Value<int> position,
       Value<DateTime> linkedAt,
-      Value<String?> setupScript,
-      Value<String?> archiveScript,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -81708,8 +83436,6 @@ typedef $$ReposTableTableUpdateCompanionBuilder =
       Value<String> remoteName,
       Value<int> position,
       Value<DateTime> linkedAt,
-      Value<String?> setupScript,
-      Value<String?> archiveScript,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -81876,16 +83602,6 @@ class $$ReposTableTableFilterComposer
 
   ColumnFilters<DateTime> get linkedAt => $composableBuilder(
     column: $table.linkedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get setupScript => $composableBuilder(
-    column: $table.setupScript,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get archiveScript => $composableBuilder(
-    column: $table.archiveScript,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -82080,16 +83796,6 @@ class $$ReposTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get setupScript => $composableBuilder(
-    column: $table.setupScript,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get archiveScript => $composableBuilder(
-    column: $table.archiveScript,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -82137,16 +83843,6 @@ class $$ReposTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get linkedAt =>
       $composableBuilder(column: $table.linkedAt, builder: (column) => column);
-
-  GeneratedColumn<String> get setupScript => $composableBuilder(
-    column: $table.setupScript,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get archiveScript => $composableBuilder(
-    column: $table.archiveScript,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -82328,8 +84024,6 @@ class $$ReposTableTableTableManager
                 Value<String> remoteName = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<DateTime> linkedAt = const Value.absent(),
-                Value<String?> setupScript = const Value.absent(),
-                Value<String?> archiveScript = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -82342,8 +84036,6 @@ class $$ReposTableTableTableManager
                 remoteName: remoteName,
                 position: position,
                 linkedAt: linkedAt,
-                setupScript: setupScript,
-                archiveScript: archiveScript,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -82358,8 +84050,6 @@ class $$ReposTableTableTableManager
                 Value<String> remoteName = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<DateTime> linkedAt = const Value.absent(),
-                Value<String?> setupScript = const Value.absent(),
-                Value<String?> archiveScript = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -82372,8 +84062,6 @@ class $$ReposTableTableTableManager
                 remoteName: remoteName,
                 position: position,
                 linkedAt: linkedAt,
-                setupScript: setupScript,
-                archiveScript: archiveScript,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -127760,373 +129448,6 @@ typedef $$SkillSourcesTableTableProcessedTableManager =
       SkillSourcesTableData,
       PrefetchHooks Function()
     >;
-typedef $$RepoScriptRunsTableTableCreateCompanionBuilder =
-    RepoScriptRunsTableCompanion Function({
-      required String id,
-      required String workspaceId,
-      required String spaceId,
-      required String repoId,
-      required String repoName,
-      required String kind,
-      required String status,
-      required DateTime startedAt,
-      Value<DateTime?> completedAt,
-      Value<int?> exitCode,
-      Value<String?> error,
-      Value<String?> outputText,
-      Value<int> rowid,
-    });
-typedef $$RepoScriptRunsTableTableUpdateCompanionBuilder =
-    RepoScriptRunsTableCompanion Function({
-      Value<String> id,
-      Value<String> workspaceId,
-      Value<String> spaceId,
-      Value<String> repoId,
-      Value<String> repoName,
-      Value<String> kind,
-      Value<String> status,
-      Value<DateTime> startedAt,
-      Value<DateTime?> completedAt,
-      Value<int?> exitCode,
-      Value<String?> error,
-      Value<String?> outputText,
-      Value<int> rowid,
-    });
-
-class $$RepoScriptRunsTableTableFilterComposer
-    extends Composer<_$WorkspaceDatabase, $RepoScriptRunsTableTable> {
-  $$RepoScriptRunsTableTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get spaceId => $composableBuilder(
-    column: $table.spaceId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get repoId => $composableBuilder(
-    column: $table.repoId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get repoName => $composableBuilder(
-    column: $table.repoName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get kind => $composableBuilder(
-    column: $table.kind,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get status => $composableBuilder(
-    column: $table.status,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get startedAt => $composableBuilder(
-    column: $table.startedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get completedAt => $composableBuilder(
-    column: $table.completedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get exitCode => $composableBuilder(
-    column: $table.exitCode,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get error => $composableBuilder(
-    column: $table.error,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get outputText => $composableBuilder(
-    column: $table.outputText,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$RepoScriptRunsTableTableOrderingComposer
-    extends Composer<_$WorkspaceDatabase, $RepoScriptRunsTableTable> {
-  $$RepoScriptRunsTableTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get spaceId => $composableBuilder(
-    column: $table.spaceId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get repoId => $composableBuilder(
-    column: $table.repoId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get repoName => $composableBuilder(
-    column: $table.repoName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get kind => $composableBuilder(
-    column: $table.kind,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get status => $composableBuilder(
-    column: $table.status,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
-    column: $table.startedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
-    column: $table.completedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get exitCode => $composableBuilder(
-    column: $table.exitCode,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get error => $composableBuilder(
-    column: $table.error,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get outputText => $composableBuilder(
-    column: $table.outputText,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$RepoScriptRunsTableTableAnnotationComposer
-    extends Composer<_$WorkspaceDatabase, $RepoScriptRunsTableTable> {
-  $$RepoScriptRunsTableTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get spaceId =>
-      $composableBuilder(column: $table.spaceId, builder: (column) => column);
-
-  GeneratedColumn<String> get repoId =>
-      $composableBuilder(column: $table.repoId, builder: (column) => column);
-
-  GeneratedColumn<String> get repoName =>
-      $composableBuilder(column: $table.repoName, builder: (column) => column);
-
-  GeneratedColumn<String> get kind =>
-      $composableBuilder(column: $table.kind, builder: (column) => column);
-
-  GeneratedColumn<String> get status =>
-      $composableBuilder(column: $table.status, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get startedAt =>
-      $composableBuilder(column: $table.startedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
-    column: $table.completedAt,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get exitCode =>
-      $composableBuilder(column: $table.exitCode, builder: (column) => column);
-
-  GeneratedColumn<String> get error =>
-      $composableBuilder(column: $table.error, builder: (column) => column);
-
-  GeneratedColumn<String> get outputText => $composableBuilder(
-    column: $table.outputText,
-    builder: (column) => column,
-  );
-}
-
-class $$RepoScriptRunsTableTableTableManager
-    extends
-        RootTableManager<
-          _$WorkspaceDatabase,
-          $RepoScriptRunsTableTable,
-          RepoScriptRunsTableData,
-          $$RepoScriptRunsTableTableFilterComposer,
-          $$RepoScriptRunsTableTableOrderingComposer,
-          $$RepoScriptRunsTableTableAnnotationComposer,
-          $$RepoScriptRunsTableTableCreateCompanionBuilder,
-          $$RepoScriptRunsTableTableUpdateCompanionBuilder,
-          (
-            RepoScriptRunsTableData,
-            BaseReferences<
-              _$WorkspaceDatabase,
-              $RepoScriptRunsTableTable,
-              RepoScriptRunsTableData
-            >,
-          ),
-          RepoScriptRunsTableData,
-          PrefetchHooks Function()
-        > {
-  $$RepoScriptRunsTableTableTableManager(
-    _$WorkspaceDatabase db,
-    $RepoScriptRunsTableTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$RepoScriptRunsTableTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$RepoScriptRunsTableTableOrderingComposer(
-                $db: db,
-                $table: table,
-              ),
-          createComputedFieldComposer: () =>
-              $$RepoScriptRunsTableTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> workspaceId = const Value.absent(),
-                Value<String> spaceId = const Value.absent(),
-                Value<String> repoId = const Value.absent(),
-                Value<String> repoName = const Value.absent(),
-                Value<String> kind = const Value.absent(),
-                Value<String> status = const Value.absent(),
-                Value<DateTime> startedAt = const Value.absent(),
-                Value<DateTime?> completedAt = const Value.absent(),
-                Value<int?> exitCode = const Value.absent(),
-                Value<String?> error = const Value.absent(),
-                Value<String?> outputText = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => RepoScriptRunsTableCompanion(
-                id: id,
-                workspaceId: workspaceId,
-                spaceId: spaceId,
-                repoId: repoId,
-                repoName: repoName,
-                kind: kind,
-                status: status,
-                startedAt: startedAt,
-                completedAt: completedAt,
-                exitCode: exitCode,
-                error: error,
-                outputText: outputText,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String workspaceId,
-                required String spaceId,
-                required String repoId,
-                required String repoName,
-                required String kind,
-                required String status,
-                required DateTime startedAt,
-                Value<DateTime?> completedAt = const Value.absent(),
-                Value<int?> exitCode = const Value.absent(),
-                Value<String?> error = const Value.absent(),
-                Value<String?> outputText = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => RepoScriptRunsTableCompanion.insert(
-                id: id,
-                workspaceId: workspaceId,
-                spaceId: spaceId,
-                repoId: repoId,
-                repoName: repoName,
-                kind: kind,
-                status: status,
-                startedAt: startedAt,
-                completedAt: completedAt,
-                exitCode: exitCode,
-                error: error,
-                outputText: outputText,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable<
-                    $RepoScriptRunsTableTable,
-                    RepoScriptRunsTableData
-                  >(table),
-                  BaseReferences<
-                    _$WorkspaceDatabase,
-                    $RepoScriptRunsTableTable,
-                    RepoScriptRunsTableData
-                  >(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$RepoScriptRunsTableTableProcessedTableManager =
-    ProcessedTableManager<
-      _$WorkspaceDatabase,
-      $RepoScriptRunsTableTable,
-      RepoScriptRunsTableData,
-      $$RepoScriptRunsTableTableFilterComposer,
-      $$RepoScriptRunsTableTableOrderingComposer,
-      $$RepoScriptRunsTableTableAnnotationComposer,
-      $$RepoScriptRunsTableTableCreateCompanionBuilder,
-      $$RepoScriptRunsTableTableUpdateCompanionBuilder,
-      (
-        RepoScriptRunsTableData,
-        BaseReferences<
-          _$WorkspaceDatabase,
-          $RepoScriptRunsTableTable,
-          RepoScriptRunsTableData
-        >,
-      ),
-      RepoScriptRunsTableData,
-      PrefetchHooks Function()
-    >;
 typedef $$RunCallUsagesTableTableCreateCompanionBuilder =
     RunCallUsagesTableCompanion Function({
       required String id,
@@ -128717,6 +130038,1226 @@ typedef $$RunCallUsagesTableTableProcessedTableManager =
       RunCallUsagesTableData,
       PrefetchHooks Function()
     >;
+typedef $$EnvironmentDefinitionsTableTableCreateCompanionBuilder =
+    EnvironmentDefinitionsTableCompanion Function({
+      required String id,
+      required String name,
+      required String definitionJson,
+      Value<String?> sourceRepoId,
+      Value<String?> sourcePath,
+      Value<String?> approvedBlobHash,
+      Value<String?> overridesJson,
+      Value<String?> createdBy,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$EnvironmentDefinitionsTableTableUpdateCompanionBuilder =
+    EnvironmentDefinitionsTableCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> definitionJson,
+      Value<String?> sourceRepoId,
+      Value<String?> sourcePath,
+      Value<String?> approvedBlobHash,
+      Value<String?> overridesJson,
+      Value<String?> createdBy,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$EnvironmentDefinitionsTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $EnvironmentDefinitionsTableTable> {
+  $$EnvironmentDefinitionsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get definitionJson => $composableBuilder(
+    column: $table.definitionJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceRepoId => $composableBuilder(
+    column: $table.sourceRepoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourcePath => $composableBuilder(
+    column: $table.sourcePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get approvedBlobHash => $composableBuilder(
+    column: $table.approvedBlobHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get overridesJson => $composableBuilder(
+    column: $table.overridesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EnvironmentDefinitionsTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $EnvironmentDefinitionsTableTable> {
+  $$EnvironmentDefinitionsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get definitionJson => $composableBuilder(
+    column: $table.definitionJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceRepoId => $composableBuilder(
+    column: $table.sourceRepoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourcePath => $composableBuilder(
+    column: $table.sourcePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get approvedBlobHash => $composableBuilder(
+    column: $table.approvedBlobHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get overridesJson => $composableBuilder(
+    column: $table.overridesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EnvironmentDefinitionsTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $EnvironmentDefinitionsTableTable> {
+  $$EnvironmentDefinitionsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get definitionJson => $composableBuilder(
+    column: $table.definitionJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceRepoId => $composableBuilder(
+    column: $table.sourceRepoId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourcePath => $composableBuilder(
+    column: $table.sourcePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get approvedBlobHash => $composableBuilder(
+    column: $table.approvedBlobHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get overridesJson => $composableBuilder(
+    column: $table.overridesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$EnvironmentDefinitionsTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $EnvironmentDefinitionsTableTable,
+          EnvironmentDefinitionsTableData,
+          $$EnvironmentDefinitionsTableTableFilterComposer,
+          $$EnvironmentDefinitionsTableTableOrderingComposer,
+          $$EnvironmentDefinitionsTableTableAnnotationComposer,
+          $$EnvironmentDefinitionsTableTableCreateCompanionBuilder,
+          $$EnvironmentDefinitionsTableTableUpdateCompanionBuilder,
+          (
+            EnvironmentDefinitionsTableData,
+            BaseReferences<
+              _$WorkspaceDatabase,
+              $EnvironmentDefinitionsTableTable,
+              EnvironmentDefinitionsTableData
+            >,
+          ),
+          EnvironmentDefinitionsTableData,
+          PrefetchHooks Function()
+        > {
+  $$EnvironmentDefinitionsTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $EnvironmentDefinitionsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EnvironmentDefinitionsTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$EnvironmentDefinitionsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$EnvironmentDefinitionsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> definitionJson = const Value.absent(),
+                Value<String?> sourceRepoId = const Value.absent(),
+                Value<String?> sourcePath = const Value.absent(),
+                Value<String?> approvedBlobHash = const Value.absent(),
+                Value<String?> overridesJson = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EnvironmentDefinitionsTableCompanion(
+                id: id,
+                name: name,
+                definitionJson: definitionJson,
+                sourceRepoId: sourceRepoId,
+                sourcePath: sourcePath,
+                approvedBlobHash: approvedBlobHash,
+                overridesJson: overridesJson,
+                createdBy: createdBy,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String definitionJson,
+                Value<String?> sourceRepoId = const Value.absent(),
+                Value<String?> sourcePath = const Value.absent(),
+                Value<String?> approvedBlobHash = const Value.absent(),
+                Value<String?> overridesJson = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => EnvironmentDefinitionsTableCompanion.insert(
+                id: id,
+                name: name,
+                definitionJson: definitionJson,
+                sourceRepoId: sourceRepoId,
+                sourcePath: sourcePath,
+                approvedBlobHash: approvedBlobHash,
+                overridesJson: overridesJson,
+                createdBy: createdBy,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $EnvironmentDefinitionsTableTable,
+                    EnvironmentDefinitionsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $EnvironmentDefinitionsTableTable,
+                    EnvironmentDefinitionsTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EnvironmentDefinitionsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $EnvironmentDefinitionsTableTable,
+      EnvironmentDefinitionsTableData,
+      $$EnvironmentDefinitionsTableTableFilterComposer,
+      $$EnvironmentDefinitionsTableTableOrderingComposer,
+      $$EnvironmentDefinitionsTableTableAnnotationComposer,
+      $$EnvironmentDefinitionsTableTableCreateCompanionBuilder,
+      $$EnvironmentDefinitionsTableTableUpdateCompanionBuilder,
+      (
+        EnvironmentDefinitionsTableData,
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $EnvironmentDefinitionsTableTable,
+          EnvironmentDefinitionsTableData
+        >,
+      ),
+      EnvironmentDefinitionsTableData,
+      PrefetchHooks Function()
+    >;
+typedef $$SpaceEnvironmentsTableTableCreateCompanionBuilder =
+    SpaceEnvironmentsTableCompanion Function({
+      required String id,
+      required String spaceId,
+      required String definitionId,
+      required String name,
+      required String status,
+      Value<String> placement,
+      Value<String?> rigId,
+      Value<String> portsJson,
+      Value<String> endpointsJson,
+      Value<String> componentsJson,
+      Value<String> optionsJson,
+      Value<String> warningsJson,
+      Value<String?> lastErrorJson,
+      Value<bool> needsRecreate,
+      required String createdBy,
+      required DateTime createdAt,
+      required DateTime lastUsedAt,
+      Value<int> rowid,
+    });
+typedef $$SpaceEnvironmentsTableTableUpdateCompanionBuilder =
+    SpaceEnvironmentsTableCompanion Function({
+      Value<String> id,
+      Value<String> spaceId,
+      Value<String> definitionId,
+      Value<String> name,
+      Value<String> status,
+      Value<String> placement,
+      Value<String?> rigId,
+      Value<String> portsJson,
+      Value<String> endpointsJson,
+      Value<String> componentsJson,
+      Value<String> optionsJson,
+      Value<String> warningsJson,
+      Value<String?> lastErrorJson,
+      Value<bool> needsRecreate,
+      Value<String> createdBy,
+      Value<DateTime> createdAt,
+      Value<DateTime> lastUsedAt,
+      Value<int> rowid,
+    });
+
+class $$SpaceEnvironmentsTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $SpaceEnvironmentsTableTable> {
+  $$SpaceEnvironmentsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get placement => $composableBuilder(
+    column: $table.placement,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rigId => $composableBuilder(
+    column: $table.rigId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get portsJson => $composableBuilder(
+    column: $table.portsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get endpointsJson => $composableBuilder(
+    column: $table.endpointsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get componentsJson => $composableBuilder(
+    column: $table.componentsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get optionsJson => $composableBuilder(
+    column: $table.optionsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get warningsJson => $composableBuilder(
+    column: $table.warningsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastErrorJson => $composableBuilder(
+    column: $table.lastErrorJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get needsRecreate => $composableBuilder(
+    column: $table.needsRecreate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SpaceEnvironmentsTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $SpaceEnvironmentsTableTable> {
+  $$SpaceEnvironmentsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get placement => $composableBuilder(
+    column: $table.placement,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rigId => $composableBuilder(
+    column: $table.rigId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get portsJson => $composableBuilder(
+    column: $table.portsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get endpointsJson => $composableBuilder(
+    column: $table.endpointsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get componentsJson => $composableBuilder(
+    column: $table.componentsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get optionsJson => $composableBuilder(
+    column: $table.optionsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get warningsJson => $composableBuilder(
+    column: $table.warningsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastErrorJson => $composableBuilder(
+    column: $table.lastErrorJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get needsRecreate => $composableBuilder(
+    column: $table.needsRecreate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SpaceEnvironmentsTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $SpaceEnvironmentsTableTable> {
+  $$SpaceEnvironmentsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get placement =>
+      $composableBuilder(column: $table.placement, builder: (column) => column);
+
+  GeneratedColumn<String> get rigId =>
+      $composableBuilder(column: $table.rigId, builder: (column) => column);
+
+  GeneratedColumn<String> get portsJson =>
+      $composableBuilder(column: $table.portsJson, builder: (column) => column);
+
+  GeneratedColumn<String> get endpointsJson => $composableBuilder(
+    column: $table.endpointsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get componentsJson => $composableBuilder(
+    column: $table.componentsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get optionsJson => $composableBuilder(
+    column: $table.optionsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get warningsJson => $composableBuilder(
+    column: $table.warningsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastErrorJson => $composableBuilder(
+    column: $table.lastErrorJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get needsRecreate => $composableBuilder(
+    column: $table.needsRecreate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$SpaceEnvironmentsTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $SpaceEnvironmentsTableTable,
+          SpaceEnvironmentsTableData,
+          $$SpaceEnvironmentsTableTableFilterComposer,
+          $$SpaceEnvironmentsTableTableOrderingComposer,
+          $$SpaceEnvironmentsTableTableAnnotationComposer,
+          $$SpaceEnvironmentsTableTableCreateCompanionBuilder,
+          $$SpaceEnvironmentsTableTableUpdateCompanionBuilder,
+          (
+            SpaceEnvironmentsTableData,
+            BaseReferences<
+              _$WorkspaceDatabase,
+              $SpaceEnvironmentsTableTable,
+              SpaceEnvironmentsTableData
+            >,
+          ),
+          SpaceEnvironmentsTableData,
+          PrefetchHooks Function()
+        > {
+  $$SpaceEnvironmentsTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $SpaceEnvironmentsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SpaceEnvironmentsTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$SpaceEnvironmentsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$SpaceEnvironmentsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<String> definitionId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> placement = const Value.absent(),
+                Value<String?> rigId = const Value.absent(),
+                Value<String> portsJson = const Value.absent(),
+                Value<String> endpointsJson = const Value.absent(),
+                Value<String> componentsJson = const Value.absent(),
+                Value<String> optionsJson = const Value.absent(),
+                Value<String> warningsJson = const Value.absent(),
+                Value<String?> lastErrorJson = const Value.absent(),
+                Value<bool> needsRecreate = const Value.absent(),
+                Value<String> createdBy = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> lastUsedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SpaceEnvironmentsTableCompanion(
+                id: id,
+                spaceId: spaceId,
+                definitionId: definitionId,
+                name: name,
+                status: status,
+                placement: placement,
+                rigId: rigId,
+                portsJson: portsJson,
+                endpointsJson: endpointsJson,
+                componentsJson: componentsJson,
+                optionsJson: optionsJson,
+                warningsJson: warningsJson,
+                lastErrorJson: lastErrorJson,
+                needsRecreate: needsRecreate,
+                createdBy: createdBy,
+                createdAt: createdAt,
+                lastUsedAt: lastUsedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String spaceId,
+                required String definitionId,
+                required String name,
+                required String status,
+                Value<String> placement = const Value.absent(),
+                Value<String?> rigId = const Value.absent(),
+                Value<String> portsJson = const Value.absent(),
+                Value<String> endpointsJson = const Value.absent(),
+                Value<String> componentsJson = const Value.absent(),
+                Value<String> optionsJson = const Value.absent(),
+                Value<String> warningsJson = const Value.absent(),
+                Value<String?> lastErrorJson = const Value.absent(),
+                Value<bool> needsRecreate = const Value.absent(),
+                required String createdBy,
+                required DateTime createdAt,
+                required DateTime lastUsedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SpaceEnvironmentsTableCompanion.insert(
+                id: id,
+                spaceId: spaceId,
+                definitionId: definitionId,
+                name: name,
+                status: status,
+                placement: placement,
+                rigId: rigId,
+                portsJson: portsJson,
+                endpointsJson: endpointsJson,
+                componentsJson: componentsJson,
+                optionsJson: optionsJson,
+                warningsJson: warningsJson,
+                lastErrorJson: lastErrorJson,
+                needsRecreate: needsRecreate,
+                createdBy: createdBy,
+                createdAt: createdAt,
+                lastUsedAt: lastUsedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $SpaceEnvironmentsTableTable,
+                    SpaceEnvironmentsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $SpaceEnvironmentsTableTable,
+                    SpaceEnvironmentsTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SpaceEnvironmentsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $SpaceEnvironmentsTableTable,
+      SpaceEnvironmentsTableData,
+      $$SpaceEnvironmentsTableTableFilterComposer,
+      $$SpaceEnvironmentsTableTableOrderingComposer,
+      $$SpaceEnvironmentsTableTableAnnotationComposer,
+      $$SpaceEnvironmentsTableTableCreateCompanionBuilder,
+      $$SpaceEnvironmentsTableTableUpdateCompanionBuilder,
+      (
+        SpaceEnvironmentsTableData,
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $SpaceEnvironmentsTableTable,
+          SpaceEnvironmentsTableData
+        >,
+      ),
+      SpaceEnvironmentsTableData,
+      PrefetchHooks Function()
+    >;
+typedef $$EnvironmentRunsTableTableCreateCompanionBuilder =
+    EnvironmentRunsTableCompanion Function({
+      required String id,
+      required String workspaceId,
+      Value<String?> spaceId,
+      Value<String?> environmentId,
+      Value<String?> definitionId,
+      Value<String?> repoId,
+      required String kind,
+      Value<String?> label,
+      required String status,
+      required DateTime startedAt,
+      Value<DateTime?> completedAt,
+      Value<int?> exitCode,
+      Value<String?> error,
+      Value<String> outputText,
+      Value<int> rowid,
+    });
+typedef $$EnvironmentRunsTableTableUpdateCompanionBuilder =
+    EnvironmentRunsTableCompanion Function({
+      Value<String> id,
+      Value<String> workspaceId,
+      Value<String?> spaceId,
+      Value<String?> environmentId,
+      Value<String?> definitionId,
+      Value<String?> repoId,
+      Value<String> kind,
+      Value<String?> label,
+      Value<String> status,
+      Value<DateTime> startedAt,
+      Value<DateTime?> completedAt,
+      Value<int?> exitCode,
+      Value<String?> error,
+      Value<String> outputText,
+      Value<int> rowid,
+    });
+
+class $$EnvironmentRunsTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $EnvironmentRunsTableTable> {
+  $$EnvironmentRunsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get environmentId => $composableBuilder(
+    column: $table.environmentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get repoId => $composableBuilder(
+    column: $table.repoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get exitCode => $composableBuilder(
+    column: $table.exitCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get outputText => $composableBuilder(
+    column: $table.outputText,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EnvironmentRunsTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $EnvironmentRunsTableTable> {
+  $$EnvironmentRunsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get environmentId => $composableBuilder(
+    column: $table.environmentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get repoId => $composableBuilder(
+    column: $table.repoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get exitCode => $composableBuilder(
+    column: $table.exitCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get outputText => $composableBuilder(
+    column: $table.outputText,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EnvironmentRunsTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $EnvironmentRunsTableTable> {
+  $$EnvironmentRunsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<String> get environmentId => $composableBuilder(
+    column: $table.environmentId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get repoId =>
+      $composableBuilder(column: $table.repoId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get exitCode =>
+      $composableBuilder(column: $table.exitCode, builder: (column) => column);
+
+  GeneratedColumn<String> get error =>
+      $composableBuilder(column: $table.error, builder: (column) => column);
+
+  GeneratedColumn<String> get outputText => $composableBuilder(
+    column: $table.outputText,
+    builder: (column) => column,
+  );
+}
+
+class $$EnvironmentRunsTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $EnvironmentRunsTableTable,
+          EnvironmentRunsTableData,
+          $$EnvironmentRunsTableTableFilterComposer,
+          $$EnvironmentRunsTableTableOrderingComposer,
+          $$EnvironmentRunsTableTableAnnotationComposer,
+          $$EnvironmentRunsTableTableCreateCompanionBuilder,
+          $$EnvironmentRunsTableTableUpdateCompanionBuilder,
+          (
+            EnvironmentRunsTableData,
+            BaseReferences<
+              _$WorkspaceDatabase,
+              $EnvironmentRunsTableTable,
+              EnvironmentRunsTableData
+            >,
+          ),
+          EnvironmentRunsTableData,
+          PrefetchHooks Function()
+        > {
+  $$EnvironmentRunsTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $EnvironmentRunsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EnvironmentRunsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EnvironmentRunsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$EnvironmentRunsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String?> spaceId = const Value.absent(),
+                Value<String?> environmentId = const Value.absent(),
+                Value<String?> definitionId = const Value.absent(),
+                Value<String?> repoId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String?> label = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<int?> exitCode = const Value.absent(),
+                Value<String?> error = const Value.absent(),
+                Value<String> outputText = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EnvironmentRunsTableCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                environmentId: environmentId,
+                definitionId: definitionId,
+                repoId: repoId,
+                kind: kind,
+                label: label,
+                status: status,
+                startedAt: startedAt,
+                completedAt: completedAt,
+                exitCode: exitCode,
+                error: error,
+                outputText: outputText,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                Value<String?> spaceId = const Value.absent(),
+                Value<String?> environmentId = const Value.absent(),
+                Value<String?> definitionId = const Value.absent(),
+                Value<String?> repoId = const Value.absent(),
+                required String kind,
+                Value<String?> label = const Value.absent(),
+                required String status,
+                required DateTime startedAt,
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<int?> exitCode = const Value.absent(),
+                Value<String?> error = const Value.absent(),
+                Value<String> outputText = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EnvironmentRunsTableCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                environmentId: environmentId,
+                definitionId: definitionId,
+                repoId: repoId,
+                kind: kind,
+                label: label,
+                status: status,
+                startedAt: startedAt,
+                completedAt: completedAt,
+                exitCode: exitCode,
+                error: error,
+                outputText: outputText,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $EnvironmentRunsTableTable,
+                    EnvironmentRunsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $EnvironmentRunsTableTable,
+                    EnvironmentRunsTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EnvironmentRunsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $EnvironmentRunsTableTable,
+      EnvironmentRunsTableData,
+      $$EnvironmentRunsTableTableFilterComposer,
+      $$EnvironmentRunsTableTableOrderingComposer,
+      $$EnvironmentRunsTableTableAnnotationComposer,
+      $$EnvironmentRunsTableTableCreateCompanionBuilder,
+      $$EnvironmentRunsTableTableUpdateCompanionBuilder,
+      (
+        EnvironmentRunsTableData,
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $EnvironmentRunsTableTable,
+          EnvironmentRunsTableData
+        >,
+      ),
+      EnvironmentRunsTableData,
+      PrefetchHooks Function()
+    >;
 
 class $WorkspaceDatabaseManager {
   final _$WorkspaceDatabase _db;
@@ -129063,8 +131604,19 @@ class $WorkspaceDatabaseManager {
       $$RigActionLogTableTableTableManager(_db, _db.rigActionLogTable);
   $$SkillSourcesTableTableTableManager get skillSourcesTable =>
       $$SkillSourcesTableTableTableManager(_db, _db.skillSourcesTable);
-  $$RepoScriptRunsTableTableTableManager get repoScriptRunsTable =>
-      $$RepoScriptRunsTableTableTableManager(_db, _db.repoScriptRunsTable);
   $$RunCallUsagesTableTableTableManager get runCallUsagesTable =>
       $$RunCallUsagesTableTableTableManager(_db, _db.runCallUsagesTable);
+  $$EnvironmentDefinitionsTableTableTableManager
+  get environmentDefinitionsTable =>
+      $$EnvironmentDefinitionsTableTableTableManager(
+        _db,
+        _db.environmentDefinitionsTable,
+      );
+  $$SpaceEnvironmentsTableTableTableManager get spaceEnvironmentsTable =>
+      $$SpaceEnvironmentsTableTableTableManager(
+        _db,
+        _db.spaceEnvironmentsTable,
+      );
+  $$EnvironmentRunsTableTableTableManager get environmentRunsTable =>
+      $$EnvironmentRunsTableTableTableManager(_db, _db.environmentRunsTable);
 }

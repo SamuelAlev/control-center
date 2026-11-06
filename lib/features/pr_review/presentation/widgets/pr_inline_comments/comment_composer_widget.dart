@@ -5,6 +5,7 @@ import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_send_row.dart';
 import 'package:control_center/features/pr_review/providers/comment_composer_mode_provider.dart';
+import 'package:control_center/features/pr_review/providers/pr_comment_draft_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -104,7 +105,7 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
 
   void _attachDraft() {
     _draftKey = _key;
-    final provider = textDraftControllerProvider(_draftKey);
+    final provider = prCommentDraftControllerProvider(_draftKey);
     final fresh = !ref.exists(provider);
     _ctrl = ref.read(provider);
     if (fresh && widget.initialText != null) {

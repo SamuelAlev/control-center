@@ -44,13 +44,8 @@ class _ProviderAppsSectionState extends ConsumerState<ProviderAppsSection> {
     return SectionCard(
       label: l10n.providerApps,
       subtitle: Text(l10n.providerAppsDescription),
-      padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-      headerPadding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        0,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      headerPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

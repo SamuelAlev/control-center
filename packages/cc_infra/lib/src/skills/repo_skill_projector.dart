@@ -10,7 +10,7 @@ import 'package:path/path.dart' as p;
 ///
 /// Each child of `.claude/skills` is one skill, and Claude names it after that
 /// child. A slug only one repository ships keeps that slug (`rest-endpoints`).
-/// A slug two repositories both ship is prefixed (`app-server:testing`) — the
+/// A slug two repositories both ship is prefixed (`api-server:testing`) — the
 /// spelling a directory-scoped skill already uses — so the bare name cannot
 /// silently run the other repository's instructions. Windows file names cannot
 /// contain `:`, so that host uses `repo__slug`; the prompt lists whichever

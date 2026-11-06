@@ -115,24 +115,32 @@ class _SettingsDisclosureState extends State<SettingsDisclosure> {
                     Icon(widget.icon, size: 15, color: tokens.fgTertiary),
                     const SizedBox(width: AppSpacing.sm),
                   ],
-                  Flexible(
-                    child: Text(
-                      widget.title,
-                      style: CcTypography.bodySm.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: tokens.textPrimary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            widget.title,
+                            style: CcTypography.bodySm.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: tokens.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (widget.badge != null) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          widget.badge!,
+                        ],
+                      ],
                     ),
                   ),
-                  if (widget.badge != null) ...[
-                    const SizedBox(width: AppSpacing.sm),
-                    widget.badge!,
-                  ],
-                  const Spacer(),
                   if (widget.summary != null) ...[
                     const SizedBox(width: AppSpacing.sm),
-                    Flexible(
+                    // Expanded, not Flexible: a loose slot shrink-wraps the
+                    // text, so TextAlign.end would have nothing to align
+                    // against and the summary would float mid-row.
+                    Expanded(
                       child: Text(
                         widget.summary!,
                         style: CcTypography.caption.copyWith(

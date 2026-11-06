@@ -2,10 +2,10 @@
 title: Skróty klawiszowe
 description: Pełny rejestr skrótów klawiszowych według zakresów, wraz z warunkami, w których każdy skrót jest wyzwalany.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/skroty-klawiszowe
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Skróty pochodzą z jednego rejestru `const`, `KeybindingRegistry` w `lib/core/constants/keybindings.dart`. Zawiera on **49 przypisań**. Ustawienia → Ty → Skróty klawiszowe wyświetla ten rejestr jako **dokumentację referencyjną tylko do odczytu**: nie ma interfejsu do ponownego przypisywania skrótów ani pliku skrótów użytkownika.
+Skróty pochodzą z jednego rejestru `const`, `KeybindingRegistry` w `lib/core/constants/keybindings.dart`. Zawiera on **49 przypisań**. Okno dialogowe **Skróty klawiszowe** (naciśnij `?` lub otwórz je z menu Pomoc) pokazuje skróty globalne oraz skróty bieżącego ekranu. Jest to **dokumentacja referencyjna tylko do odczytu**: nie ma interfejsu do ponownego przypisywania skrótów ani pliku skrótów użytkownika.
 
 W dalszej części strony `Cmd` oznacza główny modyfikator polecenia — ⌘ w macOS oraz Ctrl w Windows i Linuksie. Przypisanie działa tylko wtedy, gdy jego polecenie ma zarejestrowany handler na bieżącym ekranie, a jego klauzula `when` jest spełniona; `!textInputFocus` oznacza, że klawisz jest przekazywany do pola tekstowego, które ma fokus.
 
@@ -41,7 +41,7 @@ Zakres `/pull-requests`. Wszystkie wymagają `route == '/pull-requests'` i braku
 | `Enter` | Otwórz PR                |
 | `F`     | Otwórz menu filtrów      |
 
-`Enter` (`pr.list-open`) jest zadeklarowany w rejestrze i pojawia się w dokumentacji skrótów, ale **ekran listy nie rejestruje dla niego handlera**, więc obecnie nie działa. `F` otwiera menu filtrów (`pr.list-open-filter`), a nie wyszukiwanie.
+`Enter` (`pr.list-open`) jest zadeklarowany w rejestrze i pojawia się w oknie dialogowym **Skróty klawiszowe**, ale **ekran listy nie rejestruje dla niego handlera**, więc obecnie nie działa. `F` otwiera menu filtrów (`pr.list-open-filter`), a nie wyszukiwanie.
 
 ## Szczegóły pull requesta (2)
 
@@ -90,7 +90,7 @@ Zakres `/spaces`. Klauzule `when` używają wyrażenia regularnego, więc dział
 
 „Przejdź do pliku” otwiera selektor plików rozmowy. Bez wpisanego tekstu pokazuje ostatnio otwierane pliki; wpisywanie przeszukuje wszystkie pliki w worktree rozmowy. `Enter` otwiera wybrany plik w nowej karcie, `Cmd/Ctrl + Enter` lub przycisk podziału w wierszu otwiera go w panelu po prawej, a `×` w wierszu ostatniego pliku usuwa go z listy.
 
-Wysyłanie klawiszem Enter należy do pola tekstowego kompozytora; dyktowanie „Przyciśnij i mów” należy do przycisku mikrofonu w kompozytorze (ma własny handler klawiatury sprzętowej). Oba są wymienione w rejestrze na potrzeby dokumentacji ustawień.
+Wysyłanie klawiszem Enter należy do pola tekstowego kompozytora; dyktowanie „Przyciśnij i mów” należy do przycisku mikrofonu w kompozytorze (ma własny handler klawiatury sprzętowej). Oba są wymienione w rejestrze, aby okno dialogowe **Skróty klawiszowe** mogło je pokazać.
 
 ## Wybór obszaru roboczego (2)
 
@@ -127,7 +127,7 @@ Zakres `/newsfeed`. Wszystkie wymagają `route == '/newsfeed'` i braku pola teks
 
 ## Klawisze przeglądarki diffów poza rejestrem
 
-Przeglądarka diffów PR-a obsługuje je samodzielnie (`PrDiffKeyboardHandler`). Wyszukiwanie, oznaczanie jako wyświetlone i zwijanie są wymienione tylko w komentarzach rejestru, na potrzeby dokumentacji ustawień — nie zarejestrowano żadnego handlera dyspozytora, więc dyspozytor pozostawia je widokowi diffu. Nie pojawiają się jako osobne wiersze w dokumentacji skrótów.
+Przeglądarka diffów PR-a obsługuje je samodzielnie (`PrDiffKeyboardHandler`). Wyszukiwanie, oznaczanie jako wyświetlone i zwijanie są jedynie odnotowane w komentarzach rejestru: nie zarejestrowano żadnego handlera dyspozytora, więc dyspozytor pozostawia je widokowi diffu. Nie pojawiają się jako osobne wiersze w oknie dialogowym **Skróty klawiszowe**.
 
 | Skrót           | Akcja                                                     |
 | --------------- | --------------------------------------------------------- |

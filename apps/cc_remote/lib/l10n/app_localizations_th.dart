@@ -2611,4 +2611,7 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'การทำงานหยุดลงเพราะข้อมูลรับรองของผู้ให้บริการใช้ไม่ได้อีกต่อไป เชื่อมต่อใหม่ในการตั้งค่า → ผู้ให้บริการ แล้วลองรอบนี้ใหม่';
+
+  @override
+  String get permissionHostExecution => 'รันคำสั่งบนโฮสต์';
 }

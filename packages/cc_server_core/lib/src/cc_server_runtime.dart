@@ -141,7 +141,8 @@ import 'package:cc_natives/cc_natives.dart'
         setPreferredInferenceLibPath,
         tryOpenFirst,
         watcherLibraryBaseName,
-        watcherLibraryEnvVar;
+        watcherLibraryEnvVar,
+        configureRigNatives;
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_persistence/repositories/cron_execution_ledger_impl.dart';
 import 'package:cc_persistence/repositories/db_mode_resolver.dart';
@@ -176,6 +177,7 @@ import 'package:cc_server_core/src/demo/demo_review_service.dart';
 import 'package:cc_server_core/src/demo/demo_world.dart'
     show kDemoPipelineTemplateIds;
 import 'package:cc_server_core/src/dotenv.dart';
+import 'package:cc_server_core/src/environments/server_environment_adapters.dart';
 import 'package:cc_server_core/src/evals/skill_evaluation_rpc_ops.dart';
 import 'package:cc_server_core/src/evals/skill_evaluation_service.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
@@ -245,6 +247,7 @@ import 'package:cc_server_core/src/skill_analysis_run_reporter.dart';
 import 'package:cc_server_core/src/skill_analysis_service.dart';
 import 'package:cc_server_core/src/skill_quarantine_guard.dart';
 import 'package:cc_server_core/src/skill_reverify_service.dart';
+import 'package:cc_server_core/src/space_provisioning_row_writers.dart';
 import 'package:cc_server_core/src/space_provisioning_service.dart';
 import 'package:cc_server_core/src/space_stack_service.dart';
 import 'package:cc_server_core/src/telemetry/server_analytics.dart';
@@ -2215,6 +2218,7 @@ Future<CcServer> runCcServer({
   // token the gateway keeps. Claude Code's `Bash` calls are asked about through
   // its PreToolUse hook on the same endpoint. Mounted on the MCP surface, so it
   // rides the loopback port agents already dial.
+  final lateEnvironments = LateEnvironmentPort();
   final agentRunGateway = AgentRunGateway(
     guard: actionGuard,
     broker: credentialBroker,
@@ -2242,7 +2246,9 @@ Future<CcServer> runCcServer({
               actingUserId.isEmpty ||
               actingUserId == ownerUserId,
   );
-  mcpControl.agentRoutes = agentRunGateway.handle;
+  mcpControl
+    ..agentRoutes = agentRunGateway.handle
+    ..attestRun = agentRunGateway.mcpScopeFor;
   // Server-owned LLM provider credential store (the "brain"): UI-saved API keys
   // and OAuth tokens persist to a 0600 JSON file under the data dir, with the
   // process environment as a read-only fallback. The SAME instance backs both
@@ -2433,6 +2439,7 @@ Future<CcServer> runCcServer({
     // class — the path bridged MCP tools take (they bypass the MCP dispatcher).
     actionGuard: actionGuard,
     agentRunGateway: agentRunGateway,
+    environments: lateEnvironments,
     // The same fail-closed gate the install path uses, so a repo's own skills
     // pass a verdict before they are projected into an agent's overlay: they
     // are cloned content whose frontmatter is autoloaded into a prompt.
@@ -2518,7 +2525,7 @@ Future<CcServer> runCcServer({
     // agent's config is isolated to its own overlay cwd and the `X-CC-*`
     // scope headers pin the session to its workspace server-side.
     mcpConfigPathResolver:
-        (cwd, {workspaceId, agentId, conversationId, spaceId}) async {
+        (cwd, {workspaceId, agentId, conversationId, spaceId, runToken}) async {
           await mcpControl.ensureRunningForDispatch();
           // `.absolute` guards against a relative cwd reaching the spawned agent:
           // `claude` resolves `--mcp-config` against ITS cwd, so a relative path
@@ -2529,6 +2536,7 @@ Future<CcServer> runCcServer({
             agentId: agentId,
             conversationId: conversationId,
             spaceId: spaceId,
+            runToken: runToken,
           );
         },
   );
@@ -2581,32 +2589,20 @@ Future<CcServer> runCcServer({
   // `.mcp.json`). rift CoW is the sole backend (same native resolve paths as
   // other libs); CoW failure fails the provision — never `git worktree` into
   // the operator checkout. `isolatedRepoRepository` is the worktree registry.
-  // Per-repo setup/archive scripts run at provision/teardown; history in
-  // `repo_script_runs`.
-  final repoScriptRepository = DaoRepoScriptRepository(workspaceDbs);
-  final repoScriptService = RepoScriptService(
-    scripts: repoScriptRepository,
-    runs: repoScriptRepository,
-    repos: repoRepository,
-    spaceNameResolver: (workspaceId, spaceId) async =>
-        (await messagingRepository.getSpaceById(workspaceId, spaceId))?.name,
-    // Test runs (the scripts dialog's Test button) execute in a throwaway
-    // rift clone under the workspace's own tmp dir — same volume as the data
-    // root, so the CoW copy stays cheap — and are swept when stale.
-    repoIsolation: repoIsolation,
-    testCloneParentDir: (workspaceId) async {
-      final dir = p.join(config.dataDir, workspaceId, 'tmp', 'script_tests');
-      await workspaceFilesystem.ensureDir(dir);
-      return dir;
-    },
-  );
+  // Worktree provision/archive tasks run at provision/teardown; history in
+  // `environment_runs`.
+  // Filled in once the environment service exists: the provisioner is built
+  // long before terminals and rigs are.
+  final lateWorktreeTasks = LateWorktreeTasks();
+  final spaceProvisioningLog = InMemorySpaceProvisioningLog();
   final conversationProvisioner = RepoWorkspaceProvisioner(
+    provisioningLog: spaceProvisioningLog,
     filesystem: workspaceFilesystem,
     isolation: repoIsolation,
     registry: isolatedRepoRepository,
-    // Setup runs right after a fresh worktree is registered (a failure fails
-    // the provision); archive runs before one is destroyed (best-effort).
-    scripts: repoScriptService,
+    // `provision` tasks run right after a fresh worktree is registered (a
+    // failure fails the provision); `archive` tasks before one is destroyed.
+    worktreeTasks: demo != null ? null : lateWorktreeTasks,
     workspaces: workspaceRepository,
     githubToken: () => forgeCredentials.tokenFor(ForgeHost.github),
     // The workspace's own branch-name convention, read from its settings
@@ -3229,6 +3225,7 @@ Future<CcServer> runCcServer({
   // unawaited off the SpaceCreated event; message dispatch is gated on
   // the space's provisioningStatus until this flips it to ready/failed.
   spaceProvisioningService = SpaceProvisioningService(
+    log: spaceProvisioningLog,
     provisioner: conversationProvisioner,
     writeMcpConfig: (cwd, {workspaceId, agentId, conversationId}) async {
       await mcpControl.ensureRunningForDispatch();
@@ -3243,17 +3240,8 @@ Future<CcServer> runCcServer({
     messagingRepository: messagingRepository,
     workspaceRepository: workspaceRepository,
     isolatedRepoRepository: isolatedRepoRepository,
-    setProvisioningStatus: (workspaceId, spaceId, status) => workspaceDbs
-        .of(workspaceId)
-        .messagingDao
-        .updateSpaceProvisioningStatus(spaceId, status.toDbValue()),
-    // Granular progress ("cloning repo X", "setting up agent Y"): written to
-    // the space row, so it rides the same live space stream clients
-    // already watch for the status. The status write clears it on ready/failed.
-    setProvisioningStep: (workspaceId, spaceId, step) => workspaceDbs
-        .of(workspaceId)
-        .messagingDao
-        .updateSpaceProvisioningStep(spaceId, step.toDbValue()),
+    setProvisioningStatus: spaceProvisioningStatusWriter(workspaceDbs),
+    setProvisioningStep: spaceProvisioningStepWriter(workspaceDbs),
     // PR-review spaces provision their repo at the PR head ref so chat /
     // terminal / file-edit all see the PR's proposed tree. Resolved from the
     // space's review-space association (newest wins).
@@ -3288,19 +3276,16 @@ Future<CcServer> runCcServer({
     // The same progress, announced for surfaces that watch events rather than
     // the space row — the chat bridge reports it on its task card.
     eventBus: eventBus,
-    // One watchdog budget per scripted repo: a setup script still inside its
-    // own (5-minute) bound must not trip the space-level watchdog.
-    setupScriptedRepoCount: (workspaceId) async {
+    // One watchdog budget per repo with provision tasks: a task still inside
+    // its own (5-minute) bound must not trip the space-level watchdog.
+    environmentRepos: lateWorktreeTasks.reposWithEnvironments,
+    provisionTaskRepoCount: (workspaceId) async {
       final repos = await workspaceRepository
           .watchReposForWorkspace(workspaceId)
           .first;
       var count = 0;
       for (final repo in repos) {
-        final scripts = await repoScriptRepository.getScripts(
-          workspaceId,
-          repo.id,
-        );
-        if (scripts.setup != null) {
+        if (await lateWorktreeTasks.hasProvisionTasks(workspaceId, repo.id)) {
           count++;
         }
       }
@@ -3425,6 +3410,7 @@ Future<CcServer> runCcServer({
     smolvm: smolvmBackend,
     images: rigImageStore,
     ios: iosSimulatorBackend,
+    hostWindows: const NativeHostWindowPort(),
     credentials: rigCredentials,
     eventBus: eventBus,
     // Confinement root for Android APK and iOS simulator app installation:
@@ -3587,6 +3573,7 @@ Future<CcServer> runCcServer({
     ..register(BrowserUseTool(rigs: rigService))
     ..register(MobileUseTool(rigs: rigService))
     ..register(IosUseTool(rigs: rigService))
+    ..register(AppUseTool(rigs: rigService))
     ..register(RigListTool(rigs: rigService))
     ..register(RigCloseTool(rigs: rigService));
 
@@ -3694,6 +3681,10 @@ Future<CcServer> runCcServer({
       envVar: samlLibraryEnvVar,
     ),
   );
+  // Backs desktop app windows. Candidates rather than an opened library: the
+  // calls block in the OS, so each runs on a worker isolate that opens the
+  // library itself.
+  configureRigNatives(dataDir: config.dataDir);
 
   // Loading onnxruntime + probing every bundled dylib: the slowest purely
   // synchronous stretch of boot on a cold page cache.
@@ -5465,6 +5456,36 @@ Future<CcServer> runCcServer({
     return res ?? {'ok': false, 'error': 'no worktree'};
   }
 
+  // Space environments: built here because they need terminals, rigs and the
+  // PR worktree sync. Absent on a demo server, which runs no host processes.
+  final environmentService = demo != null
+      ? null
+      : wireServerEnvironments(
+          dataDir: config.dataDir,
+          workspaceDbs: workspaceDbs,
+          globalDb: globalDb,
+          events: eventBus,
+          terminals: terminalSessions,
+          rigs: rigService,
+          messaging: messagingRepository,
+          repos: repoRepository,
+          isolated: isolatedRepoRepository,
+          reviewSpaces: reviewSpaceRepository,
+          isolation: repoIsolation,
+          filesystem: workspaceFilesystem,
+          workspaces: workspaceRepository,
+          provisioning: spaceProvisioningService,
+          githubClientForOwner: githubClientForOwner,
+          members: membershipRepository,
+          syncPrWorktree: syncPrWorktree,
+          worktreeTasks: lateWorktreeTasks,
+          environments: lateEnvironments,
+          sandboxManager: sandboxManager,
+          gateway: agentRunGateway,
+          actionGuard: actionGuard,
+          mcpRegistry: mcpRegistry,
+        );
+
   // One provider-side app per WORKSPACE, dialed OUTBOUND (Slack: Socket Mode —
   // `apps.connections.open` + a WebSocket), so a server behind NAT with no tunnel
   // receives mentions, DMs and slash commands without any inbound endpoint.
@@ -5614,10 +5635,11 @@ Future<CcServer> runCcServer({
     // demo: no worktrees to provision.
     ensurePrWorktree: demo != null ? null : ensurePrWorktreePath,
     // demo: no worktrees to sync.
-    syncPrWorktree: demo != null ? null : syncPrWorktree,
+    syncPrWorktree: clientPrSync(environmentService, syncPrWorktree),
     extraOps: serverExtraOps.ops,
     webPushService: webPushService,
     extraWatchQueries: serverExtraOps.watches,
+    spaceProvisioningLog: spaceProvisioningLog,
     // Identity & membership (multi-user access): the users/members/invites/
     // prefs/activity ops + the invite service, plus the bootstrap owner (the
     // admin of server-global surfaces like the device registry).
@@ -5690,9 +5712,8 @@ Future<CcServer> runCcServer({
     agentRepository: agentRepository,
     agentRunLogRepository: agentRunLogRepository,
     repoRepository: repoRepository,
-    repoScriptRepository: repoScriptRepository,
-    // demo: no repo script execution.
-    repoScripts: demo != null ? null : repoScriptService,
+    // demo: no host processes.
+    environments: environmentService,
     spaceReadRepository: spaceReadRepository,
     memoryDomainRepository: memoryDomainRepository,
     memoryAccessGrantRepository: memoryAccessGrantRepository,
@@ -7196,22 +7217,11 @@ Future<CcServer> runCcServer({
             final file = File(path);
             return file.existsSync() ? file : null;
           },
-    backupSnapshotArchive: databaseBackupService == null
-        ? null
-        : ({required name}) async {
-            // Resolved through the LISTING rather than by joining `name` onto
-            // the backups root: the client names a snapshot, never a path, so
-            // this route cannot be aimed at a directory the listing would not
-            // have shown it.
-            final snapshots = await databaseBackupService.listBackups();
-            final match = snapshots.where((s) => s.name == name).firstOrNull;
-            if (match == null) {
-              return null;
-            }
-            return BackupSnapshotArchiveBuilder(
-              stagingDir: backupTransferStagingDir,
-            ).build(snapshot: Directory(match.path), name: name);
-          },
+    backupSnapshotArchive: snapshotArchiveWriter(
+      databaseBackupService,
+      stagingDir: backupTransferStagingDir,
+    ),
+    backupStoredFile: storedBackupReader(databaseBackupService),
     backupRestore: databaseBackupService == null
         ? null
         : ({required workspaceId, required sourcePath}) async {

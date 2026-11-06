@@ -20,8 +20,9 @@ class NewsfeedTrustedSitesSection extends ConsumerWidget {
 
     return SectionCard(
       label: l10n.trustedSitesSectionTitle,
-      padding: const EdgeInsets.fromLTRB(0, 14, 0, 8),
-      headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 8),
+      padding: const EdgeInsets.fromLTRB(0, AppSpacing.md, 0, 8),
+      headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 0),
+      headerAlignment: CrossAxisAlignment.center,
       trailing: CcButton(
         variant: CcButtonVariant.secondary,
         onPressed: () => _showAddTrustedSiteDialog(context, ref),
@@ -91,6 +92,7 @@ class _TrustedSiteRow extends ConsumerWidget {
           CcTooltip(
             message: l10n.removeTrustedSite,
             child: CcIconButton(
+              variant: CcButtonVariant.destructive,
               icon: AppIcons.trash2,
               semanticLabel: l10n.remove,
               onPressed: () =>

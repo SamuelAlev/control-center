@@ -51,12 +51,13 @@ bool get runningInCi =>
 /// `$CC_NATIVE_LIB_DIR`, the repo's `build/natives/` staging dir, and the dev
 /// app-support install (including its `grammars/` subdir), first source wins.
 Future<void> stageServerNatives(String dataDir) async {
+  final sources = _nativeSourceDirs();
   final wanted = RegExp(
     r'^(lib)?(rhttp|fff_c|ccpty|cc_watcher|rift_ffi|lame_ffi|aec_ffi|cc_inference'
-    r'|cc_saml|tree-sitter.*)'
+    r'|cc_saml|cc_window|tree-sitter.*)'
     r'\.(dylib|so|dll)(\..+)?$|\.scm$',
   );
-  for (final source in _nativeSourceDirs()) {
+  for (final source in sources) {
     for (final entity in source.listSync()) {
       if (entity is! File) {
         continue;
@@ -69,6 +70,39 @@ Future<void> stageServerNatives(String dataDir) async {
       if (target.existsSync()) {
         continue; // First source wins.
       }
+      entity.copySync(target.path);
+    }
+  }
+  // The preflight also requires the managed media tools, found at
+  // `<dataDir>/media/`. Link the first staged copy rather than copying it.
+  final mediaTarget = p.join(dataDir, 'media');
+  for (final source in sources) {
+    final media = Directory(p.join(source.path, 'media'));
+    if (!media.existsSync() || Directory(mediaTarget).existsSync()) {
+      continue;
+    }
+    _stageMedia(media, mediaTarget);
+  }
+}
+
+/// Symlinks the media directory, copying it only where a link is refused
+/// (unprivileged Windows).
+void _stageMedia(Directory source, String targetPath) {
+  try {
+    Link(targetPath).createSync(source.absolute.path);
+    return;
+  } on FileSystemException {
+    if (!Platform.isWindows) {
+      rethrow;
+    }
+  }
+  for (final entity in source.listSync(recursive: true)) {
+    final relative = p.relative(entity.path, from: source.path);
+    if (entity is Directory) {
+      Directory(p.join(targetPath, relative)).createSync(recursive: true);
+    } else if (entity is File) {
+      final target = File(p.join(targetPath, relative));
+      target.parent.createSync(recursive: true);
       entity.copySync(target.path);
     }
   }

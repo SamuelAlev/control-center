@@ -2,7 +2,7 @@
 title: Narzędzia MCP
 description: Kompletny katalog narzędzi MCP, które rejestruje cc_server, według rodzin.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-mcp
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` hostuje jeden rejestr narzędzi MCP (JSON-RPC 2.0), udostępniany na głównym porcie serwera (domyślnie `9030`) pod `POST /mcp` i `GET /sse`, w wersji protokołu `2024-11-05`. Każdy klient trafia do tego samego rejestru: aplikacja desktopowa, wersja webowa, zewnętrzni klienci MCP i wbudowany runtime agentów. Zewnętrzne serwery MCP można podłączyć do tego samego rejestru jako warstwę dynamiczną.
@@ -259,6 +259,8 @@ Pełny słownik czasowników dla każdej powierzchni znajduje się w
 | `ios_use`      | Steruje Symulatorem iOS przez WebDriverAgent/CoreSimulator: inspekcja/wprowadzanie, zrzuty ekranu, instalowanie/uruchamianie/zatrzymywanie/odinstalowywanie aplikacji, deep linki i procesy symulatora w kształcie argv |
 | `rig_list`     | Wylicza rigi obszaru roboczego wraz z powierzchnią, statusem, rozmiarem wyświetlania i kontrolerem |
 | `rig_close`    | Niszczy riga i odrzuca należący do niego stan maszyny                                            |
+
+`app_use` to piąte narzędzie use: steruje oknami aplikacji desktopowej uruchomionej w przestrzeni, bezpośrednio na hoście, a nie w VM, i deklaruje też `fileWriteOutsideWorktree` oraz `fileDelete`. To narzędzie i narzędzia `environment_*` opisuje strona [Konfigurowanie środowisk](/pl-PL/podrecznik/poradniki/srodowiska/).
 
 ## Nieudostępniane przez MCP
 

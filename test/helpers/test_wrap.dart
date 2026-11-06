@@ -7,7 +7,11 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 // Provider overrides shared by both wrappers.
@@ -37,6 +41,69 @@ final _testOverrides = [
   meetingActionItemStatsProvider.overrideWith((ref, _) => const Stream.empty()),
   meetingDecisionCountsProvider.overrideWith((ref, _) => const Stream.empty()),
 ];
+
+/// A router with [routes] inside the shell's [MouseNavigationHandler], for pages
+/// whose navigation is under test. Pass the app's own route lists so the test
+/// walks the production table; pump with [testRouterWrap].
+GoRouter historyTestRouter({
+  required String initialLocation,
+  required List<RouteBase> routes,
+}) => GoRouter(
+  initialLocation: initialLocation,
+  routes: [
+    ShellRoute(
+      builder: (context, state, child) => Consumer(
+        builder: (context, ref, _) => MouseNavigationHandler(
+          historyController: ref.read(navigationHistoryProvider.notifier),
+          // Inside the navigator, for its overlay.
+          child: CcToastScope(child: Scaffold(body: child)),
+        ),
+      ),
+      routes: routes,
+    ),
+  ],
+);
+
+/// [testWrap] for a page that navigates: the same scope, l10n and theme around
+/// [router].
+Widget testRouterWrap(
+  GoRouter router, {
+  Locale locale = const Locale('en'),
+  bool isDemo = false,
+}) => ProviderScope(
+  overrides: [
+    isDemoServerProvider.overrideWith((ref) => isDemo),
+    ..._testOverrides,
+  ],
+  child: MaterialApp.router(
+    routerConfig: router,
+    localizationsDelegates: [
+      ...AppLocalizations.localizationsDelegates,
+      ...GlobalMaterialLocalizations.delegates,
+    ],
+    supportedLocales: kSupportedAppLocales,
+    locale: locale,
+    builder: (context, child) => CcTheme(
+      data: CcThemeData.light(),
+      child: child ?? const SizedBox.shrink(),
+    ),
+  ),
+);
+
+/// Presses the mouse's back button, or its forward button with [forward].
+Future<void> pressMouseHistoryButton(
+  WidgetTester tester, {
+  bool forward = false,
+}) async {
+  final mouse = await tester.createGesture(
+    kind: PointerDeviceKind.mouse,
+    buttons: forward ? kForwardMouseButton : kBackMouseButton,
+  );
+  await mouse.down(const Offset(5, 5));
+  await mouse.up();
+  await mouse.removePointer();
+  await tester.pumpAndSettle();
+}
 
 /// ProviderScope + MaterialApp (l10n) + CcTheme for widget tests.
 ///

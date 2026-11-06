@@ -34,6 +34,8 @@ abstract interface class RepoIsolationPort {
   /// [authUrl] or copy's origin; [headRef] fetches that ref as [branch].
   /// Rift failures throw (no worktree rescue on CoW). [pristine] → clean -ffdx.
   /// [cancel] → [CancelledException]; disk leftover is caller's to reap.
+  /// [onOutput] receives each stage and git's progress as it happens; lines
+  /// are unredacted, so a caller that shows them redacts first.
   Future<RepoIsolationResult> provision({
     required String sourcePath,
     required String destParentDir,
@@ -44,6 +46,7 @@ abstract interface class RepoIsolationPort {
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   });
 
   /// Destroys a previously provisioned worktree. For the rift backend this

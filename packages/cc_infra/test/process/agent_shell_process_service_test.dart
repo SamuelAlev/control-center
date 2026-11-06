@@ -38,7 +38,7 @@ class _RunLogs implements AgentRunLogRepository {
 const _claudeCommand =
     r'/bin/zsh -c source /data/claude-accounts/account/shell-snapshots/'
     r'snapshot-zsh-1-x.sh 2>/dev/null || true && setopt NO_EXTENDED_GLOB '
-    r"2>/dev/null || true && eval 'cd repos/web-app && node vitest.mjs run "
+    r"2>/dev/null || true && eval 'cd repos/shop-ui && node vitest.mjs run "
     r"--shard=2/10 > /tmp/shard2.log 2>&1; echo '\''done'\''' < /dev/null "
     r'&& pwd -P >| /tmp/claude-1-cwd';
 
@@ -79,7 +79,7 @@ void main() {
     test("unwraps Claude Code's eval line, quotes and all", () {
       expect(
         agentCommandOf(_claudeCommand),
-        'cd repos/web-app && node vitest.mjs run --shard=2/10 > '
+        'cd repos/shop-ui && node vitest.mjs run --shard=2/10 > '
         "/tmp/shard2.log 2>&1; echo 'done'",
       );
     });
@@ -154,7 +154,7 @@ void main() {
       expect(p.origin, AgentShellOrigin.cli);
       expect(p.agentId, 'engineer');
       expect(p.runId, 'run-1');
-      expect(p.command, startsWith('cd repos/web-app && node vitest.mjs'));
+      expect(p.command, startsWith('cd repos/shop-ui && node vitest.mjs'));
       expect(
         p.startedAt,
         now.subtract(const Duration(minutes: 4, seconds: 12)),

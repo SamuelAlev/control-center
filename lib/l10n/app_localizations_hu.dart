@@ -91,10 +91,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get keybindingPushToTalk => 'Nyomva beszélhet';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'Hangdiktálás nyomva tartása vagy váltása az üzenetszerkesztőben';
-
-  @override
   String get agentPermissions => 'Ügynökjogosultságok';
 
   @override
@@ -195,6 +191,9 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'iOS-szimulátor';
+
+  @override
+  String get rigSurfaceAppWindow => 'Alkalmazásablak';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -468,6 +467,10 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'Az élő nézethez ffmpeg kell ezen a gépen. Telepítse az ffmpeg-et, és nyissa újra a lapot.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'Az élő nézethez képernyőfelvétel szükséges. Engedélyezze a Control Center számára a Rendszerbeállításokban, majd nyissa meg újra a lapot.';
 
   @override
   String get rigStreamEnded => 'Az élő nézet véget ért.';
@@ -1577,10 +1580,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'Szűrőmenü megnyitása';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'A pull request szűrőmenü megnyitása';
 
   @override
   String countSelected(int count) {
@@ -2853,19 +2852,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get cancelEdit => 'Szerkesztés megszakítása';
 
   @override
-  String get categoryCreation => 'Létrehozás';
-
-  @override
-  String get categoryEditing => 'Szerkesztés';
-
-  @override
   String get categoryNavigation => 'Navigáció';
-
-  @override
-  String get categorySystem => 'Rendszer';
-
-  @override
-  String get categoryView => 'Kategórianézet';
 
   @override
   String get change => 'Módosítás';
@@ -3693,31 +3680,13 @@ class AppLocalizationsHu extends AppLocalizations {
   String get keepSandboxing => 'Homokozó megtartása';
 
   @override
-  String get keybindingAddARepositoryDescription => 'Tároló hozzáadása';
-
-  @override
   String get keybindingAddRepository => 'Tároló hozzáadása';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'A kijelölt cikk könyvjelzőzése vagy eltávolítása';
 
   @override
   String get keybindingCommandPalette => 'Parancspaletta';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'Új ügynök létrehozása';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'Új munkaterület létrehozása';
-
-  @override
   String get keybindingFocusSearch => 'Keresés fókusza';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'A pull request keresőmező fókusza';
 
   @override
   String get keybindingNewAgent => 'Új ügynök';
@@ -3738,35 +3707,10 @@ class AppLocalizationsHu extends AppLocalizations {
   String get keybindingOpenArticle => 'Cikk megnyitása';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'A munkaterület-váltó felugró ablak megnyitása vagy bezárása az oldalsávban';
-
-  @override
   String get keybindingOpenPr => 'PR megnyitása';
 
   @override
   String get keybindingOpenSettings => 'Beállítások megnyitása';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'Az alkalmazás beállításainak megnyitása';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription =>
-      'A parancspaletta megnyitása';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'A kijelölt cikk megnyitása';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'A kijelölt pull request megnyitása';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'A kijelölt munkaterület megnyitása';
 
   @override
   String get keybindingOpenWorkspace => 'Munkaterület megnyitása';
@@ -3784,87 +3728,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get keybindingRefresh => 'Frissítés';
 
   @override
-  String get keybindingRefreshAllFeedsDescription =>
-      'Minden hírfolyam frissítése';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'A pull request lista frissítése';
-
-  @override
-  String get keybindingRescanForAdaptersDescription =>
-      'Adapterek újraellenőrzése';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription =>
-      'A következő cikk kijelölése';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription =>
-      'A következő tér kijelölése';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'Az előző cikk kijelölése';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription =>
-      'Az előző tér kijelölése';
-
-  @override
   String get keybindingSendMessage => 'Üzenet küldése';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'Az aktuális üzenet küldése';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'Váltás világos és sötét mód között';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'Váltás a nyolcadik munkaterületre';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'Váltás az ötödik munkaterületre';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'Váltás az első munkaterületre';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'Váltás a negyedik munkaterületre';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'Váltás a következő munkaterületre';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'Váltás a kilencedik munkaterületre';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'Váltás az előző munkaterületre';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'Váltás a második munkaterületre';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'Váltás a hetedik munkaterületre';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'Váltás a hatodik munkaterületre';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'Váltás a harmadik munkaterületre';
 
   @override
   String get keybindingToggleBookmark => 'Könyvjelző váltása';
@@ -3901,13 +3765,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => '9. munkaterület';
-
-  @override
-  String get keybindings => 'Gyorsbillentyűk';
-
-  @override
-  String get keybindingsDescription =>
-      'Minden billentyűparancs. A parancsok rögzítettek, és nem rendelhetők át.';
 
   @override
   String get killRunning => 'Futó leállítása';
@@ -4178,11 +4035,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get noSavedArticlesBody => 'A mentett cikkek itt jelennek meg.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'Nincs a(z) „$query” kifejezésre illeszkedő gyorsbillentyű';
-  }
 
   @override
   String get noSystemFonts => 'Nem találhatók rendszerbetűtípusok.';
@@ -4919,12 +4771,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'Keresés…';
-
-  @override
-  String get searchShortcuts => 'Gyorsbillentyűk keresése…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'Nem érhető el a böngészőben';
 
   @override
   String get searching => 'Keresés…';
@@ -6721,6 +6567,30 @@ class AppLocalizationsHu extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'Tér törölve';
 
   @override
+  String get triggerEventSpaceArchived => 'Tér archiválva';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged =>
+      'Tér előkészítése megváltozott';
+
+  @override
+  String get triggerEventPrHeadChanged => 'PR head megváltozott';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged =>
+      'Környezet állapota megváltozott';
+
+  @override
+  String get triggerEventEnvironmentReady => 'Környezet kész';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'Környezet megszüntetve';
+
+  @override
+  String get triggerEventEnvironmentProcessExited =>
+      'Környezeti folyamat kilépett';
+
+  @override
   String get triggerExternalPrHelp =>
       'Egy pull request, amelyet a kódhoston nyitottak, nem a Control Centerből.';
 
@@ -6784,6 +6654,33 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'Egy beszélgetési teret törölnek.';
+
+  @override
+  String get triggerSpaceArchivedHelp => 'Egy beszélgetési teret archiválnak.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'Egy tér worktree-jeinek előkészítése elindul, befejeződik vagy meghiúsul.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'Új commitok kerülnek egy nyitott pull requestbe.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'Egy tér környezete új állapotba kerül.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'Egy tér környezete elindult és használható.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp =>
+      'Egy tér környezetét lebontják.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'Egy környezet által futtatott folyamat kilép.';
 
   @override
   String get navTickets => 'Jegyek';
@@ -9001,19 +8898,6 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'Használat és költség';
-
-  @override
-  String get usageAndCostDescription =>
-      'Az ügynökei költése az elmúlt 7 napban, a megfigyelt futtatási költségekből.';
-
-  @override
-  String get noUsageYet => 'Még nincs rögzített használat.';
-
-  @override
-  String get spentThisWeek => 'elköltve ezen a héten';
-
-  @override
   String get subscriptionUsage => 'Előfizetés használata';
 
   @override
@@ -9227,9 +9111,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get keybindingNewSpace => 'Új tér';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'Új tér létrehozása';
-
-  @override
   String get jumpToLatest => 'Ugrás a legújabbra';
 
   @override
@@ -9405,71 +9286,8 @@ class AppLocalizationsHu extends AppLocalizations {
   String get preparingWorkspace => 'Munkaterület előkészítése…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'A(z) $repo telepítőszkriptjének futtatása…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'Szkriptek';
-
-  @override
-  String get repoScriptsTooltip => 'Életciklus-szkriptek beállítása';
-
-  @override
-  String get repoScriptsSetupLabel => 'Telepítőszkript';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'A tér worktree-jében fut, közvetlenül a létrehozása után — függőségek telepítése, fájlok generálása. A hiba sikertelennek jelöli a teret; az újrapróbálás újra futtatja.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'Archiválószkript';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'Közvetlenül a tér worktree-jének törlése előtt fut — a worktree-n kívüli erőforrások takarítása. A hiba soha nem blokkolja a törlést.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'bash-sel fut a worktree-ből, a CC_WORKSPACE_PATH (a worktree), CC_ROOT_PATH (a tároló gyökere), CC_SPACE_ID, CC_SPACE_NAME és CC_REPO_NAME beállítva.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'pl. pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'pl. docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => 'Legutóbbi futtatások';
-
-  @override
-  String get repoScriptsNoRuns => 'Még nincs futtatás';
-
-  @override
-  String get repoScriptsSaved => 'Szkriptek mentve';
-
-  @override
-  String get repoScriptsRunKindSetup => 'Telepítés';
-
-  @override
-  String get repoScriptsRunKindArchive => 'Archiválás';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'Fut';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'Sikeres';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'Sikertelen';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'Időtúllépés';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'Kilépési kód $code';
+  String provisioningRunningTasks(String repo) {
+    return 'A(z) $repo worktree-feladatainak futtatása…';
   }
 
   @override
@@ -10275,10 +10093,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get keybindingCheatSheet => 'Billentyűparancsok';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'Az aktuális képernyő billentyűparancs-táblázatának megjelenítése';
-
-  @override
   String get runPlaybookLabel => 'Playbook futtatása';
 
   @override
@@ -10289,14 +10103,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'Mégis';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'Az utolsó visszavonható művelet visszavonása';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'Az utoljára visszavont művelet mégis végrehajtása';
 
   @override
   String get undone => 'Visszavonva';
@@ -14160,6 +13966,9 @@ class AppLocalizationsHu extends AppLocalizations {
   String get newSkill => 'Új készség';
 
   @override
+  String get newItemAction => 'Új';
+
+  @override
   String get zoomIn => 'Nagyítás';
 
   @override
@@ -14378,6 +14187,9 @@ class AppLocalizationsHu extends AppLocalizations {
   String get steerNow => 'Irányítás';
 
   @override
+  String get steerForce => 'Leállítás és küldés';
+
+  @override
   String get steeringQueueLabel => 'Várólistás irányítóüzenetek';
 
   @override
@@ -14425,16 +14237,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'Újra kérdezünk, amikor egy ügynök következő alkalommal programot akar futtatni ebből a példányból.';
-
-  @override
-  String get repoScriptsTest => 'Teszt';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'A vázlat futtatása a tároló eldobható klónjában';
-
-  @override
-  String get repoScriptsRunKindTest => 'Teszt';
 
   @override
   String get demoBadgeLabel => 'Demo';
@@ -14650,6 +14452,50 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'Útvonal a szerveren';
+
+  @override
+  String get backupScheduledLabel => 'Ütemezett mentések';
+
+  @override
+  String get backupScheduledExplainer =>
+      'Az egyes munkaterületek mentési pipeline-ja által tárolt másolatok. Az ütemezést és a megőrzést a pipeline sablonjában állíthatja be.';
+
+  @override
+  String get backupScheduledNone => 'Még nincs mentés';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mentés',
+      one: '1 mentés',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'Utolsó mentés: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'A munkaterület mentéseinek megtekintéséhez rendszergazdai szerepkör szükséges.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'Törli ezt a mentést?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'Törli a(z) $name $date dátumú mentését a szerverről? Ez nem vonható vissza.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'Mentés törölve.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'Munkaterület törölve';
 
   @override
   String get backupRestoreAction => 'Visszaállítás';
@@ -15273,14 +15119,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get ideQuickOpen => 'Ugrás fájlra';
 
   @override
-  String get ideQuickOpenDescription =>
-      'A beszélgetés fájljainak keresése név szerint, és egy megnyitása lapon';
-
-  @override
-  String get prQuickOpenDescription =>
-      'A pull request fájljainak keresése név szerint, és egy megnyitása lapon';
-
-  @override
   String get ideQuickOpenHint => 'Fájlok keresése név szerint';
 
   @override
@@ -15610,6 +15448,15 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'Kényszerített betöltés';
+
+  @override
+  String get skillEvalHashLabel => 'Csomag hash-e';
+
+  @override
+  String get skillEvalProgressLabel => 'Folyamat';
+
+  @override
+  String get skillEvalUpdatesToggle => 'Frissítések értékelése';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -16002,4 +15849,712 @@ class AppLocalizationsHu extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return 'Még $minutes perc';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'A környezetek valódi folyamatokat futtatnak a gazdagépen, ezért a demóban nincsenek.';
+
+  @override
+  String get environmentChecksFailing =>
+      'Néhány ellenőrzés sikertelen a szerveren';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'Végpontok: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'Szolgáltatások: $names';
+  }
+
+  @override
+  String get environmentCopied => 'Másolva';
+
+  @override
+  String get environmentCopyCommand => 'Parancs másolása';
+
+  @override
+  String get environmentCopyUrl => 'URL másolása';
+
+  @override
+  String get environmentDefinition => 'Definíció';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count definíció',
+      one: '1 definíció',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'Megsemmisítés';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return 'A(z) $name és az adatai törlődnek. Az Indítás újat hoz létre.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'Megsemmisíti ezt a környezetet?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'Futtatás egy szolgáltatásban';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'Kilépési kód: $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => 'Ezt a szerveren kell beállítani';
+
+  @override
+  String get environmentKindApp => 'Alkalmazás';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'Folyamat';
+
+  @override
+  String get environmentKindTask => 'Feladat';
+
+  @override
+  String get environmentLaunch => 'Megnyitás';
+
+  @override
+  String get environmentLogsGone => 'Ezek a naplók már nem érhetők el.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'Naplók: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'Várakozás kimenetre';
+
+  @override
+  String get environmentMoreActions => 'További környezeti műveletek';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'Egy módosítás miatt újra létre kell hozni ezt a környezetet.';
+
+  @override
+  String get environmentNoStack =>
+      'Csak worktree-feladatokat futtat, így nincs mit elindítani.';
+
+  @override
+  String get environmentOnTheServer => 'A szerveren';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Megnyitás a Browser (VM) nézetben';
+
+  @override
+  String get environmentOpenViewer => 'Megjelenítő megnyitása';
+
+  @override
+  String get environmentPlacementRig => 'Virtuális gépen';
+
+  @override
+  String get environmentPreviewTab => 'Környezet';
+
+  @override
+  String get environmentRebuildRelaunch => 'Újraépítés és újranyitás';
+
+  @override
+  String get environmentRecreate => 'Újralétrehozás';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return 'A(z) $name megsemmisül, majd ugyanazokkal a beállításokkal újraindul. Az adatai elvesznek.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'Újra létrehozza ezt a környezetet?';
+
+  @override
+  String environmentResetBody(String name) {
+    return 'A(z) $name visszaáll az alapállapotra. Az azóta létrehozott adatok elvesznek.';
+  }
+
+  @override
+  String get environmentResetData => 'Adatok visszaállítása';
+
+  @override
+  String get environmentResetTitle => 'Visszaállítja az adatokat?';
+
+  @override
+  String get environmentRestart => 'Újraindítás';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count újraindítás',
+      one: '1 újraindítás',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'Futtatás';
+
+  @override
+  String get environmentRunInTerminal => 'Futtatás terminálban';
+
+  @override
+  String get environmentSectionTitle => 'Környezet';
+
+  @override
+  String get environmentService => 'Szolgáltatás';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'Műveletek: $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'Környezet indítása';
+
+  @override
+  String get environmentStateCrashed => 'Összeomlott';
+
+  @override
+  String get environmentStatusDegraded => 'Korlátozott';
+
+  @override
+  String get environmentStatusDestroying => 'Megsemmisítés folyamatban';
+
+  @override
+  String get environmentStatusGone => 'Eltűnt';
+
+  @override
+  String get environmentStatusStopping => 'Leállítás folyamatban';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'A(z) $name leállításával elvesznek az adatai, és az Indítás nem hozza vissza őket.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'Leállítás és adatvesztés';
+
+  @override
+  String get environmentStopTitle => 'Leállítja ezt a környezetet?';
+
+  @override
+  String get environmentTaskNeverRun => 'Még nem futott';
+
+  @override
+  String get environmentsAddCheck => 'Ellenőrzés hozzáadása';
+
+  @override
+  String get environmentsAddOption => 'Beállítás hozzáadása';
+
+  @override
+  String get environmentsAddRole => 'Szerepkör hozzáadása';
+
+  @override
+  String get environmentsAdminOnly =>
+      'Definíciókat csak a munkaterület rendszergazdái módosíthatnak.';
+
+  @override
+  String get environmentsAfter => 'Várakozás ezekre az összetevőkre';
+
+  @override
+  String get environmentsAnchor => 'Horgony';
+
+  @override
+  String get environmentsAutoCreate => 'Automatikus indítás';
+
+  @override
+  String get environmentsAutoCreateAll => 'Minden megfelelő térben';
+
+  @override
+  String get environmentsAutoCreateOff => 'Soha';
+
+  @override
+  String get environmentsAutoCreatePrs => 'Pull request terekben';
+
+  @override
+  String get environmentsBlank => 'Üres definíció';
+
+  @override
+  String get environmentsCheckFix => 'Javító parancs';
+
+  @override
+  String get environmentsCheckHint => 'Tipp';
+
+  @override
+  String get environmentsCommandHelp =>
+      'Az argumentumokat szóköz választja el. A szóközt tartalmazót tegye idézőjelbe.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count összetevő',
+      one: '1 összetevő',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'Képek építése indításkor';
+
+  @override
+  String get environmentsComposeFile => 'Compose-fájl';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Nem sikerült compose-fájlt olvasni. A szolgáltatásnevek a JSON nézetben továbbra is megadhatók.';
+
+  @override
+  String get environmentsComposeServices => 'Szolgáltatások';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'Hagyja üresen az összes szolgáltatást, ha mindet futtatni szeretné.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'Ennek a parancsnak feltételes argumentumai vannak. Szerkessze a JSON nézetben.';
+
+  @override
+  String get environmentsCwdPath => 'Munkaútvonal';
+
+  @override
+  String get environmentsCwdRole => 'Munkaszerepkör';
+
+  @override
+  String get environmentsDeleteBody =>
+      'A terek többé nem indíthatják. A futó környezetek a leállításukig futnak.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'Törli ezt: $name?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'Mit indíthat az egyes terek, és milyen feladatokat futtatnak a worktree-k.';
+
+  @override
+  String get environmentsDraftFromRepo => 'Vázlat a tárolóból';
+
+  @override
+  String get environmentsEmpty => 'Még nincsenek definíciók';
+
+  @override
+  String get environmentsEnabledWhen => 'Engedélyezve, ha';
+
+  @override
+  String get environmentsEndpointRole => 'Végpont szerepköre';
+
+  @override
+  String get environmentsFollowPrHead => 'A pull request head követése';
+
+  @override
+  String get environmentsForkApproval => 'Minden indításhoz rendszergazda kell';
+
+  @override
+  String get environmentsForkDeny => 'Elutasítva';
+
+  @override
+  String get environmentsForkPrs => 'Forkból érkező pull requestek';
+
+  @override
+  String get environmentsForkRig => 'Futtatás virtuális gépen';
+
+  @override
+  String get environmentsIdleStop => 'Leállítás ennyi tétlen perc után';
+
+  @override
+  String get environmentsIsolateHome => 'Saját kezdőkönyvtár az alkalmazásnak';
+
+  @override
+  String get environmentsIssues => 'Mentés előtt javítsa ezeket';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'Érvénytelen JSON: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'Leállításkor megtartja az adatait';
+
+  @override
+  String get environmentsLinkConfirm => 'Összekapcsolás és jóváhagyás';
+
+  @override
+  String get environmentsLinkFile => 'Tárolófájl összekapcsolása';
+
+  @override
+  String get environmentsLinkHelp =>
+      'Csak az alapértelmezett ágról olvassa, és csak jóváhagyás után futtatja.';
+
+  @override
+  String get environmentsLinkPath => 'Útvonal';
+
+  @override
+  String get environmentsMaxRunning => 'Egyszerre futó';
+
+  @override
+  String get environmentsNamingProject => 'Projekt';
+
+  @override
+  String get environmentsNamingTemplate => 'Névsablon';
+
+  @override
+  String get environmentsNew => 'Új definíció';
+
+  @override
+  String get environmentsNewDefinitionName => 'Új környezet';
+
+  @override
+  String get environmentsNoChecks =>
+      'Ennek a definíciónak nincsenek ellenőrzései.';
+
+  @override
+  String get environmentsNoRuns => 'Még nincsenek tesztfuttatások';
+
+  @override
+  String get environmentsOnChange => 'Figyelt útvonalak';
+
+  @override
+  String get environmentsOptionBool => 'Igen vagy nem';
+
+  @override
+  String get environmentsOptionEnum => 'Egy ezek közül';
+
+  @override
+  String get environmentsOptionMulti => 'Több ezek közül';
+
+  @override
+  String get environmentsOptionValues => 'Értékek';
+
+  @override
+  String get environmentsPlacement => 'Elhelyezés';
+
+  @override
+  String get environmentsPlacementHost => 'A gazdagépen';
+
+  @override
+  String get environmentsPlacementRig => 'Virtuális gépen';
+
+  @override
+  String get environmentsPrepareTask => 'Előkészítő feladat';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'Elsődleges végpont';
+
+  @override
+  String get environmentsReadyHttp => 'Kész, ha ez az URL válaszol';
+
+  @override
+  String get environmentsRestartAlways => 'Mindig';
+
+  @override
+  String get environmentsRestartNever => 'Soha';
+
+  @override
+  String get environmentsRestartOn =>
+      'Újraindítás, ha ezek az útvonalak változnak';
+
+  @override
+  String get environmentsRestartOnFailure => 'Hiba esetén';
+
+  @override
+  String get environmentsRestartPolicy => 'Újraindítás';
+
+  @override
+  String get environmentsRigTtl => 'Virtuális gép élettartama órában';
+
+  @override
+  String get environmentsRunChecks => 'Újrafuttatás';
+
+  @override
+  String get environmentsRunTest => 'Teszt futtatása';
+
+  @override
+  String get environmentsSaved => 'Definíció mentve';
+
+  @override
+  String get environmentsSectionComponents => 'Összetevők';
+
+  @override
+  String get environmentsSectionOptions => 'Indítási beállítások';
+
+  @override
+  String get environmentsSectionSeedFiles => 'Kezdőfájlok';
+
+  @override
+  String get environmentsSectionVariables => 'Változók';
+
+  @override
+  String get environmentsSeedHelp =>
+      'Soronként egy útvonal, a regisztrált checkoutból másolva. Forkból érkező pull requestek sosem kapják meg.';
+
+  @override
+  String get environmentsShellHelp =>
+      'A helyőrzők itt nem bővülnek ki. Inkább a CC_ENV_* változókat olvassa.';
+
+  @override
+  String get environmentsSourceApprove => 'Verzió jóváhagyása';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return 'A(z) $path megegyezik a jóváhagyott verzióval.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'A jóváhagyott verzió fut tovább, amíg ezt jóvá nem hagyja.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'Forrás';
+
+  @override
+  String get environmentsTestHelp =>
+      'Eldobható környezetet futtat végig: ellenőrzés, indítás, várakozás a készre, megsemmisítés.';
+
+  @override
+  String get environmentsTestSaveFirst => 'Először mentse a definíciót.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'Időtúllépés másodpercben';
+
+  @override
+  String get environmentsTitle => 'Környezetek';
+
+  @override
+  String get environmentsTriggerArchive => 'A worktree törlése előtt';
+
+  @override
+  String get environmentsTriggerChange => 'Ha a figyelt útvonalak változnak';
+
+  @override
+  String get environmentsTriggerCreate => 'Környezetenként egyszer';
+
+  @override
+  String get environmentsTriggerManual => 'Kérésre';
+
+  @override
+  String get environmentsTriggerProvision => 'A worktree létrehozásakor';
+
+  @override
+  String get environmentsTriggerStart => 'Minden indításkor';
+
+  @override
+  String get environmentsTriggers => 'Futás';
+
+  @override
+  String get environmentsUnreadable =>
+      'Ez a kliens nem tudja olvasni ezt a definíciót.';
+
+  @override
+  String get environmentsUpdateAvailable => 'Frissítés érhető el';
+
+  @override
+  String get environmentsUseShell => 'Shell-parancs használata';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'Az eszköz ekkor a saját checkoutján fut. Kezelje csak olvashatóként.';
+
+  @override
+  String get environmentsWhenMissing => 'Ha egy térből hiányzik';
+
+  @override
+  String get environmentsWhenMissingAdd => 'Hozzáadás a térhez';
+
+  @override
+  String get environmentsWhenMissingSkip => 'Kihagyás';
+
+  @override
+  String get environmentsWhenMissingSource =>
+      'A regisztrált checkout használata';
+
+  @override
+  String get environmentsUnsupported =>
+      'Ez a szerver nem támogatja a környezeteket.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'Nincs megjelenítő: a szerver nem tudja rögzíteni ezt az ablakot. Engedélyezze a képernyőfelvételt a Control Center számára a szerveren.';
+
+  @override
+  String get environmentHealthHealthy => 'Egészséges';
+
+  @override
+  String get environmentHealthUnhealthy => 'Hibás';
+
+  @override
+  String get environmentTerminalStale =>
+      'Ez a terminál a környezet indulása előtt nyílt meg, ezért hiányoznak belőle a változói.';
+
+  @override
+  String get environmentTerminalFresh => 'Új terminál megnyitása';
+
+  @override
+  String get environmentsShellStays =>
+      'A többsoros szkript shell-parancs marad: a sorai adják a szerkezetét.';
+
+  @override
+  String get environmentsOverrides => 'Munkaterület-felülírások';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'A fájl saját beállításai itt csak olvashatók. Rendelje a szerepköreit a munkaterület tárolóihoz, vagy írjon felül bármely mezőt JSON-ként.';
+
+  @override
+  String get environmentsReposHelp =>
+      'A környezet által használt tárolók, mindegyik egy szerepkörhöz kötve.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'Amit a környezet futtat, indítási sorrendben.';
+
+  @override
+  String get environmentsOptionsHelp =>
+      'A környezet indításakor felkínált választások.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'Feladatokra, folyamatokra, alkalmazásokra és a tér termináljaira érvényesek.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'Amire a gazdagépnek szüksége van a környezet futtatásához.';
+
+  @override
+  String get environmentsIdleStopHelp => '0 esetén soha nem áll le.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'Az ezt a tárolót tartalmazó tér elindíthatja a környezetet.';
+
+  @override
+  String get environmentsRequiredHelp => 'A környezet nem futhat nélküle.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'Szinkronizálás és frissítés, amikor a pull request head elmozdul.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'Javítás szükséges';
+
+  @override
+  String get environmentsCheckFile => 'Fájl';
+
+  @override
+  String get environmentsDiscardBody =>
+      'A definíción végzett módosításai elvesznek.';
+
+  @override
+  String get environmentsWorktreeRuns => 'Worktree-feladatok futásai';
+
+  @override
+  String get environmentsNoWorktreeRuns => 'Még nem futott worktree-feladat.';
+
+  @override
+  String get environmentsLinkRoles => 'Szerepkörök a fájlban';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'Nem sikerült beolvasni a fájlt a tárolóból. A szerepkörök az összekapcsolás után rendelhetők hozzá.';
+
+  @override
+  String get guardrailClassHostExecution => 'Parancsok futtatása a gazdagépen';
+
+  @override
+  String get environmentUrls => 'URL-ek';
+
+  @override
+  String get environmentScripts => 'Szkriptek';
+
+  @override
+  String get environmentNoneForSpace => 'Ehhez a térhez nincs környezet';
+
+  @override
+  String get environmentNoneForPr => 'Ehhez a pull requesthez nincs környezet';
+
+  @override
+  String get environmentSetupBody =>
+      'A környezet egy tároló szolgáltatásait, szkriptjeit és URL-jeit futtatja egy térhez. Állítsa be egyszer, és a tároló minden tere elindíthatja.';
+
+  @override
+  String get environmentSetUp => 'Környezet beállítása';
+
+  @override
+  String get environmentEditDefinition => 'Definíció szerkesztése';
+
+  @override
+  String get environmentOpenPanel => 'Környezet megnyitása';
+
+  @override
+  String get environmentNeedsSetup => 'Beállítás szükséges';
+
+  @override
+  String get environmentContinueInTerminal => 'Folytatás a terminálban';
+
+  @override
+  String get environmentSetupHint =>
+      'Az eszköznek szüksége van rád egy terminálban jelszó vagy kérdés miatt. Az indítás utána folytatódik.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'Ez a terminál azért nyílt meg, mert az indításhoz szükség van rád';
+
+  @override
+  String get environmentSetupTab => 'Környezet beállítása';
+
+  @override
+  String get environmentsNothingRunning =>
+      'Ebből a definícióból semmi sem fut.';
+
+  @override
+  String get searchPoliciesHint => 'Szabályzatok keresése...';
+
+  @override
+  String get noPoliciesMatch => 'Nincs a keresésnek megfelelő szabályzat';
+
+  @override
+  String get memoryPolicyActive => 'Aktív';
+
+  @override
+  String get memoryFactType => 'Típus';
+
+  @override
+  String get memoryTimesRecalled => 'Előhívások száma';
+
+  @override
+  String get memorySourceFacts => 'Forrástények';
+
+  @override
+  String get spaceSetupLogs => 'Beállítási naplók';
 }

@@ -162,6 +162,10 @@ class _BrowserPorts {
   /// The guest :443 tunnel feeding the domain router's HTTPS lane, when the
   /// host has TLS material.
   GuestReverseTunnel? domainTlsTunnel;
+
+  /// Guest side of the environment router's own port, so a canonical
+  /// environment URL is the same inside the VM as on the host.
+  GuestReverseTunnel? environmentTunnel;
 }
 
 class _AndroidPorts {
@@ -215,12 +219,14 @@ class RigPortsService {
     required this._startInGuest,
     this._tlsContext,
     this._pollInterval = const Duration(seconds: 4),
+    this._routerPort,
     RigHostTreeListen? listHostTreeListeners,
   }) : _listHostTreeListeners =
            listHostTreeListeners ?? discoverHostShellListeners {
     _router = RigDomainRouter(
       muxPortOf: (id) => _execs[id]?.muxHostPort,
       hostPortOf: (id, guest) => _shells[id]?.published[guest]?.hostPort,
+      workspaceOf: (id) => _execs[id]?.workspaceId ?? _shells[id]?.workspaceId,
     );
   }
 
@@ -228,6 +234,9 @@ class RigPortsService {
   final RigGuestStart _startInGuest;
   final SecurityContext? Function()? _tlsContext;
   final Duration _pollInterval;
+
+  /// The port environment URLs use. Null keeps the router ephemeral.
+  final int? _routerPort;
   final RigHostTreeListen _listHostTreeListeners;
 
   final Map<String, _ExecPorts> _execs = {};
@@ -239,6 +248,20 @@ class RigPortsService {
       StreamController<RigPortsSnapshot>.broadcast();
   bool _disposed = false;
 
+  /// Starts the router and returns the port environment URLs use.
+  Future<int> ensureEnvironmentRouter() =>
+      _router.start(preferredPort: _routerPort);
+
+  /// Replaces [environmentId]'s routes.
+  void setEnvironmentRoutes(
+    String environmentId,
+    Map<String, RigEnvironmentRoute> routes,
+  ) => _router.setEnvironmentRoutes(environmentId, routes);
+
+  /// Removes [environmentId]'s routes.
+  void clearEnvironmentRoutes(String environmentId) =>
+      _router.clearEnvironmentRoutes(environmentId);
+
   /// The mux forward for [rigId], for callers (the domain router, tests) that
   /// need to dial a rig's guest directly.
   int? muxPortOf(String rigId) => _execs[rigId]?.muxHostPort;
@@ -248,11 +271,15 @@ class RigPortsService {
   Map<int, String> debugBrowserDials(String browserRigId) =>
       Map.of(_browsers[browserRigId]?.dials ?? const {});
 
+  /// The router's lane for [workspaceId], as a guest tunnel dials it.
+  @visibleForTesting
+  Future<int> debugWorkspaceLane(String workspaceId) =>
+      _router.startScoped(workspaceId);
+
   /// Device-port → host-port reverses currently planted for [androidRigId].
   @visibleForTesting
   Map<int, int> debugAndroidReverses(String androidRigId) =>
       Map.of(_androids[androidRigId]?.planted ?? const {});
-
 
   /// Attaches an exec (terminal) rig: bootstraps the in-guest mux, arms the
   /// credential broker's reverse tunnel and starts port discovery.
@@ -412,6 +439,7 @@ class RigPortsService {
     if (browser != null) {
       browser.domainTunnel?.stop();
       browser.domainTlsTunnel?.stop();
+      browser.environmentTunnel?.stop();
       for (final tunnel in browser.tunnels.values) {
         tunnel.stop();
       }
@@ -447,7 +475,6 @@ class RigPortsService {
     await _router.dispose();
     await _changes.close();
   }
-
 
   /// The current snapshot for [id], or null when it is not an attached
   /// exec rig or host-shell session in [workspaceId]. A [spaceId] that does
@@ -620,7 +647,6 @@ class RigPortsService {
       }
     }
   }
-
 
   /// Turns auto-forwarding on or off for [id].
   Future<bool> setAutoForward(
@@ -893,7 +919,6 @@ class RigPortsService {
     return state;
   }
 
-
   Future<void> _poll(_ExecPorts state) async {
     if (state.polling || _disposed || !_execs.containsKey(state.rigId)) {
       return;
@@ -1154,7 +1179,6 @@ class RigPortsService {
     }
   }
 
-
   /// Same workspace AND a non-null conversation on both sides. A missing
   /// space never matches — that would broadcast into every conversation.
   bool _sameSpace(
@@ -1345,8 +1369,15 @@ class RigPortsService {
     )..start();
 
     try {
-      final routerPort = await _router.start();
-      browser.domainTunnel = arm(80, routerPort);
+      // Guest tunnels get a lane of their own workspace, never the shared
+      // listener: that is what stops one workspace's browser reaching
+      // another's environment by naming its host.
+      final sharedPort = await ensureEnvironmentRouter();
+      final scopedPort = await _router.startScoped(browser.workspaceId);
+      browser.domainTunnel = arm(80, scopedPort);
+      if (!kBrowserDomainLanePorts.contains(sharedPort)) {
+        browser.environmentTunnel = arm(sharedPort, scopedPort);
+      }
     } on Object catch (e) {
       CcInfraLog.warning(
         'rig/ports: dev-domain routing unavailable for ${browser.rigId}: $e',
@@ -1360,7 +1391,7 @@ class RigPortsService {
     if (context == null) {
       return;
     }
-    final tlsPort = await _router.startTls(context);
+    final tlsPort = await _router.startScopedTls(browser.workspaceId, context);
     if (tlsPort != null) {
       browser.domainTlsTunnel = arm(443, tlsPort);
     }
@@ -1382,7 +1413,6 @@ class RigPortsService {
       return null;
     }
   }
-
 
   Future<void> _syncAndroid(_AndroidPorts android) async {
     if (_disposed || !_androids.containsKey(android.rigId)) {

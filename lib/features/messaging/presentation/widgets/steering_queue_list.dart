@@ -53,9 +53,9 @@ class _SteeringQueueListState extends ConsumerState<SteeringQueueList> {
       return const SizedBox.shrink();
     }
     final l10n = AppLocalizations.of(context);
-    // Unknown (null) shows the button: a card that outlived the client which
-    // typed it still belongs to a run that can very likely take it, and the
-    // deliver call reports honestly when it cannot.
+    // Unknown (null) reads as steerable: a card that outlived the client which
+    // typed it still belongs to a run that can very likely take it. A refused
+    // delivery flips this, so nothing is stopped without saying so first.
     final steerable = ref.watch(steeringSteerableProvider(key)) ?? true;
 
     return Semantics(
@@ -86,7 +86,7 @@ class _SteeringQueueListState extends ConsumerState<SteeringQueueList> {
               dragHandle: _dragHandle(context, index),
               onEdit: (content) => _onEdit(key, card.id, content),
               onDelete: () => _onDelete(key, card.id),
-              onDeliver: () => _onDeliver(key, card.id),
+              onDeliver: () => _onDeliver(key, card.id, force: !steerable),
             );
           },
         ),
@@ -172,25 +172,38 @@ class _SteeringQueueListState extends ConsumerState<SteeringQueueList> {
     );
   }
 
-  Future<void> _onDeliver(ConversationRef key, String messageId) async {
+  Future<void> _onDeliver(
+    ConversationRef key,
+    String messageId, {
+    required bool force,
+  }) async {
     final workspaceId = ref.read(activeWorkspaceIdProvider);
     if (workspaceId == null) {
       return;
     }
-    final delivered = await deliverSteeringCard(
-      ref,
-      workspaceId: workspaceId,
-      key: key,
-      messageId: messageId,
-    );
-    if (!delivered && mounted) {
-      // The run ended (or was a CLI transport) between render and press. The
-      // card stays queued and the run-end conversion is its delivery path —
-      // say so rather than failing silently.
-      CcToastScope.maybeOf(context)?.show(
-        AppLocalizations.of(context).steeringDeliverUnavailable,
-        variant: CcToastVariant.neutral,
-      );
+    final delivered = force
+        ? await forceSteeringCard(
+            ref,
+            workspaceId: workspaceId,
+            key: key,
+            messageId: messageId,
+          )
+        : await deliverSteeringCard(
+            ref,
+            workspaceId: workspaceId,
+            key: key,
+            messageId: messageId,
+          );
+    if (delivered || !mounted) {
+      return;
     }
+    // No run could take it between render and press. The card stays queued
+    // and run-end conversion is its delivery path; say so rather than failing
+    // silently, and let the button offer to stop the run from here on.
+    ref.read(steeringSteerableProvider(key).notifier).set(false);
+    CcToastScope.maybeOf(context)?.show(
+      AppLocalizations.of(context).steeringDeliverUnavailable,
+      variant: CcToastVariant.neutral,
+    );
   }
 }

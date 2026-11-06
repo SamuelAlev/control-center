@@ -9,6 +9,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
+import 'package:control_center/features/pr_review/providers/pr_comment_draft_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
@@ -85,7 +86,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
   void initState() {
     super.initState();
     _draftRepo = _repo;
-    final provider = textDraftControllerProvider(_draftKey);
+    final provider = prCommentDraftControllerProvider(_draftKey);
     _canRestoreDraft = !ref.exists(provider);
     _commentCtrl = ref.read(provider);
     _commentCtrl.addListener(_onCommentChanged);
@@ -101,7 +102,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
       _draftTimer?.cancel();
       _commentCtrl.removeListener(_onCommentChanged);
       _draftRepo = _repo;
-      final provider = textDraftControllerProvider(_draftKey);
+      final provider = prCommentDraftControllerProvider(_draftKey);
       _canRestoreDraft = !ref.exists(provider);
       _commentCtrl = ref.read(provider);
       _draftRevision = 0;

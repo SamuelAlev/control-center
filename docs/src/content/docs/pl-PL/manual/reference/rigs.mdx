@@ -2,7 +2,7 @@
 title: Rigi
 description: Każda powierzchnia, backend, czasownik działania, stan cyklu życia, port, wartość domyślna i kontrakt rigu — kompletny katalog faktów.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/rigi
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Tylko fakty. Model, który za nimi stoi, opisuje [Rigi i
@@ -18,6 +18,8 @@ z [poradnika](/pl-PL/podrecznik/poradniki/uzywanie-rigow/).
 | Komputer | Pulpit X11: dane wejściowe przez hypervisor, przechwytywanie przez agenta systemu gościa | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (awaryjny tryb bez akceleracji, nigdy nie wybierany automatycznie) | Tak |
 | Android | Android przez ADB | Emulator Google'a | `android-emulator` | **Nie** — emulator sam zarządza swoją siecią |
 | iOS | Symulator iOS przez WebDriverAgent | CoreSimulator | `ios-simulator` | **Nie** — sieć działa przez hosta Mac |
+| Okno aplikacji | Okna aplikacji desktopowej uruchomionej ze środowiska, przez system operacyjny | Okno hosta | `host-window` | **Nie** — aplikacja działa na hoście z dostępem użytkownika serwera |
+| Środowisko | Stos compose i zadania [środowiska](/pl-PL/podrecznik/poradniki/srodowiska/) z umieszczeniem `rig` | microVM | `smolvm` | Tak |
 
 Terminal i powierzchnia `computer_use` dzielą wartość powierzchni `computer`;
 terminal wyróżnia znacznik obrazu exec i nigdy nie jest ponownie używany jako

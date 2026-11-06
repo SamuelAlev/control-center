@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 
 void main() {
   const reposDir = '/data/ws/spaces/sp1/repos';
-  const known = {'web-app', 'api', 'web-app-legacy'};
+  const known = {'shop-ui', 'api', 'shop-ui-legacy'};
 
   ActiveRepoTracker tracker() =>
       ActiveRepoTracker(reposDir: reposDir, knownRepos: known);
@@ -12,10 +12,10 @@ void main() {
     test('absolute path under the repos dir', () {
       final t = tracker();
       expect(
-        t.observe('edit', {'file_path': '$reposDir/web-app/src/x.ts'}),
-        'web-app',
+        t.observe('edit', {'file_path': '$reposDir/shop-ui/src/x.ts'}),
+        'shop-ui',
       );
-      expect(t.active, 'web-app');
+      expect(t.active, 'shop-ui');
     });
 
     test('relative path through the overlay symlink', () {
@@ -34,7 +34,7 @@ void main() {
     });
 
     test('a later write in another repo switches again', () {
-      final t = tracker()..observe('write', {'path': 'repos/web-app/a.ts'});
+      final t = tracker()..observe('write', {'path': 'repos/shop-ui/a.ts'});
       expect(t.observe('write', {'path': 'repos/api/b.dart'}), 'api');
       expect(t.active, 'api');
     });
@@ -47,7 +47,7 @@ void main() {
 
     test('bash cwd', () {
       final t = tracker();
-      expect(t.observe('bash', {'cwd': '$reposDir/web-app'}), 'web-app');
+      expect(t.observe('bash', {'cwd': '$reposDir/shop-ui'}), 'shop-ui');
     });
 
     test('bash command text, for adapters whose shell takes no cwd', () {
@@ -64,15 +64,15 @@ void main() {
     test('a read seeds when nothing is active', () {
       final t = tracker();
       expect(
-        t.observe('read', {'file_path': 'repos/web-app/README.md'}),
-        'web-app',
+        t.observe('read', {'file_path': 'repos/shop-ui/README.md'}),
+        'shop-ui',
       );
     });
 
     test('a read never switches away from an active repo', () {
       final t = tracker()..observe('write', {'path': 'repos/api/b.dart'});
       expect(
-        t.observe('read', {'file_path': 'repos/web-app/src/x.ts'}),
+        t.observe('read', {'file_path': 'repos/shop-ui/src/x.ts'}),
         isNull,
       );
       expect(t.active, 'api', reason: 'a cross-repo glance must not thrash');
@@ -114,8 +114,8 @@ void main() {
     test('a longer repo name is not truncated to a shorter one', () {
       final t = tracker();
       expect(
-        t.observe('write', {'path': 'repos/web-app-legacy/x.ts'}),
-        'web-app-legacy',
+        t.observe('write', {'path': 'repos/shop-ui-legacy/x.ts'}),
+        'shop-ui-legacy',
       );
     });
 
@@ -143,7 +143,7 @@ void main() {
 
     test('a seeded repo still yields to a write elsewhere', () {
       final t = tracker()..seed('api');
-      expect(t.observe('edit', {'file_path': 'repos/web-app/x.ts'}), 'web-app');
+      expect(t.observe('edit', {'file_path': 'repos/shop-ui/x.ts'}), 'shop-ui');
     });
   });
 

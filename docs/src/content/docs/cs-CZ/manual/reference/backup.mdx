@@ -2,7 +2,7 @@
 title: Záloha, export a import
 description: Rozložení snímku, manifest, každá operace zálohy a trasa přenosu a přesně které soubory záloha obsahuje a které ne.
 slug: cs-CZ/prirucka/referencni-prirucka/zaloha
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Všechno, co Control Center umí zkopírovat, předat nebo převzít, a přesný tvar každého
@@ -50,7 +50,12 @@ Nemají manifest ani `global.db` a nejsou to snímky instalace.
 Krok uchování v týdenní pipeline maže jen zálohy svého pracovního prostoru
 starší než nastavený věk (výchozí je 30 dní). Ten krok nikdy nerotuje ručně
 pořízené snímky instalace. `server.listBackups` vypisuje jen snímky
-instalace, včetně neúplných.
+instalace, včetně neúplných; `workspace.listBackups` vypisuje plánované zálohy jednoho
+pracovního prostoru.
+
+Smazání pracovního prostoru tenhle adresář nechá na místě. Plán pracovního prostoru s ním
+skončí, takže ty zálohy už nic nerotuje a zůstanou, dokud je vlastník instalace neodstraní.
+`server.listOrphanedBackups` je nahlásí.
 
 
 ### `manifest.json`
@@ -128,6 +133,10 @@ demo server, chybí úplně. Neodmítají se, ve struktuře nejsou.
 | `server.backupNow`    | zápis  | Instalace   | **vlastník** instalace | žádné        | `{ok, path}`                       |
 | `server.listBackups`  | čtení  | Instalace   | **vlastník** instalace | žádné        | `{backups: [...]}`                 |
 | `server.deleteBackup` | zápis  | Instalace   | **vlastník** instalace | `name`       | `{ok}`                             |
+| `server.listOrphanedBackups` | čtení | Instalace | **vlastník** instalace | žádné | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | zápis | Instalace | **vlastník** instalace | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | čtení | Pracovní prostor | `admin` | žádné | `{backups: [...]}` |
+| `workspace.deleteBackup` | zápis | Pracovní prostor | `owner` | `name` | `{ok}` |
 | `workspace.export`    | čtení  | Pracovní prostor | `admin`          | žádné         | `{ok, path}`                       |
 | `workspace.import`    | zápis  | Pracovní prostor | `owner`          | `source_path` | `{ok, workspace_id}`               |
 | `workspace.delete`    | zápis  | Instalace*  | `owner`               | `id`          | řádek registru označený jako smazaný |
@@ -137,6 +146,13 @@ registru. Jeho obsluha zkontroluje členství volajícího v pojmenovaném praco
 a vyžaduje `owner`.
 
 `path` v každé odpovědi je cesta na **hostiteli serveru**.
+
+`server.listOrphanedBackups` vrací jednu položku na každý pracovní prostor, který už není živý:
+`workspace_id`, `workspace_name`, pokud ho registr ještě zná, a `backups`.
+Smazaný pracovní prostor už nemůže projít kontrolou role v pracovním prostoru, takže jeho zálohy
+patří vlastníkovi instalace. `server.deleteOrphanedBackup` odmítne živý pracovní prostor, jehož
+zálohy zůstávají za `workspace.deleteBackup` a vlastními rolemi toho prostoru. Obě mazací
+operace přijímají jen vypsané jméno adresáře s časovým razítkem, ne cestu.
 
 :::note[Snímek celé instalace je na obou linkách jen pro vlastníka]
 `server.backupNow`, `server.listBackups` a `server.deleteBackup` vyžadují
@@ -218,25 +234,30 @@ PSK a roli níže.
 | ----------------------- | ------ | --------------- | -------------------------------- | -------------------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** pracovního prostoru    |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **vlastník** instalace           |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **admin** pracovního prostoru; po smazání pracovního prostoru **vlastník** instalace |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **vlastník** pracovního prostoru |
 
-`w` je id pracovního prostoru, `n` jméno adresáře snímku, `d` id volajícího zařízení a `s`
-podpis. `n` se vyřeší proti výpisu záloh, ne spojením cesty ke kořeni záloh,
-takže trasa nemůže mířit na adresář, který by výpis neukázal.
+`w` je id pracovního prostoru, `n` jméno adresáře snímku nebo plánované zálohy, `d` id volajícího zařízení a `s`
+podpis. U `/backup/snapshot` se `n` vyřeší proti výpisu záloh, ne spojením cesty ke kořeni záloh,
+takže trasa nemůže mířit na adresář, který by výpis neukázal. U `/backup/stored` musí jít o jméno
+s časovým razítkem a soubor musí být skutečný soubor uvnitř vlastního adresáře záloh toho pracovního prostoru.
 
 | Stav   | Příčina                                                                                 |
 | ------ | --------------------------------------------------------------------------------------- |
-| `400`  | Chybí povinný parametr dotazu, nebo je tělo nahrání prázdné                             |
+| `400`  | Chybí povinný parametr dotazu, jméno zálohy je neplatné, nebo je tělo nahrání prázdné   |
 | `403`  | Neznámé nebo odvolané zařízení, špatný podpis, nebo volající nemá roli                  |
-| `404`  | Na tomhle hostiteli není port záloh, nebo pojmenovaný snímek či soubor pracovního prostoru neexistuje |
+| `404`  | Na tomhle hostiteli není port záloh, nebo pojmenovaný snímek, záloha či soubor pracovního prostoru neexistuje |
 | `405`  | `/backup/restore` zavolané jinak než `POST`                                             |
 | `413`  | Tělo nahrání přesahuje 8 GiB, podle deklarovaného content-length nebo podle bajtů, které se skutečně přečetly |
 | `426`  | Jakýkoli přímý požadavek na trasu přenosu na veřejném HTTP posluchači; použij šifrovaný tunel prostředků spárovaného klienta |
 | `500`  | Export nebo archiv selhal na straně serveru                                             |
 
-Obě stažení odpovídají `Cache-Control: no-store` a `Accept-Ranges: none`. Každý požadavek
-vytvoří **čerstvou** kopii a po odstreamování ji smaže. Jinak se bajty ze dvou různých exportů
+Všechna tři stažení odpovídají `Cache-Control: no-store` a `Accept-Ranges: none`.
+`/backup/workspace` a `/backup/snapshot` vytvoří pro každý požadavek **čerstvou** kopii a po odstreamování ji smažou. Jinak se bajty ze dvou různých exportů
 slepí do jednoho souboru, ať už z mezipaměti, nebo z obnoveného rozsahu. Takový soubor vypadá platně a platný není.
+
+`/backup/stored` je výjimka: streamuje plánovanou zálohu jako `<workspaceId>-<name>.db`
+a soubor nechá na místě, protože ten soubor je ta záloha.
 
 `/backup/snapshot` vrací `<name>.zip`. Položky jsou relativní ke kořeni snímku, takže
 rozbalení zopakuje `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
@@ -265,11 +286,11 @@ Ani jeden přenos nešifruje výsledné soubory záloh v klidu.
 | Příprava přenosu                   | `<dataDir>/backups/transfer/` — mezisklad, který uklidí trasa, jež do něj zapisuje |
 | Jméno archivu snímku               | `<snapshot directory name>.zip`                              |
 | Strop nahrání                      | 8 GiB na šifrované nahrání `/backup/restore`                 |
-| Uchování                           | Snímky instalace: ruční smazání. Zálohy pracovního prostoru: týdenní pipeline, výchozí 30 dní |
+| Uchování                           | Snímky instalace: ruční smazání. Zálohy pracovního prostoru: týdenní pipeline, výchozí 30 dní, nebo ruční smazání. Zálohy smazaného pracovního prostoru: jen ruční smazání |
 
 Adresáře `exports/`, `transfer/` a `workspace-backups/` nejsou
 snímky instalace a `server.listBackups` je vynechává. Naplánované uchování má jen
-poslední z nich. Smazání snímku instalace vyžaduje výslovný zásah
+poslední z nich, a to jen dokud jeho pracovní prostor existuje. Smazání snímku instalace vyžaduje výslovný zásah
 vlastníka instalace.
 
 ## Související

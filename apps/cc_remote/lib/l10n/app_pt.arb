@@ -757,5 +757,6 @@
   "transcriptClaudeSignInExpiredTitle": "Login do Claude Code expirado",
   "transcriptClaudeSignInExpiredBody": "A execução parou porque a conta dela não autentica mais. Entre novamente e tente o turno outra vez.",
   "transcriptSignInExpiredTitle": "Login do provedor expirado",
-  "transcriptSignInExpiredBody": "A execução parou porque a credencial do provedor não funciona mais. Reconecte-o em Configurações → Provedores e tente o turno outra vez."
+  "transcriptSignInExpiredBody": "A execução parou porque a credencial do provedor não funciona mais. Reconecte-o em Configurações → Provedores e tente o turno outra vez.",
+  "permissionHostExecution": "Executar comandos no host"
 }

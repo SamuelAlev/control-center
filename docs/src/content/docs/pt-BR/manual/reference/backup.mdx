@@ -2,7 +2,7 @@
 title: Backup, exportação e importação
 description: A estrutura do snapshot, o manifesto, cada operação de backup e rota de transferência, e exatamente quais arquivos um backup contém e não contém.
 slug: pt-BR/manual/referencia/backup
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Tudo o que o Control Center consegue copiar, entregar ou adotar, e a forma exata de cada
@@ -53,7 +53,12 @@ Eles não incluem manifesto nem `global.db` e não são snapshots da instalaçã
 A etapa de retenção do pipeline semanal remove apenas backups do próprio espaço de
 trabalho mais antigos que a idade configurada (30 dias por padrão); snapshots da
 instalação criados manualmente nunca são rotacionados por essa etapa. `server.listBackups`
-lista apenas snapshots da instalação, inclusive os incompletos.
+lista apenas snapshots da instalação, inclusive os incompletos; `workspace.listBackups`
+lista os backups agendados de um espaço de trabalho.
+
+Excluir um espaço de trabalho mantém este diretório no lugar. O agendamento do espaço de
+trabalho para junto com ele, então nada mais rotaciona esses backups, e eles ficam até o
+proprietário da instalação removê-los. `server.listOrphanedBackups` os informa.
 
 
 ### `manifest.json`
@@ -135,6 +140,10 @@ servidor sem porta de backup configurada, como o servidor de demonstração.
 | `server.backupNow`   | mutate | Instalação | **proprietário** da instalação | nenhum | `{ok, path}`           |
 | `server.listBackups` | read   | Instalação | **proprietário** da instalação | nenhum | `{backups: [...]}`     |
 | `server.deleteBackup` | mutate | Instalação | **proprietário** da instalação | `name` | `{ok}`                |
+| `server.listOrphanedBackups` | read | Instalação | **proprietário** da instalação | nenhum | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | mutate | Instalação | **proprietário** da instalação | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | read | Espaço de trabalho | `admin` | nenhum | `{backups: [...]}` |
+| `workspace.deleteBackup` | mutate | Espaço de trabalho | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Espaço de trabalho | `admin` | nenhum        | `{ok, path}`                  |
 | `workspace.import`   | mutate | Espaço de trabalho | `owner` | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | Instalação* | `owner`      | `id`          | linha do registro marcada como excluída |
@@ -144,6 +153,15 @@ global; o handler dele verifica a associação do chamador ao espaço de trabalh
 e exige `owner`.
 
 `path` em toda resposta é um caminho no **host do servidor**.
+
+`server.listOrphanedBackups` retorna uma entrada por espaço de trabalho que não está mais
+ativo: `workspace_id`, `workspace_name` quando o registro ainda o conhece, e `backups`. Um
+espaço de trabalho excluído não consegue mais passar por uma verificação de função do espaço
+de trabalho, então seus backups pertencem ao proprietário da instalação.
+`server.deleteOrphanedBackup` recusa um espaço de trabalho ativo, cujos backups continuam
+atrás de `workspace.deleteBackup` e das funções próprias desse espaço de trabalho. As duas
+ops de exclusão aceitam apenas um nome de diretório com carimbo de data/hora listado, não um
+caminho.
 
 :::note[Um snapshot da instalação inteira exige o proprietário nas duas vias]
 `server.backupNow`, `server.listBackups` e `server.deleteBackup` exigem o
@@ -231,27 +249,33 @@ string de destino dele usando a sua PSK de emparelhamento e a função abaixo.
 | ----------------------- | ------ | --------------- | -------------------------------- | ----------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** do espaço de trabalho |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **proprietário** da instalação |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **admin** do espaço de trabalho; **proprietário** da instalação depois que o espaço de trabalho é excluído |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **proprietário** do espaço de trabalho |
 
-`w` é um id de espaço de trabalho, `n` é um nome de diretório de snapshot, `d` é o id do
-dispositivo que chama e `s` é a assinatura. `n` é resolvido contra a listagem de backups
-em vez de ser concatenado à raiz de backups, então a rota não pode ser apontada para um
-diretório que a listagem não teria mostrado.
+`w` é um id de espaço de trabalho, `n` é um nome de diretório de snapshot ou de backup
+agendado, `d` é o id do dispositivo que chama e `s` é a assinatura. Em `/backup/snapshot`,
+`n` é resolvido contra a listagem de backups em vez de ser concatenado à raiz de backups,
+então a rota não pode ser apontada para um diretório que a listagem não teria mostrado. Em
+`/backup/stored`, ele precisa ser um nome com carimbo de data/hora, e o arquivo precisa ser
+um arquivo real dentro do diretório de backups desse próprio espaço de trabalho.
 
 | Status | Causa                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | Falta um parâmetro de query obrigatório, ou o corpo de um upload está vazio          |
+| `400`  | Falta um parâmetro de query obrigatório, um nome de backup é inválido, ou o corpo de um upload está vazio |
 | `403`  | Dispositivo desconhecido ou revogado, assinatura inválida, ou o chamador não tem a função |
-| `404`  | Nenhuma porta de backup neste host, ou o snapshot/arquivo de espaço de trabalho nomeado não existe |
+| `404`  | Nenhuma porta de backup neste host, ou o arquivo de snapshot, backup ou espaço de trabalho nomeado não existe |
 | `405`  | `/backup/restore` chamado com qualquer coisa diferente de `POST`                     |
 | `413`  | O corpo do upload excede 8 GiB, pelo content-length declarado ou pelos bytes realmente lidos |
 | `426`  | Qualquer requisição direta a uma rota de transferência no listener HTTP público; use o túnel de recursos cifrado de um cliente emparelhado |
 | `500`  | A exportação ou o arquivamento falhou no lado do servidor                            |
 
-Os dois downloads respondem `Cache-Control: no-store` com `Accept-Ranges: none`. Cada
-requisição cria uma cópia **nova** e a exclui depois de transmitida, então uma resposta em
-cache ou retomada juntaria bytes de duas exportações diferentes em um único arquivo que
-parece válido e não é.
+Os três downloads respondem `Cache-Control: no-store` com `Accept-Ranges: none`.
+`/backup/workspace` e `/backup/snapshot` criam uma cópia **nova** por requisição e a excluem
+depois de transmitida, então uma resposta em cache ou retomada juntaria bytes de duas
+exportações diferentes em um único arquivo que parece válido e não é.
+
+`/backup/stored` é a exceção: transmite um backup agendado como `<workspaceId>-<name>.db` e
+mantém o arquivo no lugar, porque esse arquivo é o backup.
 
 `/backup/snapshot` retorna `<name>.zip`, com entradas relativas à raiz do snapshot, de modo
 que descompactar reproduz `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
@@ -281,12 +305,12 @@ transportes cifra em repouso os arquivos de backup resultantes.
 | Preparação de transferência    | `<dataDir>/backups/transfer/` — uma bancada de trabalho, varrida pela rota que a grava |
 | Nome do arquivo do snapshot    | `<snapshot directory name>.zip`                              |
 | Teto de upload                 | 8 GiB por upload cifrado para `/backup/restore`              |
-| Retenção                       | Snapshots da instalação: exclusão manual. Backups de espaços de trabalho: pipeline semanal, 30 dias por padrão |
+| Retenção                       | Snapshots da instalação: exclusão manual. Backups de espaços de trabalho: pipeline semanal, 30 dias por padrão, ou exclusão manual. Backups de um espaço de trabalho excluído: apenas exclusão manual |
 
 Os diretórios `exports/`, `transfer/` e `workspace-backups/` não são snapshots da
 instalação e ficam excluídos de `server.listBackups`. Apenas o último diretório tem
-retenção agendada; excluir um snapshot da instalação exige uma ação explícita do
-proprietário da instalação.
+retenção agendada, e só enquanto seu espaço de trabalho existir; excluir um snapshot da
+instalação exige uma ação explícita do proprietário da instalação.
 
 ## Veja também
 

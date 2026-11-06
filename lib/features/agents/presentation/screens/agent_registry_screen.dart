@@ -99,9 +99,9 @@ class _AgentRegistryScreenState extends ConsumerState<AgentRegistryScreen> {
       child: PageWrapper(
         title: l10n.agents,
         subtitle: l10n.configureAgentIdentities,
-        // Only the view toggles. "New agent" sits on the roster card instead,
-        // in the same slot as Skills' "New skill": it acts on that list, not on
-        // the page, and up here it was also on offer while the org chart or the
+        // Only the view toggles. "New" sits beside the roster's filter instead,
+        // in the same slot as on Skills: it acts on that list, not on the
+        // page, and up here it was also on offer while the org chart or the
         // teams manager had replaced the roster entirely — offering to add a
         // row to a table that is not on screen. The `settings.agents-new`
         // keybinding below still reaches it from anywhere.
@@ -187,23 +187,11 @@ class _AgentRegistryScreenState extends ConsumerState<AgentRegistryScreen> {
       child: SectionCard(
         label: l10n.agents,
         count: agents.length,
-        padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-        headerPadding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          0,
-          AppSpacing.lg,
-          AppSpacing.md,
-        ),
+        // Top inset matches the card's 12 px header gap, so the heading sits
+        // evenly between the card edge and the divider.
+        padding: const EdgeInsets.only(top: AppSpacing.md),
+        headerPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         expands: true,
-        // Beside the roster it fills, at the same weight and in the same slot
-        // as Skills' "New skill" — the two are the same gesture on two lists,
-        // so they are the same control in the same place.
-        trailing: CcButton(
-          onPressed: _createUnnamedAgent,
-          size: CcButtonSize.sm,
-          icon: AppIcons.plus,
-          child: Text(l10n.newAgent),
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -232,9 +220,21 @@ class _AgentRegistryScreenState extends ConsumerState<AgentRegistryScreen> {
     required AgentRegistryView? activeView,
     required List<AgentSettingsTab> agentTabs,
   }) {
+    final l10n = AppLocalizations.of(context);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= _wideBreakpoint;
+
+        // Beside the filter, the same control in the same slot as on Skills:
+        // the two are the same gesture on two lists.
+        final newAgent = CcButton(
+          onPressed: _createUnnamedAgent,
+          size: CcButtonSize.sm,
+          icon: AppIcons.plus,
+          semanticLabel: l10n.newAgent,
+          child: Text(l10n.newItemAction),
+        );
 
         final roster = Padding(
           padding: const EdgeInsets.only(top: AppSpacing.md),
@@ -243,6 +243,7 @@ class _AgentRegistryScreenState extends ConsumerState<AgentRegistryScreen> {
             query: _query,
             selectedId: _selectedAgentId,
             filterController: _filterCtl,
+            filterAction: newAgent,
             onSelect: (id) => setState(() {
               _selectedAgentId = id;
               // Selecting an agent leaves whichever overview was showing.
@@ -275,7 +276,25 @@ class _AgentRegistryScreenState extends ConsumerState<AgentRegistryScreen> {
 
         if (!wide) {
           final pane = detail();
-          return pane ?? roster;
+          if (pane == null) {
+            return roster;
+          }
+          // A selected agent replaces the roster here, so the button comes
+          // along or a narrow window has no way to add an agent.
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: newAgent,
+                ),
+              ),
+              const CcDivider(),
+              Expanded(child: pane),
+            ],
+          );
         }
 
         final pane = detail();

@@ -13,6 +13,7 @@ class _SkillEditorContent extends ConsumerWidget {
     required this.dirty,
     required this.saving,
     required this.scanning,
+    required this.onEdited,
     required this.onAttachedChange,
     required this.onSave,
     required this.onScan,
@@ -30,6 +31,7 @@ class _SkillEditorContent extends ConsumerWidget {
   final bool dirty;
   final bool saving;
   final bool scanning;
+  final VoidCallback onEdited;
   final ValueChanged<Set<String>> onAttachedChange;
   final VoidCallback onSave;
   final VoidCallback onScan;
@@ -123,6 +125,7 @@ class _SkillEditorContent extends ConsumerWidget {
                     CcTextField(
                       controller: nameCtl,
                       hintText: l10n.egArchitect,
+                      onChanged: (_) => onEdited(),
                     ),
                   ],
                 ),
@@ -137,6 +140,7 @@ class _SkillEditorContent extends ConsumerWidget {
                     CcTextField(
                       controller: descCtl,
                       hintText: l10n.briefDescription,
+                      onChanged: (_) => onEdited(),
                     ),
                   ],
                 ),
@@ -172,6 +176,7 @@ class _SkillEditorContent extends ConsumerWidget {
             controller: bodyCtl,
             hintText: l10n.writeSkillContent,
             minLines: 14,
+            onChanged: (_) => onEdited(),
           ),
           if (dirty) ...[
             const SizedBox(height: 8),

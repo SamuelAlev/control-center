@@ -35,6 +35,15 @@ class EditorTab {
   /// When non-null, the tab is unique within its group by this key: opening a
   /// second tab with the same key refocuses/replaces the existing one.
   final String? dedupKey;
+
+  /// The tab's stable identity: its [dedupKey], else its [kind].
+  ///
+  /// It names the tab in a `?tab=` link and in a persisted layout's saved
+  /// selection, so it must survive a restart and another device's restore.
+  /// The kind fallback is only unique for singleton kinds; a kind that can
+  /// stack mints a per-tab [dedupKey] (`instanceTabKey`), and a layout decode
+  /// mints one for same-kind siblings saved without it.
+  String get id => dedupKey ?? kind;
 }
 
 /// Owns the open tabs + selection for one editor tab-group (one leaf of the
@@ -63,6 +72,10 @@ class EditorTabGroupController extends ChangeNotifier {
 
   /// The current tabs (unmodifiable view).
   List<EditorTab> get tabs => List.unmodifiable(_tabs);
+
+  /// The tabs in visit order, most recent first (unmodifiable view). A tab
+  /// never selected since the group was built is absent.
+  List<EditorTab> get visitOrder => List.unmodifiable(_visitOrder);
 
   /// Whether this group holds no tabs.
   bool get isEmpty => _tabs.isEmpty;

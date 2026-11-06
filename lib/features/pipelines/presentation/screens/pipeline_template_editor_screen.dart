@@ -119,7 +119,10 @@ class _PipelineTemplateEditorScreenState
     }
     setState(() {
       _draft = next;
-      _dirty = next != def;
+      // Expanding the shared seed entry is redone on every open, so it is not
+      // an edit to save. Any other difference means the rows have drifted from
+      // the saved graph, which changes what runs and does need saving.
+      _dirty = next != def && !pipelineHasSharedTriggerEntry(def, rows);
     });
   }
 

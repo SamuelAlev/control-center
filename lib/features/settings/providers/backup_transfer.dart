@@ -107,6 +107,17 @@ class BackupTransfer {
     onProgress: onProgress,
   );
 
+  /// Downloads scheduled backup [name] of [workspaceId] as one database file.
+  Future<BackupDownload> downloadWorkspaceBackup({
+    required String workspaceId,
+    required String name,
+    BackupProgress? onProgress,
+  }) => _download(
+    url: _proxy.backupStoredUrl(workspaceId: workspaceId, name: name),
+    suggestedName: '$workspaceId-$name.db',
+    onProgress: onProgress,
+  );
+
   /// Uploads [file] and has the server adopt it as [workspaceId]'s database.
   ///
   /// Streamed rather than buffered: a workspace database is not a screenshot,
@@ -238,7 +249,9 @@ class BackupTransfer {
       // a workspace database"), which is the only useful thing to say and the
       // only thing the server knows. Bounded: a stray HTML error page is not a
       // sentence to put in a toast.
-      serverMessage: trimmed.isNotEmpty && trimmed.length < 500 ? trimmed : null,
+      serverMessage: trimmed.isNotEmpty && trimmed.length < 500
+          ? trimmed
+          : null,
     );
   }
 }

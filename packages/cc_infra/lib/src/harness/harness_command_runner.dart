@@ -32,6 +32,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     required this._mode,
     required this._networkEnabled,
     this._loopbackPorts = const [],
+    this._environmentScope,
     this.sandboxManager,
     this.confirmationPort,
     this.execGrantRootsResolver,
@@ -106,6 +107,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
   /// Host loopback ports the command must reach — the agent run gateway that
   /// `git push` is routed through. See `SandboxSpec.loopbackPorts`.
   final List<int> _loopbackPorts;
+  final String? _environmentScope;
 
   final Map<String, String> _baseEnv;
   final int _maxOutputChars;
@@ -394,6 +396,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
       protectedPaths: await _protectedPaths?.call() ?? const [],
       execGrantRoots: await _execGrantRoots(),
       loopbackPorts: _loopbackPorts,
+      environmentScope: _environmentScope,
     );
     final policy = const SandboxPolicyResolver().resolve(
       spec: spec,

@@ -975,5 +975,6 @@
   "transcriptClaudeSignInExpiredTitle": "Log masuk Claude Code telah tamat tempoh",
   "transcriptClaudeSignInExpiredBody": "Larian berhenti kerana akaunnya tidak lagi disahkan. Log masuk semula, kemudian cuba semula giliran ini.",
   "transcriptSignInExpiredTitle": "Log masuk penyedia telah tamat tempoh",
-  "transcriptSignInExpiredBody": "Larian berhenti kerana kelayakan penyedianya tidak lagi berfungsi. Sambung semula dalam Tetapan → Penyedia, kemudian cuba semula giliran ini."
+  "transcriptSignInExpiredBody": "Larian berhenti kerana kelayakan penyedianya tidak lagi berfungsi. Sambung semula dalam Tetapan → Penyedia, kemudian cuba semula giliran ini.",
+  "permissionHostExecution": "Jalankan arahan pada hos"
 }

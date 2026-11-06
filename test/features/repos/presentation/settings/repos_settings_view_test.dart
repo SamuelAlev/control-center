@@ -4,11 +4,14 @@ import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/repos/presentation/settings/repos_settings_view.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_hover_reveal.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/workspace_avatar.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -277,6 +280,146 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.byIcon(AppIcons.trash2), findsOneWidget);
+    expect(find.byIcon(AppIcons.boxes), findsNothing);
+  });
+
+  group('repo row', () {
+    final repo = Repo(
+      id: 'repo-1',
+      name: 'test-repo',
+      path: '/tmp/test-repo',
+      remoteOwner: '',
+      remoteName: '',
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+    );
+
+    Future<void> pumpRow(WidgetTester tester, {bool demo = false}) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            isDemoServerProvider.overrideWithValue(demo),
+            activeWorkspaceIdProvider.overrideWith(
+              () => _TestActiveWorkspaceNotifier('ws-test'),
+            ),
+            reposForWorkspaceProvider(
+              'ws-test',
+            ).overrideWith((ref) => Stream.value([repo])),
+            appPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: _wrap(const ReposSettingsView()),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    double opacityOf(WidgetTester tester, IconData icon) => tester
+        .widget<AnimatedOpacity>(
+          find
+              .ancestor(
+                of: find.byIcon(icon),
+                matching: find.byType(AnimatedOpacity),
+              )
+              .first,
+        )
+        .opacity;
+
+    testWidgets('clicking the row opens the link dialog', (tester) async {
+      await pumpRow(tester);
+
+      await tester.tap(find.text('test-repo'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('GitHub link'), findsOneWidget);
+    });
+
+    testWidgets('clicking the drag handle does not open the dialog', (
+      tester,
+    ) async {
+      await pumpRow(tester);
+
+      await tester.tap(find.byIcon(AppIcons.gripVertical));
+      await tester.pumpAndSettle();
+
+      expect(find.text('GitHub link'), findsNothing);
+    });
+
+    testWidgets('a demo row stays closed with its actions in view', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      await pumpRow(tester, demo: true);
+
+      await tester.tap(find.text('test-repo'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('GitHub link'), findsNothing);
+      expect(opacityOf(tester, AppIcons.trash2), 1);
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    testWidgets('all three actions are square', (tester) async {
+      await pumpRow(tester);
+
+      for (final icon in [
+        AppIcons.scanSearch,
+        AppIcons.link,
+        AppIcons.trash2,
+      ]) {
+        final button = find.ancestor(
+          of: find.byIcon(icon),
+          matching: find.byType(CcIconButton),
+        );
+        expect(tester.getSize(button), const Size(32, 32));
+      }
+    });
+
+    testWidgets('actions wait for hover and every one names itself', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      addTearDown(() {
+        debugDefaultTargetPlatformOverride = null;
+        SettingsHoverReveal.debugForgetMouse();
+      });
+      await pumpRow(tester);
+
+      const actions = {
+        'Index code': AppIcons.scanSearch,
+        'GitHub link': AppIcons.link,
+        'Remove': AppIcons.trash2,
+      };
+      for (final icon in actions.values) {
+        expect(opacityOf(tester, icon), 0);
+      }
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(find.text('test-repo')));
+      await tester.pumpAndSettle();
+      for (final icon in actions.values) {
+        expect(opacityOf(tester, icon), 1);
+      }
+
+      for (final MapEntry(key: label, value: icon) in actions.entries) {
+        await mouse.moveTo(tester.getCenter(find.byIcon(icon)));
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump();
+        expect(find.text(label), findsOneWidget);
+        await mouse.moveTo(tester.getCenter(find.text('test-repo')));
+        await tester.pumpAndSettle();
+      }
+      debugDefaultTargetPlatformOverride = null;
+    });
   });
 
   testWidgets('renders repo with github remote avatar', (tester) async {

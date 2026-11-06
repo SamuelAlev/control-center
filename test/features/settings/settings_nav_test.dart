@@ -63,6 +63,14 @@ void main() {
     );
   });
 
+  test('a page that opens records stays selected on them', () {
+    for (final entry in kSettingsNavItems) {
+      if (entry.detailRoutes.isNotEmpty) {
+        expect(entry.matchesSubroutes, isTrue, reason: entry.id);
+      }
+    }
+  });
+
   group('scope namespacing', () {
     /// Strips the `/workspaces/<id>` prefix, leaving the logical settings path.
     String logical(String route) =>
@@ -94,6 +102,5 @@ void main() {
         }
       }
     });
-
   });
 }

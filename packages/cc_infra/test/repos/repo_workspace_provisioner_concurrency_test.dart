@@ -39,10 +39,10 @@ void main() {
       workspaces: _FakeWorkspaces([
         Repo(
           id: 'repo-1',
-          name: 'web-app',
-          path: '/src/web-app',
+          name: 'shop-ui',
+          path: '/src/shop-ui',
           remoteOwner: 'acme',
-          remoteName: 'web-app',
+          remoteName: 'shop-ui',
           createdAt: DateTime(2026),
           updatedAt: DateTime(2026),
         ),
@@ -59,7 +59,7 @@ void main() {
   });
 
   String worktreePath() =>
-      p.join(root.path, 'spaces', 'sp-1', 'repos', 'web-app');
+      p.join(root.path, 'spaces', 'sp-1', 'repos', 'shop-ui');
 
   Future<String> provision(String agentSlug) => provisioner.ensureSpaceWorkspace(
     workspaceId: 'ws-1',
@@ -189,6 +189,7 @@ class _RaceyIsolation implements RepoIsolationPort {
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   }) async {
     final path = p.join(destParentDir, name);
     if (Directory(path).existsSync()) {

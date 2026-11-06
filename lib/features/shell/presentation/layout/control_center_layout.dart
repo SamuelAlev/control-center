@@ -201,6 +201,11 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
         }
         return CcResizable(
           axis: Axis.horizontal,
+          // CcSidebar already paints its trailing hairline on this seam, in
+          // every layout. A resting divider would stack on it half a pixel
+          // over and read thicker than the app's other hairlines, so only the
+          // hover/drag highlight is drawn here.
+          dividerThickness: 0,
           dividerColor: context.ds.borderPrimary,
           onResize: (extents) =>
               ref.read(sidebarWidthProvider.notifier).setWidth(extents.first),

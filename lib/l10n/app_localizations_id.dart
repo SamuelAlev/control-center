@@ -90,10 +90,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get keybindingPushToTalk => 'Tekan untuk bicara';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'Tahan atau alihkan dikte suara di penyusun pesan';
-
-  @override
   String get agentPermissions => 'Izin agen';
 
   @override
@@ -189,6 +185,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'Simulator iOS';
+
+  @override
+  String get rigSurfaceAppWindow => 'Jendela aplikasi';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -462,6 +461,10 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'Tampilan langsung memerlukan ffmpeg di host ini. Pasang ffmpeg lalu buka ulang tab.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'Tampilan langsung memerlukan Perekaman Layar. Berikan izin ke Control Center di Pengaturan Sistem lalu buka kembali tab.';
 
   @override
   String get rigStreamEnded => 'Tampilan langsung berakhir.';
@@ -1566,10 +1569,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'Buka menu filter';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'Buka menu filter pull request';
 
   @override
   String countSelected(int count) {
@@ -2843,19 +2842,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get cancelEdit => 'Batalkan pengeditan';
 
   @override
-  String get categoryCreation => 'Pembuatan';
-
-  @override
-  String get categoryEditing => 'Pengeditan';
-
-  @override
   String get categoryNavigation => 'Navigasi';
-
-  @override
-  String get categorySystem => 'Sistem';
-
-  @override
-  String get categoryView => 'Tampilan kategori';
 
   @override
   String get change => 'Ubah';
@@ -3679,31 +3666,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get keepSandboxing => 'Pertahankan sandboxing';
 
   @override
-  String get keybindingAddARepositoryDescription => 'Tambah repositori';
-
-  @override
   String get keybindingAddRepository => 'Tambah repositori';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'Tandai atau hapus bookmark artikel terpilih';
 
   @override
   String get keybindingCommandPalette => 'Palet perintah';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'Buat agen baru';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'Buat ruang kerja baru';
-
-  @override
   String get keybindingFocusSearch => 'Fokus ke pencarian';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'Fokus ke kolom pencarian pull request';
 
   @override
   String get keybindingNewAgent => 'Agen baru';
@@ -3724,35 +3693,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get keybindingOpenArticle => 'Buka artikel';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'Buka atau tutup popup pengalih ruang kerja di bilah samping';
-
-  @override
   String get keybindingOpenPr => 'Buka PR';
 
   @override
   String get keybindingOpenSettings => 'Buka pengaturan';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'Buka pengaturan aplikasi';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription =>
-      'Buka palet perintah';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'Buka artikel yang dipilih';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'Buka pull request yang dipilih';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'Buka ruang kerja yang dipilih';
 
   @override
   String get keybindingOpenWorkspace => 'Buka ruang kerja';
@@ -3770,85 +3714,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get keybindingRefresh => 'Muat ulang';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'Muat ulang semua feed';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'Muat ulang daftar pull request';
-
-  @override
-  String get keybindingRescanForAdaptersDescription => 'Pindai ulang adapter';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription =>
-      'Pilih artikel berikutnya';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription =>
-      'Pilih space berikutnya';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'Pilih artikel sebelumnya';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription =>
-      'Pilih space sebelumnya';
-
-  @override
   String get keybindingSendMessage => 'Kirim pesan';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'Kirim pesan saat ini';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'Beralih antara mode terang dan gelap';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'Beralih ke ruang kerja kedelapan';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'Beralih ke ruang kerja kelima';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'Beralih ke ruang kerja pertama';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'Beralih ke ruang kerja keempat';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'Beralih ke ruang kerja berikutnya';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'Beralih ke ruang kerja kesembilan';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'Beralih ke ruang kerja sebelumnya';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'Beralih ke ruang kerja kedua';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'Beralih ke ruang kerja ketujuh';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'Beralih ke ruang kerja keenam';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'Beralih ke ruang kerja ketiga';
 
   @override
   String get keybindingToggleBookmark => 'Alihkan bookmark';
@@ -3886,13 +3752,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'Ruang kerja 9';
-
-  @override
-  String get keybindings => 'Pintasan keyboard';
-
-  @override
-  String get keybindingsDescription =>
-      'Semua pintasan keyboard. Pintasan bersifat tetap dan tidak dapat diubah.';
 
   @override
   String get killRunning => 'Hentikan yang berjalan';
@@ -4166,11 +4025,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get noSavedArticlesBody =>
       'Artikel yang Anda simpan akan muncul di sini.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'Tidak ada pintasan yang cocok dengan \"$query\"';
-  }
 
   @override
   String get noSystemFonts => 'Tidak ada font sistem terdeteksi.';
@@ -4908,12 +4762,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'Cari…';
-
-  @override
-  String get searchShortcuts => 'Cari pintasan…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'Tidak tersedia di browser';
 
   @override
   String get searching => 'Mencari…';
@@ -6703,6 +6551,29 @@ class AppLocalizationsId extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'Ruang dihapus';
 
   @override
+  String get triggerEventSpaceArchived => 'Ruang diarsipkan';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged => 'Penyiapan ruang berubah';
+
+  @override
+  String get triggerEventPrHeadChanged => 'Head PR berubah';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged =>
+      'Status lingkungan berubah';
+
+  @override
+  String get triggerEventEnvironmentReady => 'Lingkungan siap';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'Lingkungan dihancurkan';
+
+  @override
+  String get triggerEventEnvironmentProcessExited =>
+      'Proses lingkungan berhenti';
+
+  @override
   String get triggerExternalPrHelp =>
       'Pull request yang dibuka di host kode, bukan dari Control Center.';
 
@@ -6762,6 +6633,32 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'Ruang percakapan dihapus.';
+
+  @override
+  String get triggerSpaceArchivedHelp => 'Ruang percakapan diarsipkan.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'Penyiapan pohon kerja ruang dimulai, selesai, atau gagal.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'Commit baru didorong ke pull request yang terbuka.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'Lingkungan ruang berpindah ke status baru.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'Lingkungan ruang sudah berjalan dan dapat digunakan.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp => 'Lingkungan ruang dibongkar.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'Proses yang dijalankan lingkungan berhenti.';
 
   @override
   String get navTickets => 'Tiket';
@@ -8977,19 +8874,6 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'Pemakaian & biaya';
-
-  @override
-  String get usageAndCostDescription =>
-      'Pengeluaran semua agen dalam 7 hari terakhir, dari biaya run yang teramati.';
-
-  @override
-  String get noUsageYet => 'Belum ada pemakaian tercatat.';
-
-  @override
-  String get spentThisWeek => 'terpakai minggu ini';
-
-  @override
   String get subscriptionUsage => 'Pemakaian langganan';
 
   @override
@@ -9201,9 +9085,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get keybindingNewSpace => 'Ruang baru';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'Buat ruang baru';
-
-  @override
   String get jumpToLatest => 'Lompat ke terbaru';
 
   @override
@@ -9376,71 +9257,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get preparingWorkspace => 'Menyiapkan ruang kerja…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'Menjalankan skrip setup untuk $repo…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'Skrip';
-
-  @override
-  String get repoScriptsTooltip => 'Konfigurasi skrip siklus hidup';
-
-  @override
-  String get repoScriptsSetupLabel => 'Skrip setup';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'Dijalankan di pohon kerja space segera setelah dibuat — instal dependensi, hasilkan file. Kegagalan menandai space sebagai gagal; coba lagi akan menjalankannya kembali.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'Skrip arsip';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'Dijalankan tepat sebelum pohon kerja space dihapus — bersihkan sumber daya di luar pohon kerja. Kegagalan tidak pernah menghalangi penghapusan.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'Dijalankan via bash dari pohon kerja, dengan CC_WORKSPACE_PATH (pohon kerja), CC_ROOT_PATH (akar repo), CC_SPACE_ID, CC_SPACE_NAME, dan CC_REPO_NAME yang disetel.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'mis. pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'mis. docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => 'Eksekusi terbaru';
-
-  @override
-  String get repoScriptsNoRuns => 'Belum ada eksekusi';
-
-  @override
-  String get repoScriptsSaved => 'Skrip disimpan';
-
-  @override
-  String get repoScriptsRunKindSetup => 'Setup';
-
-  @override
-  String get repoScriptsRunKindArchive => 'Arsip';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'Berjalan';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'Berhasil';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'Gagal';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'Waktu habis';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'Kode keluar $code';
+  String provisioningRunningTasks(String repo) {
+    return 'Menjalankan tugas worktree untuk $repo…';
   }
 
   @override
@@ -10245,10 +10063,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get keybindingCheatSheet => 'Pintasan keyboard';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'Tampilkan lembar pintasan keyboard untuk layar saat ini';
-
-  @override
   String get runPlaybookLabel => 'Jalankan playbook';
 
   @override
@@ -10259,14 +10073,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'Ulangi';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'Urungkan tindakan terakhir yang dapat diurungkan';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'Ulangi tindakan yang baru diurungkan';
 
   @override
   String get undone => 'Diurungkan';
@@ -14121,6 +13927,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get newSkill => 'Skill baru';
 
   @override
+  String get newItemAction => 'Baru';
+
+  @override
   String get zoomIn => 'Perbesar';
 
   @override
@@ -14337,6 +14146,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get steerNow => 'Arahkan';
 
   @override
+  String get steerForce => 'Hentikan dan kirim';
+
+  @override
   String get steeringQueueLabel => 'Pesan pengarahan dalam antrean';
 
   @override
@@ -14384,16 +14196,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'Anda akan ditanya lagi saat agen perlu menjalankan program dari salinan ini.';
-
-  @override
-  String get repoScriptsTest => 'Tes';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'Jalankan draf ini di klon repo yang sekali pakai';
-
-  @override
-  String get repoScriptsRunKindTest => 'Tes';
 
   @override
   String get demoBadgeLabel => 'Demo';
@@ -14609,6 +14411,49 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'Path di server';
+
+  @override
+  String get backupScheduledLabel => 'Cadangan terjadwal';
+
+  @override
+  String get backupScheduledExplainer =>
+      'Salinan yang disimpan oleh pipeline cadangan setiap ruang kerja. Atur jadwal dan retensi di templat pipeline.';
+
+  @override
+  String get backupScheduledNone => 'Belum ada cadangan';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cadangan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'Cadangan terakhir: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'Anda memerlukan peran admin di ruang kerja ini untuk melihat cadangannya.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'Hapus cadangan ini?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'Hapus cadangan $name tanggal $date dari server? Tindakan ini tidak dapat dibatalkan.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'Cadangan dihapus.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'Ruang kerja dihapus';
 
   @override
   String get backupRestoreAction => 'Pulihkan';
@@ -15228,14 +15073,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get ideQuickOpen => 'Buka file';
 
   @override
-  String get ideQuickOpenDescription =>
-      'Cari file percakapan berdasarkan nama dan buka salah satunya di tab';
-
-  @override
-  String get prQuickOpenDescription =>
-      'Cari file pull request berdasarkan nama dan buka salah satunya di tab';
-
-  @override
   String get ideQuickOpenHint => 'Cari file berdasarkan nama';
 
   @override
@@ -15563,6 +15400,15 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'Muat paksa';
+
+  @override
+  String get skillEvalHashLabel => 'Hash paket';
+
+  @override
+  String get skillEvalProgressLabel => 'Progres';
+
+  @override
+  String get skillEvalUpdatesToggle => 'Evaluasi pembaruan';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -15953,4 +15799,710 @@ class AppLocalizationsId extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return 'Tersisa $minutes mnt';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'Lingkungan menjalankan proses nyata di host, jadi demo tidak memilikinya.';
+
+  @override
+  String get environmentChecksFailing => 'Beberapa pemeriksaan gagal di server';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'Endpoint: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'Layanan: $names';
+  }
+
+  @override
+  String get environmentCopied => 'Disalin';
+
+  @override
+  String get environmentCopyCommand => 'Salin perintah';
+
+  @override
+  String get environmentCopyUrl => 'Salin URL';
+
+  @override
+  String get environmentDefinition => 'Definisi';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count definisi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'Hancurkan';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name dan datanya dihapus. Mulai membuat yang baru.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'Hancurkan lingkungan ini?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'Jalankan di layanan';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'Kode keluar $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => 'Ini perlu disiapkan di server';
+
+  @override
+  String get environmentKindApp => 'Aplikasi';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'Proses';
+
+  @override
+  String get environmentKindTask => 'Tugas';
+
+  @override
+  String get environmentLaunch => 'Luncurkan';
+
+  @override
+  String get environmentLogsGone => 'Log ini tidak lagi tersedia.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'Log: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'Menunggu output';
+
+  @override
+  String get environmentMoreActions => 'Tindakan lingkungan lainnya';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'Perubahan mengharuskan lingkungan ini dibuat ulang.';
+
+  @override
+  String get environmentNoStack =>
+      'Hanya menjalankan tugas worktree, jadi tidak ada yang perlu dimulai.';
+
+  @override
+  String get environmentOnTheServer => 'Di server';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Buka di Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'Buka penampil';
+
+  @override
+  String get environmentPlacementRig => 'Di VM';
+
+  @override
+  String get environmentPreviewTab => 'Lingkungan';
+
+  @override
+  String get environmentRebuildRelaunch => 'Bangun ulang & luncurkan ulang';
+
+  @override
+  String get environmentRecreate => 'Buat ulang';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name dihancurkan dan dimulai lagi dengan opsi yang sama. Datanya hilang.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'Buat ulang lingkungan ini?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name kembali ke kondisi dasar. Data yang dibuat sejak itu hilang.';
+  }
+
+  @override
+  String get environmentResetData => 'Atur ulang data';
+
+  @override
+  String get environmentResetTitle => 'Atur ulang data?';
+
+  @override
+  String get environmentRestart => 'Mulai ulang';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mulai ulang',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'Jalankan';
+
+  @override
+  String get environmentRunInTerminal => 'Jalankan di terminal';
+
+  @override
+  String get environmentSectionTitle => 'Lingkungan';
+
+  @override
+  String get environmentService => 'Layanan';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'Tindakan untuk $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'Mulai lingkungan';
+
+  @override
+  String get environmentStateCrashed => 'Crash';
+
+  @override
+  String get environmentStatusDegraded => 'Menurun';
+
+  @override
+  String get environmentStatusDestroying => 'Menghancurkan';
+
+  @override
+  String get environmentStatusGone => 'Hilang';
+
+  @override
+  String get environmentStatusStopping => 'Menghentikan';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'Menghentikan $name menghilangkan datanya, dan Mulai tidak mengembalikannya.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'Hentikan dan hilangkan data';
+
+  @override
+  String get environmentStopTitle => 'Hentikan lingkungan ini?';
+
+  @override
+  String get environmentTaskNeverRun => 'Belum dijalankan';
+
+  @override
+  String get environmentsAddCheck => 'Tambah pemeriksaan';
+
+  @override
+  String get environmentsAddOption => 'Tambah opsi';
+
+  @override
+  String get environmentsAddRole => 'Tambah peran';
+
+  @override
+  String get environmentsAdminOnly =>
+      'Hanya admin ruang kerja yang dapat mengubah definisi.';
+
+  @override
+  String get environmentsAfter => 'Tunggu komponen ini';
+
+  @override
+  String get environmentsAnchor => 'Jangkar';
+
+  @override
+  String get environmentsAutoCreate => 'Mulai otomatis';
+
+  @override
+  String get environmentsAutoCreateAll =>
+      'Di setiap ruang yang memenuhi syarat';
+
+  @override
+  String get environmentsAutoCreateOff => 'Tidak pernah';
+
+  @override
+  String get environmentsAutoCreatePrs => 'Di ruang pull request';
+
+  @override
+  String get environmentsBlank => 'Definisi kosong';
+
+  @override
+  String get environmentsCheckFix => 'Perintah perbaikan';
+
+  @override
+  String get environmentsCheckHint => 'Petunjuk';
+
+  @override
+  String get environmentsCommandHelp =>
+      'Argumen dipisahkan spasi. Beri tanda kutip pada argumen yang berisi spasi.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komponen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'Bangun image saat mulai';
+
+  @override
+  String get environmentsComposeFile => 'File compose';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Tidak dapat membaca file compose. Nama layanan tetap dapat dimasukkan di tampilan JSON.';
+
+  @override
+  String get environmentsComposeServices => 'Layanan';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'Biarkan semua layanan tidak dicentang untuk menjalankan semuanya.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'Perintah ini memiliki argumen bersyarat. Edit di tampilan JSON.';
+
+  @override
+  String get environmentsCwdPath => 'Jalur kerja';
+
+  @override
+  String get environmentsCwdRole => 'Peran kerja';
+
+  @override
+  String get environmentsDeleteBody =>
+      'Ruang tidak lagi dapat memulainya. Lingkungan yang berjalan terus berjalan sampai dihentikan.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'Hapus $name?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'Apa yang dapat dimulai setiap ruang, dan tugas yang dijalankan worktree-nya.';
+
+  @override
+  String get environmentsDraftFromRepo => 'Draf dari repo';
+
+  @override
+  String get environmentsEmpty => 'Belum ada definisi';
+
+  @override
+  String get environmentsEnabledWhen => 'Aktif saat';
+
+  @override
+  String get environmentsEndpointRole => 'Peran endpoint';
+
+  @override
+  String get environmentsFollowPrHead => 'Ikuti head pull request';
+
+  @override
+  String get environmentsForkApproval => 'Setiap mulai memerlukan admin';
+
+  @override
+  String get environmentsForkDeny => 'Ditolak';
+
+  @override
+  String get environmentsForkPrs => 'Pull request fork';
+
+  @override
+  String get environmentsForkRig => 'Jalankan di VM';
+
+  @override
+  String get environmentsIdleStop => 'Hentikan setelah menit diam';
+
+  @override
+  String get environmentsIsolateHome => 'Beri aplikasi home pribadi';
+
+  @override
+  String get environmentsIssues => 'Perbaiki ini sebelum menyimpan';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'JSON tidak valid: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'Mempertahankan datanya saat dihentikan';
+
+  @override
+  String get environmentsLinkConfirm => 'Tautkan dan setujui';
+
+  @override
+  String get environmentsLinkFile => 'Tautkan file repo';
+
+  @override
+  String get environmentsLinkHelp =>
+      'Dibaca hanya dari branch default, dan dijalankan hanya setelah disetujui.';
+
+  @override
+  String get environmentsLinkPath => 'Jalur';
+
+  @override
+  String get environmentsMaxRunning => 'Berjalan bersamaan';
+
+  @override
+  String get environmentsNamingProject => 'Proyek';
+
+  @override
+  String get environmentsNamingTemplate => 'Templat nama';
+
+  @override
+  String get environmentsNew => 'Definisi baru';
+
+  @override
+  String get environmentsNewDefinitionName => 'Lingkungan baru';
+
+  @override
+  String get environmentsNoChecks => 'Definisi ini tidak memiliki pemeriksaan.';
+
+  @override
+  String get environmentsNoRuns => 'Belum ada uji coba';
+
+  @override
+  String get environmentsOnChange => 'Jalur yang dipantau';
+
+  @override
+  String get environmentsOptionBool => 'Ya atau tidak';
+
+  @override
+  String get environmentsOptionEnum => 'Salah satu dari';
+
+  @override
+  String get environmentsOptionMulti => 'Beberapa dari';
+
+  @override
+  String get environmentsOptionValues => 'Nilai';
+
+  @override
+  String get environmentsPlacement => 'Penempatan';
+
+  @override
+  String get environmentsPlacementHost => 'Di host';
+
+  @override
+  String get environmentsPlacementRig => 'Di VM';
+
+  @override
+  String get environmentsPrepareTask => 'Tugas persiapan';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'Endpoint utama';
+
+  @override
+  String get environmentsReadyHttp => 'Siap saat URL ini menjawab';
+
+  @override
+  String get environmentsRestartAlways => 'Selalu';
+
+  @override
+  String get environmentsRestartNever => 'Tidak pernah';
+
+  @override
+  String get environmentsRestartOn => 'Mulai ulang saat jalur ini berubah';
+
+  @override
+  String get environmentsRestartOnFailure => 'Saat gagal';
+
+  @override
+  String get environmentsRestartPolicy => 'Mulai ulang';
+
+  @override
+  String get environmentsRigTtl => 'Masa pakai VM dalam jam';
+
+  @override
+  String get environmentsRunChecks => 'Jalankan lagi';
+
+  @override
+  String get environmentsRunTest => 'Jalankan pengujian';
+
+  @override
+  String get environmentsSaved => 'Definisi disimpan';
+
+  @override
+  String get environmentsSectionComponents => 'Komponen';
+
+  @override
+  String get environmentsSectionOptions => 'Opsi mulai';
+
+  @override
+  String get environmentsSectionSeedFiles => 'File seed';
+
+  @override
+  String get environmentsSectionVariables => 'Variabel';
+
+  @override
+  String get environmentsSeedHelp =>
+      'Satu jalur per baris, disalin dari checkout terdaftar. Pull request fork tidak pernah menerimanya.';
+
+  @override
+  String get environmentsShellHelp =>
+      'Placeholder tidak diperluas di sini. Baca variabel CC_ENV_* sebagai gantinya.';
+
+  @override
+  String get environmentsSourceApprove => 'Setujui versi ini';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path cocok dengan versi yang disetujui.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'Versi yang disetujui terus berjalan sampai Anda menyetujui yang ini.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'Sumber';
+
+  @override
+  String get environmentsTestHelp =>
+      'Menjalankan lingkungan sekali pakai dari awal sampai akhir: periksa, mulai, tunggu siap, hancurkan.';
+
+  @override
+  String get environmentsTestSaveFirst => 'Simpan definisi terlebih dahulu.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'Batas waktu dalam detik';
+
+  @override
+  String get environmentsTitle => 'Lingkungan';
+
+  @override
+  String get environmentsTriggerArchive => 'Sebelum worktree dihapus';
+
+  @override
+  String get environmentsTriggerChange => 'Saat jalur yang dipantau berubah';
+
+  @override
+  String get environmentsTriggerCreate => 'Sekali per lingkungan';
+
+  @override
+  String get environmentsTriggerManual => 'Sesuai permintaan';
+
+  @override
+  String get environmentsTriggerProvision => 'Saat worktree dibuat';
+
+  @override
+  String get environmentsTriggerStart => 'Setiap kali mulai';
+
+  @override
+  String get environmentsTriggers => 'Berjalan';
+
+  @override
+  String get environmentsUnreadable =>
+      'Klien ini tidak dapat membaca definisi ini.';
+
+  @override
+  String get environmentsUpdateAvailable => 'Pembaruan tersedia';
+
+  @override
+  String get environmentsUseShell => 'Gunakan perintah shell';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'Alat kemudian berjalan pada checkout Anda sendiri. Perlakukan sebagai hanya-baca.';
+
+  @override
+  String get environmentsWhenMissing => 'Saat ruang tidak memilikinya';
+
+  @override
+  String get environmentsWhenMissingAdd => 'Tambahkan ke ruang';
+
+  @override
+  String get environmentsWhenMissingSkip => 'Lewati';
+
+  @override
+  String get environmentsWhenMissingSource => 'Gunakan checkout terdaftar';
+
+  @override
+  String get environmentsUnsupported =>
+      'Server ini tidak mendukung lingkungan.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'Tidak ada penampil: server tidak dapat menangkap jendela ini. Izinkan Perekaman Layar untuk Control Center di server.';
+
+  @override
+  String get environmentHealthHealthy => 'Sehat';
+
+  @override
+  String get environmentHealthUnhealthy => 'Tidak sehat';
+
+  @override
+  String get environmentTerminalStale =>
+      'Terminal ini dibuka sebelum lingkungan dimulai, jadi tidak memiliki variabelnya.';
+
+  @override
+  String get environmentTerminalFresh => 'Buka terminal baru';
+
+  @override
+  String get environmentsShellStays =>
+      'Skrip multi-baris tetap menjadi perintah shell: baris-barisnya adalah strukturnya.';
+
+  @override
+  String get environmentsOverrides => 'Penggantian ruang kerja';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'Pengaturan file itu sendiri hanya-baca di sini. Ikat perannya ke repo ruang kerja ini, atau ganti bidang apa pun sebagai JSON.';
+
+  @override
+  String get environmentsReposHelp =>
+      'Repositori yang digunakan lingkungan ini, masing-masing terikat ke satu peran.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'Yang dijalankan lingkungan, sesuai urutan mulai.';
+
+  @override
+  String get environmentsOptionsHelp =>
+      'Pilihan yang ditawarkan saat lingkungan dimulai.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'Ditetapkan pada tugas, proses, aplikasi, dan terminal ruang.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'Yang dibutuhkan host agar lingkungan ini berjalan.';
+
+  @override
+  String get environmentsIdleStopHelp => '0 tidak pernah menghentikannya.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'Ruang yang memuat repositori ini dapat memulai lingkungan.';
+
+  @override
+  String get environmentsRequiredHelp =>
+      'Lingkungan tidak dapat berjalan tanpanya.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'Sinkronkan dan segarkan saat head pull request berpindah.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'Perlu diperbaiki';
+
+  @override
+  String get environmentsCheckFile => 'Berkas';
+
+  @override
+  String get environmentsDiscardBody =>
+      'Suntingan Anda pada definisi ini akan hilang.';
+
+  @override
+  String get environmentsWorktreeRuns => 'Proses tugas worktree';
+
+  @override
+  String get environmentsNoWorktreeRuns =>
+      'Belum ada tugas worktree yang berjalan.';
+
+  @override
+  String get environmentsLinkRoles => 'Peran dalam file ini';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'Tidak dapat membaca file dari repo. Peran dapat diikat setelah ditautkan.';
+
+  @override
+  String get guardrailClassHostExecution => 'Jalankan perintah di host';
+
+  @override
+  String get environmentUrls => 'URL';
+
+  @override
+  String get environmentScripts => 'Skrip';
+
+  @override
+  String get environmentNoneForSpace => 'Tidak ada lingkungan untuk ruang ini';
+
+  @override
+  String get environmentNoneForPr =>
+      'Tidak ada lingkungan untuk pull request ini';
+
+  @override
+  String get environmentSetupBody =>
+      'Lingkungan menjalankan layanan, skrip, dan URL repo untuk satu ruang. Siapkan sekali dan setiap ruang di repo itu dapat memulainya.';
+
+  @override
+  String get environmentSetUp => 'Siapkan lingkungan';
+
+  @override
+  String get environmentEditDefinition => 'Edit definisi';
+
+  @override
+  String get environmentOpenPanel => 'Buka lingkungan';
+
+  @override
+  String get environmentNeedsSetup => 'Perlu disiapkan';
+
+  @override
+  String get environmentContinueInTerminal => 'Lanjutkan di terminal';
+
+  @override
+  String get environmentSetupHint =>
+      'Alat ini membutuhkan Anda di terminal untuk kata sandi atau pertanyaan. Proses mulai berlanjut setelah selesai.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'Terminal ini terbuka karena proses mulai membutuhkan Anda';
+
+  @override
+  String get environmentSetupTab => 'Penyiapan lingkungan';
+
+  @override
+  String get environmentsNothingRunning =>
+      'Tidak ada yang berjalan dari definisi ini.';
+
+  @override
+  String get searchPoliciesHint => 'Cari kebijakan...';
+
+  @override
+  String get noPoliciesMatch =>
+      'Tidak ada kebijakan yang cocok dengan pencarian Anda';
+
+  @override
+  String get memoryPolicyActive => 'Aktif';
+
+  @override
+  String get memoryFactType => 'Jenis';
+
+  @override
+  String get memoryTimesRecalled => 'Jumlah pemanggilan';
+
+  @override
+  String get memorySourceFacts => 'Fakta sumber';
+
+  @override
+  String get spaceSetupLogs => 'Log penyiapan';
 }

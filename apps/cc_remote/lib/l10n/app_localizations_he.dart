@@ -2617,4 +2617,7 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'הריצה נעצרה כי פרטי ההתחברות של הספק כבר לא עובדים. חברו אותו מחדש בהגדרות ← ספקים ואז נסו שוב את התור.';
+
+  @override
+  String get permissionHostExecution => 'הרצת פקודות במארח';
 }

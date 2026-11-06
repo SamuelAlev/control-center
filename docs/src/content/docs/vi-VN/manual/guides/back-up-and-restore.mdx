@@ -2,7 +2,7 @@
 title: Sao lưu và khôi phục
 description: Tạo ảnh chụp bản cài đặt, chuyển một không gian làm việc giữa các máy, khôi phục một không gian làm việc hoặc toàn bộ, và giữ bản sao ở nơi khác.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Hướng dẫn này bao quát năm việc người ta thực sự làm với bản sao lưu: tạo một bản,
@@ -16,7 +16,7 @@ Mọi thứ ở đây nằm tại **Cài đặt → Máy chủ → Sao lưu và 
 
 - Một **máy khách đầy đủ** — ứng dụng desktop hoặc web. Một điện thoại đã ghép nối không kích hoạt được bất cứ phần nào trong số này, và đó là chủ đích.
 - Để tạo, liệt kê, tải xuống hoặc xóa một **ảnh chụp cài đặt**: **owner** của bản cài đặt.
-- Với các thao tác theo từng không gian làm việc: **admin** của không gian làm việc đó để xuất, **owner** để nhập hoặc xóa nó.
+- Với các thao tác theo từng không gian làm việc: **admin** của không gian làm việc đó để xuất nó hoặc để liệt kê và tải xuống các bản sao lưu theo lịch của nó, **owner** để nhập hoặc xóa nó hoặc để xóa một trong các bản sao lưu của nó.
 - Với tải xuống và tải lên: một máy khách đầy đủ đã ghép nối, trên kết nối trực tiếp hoặc qua relay được môi giới. Cả hai đường đều chở các byte của tệp qua cùng một đường hầm tài nguyên đã xác thực và mã hóa đầu-cuối; relay không thể đọc chúng.
 
 ::::caution[Ảnh chụp cài đặt là thao tác thủ công]
@@ -84,12 +84,35 @@ Các bản sao lưu không gian làm việc nằm trên máy chủ tại
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Nút lưu giữ chỉ
 xóa các bản sao lưu cũ của không gian làm việc này; nó không bao giờ xóa ảnh chụp cài
 đặt hay bản sao lưu của các không gian làm việc khác. Những tệp này chỉ chứa cơ sở dữ
-liệu. Để lưu giữ ngoài máy, hãy sao chép chúng một cách độc lập.
+liệu. Để lưu giữ ngoài máy, hãy tải chúng xuống hoặc sao chép chúng một cách độc lập.
 
-Những bản sao lưu này tách biệt với danh sách **Ảnh chụp cài đặt**. Để khôi phục một
-bản, dùng **Dữ liệu không gian làm việc → Nhập** với đường dẫn `workspace.db` phía máy
-chủ của bản sao lưu đó. Nhập sẽ thay thế cơ sở dữ liệu hiện tại của không gian làm việc
-đó, nên hãy xuất nó trước nếu bạn có thể cần hoàn tác lần khôi phục.
+## Tìm và khôi phục một bản sao lưu theo lịch
+
+**Sao lưu theo lịch** nằm giữa **Ảnh chụp cài đặt** và **Dữ liệu không gian làm việc**,
+với một hàng cho mỗi không gian làm việc: lần sao lưu gần nhất chạy khi nào, đã giữ bao
+nhiêu bản và chúng chiếm bao nhiêu dung lượng. Không gian làm việc có quy trình chưa tạo
+ra gì sẽ hiện **Chưa có bản sao lưu**. Không gian làm việc mà bạn không phải admin sẽ nêu
+điều đó trong hàng của nó thay vì liệt kê các bản sao lưu.
+
+Mở rộng một hàng để xem từng bản sao lưu, mới nhất trước:
+
+- **Khôi phục** thay thế cơ sở dữ liệu hiện tại của không gian làm việc bằng bản sao lưu này. Hãy xuất không gian làm việc trước nếu bạn có thể cần hoàn tác. Cần **owner**.
+- **Tải xuống** lưu tệp trên máy bạn đang dùng. Bản sao lưu vẫn ở trên máy chủ.
+- **Sao chép đường dẫn** sao chép vị trí của nó trên máy chủ.
+- **Xóa** xóa vĩnh viễn bản sao lưu này, sau khi bạn nhập tên không gian làm việc. Cần **owner**.
+
+### Bản sao lưu của không gian làm việc đã xóa
+
+Xóa một không gian làm việc sẽ để lại các bản sao lưu theo lịch của nó trên máy chủ, và
+vì lịch của nó dừng cùng với nó nên việc dọn dẹp theo thời hạn lưu giữ cũng dừng: chúng ở
+đó cho đến khi có người xóa. **owner** của bản cài đặt thấy chúng trong cùng danh sách,
+được đánh dấu **Không gian làm việc đã xóa**, và có thể tải xuống hoặc xóa chúng tại đó.
+Không ai khác thấy những hàng đó.
+
+Chúng không có **Khôi phục**, vì không có không gian làm việc nào để khôi phục vào. Để
+đưa một bản trở lại, hãy tải nó xuống, tạo một không gian làm việc và tải tệp lên như mô
+tả trong
+[Chuyển một không gian làm việc sang bản cài đặt khác](#chuyển-một-không-gian-làm-việc-sang-bản-cài-đặt-khác).
 
 ## Xóa một ảnh chụp cài đặt
 
@@ -105,13 +128,16 @@ phải máy bạn đang ngồi, hãy dùng các nút **Tải xuống**:
 
 - Bên cạnh mỗi **không gian làm việc** dưới **Dữ liệu không gian làm việc** → **Tải xuống**, để lấy một tệp `.db`.
 - Bên cạnh mỗi **ảnh chụp** dưới **Ảnh chụp cài đặt** → **Tải xuống**, để lấy toàn bộ ảnh chụp dưới dạng `.zip`.
+- Bên cạnh mỗi bản sao lưu dưới **Sao lưu theo lịch** → **Tải xuống**, để lấy tệp `.db` của bản sao lưu đó.
 
 Trên desktop, bạn chọn nơi tệp hạ cánh và thông báo nổi nêu tên nó; trên web, tệp đi
-vào thư mục tải xuống của trình duyệt. Dù theo cách nào, cả hai đều báo tiến độ theo
-byte, bởi đây là hai payload có thể lên tới hàng gigabyte.
+vào thư mục tải xuống của trình duyệt. Dù theo cách nào, cả ba đều báo tiến độ theo
+byte, bởi các payload này có thể lên tới hàng gigabyte.
 
-Cả hai đều tạo một bản sao mới ngay lúc bạn nhấn nút, truyền phát nó, rồi xóa bản sao
-trên máy chủ sau đó — tải xuống không phải là "lấy tệp mà nút xuất đã tạo trước đó".
+Các lần tải xuống không gian làm việc và ảnh chụp tạo một bản sao mới ngay lúc bạn nhấn
+nút, truyền phát nó, rồi xóa bản sao trên máy chủ sau đó — tải xuống không phải là "lấy
+tệp mà nút xuất đã tạo trước đó". Bản sao lưu theo lịch là ngoại lệ: bạn nhận được tệp đã
+lưu, và tệp đó vẫn ở trên máy chủ.
 
 Giải nén một tệp lưu trữ ảnh chụp tái tạo chính xác bố cục của ảnh chụp, và đó là
 điều khiến việc khôi phục nó chỉ còn là một thao tác sao chép trở lại.

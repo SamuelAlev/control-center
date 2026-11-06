@@ -27,7 +27,8 @@ IconData rigSurfaceIcon(RigSurface? surface) => switch (surface) {
   RigSurface.browser => AppIcons.globe,
   RigSurface.mobile => AppIcons.androidLogo,
   RigSurface.ios => AppIcons.appleLogo,
-  RigSurface.computer || null => AppIcons.monitor,
+  RigSurface.environment => AppIcons.boxes,
+  RigSurface.computer || RigSurface.window || null => AppIcons.monitor,
 };
 
 /// The localized name of [surface], naming [engine] when the surface is a
@@ -49,6 +50,8 @@ String rigSurfaceLabel(
         : l10n.rigSurfaceBrowserEngine(engine.label),
   RigSurface.mobile => l10n.rigSurfaceAndroid,
   RigSurface.ios => l10n.rigSurfaceIosSimulator,
+  RigSurface.window => l10n.rigSurfaceAppWindow,
+  RigSurface.environment => l10n.environmentSectionTitle,
   RigSurface.computer || null => l10n.rigSurfaceComputer,
 };
 

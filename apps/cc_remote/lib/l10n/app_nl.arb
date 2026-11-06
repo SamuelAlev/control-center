@@ -757,5 +757,6 @@
   "transcriptClaudeSignInExpiredTitle": "Aanmelding bij Claude Code verlopen",
   "transcriptClaudeSignInExpiredBody": "De run is gestopt omdat het account zich niet meer authenticeert. Meld je opnieuw aan en probeer de beurt dan opnieuw.",
   "transcriptSignInExpiredTitle": "Aanmelding bij provider verlopen",
-  "transcriptSignInExpiredBody": "De run is gestopt omdat de inloggegevens van de provider niet meer werken. Verbind hem opnieuw via Instellingen → Providers en probeer de beurt dan opnieuw."
+  "transcriptSignInExpiredBody": "De run is gestopt omdat de inloggegevens van de provider niet meer werken. Verbind hem opnieuw via Instellingen → Providers en probeer de beurt dan opnieuw.",
+  "permissionHostExecution": "Opdrachten uitvoeren op de host"
 }

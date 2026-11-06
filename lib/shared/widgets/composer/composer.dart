@@ -1260,7 +1260,9 @@ class _ComposerState extends ConsumerState<Composer> {
       final trigger = m.group(1)!;
       final label = m.group(2)!;
       final kind = switch (trigger) {
-        '@' => 'agent', // best-effort; file/scratchpad are also '@'
+        // Syntax alone cannot say what `@x` is: a team handle, a path, an
+        // agent. Only the host's roster can, so this claims nothing.
+        '@' => unresolvedMentionKind,
         '#' => 'space',
         '/' => 'slash',
         _ => 'unknown',
@@ -1591,15 +1593,19 @@ class _ComposerState extends ConsumerState<Composer> {
         color: ds.bgPrimary,
         borderRadius: AppRadii.brMd,
         border: Border.all(
-          // Focus strengthens the hairline to a neutral that clears 3:1 rather
-          // than switching to the accent. The composer is focused for most of
-          // a session, and a standing orange frame spent one of the screen's
-          // two accent uses on chrome; the caret plus this edge already say
-          // where typing goes.
-          color: _composerFocused ? ds.textPlaceholder : ds.borderSecondary,
+          // The accent is the focus color everywhere else (it is what
+          // `CcInputTokens.borderFocused` resolves to), so the composer, the
+          // most-focused surface in the app, uses it too.
+          color: _composerFocused ? ds.accent : ds.borderSecondary,
           width: 1,
         ),
-        boxShadow: AppShadows.soft,
+        boxShadow: [
+          // A calm focus cue: a soft, low-alpha bloom rather than a loud glow,
+          // so the composer stays composed when active.
+          if (_composerFocused)
+            BoxShadow(color: ds.accent.withValues(alpha: 0.12), blurRadius: 5),
+          ...AppShadows.soft,
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),

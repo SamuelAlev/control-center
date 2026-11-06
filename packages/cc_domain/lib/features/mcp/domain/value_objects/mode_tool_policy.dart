@@ -46,6 +46,13 @@ class ModeToolPolicy {
     'get_artifact',
   };
 
+  /// Reading a space's environment: what is up and what its logs say. Review
+  /// and plan agents may look at the running stack, not change it.
+  static const Set<String> environmentReadTools = {
+    'environment_status',
+    'environment_logs',
+  };
+
   /// Code-graph tools — read-only, always permitted.
   static const Set<String> codeGraphTools = {
     'search_code',
@@ -89,6 +96,7 @@ class ModeToolPolicy {
   static const Set<String> reviewAllowed = {
     ...memoryKnowledgeTools,
     ...codeGraphTools,
+    ...environmentReadTools,
     ...runMechanicsTools,
     // Review participation
     'add_review_node',
@@ -138,6 +146,7 @@ class ModeToolPolicy {
   /// memory/code-graph tools and ticket completion so a plan agent dispatched
   /// against a ticket can still close it out.
   static const Set<String> planAllowed = {
+    ...environmentReadTools,
     ...memoryKnowledgeTools,
     ...codeGraphTools,
     ...runMechanicsTools,

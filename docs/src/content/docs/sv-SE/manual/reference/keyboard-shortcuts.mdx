@@ -2,10 +2,10 @@
 title: Tangentbordsgenvägar
 description: Hela registret över tangentbindningar, per omfång, med villkoren som avgör när varje genväg utlöses.
 slug: sv-SE/handbok/referens/tangentbordsgenvagar
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Genvägarna kommer från ett enda `const`-register, `KeybindingRegistry` i `lib/core/constants/keybindings.dart`. Det innehåller **49 bindningar**. Inställningar → Du → Kortkommandon visar registret som en **skrivskyddad referens**: det finns inget gränssnitt för att tilldela om genvägar och ingen fil för egna tangentbindningar.
+Genvägarna kommer från ett enda `const`-register, `KeybindingRegistry` i `lib/core/constants/keybindings.dart`. Det innehåller **49 bindningar**. Dialogrutan **Tangentbordsgenvägar** (tryck på `?` eller öppna den från Hjälp-menyn) visar de globala genvägarna och dem för den aktuella skärmen. Den är en **skrivskyddad referens**: det finns inget gränssnitt för att tilldela om genvägar och ingen fil för egna tangentbindningar.
 
 `Cmd` nedan är den primära kommandomodifieraren — ⌘ på macOS, Ctrl på Windows och Linux. En bindning utlöses bara när dess kommando har en registrerad hanterare på den aktuella skärmen och dess `when`-villkor är uppfyllt; `!textInputFocus` betyder att tangenten i stället skickas vidare till ett fokuserat textfält.
 
@@ -41,7 +41,7 @@ Omfånget `/pull-requests`. Alla kräver `route == '/pull-requests'` och att ing
 | `Enter` | Öppna PR        |
 | `F`    | Öppna filtermeny |
 
-`Enter` (`pr.list-open`) är deklarerad i registret och visas i referensen över kortkommandon, men **listskärmen registrerar ingen hanterare för den**, så den utlöses inte för närvarande. `F` öppnar filtermenyn (`pr.list-open-filter`), inte sökningen.
+`Enter` (`pr.list-open`) är deklarerad i registret och visas i dialogrutan **Tangentbordsgenvägar**, men **listskärmen registrerar ingen hanterare för den**, så den utlöses inte för närvarande. `F` öppnar filtermenyn (`pr.list-open-filter`), inte sökningen.
 
 ## Pull request-detaljvyn (2)
 
@@ -90,7 +90,7 @@ Omfånget `/spaces`. `when`-villkoren använder ett regex så att de utlöses b�
 
 Gå till fil öppnar en väljare över samtalets filer. Utan inmatning listar den de filer du senast öppnade; när du skriver söker den i alla filer i samtalets worktrees. `Enter` öppnar den valda filen i en ny flik, `Cmd/Ctrl + Enter` eller delningsknappen på raden öppnar den i en panel till höger, och `×` på en nylig rad tar bort den från listan.
 
-Enter-för-att-skicka hanteras av meddelandefältets textfält; tryck-för-att-tala hanteras av meddelandefältets mikrofonsknapp (med sin egen hanterare för fysiskt tangentbord). Båda finns med i registret för inställningsreferensen.
+Enter-för-att-skicka hanteras av meddelandefältets textfält; tryck-för-att-tala hanteras av meddelandefältets mikrofonsknapp (med sin egen hanterare för fysiskt tangentbord). Båda finns med i registret så att dialogrutan **Tangentbordsgenvägar** kan visa dem.
 
 ## Arbetsyteväljaren (2)
 
@@ -127,7 +127,7 @@ Omfånget `/newsfeed`. Alla kräver `route == '/newsfeed'` och att inget textfä
 
 ## Tangenter i diffvyn utanför registret
 
-PR-diffvyn hanterar dessa själv (`PrDiffKeyboardHandler`). Sökning/visad/ihopfällning finns bara med i registrets kommentarer för inställningsreferensen — ingen hanterare registreras i dispatch, så de lämnas vidare till diffvyn. De visas inte som egna rader i referensen över kortkommandon.
+PR-diffvyn hanterar dessa själv (`PrDiffKeyboardHandler`). Sökning/visad/ihopfällning nämns bara i registrets kommentarer: ingen hanterare registreras i dispatch, så de lämnas vidare till diffvyn. De visas inte som egna rader i dialogrutan **Tangentbordsgenvägar**.
 
 | Genväg          | Åtgärd                                               |
 | --------------- | ---------------------------------------------------- |

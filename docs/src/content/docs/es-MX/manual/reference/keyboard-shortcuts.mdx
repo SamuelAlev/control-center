@@ -2,10 +2,10 @@
 title: Atajos de teclado
 description: El registro completo de atajos de teclado, por alcance, con las condiciones en las que se activa cada atajo.
 slug: es-MX/manual/referencia/atajos-de-teclado
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Los atajos provienen de un único registro `const`, `KeybindingRegistry` en `lib/core/constants/keybindings.dart`. Contiene **49 asignaciones**. **Ajustes → Tú → Atajos de teclado** muestra ese registro como una **referencia de solo lectura**: no hay interfaz para reasignar atajos ni archivo de atajos de teclado del usuario.
+Los atajos provienen de un único registro `const`, `KeybindingRegistry` en `lib/core/constants/keybindings.dart`. Contiene **49 asignaciones**. El cuadro de diálogo **Atajos de teclado** (presiona `?` o ábrelo desde el menú Ayuda) muestra los atajos globales y los de la pantalla actual. Es una **referencia de solo lectura**: no hay interfaz para reasignar atajos ni archivo de atajos de teclado del usuario.
 
 `Cmd` a continuación es el modificador de comando principal: ⌘ en macOS y Ctrl en Windows y Linux. Una asignación solo se activa cuando su comando tiene un manejador registrado en la pantalla actual y se cumple su cláusula `when`; `!textInputFocus` significa que la tecla se deja pasar a un campo de texto que tiene el foco.
 
@@ -41,7 +41,7 @@ Alcance `/pull-requests`. Todos requieren `route == '/pull-requests'` y que ning
 | `Enter` | Abrir PR               |
 | `F`     | Abrir el menú de filtros |
 
-`Enter` (`pr.list-open`) está declarado en el registro y aparece en la referencia de atajos de teclado, pero **la pantalla de la lista no registra un manejador para él**, así que por ahora no se activa. `F` abre el menú de filtros (`pr.list-open-filter`), no la búsqueda.
+`Enter` (`pr.list-open`) está declarado en el registro y aparece en el cuadro de diálogo **Atajos de teclado**, pero **la pantalla de la lista no registra un manejador para él**, así que por ahora no se activa. `F` abre el menú de filtros (`pr.list-open-filter`), no la búsqueda.
 
 ## Detalle de pull request (2)
 
@@ -90,7 +90,7 @@ Alcance `/spaces`. Las cláusulas `when` usan una expresión regular, así que s
 
 «Ir al archivo» abre un selector con los archivos de la conversación. Sin escribir nada, muestra los archivos que abriste más recientemente; al escribir, busca en todos los archivos de los worktrees de la conversación. `Enter` abre el archivo seleccionado en una pestaña nueva, `Cmd/Ctrl + Enter` o el botón de dividir de la fila lo abre en un panel a la derecha, y la `×` de una fila reciente lo quita de la lista.
 
-El envío con Enter lo maneja el campo de texto del compositor; pulsar para hablar lo maneja el botón de micrófono del compositor (su propio manejador de teclado físico). Ambos aparecen en el registro para la referencia de ajustes.
+El envío con Enter lo maneja el campo de texto del compositor; pulsar para hablar lo maneja el botón de micrófono del compositor (su propio manejador de teclado físico). Ambos aparecen en el registro para que el cuadro de diálogo **Atajos de teclado** pueda mostrarlos.
 
 ## Selector de espacios de trabajo (2)
 
@@ -127,7 +127,7 @@ Alcance `/newsfeed`. Todos requieren `route == '/newsfeed'` y que ningún campo 
 
 ## Teclas del visor de diferencias fuera del registro
 
-El visor de diferencias de las PR maneja estas teclas por su cuenta (`PrDiffKeyboardHandler`). Buscar, visto y contraer solo aparecen en los comentarios del registro para la referencia de ajustes: no hay ningún manejador del despachador registrado, así que el despachador se las deja a la vista de diff. No aparecen como filas propias en la referencia de atajos de teclado.
+El visor de diferencias de las PR maneja estas teclas por su cuenta (`PrDiffKeyboardHandler`). Buscar, visto y contraer solo se mencionan en los comentarios del registro: no hay ningún manejador del despachador registrado, así que el despachador se las deja a la vista de diff. No aparecen como filas propias en el cuadro de diálogo **Atajos de teclado**.
 
 | Atajo           | Acción                                                       |
 | --------------- | ------------------------------------------------------------ |

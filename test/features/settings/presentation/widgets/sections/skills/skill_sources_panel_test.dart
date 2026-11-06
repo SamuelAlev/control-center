@@ -5,6 +5,7 @@ import 'package:cc_domain/features/skills/domain/scanner/skill_scan_types.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_rail.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/skills/skill_sources_panel.dart';
 import 'package:control_center/features/settings/providers/skill_source_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -223,6 +224,24 @@ void main() {
     expect(find.text('XLSX skills'), findsOneWidget);
     // Install-state badges surface on the grid cards.
     expect(find.text('Update available'), findsOneWidget);
+  });
+
+  testWidgets('rail list reaches the divider, rows keep their inset', (
+    tester,
+  ) async {
+    await pumpPanel(tester);
+
+    final scaffold = find.byType(SettingsMasterDetail);
+    final divider = tester.getTopLeft(scaffold).dx + 250;
+    final list = tester.getRect(
+      find.descendant(of: scaffold, matching: find.byType(ListView)).first,
+    );
+    final row = tester.getRect(find.byType(SettingsRailItem).first);
+
+    // The scrollbar pins to the viewport's edge, so the viewport must end at
+    // the divider while the rows stop short of it.
+    expect(list.right, divider);
+    expect(row.right, divider - 8);
   });
 
   testWidgets('the filter narrows the grid by name, description and slug', (

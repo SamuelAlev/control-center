@@ -19,6 +19,7 @@ String permissionClassLabel(AppLocalizations l, ActionClass action) =>
       ActionClass.processSpawn => l.permissionProcessSpawn,
       ActionClass.workspaceMutation => l.permissionWorkspaceMutation,
       ActionClass.enclosureControl => l.permissionEnclosureControl,
+      ActionClass.hostExecution => l.permissionHostExecution,
     };
 
 String permissionDecisionLabel(AppLocalizations l, ActionDecision decision) =>

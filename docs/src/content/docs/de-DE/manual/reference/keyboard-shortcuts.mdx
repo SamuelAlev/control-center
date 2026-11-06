@@ -2,10 +2,10 @@
 title: Tastenkürzel
 description: Die vollständige Registry der Tastenkürzel, nach Geltungsbereich, mit den Bedingungen, unter denen jedes Kürzel auslöst.
 slug: de-DE/handbuch/referenz/tastenkuerzel
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Die Kürzel kommen aus einer `const`-Registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Sie enthält **49 Bindungen**. Einstellungen → Du → Tastaturkürzel zeigt diese Registry als **schreibgeschützte Referenz**: Es gibt keine Oberfläche zum Umbelegen und keine Datei für eigene Tastenkürzel.
+Die Kürzel kommen aus einer `const`-Registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Sie enthält **49 Bindungen**. Der Dialog **Tastenkürzel** (drücke `?` oder öffne ihn über das Hilfe-Menü) zeigt die globalen Kürzel und die des aktuellen Bildschirms. Er ist eine **schreibgeschützte Referenz**: Es gibt keine Oberfläche zum Umbelegen und keine Datei für eigene Tastenkürzel.
 
 `Cmd` unten ist der primäre Befehlsmodifikator — ⌘ auf macOS, Ctrl unter Windows und Linux. Eine Bindung löst nur aus, wenn ihr Befehl auf dem aktuellen Bildschirm einen registrierten Handler hat und ihre `when`-Klausel zutrifft; `!textInputFocus` heißt, die Taste wird an ein fokussiertes Textfeld durchgereicht.
 
@@ -41,7 +41,7 @@ Geltungsbereich `/pull-requests`. Alle verlangen `route == '/pull-requests'` und
 | `Enter`      | PR öffnen         |
 | `F`          | Filtermenü öffnen |
 
-`Enter` (`pr.list-open`) ist in der Registry deklariert und erscheint in der Tastaturkürzel-Referenz, aber **der Listenbildschirm registriert keinen Handler dafür**, deshalb löst es derzeit nicht aus. `F` öffnet das Filtermenü (`pr.list-open-filter`), nicht die Suche.
+`Enter` (`pr.list-open`) ist in der Registry deklariert und erscheint im Dialog **Tastenkürzel**, aber **der Listenbildschirm registriert keinen Handler dafür**, deshalb löst es derzeit nicht aus. `F` öffnet das Filtermenü (`pr.list-open-filter`), nicht die Suche.
 
 ## Pull-Request-Detail (2)
 
@@ -90,7 +90,7 @@ Geltungsbereich `/spaces`. Die `when`-Klauseln nutzen einen Regex, damit sie sow
 
 „Zu Datei wechseln“ öffnet eine Auswahl über die Dateien der Unterhaltung. Ohne Eingabe listet sie die zuletzt geöffneten Dateien; beim Tippen durchsucht sie alle Dateien in den Worktrees der Unterhaltung. `Enter` öffnet die ausgewählte Datei in einem neuen Tab, `Cmd/Ctrl + Enter` oder die Teilen-Schaltfläche in der Zeile öffnet sie in einem Bereich rechts daneben, und das `×` in einer Zeile mit einer zuletzt geöffneten Datei entfernt sie aus der Liste.
 
-Senden mit Enter gehört zum Textfeld des Composers. Zum Sprechen drücken gehört zur Mikrofontaste des Composers, mit eigenem Handler für die Hardware-Tastatur. Beide stehen in der Registry, damit die Einstellungsreferenz sie aufführt.
+Senden mit Enter gehört zum Textfeld des Composers. Zum Sprechen drücken gehört zur Mikrofontaste des Composers, mit eigenem Handler für die Hardware-Tastatur. Beide stehen in der Registry, damit der Dialog **Tastenkürzel** sie anzeigen kann.
 
 ## Arbeitsbereichsauswahl (2)
 
@@ -127,7 +127,7 @@ Geltungsbereich `/newsfeed`. Alle verlangen `route == '/newsfeed'` und kein foku
 
 ## Diff-Viewer-Tasten außerhalb der Registry
 
-Der PR-Diff-Viewer verarbeitet diese Tasten selbst (`PrDiffKeyboardHandler`). Suche, Gesehen und Einklappen stehen nur in den Kommentaren der Registry für die Einstellungsreferenz — ein Dispatcher-Handler ist nicht registriert, der Dispatcher überlässt sie der Diff-Ansicht. In der Tastaturkürzel-Referenz haben sie keine eigenen Zeilen.
+Der PR-Diff-Viewer verarbeitet diese Tasten selbst (`PrDiffKeyboardHandler`). Suche, Gesehen und Einklappen werden nur in den Kommentaren der Registry erwähnt: Ein Dispatcher-Handler ist nicht registriert, der Dispatcher überlässt sie der Diff-Ansicht. Im Dialog **Tastenkürzel** haben sie keine eigenen Zeilen.
 
 | Tastenkürzel    | Aktion                                                          |
 | --------------- | --------------------------------------------------------------- |

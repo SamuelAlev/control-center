@@ -2,7 +2,7 @@
 title: MCP-verktøy
 description: Fullstendig katalog over MCP-verktøyene cc_server registrerer, gruppert etter familie.
 slug: nb-NO/handbok/referanse/mcp-verktoy
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` er vert for ett MCP-verktøyregister (JSON-RPC 2.0), betjent på
@@ -294,6 +294,8 @@ fulle verbvokabularet per flate står i
 | `ios_use`      | Styr iOS-simulatoren gjennom WebDriverAgent/CoreSimulator: inspiser/gi input, skjermbilder, installer/start/stopp/avinstaller apper, dype lenker og simulatorprosesser formet som argv |
 | `rig_list`     | List opp stasjonene i et arbeidsområde med flate, status, skjermstørrelse og kontroller         |
 | `rig_close`    | Ødelegg en stasjon og forkast maskintilstanden den eier                                          |
+
+`app_use` er et femte use-verktøy: det styrer vinduene til en skrivebordsapp startet i et område, direkte på verten og ikke i en VM, og deklarerer også `fileWriteOutsideWorktree` og `fileDelete`. Det og `environment_*`-verktøyene er beskrevet i [Sett opp miljøer](/nb-NO/handbok/slik-gjor-du/miljoer/).
 
 ## Ikke eksponert over MCP
 

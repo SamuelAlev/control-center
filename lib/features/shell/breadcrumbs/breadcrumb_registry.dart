@@ -68,6 +68,10 @@ final Map<String, BreadcrumbBuilder> breadcrumbRegistry = {
     for (final entry in group.items)
       if (entry.id != 'workspace.pipelines')
         entry.route(workspaceIdParam): _settingsCrumbsFor(group, entry),
+  for (final group in kSettingsNav)
+    for (final entry in group.items)
+      for (final detail in entry.detailRoutes)
+        detail(workspaceIdParam): _settingsCrumbsFor(group, entry),
   settingsPipelinesRoute(workspaceIdParam): _settingsPipelinesCrumbs,
   '${settingsPipelinesRoute(workspaceIdParam)}/:templateId':
       _pipelineTemplateEditorCrumbs,
@@ -76,7 +80,6 @@ final Map<String, BreadcrumbBuilder> breadcrumbRegistry = {
       _teamProfileCrumbs,
   workspaceListRoute: _manageWorkspacesCrumbs,
 };
-
 
 List<CcBreadcrumbItem> _inboxCrumbs(
   WidgetRef ref,
@@ -159,7 +162,6 @@ List<CcBreadcrumbItem> _newsfeedArticleCrumbs(
   );
 }
 
-
 List<CcBreadcrumbItem> _meetingsCrumbs(
   WidgetRef ref,
   BuildContext context,
@@ -214,7 +216,6 @@ List<CcBreadcrumbItem> _meetingDetailCrumbs(
   );
 }
 
-
 List<CcBreadcrumbItem> _calendarCrumbs(
   WidgetRef ref,
   BuildContext context,
@@ -258,7 +259,6 @@ List<CcBreadcrumbItem> _calendarEventDetailCrumbs(
   );
 }
 
-
 List<CcBreadcrumbItem> _memoryCrumbs(
   WidgetRef ref,
   BuildContext context,
@@ -282,7 +282,6 @@ List<CcBreadcrumbItem> _manageWorkspacesCrumbs(
   GoRouterState state,
   AppLocalizations l10n,
 ) => [CcBreadcrumbItem(current: true, child: Text(l10n.manageWorkspaces))];
-
 
 List<CcBreadcrumbItem> _ticketsCrumbs(
   WidgetRef ref,
@@ -346,7 +345,6 @@ List<CcBreadcrumbItem> _projectOverviewCrumbs(
     CcBreadcrumbItem(current: true, child: Text(project?.name ?? '…')),
   ];
 }
-
 
 List<CcBreadcrumbItem> _pipelinesCrumbs(
   WidgetRef ref,
@@ -438,7 +436,6 @@ List<CcBreadcrumbItem> _pipelineRunDetailCrumbs(
     ),
   ];
 }
-
 
 List<CcBreadcrumbItem> _pullRequestsListCrumbs(
   WidgetRef ref,
@@ -553,7 +550,6 @@ List<CcBreadcrumbItem> _pullRequestDetailCrumbs(
   );
 }
 
-
 CcBreadcrumbItem _settingsRoot(
   BuildContext context,
   GoRouterState state,
@@ -635,7 +631,6 @@ List<CcBreadcrumbItem> _pipelineTemplateEditorCrumbs(
     ],
   );
 }
-
 
 List<CcBreadcrumbItem> _userProfileCrumbs(
   WidgetRef ref,

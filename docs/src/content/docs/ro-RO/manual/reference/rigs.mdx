@@ -2,7 +2,7 @@
 title: Stații
 description: Fiecare suprafață de stație, backend, verb de acțiune, stare din ciclul de viață, port, valoare implicită și contract — catalogul factual complet.
 slug: ro-RO/manual/referinta/statii
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Doar fapte. Pentru modelul din spatele lor, citește [Stații și medii
@@ -18,6 +18,8 @@ izolate](/ro-RO/manual/concepte/statii/); ca să deschizi o mașină, urmează
 | Computer | Desktop X11: intrare prin hipervizor, captură prin agentul din invitat | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (variantă de rezervă neaccelerată, niciodată aleasă automat) | Da |
 | Android | Android prin ADB | emulatorul Google | `android-emulator` | **Nu** — emulatorul își gestionează singur rețeaua |
 | iOS | Simulator iOS prin WebDriverAgent | CoreSimulator | `ios-simulator` | **Nu** — rețeaua urmează Mac-ul gazdă |
+| Fereastră de aplicație | Ferestrele unei aplicații desktop lansate dintr-un mediu, prin sistemul de operare | Fereastră a gazdei | `host-window` | **Nu** — aplicația rulează pe gazdă cu accesul utilizatorului serverului |
+| Mediu | Stack-ul compose și sarcinile unui [mediu](/ro-RO/manual/ghiduri-practice/medii/) cu plasare `rig` | microVM | `smolvm` | Da |
 
 Terminalul și suprafața `computer_use` împart valoarea de suprafață
 `computer`; terminalul se distinge prin markerul imaginii lui de exec și nu

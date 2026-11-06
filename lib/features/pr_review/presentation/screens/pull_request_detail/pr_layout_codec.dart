@@ -28,6 +28,11 @@ const EditorLayoutCodec prLayoutCodec = EditorLayoutCodec(
     PrTabKinds.codeServer,
     PrTabKinds.browser,
     PrTabKinds.rig,
+    // Reattaches to the output and nothing else: reopening a PR page never
+    // starts an environment.
+    PrTabKinds.environmentLogs,
+    // Shows the environment and offers Start; restoring it starts nothing.
+    PrTabKinds.environment,
     // NB: `PrTabKinds.preview` is deliberately NOT restorable — preview tabs
     // are wholly derived from live detection and re-injected after Diff on
     // each load, so persisting one would only risk a blank/duplicate tab.
@@ -37,6 +42,7 @@ const EditorLayoutCodec prLayoutCodec = EditorLayoutCodec(
     // A rig tab with no surface has no machine to show; dropping it beats
     // restoring a tab that renders an empty desktop by default.
     PrTabKinds.rig: ['surface'],
+    PrTabKinds.environmentLogs: ['workspaceId', 'spaceId', 'target'],
   },
   aliasKind: _aliasLegacyReview,
   // An ENCLOSED terminal boots a VM on first attach, so a restored one gets the
@@ -44,7 +50,8 @@ const EditorLayoutCodec prLayoutCodec = EditorLayoutCodec(
   // does not. Otherwise reopening a PR page with a persisted `microvm` terminal
   // booted a VM before the user touched anything.
   rewriteArgsOnDecode: _deferEnclosedTerminalStart,
-  transientArgs: {EditorLayoutCodec.deferStartArg},
+  // A typed-but-not-run command belongs to the press that opened the tab.
+  transientArgs: {EditorLayoutCodec.deferStartArg, 'initialInput'},
   iconFor: PrTabKinds.iconFor,
 );
 

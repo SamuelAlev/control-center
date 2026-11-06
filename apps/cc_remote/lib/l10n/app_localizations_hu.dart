@@ -2647,4 +2647,7 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'A futás leállt, mert a szolgáltató hitelesítő adata már nem működik. Csatlakoztasd újra a Beállítások → Szolgáltatók alatt, majd próbáld újra a kört.';
+
+  @override
+  String get permissionHostExecution => 'Parancsok futtatása a gazdagépen';
 }

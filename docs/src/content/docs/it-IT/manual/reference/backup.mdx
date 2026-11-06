@@ -2,7 +2,7 @@
 title: Backup, esportazione e importazione
 description: La struttura dell'istantanea, il manifest, ogni operazione di backup e route di trasferimento, ed esattamente quali file un backup contiene e quali no.
 slug: it-IT/manuale/riferimento/backup
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Tutto ciò che Control Center può copiare, cedere o adottare, e la forma esatta di ogni
@@ -53,7 +53,13 @@ Il passaggio di conservazione della pipeline settimanale elimina solo i backup d
 proprio spazio di lavoro più vecchi dell'età configurata (30 giorni per impostazione
 predefinita); le istantanee dell'installazione create manualmente non vengono mai
 ruotate da quel passaggio. `server.listBackups` elenca solo le istantanee
-dell'installazione, comprese quelle incomplete.
+dell'installazione, comprese quelle incomplete; `workspace.listBackups` elenca i backup
+pianificati di un singolo spazio di lavoro.
+
+L'eliminazione di uno spazio di lavoro lascia al suo posto questa directory. La
+pianificazione dello spazio di lavoro si ferma con esso, quindi nulla ruota più quei
+backup, che restano finché il proprietario dell'installazione non li rimuove.
+`server.listOrphanedBackups` li segnala.
 
 
 ### `manifest.json`
@@ -137,6 +143,10 @@ rifiutati, ma strutturalmente mancanti.
 | `server.backupNow`    | mutazione | Installazione     | **proprietario** dell'installazione | nessuno | `{ok, path}`      |
 | `server.listBackups`  | lettura   | Installazione     | **proprietario** dell'installazione | nessuno | `{backups: [...]}` |
 | `server.deleteBackup` | mutazione | Installazione     | **proprietario** dell'installazione | `name`  | `{ok}`            |
+| `server.listOrphanedBackups` | lettura | Installazione | **proprietario** dell'installazione | nessuno | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | mutazione | Installazione | **proprietario** dell'installazione | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | lettura | Spazio di lavoro | `admin` | nessuno | `{backups: [...]}` |
+| `workspace.deleteBackup` | mutazione | Spazio di lavoro | `owner` | `name` | `{ok}` |
 | `workspace.export`    | lettura   | Spazio di lavoro  | `admin`             | nessuno       | `{ok, path}`                  |
 | `workspace.import`    | mutazione | Spazio di lavoro  | `owner`             | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`    | mutazione | Installazione*    | `owner`             | `id`          | riga di registro contrassegnata come eliminata |
@@ -146,6 +156,15 @@ globale; il suo handler verifica l'appartenenza del chiamante allo spazio di lav
 indicato e richiede `owner`.
 
 `path` in ogni risposta è un percorso sull'**host del server**.
+
+`server.listOrphanedBackups` restituisce una voce per ogni spazio di lavoro non più attivo:
+`workspace_id`, `workspace_name` quando il registro lo conosce ancora, e `backups`. Uno
+spazio di lavoro eliminato non può più superare un controllo di ruolo dello spazio di
+lavoro, quindi i suoi backup appartengono al proprietario dell'installazione.
+`server.deleteOrphanedBackup` rifiuta uno spazio di lavoro attivo, i cui backup restano
+dietro `workspace.deleteBackup` e i ruoli propri di quello spazio di lavoro. Entrambe le
+operazioni di eliminazione accettano solo un nome di directory con timestamp presente
+nell'elenco, non un percorso.
 
 :::note[Un'istantanea dell'intera installazione richiede il proprietario su entrambi i canali]
 `server.backupNow`, `server.listBackups` e `server.deleteBackup` richiedono il
@@ -231,27 +250,33 @@ abbinamento e il ruolo riportato sotto.
 | ----------------------- | ------ | --------------- | ------------------------------ | -------------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** dello spazio di lavoro |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **proprietario** dell'installazione |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **admin** dello spazio di lavoro; **proprietario** dell'installazione una volta eliminato lo spazio di lavoro |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **proprietario** dello spazio di lavoro |
 
-`w` è un id di spazio di lavoro, `n` un nome di directory di istantanea, `d` l'id del
-dispositivo chiamante, `s` la firma. `n` viene risolto rispetto all'elenco dei backup
-anziché concatenato alla radice dei backup, quindi la route non può essere puntata su
-una directory che l'elenco non avrebbe mostrato.
+`w` è un id di spazio di lavoro, `n` un nome di directory di istantanea o di backup
+pianificato, `d` l'id del dispositivo chiamante, `s` la firma. Su `/backup/snapshot`, `n`
+viene risolto rispetto all'elenco dei backup anziché concatenato alla radice dei backup,
+quindi la route non può essere puntata su una directory che l'elenco non avrebbe mostrato.
+Su `/backup/stored` deve essere un nome con timestamp, e il file deve essere un file reale
+all'interno della directory di backup di quello stesso spazio di lavoro.
 
 | Stato | Causa                                                                             |
 | ------ | --------------------------------------------------------------------------------- |
-| `400`  | Manca un parametro di query obbligatorio, o il corpo di un caricamento è vuoto     |
+| `400`  | Manca un parametro di query obbligatorio, un nome di backup non è valido, o il corpo di un caricamento è vuoto |
 | `403`  | Dispositivo sconosciuto o revocato, firma non valida, o il chiamante non ha il ruolo |
-| `404`  | Nessuna porta di backup su questo host, o il file di istantanea/spazio di lavoro indicato non esiste |
+| `404`  | Nessuna porta di backup su questo host, o il file di istantanea, backup o spazio di lavoro indicato non esiste |
 | `405`  | `/backup/restore` chiamato con un metodo diverso da `POST`                         |
 | `413`  | Il corpo del caricamento supera gli 8 GiB, per content-length dichiarato o per byte effettivamente letti |
 | `426`  | Qualsiasi richiesta diretta a una route di trasferimento sul listener HTTP pubblico; usa il tunnel delle risorse cifrato di un client associato |
 | `500`  | L'esportazione o l'archiviazione non è riuscita lato server                        |
 
-Entrambi i download rispondono con `Cache-Control: no-store` e `Accept-Ranges: none`.
-Ogni richiesta genera una copia **nuova** e la elimina dopo averla trasmessa in
-streaming, quindi una risposta in cache o ripresa unirebbe i byte di due esportazioni
-diverse in un unico file che sembra valido e non lo è.
+Tutti e tre i download rispondono con `Cache-Control: no-store` e `Accept-Ranges: none`.
+`/backup/workspace` e `/backup/snapshot` generano una copia **nuova** per ogni richiesta e
+la eliminano dopo averla trasmessa in streaming, quindi una risposta in cache o ripresa
+unirebbe i byte di due esportazioni diverse in un unico file che sembra valido e non lo è.
+
+`/backup/stored` è l'eccezione: trasmette in streaming un backup pianificato come
+`<workspaceId>-<name>.db` e lascia il file al suo posto, perché quel file è il backup.
 
 `/backup/snapshot` restituisce `<name>.zip`, con voci relative alla radice
 dell'istantanea, così l'estrazione riproduce `manifest.json` + `global.db` +
@@ -281,12 +306,13 @@ di backup risultanti.
 | Staging dei trasferimenti       | `<dataDir>/backups/transfer/` — un banco di lavoro, ripulito dalla route che lo scrive |
 | Nome dell'archivio dell'istantanea | `<snapshot directory name>.zip`                           |
 | Limite di caricamento           | 8 GiB per caricamento cifrato verso `/backup/restore`        |
-| Conservazione                   | Istantanee dell'installazione: eliminazione manuale. Backup degli spazi di lavoro: pipeline settimanale, 30 giorni per impostazione predefinita |
+| Conservazione                   | Istantanee dell'installazione: eliminazione manuale. Backup degli spazi di lavoro: pipeline settimanale, 30 giorni per impostazione predefinita, o eliminazione manuale. Backup di uno spazio di lavoro eliminato: solo eliminazione manuale |
 
 Le directory `exports/`, `transfer/` e `workspace-backups/` non sono istantanee
 dell'installazione e sono escluse da `server.listBackups`. Solo l'ultima directory ha
-una conservazione pianificata; l'eliminazione di un'istantanea dell'installazione
-richiede l'azione esplicita del proprietario dell'installazione.
+una conservazione pianificata, e solo finché il suo spazio di lavoro esiste;
+l'eliminazione di un'istantanea dell'installazione richiede l'azione esplicita del
+proprietario dell'installazione.
 
 ## Vedi anche
 

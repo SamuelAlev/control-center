@@ -1,0 +1,411 @@
+---
+title: 设置环境
+description: 借助 compose、自定义 CLI、受监管的进程或桌面应用，为每个空间和拉取请求提供各自运行中的技术栈。
+slug: zh-CN/手册/操作指南/环境
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+**环境**是一个空间运行中的技术栈：分支所需的服务，与所有其他空间隔离，显示在侧边栏中，智能体可以访问。拉取请求也有环境，因为 PR 本来就有自己的空间。
+
+工作区管理员只需编写一次**定义**。之后成员在空间或 PR 侧边栏的 **环境** 部分点击 **开始**。定义保存在工作区数据库中，因此功能分支永远不会改变 Control Center 运行的内容，不过工具仍会运行该分支的代码。
+
+## 创建定义
+
+1. 打开 **设置 → 工作区 → 环境**。只有工作区管理员可以更改定义。
+2. 点击 **新建定义**，然后选择 **空白定义** 或 **从仓库生成草稿**。草稿会在仓库中查找 compose 文件、`Procfile` 和 `package.json` 脚本，由你审阅结果。
+3. 填写表单，或使用 **JSON** 选项卡。本页的示例就是该 JSON。
+4. 点击 **运行测试**。它会启动一个一次性环境，等待就绪后将其销毁。
+
+要把定义保存在仓库中，请使用 **关联仓库文件**。Control Center 只从默认分支读取该文件，并且只运行管理员批准的版本。较新的版本会显示 **有可用更新**，在批准之前不会改变任何内容。
+
+## 最小的定义
+
+一个普通的 compose 仓库只需要这些：
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+其他内容都有默认值：自动发现 compose 文件，运行所有服务，分配端口，检测 HTTP 端点，环境以分支命名。
+
+## 组件类型
+
+环境是一个有序的组件列表。除非 `after` 指定了其他组件，否则每个组件都会等待前一个就绪，停止时按相反顺序进行。`enabledWhen` 让组件取决于某个选项或角色，例如 `opt.seed`、`!opt.seed` 或 `repo.web`。
+
+| 类型 | 由谁运行 | 用途 |
+| --- | --- | --- |
+| `compose` | Control Center 的 compose 驱动 | 任意 compose 文件，每个环境一个 |
+| `cli` | 你的工具。Control Center 调用映射的动词并读取 JSON | 自行管理生命周期、域名和数据的工具 |
+| `process` | Control Center，在受监管的终端会话中 | 开发服务器和 worker |
+| `task` | Control Center，每个触发器运行一次 | 安装、迁移、测试 |
+| `app` | Control Center，在有人点击 **启动应用** 时 | 桌面应用 |
+
+`task` 组件接受 `when` 列表：
+
+| 触发器 | 运行时机 |
+| --- | --- |
+| `provision` | 创建工作树时（见下文的工作树任务） |
+| `create` | 每个环境一次，重置后再运行一次 |
+| `start` | 每次启动时 |
+| `change` | 同步之后，已更改的路径匹配 `onChange` 时 |
+| `manual` | 按需：**运行**、`cc-env run <id>` 或 `environment_run_task` |
+| `archive` | 工作树销毁前 |
+
+以数组形式给出的命令是 argv，因此选项值绝不会经过 shell。字符串，或带行数组的 `script`，在 `bash -lc` 下运行。`{name}`、`{branch}`、`{stateDir}`、`{repo.<role>}`、`{port.<key>}`、`{opt.<key>}` 和 `{url.<role>}` 等占位符只在 argv 中展开。shell 命令通过 `CC_ENV_*` 变量读取相同的值，例如 `$CC_ENV_PORT_WEB`。
+
+每条命令和空间终端还会获得 `CC_ENV_NAME`、`CC_ENV_STATE_DIR`、`CC_ENV_URL`、`CC_SPACE_ID`、`CC_REPO_PATH_<ROLE>`，在 PR 空间中还有 `CC_PR_NUMBER` 和 `CC_PR_IS_FORK`。有 compose 组件时还会获得 `COMPOSE_PROJECT_NAME` 和 `COMPOSE_FILE`，因此任务中的 `docker compose exec` 能到达正确的项目。
+
+## 角色和工作目录
+
+定义将**角色**绑定到工作区仓库，因此一个技术栈可以跨多个仓库：
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`：空间至少包含一个锚点角色时才能启动环境。如果有两个定义匹配，由启动的人选择。
+- `required`：没有这个仓库，技术栈无法运行。
+- `whenMissing`：空间缺少该角色时的处理方式。`addToSpace` 以默认分支添加仓库，是 `required` 角色的默认值。`useSource` 传入你注册的检出，应将其视为只读。`skip` 不设置变量，是其他情况下的默认值。
+- 启动需要对空间内某个锚点仓库拥有 `write` 授权，并对所有其他绑定的仓库拥有读取权限。
+
+命令在 `repos` 中空间拥有的第一个角色里运行，因此单仓库定义无需提及。任何组件都可以用 `"cwd": { "role": "e2e", "path": "packages/ui" }` 覆盖。两个字段都是可选的。
+
+## 端口和 URL
+
+Control Center 在任何内容启动之前，从主机范围内的区间分配主机端口（默认 42000 到 49999，每块 32 个）。端口在环境的整个生命周期内保持不变，compose 端口只绑定到 `127.0.0.1`。
+
+- compose 端口无需声明。用 `{port.postgres.5432}` 或 `CC_ENV_PORT_POSTGRES_5432` 读取。
+- 其他端口在使用之处用 `"port": "web"` 或 `"ports": ["web", "hmr"]` 声明，并用 `{port.web}` 读取。带端口的进程还会获得 `PORT` 和 `HOST=127.0.0.1`。
+
+HTTP 端点在服务器的路由器上获得一个 URL，路由器只监听一个环回端口：
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>` 是分支的 slug，PR 空间中为 `pr-<n>`。`<project>` 是 `naming.project`，否则是定义的名称。
+- `*.localhost` 名称指向环回地址，因此不需要 hosts 条目或 DNS，主机名还能让环境之间的 Cookie 相互隔离。
+- 响应 HTTP 的 compose 端口会被检测到，组件上的 `http` 可覆盖这一判断。进程需要 `"endpoint": { "role": "web", "primary": true }`，这也会让 `{url.web}` 可用。
+- 在浏览器 (VM) 中，使用 **在 Browser (VM) 中打开**。在那里 `https://web--fix-login--shop.localhost/` 会到达相同的路由。
+- 整个标签不超过 63 个字符，因此长名称会用哈希缩短。
+- 两个端点没有共同的父域。需要在两者之间共用一个 Cookie 的应用必须从一个端点提供服务。
+
+对于必须预先注册的 URL，例如 OAuth 重定向，`"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` 提供一组固定的名称。
+
+`policy` 决定环境何时运行。`autoCreate` 为 `off`、`prSpaces` 或 `allSpaces`，`idleStopMinutes` 默认为 240，`followPrHead` 在 head 移动时同步 PR 环境，`maxRunning`（默认 6）让 **开始** 提议停止最久未使用的环境。
+
+## 示例：compose 应用
+
+一个 compose 文件中的 Web 应用和 Postgres，带有被 git 忽略的 `.env`、迁移和测试任务。`seedFiles` 将指定文件从你注册的检出复制到每个新工作树。
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+`healthchecks` 让没有自带健康检查的服务也能阻塞下一个组件。没有它，运行中的容器就算就绪，迁移可能抢在仍在启动的数据库之前运行。
+
+## 示例：自定义 CLI
+
+一个虚构的 `acme` 工具，自行管理容器、域名和 TLS。Control Center 提供 `{name}`，其余一切从 `status` 获知。它绝不推导工具的主机名，也绝不编辑 `/etc/hosts`。
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create`、`status` 和 `destroy` 是必需的。Control Center 根据读取的状态选择 `create` 或 `start`。任何动词都可以用 `{ "shell": "…" }` 代替 argv。
+- `statusMap` 用 JSON 指针读取工具自身的 JSON，其中 `*` 匹配每一项。状态规则有序，第一个匹配的规则生效。条件是 `path` 加 `equals`，或 `any`、`none` 加 `where`。
+- `keepsDataOnStop: false` 关闭空闲停止，并在 **停止** 上添加数据丢失警告。当停止会丢失数据时设置它。
+- `routing.mode: "tool"` 把工具的主机名连接到浏览器 (VM) 和智能体。域名必须以 `.test`、`.localhost` 或 `.internal` 结尾，超出范围的 URL 会被丢弃。
+
+你自己的工具可以省略 `statusMap`，直接输出本页末尾描述的状态契约。
+
+## 示例：pnpm 单体仓库
+
+只有进程和任务，没有容器。Web 应用通过 `{url.api}` 找到 API。
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- 每个进程都是一个终端选项卡，可以打开、阅读和输入。关闭选项卡不会停止进程。
+- `ready` 接受 `http`、`tcp` 或 `logMatch`。`restart` 为 `on-failure`（默认）、`always` 或 `never`。`restartOn` 在已更改的路径匹配时重启进程。
+- `options` 会变成 **开始** 上的表单，`agentDefault` 适用于智能体启动的运行。
+
+## 示例：桌面应用
+
+一个带构建步骤的桌面应用。无论用什么技术构建，应用的工作方式都一样，因为 Control Center 在操作系统窗口层面工作，不需要在应用中加入钩子或 SDK。
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+应用不会随环境启动。有人点击 **启动应用** 后，先运行 `prepare`。**重新构建并启动** 会再次运行这一组合。正常退出显示为已关闭，崩溃会显示最后的日志行且不重启，服务器重启绝不会重新启动应用，空闲停止也不会动运行中的应用。
+
+### 桌面应用的权限和限制
+
+- 在 macOS 上，在系统设置中为 Control Center 授予一次**屏幕录制**和**辅助功能**权限。服务器主机需要图形会话：无头服务器会拒绝启动应用。
+- 直接启动二进制文件。`open -a` 会把应用交给 LaunchServices，应用随之离开 Control Center 跟踪的进程树。`"window": { "match": { "bundleId": "…" } }` 可处理这种情况，但只有一个运行中的副本时才安全。
+- 窗口留在显示器上。macOS 不会捕获位于所有显示器之外的窗口，因此智能体使用的应用在服务器屏幕上可见。它不需要焦点。
+- `"isolate": "home"` 通过 `HOME`、`XDG_*` 和 `CFFIXED_USER_HOME` 为应用提供私有主目录，让两个空间的副本可以并行运行。`NSUserDefaults` 不隔离，因此 Cocoa 偏好设置和 Flutter 的 `shared_preferences` 仍在副本之间共享。
+- `isolate` 只作用于启动的进程。`flutter run` 之类的工具链启动器需要真实的主目录，所以请把 `isolate` 与构建好的二进制文件搭配使用。如果应用有自己的设置，例如 `--user-data-dir`，请优先使用。
+- 智能体用 `app_use` 操作窗口，它只能触及此环境的进程树。智能体看到的是窗口，不是桌面。智能体的启动要经过操作策略，默认会询问，而在有人掌握控制权时，智能体的输入会暂停。
+- `"input": "background"`（默认）将事件发送给进程。`"foreground"` 激活窗口并接管光标。
+
+## 工作树任务取代仓库脚本
+
+`provision` 和 `archive` 任务取代了过去按仓库配置的设置和归档脚本。**现有脚本已自动迁移：**每个有脚本的仓库现在都有一个以仓库命名的定义，其中的 `setup` 和 `archive` 任务保存着相同的脚本文本。**设置 → 工作区 → 仓库** 中仓库行上的图标可以打开它。过去的脚本运行记录保留为只读历史。
+
+这些任务跟随工作树而不是环境，因此在没有人点击 **开始** 的空间中也会运行：
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| 运行时机 | 角色的工作树创建时，在任何空间中 | 该工作树销毁前 |
+| 失败时 | 配置失败，工作树被销毁 | 记录下来，绝不阻止删除 |
+| 默认超时 | 5 分钟 | 2 分钟 |
+| 可见内容 | `CC_WORKSPACE_PATH`、`CC_ROOT_PATH`、`CC_SPACE_*`、`CC_REPO_NAME` | 相同 |
+
+没有技术栈的仓库只需要一个包含其任务的定义。由于没有可启动的内容，所以不需要锚点角色：
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- 此时还没有环境，因此这些任务不能使用 `{name}`、`{port.*}`、`{url.*}`、`{opt.*}` 或 `enabledWhen`，也不会获得定义的 `env`。
+- 一个仓库的 `provision` 和 `archive` 任务只能由一个定义持有。其他定义仍可为其他用途绑定它。
+- `"when": ["provision", "change"]` 还会在锁文件变化时重新安装，这是设置脚本从未做到的。
+- 任务针对其 `cwd` 角色的工作树运行，因此多仓库定义可以分别设置每个仓库。
+- 测试运行会设置 `CC_SCRIPT_TEST=1`。重试从干净的工作树开始，所以任务要能承受重新运行。
+
+## 智能体
+
+智能体绝不会获得 Docker 套接字。在有符合条件的定义的空间中，运行的 `PATH` 上会有 `cc-env`。空间来自运行本身，因此智能体只能操作自己的环境，每条命令都要经过操作策略。
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+有 compose 组件时，`docker` shim 还允许 `docker compose` 使用 `ps`、`logs`、`exec`、`port`、`restart` 和 `top`。动词之前不能有标志，`logs` 不能跟踪输出，`exec` 只接受 `-T`。其他情况以代码 5 退出，并显示“not available in Control Center agent runs”。
+
+技能调用自身工具的仓库可以继续这样做。`cli` 组件上的 `agentPassthrough` 块声明智能体可以运行哪些命令：
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+`maps` 指定适用其策略的操作。`positionalName` 将该参数强制为此空间的环境，`nameFilter` 将 JSON 输出过滤到该环境，每个 `pathFlags` 值都必须解析到运行的工作树内。不匹配任何规则的命令以代码 5 退出。
+
+相同的操作也以工具形式提供：`environment_status`、`environment_up`、`environment_down`、`environment_reset`、`environment_destroy`、`environment_restart`、`environment_exec`、`environment_logs`、`environment_run_task`、`environment_launch_app` 和 `environment_stop_app`。沙盒中的智能体可直接访问自己的端口，并通过运行的代理访问环境的主机名，所以请让它们从 `environment_status` 读取端点，不要猜测 URL。
+
+## 来自复刻的拉取请求
+
+来自复刻的 PR 的代码不可信，在主机放置下它以服务器的操作系统用户身份运行。`policy.forkPrs` 决定如何处理：
+
+| 值 | 效果 | 默认用于 |
+| --- | --- | --- |
+| `rig` | compose 文件在 VM 中运行，无需确认 | 只含 `compose` 和 `task` 组件的定义 |
+| `approval` | 每次启动都需要管理员 | 所有其他定义 |
+| `deny` | 拒绝 | 无 |
+
+- `seedFiles` 绝不会复制给复刻，因为它们通常是机密。绑定其中某个文件的 compose 文件会按名称报告缺失的文件。
+- `provision` 和 `archive` 任务会被跳过，除非策略为 `rig`，此时它们在 VM 中运行。
+- 在主机放置下，复刻上的 `privileged`、主机命名空间、Docker 套接字绑定、`devices` 以及空间工作树之外的绑定都会被拒绝。在受信任的空间中只发出警告。
+
+## Rig 放置
+
+`"placement": "rig"` 在专用的 microVM 中运行 `compose` 和 `task` 组件。含有 `process`、`cli` 或 `app` 组件的定义不符合条件。compose 文件原样运行，没有主机 Docker 套接字，也没有操作员凭据，网络访问仅限其镜像所需的镜像仓库。工作树以实时方式挂载。
+
+- **arm64 客户机。** 在 Apple Silicon 上客户机是 arm64，因此仅支持 amd64 的镜像无法运行。
+- **私有镜像仓库会被拒绝。** 客户机没有镜像仓库凭据，因此已知公共镜像仓库之外的镜像在 VM 启动前就会被拒绝。公共镜像仓库中的私有仓库会在客户机拉取时失败。
+- **16 GiB 存储。** 技术栈的所有镜像和卷共用一块 16 GiB 磁盘，且无法扩大。
+- **首次启动较慢。** 镜像层按 VM 分开，因此首次启动要拉取全部内容。已停止的 rig 会保留磁盘。
+- **基础镜像必须可读。** 通过变量指定基础镜像的 Dockerfile 无法规划，因为网络访问在启动时就已固定。
+- **生命周期。** `policy.rigTtlHours` 终止 VM，默认 24 小时后。
+
+## 面向工具作者的状态契约
+
+没有 `statusMap` 的 `cli` 组件期望原生契约 `cc-env/1`。`status` 动词将此对象打印到 stdout：
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- `state` 为 `ready`、`starting`、`stopped`、`failed` 或 `missing`。`missing` 导向 `create`，`stopped` 和 `failed` 导向 `start`。请以退出码 0 报告 `missing`：失败的 `status` 算作 `failed`。
+- 只有 `state` 是必需的。未知字段会被忽略，无法解析的输出显示为降级，原始文本作为详情。
+- URL 必须是环回地址、`*.localhost` 或位于 `routing.domain` 之下，否则会被丢弃。
+- `needsRecreate: true` 显示 **重新创建**，它会丢弃数据。Control Center 绝不会自行据此操作。
+- `list` 动词打印名称数组或带 `name` 的对象数组(JSON)。
+
+退出码适用于所有动词：
+
+| 代码 | 含义 |
+| --- | --- |
+| 0 | 成功 |
+| 3 | 需要设置主机。**在终端中运行** 打开空间终端，命令已输入但未运行，然后用 **重试** 重试。Control Center 绝不运行 `sudo` |
+| 4 | 需要身份验证 |
+| 5 | 依赖项不可用 |
+| 其他 | 失败 |
+
+进度以换行分隔的 JSON 输出到 stderr：
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+`step` 行显示为实时步骤列表，`note` 行按原样显示。最后一行类型为 `error` 时会成为结构化错误，并提供 `command` 供复制。否则 Control Center 显示 stderr 的最后 20 行。非 JSON 内容都是普通日志输出。
+
+## 相关内容
+
+- [使用空间](/zh-CN/手册/操作指南/空间/)
+- [从终端转发端口](/zh-CN/手册/操作指南/vm-端口/)
+- [给智能体一台用于测试的机器](/zh-CN/手册/操作指南/使用机台/)
+- [配置护栏](/zh-CN/手册/操作指南/配置护栏/)

@@ -2,7 +2,7 @@
 title: Mentés, exportálás és importálás
 description: A pillanatkép felépítése, a manifest, minden mentési művelet és átviteli útvonal, valamint pontosan azok a fájlok, amelyeket egy biztonsági mentés tartalmaz, és amelyeket nem.
 slug: hu-HU/kezikonyv/referencia/mentes
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Minden, amit a Control Center másolni, átadni vagy átvenni képes, és az egyes
@@ -53,7 +53,13 @@ Nem tartalmaznak manifestet és `global.db`-t, és nem telepítési pillanatkép
 A heti pipeline megőrzési lépése csak a saját munkaterületének a beállított életkornál
 (alapértelmezésben 30 napnál) régebbi mentéseit törli; a kézzel készített telepítési
 pillanatképeket ez a lépés soha nem törli. A `server.listBackups` csak telepítési
-pillanatképeket listáz, a hiányosakat is beleértve.
+pillanatképeket listáz, a hiányosakat is beleértve; a `workspace.listBackups` egy
+munkaterület ütemezett mentéseit listázza.
+
+Egy munkaterület törlése a helyén hagyja ezt a könyvtárat. A munkaterület ütemezése vele
+együtt leáll, így ezeket a mentéseket többé semmi nem törli a megőrzés szerint, és addig
+maradnak, amíg a telepítés tulajdonosa el nem távolítja őket. A
+`server.listOrphanedBackups` jelenti őket.
 
 
 ### `manifest.json`
@@ -137,6 +143,10 @@ nincsenek ott.
 | `server.backupNow`    | Írás    | Telepítés    | a telepítés **tulajdonosa** | nincs         | `{ok, path}`                                           |
 | `server.listBackups`  | Olvasás | Telepítés    | a telepítés **tulajdonosa** | nincs         | `{backups: [...]}`                                     |
 | `server.deleteBackup` | Írás    | Telepítés    | a telepítés **tulajdonosa** | `name`        | `{ok}`                                                 |
+| `server.listOrphanedBackups` | Olvasás | Telepítés | a telepítés **tulajdonosa** | nincs | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | Írás | Telepítés | a telepítés **tulajdonosa** | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | Olvasás | Munkaterület | `admin` | nincs | `{backups: [...]}` |
+| `workspace.deleteBackup` | Írás | Munkaterület | `owner` | `name` | `{ok}` |
 | `workspace.export`    | Olvasás | Munkaterület | `admin`                     | nincs         | `{ok, path}`                                           |
 | `workspace.import`    | Írás    | Munkaterület | `owner`                     | `source_path` | `{ok, workspace_id}`                                   |
 | `workspace.delete`    | Írás    | Telepítés*   | `owner`                     | `id`          | a nyilvántartási sor töröltként megjelölve             |
@@ -146,6 +156,14 @@ nyilvántartásban él; a kezelője ellenőrzi a hívó tagságát a megnevezett
 és `owner` szerepkört követel.
 
 A `path` minden válaszban a **szervergép** egy útvonala.
+
+A `server.listOrphanedBackups` egy-egy bejegyzést ad vissza minden olyan munkaterülethez,
+amely már nem él: `workspace_id`, `workspace_name`, ha a nyilvántartás még ismeri, és
+`backups`. Egy törölt munkaterület már nem tud megfelelni a munkaterületi szerepkör-ellenőrzésnek,
+ezért a mentései a telepítés tulajdonosához tartoznak. A `server.deleteOrphanedBackup`
+elutasít egy élő munkaterületet, amelynek mentései a `workspace.deleteBackup` és az adott
+munkaterület saját szerepkörei mögött maradnak. Mindkét törlő művelet csak listázott
+időbélyeg-könyvtárnevet fogad el, útvonalat nem.
 
 :::note[A teljes telepítésről készült pillanatkép mindkét útvonalon tulajdonosi kapu mögött van]
 A `server.backupNow`, a `server.listBackups` és a `server.deleteBackup` a telepítés
@@ -230,27 +248,34 @@ párosítási PSK-jával, valamint az alábbi szerepkört.
 | ------------------- | ------- | ------------- | -------------------------------- | ------------------------- |
 | `/backup/workspace` | GET     | `w`, `d`, `s` | `backup-workspace:<workspaceId>` | Munkaterület **admin**    |
 | `/backup/snapshot`  | GET     | `n`, `d`, `s` | `backup-snapshot:<name>`         | Telepítés **tulajdonosa** |
+| `/backup/stored` | GET | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Munkaterület **admin**; a munkaterület törlése után a telepítés **tulajdonosa** |
 | `/backup/restore`   | POST    | `w`, `d`, `s` | `backup-restore:<workspaceId>`   | Munkaterület **tulajdonosa** |
 
-A `w` egy munkaterület-azonosító, az `n` egy pillanatkép-könyvtárnév, a `d` a hívó
-eszköz azonosítója, az `s` pedig az aláírás. Az `n` a mentéslistázás alapján oldódik fel,
-nem a mentések gyökérkönyvtárához fűzve, így az útvonal nem irányítható olyan könyvtárra,
-amelyet a listázás nem mutatott volna.
+A `w` egy munkaterület-azonosító, az `n` egy pillanatkép vagy ütemezett mentés
+könyvtárneve, a `d` a hívó eszköz azonosítója, az `s` pedig az aláírás. A
+`/backup/snapshot` esetén az `n` a mentéslistázás alapján oldódik fel, nem a mentések
+gyökérkönyvtárához fűzve, így az útvonal nem irányítható olyan könyvtárra, amelyet a
+listázás nem mutatott volna. A `/backup/stored` esetén időbélyeg-névnek kell lennie, a
+fájlnak pedig valódi fájlnak kell lennie az adott munkaterület saját mentéskönyvtárán
+belül.
 
 | Állapot | Ok                                                                                                                     |
 | ------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `400`   | Hiányzik egy kötelező lekérdezési paraméter, vagy üres a feltöltés törzse                                              |
+| `400`   | Hiányzik egy kötelező lekérdezési paraméter, érvénytelen egy mentésnév, vagy üres a feltöltés törzse                   |
 | `403`   | Ismeretlen vagy visszavont eszköz, hibás aláírás, vagy a hívónak nincs meg a szerepköre                                |
-| `404`   | Nincs mentési port ezen a gazdagépen, vagy a megnevezett pillanatkép- vagy munkaterület-fájl nem létezik               |
+| `404`   | Nincs mentési port ezen a gazdagépen, vagy a megnevezett pillanatkép-, mentés- vagy munkaterület-fájl nem létezik      |
 | `405`   | A `/backup/restore` hívása `POST`-on kívül bármi mással                                                                 |
 | `413`   | A feltöltés törzse meghaladja a 8 GiB-ot, akár a megadott content-length, akár a ténylegesen beolvasott bájtok szerint |
 | `426`   | Bármely közvetlen kérés egy átviteli útvonalra a nyilvános HTTP-listeneren; használja egy párosított kliens titkosított erőforrás-alagútját |
 | `500`   | Az exportálás vagy az archiválás szerveroldalon meghiúsult                                                             |
 
-Mindkét letöltés `Cache-Control: no-store`, illetve `Accept-Ranges: none` fejléccel
-válaszol. Minden kérés egy **friss** másolatot készít, és a streamelés után törli, így egy
-gyorsítótárazott vagy folytatott válasz két különböző exportálás bájtjait fűzné össze
-egyetlen, érvényesnek látszó, de nem az fájlba.
+Mindhárom letöltés `Cache-Control: no-store`, illetve `Accept-Ranges: none` fejléccel
+válaszol. A `/backup/workspace` és a `/backup/snapshot` kérésenként egy **friss** másolatot
+készít, és a streamelés után törli, így egy gyorsítótárazott vagy folytatott válasz két
+különböző exportálás bájtjait fűzné össze egyetlen, érvényesnek látszó, de nem az fájlba.
+
+A `/backup/stored` a kivétel: az ütemezett mentést `<workspaceId>-<name>.db` néven
+streameli, és a fájlt a helyén hagyja, mert maga a fájl a mentés.
 
 A `/backup/snapshot` `<name>.zip` fájlt ad vissza, a bejegyzések a pillanatkép gyökeréhez
 képes relatívak, így a kicsomagolás a `manifest.json` + `global.db` +
@@ -281,12 +306,12 @@ fájlokat.
 | Átviteli előkészítés            | `<dataDir>/backups/transfer/` — egy munkapad, amelyet az őt író útvonal söpör ki      |
 | A pillanatkép-archívum neve     | `<snapshot directory name>.zip`                                                       |
 | Feltöltési felső korlát         | 8 GiB titkosított `/backup/restore`-feltöltésenként                                    |
-| Megőrzés                        | Telepítési pillanatképek: kézi törlés. Munkaterület-mentések: heti pipeline, alapértelmezésben 30 nap |
+| Megőrzés                        | Telepítési pillanatképek: kézi törlés. Munkaterület-mentések: heti pipeline, alapértelmezésben 30 nap, vagy kézi törlés. Törölt munkaterület mentései: csak kézi törlés |
 
 Az `exports/`, a `transfer/` és a `workspace-backups/` könyvtár nem telepítési
 pillanatkép, és ki van zárva a `server.listBackups` listájából. Csak az utolsó
-könyvtárnak van ütemezett megőrzése; egy telepítési pillanatkép törléséhez a telepítés
-tulajdonosának kifejezett művelete kell.
+könyvtárnak van ütemezett megőrzése, és csak addig, amíg a munkaterülete létezik; egy
+telepítési pillanatkép törléséhez a telepítés tulajdonosának kifejezett művelete kell.
 
 ## Lásd még
 

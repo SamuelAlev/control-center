@@ -1,4 +1,5 @@
 {
   "@@locale": "zh_HK",
-  "failureUnreachable": "無法透過任何路徑連到你的伺服器 — 請確認伺服器正在執行，或改用相同網絡再試"
+  "failureUnreachable": "無法透過任何路徑連到你的伺服器 — 請確認伺服器正在執行，或改用相同網絡再試",
+  "permissionHostExecution": "在主機上執行指令"
 }

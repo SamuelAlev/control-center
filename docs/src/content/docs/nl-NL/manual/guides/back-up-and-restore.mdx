@@ -2,7 +2,7 @@
 title: Back-uppen en herstellen
 description: Maak een momentopname van de installatie, verplaats een werkruimte tussen machines, herstel één werkruimte of allemaal, en bewaar kopieën ergens anders.
 slug: nl-NL/handleiding/gidsen/back-uppen-en-herstellen
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Deze handleiding behandelt de vijf dingen die mensen daadwerkelijk met back-ups doen:
@@ -16,7 +16,7 @@ Alles hier staat onder **Instellingen → Server → Back-up en herstel**.
 
 - Een **volledige client** — de desktop- of webapp. Een gekoppelde telefoon kan dit allemaal niet starten, en dat is bewust.
 - Voor het maken, opvragen, downloaden of verwijderen van een **momentopname van de installatie**: de **eigenaar** van de installatie.
-- Voor acties per werkruimte: **beheerder** van die werkruimte om te exporteren, **eigenaar** om te importeren of te verwijderen.
+- Voor acties per werkruimte: **beheerder** van die werkruimte om te exporteren of om de geplande back-ups te bekijken en te downloaden, **eigenaar** om te importeren of te verwijderen of om een van de back-ups te verwijderen.
 - Voor downloads en uploads: een gekoppelde volledige client, op een rechtstreekse of een via een relay bemiddelde verbinding. Beide routes dragen de bestandsbytes door dezelfde geauthenticeerde, end-to-end-versleutelde brontunnel; de relay kan ze niet lezen.
 
 :::caution[Momentopnamen van de installatie zijn handmatig]
@@ -85,12 +85,35 @@ Back-ups van werkruimtes staan op de server onder
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. De bewaarnode
 verwijdert alleen oude back-ups van deze werkruimte; hij verwijdert nooit momentopnamen
 van de installatie of back-ups van andere werkruimtes. Deze bestanden bevatten alleen de
-database. Kopieer ze apart als je ze buiten de machine wilt bewaren.
+database. Download ze of kopieer ze apart als je ze buiten de machine wilt bewaren.
 
-Deze back-ups staan los van de lijst **Momentopnamen van de installatie**. Gebruik om er
-een te herstellen **Werkruimtegegevens → Importeren** met het serverpad van de
-`workspace.db` van de back-up. Importeren vervangt de huidige database van die
-werkruimte, dus exporteer die eerst als je het herstellen misschien ongedaan wilt maken.
+## Een geplande back-up vinden en herstellen
+
+**Geplande back-ups** staat tussen **Momentopnamen van de installatie** en
+**Werkruimtegegevens**, met één rij per werkruimte: wanneer de laatste back-up is
+uitgevoerd, hoeveel er zijn bewaard en hoeveel ruimte ze innemen. Een werkruimte waarvan de
+pipeline nog niets heeft opgeleverd, toont **Nog geen back-ups**. Een werkruimte waarvan je
+geen beheerder bent, meldt dat in de rij in plaats van de back-ups te tonen.
+
+Klap een rij uit om elke back-up te zien, de nieuwste eerst:
+
+- **Herstellen** vervangt de huidige database van de werkruimte door deze back-up. Exporteer de werkruimte eerst als je dit misschien ongedaan wilt maken. Vereist **eigenaar**.
+- **Downloaden** slaat het bestand op op de machine die je gebruikt. De back-up blijft op de server staan.
+- **Pad kopiëren** kopieert de locatie op de server.
+- **Verwijderen** verwijdert deze back-up definitief, nadat je de naam van de werkruimte hebt getypt. Vereist **eigenaar**.
+
+### Back-ups van een verwijderde werkruimte
+
+Als je een werkruimte verwijdert, blijven de geplande back-ups op de server staan, en omdat
+het schema samen met de werkruimte stopt, stopt ook de bewaring: ze blijven staan tot
+iemand ze verwijdert. De **eigenaar** van de installatie ziet ze in dezelfde lijst,
+gemarkeerd met **Werkruimte verwijderd**, en kan ze daar downloaden of verwijderen. Niemand
+anders ziet die rijen.
+
+Ze hebben geen **Herstellen**, omdat er geen werkruimte is om in te herstellen. Om er een
+terug te halen, download je hem, maak je een werkruimte aan en upload je het bestand zoals
+beschreven in
+[Een werkruimte naar een andere installatie verplaatsen](#een-werkruimte-naar-een-andere-installatie-verplaatsen).
 
 ## Een momentopname van de installatie verwijderen
 
@@ -107,14 +130,16 @@ de machine is waar je achter zit, gebruik dan de knoppen **Downloaden**:
 
 - Naast elke **werkruimte** onder **Werkruimtegegevens** → **Downloaden**, voor één `.db`-bestand.
 - Naast elke **momentopname** onder **Momentopnamen van de installatie** → **Downloaden**, voor de hele momentopname als `.zip`.
+- Naast elke back-up onder **Geplande back-ups** → **Downloaden**, voor het `.db`-bestand van die back-up.
 
 Op de desktop kies je waar het bestand terechtkomt en noemt de melding het pad; op het web
-gaat het naar de downloads van de browser. In beide gevallen melden ze de voortgang in
-bytes, want dit zijn de twee payloads die in de gigabytes kunnen lopen.
+gaat het naar de downloads van de browser. In beide gevallen melden alle drie de voortgang
+in bytes, want deze payloads kunnen in de gigabytes lopen.
 
-Beide maken op het moment dat je op de knop drukt een verse kopie, streamen die en
-verwijderen daarna de kopie op de server — een download is niet “het bestand ophalen dat
-de exportknop eerder heeft gemaakt”.
+De downloads van werkruimtes en momentopnamen maken op het moment dat je op de knop drukt
+een verse kopie, streamen die en verwijderen daarna de kopie op de server — een download is
+niet “het bestand ophalen dat de exportknop eerder heeft gemaakt”. Een geplande back-up is
+de uitzondering: je krijgt het opgeslagen bestand, en dat blijft op de server staan.
 
 Het uitpakken van een archief van een momentopname herstelt de indeling van de
 momentopname exact, en dat is wat herstellen een kwestie van terugkopiëren maakt.

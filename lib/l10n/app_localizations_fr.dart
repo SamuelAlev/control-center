@@ -92,10 +92,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get keybindingPushToTalk => 'Appuyer pour parler';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'Maintenir ou basculer la dictée vocale dans le compositeur de messages';
-
-  @override
   String get agentPermissions => 'Autorisations des agents';
 
   @override
@@ -196,6 +192,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'Simulateur iOS';
+
+  @override
+  String get rigSurfaceAppWindow => 'Fenêtre d\'application';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -473,6 +472,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'La vue en direct nécessite ffmpeg sur cet hôte. Installez ffmpeg puis rouvrez l\'onglet.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'La vue en direct nécessite l\'enregistrement de l\'écran. Accordez-le à Control Center dans Réglages Système, puis rouvrez l\'onglet.';
 
   @override
   String get rigStreamEnded => 'La vue en direct s\'est terminée.';
@@ -1581,10 +1584,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'Ouvrir le menu de filtres';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'Ouvrir le menu de filtres des PR';
 
   @override
   String countSelected(int count) {
@@ -2864,19 +2863,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get cancelEdit => 'Annuler l\'édition';
 
   @override
-  String get categoryCreation => 'Création';
-
-  @override
-  String get categoryEditing => 'Édition';
-
-  @override
   String get categoryNavigation => 'Navigation';
-
-  @override
-  String get categorySystem => 'Système';
-
-  @override
-  String get categoryView => 'Vue';
 
   @override
   String get change => 'Modifier';
@@ -3705,31 +3692,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get keepSandboxing => 'Conserver le bac à sable';
 
   @override
-  String get keybindingAddARepositoryDescription => 'Ajouter un dépôt';
-
-  @override
   String get keybindingAddRepository => 'Ajouter un dépôt';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'Signet ou supprimer le signet de l\'article sélectionné';
 
   @override
   String get keybindingCommandPalette => 'Palette de commandes';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'Créer un nouvel agent';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'Créer un nouvel espace de travail';
-
-  @override
   String get keybindingFocusSearch => 'Aller à la recherche';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'Activer le champ de recherche des pull requests';
 
   @override
   String get keybindingNewAgent => 'Nouvel agent';
@@ -3750,35 +3719,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get keybindingOpenArticle => 'Ouvrir l\'article';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'Ouvrir ou fermer le popup du sélecteur d\'espace dans la barre latérale';
-
-  @override
   String get keybindingOpenPr => 'Ouvrir la PR';
 
   @override
   String get keybindingOpenSettings => 'Ouvrir les paramètres';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'Ouvrir les paramètres de l\'application';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription =>
-      'Ouvrir la palette de commandes';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'Ouvrir l\'article sélectionné';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'Ouvrir la demande de tirage sélectionnée';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'Ouvrir l\'espace de travail sélectionné';
 
   @override
   String get keybindingOpenWorkspace => 'Ouvrir l\'espace de travail';
@@ -3796,86 +3740,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get keybindingRefresh => 'Actualiser';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'Actualiser tous les flux';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'Actualiser la liste des demandes de tirage';
-
-  @override
-  String get keybindingRescanForAdaptersDescription =>
-      'Rescanner les adaptateurs';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription =>
-      'Sélectionner l\'article suivant';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription =>
-      'Sélectionner le espace suivant';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'Sélectionner l\'article précédent';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription =>
-      'Sélectionner le espace précédent';
-
-  @override
   String get keybindingSendMessage => 'Envoyer le message';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'Envoyer le message actuel';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'Basculer entre le mode clair et sombre';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'Passer au huitième espace de travail';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'Passer au cinquième espace de travail';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'Passer au premier espace de travail';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'Passer au quatrième espace de travail';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'Passer à l\'espace de travail suivant';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'Passer au neuvième espace de travail';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'Passer à l\'espace de travail précédent';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'Passer au deuxième espace de travail';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'Passer au septième espace de travail';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'Passer au sixième espace de travail';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'Passer au troisième espace de travail';
 
   @override
   String get keybindingToggleBookmark => 'Basculer le signet';
@@ -3913,13 +3778,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'Workspace9';
-
-  @override
-  String get keybindings => 'Raccourcis clavier';
-
-  @override
-  String get keybindingsDescription =>
-      'Tous les raccourcis clavier. Les raccourcis sont fixes et ne peuvent pas être réassignés.';
 
   @override
   String get killRunning => 'Arrêter l\'exécution';
@@ -4195,11 +4053,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get noSavedArticlesBody =>
       'Les articles que vous enregistrez apparaîtront ici.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'Aucun raccourci ne correspond à « $query »';
-  }
 
   @override
   String get noSystemFonts => 'Aucune police système détectée.';
@@ -4941,12 +4794,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'Rechercher...';
-
-  @override
-  String get searchShortcuts => 'Rechercher des raccourcis…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'Indisponible dans le navigateur';
 
   @override
   String get searching => 'Recherche en cours...';
@@ -6748,6 +6595,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'Espace supprimé';
 
   @override
+  String get triggerEventSpaceArchived => 'Espace archivé';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged =>
+      'Provisionnement de l\'espace modifié';
+
+  @override
+  String get triggerEventPrHeadChanged => 'Head de la PR modifié';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged =>
+      'Statut de l\'environnement modifié';
+
+  @override
+  String get triggerEventEnvironmentReady => 'Environnement prêt';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'Environnement détruit';
+
+  @override
+  String get triggerEventEnvironmentProcessExited =>
+      'Processus de l\'environnement terminé';
+
+  @override
   String get triggerExternalPrHelp =>
       'Une pull request ouverte sur l\'hôte de code, pas depuis Control Center.';
 
@@ -6812,6 +6683,34 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get triggerSpaceDeletedHelp =>
       'Un espace de conversation est supprimé.';
+
+  @override
+  String get triggerSpaceArchivedHelp =>
+      'Un espace de conversation est archivé.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'Le provisionnement des worktrees d\'un espace démarre, se termine ou échoue.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'De nouveaux commits sont poussés sur une pull request ouverte.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'Un environnement d\'espace passe à un nouveau statut.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'Un environnement d\'espace a démarré et peut être utilisé.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp =>
+      'Un environnement d\'espace est démantelé.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'Un processus lancé par un environnement se termine.';
 
   @override
   String get navTickets => 'Tickets';
@@ -9034,19 +8933,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'Utilisation et coût';
-
-  @override
-  String get usageAndCostDescription =>
-      'Dépenses de vos agents sur les 7 derniers jours, d\'après les coûts d\'exécution observés.';
-
-  @override
-  String get noUsageYet => 'Aucune utilisation enregistrée pour l\'instant.';
-
-  @override
-  String get spentThisWeek => 'dépensés cette semaine';
-
-  @override
   String get subscriptionUsage => 'Utilisation de l\'abonnement';
 
   @override
@@ -9262,9 +9148,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get keybindingNewSpace => 'Nouveau espace';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'Créer un nouveau espace';
-
-  @override
   String get jumpToLatest => 'Aller au plus récent';
 
   @override
@@ -9443,71 +9326,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get preparingWorkspace => 'Préparation de l espace de travail…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'Exécution du script de configuration pour $repo…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'Scripts';
-
-  @override
-  String get repoScriptsTooltip => 'Configurer les scripts de cycle de vie';
-
-  @override
-  String get repoScriptsSetupLabel => 'Script de configuration';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'S\'exécute dans le worktree de l\'espace juste après sa création — installation des dépendances, génération de fichiers. Un échec marque l\'espace comme échoué ; une nouvelle tentative le relance.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'Script d\'archivage';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'S\'exécute juste avant la suppression du worktree d\'un espace — nettoie les ressources externes au worktree. Un échec ne bloque jamais la suppression.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'S\'exécute via bash depuis le worktree, avec CC_WORKSPACE_PATH (le worktree), CC_ROOT_PATH (la racine du dépôt), CC_SPACE_ID, CC_SPACE_NAME et CC_REPO_NAME définis.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'ex. pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'ex. docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => 'Exécutions récentes';
-
-  @override
-  String get repoScriptsNoRuns => 'Aucune exécution';
-
-  @override
-  String get repoScriptsSaved => 'Scripts enregistrés';
-
-  @override
-  String get repoScriptsRunKindSetup => 'Configuration';
-
-  @override
-  String get repoScriptsRunKindArchive => 'Archivage';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'En cours';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'Réussi';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'Échoué';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'Expiré';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'Code de sortie $code';
+  String provisioningRunningTasks(String repo) {
+    return 'Exécution des tâches du worktree pour $repo…';
   }
 
   @override
@@ -10317,10 +10137,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get keybindingCheatSheet => 'Raccourcis clavier';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'Afficher l\'aide-mémoire des raccourcis clavier pour l\'écran actuel';
-
-  @override
   String get runPlaybookLabel => 'Exécuter le playbook';
 
   @override
@@ -10331,14 +10147,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'Rétablir';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'Annuler votre dernière action réversible';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'Rétablir la dernière action annulée';
 
   @override
   String get undone => 'Annulé';
@@ -14222,6 +14030,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get newSkill => 'Nouvelle compétence';
 
   @override
+  String get newItemAction => 'Nouveau';
+
+  @override
   String get zoomIn => 'Zoom avant';
 
   @override
@@ -14441,6 +14252,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get steerNow => 'Guider';
 
   @override
+  String get steerForce => 'Arrêter et envoyer';
+
+  @override
   String get steeringQueueLabel => 'Messages de pilotage en attente';
 
   @override
@@ -14488,16 +14302,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'Vous serez sollicité à nouveau la prochaine fois qu\'un agent devra exécuter un programme depuis cette copie.';
-
-  @override
-  String get repoScriptsTest => 'Tester';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'Exécuter ce brouillon dans un clone jetable du dépôt';
-
-  @override
-  String get repoScriptsRunKindTest => 'Test';
 
   @override
   String get demoBadgeLabel => 'Démo';
@@ -14713,6 +14517,50 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'Chemin sur le serveur';
+
+  @override
+  String get backupScheduledLabel => 'Sauvegardes planifiées';
+
+  @override
+  String get backupScheduledExplainer =>
+      'Copies enregistrées par le pipeline de sauvegarde de chaque espace de travail. Définissez la planification et la rétention dans le modèle du pipeline.';
+
+  @override
+  String get backupScheduledNone => 'Aucune sauvegarde pour l\'instant';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sauvegardes',
+      one: '1 sauvegarde',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'Dernière sauvegarde : $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'Vous devez avoir le rôle d\'administrateur dans cet espace de travail pour voir ses sauvegardes.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'Supprimer cette sauvegarde ?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'Supprimer du serveur la sauvegarde du $date de $name ? Cette action est irréversible.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'Sauvegarde supprimée.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'Espace de travail supprimé';
 
   @override
   String get backupRestoreAction => 'Restaurer';
@@ -15339,14 +15187,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ideQuickOpen => 'Aller au fichier';
 
   @override
-  String get ideQuickOpenDescription =>
-      'Rechercher les fichiers de la conversation par nom et en ouvrir un dans un onglet';
-
-  @override
-  String get prQuickOpenDescription =>
-      'Rechercher les fichiers de la pull request par nom et en ouvrir un dans un onglet';
-
-  @override
   String get ideQuickOpenHint => 'Rechercher des fichiers par nom';
 
   @override
@@ -15678,6 +15518,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'Chargement forcé';
+
+  @override
+  String get skillEvalHashLabel => 'Hash du paquet';
+
+  @override
+  String get skillEvalProgressLabel => 'Progression';
+
+  @override
+  String get skillEvalUpdatesToggle => 'Évaluations des mises à jour';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -16072,6 +15921,721 @@ class AppLocalizationsFr extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return '$minutes min restantes';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'Les environnements exécutent de vrais processus sur l\'hôte, la démo n\'en a donc aucun.';
+
+  @override
+  String get environmentChecksFailing =>
+      'Certaines vérifications échouent sur le serveur';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'Points de terminaison : $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'Services : $names';
+  }
+
+  @override
+  String get environmentCopied => 'Copié';
+
+  @override
+  String get environmentCopyCommand => 'Copier la commande';
+
+  @override
+  String get environmentCopyUrl => 'Copier l\'URL';
+
+  @override
+  String get environmentDefinition => 'Définition';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count définitions',
+      one: '1 définition',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'Détruire';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name et ses données sont supprimés. Démarrer en crée un nouveau.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'Détruire cet environnement ?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'Exécuter dans un service';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'Code de sortie $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded =>
+      'Cela doit être configuré sur le serveur';
+
+  @override
+  String get environmentKindApp => 'App';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'Processus';
+
+  @override
+  String get environmentKindTask => 'Tâche';
+
+  @override
+  String get environmentLaunch => 'Lancer';
+
+  @override
+  String get environmentLogsGone => 'Ces journaux ne sont plus disponibles.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'Journaux : $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'En attente de sortie';
+
+  @override
+  String get environmentMoreActions => 'Autres actions de l\'environnement';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'Une modification impose de recréer cet environnement.';
+
+  @override
+  String get environmentNoStack =>
+      'Exécute uniquement des tâches de worktree, il n\'y a donc rien à démarrer.';
+
+  @override
+  String get environmentOnTheServer => 'Sur le serveur';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Ouvrir dans Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'Ouvrir la visionneuse';
+
+  @override
+  String get environmentPlacementRig => 'Dans une VM';
+
+  @override
+  String get environmentPreviewTab => 'Environnement';
+
+  @override
+  String get environmentRebuildRelaunch => 'Recompiler et relancer';
+
+  @override
+  String get environmentRecreate => 'Recréer';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name est détruit puis redémarré avec les mêmes options. Ses données sont perdues.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'Recréer cet environnement ?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name revient à son état de base. Les données créées depuis sont perdues.';
+  }
+
+  @override
+  String get environmentResetData => 'Réinitialiser les données';
+
+  @override
+  String get environmentResetTitle => 'Réinitialiser les données ?';
+
+  @override
+  String get environmentRestart => 'Redémarrer';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count redémarrages',
+      one: '1 redémarrage',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'Exécuter';
+
+  @override
+  String get environmentRunInTerminal => 'Exécuter dans le terminal';
+
+  @override
+  String get environmentSectionTitle => 'Environnement';
+
+  @override
+  String get environmentService => 'Service';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'Actions pour $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'Démarrer l\'environnement';
+
+  @override
+  String get environmentStateCrashed => 'Planté';
+
+  @override
+  String get environmentStatusDegraded => 'Dégradé';
+
+  @override
+  String get environmentStatusDestroying => 'Destruction en cours';
+
+  @override
+  String get environmentStatusGone => 'Disparu';
+
+  @override
+  String get environmentStatusStopping => 'Arrêt en cours';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'Arrêter $name perd ses données, et Démarrer ne les restaure pas.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'Arrêter et perdre les données';
+
+  @override
+  String get environmentStopTitle => 'Arrêter cet environnement ?';
+
+  @override
+  String get environmentTaskNeverRun => 'Pas encore exécutée';
+
+  @override
+  String get environmentsAddCheck => 'Ajouter une vérification';
+
+  @override
+  String get environmentsAddOption => 'Ajouter une option';
+
+  @override
+  String get environmentsAddRole => 'Ajouter un rôle';
+
+  @override
+  String get environmentsAdminOnly =>
+      'Seuls les administrateurs de l\'espace de travail peuvent modifier les définitions.';
+
+  @override
+  String get environmentsAfter => 'Attendre ces composants';
+
+  @override
+  String get environmentsAnchor => 'Ancre';
+
+  @override
+  String get environmentsAutoCreate => 'Démarrer automatiquement';
+
+  @override
+  String get environmentsAutoCreateAll => 'Dans chaque espace éligible';
+
+  @override
+  String get environmentsAutoCreateOff => 'Jamais';
+
+  @override
+  String get environmentsAutoCreatePrs => 'Dans les espaces de pull request';
+
+  @override
+  String get environmentsBlank => 'Définition vierge';
+
+  @override
+  String get environmentsCheckFix => 'Commande de correction';
+
+  @override
+  String get environmentsCheckHint => 'Indice';
+
+  @override
+  String get environmentsCommandHelp =>
+      'Les arguments sont séparés par des espaces. Mettez entre guillemets celui qui en contient un.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count composants',
+      one: '1 composant',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'Construire les images au démarrage';
+
+  @override
+  String get environmentsComposeFile => 'Fichier compose';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Impossible de lire un fichier compose. Les noms de service peuvent aller dans la vue JSON.';
+
+  @override
+  String get environmentsComposeServices => 'Services';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'Laissez tous les services décochés pour tous les exécuter.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'Cette commande a des arguments conditionnels. Modifiez-la dans la vue JSON.';
+
+  @override
+  String get environmentsCwdPath => 'Chemin de travail';
+
+  @override
+  String get environmentsCwdRole => 'Rôle de travail';
+
+  @override
+  String get environmentsDeleteBody =>
+      'Les espaces ne peuvent plus le démarrer. Les environnements en cours continuent jusqu\'à leur arrêt.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'Supprimer $name ?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'Ce que chaque espace peut démarrer et les tâches de ses worktrees.';
+
+  @override
+  String get environmentsDraftFromRepo => 'Ébaucher depuis le dépôt';
+
+  @override
+  String get environmentsEmpty => 'Aucune définition pour l\'instant';
+
+  @override
+  String get environmentsEnabledWhen => 'Activé quand';
+
+  @override
+  String get environmentsEndpointRole => 'Rôle du point de terminaison';
+
+  @override
+  String get environmentsFollowPrHead => 'Suivre le head de la pull request';
+
+  @override
+  String get environmentsForkApproval =>
+      'Chaque démarrage exige un administrateur';
+
+  @override
+  String get environmentsForkDeny => 'Refusé';
+
+  @override
+  String get environmentsForkPrs => 'Pull requests de forks';
+
+  @override
+  String get environmentsForkRig => 'Exécuter dans une VM';
+
+  @override
+  String get environmentsIdleStop => 'Arrêter après des minutes d\'inactivité';
+
+  @override
+  String get environmentsIsolateHome =>
+      'Donner à l\'app un dossier personnel privé';
+
+  @override
+  String get environmentsIssues => 'Corrigez ceci avant d\'enregistrer';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'JSON non valide : $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'Conserve ses données à l\'arrêt';
+
+  @override
+  String get environmentsLinkConfirm => 'Lier et approuver';
+
+  @override
+  String get environmentsLinkFile => 'Lier un fichier du dépôt';
+
+  @override
+  String get environmentsLinkHelp =>
+      'Lu uniquement depuis la branche par défaut, et exécuté seulement après approbation.';
+
+  @override
+  String get environmentsLinkPath => 'Chemin';
+
+  @override
+  String get environmentsMaxRunning => 'En cours en même temps';
+
+  @override
+  String get environmentsNamingProject => 'Projet';
+
+  @override
+  String get environmentsNamingTemplate => 'Modèle de nom';
+
+  @override
+  String get environmentsNew => 'Nouvelle définition';
+
+  @override
+  String get environmentsNewDefinitionName => 'Nouvel environnement';
+
+  @override
+  String get environmentsNoChecks =>
+      'Cette définition n\'a aucune vérification.';
+
+  @override
+  String get environmentsNoRuns => 'Aucune exécution de test pour l\'instant';
+
+  @override
+  String get environmentsOnChange => 'Chemins à surveiller';
+
+  @override
+  String get environmentsOptionBool => 'Oui ou non';
+
+  @override
+  String get environmentsOptionEnum => 'Un parmi';
+
+  @override
+  String get environmentsOptionMulti => 'Plusieurs parmi';
+
+  @override
+  String get environmentsOptionValues => 'Valeurs';
+
+  @override
+  String get environmentsPlacement => 'Emplacement';
+
+  @override
+  String get environmentsPlacementHost => 'Sur l\'hôte';
+
+  @override
+  String get environmentsPlacementRig => 'Dans une VM';
+
+  @override
+  String get environmentsPrepareTask => 'Tâche de préparation';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'Point de terminaison principal';
+
+  @override
+  String get environmentsReadyHttp => 'Prêt quand cette URL répond';
+
+  @override
+  String get environmentsRestartAlways => 'Toujours';
+
+  @override
+  String get environmentsRestartNever => 'Jamais';
+
+  @override
+  String get environmentsRestartOn => 'Redémarrer quand ces chemins changent';
+
+  @override
+  String get environmentsRestartOnFailure => 'En cas d\'échec';
+
+  @override
+  String get environmentsRestartPolicy => 'Redémarrer';
+
+  @override
+  String get environmentsRigTtl => 'Durée de vie de la VM en heures';
+
+  @override
+  String get environmentsRunChecks => 'Relancer';
+
+  @override
+  String get environmentsRunTest => 'Lancer le test';
+
+  @override
+  String get environmentsSaved => 'Définition enregistrée';
+
+  @override
+  String get environmentsSectionComponents => 'Composants';
+
+  @override
+  String get environmentsSectionOptions => 'Options de démarrage';
+
+  @override
+  String get environmentsSectionSeedFiles => 'Fichiers d\'amorçage';
+
+  @override
+  String get environmentsSectionVariables => 'Variables';
+
+  @override
+  String get environmentsSeedHelp =>
+      'Un chemin par ligne, copié depuis le checkout enregistré. Les pull requests de forks ne les reçoivent jamais.';
+
+  @override
+  String get environmentsShellHelp =>
+      'Les espaces réservés ne sont pas développés ici. Lisez plutôt les variables CC_ENV_*.';
+
+  @override
+  String get environmentsSourceApprove => 'Approuver cette version';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path correspond à la version approuvée.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'La version approuvée continue de tourner tant que vous n\'approuvez pas celle-ci.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'Source';
+
+  @override
+  String get environmentsTestHelp =>
+      'Exécute un environnement jetable de bout en bout : vérifier, démarrer, attendre qu\'il soit prêt, détruire.';
+
+  @override
+  String get environmentsTestSaveFirst => 'Enregistrez d\'abord la définition.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'Délai en secondes';
+
+  @override
+  String get environmentsTitle => 'Environnements';
+
+  @override
+  String get environmentsTriggerArchive => 'Avant la suppression du worktree';
+
+  @override
+  String get environmentsTriggerChange =>
+      'Quand les chemins surveillés changent';
+
+  @override
+  String get environmentsTriggerCreate => 'Une fois par environnement';
+
+  @override
+  String get environmentsTriggerManual => 'À la demande';
+
+  @override
+  String get environmentsTriggerProvision => 'À la création du worktree';
+
+  @override
+  String get environmentsTriggerStart => 'À chaque démarrage';
+
+  @override
+  String get environmentsTriggers => 'S\'exécute';
+
+  @override
+  String get environmentsUnreadable =>
+      'Ce client ne peut pas lire cette définition.';
+
+  @override
+  String get environmentsUpdateAvailable => 'Mise à jour disponible';
+
+  @override
+  String get environmentsUseShell => 'Utiliser une commande shell';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'L\'outil s\'exécute alors sur votre propre checkout. Considérez-le comme en lecture seule.';
+
+  @override
+  String get environmentsWhenMissing => 'Quand un espace ne l\'a pas';
+
+  @override
+  String get environmentsWhenMissingAdd => 'L\'ajouter à l\'espace';
+
+  @override
+  String get environmentsWhenMissingSkip => 'L\'ignorer';
+
+  @override
+  String get environmentsWhenMissingSource => 'Utiliser le checkout enregistré';
+
+  @override
+  String get environmentsUnsupported =>
+      'Ce serveur ne prend pas en charge les environnements.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'Pas de visionneuse : le serveur ne peut pas capturer cette fenêtre. Autorisez l\'enregistrement de l\'écran pour Control Center sur le serveur.';
+
+  @override
+  String get environmentHealthHealthy => 'Sain';
+
+  @override
+  String get environmentHealthUnhealthy => 'Défaillant';
+
+  @override
+  String get environmentTerminalStale =>
+      'Ce terminal a été ouvert avant le démarrage de l\'environnement : il n\'a donc pas ses variables.';
+
+  @override
+  String get environmentTerminalFresh => 'Ouvrir un nouveau terminal';
+
+  @override
+  String get environmentsShellStays =>
+      'Un script sur plusieurs lignes reste une commande shell : ses lignes sont sa structure.';
+
+  @override
+  String get environmentsOverrides => 'Remplacements de l\'espace de travail';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'Les réglages du fichier sont en lecture seule ici. Associez ses rôles aux dépôts de cet espace de travail ou remplacez n\'importe quel champ en JSON.';
+
+  @override
+  String get environmentsReposHelp =>
+      'Les dépôts utilisés par cet environnement, chacun lié à un rôle.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'Ce que l’environnement exécute, dans l’ordre de démarrage.';
+
+  @override
+  String get environmentsOptionsHelp =>
+      'Choix proposés au démarrage de l’environnement.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'Définies pour les tâches, processus, apps et terminaux de l’espace.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'Ce dont l’hôte a besoin pour faire tourner cet environnement.';
+
+  @override
+  String get environmentsIdleStopHelp => '0 ne l’arrête jamais.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'Un espace contenant ce dépôt peut démarrer l’environnement.';
+
+  @override
+  String get environmentsRequiredHelp =>
+      'L’environnement ne peut pas tourner sans lui.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'Synchroniser et actualiser quand le head de la pull request bouge.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'À corriger';
+
+  @override
+  String get environmentsCheckFile => 'Fichier';
+
+  @override
+  String get environmentsDiscardBody =>
+      'Vos modifications de cette définition seront perdues.';
+
+  @override
+  String get environmentsWorktreeRuns => 'Exécutions des tâches de worktree';
+
+  @override
+  String get environmentsNoWorktreeRuns =>
+      'Aucune tâche de worktree n\'a encore été exécutée.';
+
+  @override
+  String get environmentsLinkRoles => 'Rôles de ce fichier';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'Impossible de lire ce fichier dans le dépôt. Les rôles pourront être associés après la liaison.';
+
+  @override
+  String get guardrailClassHostExecution =>
+      'Exécuter des commandes sur l\'hôte';
+
+  @override
+  String get environmentUrls => 'URL';
+
+  @override
+  String get environmentScripts => 'Scripts';
+
+  @override
+  String get environmentNoneForSpace => 'Aucun environnement pour cet espace';
+
+  @override
+  String get environmentNoneForPr =>
+      'Aucun environnement pour cette pull request';
+
+  @override
+  String get environmentSetupBody =>
+      'Un environnement exécute les services, scripts et URL d’un dépôt pour un espace. Configurez-le une fois et chaque espace du dépôt pourra le démarrer.';
+
+  @override
+  String get environmentSetUp => 'Configurer l’environnement';
+
+  @override
+  String get environmentEditDefinition => 'Modifier la définition';
+
+  @override
+  String get environmentOpenPanel => 'Ouvrir l’environnement';
+
+  @override
+  String get environmentNeedsSetup => 'Configuration requise';
+
+  @override
+  String get environmentContinueInTerminal => 'Continuer dans le terminal';
+
+  @override
+  String get environmentSetupHint =>
+      'L’outil a besoin de vous dans un terminal, pour un mot de passe ou une question. Le démarrage reprend ensuite.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'Ce terminal s’est ouvert, car le démarrage a besoin de vous';
+
+  @override
+  String get environmentSetupTab => 'Configuration de l’environnement';
+
+  @override
+  String get environmentsNothingRunning =>
+      'Rien ne tourne à partir de cette définition.';
+
+  @override
+  String get searchPoliciesHint => 'Rechercher des politiques...';
+
+  @override
+  String get noPoliciesMatch =>
+      'Aucune politique ne correspond à votre recherche';
+
+  @override
+  String get memoryPolicyActive => 'Active';
+
+  @override
+  String get memoryFactType => 'Type';
+
+  @override
+  String get memoryTimesRecalled => 'Nombre de rappels';
+
+  @override
+  String get memorySourceFacts => 'Faits sources';
+
+  @override
+  String get spaceSetupLogs => 'Journaux de préparation';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

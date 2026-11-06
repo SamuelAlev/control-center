@@ -69,6 +69,88 @@ class GraphNode extends StatelessWidget {
   }
 }
 
+/// The face of a node: reports the pointer, and whether this is the node the
+/// inspector is showing.
+///
+/// Selection is painted over the card rather than on its border, so choosing a
+/// node never moves what is inside it.
+class GraphNodeSurface extends StatefulWidget {
+  /// Creates a [GraphNodeSurface].
+  const GraphNodeSurface({
+    super.key,
+    required this.color,
+    required this.borderColor,
+    required this.borderRadius,
+    required this.padding,
+    required this.selected,
+    required this.onTap,
+    required this.child,
+  });
+
+  /// Resting fill.
+  final Color color;
+
+  /// Resting border.
+  final Color borderColor;
+
+  /// The card's corners.
+  final BorderRadius borderRadius;
+
+  /// Insets around [child].
+  final EdgeInsetsGeometry padding;
+
+  /// Whether the inspector is showing this node.
+  final bool selected;
+
+  /// Selects the node.
+  final VoidCallback onTap;
+
+  /// The card's content.
+  final Widget child;
+
+  @override
+  State<GraphNodeSurface> createState() => _GraphNodeSurfaceState();
+}
+
+class _GraphNodeSurfaceState extends State<GraphNodeSurface> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: CcMotion.resolve(context, CcMotion.fast),
+          curve: CcMotion.standard,
+          width: double.infinity,
+          height: double.infinity,
+          padding: widget.padding,
+          decoration: BoxDecoration(
+            color: widget.color,
+            borderRadius: widget.borderRadius,
+            border: Border.all(
+              color: _hovered ? t.fgQuaternary : widget.borderColor,
+            ),
+            boxShadow: _hovered ? AppShadows.soft : const [],
+          ),
+          foregroundDecoration: widget.selected
+              ? BoxDecoration(
+                  borderRadius: widget.borderRadius,
+                  border: Border.all(color: t.accent, width: 2),
+                )
+              : null,
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
 /// One row in the knowledge-graph legend.
 class LegendItem extends StatelessWidget {
   /// Creates a [LegendItem].

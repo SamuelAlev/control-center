@@ -306,7 +306,6 @@
   "filesChanged": "Ficheiros alterados",
   "filesMentionSection": "Ficheiros",
   "keybindingFocusSearch": "Focar na pesquisa",
-  "keybindingFocusThePullRequestSearchFieldDescription": "Focar no campo de pesquisa de pull requests",
   "letsPluginTools": "Vamos ligar as suas ferramentas.",
   "loadingAgents": "A carregar agentes…",
   "loadingModels": "A carregar modelos…",
@@ -659,7 +658,6 @@
   "mcpStatusConnecting": "A ligar…",
   "providersAndModels": "Fornecedores e modelos",
   "providersAndModelsDescription": "Liste todos os fornecedores que o agente integrado pode usar — defina uma chave de API ou entre pelo navegador, veja os modelos e preços de cada fornecedor ligado e controle quais fornecedores este espaço de trabalho pode usar.",
-  "noUsageYet": "Nenhum uso registado ainda.",
   "harnessConnectProviderForModels": "Ligue um fornecedor para ver os modelos.",
   "providerWaitingForBrowser": "A aguardar a sua autorização no navegador…",
   "providerConnectedApiKey": "Ligado via chave de API",
@@ -674,17 +672,14 @@
   },
   "providerNotConnected": "Não ligado",
   "preparingWorkspace": "A preparar espaço de trabalho…",
-  "provisioningRunningSetupScript": "A executar o script de configuração de {repo}…",
-  "@provisioningRunningSetupScript": {
+  "provisioningRunningTasks": "A executar tarefas do worktree de {repo}…",
+  "@provisioningRunningTasks": {
     "placeholders": {
       "repo": {
         "type": "String"
       }
     }
   },
-  "repoScriptsSetupHelp": "É executado no worktree do espaço logo após sua criação — instalar dependências, gerar ficheiros. Uma falha marca o espaço como falho; tentar novamente o executa de novo.",
-  "repoScriptsArchiveHelp": "É executado pouco antes da eliminação do worktree de um espaço — limpa recursos fora do worktree. Uma falha nunca bloqueia a eliminação.",
-  "repoScriptsSaved": "Scripts guardados",
   "provisioningCloningRepo": "A clonar {repo}…",
   "@provisioningCloningRepo": {
     "placeholders": {
@@ -723,7 +718,6 @@
   },
   "planPlaybookDelete": "Eliminar playbook",
   "cheatSheetThisScreen": "Esta ecrã",
-  "keybindingShowKeyboardShortcutsDescription": "Mostrar a folha de referência de atalhos de teclado da ecrã atual",
   "inboxSeverityWaiting": "A aguardar",
   "inboxSectionNeedsYourReview": "A aguardar a sua revisão",
   "inboxSectionWaitingForReviewers": "A aguardar revisores",
@@ -1031,7 +1025,6 @@
   "repoLinkWorkspaceDialogBody": "{repo} está associado a mais de um espaço de trabalho. Em qual deve abrir este link?",
   "repoLinkWorkspaceRemember": "Memorizar a minha escolha para este repositório",
   "ideQuickOpen": "Ir para o ficheiro",
-  "ideQuickOpenDescription": "Pesquise os ficheiros da conversa pelo nome e abra um num separador",
   "ideQuickOpenHint": "Pesquisar ficheiros por nome",
   "ideQuickOpenNoRecent": "Nenhum ficheiro aberto recentemente",
   "connectWelcomeSubtitle": "Execute aqui ou ligue a um servidor que já tenha.",

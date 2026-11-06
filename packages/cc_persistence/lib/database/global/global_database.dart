@@ -2,6 +2,7 @@
 library;
 
 import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
+import 'package:cc_persistence/database/daos/environment_lease_dao.dart';
 import 'package:cc_persistence/database/daos/fleet_dao.dart';
 import 'package:cc_persistence/database/daos/managed_action_policy_dao.dart';
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
@@ -13,6 +14,7 @@ import 'package:cc_persistence/database/daos/user_preference_dao.dart';
 import 'package:cc_persistence/database/daos/workspace_registry_dao.dart';
 import 'package:cc_persistence/database/daos/workspace_route_dao.dart';
 import 'package:cc_persistence/database/migration_steps.dart';
+import 'package:cc_persistence/database/tables/environment_slot_leases.dart';
 import 'package:cc_persistence/database/tables/fleet_tables.dart';
 import 'package:cc_persistence/database/tables/managed_action_policies_table.dart';
 import 'package:cc_persistence/database/tables/paired_devices.dart';
@@ -34,8 +36,9 @@ part 'global_database.g.dart';
 ///
 /// Tables here must be server-wide: workspace registry; users / preferences /
 /// paired devices; per-user RSS; fleet workers/jobs/placement (payloads carry
-/// ids, never workspace content); workspace_routes + server_meta. Boot opens
-/// only this file.
+/// ids, never workspace content); workspace_routes + server_meta; environment
+/// port leases (ports are host-wide; rows carry ids only). Boot opens only this
+/// file.
 @DriftDatabase(
   tables: [
     WorkspacesTable,
@@ -52,6 +55,7 @@ part 'global_database.g.dart';
     ServerSettingsTable,
     SsoConnectionsTable,
     ManagedActionPoliciesTable,
+    EnvironmentSlotLeasesTable,
   ],
   daos: [
     WorkspaceRegistryDao,
@@ -64,6 +68,7 @@ part 'global_database.g.dart';
     ServerSettingDao,
     SsoConnectionDao,
     ManagedActionPolicyDao,
+    EnvironmentLeaseDao,
   ],
 )
 class GlobalDatabase extends _$GlobalDatabase {
@@ -84,7 +89,7 @@ class GlobalDatabase extends _$GlobalDatabase {
   final void Function(String tag, String message)? onError;
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   /// The `server_meta` key holding this install's uuid.
   static const installIdKey = 'install_id';
@@ -171,6 +176,17 @@ class GlobalDatabase extends _$GlobalDatabase {
         workspacesTable,
         workspacesTable.autoPublishReview,
       );
+    }),
+    // v7: host port leases for space environments. Purely additive; a fresh
+    // database builds the table in `onCreate`.
+    MigrationStep(6, 7, (m) async {
+      final existing = await customSelect(
+        "SELECT name FROM sqlite_master WHERE type = 'table' "
+        "AND name = 'environment_slot_leases'",
+      ).get();
+      if (existing.isEmpty) {
+        await m.createTable(environmentSlotLeasesTable);
+      }
     }),
   ];
 

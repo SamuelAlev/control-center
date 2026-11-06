@@ -2,7 +2,7 @@
 title: Állomások
 description: Minden állomásfelület, háttérrendszer, műveleti ige, életciklus-állapot, port, alapérték és szerződés – a teljes tényszerű katalógus.
 slug: hu-HU/kezikonyv/referencia/allomasok
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Csak tények. A mögöttük lévő modellhez lásd: [Állomások és elszigetelt
@@ -18,6 +18,8 @@ kövesse [az útmutatót](/hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-haszna
 | Számítógép | X11-es asztal: bemenet a hypervisoron keresztül, rögzítés a vendéggép ügynökén keresztül | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (gyorsítás nélküli tartalék, soha nem választódik automatikusan) | Igen |
 | Android | Android ADB-n keresztül | A Google emulátora | `android-emulator` | **Nem** – az emulátor maga kezeli a hálózatát |
 | iOS | iOS-szimulátor WebDriverAgenten keresztül | CoreSimulator | `ios-simulator` | **Nem** – a hálózat a gazdagép Macet követi |
+| Alkalmazásablak | Egy környezetből indított asztali alkalmazás ablakai, az operációs rendszeren át | Gazdaablak | `host-window` | **Nem** — az alkalmazás a gazdán fut a szerverfelhasználó hozzáférésével |
+| Környezet | Egy `rig` elhelyezésű [környezet](/hu-HU/kezikonyv/gyakorlati-utmutatok/kornyezetek/) compose-stackje és feladatai | microVM | `smolvm` | Igen |
 
 A terminál és a `computer_use` felület ugyanazt a `computer` felületértéket
 használja; a terminált az exec-képe jelölője különbözteti meg, és soha nem

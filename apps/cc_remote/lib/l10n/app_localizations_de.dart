@@ -2663,4 +2663,7 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Der Lauf wurde beendet, weil die Zugangsdaten seines Anbieters nicht mehr funktionieren. Verbinde ihn unter Einstellungen → Anbieter neu und wiederhole dann den Zug.';
+
+  @override
+  String get permissionHostExecution => 'Befehle auf dem Host ausführen';
 }

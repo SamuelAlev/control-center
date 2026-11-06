@@ -71,22 +71,36 @@ class PipelineCronScheduler {
   ) {
     final period = Duration(seconds: intervalSeconds);
     final last = trigger.lastFiredAt?.toUtc();
-    final next = last == null ? now : last.add(period);
-    if (last == null || !now.isBefore(next)) {
-      // We've fallen a whole extra period behind (≥ 2 periods since the last
-      // fire) only after downtime. Under the skip policy, don't run late —
-      // resume at the next future slot.
-      final caughtUp = last != null && now.isAfter(last.add(period * 2));
-      if (caughtUp && trigger.catchUpPolicy == CronCatchUpPolicy.skip) {
-        return CronEvaluation.idle(nextRunAt: now.add(period));
-      }
+    if (last == null) {
       return CronEvaluation(
         shouldFire: true,
         plannedAt: now,
         nextRunAt: now.add(period),
       );
     }
-    return CronEvaluation.idle(nextRunAt: next);
+    final skip = trigger.catchUpPolicy == CronCatchUpPolicy.skip;
+    var due = last.add(period);
+    // Skipping doesn't move `lastFiredAt`, so the slot a skip resumes at only
+    // lives in `nextRunAt`. Deriving `due` from `lastFiredAt` alone would see
+    // the same missed slot on every tick and the trigger would never fire
+    // again.
+    final resume = trigger.nextRunAt?.toUtc();
+    if (skip && resume != null && resume.isAfter(due)) {
+      due = resume;
+    }
+    if (now.isBefore(due)) {
+      return CronEvaluation.idle(nextRunAt: due);
+    }
+    // A whole extra period past the due slot only happens after downtime.
+    // Under the skip policy, don't run late: resume at the next future slot.
+    if (skip && now.isAfter(due.add(period))) {
+      return CronEvaluation.idle(nextRunAt: now.add(period));
+    }
+    return CronEvaluation(
+      shouldFire: true,
+      plannedAt: now,
+      nextRunAt: now.add(period),
+    );
   }
 
   CronEvaluation _evaluateCron(PipelineTrigger trigger, DateTime now) {

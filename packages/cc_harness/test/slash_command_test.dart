@@ -48,7 +48,7 @@ void main() {
     });
 
     test('keeps the repo qualifier for downstream resolution', () {
-      expect(skillNameFor('skill:web-app:testing'), 'web-app:testing');
+      expect(skillNameFor('skill:shop-ui:testing'), 'shop-ui:testing');
     });
 
     test('a namespaced skill may share a builtin name', () {
@@ -77,10 +77,10 @@ void main() {
     });
 
     test('the parser accepts the namespaced form', () {
-      final r = parseSlashCommand('/skill:web-app:testing run it');
-      expect(r.command, 'skill:web-app:testing');
+      final r = parseSlashCommand('/skill:shop-ui:testing run it');
+      expect(r.command, 'skill:shop-ui:testing');
       expect(r.args, 'run it');
-      expect(skillNameFor(r.command!), 'web-app:testing');
+      expect(skillNameFor(r.command!), 'shop-ui:testing');
     });
   });
 }

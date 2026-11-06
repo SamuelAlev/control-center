@@ -566,7 +566,7 @@ void main() {
                   templateId: 'index_code',
                   workspaceId: 'ws-1',
                   status: PipelineRunStatus.running,
-                  state: const {'repo_name': 'web-app'},
+                  state: const {'repo_name': 'shop-ui'},
                   startedAt: DateTime(2026),
                 ),
               ),
@@ -577,7 +577,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.text('Code analysis · web-app'), findsOneWidget);
+      expect(find.text('Code analysis · shop-ui'), findsOneWidget);
       expect(find.textContaining('{{'), findsNothing);
     });
 

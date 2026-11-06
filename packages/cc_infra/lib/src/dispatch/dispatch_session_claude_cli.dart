@@ -269,8 +269,9 @@ extension _ClaudeCliMethods on DispatchSession {
         mode: mode,
         protectedPaths: await _protectedPaths(),
         runnerStateDirs: _runnerStateDirs,
-        execGrantRoots: await _resolveExecGrantRoots(wsId),
+        execGrantRoots: await _execGrants(wsId),
         loopbackPorts: _gatewayLoopbackPorts,
+        environmentScope: _environment.scope,
       ),
       emit: addEvent,
     );
@@ -892,7 +893,9 @@ extension _ClaudeCliMethods on DispatchSession {
     var mcp = '';
     if (mcpConfigPath != null && mcpConfigPath.isNotEmpty) {
       try {
-        mcp = File(mcpConfigPath).readAsStringSync();
+        mcp = AgentRunLease.withoutRunSecret(
+          File(mcpConfigPath).readAsStringSync(),
+        );
       } on Object {
         mcp = mcpConfigPath;
       }

@@ -29,6 +29,7 @@ class AdapterLaunchControls extends ConsumerWidget {
           label: l10n.environmentVariables,
           description: l10n.environmentVariablesDescription,
           controlWidth: 200,
+          trailingControl: true,
           child: CcButton(
             variant: CcButtonVariant.secondary,
             size: CcButtonSize.sm,

@@ -272,6 +272,38 @@ void main() {
       '/agent/git/github.com/acme/widgets.git/info/refs'
       '?service=git-receive-pack';
 
+  group('MCP run grant', () {
+    test('a live secret proves its own run', () {
+      final scope = gateway.mcpScopeFor(lease.secret);
+
+      expect(scope?.attested, isTrue);
+      expect(scope?.workspaceId, isNotEmpty);
+    });
+
+    test('an unknown secret proves nothing', () {
+      expect(gateway.mcpScopeFor('guessed'), isNull);
+    });
+
+    test('a closed run proves nothing', () async {
+      final closing = (await gateway.open(
+        const AgentRunGrant(workspaceId: 'ws', conversationId: 'c'),
+      ))!;
+      await gateway.close(closing);
+
+      expect(gateway.mcpScopeFor(closing.secret), isNull);
+    });
+
+    test('configs that differ only in the run secret compare equal', () {
+      String config(String secret) =>
+          '{"headers":{"${AgentRunLease.tokenHeader}": "$secret","a":"b"}}';
+
+      expect(
+        AgentRunLease.withoutRunSecret(config('one')),
+        AgentRunLease.withoutRunSecret(config('two')),
+      );
+    });
+  });
+
   group('push proxy', () {
     test('an unknown secret is refused', () async {
       final r = await send(
@@ -727,6 +759,203 @@ void main() {
     });
   });
 
+  group('fetching the run\'s own repo', () {
+    const token = 'run-forge-token';
+    late Directory home;
+    late File helperLog;
+
+    setUp(() {
+      home = Directory.systemTemp.createTempSync('cc_lease_fetch');
+      helperLog = File('${home.path}/user_helper.log');
+      // The shape that broke fetches: every GitHub URL rewritten to SSH, plus
+      // user credential helpers that must never see the run's token.
+      File('${home.path}/gitconfig').writeAsStringSync('''
+[credential]
+\thelper = "!f() { cat >> '${helperLog.path}'; echo \\"op=\$1\\" >> '${helperLog.path}'; }; f"
+[url "git@github.com:"]
+\tinsteadOf = "https://github.com/"
+''');
+    });
+
+    tearDown(() => home.deleteSync(recursive: true));
+
+    Map<String, String> gitEnv(
+      AgentRunLease run, {
+      String? forgeToken = token,
+    }) {
+      final env = <String, String>{
+        'GIT_CONFIG_GLOBAL': '${home.path}/gitconfig',
+        'GIT_CONFIG_NOSYSTEM': '1',
+        'GIT_TERMINAL_PROMPT': '0',
+        'GH_TOKEN': ?forgeToken,
+      };
+      return {...env, ...run.environment(env)};
+    }
+
+    Future<ProcessResult> git(
+      List<String> args,
+      Map<String, String> env, {
+      String? input,
+    }) async {
+      final process = await Process.start(
+        'git',
+        args,
+        workingDirectory: home.path,
+        environment: env,
+      );
+      process.stdin.write(input ?? '');
+      await process.stdin.close();
+      final out = process.stdout.transform(utf8.decoder).join();
+      final err = process.stderr.transform(utf8.decoder).join();
+      return ProcessResult(
+        process.pid,
+        await process.exitCode,
+        await out,
+        await err,
+      );
+    }
+
+    /// Fetch and push URLs for a remote at [url], as git resolves them.
+    Future<({String fetch, String push})> urls(
+      String url,
+      Map<String, String> env,
+    ) async {
+      final repo = Directory('${home.path}/repo');
+      if (repo.existsSync()) {
+        repo.deleteSync(recursive: true);
+      }
+      await git(['init', '-q', repo.path], env);
+      await git(['-C', repo.path, 'remote', 'add', 'origin', url], env);
+      Future<String> get(List<String> extra) async =>
+          ((await git([
+                    '-C',
+                    repo.path,
+                    'remote',
+                    'get-url',
+                    ...extra,
+                    'origin',
+                  ], env)).stdout
+                  as String)
+              .trim();
+      return (fetch: await get(const []), push: await get(const ['--push']));
+    }
+
+    Future<String> fill(String url, Map<String, String> env) async =>
+        (await git(['credential', 'fill'], env, input: 'url=$url\n\n')).stdout
+            as String;
+
+    test(
+      'every origin spelling fetches over HTTPS and pushes to the gateway',
+      () async {
+        final env = gitEnv(lease);
+        final gateway = '${lease.base}/agent/git/github.com/acme/widgets.git';
+        for (final origin in const [
+          'git@github.com:acme/widgets.git',
+          'ssh://git@github.com/acme/widgets.git',
+          'https://github.com/acme/widgets.git',
+        ]) {
+          final resolved = await urls(origin, env);
+          expect(resolved.fetch, 'https://github.com/acme/widgets.git');
+          expect(resolved.push, gateway);
+        }
+      },
+    );
+
+    test(
+      'offers the token for the run\'s repo, with or without .git',
+      () async {
+        final env = gitEnv(lease);
+        for (final url in const [
+          'https://github.com/acme/widgets.git',
+          'https://github.com/acme/widgets',
+        ]) {
+          final filled = await fill(url, env);
+          expect(filled, contains('username=x-access-token\n'));
+          expect(filled, contains('password=$token\n'));
+        }
+        expect(helperLog.existsSync(), isFalse);
+      },
+    );
+
+    test('never offers the token for any other repo', () async {
+      final env = gitEnv(lease);
+      for (final url in const [
+        'https://github.com/acme/widgets-extra.git',
+        'https://github.com/acme/widgets.gitx',
+        'https://github.com/other/widgets.git',
+        'https://example.com/acme/widgets.git',
+        'https://evil.example/https://github.com/acme/widgets.git',
+      ]) {
+        expect(await fill(url, env), isNot(contains(token)));
+      }
+    });
+
+    test('other repos keep the user\'s own routing', () async {
+      final resolved = await urls(
+        'git@github.com:other/repo.git',
+        gitEnv(lease),
+      );
+      expect(resolved.fetch, 'git@github.com:other/repo.git');
+    });
+
+    test('git never hands the token to the user\'s helpers to store', () async {
+      final env = gitEnv(lease);
+      final approved = await git(
+        ['credential', 'approve'],
+        env,
+        input:
+            'protocol=https\nhost=github.com\npath=acme/widgets.git\n'
+            'username=x-access-token\npassword=$token\n\n',
+      );
+      expect(approved.exitCode, 0);
+      expect(approved.stderr, isEmpty);
+      expect(helperLog.existsSync(), isFalse);
+    });
+
+    test('a run without a forge token keeps its origin', () async {
+      final resolved = await urls(
+        'git@github.com:acme/widgets.git',
+        gitEnv(lease, forgeToken: null),
+      );
+      expect(resolved.fetch, 'git@github.com:acme/widgets.git');
+    });
+
+    test('a repo name unfit for a config key adds no fetch routing', () async {
+      for (final (owner, name) in const [
+        ('acme', '..'),
+        ('..', 'widgets'),
+        ('acme', 'wid gets'),
+        ('acme/x', 'widgets'),
+        ('acme', 'widgets\nhelper'),
+        ('-acme', 'widgets'),
+      ]) {
+        final run = (await gateway.open(
+          AgentRunGrant(
+            workspaceId: 'w1',
+            conversationId: 'c1',
+            repoOwner: owner,
+            repoName: name,
+          ),
+        ))!;
+        expect(run.fetchGitConfig, isEmpty);
+        await gateway.close(run);
+      }
+    });
+
+    test('a run with no repo adds no fetch routing', () async {
+      final run = (await gateway.open(
+        const AgentRunGrant(workspaceId: 'w1', conversationId: 'c1'),
+      ))!;
+      expect(run.fetchGitConfig, isEmpty);
+      await gateway.close(run);
+    });
+
+    test('the environment never carries the token itself', () {
+      final added = lease.environment(const {'GH_TOKEN': token});
+      expect(added.values.where((value) => value.contains(token)), isEmpty);
+    });
+  });
+
   group('Claude Code command hook', () {
     Future<({int exitCode, String out, String err})> hook(
       String tool,
@@ -807,7 +1036,7 @@ void main() {
     );
 
     const compoundPush =
-        r'cd repos/web-app && U="https://x-access-token:${GH_TOKEN}@github.com:443/acme/widgets.git"; '
+        r'cd repos/shop-ui && U="https://x-access-token:${GH_TOKEN}@github.com:443/acme/widgets.git"; '
         r'ARGS=(); for b in feature/a feature/b; do ARGS+=("--force-with-lease=refs/heads/$b:$(git rev-parse origin/$b)"); '
         r'done; git push "${ARGS[@]}" "$U" feature/a:refs/heads/feature/a 2>&1 | cat';
     for (final command in [

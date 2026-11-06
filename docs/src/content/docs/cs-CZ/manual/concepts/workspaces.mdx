@@ -2,7 +2,7 @@
 title: Pracovní prostory a izolace
 description: Proč je pracovní prostor tvrdá hranice tenanta, jak rozdělení databází tu hranici dělá strukturální a co ji záměrně překračuje.
 slug: cs-CZ/prirucka/koncepty/pracovni-prostory
-sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
+sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
 ---
 
 ## Co je pracovní prostor?
@@ -109,7 +109,10 @@ Operace zálohy žijí pod **Nastavení → Server → Záloha a obnovení**:
 úplné, a vlastník instalace může jeden po potvrzení smazat. Každý
 pracovní prostor nabízí export a import. Vestavěná pipeline **Workspace backup**
 bere jen databázi toho pracovního prostoru, jednou týdně, a maže vlastní
-zálohy starší než nastavený věk retence. Obnova pracovního prostoru ze
+zálohy starší než nastavený věk retence. Tyhle zálohy jsou na téže stránce vypsané
+podle pracovního prostoru a každou z nich lze obnovit, stáhnout nebo smazat. Smazání
+pracovního prostoru jeho zálohy zanechá, aby si je vlastník instalace vyzvedl nebo je
+odstranil, protože plán i retence končí spolu s ním. Obnova pracovního prostoru ze
 snímku instalace je `workspace.import` namířený na
 `<workspaceId>/workspace.db` ve snímku. Obnova celé instalace zůstává
 zkopírováním adresáře snímku zpátky při zastaveném serveru.
@@ -118,11 +121,11 @@ Co žádná z nich nenese, je zbytek adresáře pracovního prostoru. Pracovní 
 
 ## Přesun zálohy mezi serverem a tvým zařízením
 
-Každá operace výše mluví v cestách na **serveru**, a to je úplná odpověď jen tehdy, když je server tvůj vlastní stroj. Tři podepsané přenosové cesty, [`/backup/workspace`, `/backup/snapshot` a `/backup/restore`](/cs-CZ/prirucka/referencni-prirucka/zaloha/#trasy-přenosu), přenesou bajty pro každou jinou topologii přes ověřený, šifrovaný tunel prostředků, na přímých spojeních i přes relé. Veřejné HTTP cesty neobsluhují čitelné bajty zálohy a podepsané cesty pořád vyžadují autorizaci. Na stránce je to tlačítko **Stáhnout** vedle každého exportu a každého snímku (vybereš, kam soubor spadne) a **Vybrat soubor a nahrát**, když obnovuješ ze souboru na stroji, u kterého sedíš. Nahrání funguje, když server není tvůj stroj: `workspace.import` potřebuje, aby soubor už ležel na hostiteli, a tudy se tam dostane.
+Každá operace výše mluví v cestách na **serveru**, a to je úplná odpověď jen tehdy, když je server tvůj vlastní stroj. Čtyři podepsané přenosové cesty, [`/backup/workspace`, `/backup/snapshot`, `/backup/stored` a `/backup/restore`](/cs-CZ/prirucka/referencni-prirucka/zaloha/#trasy-přenosu), přenesou bajty pro každou jinou topologii přes ověřený, šifrovaný tunel prostředků, na přímých spojeních i přes relé. Veřejné HTTP cesty neobsluhují čitelné bajty zálohy a podepsané cesty pořád vyžadují autorizaci. Na stránce je to tlačítko **Stáhnout** vedle každého exportu, každého snímku a každé plánované zálohy (vybereš, kam soubor spadne) a **Vybrat soubor a nahrát**, když obnovuješ ze souboru na stroji, u kterého sedíš. Nahrání funguje, když server není tvůj stroj: `workspace.import` potřebuje, aby soubor už ležel na hostiteli, a tudy se tam dostane.
 
 Tři vlastnosti stojí za to znát:
 
-- **Stažení vytvoří čerstvou kopii a server si z ní nic nenechá.** Při stažení se export spustí znovu, výsledek se streamuje a pak se smaže. Odpověď je `no-store` s `Accept-Ranges: none` ze stejného důvodu: obnovený rozsah by slepil dva různé exporty do jednoho souboru, který vypadá platně a není.
+- **Stažení vytvoří čerstvou kopii a server si z ní nic nenechá.** Při stažení se export spustí znovu, výsledek se streamuje a pak se smaže. Odpověď je `no-store` s `Accept-Ranges: none` ze stejného důvodu: obnovený rozsah by slepil dva různé exporty do jednoho souboru, který vypadá platně a není. Výjimkou je plánovaná záloha: už existuje, takže její stažení streamuje tenhle soubor a nechá ho na serveru.
 - **Nahrání se streamuje na disk a nikdy se nebufferuje**, na obou koncích, a dočasná kopie se smaže na každé cestě ven, včetně odmítnutí. Databáze pracovního prostoru není snímek obrazovky.
 - **Přenos funguje i přes relé.** Stažení i nahrání používají stejný šifrovaný tunel prostředků jako přímá spojení; přímý HTTP origin není potřeba.
 

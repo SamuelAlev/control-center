@@ -209,6 +209,7 @@ void main() {
       'zai',
       'kimi-code',
       'cursor',
+      'mistral',
     });
   });
 }

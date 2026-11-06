@@ -328,7 +328,10 @@ void main() {
         '.cargo/bin',
         'fvm/versions',
       ]) {
-        expect(cfg.toolchainExecRoots, contains(p.join(real, rel)));
+        expect(
+          cfg.toolchainExecRoots,
+          contains(p.normalize(p.join(real, rel))),
+        );
       }
       final inHome = cfg.toolchainExecRoots
           .where((r) => r == home.path || p.isWithin(home.path, r))
@@ -337,7 +340,9 @@ void main() {
       expect(inHome, isNot(contains('Downloads')));
       expect(inHome, isNot(contains('.')), reason: 'never the home itself');
       expect(
-        cfg.toolchainExecRoots.where((r) => r.endsWith('.rustup/toolchains')),
+        cfg.toolchainExecRoots.where(
+          (r) => r.endsWith(p.join('.rustup', 'toolchains')),
+        ),
         isEmpty,
         reason: 'missing trees are not emitted',
       );

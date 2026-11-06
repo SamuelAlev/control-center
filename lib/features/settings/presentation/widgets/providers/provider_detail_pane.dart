@@ -160,7 +160,7 @@ class _ProviderDetailPaneState extends ConsumerState<ProviderDetailPane> {
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: CcButton(
-                variant: CcButtonVariant.ghost,
+                variant: CcButtonVariant.destructive,
                 size: CcButtonSize.sm,
                 icon: AppIcons.trash2,
                 onPressed: _busy ? null : _removeProvider,
@@ -219,7 +219,7 @@ class _ProviderDetailPaneState extends ConsumerState<ProviderDetailPane> {
 
     // A connected plan reports its account and remaining quota instead of a
     // bare "connected" badge; a metered key has neither.
-    final hasPlan = harnessPlanUsageIds.containsKey(info.id);
+    final hasPlan = watchShowsPlanPanel(ref, info.id);
     final signedIn = info.hasCredential || info.connected;
 
     return Column(

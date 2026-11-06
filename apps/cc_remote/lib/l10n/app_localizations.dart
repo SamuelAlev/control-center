@@ -4702,6 +4702,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.'**
   String get transcriptSignInExpiredBody;
+
+  /// Permission class: running commands on the host outside any sandbox, at an agent's request
+  ///
+  /// In en, this message translates to:
+  /// **'Run commands on the host'**
+  String get permissionHostExecution;
 }
 
 class _AppLocalizationsDelegate

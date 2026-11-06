@@ -38,6 +38,7 @@ every stories file targets [Showcase] and names its navigation entry with a
     $CollapsedRail..$generatedName = 'CollapsedRail',
     $CollapsibleGroups..$generatedName = 'CollapsibleGroups',
     $Expanded..$generatedName = 'Expanded',
+    $FooterToolbar..$generatedName = 'FooterToolbar',
     $NestedBranch..$generatedName = 'NestedBranch',
   ],
 );

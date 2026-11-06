@@ -15,7 +15,6 @@ void main() {
   Keybinding cmdKey(LogicalKeyboardKey key, {bool shift = false}) =>
       Keybinding.key(
         id: 'test',
-        category: KeybindingCategory.system,
         scope: 'global',
         key: key,
         cmd: true,
@@ -72,7 +71,6 @@ void main() {
       // Plain "T" (no ⌘) reaches the page fine.
       final plainT = Keybinding.key(
         id: 't',
-        category: KeybindingCategory.system,
         scope: 'global',
         key: LogicalKeyboardKey.keyT,
       );

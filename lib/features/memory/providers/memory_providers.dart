@@ -27,3 +27,19 @@ final memoryDomainsProvider = StreamProvider.family<List<MemoryDomain>, String>(
     return repo.watchByWorkspace(workspaceId);
   },
 );
+
+/// Which kind of record a [MemoryRecordRef] points at.
+enum MemoryRecordKind {
+  /// A memory fact.
+  fact,
+
+  /// A memory policy.
+  policy,
+}
+
+/// The record a Memory URL has open.
+typedef MemoryRecordRef = ({
+  String workspaceId,
+  MemoryRecordKind kind,
+  String id,
+});

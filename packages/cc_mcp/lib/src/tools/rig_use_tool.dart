@@ -14,10 +14,11 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/window_action.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_mcp/src/log/cc_mcp_log.dart';
 
-/// Shared behaviour for the four enclosure and host-device tools.
+/// Shared behaviour for the enclosure and host-device tools.
 ///
 /// Each surface differs only in its verb vocabulary and schema; opening,
 /// workspace validation, take-over handling and result shaping are identical.
@@ -30,7 +31,8 @@ import 'package:cc_mcp/src/log/cc_mcp_log.dart';
 const String kUnattributedRigAgentId = 'unattributed';
 
 /// The shared implementation behind `computer_use`, `browser_use`,
-/// `mobile_use`, and `ios_use`: one resolution path and one effect contract.
+/// `mobile_use`, `ios_use` and `app_use`: one resolution path and one effect
+/// contract.
 abstract class RigUseTool extends McpTool {
   /// Creates a [RigUseTool] over [_rigs].
   RigUseTool({required this._rigs});
@@ -61,6 +63,12 @@ abstract class RigUseTool extends McpTool {
 
   /// The JSON schema fragment describing this surface's actions.
   Map<String, dynamic> get actionSchema;
+
+  /// Why no rig can be opened here, or null when this tool boots its own.
+  ///
+  /// Set by a surface whose rig only exists because something else started it.
+  /// The sentence reaches the model when a space has no such rig.
+  String? get cannotOpenReason => null;
 
   @override
   Set<ActionClass> get actionClasses => const {
@@ -217,6 +225,12 @@ abstract class RigUseTool extends McpTool {
           '${surface.wire} rigs. Open a ${surface.wire} rig instead.',
         );
       }
+      // A window rig reaches a real app on the host, so it belongs to the
+      // space whose environment launched it and nobody else.
+      if (surface == RigSurface.window &&
+          existing.conversationId != conversationId) {
+        throw _RigResolutionFailure('No rig "$rigId" in this space.');
+      }
       return existing;
     }
 
@@ -231,8 +245,9 @@ abstract class RigUseTool extends McpTool {
             // things side by side; latching onto one of those would have the
             // agent act inside a window someone is reading, and which of them
             // it picked would depend on list order. Addressing one explicitly
-            // is what `rig_id` is for.
-            candidate.spec.slotId == null &&
+            // is what `rig_id` is for. A surface that cannot open its own rig
+            // has no default machine, so any of its slots will do.
+            (candidate.spec.slotId == null || cannotOpenReason != null) &&
             // A conversation can hold one rig per ENGINE, and reusing the
             // wrong one answers "does this work in Firefox?" with Chromium.
             (surface != RigSurface.browser ||
@@ -243,6 +258,11 @@ abstract class RigUseTool extends McpTool {
           return candidate;
         }
       }
+    }
+
+    final refusal = cannotOpenReason;
+    if (refusal != null) {
+      throw _RigResolutionFailure(refusal);
     }
 
     return _rigs.open(
@@ -368,6 +388,135 @@ class ComputerUseTool extends RigUseTool {
     },
     'width': {'type': 'integer', 'description': 'set_display width.'},
     'height': {'type': 'integer', 'description': 'set_display height.'},
+  };
+}
+
+/// `app_use` — drive the windows of a desktop app running on the host.
+///
+/// Separate from `computer_use` because that tool promises nothing touches the
+/// host, and this one exists to touch it. Same action vocabulary, its own
+/// policy entry, and it runs server-side so a sandbox never needs a GUI.
+class AppUseTool extends RigUseTool {
+  /// Creates an [AppUseTool].
+  AppUseTool({required super.rigs});
+
+  /// The run's own space and agent, never the model's: an app window is on
+  /// the host, and only the space that launched it may drive it.
+  @override
+  Set<String> get forcedScopeKeys => const {'space_id', 'agent_id'};
+
+  /// Forcing a value is no use if none was supplied: the model's would stand.
+  @override
+  Set<String> get requiredScopeKeys => const {'space_id'};
+
+  /// Headers can name any space; only a run's own secret names its own.
+  @override
+  bool get requiresRunGrant => true;
+
+  @override
+  String get name => 'app_use';
+
+  @override
+  RigSurface get surface => RigSurface.window;
+
+  /// Everything `computer_use` can do to an app, because a click is what can
+  /// reach whatever the app reaches: it runs on the host with the user's
+  /// access, not in a VM. `enclosureControl` is the class policy already uses
+  /// for driving a surface, and the other two are the app's reach, which no
+  /// allowlist bounds here. Opening a rig spawns nothing; launching the app is
+  /// the environment's action, gated there.
+  @override
+  Set<ActionClass> get actionClasses => const {
+    ActionClass.enclosureControl,
+    ActionClass.networkEgress,
+    ActionClass.processSpawn,
+    ActionClass.fileWriteOutsideWorktree,
+    ActionClass.fileDelete,
+  };
+
+  @override
+  String get cannotOpenReason =>
+      'No desktop app is running in this space. An app window appears here '
+      'once its app has been launched from the space environment.';
+
+  @override
+  String get description =>
+      'Drives the windows of a desktop app launched in this space: list and '
+      'select its windows, read its UI tree, move, click, drag, scroll, type, '
+      'press keys and take screenshots. The app runs directly on the host '
+      'with the user\'s full access, not in a VM or sandbox, and a window can '
+      'be on the screen of a person who is working. Anything the app can do, '
+      'an action here can do, so treat each one as acting on the real machine. '
+      'Only the app\'s own windows are reachable. Coordinates are window '
+      'pixels; every screenshot states the window size. read_ui is cheaper '
+      'and more precise where it works, but not every app exposes one, so '
+      'fall back to screenshots. Input may not reach every framework: check '
+      'with a screenshot that an action landed.';
+
+  @override
+  RigActionParse parseAction(Map<String, dynamic> arguments) =>
+      WindowAction.parse(arguments);
+
+  @override
+  Map<String, dynamic> get actionSchema => {
+    'action': {
+      'type': 'string',
+      'enum': [
+        'list_windows',
+        'select_window',
+        'read_ui',
+        'screenshot',
+        'cursor_position',
+        'mouse_move',
+        'left_click',
+        'right_click',
+        'middle_click',
+        'double_click',
+        'triple_click',
+        'left_mouse_down',
+        'left_mouse_up',
+        'left_click_drag',
+        'scroll',
+        'key',
+        'hold_key',
+        'type',
+        'wait',
+      ],
+      'description': 'The action to perform.',
+    },
+    'window_id': {
+      'type': 'integer',
+      'description': 'select_window: an id from list_windows.',
+    },
+    'coordinate': {
+      'type': 'array',
+      'items': {'type': 'integer'},
+      'minItems': 2,
+      'maxItems': 2,
+      'description': '[x, y] in window pixels, from its top-left corner.',
+    },
+    'start_coordinate': {
+      'type': 'array',
+      'items': {'type': 'integer'},
+      'minItems': 2,
+      'maxItems': 2,
+      'description': 'Drag origin as [x, y]; defaults to the current pointer.',
+    },
+    'text': {
+      'type': 'string',
+      'description':
+          'Text to type, or a key combination for key/hold_key (e.g. '
+          '"ctrl+s", "cmd+s", "Return").',
+    },
+    'scroll_direction': {
+      'type': 'string',
+      'enum': ['up', 'down', 'left', 'right'],
+    },
+    'scroll_amount': {'type': 'integer', 'description': 'Wheel clicks.'},
+    'duration': {
+      'type': 'integer',
+      'description': 'Seconds, for wait and hold_key.',
+    },
   };
 }
 

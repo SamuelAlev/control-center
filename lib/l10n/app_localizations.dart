@@ -294,12 +294,6 @@ abstract class AppLocalizations {
   /// **'Push to talk'**
   String get keybindingPushToTalk;
 
-  /// No description provided for @keybindingPushToTalkDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Hold or toggle voice dictation in the message composer'**
-  String get keybindingPushToTalkDescription;
-
   /// No description provided for @agentPermissions.
   ///
   /// In en, this message translates to:
@@ -485,6 +479,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'iOS Simulator'**
   String get rigSurfaceIosSimulator;
+
+  /// No description provided for @rigSurfaceAppWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'App window'**
+  String get rigSurfaceAppWindow;
 
   /// Browser rig surface name, by engine.
   ///
@@ -965,6 +965,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Live view needs ffmpeg on this host. Install ffmpeg and reopen the tab.'**
   String get rigStreamNeedsFfmpeg;
+
+  /// No description provided for @rigStreamNeedsScreenCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Live view needs Screen Recording. Grant it to Control Center in System Settings and reopen the tab.'**
+  String get rigStreamNeedsScreenCapture;
 
   /// No description provided for @rigStreamEnded.
   ///
@@ -2885,12 +2891,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open filter menu'**
   String get keybindingOpenFilterMenu;
-
-  /// No description provided for @keybindingOpenThePullRequestFilterMenuDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Open the pull request filter menu'**
-  String get keybindingOpenThePullRequestFilterMenuDescription;
 
   /// No description provided for @countSelected.
   ///
@@ -4986,35 +4986,11 @@ abstract class AppLocalizations {
   /// **'Cancel edit'**
   String get cancelEdit;
 
-  /// No description provided for @categoryCreation.
-  ///
-  /// In en, this message translates to:
-  /// **'Creation'**
-  String get categoryCreation;
-
-  /// No description provided for @categoryEditing.
-  ///
-  /// In en, this message translates to:
-  /// **'Editing'**
-  String get categoryEditing;
-
   /// No description provided for @categoryNavigation.
   ///
   /// In en, this message translates to:
   /// **'Navigation'**
   String get categoryNavigation;
-
-  /// No description provided for @categorySystem.
-  ///
-  /// In en, this message translates to:
-  /// **'System'**
-  String get categorySystem;
-
-  /// Locale string for categoryView
-  ///
-  /// In en, this message translates to:
-  /// **'Category view'**
-  String get categoryView;
 
   /// Change
   ///
@@ -6390,23 +6366,11 @@ abstract class AppLocalizations {
   /// **'Keep sandboxing'**
   String get keepSandboxing;
 
-  /// Locale string for keybindingAddARepositoryDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Add a repository'**
-  String get keybindingAddARepositoryDescription;
-
   /// Locale string for keybindingAddRepository
   ///
   /// In en, this message translates to:
   /// **'Add repository'**
   String get keybindingAddRepository;
-
-  /// Locale string for keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Bookmark or unbookmark the selected article'**
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription;
 
   /// Locale string for keybindingCommandPalette
   ///
@@ -6414,29 +6378,11 @@ abstract class AppLocalizations {
   /// **'Command palette'**
   String get keybindingCommandPalette;
 
-  /// Locale string for keybindingCreateANewAgentDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Create a new agent'**
-  String get keybindingCreateANewAgentDescription;
-
-  /// Locale string for keybindingCreateANewWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Create a new workspace'**
-  String get keybindingCreateANewWorkspaceDescription;
-
   /// Locale string for keybindingFocusSearch
   ///
   /// In en, this message translates to:
   /// **'Focus search'**
   String get keybindingFocusSearch;
-
-  /// Locale string for keybindingFocusThePullRequestSearchFieldDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Focus the pull request search field'**
-  String get keybindingFocusThePullRequestSearchFieldDescription;
 
   /// Locale string for keybindingNewAgent
   ///
@@ -6474,13 +6420,6 @@ abstract class AppLocalizations {
   /// **'Open article'**
   String get keybindingOpenArticle;
 
-  /// Locale string for keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Open or close the workspace switcher popup in the sidebar'**
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription;
-
   /// Locale string for keybindingOpenPr
   ///
   /// In en, this message translates to:
@@ -6492,36 +6431,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open settings'**
   String get keybindingOpenSettings;
-
-  /// Locale string for keybindingOpenTheApplicationSettingsDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Open the application settings'**
-  String get keybindingOpenTheApplicationSettingsDescription;
-
-  /// Locale string for keybindingOpenTheCommandPaletteDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Open the command palette'**
-  String get keybindingOpenTheCommandPaletteDescription;
-
-  /// Locale string for keybindingOpenTheSelectedArticleDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Open the selected article'**
-  String get keybindingOpenTheSelectedArticleDescription;
-
-  /// Locale string for keybindingOpenTheSelectedPullRequestDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Open the selected pull request'**
-  String get keybindingOpenTheSelectedPullRequestDescription;
-
-  /// Locale string for keybindingOpenTheSelectedWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Open the selected workspace'**
-  String get keybindingOpenTheSelectedWorkspaceDescription;
 
   /// Locale string for keybindingOpenWorkspace
   ///
@@ -6553,131 +6462,11 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get keybindingRefresh;
 
-  /// Locale string for keybindingRefreshAllFeedsDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh all feeds'**
-  String get keybindingRefreshAllFeedsDescription;
-
-  /// Locale string for keybindingRefreshThePullRequestListDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh the pull request list'**
-  String get keybindingRefreshThePullRequestListDescription;
-
-  /// Locale string for keybindingRescanForAdaptersDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Rescan for adapters'**
-  String get keybindingRescanForAdaptersDescription;
-
-  /// Locale string for keybindingSelectTheNextArticleDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Select the next article'**
-  String get keybindingSelectTheNextArticleDescription;
-
-  /// Locale string for keybindingSelectTheNextSpaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Select the next space'**
-  String get keybindingSelectTheNextSpaceDescription;
-
-  /// Locale string for keybindingSelectThePreviousArticleDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Select the previous article'**
-  String get keybindingSelectThePreviousArticleDescription;
-
-  /// Locale string for keybindingSelectThePreviousSpaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Select the previous space'**
-  String get keybindingSelectThePreviousSpaceDescription;
-
   /// Locale string for keybindingSendMessage
   ///
   /// In en, this message translates to:
   /// **'Send message'**
   String get keybindingSendMessage;
-
-  /// Locale string for keybindingSendTheCurrentMessageDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Send the current message'**
-  String get keybindingSendTheCurrentMessageDescription;
-
-  /// Locale string for keybindingSwitchBetweenLightAndDarkModeDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch between light and dark mode'**
-  String get keybindingSwitchBetweenLightAndDarkModeDescription;
-
-  /// Locale string for keybindingSwitchToTheEighthWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to the eighth workspace'**
-  String get keybindingSwitchToTheEighthWorkspaceDescription;
-
-  /// Locale string for keybindingSwitchToTheFifthWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to the fifth workspace'**
-  String get keybindingSwitchToTheFifthWorkspaceDescription;
-
-  /// Locale string for keybindingSwitchToTheFirstWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to the first workspace'**
-  String get keybindingSwitchToTheFirstWorkspaceDescription;
-
-  /// Locale string for keybindingSwitchToTheFourthWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to the fourth workspace'**
-  String get keybindingSwitchToTheFourthWorkspaceDescription;
-
-  /// Locale string for keybindingSwitchToTheNextWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to the next workspace'**
-  String get keybindingSwitchToTheNextWorkspaceDescription;
-
-  /// Locale string for keybindingSwitchToTheNinthWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to the ninth workspace'**
-  String get keybindingSwitchToTheNinthWorkspaceDescription;
-
-  /// Locale string for keybindingSwitchToThePreviousWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to the previous workspace'**
-  String get keybindingSwitchToThePreviousWorkspaceDescription;
-
-  /// Locale string for keybindingSwitchToTheSecondWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to the second workspace'**
-  String get keybindingSwitchToTheSecondWorkspaceDescription;
-
-  /// Locale string for keybindingSwitchToTheSeventhWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to the seventh workspace'**
-  String get keybindingSwitchToTheSeventhWorkspaceDescription;
-
-  /// Locale string for keybindingSwitchToTheSixthWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to the sixth workspace'**
-  String get keybindingSwitchToTheSixthWorkspaceDescription;
-
-  /// Locale string for keybindingSwitchToTheThirdWorkspaceDescription
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to the third workspace'**
-  String get keybindingSwitchToTheThirdWorkspaceDescription;
 
   /// Locale string for keybindingToggleBookmark
   ///
@@ -6750,18 +6539,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Workspace 9'**
   String get keybindingWorkspace9;
-
-  /// No description provided for @keybindings.
-  ///
-  /// In en, this message translates to:
-  /// **'Keybindings'**
-  String get keybindings;
-
-  /// All keyboard shortcuts. Shortcuts are fixed and cannot be reassigned.
-  ///
-  /// In en, this message translates to:
-  /// **'All keyboard shortcuts. Shortcuts are fixed and cannot be reassigned.'**
-  String get keybindingsDescription;
 
   /// No description provided for @killRunning.
   ///
@@ -7236,12 +7013,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Articles you save will appear here.'**
   String get noSavedArticlesBody;
-
-  /// Empty state in keybindings search
-  ///
-  /// In en, this message translates to:
-  /// **'No shortcuts match \"{query}\"'**
-  String noShortcutsMatch(String query);
 
   /// No description provided for @noSystemFonts.
   ///
@@ -8478,18 +8249,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search…'**
   String get searchPlaceholder;
-
-  /// Search shortcuts…
-  ///
-  /// In en, this message translates to:
-  /// **'Search shortcuts…'**
-  String get searchShortcuts;
-
-  /// Note shown next to a keyboard shortcut that the browser reserves (e.g. ⌘T, ⌘W, ⌘1–9) so it only works in the desktop app
-  ///
-  /// In en, this message translates to:
-  /// **'Unavailable in the browser'**
-  String get shortcutUnavailableInBrowser;
 
   /// Locale string for searching
   ///
@@ -11575,6 +11334,48 @@ abstract class AppLocalizations {
   /// **'Space deleted'**
   String get triggerEventSpaceDeleted;
 
+  /// No description provided for @triggerEventSpaceArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Space archived'**
+  String get triggerEventSpaceArchived;
+
+  /// No description provided for @triggerEventSpaceProvisioningChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Space provisioning changed'**
+  String get triggerEventSpaceProvisioningChanged;
+
+  /// No description provided for @triggerEventPrHeadChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'PR head changed'**
+  String get triggerEventPrHeadChanged;
+
+  /// No description provided for @triggerEventEnvironmentStatusChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment status changed'**
+  String get triggerEventEnvironmentStatusChanged;
+
+  /// No description provided for @triggerEventEnvironmentReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment ready'**
+  String get triggerEventEnvironmentReady;
+
+  /// No description provided for @triggerEventEnvironmentDestroyed.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment destroyed'**
+  String get triggerEventEnvironmentDestroyed;
+
+  /// No description provided for @triggerEventEnvironmentProcessExited.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment process exited'**
+  String get triggerEventEnvironmentProcessExited;
+
   /// No description provided for @triggerExternalPrHelp.
   ///
   /// In en, this message translates to:
@@ -11676,6 +11477,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A conversation space is deleted.'**
   String get triggerSpaceDeletedHelp;
+
+  /// No description provided for @triggerSpaceArchivedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A conversation space is archived.'**
+  String get triggerSpaceArchivedHelp;
+
+  /// No description provided for @triggerSpaceProvisioningChangedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup of a space\'s worktrees starts, finishes, or fails.'**
+  String get triggerSpaceProvisioningChangedHelp;
+
+  /// No description provided for @triggerPrHeadChangedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'New commits are pushed to an open pull request.'**
+  String get triggerPrHeadChangedHelp;
+
+  /// No description provided for @triggerEnvironmentStatusChangedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A space environment moves to a new status.'**
+  String get triggerEnvironmentStatusChangedHelp;
+
+  /// No description provided for @triggerEnvironmentReadyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A space environment has started and can be used.'**
+  String get triggerEnvironmentReadyHelp;
+
+  /// No description provided for @triggerEnvironmentDestroyedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A space environment is torn down.'**
+  String get triggerEnvironmentDestroyedHelp;
+
+  /// No description provided for @triggerEnvironmentProcessExitedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A process run by an environment exits.'**
+  String get triggerEnvironmentProcessExitedHelp;
 
   /// No description provided for @navTickets.
   ///
@@ -15387,30 +15230,6 @@ abstract class AppLocalizations {
   /// **'{tokens} context'**
   String contextTokens(String tokens);
 
-  /// No description provided for @usageAndCost.
-  ///
-  /// In en, this message translates to:
-  /// **'Usage & cost'**
-  String get usageAndCost;
-
-  /// No description provided for @usageAndCostDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Spend across your agents over the last 7 days, from observed run costs.'**
-  String get usageAndCostDescription;
-
-  /// No description provided for @noUsageYet.
-  ///
-  /// In en, this message translates to:
-  /// **'No usage recorded yet.'**
-  String get noUsageYet;
-
-  /// No description provided for @spentThisWeek.
-  ///
-  /// In en, this message translates to:
-  /// **'spent this week'**
-  String get spentThisWeek;
-
   /// No description provided for @subscriptionUsage.
   ///
   /// In en, this message translates to:
@@ -15807,12 +15626,6 @@ abstract class AppLocalizations {
   /// **'New space'**
   String get keybindingNewSpace;
 
-  /// No description provided for @keybindingCreateANewSpaceDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Create a new space'**
-  String get keybindingCreateANewSpaceDescription;
-
   /// No description provided for @jumpToLatest.
   ///
   /// In en, this message translates to:
@@ -16113,125 +15926,11 @@ abstract class AppLocalizations {
   /// **'Preparing workspace…'**
   String get preparingWorkspace;
 
-  /// No description provided for @provisioningRunningSetupScript.
+  /// No description provided for @provisioningRunningTasks.
   ///
   /// In en, this message translates to:
-  /// **'Running the setup script for {repo}…'**
-  String provisioningRunningSetupScript(String repo);
-
-  /// No description provided for @repoScriptsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Scripts'**
-  String get repoScriptsTitle;
-
-  /// No description provided for @repoScriptsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure lifecycle scripts'**
-  String get repoScriptsTooltip;
-
-  /// No description provided for @repoScriptsSetupLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Setup script'**
-  String get repoScriptsSetupLabel;
-
-  /// No description provided for @repoScriptsSetupHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Runs in the space\'s worktree right after it is created — install dependencies, generate files. A failure marks the space as failed; retry runs it again.'**
-  String get repoScriptsSetupHelp;
-
-  /// No description provided for @repoScriptsArchiveLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Archive script'**
-  String get repoScriptsArchiveLabel;
-
-  /// No description provided for @repoScriptsArchiveHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Runs just before a space\'s worktree is deleted — clean up resources outside the worktree. A failure never blocks deletion.'**
-  String get repoScriptsArchiveHelp;
-
-  /// No description provided for @repoScriptsEnvHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Runs via bash from the worktree, with CC_WORKSPACE_PATH (the worktree), CC_ROOT_PATH (the repo root), CC_SPACE_ID, CC_SPACE_NAME and CC_REPO_NAME set.'**
-  String get repoScriptsEnvHelp;
-
-  /// No description provided for @repoScriptsSetupPlaceholder.
-  ///
-  /// In en, this message translates to:
-  /// **'e.g. pnpm install'**
-  String get repoScriptsSetupPlaceholder;
-
-  /// No description provided for @repoScriptsArchivePlaceholder.
-  ///
-  /// In en, this message translates to:
-  /// **'e.g. docker compose -p \$CC_SPACE_ID down'**
-  String get repoScriptsArchivePlaceholder;
-
-  /// No description provided for @repoScriptsRecentRuns.
-  ///
-  /// In en, this message translates to:
-  /// **'Recent runs'**
-  String get repoScriptsRecentRuns;
-
-  /// No description provided for @repoScriptsNoRuns.
-  ///
-  /// In en, this message translates to:
-  /// **'No runs yet'**
-  String get repoScriptsNoRuns;
-
-  /// No description provided for @repoScriptsSaved.
-  ///
-  /// In en, this message translates to:
-  /// **'Scripts saved'**
-  String get repoScriptsSaved;
-
-  /// No description provided for @repoScriptsRunKindSetup.
-  ///
-  /// In en, this message translates to:
-  /// **'Setup'**
-  String get repoScriptsRunKindSetup;
-
-  /// No description provided for @repoScriptsRunKindArchive.
-  ///
-  /// In en, this message translates to:
-  /// **'Archive'**
-  String get repoScriptsRunKindArchive;
-
-  /// No description provided for @repoScriptsRunStatusRunning.
-  ///
-  /// In en, this message translates to:
-  /// **'Running'**
-  String get repoScriptsRunStatusRunning;
-
-  /// No description provided for @repoScriptsRunStatusSucceeded.
-  ///
-  /// In en, this message translates to:
-  /// **'Succeeded'**
-  String get repoScriptsRunStatusSucceeded;
-
-  /// No description provided for @repoScriptsRunStatusFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed'**
-  String get repoScriptsRunStatusFailed;
-
-  /// No description provided for @repoScriptsRunStatusTimedOut.
-  ///
-  /// In en, this message translates to:
-  /// **'Timed out'**
-  String get repoScriptsRunStatusTimedOut;
-
-  /// No description provided for @repoScriptsExitCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Exit code {code}'**
-  String repoScriptsExitCode(int code);
+  /// **'Running worktree tasks for {repo}…'**
+  String provisioningRunningTasks(String repo);
 
   /// No description provided for @provisioningCloningRepo.
   ///
@@ -17607,12 +17306,6 @@ abstract class AppLocalizations {
   /// **'Keyboard shortcuts'**
   String get keybindingCheatSheet;
 
-  /// No description provided for @keybindingShowKeyboardShortcutsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show the keyboard shortcut cheat-sheet for the current screen'**
-  String get keybindingShowKeyboardShortcutsDescription;
-
   /// No description provided for @runPlaybookLabel.
   ///
   /// In en, this message translates to:
@@ -17636,18 +17329,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Redo'**
   String get keybindingRedo;
-
-  /// No description provided for @keybindingUndoLastActionDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Undo your last reversible action'**
-  String get keybindingUndoLastActionDescription;
-
-  /// No description provided for @keybindingRedoLastActionDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Redo the last undone action'**
-  String get keybindingRedoLastActionDescription;
 
   /// No description provided for @undone.
   ///
@@ -23948,17 +23629,23 @@ abstract class AppLocalizations {
   /// **'Reset to default'**
   String get resetToDefault;
 
-  /// Primary action in the agents card header: create an agent
+  /// Create an agent: the empty state's button, and the accessible name of the roster's New button
   ///
   /// In en, this message translates to:
   /// **'New agent'**
   String get newAgent;
 
-  /// Primary action in the skills card header: create a skill
+  /// Create a skill: the editor's heading for an unsaved skill, and the accessible name of the rail's New button
   ///
   /// In en, this message translates to:
   /// **'New skill'**
   String get newSkill;
+
+  /// Short button beside a list's filter field that creates an item in that list, such as an agent or a skill
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get newItemAction;
 
   /// Tooltip on the canvas zoom-in control
   ///
@@ -24320,6 +24007,12 @@ abstract class AppLocalizations {
   /// **'Steer'**
   String get steerNow;
 
+  /// No description provided for @steerForce.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and send'**
+  String get steerForce;
+
   /// No description provided for @steeringQueueLabel.
   ///
   /// In en, this message translates to:
@@ -24409,24 +24102,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ll be asked again the next time an agent needs to run a program from this copy.'**
   String get sandboxExecGrantRevokeConfirmBody;
-
-  /// No description provided for @repoScriptsTest.
-  ///
-  /// In en, this message translates to:
-  /// **'Test'**
-  String get repoScriptsTest;
-
-  /// No description provided for @repoScriptsTestTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Run this draft in a throwaway clone of the repo'**
-  String get repoScriptsTestTooltip;
-
-  /// No description provided for @repoScriptsRunKindTest.
-  ///
-  /// In en, this message translates to:
-  /// **'Test'**
-  String get repoScriptsRunKindTest;
 
   /// Persistent badge in the app shell header when connected to a public demo server
   ///
@@ -24757,6 +24432,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Path on the server'**
   String get backupServerPathLabel;
+
+  /// Heading of the Settings section listing each workspace's pipeline backups
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled backups'**
+  String get backupScheduledLabel;
+
+  /// Explains where scheduled workspace backups come from and where to configure them
+  ///
+  /// In en, this message translates to:
+  /// **'Copies saved by each workspace\'s backup pipeline. Set the schedule and retention in the pipeline\'s template.'**
+  String get backupScheduledExplainer;
+
+  /// Status of a workspace whose backup pipeline has saved nothing yet
+  ///
+  /// In en, this message translates to:
+  /// **'No backups yet'**
+  String get backupScheduledNone;
+
+  /// How many scheduled backups a workspace has
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 backup} other{{count} backups}}'**
+  String backupScheduledCount(int count);
+
+  /// When a workspace was last backed up; time is a relative phrase such as '5 days ago'
+  ///
+  /// In en, this message translates to:
+  /// **'Last backup {time}'**
+  String backupScheduledLast(String time);
+
+  /// Shown on a workspace row when the server refuses to list its backups
+  ///
+  /// In en, this message translates to:
+  /// **'You need the admin role on this workspace to see its backups.'**
+  String get backupListForbidden;
+
+  /// Title of the confirmation before deleting one scheduled backup
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this backup?'**
+  String get backupScheduledDeleteTitle;
+
+  /// Confirmation body before deleting one scheduled backup
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the {date} backup of {name} from the server? This cannot be undone.'**
+  String backupScheduledDeleteBody(String date, String name);
+
+  /// Toast after one scheduled backup was deleted
+  ///
+  /// In en, this message translates to:
+  /// **'Backup deleted.'**
+  String get backupScheduledDeleteDone;
+
+  /// Status of a row listing backups left by a deleted workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace deleted'**
+  String get backupScheduledWorkspaceDeleted;
 
   /// Button that adopts a workspace file from a snapshot
   ///
@@ -25760,18 +25495,6 @@ abstract class AppLocalizations {
   /// **'Go to file'**
   String get ideQuickOpen;
 
-  /// Keyboard shortcut description for the IDE quick open file picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Search the conversation\'s files by name and open one in a tab'**
-  String get ideQuickOpenDescription;
-
-  /// Keyboard shortcut description for the pull request page's quick open file picker (⌘P / Ctrl+P).
-  ///
-  /// In en, this message translates to:
-  /// **'Search the pull request\'s files by name and open one in a tab'**
-  String get prQuickOpenDescription;
-
   /// Placeholder in the quick open picker's search field.
   ///
   /// In en, this message translates to:
@@ -26231,6 +25954,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Forced load'**
   String get skillEvalForcedEvent;
+
+  /// Label for the content hash of the installed skill revision.
+  ///
+  /// In en, this message translates to:
+  /// **'Package hash'**
+  String get skillEvalHashLabel;
+
+  /// Label for how many evaluation attempts have finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get skillEvalProgressLabel;
+
+  /// Title of the switch that starts a budgeted evaluation when a skill is saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Update evaluations'**
+  String get skillEvalUpdatesToggle;
 
   /// Skill campaign operator interface.
   ///
@@ -26873,6 +26614,1248 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{minutes}m left'**
   String focusModeRemaining(int minutes);
+
+  /// Space environments: demoUnavailableEnvironments
+  ///
+  /// In en, this message translates to:
+  /// **'Environments run real processes on the host, so the demo has none.'**
+  String get demoUnavailableEnvironments;
+
+  /// Space environments: environmentChecksFailing
+  ///
+  /// In en, this message translates to:
+  /// **'Some checks are failing on the server'**
+  String get environmentChecksFailing;
+
+  /// Space environments: environmentCliEndpoints
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoints: {names}'**
+  String environmentCliEndpoints(String names);
+
+  /// Space environments: environmentCliServices
+  ///
+  /// In en, this message translates to:
+  /// **'Services: {names}'**
+  String environmentCliServices(String names);
+
+  /// Space environments: environmentCopied
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get environmentCopied;
+
+  /// Space environments: environmentCopyCommand
+  ///
+  /// In en, this message translates to:
+  /// **'Copy command'**
+  String get environmentCopyCommand;
+
+  /// Space environments: environmentCopyUrl
+  ///
+  /// In en, this message translates to:
+  /// **'Copy URL'**
+  String get environmentCopyUrl;
+
+  /// Space environments: environmentDefinition
+  ///
+  /// In en, this message translates to:
+  /// **'Definition'**
+  String get environmentDefinition;
+
+  /// Space environments: environmentDefinitionCount
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 definition} other{{count} definitions}}'**
+  String environmentDefinitionCount(int count);
+
+  /// Space environments: environmentDestroy
+  ///
+  /// In en, this message translates to:
+  /// **'Destroy'**
+  String get environmentDestroy;
+
+  /// Space environments: environmentDestroyBody
+  ///
+  /// In en, this message translates to:
+  /// **'{name} and its data are removed. Start creates a new one.'**
+  String environmentDestroyBody(String name);
+
+  /// Space environments: environmentDestroyTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Destroy this environment?'**
+  String get environmentDestroyTitle;
+
+  /// Space environments: environmentExec
+  ///
+  /// In en, this message translates to:
+  /// **'Exec'**
+  String get environmentExec;
+
+  /// Space environments: environmentExecTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Run in a service'**
+  String get environmentExecTitle;
+
+  /// Space environments: environmentExitCode
+  ///
+  /// In en, this message translates to:
+  /// **'Exit code {code}'**
+  String environmentExitCode(int code);
+
+  /// Space environments: environmentHostSetupNeeded
+  ///
+  /// In en, this message translates to:
+  /// **'This needs setting up on the server'**
+  String get environmentHostSetupNeeded;
+
+  /// Space environments: environmentKindApp
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get environmentKindApp;
+
+  /// Space environments: environmentKindCli
+  ///
+  /// In en, this message translates to:
+  /// **'CLI'**
+  String get environmentKindCli;
+
+  /// Space environments: environmentKindCompose
+  ///
+  /// In en, this message translates to:
+  /// **'Compose'**
+  String get environmentKindCompose;
+
+  /// Space environments: environmentKindProcess
+  ///
+  /// In en, this message translates to:
+  /// **'Process'**
+  String get environmentKindProcess;
+
+  /// Space environments: environmentKindTask
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get environmentKindTask;
+
+  /// Space environments: environmentLaunch
+  ///
+  /// In en, this message translates to:
+  /// **'Launch'**
+  String get environmentLaunch;
+
+  /// Space environments: environmentLogsGone
+  ///
+  /// In en, this message translates to:
+  /// **'These logs are no longer available.'**
+  String get environmentLogsGone;
+
+  /// Space environments: environmentLogsTab
+  ///
+  /// In en, this message translates to:
+  /// **'Logs: {name}'**
+  String environmentLogsTab(String name);
+
+  /// Space environments: environmentLogsWaiting
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for output'**
+  String get environmentLogsWaiting;
+
+  /// Space environments: environmentMoreActions
+  ///
+  /// In en, this message translates to:
+  /// **'More environment actions'**
+  String get environmentMoreActions;
+
+  /// Space environments: environmentNeedsRecreate
+  ///
+  /// In en, this message translates to:
+  /// **'A change needs this environment recreated.'**
+  String get environmentNeedsRecreate;
+
+  /// Space environments: environmentNoStack
+  ///
+  /// In en, this message translates to:
+  /// **'Runs worktree tasks only, so there is nothing to start.'**
+  String get environmentNoStack;
+
+  /// Space environments: environmentOnTheServer
+  ///
+  /// In en, this message translates to:
+  /// **'On the server'**
+  String get environmentOnTheServer;
+
+  /// Space environments: environmentOpenInBrowserVm
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Browser (VM)'**
+  String get environmentOpenInBrowserVm;
+
+  /// Space environments: environmentOpenViewer
+  ///
+  /// In en, this message translates to:
+  /// **'Open viewer'**
+  String get environmentOpenViewer;
+
+  /// Space environments: environmentPlacementRig
+  ///
+  /// In en, this message translates to:
+  /// **'In a VM'**
+  String get environmentPlacementRig;
+
+  /// Space environments: environmentPreviewTab
+  ///
+  /// In en, this message translates to:
+  /// **'Environment'**
+  String get environmentPreviewTab;
+
+  /// Space environments: environmentRebuildRelaunch
+  ///
+  /// In en, this message translates to:
+  /// **'Rebuild & relaunch'**
+  String get environmentRebuildRelaunch;
+
+  /// Space environments: environmentRecreate
+  ///
+  /// In en, this message translates to:
+  /// **'Recreate'**
+  String get environmentRecreate;
+
+  /// Space environments: environmentRecreateBody
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is destroyed and started again with the same options. Its data is lost.'**
+  String environmentRecreateBody(String name);
+
+  /// Space environments: environmentRecreateTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Recreate this environment?'**
+  String get environmentRecreateTitle;
+
+  /// Space environments: environmentResetBody
+  ///
+  /// In en, this message translates to:
+  /// **'{name} returns to its baseline. Data created since then is lost.'**
+  String environmentResetBody(String name);
+
+  /// Space environments: environmentResetData
+  ///
+  /// In en, this message translates to:
+  /// **'Reset data'**
+  String get environmentResetData;
+
+  /// Space environments: environmentResetTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Reset data?'**
+  String get environmentResetTitle;
+
+  /// Space environments: environmentRestart
+  ///
+  /// In en, this message translates to:
+  /// **'Restart'**
+  String get environmentRestart;
+
+  /// Space environments: environmentRestarts
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 restart} other{{count} restarts}}'**
+  String environmentRestarts(int count);
+
+  /// Space environments: environmentRun
+  ///
+  /// In en, this message translates to:
+  /// **'Run'**
+  String get environmentRun;
+
+  /// Space environments: environmentRunInTerminal
+  ///
+  /// In en, this message translates to:
+  /// **'Run in terminal'**
+  String get environmentRunInTerminal;
+
+  /// Space environments: environmentSectionTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Environment'**
+  String get environmentSectionTitle;
+
+  /// Space environments: environmentService
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get environmentService;
+
+  /// Space environments: environmentServiceActions
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for {name}'**
+  String environmentServiceActions(String name);
+
+  /// Space environments: environmentStartTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Start environment'**
+  String get environmentStartTitle;
+
+  /// Space environments: environmentStateCrashed
+  ///
+  /// In en, this message translates to:
+  /// **'Crashed'**
+  String get environmentStateCrashed;
+
+  /// Space environments: environmentStatusDegraded
+  ///
+  /// In en, this message translates to:
+  /// **'Degraded'**
+  String get environmentStatusDegraded;
+
+  /// Space environments: environmentStatusDestroying
+  ///
+  /// In en, this message translates to:
+  /// **'Destroying'**
+  String get environmentStatusDestroying;
+
+  /// Space environments: environmentStatusGone
+  ///
+  /// In en, this message translates to:
+  /// **'Gone'**
+  String get environmentStatusGone;
+
+  /// Space environments: environmentStatusStopping
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping'**
+  String get environmentStatusStopping;
+
+  /// Space environments: environmentStopDataLoss
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping {name} loses its data, and Start won\'t bring it back.'**
+  String environmentStopDataLoss(String name);
+
+  /// Space environments: environmentStopLoseData
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and lose data'**
+  String get environmentStopLoseData;
+
+  /// Space environments: environmentStopTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this environment?'**
+  String get environmentStopTitle;
+
+  /// Space environments: environmentTaskNeverRun
+  ///
+  /// In en, this message translates to:
+  /// **'Not run yet'**
+  String get environmentTaskNeverRun;
+
+  /// Space environments: environmentsAddCheck
+  ///
+  /// In en, this message translates to:
+  /// **'Add check'**
+  String get environmentsAddCheck;
+
+  /// Space environments: environmentsAddOption
+  ///
+  /// In en, this message translates to:
+  /// **'Add option'**
+  String get environmentsAddOption;
+
+  /// Space environments: environmentsAddRole
+  ///
+  /// In en, this message translates to:
+  /// **'Add role'**
+  String get environmentsAddRole;
+
+  /// Space environments: environmentsAdminOnly
+  ///
+  /// In en, this message translates to:
+  /// **'Only workspace admins can change definitions.'**
+  String get environmentsAdminOnly;
+
+  /// Space environments: environmentsAfter
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for these components'**
+  String get environmentsAfter;
+
+  /// Space environments: environmentsAnchor
+  ///
+  /// In en, this message translates to:
+  /// **'Anchor'**
+  String get environmentsAnchor;
+
+  /// Space environments: environmentsAutoCreate
+  ///
+  /// In en, this message translates to:
+  /// **'Start automatically'**
+  String get environmentsAutoCreate;
+
+  /// Space environments: environmentsAutoCreateAll
+  ///
+  /// In en, this message translates to:
+  /// **'In every eligible space'**
+  String get environmentsAutoCreateAll;
+
+  /// Space environments: environmentsAutoCreateOff
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get environmentsAutoCreateOff;
+
+  /// Space environments: environmentsAutoCreatePrs
+  ///
+  /// In en, this message translates to:
+  /// **'In pull request spaces'**
+  String get environmentsAutoCreatePrs;
+
+  /// Space environments: environmentsBlank
+  ///
+  /// In en, this message translates to:
+  /// **'Blank definition'**
+  String get environmentsBlank;
+
+  /// Space environments: environmentsCheckFix
+  ///
+  /// In en, this message translates to:
+  /// **'Fix command'**
+  String get environmentsCheckFix;
+
+  /// Space environments: environmentsCheckHint
+  ///
+  /// In en, this message translates to:
+  /// **'Hint'**
+  String get environmentsCheckHint;
+
+  /// Space environments: environmentsCommandHelp
+  ///
+  /// In en, this message translates to:
+  /// **'Arguments are separated by spaces. Quote one that contains a space.'**
+  String get environmentsCommandHelp;
+
+  /// Space environments: environmentsComponentCount
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 component} other{{count} components}}'**
+  String environmentsComponentCount(int count);
+
+  /// Space environments: environmentsComponentId
+  ///
+  /// In en, this message translates to:
+  /// **'ID'**
+  String get environmentsComponentId;
+
+  /// Space environments: environmentsComposeBuild
+  ///
+  /// In en, this message translates to:
+  /// **'Build images on start'**
+  String get environmentsComposeBuild;
+
+  /// Space environments: environmentsComposeFile
+  ///
+  /// In en, this message translates to:
+  /// **'Compose file'**
+  String get environmentsComposeFile;
+
+  /// Space environments: environmentsComposeHttp
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP'**
+  String get environmentsComposeHttp;
+
+  /// Space environments: environmentsComposeNoFile
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read a compose file. Service names can still go in the JSON view.'**
+  String get environmentsComposeNoFile;
+
+  /// Space environments: environmentsComposeServices
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get environmentsComposeServices;
+
+  /// Space environments: environmentsComposeServicesHint
+  ///
+  /// In en, this message translates to:
+  /// **'Leave every service unchecked to run them all.'**
+  String get environmentsComposeServicesHint;
+
+  /// Space environments: environmentsConditionalArgs
+  ///
+  /// In en, this message translates to:
+  /// **'This command has conditional arguments. Edit it in the JSON view.'**
+  String get environmentsConditionalArgs;
+
+  /// Space environments: environmentsCwdPath
+  ///
+  /// In en, this message translates to:
+  /// **'Working path'**
+  String get environmentsCwdPath;
+
+  /// Space environments: environmentsCwdRole
+  ///
+  /// In en, this message translates to:
+  /// **'Working role'**
+  String get environmentsCwdRole;
+
+  /// Space environments: environmentsDeleteBody
+  ///
+  /// In en, this message translates to:
+  /// **'Spaces can no longer start it. Running environments keep running until they are stopped.'**
+  String get environmentsDeleteBody;
+
+  /// Space environments: environmentsDeleteTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String environmentsDeleteTitle(String name);
+
+  /// Space environments: environmentsDescription
+  ///
+  /// In en, this message translates to:
+  /// **'What each space can start, and the tasks its worktrees run.'**
+  String get environmentsDescription;
+
+  /// Space environments: environmentsDraftFromRepo
+  ///
+  /// In en, this message translates to:
+  /// **'Draft from repo'**
+  String get environmentsDraftFromRepo;
+
+  /// Space environments: environmentsEmpty
+  ///
+  /// In en, this message translates to:
+  /// **'No definitions yet'**
+  String get environmentsEmpty;
+
+  /// Space environments: environmentsEnabledWhen
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled when'**
+  String get environmentsEnabledWhen;
+
+  /// Space environments: environmentsEndpointRole
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint role'**
+  String get environmentsEndpointRole;
+
+  /// Space environments: environmentsFollowPrHead
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the pull request\'s head'**
+  String get environmentsFollowPrHead;
+
+  /// Space environments: environmentsForkApproval
+  ///
+  /// In en, this message translates to:
+  /// **'Each start needs an admin'**
+  String get environmentsForkApproval;
+
+  /// Space environments: environmentsForkDeny
+  ///
+  /// In en, this message translates to:
+  /// **'Refused'**
+  String get environmentsForkDeny;
+
+  /// Space environments: environmentsForkPrs
+  ///
+  /// In en, this message translates to:
+  /// **'Fork pull requests'**
+  String get environmentsForkPrs;
+
+  /// Space environments: environmentsForkRig
+  ///
+  /// In en, this message translates to:
+  /// **'Run in a VM'**
+  String get environmentsForkRig;
+
+  /// Space environments: environmentsIdleStop
+  ///
+  /// In en, this message translates to:
+  /// **'Stop after idle minutes'**
+  String get environmentsIdleStop;
+
+  /// Space environments: environmentsIsolateHome
+  ///
+  /// In en, this message translates to:
+  /// **'Give the app a private home'**
+  String get environmentsIsolateHome;
+
+  /// Space environments: environmentsIssues
+  ///
+  /// In en, this message translates to:
+  /// **'Fix these before saving'**
+  String get environmentsIssues;
+
+  /// Space environments: environmentsJsonInvalid
+  ///
+  /// In en, this message translates to:
+  /// **'Not valid JSON: {error}'**
+  String environmentsJsonInvalid(String error);
+
+  /// Space environments: environmentsKeepsData
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps its data when stopped'**
+  String get environmentsKeepsData;
+
+  /// Space environments: environmentsLinkConfirm
+  ///
+  /// In en, this message translates to:
+  /// **'Link and approve'**
+  String get environmentsLinkConfirm;
+
+  /// Space environments: environmentsLinkFile
+  ///
+  /// In en, this message translates to:
+  /// **'Link a repo file'**
+  String get environmentsLinkFile;
+
+  /// Space environments: environmentsLinkHelp
+  ///
+  /// In en, this message translates to:
+  /// **'Read from the default branch only, and run only once approved.'**
+  String get environmentsLinkHelp;
+
+  /// Space environments: environmentsLinkPath
+  ///
+  /// In en, this message translates to:
+  /// **'Path'**
+  String get environmentsLinkPath;
+
+  /// Space environments: environmentsMaxRunning
+  ///
+  /// In en, this message translates to:
+  /// **'Running at once'**
+  String get environmentsMaxRunning;
+
+  /// Space environments: environmentsNamingProject
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get environmentsNamingProject;
+
+  /// Space environments: environmentsNamingTemplate
+  ///
+  /// In en, this message translates to:
+  /// **'Name template'**
+  String get environmentsNamingTemplate;
+
+  /// Space environments: environmentsNew
+  ///
+  /// In en, this message translates to:
+  /// **'New definition'**
+  String get environmentsNew;
+
+  /// Space environments: environmentsNewDefinitionName
+  ///
+  /// In en, this message translates to:
+  /// **'New environment'**
+  String get environmentsNewDefinitionName;
+
+  /// Space environments: environmentsNoChecks
+  ///
+  /// In en, this message translates to:
+  /// **'This definition has no checks.'**
+  String get environmentsNoChecks;
+
+  /// Space environments: environmentsNoRuns
+  ///
+  /// In en, this message translates to:
+  /// **'No test runs yet'**
+  String get environmentsNoRuns;
+
+  /// Space environments: environmentsOnChange
+  ///
+  /// In en, this message translates to:
+  /// **'Paths to watch'**
+  String get environmentsOnChange;
+
+  /// Space environments: environmentsOptionBool
+  ///
+  /// In en, this message translates to:
+  /// **'Yes or no'**
+  String get environmentsOptionBool;
+
+  /// Space environments: environmentsOptionEnum
+  ///
+  /// In en, this message translates to:
+  /// **'One of'**
+  String get environmentsOptionEnum;
+
+  /// Space environments: environmentsOptionMulti
+  ///
+  /// In en, this message translates to:
+  /// **'Several of'**
+  String get environmentsOptionMulti;
+
+  /// Space environments: environmentsOptionValues
+  ///
+  /// In en, this message translates to:
+  /// **'Values'**
+  String get environmentsOptionValues;
+
+  /// Space environments: environmentsPlacement
+  ///
+  /// In en, this message translates to:
+  /// **'Placement'**
+  String get environmentsPlacement;
+
+  /// Space environments: environmentsPlacementHost
+  ///
+  /// In en, this message translates to:
+  /// **'On the host'**
+  String get environmentsPlacementHost;
+
+  /// Space environments: environmentsPlacementRig
+  ///
+  /// In en, this message translates to:
+  /// **'In a VM'**
+  String get environmentsPlacementRig;
+
+  /// Space environments: environmentsPrepareTask
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare task'**
+  String get environmentsPrepareTask;
+
+  /// Space environments: environmentsPrimaryEndpoint
+  ///
+  /// In en, this message translates to:
+  /// **'Primary endpoint'**
+  String get environmentsPrimaryEndpoint;
+
+  /// Space environments: environmentsReadyHttp
+  ///
+  /// In en, this message translates to:
+  /// **'Ready when this URL answers'**
+  String get environmentsReadyHttp;
+
+  /// Space environments: environmentsRestartAlways
+  ///
+  /// In en, this message translates to:
+  /// **'Always'**
+  String get environmentsRestartAlways;
+
+  /// Space environments: environmentsRestartNever
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get environmentsRestartNever;
+
+  /// Space environments: environmentsRestartOn
+  ///
+  /// In en, this message translates to:
+  /// **'Restart when these paths change'**
+  String get environmentsRestartOn;
+
+  /// Space environments: environmentsRestartOnFailure
+  ///
+  /// In en, this message translates to:
+  /// **'On failure'**
+  String get environmentsRestartOnFailure;
+
+  /// Space environments: environmentsRestartPolicy
+  ///
+  /// In en, this message translates to:
+  /// **'Restart'**
+  String get environmentsRestartPolicy;
+
+  /// Space environments: environmentsRigTtl
+  ///
+  /// In en, this message translates to:
+  /// **'VM lifetime in hours'**
+  String get environmentsRigTtl;
+
+  /// Space environments: environmentsRunChecks
+  ///
+  /// In en, this message translates to:
+  /// **'Run again'**
+  String get environmentsRunChecks;
+
+  /// Space environments: environmentsRunTest
+  ///
+  /// In en, this message translates to:
+  /// **'Run test'**
+  String get environmentsRunTest;
+
+  /// Space environments: environmentsSaved
+  ///
+  /// In en, this message translates to:
+  /// **'Definition saved'**
+  String get environmentsSaved;
+
+  /// Space environments: environmentsSectionComponents
+  ///
+  /// In en, this message translates to:
+  /// **'Components'**
+  String get environmentsSectionComponents;
+
+  /// Space environments: environmentsSectionOptions
+  ///
+  /// In en, this message translates to:
+  /// **'Start options'**
+  String get environmentsSectionOptions;
+
+  /// Space environments: environmentsSectionSeedFiles
+  ///
+  /// In en, this message translates to:
+  /// **'Seed files'**
+  String get environmentsSectionSeedFiles;
+
+  /// Space environments: environmentsSectionVariables
+  ///
+  /// In en, this message translates to:
+  /// **'Variables'**
+  String get environmentsSectionVariables;
+
+  /// Space environments: environmentsSeedHelp
+  ///
+  /// In en, this message translates to:
+  /// **'One path per line, copied from the registered checkout. Fork pull requests never receive these.'**
+  String get environmentsSeedHelp;
+
+  /// Space environments: environmentsShellHelp
+  ///
+  /// In en, this message translates to:
+  /// **'Placeholders aren\'t expanded here. Read CC_ENV_* variables instead.'**
+  String get environmentsShellHelp;
+
+  /// Space environments: environmentsSourceApprove
+  ///
+  /// In en, this message translates to:
+  /// **'Approve this version'**
+  String get environmentsSourceApprove;
+
+  /// Space environments: environmentsSourceCurrent
+  ///
+  /// In en, this message translates to:
+  /// **'{path} matches the approved version.'**
+  String environmentsSourceCurrent(String path);
+
+  /// Space environments: environmentsSourceNotice
+  ///
+  /// In en, this message translates to:
+  /// **'The approved version keeps running until you approve this one.'**
+  String get environmentsSourceNotice;
+
+  /// Space environments: environmentsTabJson
+  ///
+  /// In en, this message translates to:
+  /// **'JSON'**
+  String get environmentsTabJson;
+
+  /// Space environments: environmentsTabSource
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get environmentsTabSource;
+
+  /// Space environments: environmentsTestHelp
+  ///
+  /// In en, this message translates to:
+  /// **'Runs a throwaway environment end to end: check, start, wait for ready, destroy.'**
+  String get environmentsTestHelp;
+
+  /// Space environments: environmentsTestSaveFirst
+  ///
+  /// In en, this message translates to:
+  /// **'Save the definition first.'**
+  String get environmentsTestSaveFirst;
+
+  /// Space environments: environmentsTimeoutSeconds
+  ///
+  /// In en, this message translates to:
+  /// **'Timeout in seconds'**
+  String get environmentsTimeoutSeconds;
+
+  /// Space environments: environmentsTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Environments'**
+  String get environmentsTitle;
+
+  /// Space environments: environmentsTriggerArchive
+  ///
+  /// In en, this message translates to:
+  /// **'Before the worktree is deleted'**
+  String get environmentsTriggerArchive;
+
+  /// Space environments: environmentsTriggerChange
+  ///
+  /// In en, this message translates to:
+  /// **'When watched paths change'**
+  String get environmentsTriggerChange;
+
+  /// Space environments: environmentsTriggerCreate
+  ///
+  /// In en, this message translates to:
+  /// **'Once per environment'**
+  String get environmentsTriggerCreate;
+
+  /// Space environments: environmentsTriggerManual
+  ///
+  /// In en, this message translates to:
+  /// **'On request'**
+  String get environmentsTriggerManual;
+
+  /// Space environments: environmentsTriggerProvision
+  ///
+  /// In en, this message translates to:
+  /// **'When the worktree is created'**
+  String get environmentsTriggerProvision;
+
+  /// Space environments: environmentsTriggerStart
+  ///
+  /// In en, this message translates to:
+  /// **'On every start'**
+  String get environmentsTriggerStart;
+
+  /// Space environments: environmentsTriggers
+  ///
+  /// In en, this message translates to:
+  /// **'Runs'**
+  String get environmentsTriggers;
+
+  /// Space environments: environmentsUnreadable
+  ///
+  /// In en, this message translates to:
+  /// **'This client can\'t read this definition.'**
+  String get environmentsUnreadable;
+
+  /// Space environments: environmentsUpdateAvailable
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get environmentsUpdateAvailable;
+
+  /// Space environments: environmentsUseShell
+  ///
+  /// In en, this message translates to:
+  /// **'Use a shell command'**
+  String get environmentsUseShell;
+
+  /// Space environments: environmentsUseSourceWarning
+  ///
+  /// In en, this message translates to:
+  /// **'The tool then runs against your own checkout. Treat it as read-only.'**
+  String get environmentsUseSourceWarning;
+
+  /// Space environments: environmentsWhenMissing
+  ///
+  /// In en, this message translates to:
+  /// **'When a space lacks it'**
+  String get environmentsWhenMissing;
+
+  /// Space environments: environmentsWhenMissingAdd
+  ///
+  /// In en, this message translates to:
+  /// **'Add it to the space'**
+  String get environmentsWhenMissingAdd;
+
+  /// Space environments: environmentsWhenMissingSkip
+  ///
+  /// In en, this message translates to:
+  /// **'Skip it'**
+  String get environmentsWhenMissingSkip;
+
+  /// Space environments: environmentsWhenMissingSource
+  ///
+  /// In en, this message translates to:
+  /// **'Use the registered checkout'**
+  String get environmentsWhenMissingSource;
+
+  /// Space environments: environmentsUnsupported
+  ///
+  /// In en, this message translates to:
+  /// **'This server doesn\'t support environments.'**
+  String get environmentsUnsupported;
+
+  /// Space environments: environmentViewerUnavailable
+  ///
+  /// In en, this message translates to:
+  /// **'No viewer: the server can\'t capture this window. Allow Screen Recording for Control Center on the server.'**
+  String get environmentViewerUnavailable;
+
+  /// Space environments: environmentHealthHealthy
+  ///
+  /// In en, this message translates to:
+  /// **'Healthy'**
+  String get environmentHealthHealthy;
+
+  /// Space environments: environmentHealthUnhealthy
+  ///
+  /// In en, this message translates to:
+  /// **'Unhealthy'**
+  String get environmentHealthUnhealthy;
+
+  /// Space environments: environmentTerminalStale
+  ///
+  /// In en, this message translates to:
+  /// **'This terminal opened before the environment started, so it lacks its variables.'**
+  String get environmentTerminalStale;
+
+  /// Space environments: environmentTerminalFresh
+  ///
+  /// In en, this message translates to:
+  /// **'Open a fresh terminal'**
+  String get environmentTerminalFresh;
+
+  /// Space environments: environmentsShellStays
+  ///
+  /// In en, this message translates to:
+  /// **'A multi-line script stays a shell command: its lines are its structure.'**
+  String get environmentsShellStays;
+
+  /// Space environments: environmentsOverrides
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace overrides'**
+  String get environmentsOverrides;
+
+  /// Space environments: environmentsOverridesHelp
+  ///
+  /// In en, this message translates to:
+  /// **'The file\'s own settings are read-only here. Bind its roles to this workspace\'s repos, or override any field as JSON.'**
+  String get environmentsOverridesHelp;
+
+  /// Space environments: environmentsReposHelp
+  ///
+  /// In en, this message translates to:
+  /// **'The repositories this environment uses, each bound to a role.'**
+  String get environmentsReposHelp;
+
+  /// Space environments: environmentsComponentsHelp
+  ///
+  /// In en, this message translates to:
+  /// **'What the environment runs, in start order.'**
+  String get environmentsComponentsHelp;
+
+  /// Space environments: environmentsOptionsHelp
+  ///
+  /// In en, this message translates to:
+  /// **'Choices offered when someone starts the environment.'**
+  String get environmentsOptionsHelp;
+
+  /// Space environments: environmentsVariablesHelp
+  ///
+  /// In en, this message translates to:
+  /// **'Set on tasks, processes, apps and space terminals.'**
+  String get environmentsVariablesHelp;
+
+  /// Space environments: environmentsChecksHelp
+  ///
+  /// In en, this message translates to:
+  /// **'What the host needs for this environment to run.'**
+  String get environmentsChecksHelp;
+
+  /// Space environments: environmentsIdleStopHelp
+  ///
+  /// In en, this message translates to:
+  /// **'0 never stops it.'**
+  String get environmentsIdleStopHelp;
+
+  /// Space environments: environmentsAnchorHelp
+  ///
+  /// In en, this message translates to:
+  /// **'A space holding this repository can start the environment.'**
+  String get environmentsAnchorHelp;
+
+  /// Space environments: environmentsRequiredHelp
+  ///
+  /// In en, this message translates to:
+  /// **'The environment can\'t run without it.'**
+  String get environmentsRequiredHelp;
+
+  /// Space environments: environmentsFollowPrHeadHelp
+  ///
+  /// In en, this message translates to:
+  /// **'Sync and refresh when the pull request\'s head moves.'**
+  String get environmentsFollowPrHeadHelp;
+
+  /// Space environments: environmentsRecordNeedsFix
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a fix'**
+  String get environmentsRecordNeedsFix;
+
+  /// Space environments: environmentsCheckFile
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get environmentsCheckFile;
+
+  /// Space environments: environmentsDiscardBody
+  ///
+  /// In en, this message translates to:
+  /// **'Your edits to this definition will be lost.'**
+  String get environmentsDiscardBody;
+
+  /// Space environments: environmentsWorktreeRuns
+  ///
+  /// In en, this message translates to:
+  /// **'Worktree task runs'**
+  String get environmentsWorktreeRuns;
+
+  /// Space environments: environmentsNoWorktreeRuns
+  ///
+  /// In en, this message translates to:
+  /// **'No worktree task has run yet.'**
+  String get environmentsNoWorktreeRuns;
+
+  /// Space environments: environmentsLinkRoles
+  ///
+  /// In en, this message translates to:
+  /// **'Roles in this file'**
+  String get environmentsLinkRoles;
+
+  /// Space environments: environmentsLinkNoFile
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read that file from the repo. Roles can be bound after linking.'**
+  String get environmentsLinkNoFile;
+
+  /// Guardrail action class: running commands on the host outside any sandbox, at an agent's request
+  ///
+  /// In en, this message translates to:
+  /// **'Run commands on the host'**
+  String get guardrailClassHostExecution;
+
+  /// Environment panel copy.
+  ///
+  /// In en, this message translates to:
+  /// **'URLs'**
+  String get environmentUrls;
+
+  /// Environment panel copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Scripts'**
+  String get environmentScripts;
+
+  /// Environment panel copy.
+  ///
+  /// In en, this message translates to:
+  /// **'No environment for this space'**
+  String get environmentNoneForSpace;
+
+  /// Environment panel copy.
+  ///
+  /// In en, this message translates to:
+  /// **'No environment for this pull request'**
+  String get environmentNoneForPr;
+
+  /// Environment panel copy.
+  ///
+  /// In en, this message translates to:
+  /// **'An environment runs a repo\'s services, scripts and URLs for one space. Set it up once and every space on the repo can start it.'**
+  String get environmentSetupBody;
+
+  /// Environment panel copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up environment'**
+  String get environmentSetUp;
+
+  /// Environment panel copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit definition'**
+  String get environmentEditDefinition;
+
+  /// Environment panel copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Open environment'**
+  String get environmentOpenPanel;
+
+  /// Status of an environment that stopped because a person has to do something on the host, such as adding hostnames with sudo.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs setup'**
+  String get environmentNeedsSetup;
+
+  /// Environment host setup: the terminal tab a stopped start finishes in.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue in terminal'**
+  String get environmentContinueInTerminal;
+
+  /// Environment host setup: the terminal tab a stopped start finishes in.
+  ///
+  /// In en, this message translates to:
+  /// **'The tool needs you in a terminal, for a password or a prompt. Starting carries on when it finishes.'**
+  String get environmentSetupHint;
+
+  /// Heading of the notice on a terminal tab that opened by itself after a Start stopped for a person. Says why the tab appeared.
+  ///
+  /// In en, this message translates to:
+  /// **'This terminal opened because the start needs you'**
+  String get environmentSetupTabReason;
+
+  /// Environment host setup: the terminal tab a stopped start finishes in.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment setup'**
+  String get environmentSetupTab;
+
+  /// Empty state of the Running tab of an environment definition.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is running from this definition.'**
+  String get environmentsNothingRunning;
+
+  /// Placeholder for the policy search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search policies...'**
+  String get searchPoliciesHint;
+
+  /// Empty state when a policy search matches nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No policies match your search'**
+  String get noPoliciesMatch;
+
+  /// Label for a memory policy being switched on.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get memoryPolicyActive;
+
+  /// Label for the kind of a memory fact, such as instruction or error.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get memoryFactType;
+
+  /// How many times agents have recalled a memory fact.
+  ///
+  /// In en, this message translates to:
+  /// **'Times recalled'**
+  String get memoryTimesRecalled;
+
+  /// Heading above the facts a memory policy was derived from.
+  ///
+  /// In en, this message translates to:
+  /// **'Source facts'**
+  String get memorySourceFacts;
+
+  /// Title of the tab following what a space's workspace preparation prints: the copy, the fetch, the checkout and any setup tasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup logs'**
+  String get spaceSetupLogs;
 }
 
 class _AppLocalizationsDelegate

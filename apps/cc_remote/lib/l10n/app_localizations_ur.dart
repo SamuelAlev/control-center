@@ -2623,4 +2623,7 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'رن رک گیا کیونکہ فراہم کنندہ کی اسناد اب کام نہیں کرتیں۔ اسے ترتیبات ← فراہم کنندگان میں دوبارہ جوڑیں، پھر یہ باری دوبارہ آزمائیں۔';
+
+  @override
+  String get permissionHostExecution => 'میزبان پر کمانڈز چلائیں';
 }

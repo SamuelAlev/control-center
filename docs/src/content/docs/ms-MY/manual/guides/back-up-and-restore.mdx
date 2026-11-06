@@ -2,7 +2,7 @@
 title: Sandarkan dan pulihkan
 description: Ambil snapshot pemasangan, pindahkan ruang kerja antara mesin, pulihkan satu ruang kerja atau kesemuanya, dan simpan salinan di tempat lain.
 slug: ms-MY/manual-pengguna/panduan-cara/sandarkan-dan-pulihkan
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Panduan ini merangkumi lima perkara yang sebenarnya dilakukan orang dengan sandaran:
@@ -16,7 +16,7 @@ Semuanya di sini terletak di **Tetapan → Pelayan → Sandaran & pulih**.
 
 - **Klien penuh** — apl desktop atau web. Telefon yang digandingkan tidak boleh mencetuskan mana-mana daripada ini, memang sengaja.
 - Untuk mengambil, menyenaraikan, memuat turun atau memadam **snapshot pemasangan**: **pemilik** pemasangan itu.
-- Untuk tindakan mengikut ruang kerja: **pentadbir** ruang kerja itu untuk eksport, **pemilik** untuk mengimport atau memadamnya.
+- Untuk tindakan mengikut ruang kerja: **pentadbir** ruang kerja itu untuk eksport atau untuk menyenaraikan dan memuat turun sandaran berjadualnya, **pemilik** untuk mengimport atau memadamnya atau untuk memadam salah satu sandarannya.
 - Untuk muat turun dan muat naik: klien penuh yang digandingkan, sama ada pada sambungan langsung atau melalui geganti berperantara. Kedua-dua laluan membawa bait fail melalui terowong sumber yang disahkan dan disulitkan hujung ke hujung yang sama; geganti tidak boleh membacanya.
 
 ::::caution[Snapshot pemasangan dibuat secara manual]
@@ -85,12 +85,35 @@ Sandaran ruang kerja terletak pada pelayan di bawah
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Nod pengekalan
 hanya memadam sandaran lama ruang kerja ini; ia tidak pernah memadam snapshot pemasangan
 atau sandaran ruang kerja lain. Fail-fail ini mengandungi pangkalan data sahaja. Untuk
-pengekalan di luar mesin, salinnya secara berasingan.
+pengekalan di luar mesin, muat turun atau salinnya secara berasingan.
 
-Sandaran ini berasingan daripada senarai **Snapshot pemasangan**. Untuk memulihkan
-satu, gunakan **Data ruang kerja → Import** dengan laluan `workspace.db` sandaran itu
-pada sisi pelayan. Import menggantikan pangkalan data semasa ruang kerja itu, jadi
-eksportnya dahulu jika anda mungkin perlu membatalkan pemulihan itu.
+## Cari dan pulihkan sandaran berjadual
+
+**Sandaran berjadual** terletak di antara **Snapshot pemasangan** dan **Data ruang kerja**,
+dengan satu baris bagi setiap ruang kerja: bila sandaran terakhirnya dijalankan, berapa
+banyak yang disimpan dan ruang yang digunakan. Ruang kerja yang pipelinenya belum
+menghasilkan apa-apa memaparkan **Belum ada sandaran**. Ruang kerja yang anda bukan
+pentadbirnya menyatakan hal itu dalam barisnya dan tidak menyenaraikan sandarannya.
+
+Kembangkan baris untuk melihat setiap sandaran, yang terbaharu dahulu:
+
+- **Pulihkan** menggantikan pangkalan data semasa ruang kerja itu dengan sandaran ini. Eksport ruang kerja dahulu jika anda mungkin perlu membatalkannya. Memerlukan **pemilik**.
+- **Muat turun** menyimpan fail pada mesin yang anda gunakan. Sandaran kekal pada pelayan.
+- **Salin laluan** menyalin lokasinya pada pelayan.
+- **Padam** membuang sandaran ini secara kekal, selepas anda menaip nama ruang kerja. Memerlukan **pemilik**.
+
+### Sandaran ruang kerja yang dipadam
+
+Memadam ruang kerja meninggalkan sandaran berjadualnya pada pelayan, dan kerana jadualnya
+berhenti bersamanya, pengekalan juga berhenti: sandaran itu kekal sehingga seseorang
+membuangnya. **Pemilik** pemasangan melihatnya dalam senarai yang sama, bertanda
+**Ruang kerja dipadam**, dan boleh memuat turun atau memadamnya di situ. Orang lain tidak
+melihat baris tersebut.
+
+Sandaran itu tiada **Pulihkan**, kerana tiada ruang kerja untuk dipulihkan. Untuk
+mengembalikannya, muat turun sandaran itu, cipta ruang kerja, dan muat naik fail seperti
+yang diterangkan dalam
+[Pindahkan ruang kerja ke pemasangan lain](#pindahkan-ruang-kerja-ke-pemasangan-lain).
 
 ## Padam snapshot pemasangan
 
@@ -106,14 +129,16 @@ mesin itu bukan mesin yang anda sedang duduki, gunakan butang **Muat turun**:
 
 - Di sebelah setiap **ruang kerja** di bawah **Data ruang kerja** → **Muat turun**, untuk satu fail `.db`.
 - Di sebelah setiap **snapshot** di bawah **Snapshot pemasangan** → **Muat turun**, untuk seluruh snapshot sebagai `.zip`.
+- Di sebelah setiap sandaran di bawah **Sandaran berjadual** → **Muat turun**, untuk fail `.db` sandaran itu.
 
 Pada desktop anda memilih tempat fail itu disimpan dan toast menamakannya; pada web ia
-masuk ke muat turun pelayar. Sama ada cara, kedua-duanya melaporkan kemajuan dalam bait,
-kerana kedua-duanya ialah muatan yang boleh mencecah gigabait.
+masuk ke muat turun pelayar. Sama ada cara, ketiga-tiganya melaporkan kemajuan dalam bait,
+kerana muatan ini boleh mencecah gigabait.
 
-Kedua-duanya menjana salinan baharu pada saat anda menekan butang, menstrimkannya, dan
-memadam salinan pelayan selepas itu — muat turun bukan "mengambil fail yang dibuat oleh
-butang eksport tadi".
+Muat turun ruang kerja dan snapshot menjana salinan baharu pada saat anda menekan butang,
+menstrimkannya, dan memadam salinan pelayan selepas itu — muat turun bukan "mengambil fail
+yang dibuat oleh butang eksport tadi". Sandaran berjadual ialah pengecualian: anda
+mendapat fail yang tersimpan, dan ia kekal pada pelayan.
 
 Membuka arkib snapshot menghasilkan semula susun atur snapshot dengan tepat, dan itulah
 yang menjadikan pemulihannya satu salinan kembali.

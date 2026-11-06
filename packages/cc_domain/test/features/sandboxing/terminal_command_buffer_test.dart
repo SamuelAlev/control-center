@@ -53,4 +53,26 @@ void main() {
     expect(buf.feed([0x03]), TerminalWriteResult.none);
     expect(buf.feed(bytes('\r')).command, '');
   });
+
+  group('terminalAsksForSecret', () {
+    test('knows the prompts a password goes to', () {
+      for (final prompt in [
+        'Password:',
+        'Password: ',
+        '[sudo] password for sam: ',
+        "user@host's password: ",
+        'Enter passphrase for key: ',
+        'Enter PIN: ',
+        'some output\nPassword:',
+      ]) {
+        expect(terminalAsksForSecret(prompt), isTrue, reason: prompt);
+      }
+    });
+
+    test('leaves an ordinary prompt alone', () {
+      for (final prompt in ['% ', r'$ ', 'password reset done\n% ', '']) {
+        expect(terminalAsksForSecret(prompt), isFalse, reason: prompt);
+      }
+    });
+  });
 }

@@ -2,10 +2,10 @@
 title: Klávesové zkratky
 description: Úplný registr klávesových zkratek podle rozsahu, včetně podmínek, za kterých se každá zkratka spustí.
 slug: cs-CZ/prirucka/referencni-prirucka/klavesove-zkratky
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Zkratky vycházejí z jednoho registru `const`, `KeybindingRegistry` v `lib/core/constants/keybindings.dart`. Je v něm **49 vazeb**. Nastavení → Vy → Klávesové zkratky ten registr vykreslí jako **referenci jen ke čtení**: zkratky nejdou přemapovat a uživatelský soubor zkratek neexistuje.
+Zkratky vycházejí z jednoho registru `const`, `KeybindingRegistry` v `lib/core/constants/keybindings.dart`. Je v něm **49 vazeb**. Dialog **Klávesové zkratky** (stiskni `?` nebo ho otevři z nabídky Nápověda) ukazuje globální zkratky a zkratky aktuální obrazovky. Je to **reference jen ke čtení**: zkratky nejdou přemapovat a uživatelský soubor zkratek neexistuje.
 
 `Cmd` níže je hlavní modifikátor příkazu — ⌘ na macOS, Ctrl na Windows a Linuxu. Vazba se spustí jen tehdy, když má její příkaz na aktuální obrazovce zaregistrovaný handler a platí její klauzule `when`. `!textInputFocus` znamená, že se klávesa předá zaměřenému textovému poli.
 
@@ -41,7 +41,7 @@ Rozsah `/pull-requests`. Všechny vyžadují `route == '/pull-requests'` a žád
 | `Enter` | Otevřít PR              |
 | `F`     | Otevřít nabídku filtrů  |
 
-`Enter` (`pr.list-open`) je v registru a na referenci zkratek se ukáže, ale **obrazovka seznamu pro něj neregistruje handler**, takže se teď nespustí. `F` otevírá nabídku filtrů (`pr.list-open-filter`), hledání ne.
+`Enter` (`pr.list-open`) je v registru a ukáže se v dialogu **Klávesové zkratky**, ale **obrazovka seznamu pro něj neregistruje handler**, takže se teď nespustí. `F` otevírá nabídku filtrů (`pr.list-open-filter`), hledání ne.
 
 ## Detail pull requestu (2)
 
@@ -90,7 +90,7 @@ Rozsah `/spaces`. Klauzule `when` používají regulární výraz, takže se spu
 
 Přejít na soubor otevře výběr ze souborů konverzace. Když nic nenapíšeš, zobrazí naposledy otevřené soubory; psaním prohledáš všechny soubory ve worktree konverzace. `Enter` otevře vybraný soubor na nové kartě, `Cmd/Ctrl + Enter` nebo tlačítko rozdělení na řádku ho otevře v podokně vpravo a `×` na řádku nedávného souboru ho ze seznamu odebere.
 
-Odeslání Enterem patří textovému poli composeru. Stisknout a mluvit patří tlačítku mikrofonu v composeru (vlastní handler hardwarové klávesnice). Obojí je v registru kvůli referenci v nastavení.
+Odeslání Enterem patří textovému poli composeru. Stisknout a mluvit patří tlačítku mikrofonu v composeru (vlastní handler hardwarové klávesnice). Obojí je v registru, aby je dialog **Klávesové zkratky** mohl zobrazit.
 
 ## Výběr pracovního prostoru (2)
 
@@ -127,7 +127,7 @@ Rozsah `/newsfeed`. Všechny vyžadují `route == '/newsfeed'` a žádné zamě�
 
 ## Klávesy prohlížeče diffů mimo registr
 
-Prohlížeč diffu PR je obsluhuje sám (`PrDiffKeyboardHandler`). Hledání, prohlédnutí a sbalení jsou v komentářích registru jen kvůli referenci v nastavení — zaregistrovaný handler dispečera není, takže je dispečer nechá prohlížeči diffu. Na referenci zkratek nemají vlastní řádky.
+Prohlížeč diffu PR je obsluhuje sám (`PrDiffKeyboardHandler`). Hledání, prohlédnutí a sbalení jsou zmíněné jen v komentářích registru: zaregistrovaný handler dispečera není, takže je dispečer nechá prohlížeči diffu. V dialogu **Klávesové zkratky** nemají vlastní řádky.
 
 | Zkratka         | Akce                                                      |
 | --------------- | --------------------------------------------------------- |

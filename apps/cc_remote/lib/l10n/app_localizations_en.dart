@@ -2619,6 +2619,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.';
+
+  @override
+  String get permissionHostExecution => 'Run commands on the host';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

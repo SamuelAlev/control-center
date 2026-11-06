@@ -2,6 +2,8 @@ import 'dart:collection';
 
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:collection/collection.dart' show ListEquality;
+import 'package:control_center/di/providers.dart'
+    show agentRunLogRepositoryProvider;
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -49,10 +51,10 @@ final class _SteeringQueue extends UnmodifiableListView<Message> {
   int get hashCode => const ListEquality<Message>().hash(_messages);
 }
 
-/// Whether any live run in the conversation can take mid-run steering (built-in harness).
-/// False for external-CLI transports (`claude -p`, …): their cards still queue and convert
-/// at run end, but a "steer now" button would promise an injection nothing can perform, so
-/// the strip hides it.
+/// Whether any live run in the conversation can take mid-run steering: a built-in harness
+/// loop, or a `claude -p` turn with its stdin open.
+/// False when nothing can: the card would wait for run end, so the strip offers to stop the
+/// run and send it instead of promising an injection nothing can perform.
 /// Stamped by the composer at ENQUEUE time — the one moment the server's answer is
 /// authoritative (it holds the live dispatch table) — rather than polled: the flag only
 /// changes when a run starts or ends, and a per-rebuild capability read would be a
@@ -67,7 +69,8 @@ class SteeringSteerableNotifier extends Notifier<bool?> {
   @override
   bool? build() => null;
 
-  /// Overwrites the flag (the composer stamps it at enqueue time).
+  /// Overwrites the flag (the composer stamps it at enqueue time, and the
+  /// strip when a delivery is refused).
   void set(bool value) {
     state = value;
   }
@@ -141,3 +144,44 @@ Future<bool> deliverSteeringCard(
       conversationId: key.conversationId,
       messageId: messageId,
     );
+
+/// Gets a queued card in now, stopping the conversation's runs if that is the
+/// only way. Returns false when no run is left to hand it to.
+///
+/// A run that can take the card takes it and keeps working. Otherwise every
+/// run stops and the server's run-end conversion sends what is queued as the
+/// next turn, this card first. Stopping stays its own call rather than a flag
+/// on delivery: `dispatch.stopRun` is authorized separately from `steering.*`,
+/// so a role that may steer but not stop is refused here too.
+Future<bool> forceSteeringCard(
+  WidgetRef ref, {
+  required String workspaceId,
+  required ConversationRef key,
+  required String messageId,
+}) async {
+  if (await deliverSteeringCard(
+    ref,
+    workspaceId: workspaceId,
+    key: key,
+    messageId: messageId,
+  )) {
+    return true;
+  }
+  final runs = await ref
+      .read(agentRunLogRepositoryProvider)
+      .activeByConversation(workspaceId, key.conversationId);
+  if (runs.isEmpty) {
+    return false;
+  }
+  await reorderSteeringCards(
+    ref,
+    workspaceId: workspaceId,
+    key: key,
+    orderedIds: [messageId],
+  );
+  final port = ref.read(messagingServiceProvider);
+  for (final run in runs) {
+    await port.stopRun(workspaceId, run.id);
+  }
+  return true;
+}

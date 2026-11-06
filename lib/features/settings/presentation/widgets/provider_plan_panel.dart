@@ -21,7 +21,39 @@ const Map<String, String> harnessPlanUsageIds = {
   // Settings → Adapters.
   'cursor': 'cursor',
   'codex': 'codex',
+  // A Mistral key bills pay-as-you-go unless its organization holds a Vibe
+  // plan; see [watchShowsPlanPanel].
+  'mistral': 'mistral',
 };
+
+/// Plan providers whose key may carry no plan at all. The server drops such
+/// keys from the usage list, leaving the provider `unconfigured`.
+const Set<String> _planOptionalIds = {'mistral'};
+
+/// Whether [providerId]'s tile shows a [ProviderPlanPanel].
+///
+/// A dedicated plan always does — "loading" and "unavailable" are both worth
+/// saying there. A key that may or may not carry a plan only does once the
+/// server has read a plan for it: until then it is a metered key, and a quota
+/// block would claim a plan the account may not have.
+bool watchShowsPlanPanel(WidgetRef ref, String providerId) {
+  final usageId = harnessPlanUsageIds[providerId];
+  if (usageId == null) {
+    return false;
+  }
+  if (!_planOptionalIds.contains(providerId)) {
+    return true;
+  }
+  return ref.watch(
+    subscriptionUsageProvider.select(
+      (async) => (async.value ?? const <SubscriptionUsage>[]).any(
+        (u) =>
+            u.providerId == usageId &&
+            u.status != SubscriptionStatus.unconfigured,
+      ),
+    ),
+  );
+}
 
 /// The connected-plan block on a Settings → Adapters provider tile: which
 /// account is signed in and what the plan has left. Disconnecting lives on the

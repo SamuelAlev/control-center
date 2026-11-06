@@ -1,0 +1,411 @@
+---
+title: إعداد البيئات
+description: امنح كل مساحة وكل طلب سحب مكدسًا عاملًا خاصًا به، باستخدام compose أو واجهة CLI مخصصة أو عمليات خاضعة للإشراف أو تطبيق سطح مكتب.
+slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/البيئات
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+**البيئة** هي المكدس العامل لمساحة واحدة: الخدمات التي يحتاجها فرع ما، معزولة عن كل المساحات الأخرى، ظاهرة في الشريط الجانبي ويمكن للوكلاء الوصول إليها. لطلبات السحب بيئة أيضًا، لأن لكل PR مساحته الخاصة أصلًا.
+
+يكتب مسؤول مساحة العمل **تعريفًا** مرة واحدة. ثم يضغط الأعضاء **بدء** في قسم **البيئة** من الشريط الجانبي للمساحة أو PR. تُحفظ التعريفات في قاعدة بيانات مساحة العمل، لذا لا يغيّر فرع الميزة أبدًا ما يشغّله Control Center، مع أن الأدوات تظل تشغّل كود ذلك الفرع.
+
+## إنشاء تعريف
+
+1. افتح **الإعدادات ← مساحة العمل ← البيئات**. يمكن لمسؤولي مساحة العمل فقط تغيير التعريفات.
+2. انقر **تعريف جديد**، ثم **تعريف فارغ** أو **مسودة من المستودع**. تبحث المسودة في المستودع عن ملفات compose وملف `Procfile` وسكربتات `package.json`، وتراجع أنت النتيجة.
+3. املأ النموذج، أو استخدم علامة التبويب **JSON**. الأمثلة في هذه الصفحة هي ذلك JSON.
+4. انقر **تشغيل الاختبار**. يبدأ ذلك بيئة مؤقتة، وينتظر حتى تصبح جاهزة، ثم يدمرها.
+
+للاحتفاظ بتعريف في مستودع، استخدم **ربط ملف من المستودع**. يقرأ Control Center الملف من الفرع الافتراضي فقط ويشغّل فقط النسخة التي وافق عليها مسؤول. تعرض النسخة الأحدث **يتوفر تحديث** ولا تغيّر شيئًا حتى تتم الموافقة عليها.
+
+## أصغر تعريف
+
+يحتاج مستودع compose بسيط إلى هذا فقط:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+كل ما عدا ذلك له قيمة افتراضية: يُكتشف ملف compose، وتعمل كل الخدمات، وتُخصص المنافذ، وتُكتشف نقاط نهاية HTTP، وتأخذ البيئة اسم الفرع.
+
+## أنواع المكونات
+
+البيئة قائمة مرتبة من المكونات. ينتظر كل مكون أن يصبح السابق جاهزًا، ما لم يحدد `after` غيره، ويجري الإيقاف بالترتيب العكسي. يجعل `enabledWhen` المكون مشروطًا بخيار أو دور، مثل `opt.seed` أو `!opt.seed` أو `repo.web`.
+
+| النوع | من يشغّله | الاستخدام |
+| --- | --- | --- |
+| `compose` | مشغّل compose في Control Center | أي ملف compose، واحد لكل بيئة |
+| `cli` | أداتك. يستدعي Control Center الأفعال المعيّنة ويقرأ JSON | أداة تملك دورة حياتها ونطاقاتها وبياناتها |
+| `process` | Control Center، في جلسة طرفية خاضعة للإشراف | خوادم التطوير والعمال |
+| `task` | Control Center، مرة لكل مشغّل | التثبيت والترحيل والاختبارات |
+| `app` | Control Center، عندما ينقر أحدهم **تشغيل التطبيق** | تطبيق سطح مكتب |
+
+تأخذ مكونات `task` قائمة `when`:
+
+| المشغّل | وقت التشغيل |
+| --- | --- |
+| `provision` | عند إنشاء شجرة العمل (راجع مهام شجرة العمل أدناه) |
+| `create` | مرة لكل بيئة، ومرة أخرى بعد إعادة الضبط |
+| `start` | عند كل بدء |
+| `change` | بعد المزامنة، عندما يطابق مسار متغيّر `onChange` |
+| `manual` | عند الطلب: **تشغيل** أو `cc-env run <id>` أو `environment_run_task` |
+| `archive` | قبل تدمير شجرة العمل مباشرة |
+
+الأمر المعطى كمصفوفة هو argv، لذا لا تمر قيم الخيارات عبر صدفة أبدًا. تعمل السلسلة النصية، أو `script` مع مصفوفة أسطر، تحت `bash -lc`. لا تُوسَّع العناصر النائبة مثل `{name}` و`{branch}` و`{stateDir}` و`{repo.<role>}` و`{port.<key>}` و`{opt.<key>}` و`{url.<role>}` إلا في argv. تقرأ أوامر الصدفة القيم نفسها كمتغيرات `CC_ENV_*`، مثل `$CC_ENV_PORT_WEB`.
+
+يحصل كل أمر وطرفية مساحة أيضًا على `CC_ENV_NAME` و`CC_ENV_STATE_DIR` و`CC_ENV_URL` و`CC_SPACE_ID` و`CC_REPO_PATH_<ROLE>`، وفي مساحات PR على `CC_PR_NUMBER` و`CC_PR_IS_FORK`. ومع مكون compose يحصلان أيضًا على `COMPOSE_PROJECT_NAME` و`COMPOSE_FILE`، فيصل `docker compose exec` داخل مهمة إلى المشروع الصحيح.
+
+## الأدوار ودليل العمل
+
+يربط التعريف **أدوارًا** بمستودعات مساحة العمل، فيمكن لمكدس واحد أن يمتد عبر عدة مستودعات:
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`: يمكن لمساحة بدء البيئة إذا احتوت على دور مرساة واحد على الأقل. إذا تطابق تعريفان، يختار من يبدأ.
+- `required`: لا يعمل المكدس من دون هذا المستودع.
+- `whenMissing`: ما يحدث عندما تفتقد المساحة الدور. يضيف `addToSpace` المستودع على فرعه الافتراضي وهو الافتراضي لأدوار `required`. يمرر `useSource` نسختك المسجلة، وعليك معاملتها كقراءة فقط. يترك `skip` المتغير بلا قيمة وهو الافتراضي في غير ذلك.
+- يتطلب البدء منحة `write` على مستودع مرساة في المساحة ووصول قراءة إلى كل مستودع مرتبط آخر.
+
+يعمل الأمر في أول دور من `repos` تملكه المساحة، لذا لا يذكره التعريف ذو المستودع الواحد أبدًا. يمكن لأي مكون تجاوز ذلك عبر `"cwd": { "role": "e2e", "path": "packages/ui" }`. كلا الحقلين اختياري.
+
+## المنافذ وعناوين URL
+
+يخصص Control Center منافذ المضيف قبل بدء أي شيء، من نطاق مشترك على مستوى المضيف (من 42000 إلى 49999 افتراضيًا، في كتل من 32). يبقى المنفذ نفسه طوال عمر البيئة، وترتبط منافذ compose بـ `127.0.0.1` فقط.
+
+- لا تحتاج منافذ compose إلى تصريح. اقرأها بصيغة `{port.postgres.5432}` أو `CC_ENV_PORT_POSTGRES_5432`.
+- يُصرَّح عن المنافذ الأخرى حيث تُستخدم، عبر `"port": "web"` أو `"ports": ["web", "hmr"]`، وتُقرأ بصيغة `{port.web}`. تحصل العملية ذات المنفذ أيضًا على `PORT` و`HOST=127.0.0.1`.
+
+تحصل نقاط نهاية HTTP على عنوان URL على موجّه الخادم، الذي يستمع على منفذ استرجاع واحد:
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>` هو الفرع بصيغة slug، أو `pr-<n>` في مساحة PR. و`<project>` هو `naming.project`، وإلا فاسم التعريف.
+- تشير أسماء `*.localhost` إلى الاسترجاع، فلا تحتاج إلى إدخالات hosts أو DNS، ويفصل اسم المضيف ملفات تعريف الارتباط بين البيئات.
+- تُكتشف منافذ compose التي تستجيب لـ HTTP، ويتجاوز `http` على المكون هذا التخمين. تحتاج العملية إلى `"endpoint": { "role": "web", "primary": true }`، الذي يتيح أيضًا `{url.web}`.
+- في المتصفح (VM)، استخدم **فتح في Browser (VM)**. يصل `https://web--fix-login--shop.localhost/` هناك إلى المسار نفسه.
+- تبقى التسمية كاملة ضمن 63 حرفًا، لذا تُختصر الأسماء الطويلة بتجزئة.
+- لا تشترك نقطتا نهاية في نطاق أب. على التطبيق الذي يحتاج إلى ملف تعريف ارتباط واحد عبرهما أن يقدمهما من نقطة نهاية واحدة.
+
+لعناوين URL التي يجب تسجيلها مسبقًا، مثل عمليات إعادة توجيه OAuth، يعطي `"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` مجموعة ثابتة من الأسماء.
+
+يقرر `policy` متى تعمل البيئات. قيمة `autoCreate` هي `off` أو `prSpaces` أو `allSpaces`، وقيمة `idleStopMinutes` الافتراضية 240، ويزامن `followPrHead` بيئة PR عند تحرك رأسها، ومع `maxRunning` (الافتراضي 6) يعرض **بدء** إيقاف أقدم بيئة استخدامًا.
+
+## مثال: تطبيق compose
+
+تطبيق ويب وPostgres من ملف compose واحد، مع `.env` يتجاهله git وعمليات ترحيل ومهمة اختبار. ينسخ `seedFiles` ملفات مسماة من نسختك المسجلة إلى كل شجرة عمل جديدة.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+يتيح `healthchecks` لخدمة بلا فحص صحة خاص بها أن تؤخر المكون التالي. من دونه تُعد الحاوية العاملة جاهزة، وقد تسبق عمليات الترحيل قاعدة بيانات ما زالت تبدأ.
+
+## مثال: CLI مخصصة
+
+أداة خيالية `acme` تملك حاوياتها ونطاقاتها وTLS الخاص بها. يوفر Control Center القيمة `{name}` ويعرف الباقي من `status`. لا يستنتج أبدًا أسماء مضيفي الأداة ولا يحرر `/etc/hosts` أبدًا.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create` و`status` و`destroy` مطلوبة. يختار Control Center بين `create` و`start` من الحالة التي يقرؤها. يمكن أن يكون أي فعل `{ "shell": "…" }` بدل argv.
+- يقرأ `statusMap` ملف JSON الخاص بالأداة بمؤشرات JSON، حيث يطابق `*` كل عنصر. قواعد الحالة مرتبة وتفوز أول مطابقة. الشرط هو `path` مع `equals`، أو `any` أو `none` مع `where`.
+- يوقف `keepsDataOnStop: false` الإيقاف عند الخمول ويضيف تحذير فقدان بيانات إلى **إيقاف**. اضبطه عندما يفقد الإيقاف البيانات.
+- يوصل `routing.mode: "tool"` أسماء مضيفي الأداة بالمتصفح (VM) والوكلاء. يجب أن ينتهي النطاق بـ `.test` أو `.localhost` أو `.internal`، ويُسقط أي عنوان URL مُبلَّغ عنه خارجه.
+
+يمكن لأداة تملكها الاستغناء عن `statusMap` وطباعة عقد الحالة الموضح في نهاية هذه الصفحة.
+
+## مثال: مستودع pnpm أحادي
+
+عمليات ومهام فقط، بلا حاويات. يجد تطبيق الويب واجهة API عبر `{url.api}`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- كل عملية علامة تبويب طرفية يمكنك فتحها وقراءتها والكتابة فيها. إغلاق علامة التبويب لا يوقفها.
+- يأخذ `ready` القيم `http` أو `tcp` أو `logMatch`. قيمة `restart` هي `on-failure` (الافتراضية) أو `always` أو `never`. يعيد `restartOn` تشغيل العملية عند مطابقة مسار متغيّر.
+- تصبح `options` نموذجًا عند **بدء**، وينطبق `agentDefault` على التشغيلات التي يبدأها وكيل.
+
+## مثال: تطبيق سطح مكتب
+
+تطبيق سطح مكتب مع خطوة بناء. يعمل التطبيق بالطريقة نفسها أيًا كانت تقنيته، لأن Control Center يعمل على مستوى نوافذ نظام التشغيل ولا يحتاج إلى خطاف أو SDK في التطبيق.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+لا يبدأ التطبيق مع البيئة. ينقر أحدهم **تشغيل التطبيق**، ويعمل `prepare` أولًا. يعيد **إعادة البناء والتشغيل** تشغيل هذا الزوج. يظهر الخروج السليم كمغلق، ويعرض التعطل آخر أسطر السجل من دون إعادة تشغيل، ولا تعيد إعادة تشغيل الخادم فتحه أبدًا، ويترك الإيقاف عند الخمول التطبيق العامل وشأنه.
+
+### أذونات تطبيقات سطح المكتب وحدودها
+
+- على macOS، امنح Control Center **تسجيل الشاشة** و**تسهيلات الاستخدام** مرة واحدة في إعدادات النظام. يحتاج مضيف الخادم إلى جلسة رسومية: يرفض الخادم عديم الواجهة تشغيل تطبيق.
+- شغّل الملف التنفيذي مباشرة. يسلّم `open -a` التطبيق إلى LaunchServices فيغادر شجرة العمليات التي يتتبعها Control Center. يغطي `"window": { "match": { "bundleId": "…" } }` هذه الحالة، لكنه آمن فقط مع نسخة عاملة واحدة.
+- تبقى النوافذ على شاشة. لا يلتقط macOS نافذة خارج كل الشاشات، لذا يظهر التطبيق الذي يستخدمه وكيل على شاشة الخادم. لا يحتاج إلى التركيز.
+- يمنح `"isolate": "home"` التطبيق دليلًا منزليًا خاصًا عبر `HOME` و`XDG_*` و`CFFIXED_USER_HOME`، لتعمل نسخ من مساحتين جنبًا إلى جنب. لا يُعزل `NSUserDefaults`، لذا تبقى تفضيلات Cocoa و`shared_preferences` في Flutter مشتركة بين النسخ.
+- ينطبق `isolate` على العملية المشغّلة فقط. يحتاج مشغّل سلسلة أدوات مثل `flutter run` إلى الدليل المنزلي الحقيقي، لذا استخدم `isolate` مع ملف تنفيذي مبني. إذا كان للتطبيق إعداد خاص، مثل `--user-data-dir`، ففضّله.
+- يتحكم الوكلاء في النافذة عبر `app_use`، الذي لا يصل إلا إلى شجرة عمليات هذه البيئة. يرى الوكيل النافذة، لا سطح المكتب. تمر عمليات التشغيل من الوكلاء عبر سياسة الإجراءات وتسأل افتراضيًا، ويتوقف إدخال الوكيل ما دام شخص يملك التحكم.
+- يرسل `"input": "background"` (الافتراضي) الأحداث إلى العملية. ينشّط `"foreground"` النافذة ويستحوذ على المؤشر.
+
+## مهام شجرة العمل تحل محل سكربتات المستودع
+
+تحل مهام `provision` و`archive` محل سكربتات الإعداد والأرشفة القديمة لكل مستودع. **رُحّلت السكربتات الموجودة تلقائيًا:** صار لكل مستودع كانت له سكربتات تعريف باسمه، فيه مهمتا `setup` و`archive` تحملان نص السكربت نفسه. تفتحه الأيقونة في صف المستودع ضمن **الإعدادات ← مساحة العمل ← المستودعات**. تبقى تشغيلات السكربتات السابقة سجلًا للقراءة فقط.
+
+تتبع هذه المهام شجرة العمل لا البيئة، لذا تعمل في مساحات لا يضغط فيها أحد **بدء**:
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| تعمل | عند إنشاء شجرة عمل الدور، في أي مساحة | قبل تدمير شجرة العمل تلك مباشرة |
+| عند الفشل | يفشل التجهيز وتُدمَّر شجرة العمل | يُسجَّل ولا يمنع الحذف أبدًا |
+| المهلة الافتراضية | 5 دقائق | دقيقتان |
+| ترى | `CC_WORKSPACE_PATH` و`CC_ROOT_PATH` و`CC_SPACE_*` و`CC_REPO_NAME` | الشيء نفسه |
+
+يحتاج المستودع بلا مكدس إلى تعريف يحمل مهامه فقط. ولأنه لا يوجد ما يُبدأ، لا يلزم دور مرساة:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- لا توجد بيئة بعد، لذا لا يمكن لهذه المهام استخدام `{name}` أو `{port.*}` أو `{url.*}` أو `{opt.*}` أو `enabledWhen`، ولا تحصل على `env` الخاص بالتعريف.
+- يمكن لتعريف واحد فقط أن يحمل مهام `provision` و`archive` لمستودع. يمكن للتعريفات الأخرى ربطه لكل ما عدا ذلك.
+- يعيد `"when": ["provision", "change"]` التثبيت أيضًا عند تغيّر ملف القفل، وهو ما لم تفعله سكربتات الإعداد قط.
+- تعمل المهمة لشجرة عمل دور `cwd` الخاص بها، لذا يمكن لتعريف متعدد المستودعات إعداد كل مستودع على حدة.
+- يضبط التشغيل التجريبي `CC_SCRIPT_TEST=1`. تبدأ إعادة المحاولة من شجرة عمل نظيفة، فاكتب مهامًا تتحمل إعادة التشغيل.
+
+## الوكلاء
+
+لا يحصل الوكلاء أبدًا على مقبس Docker. في مساحة ذات تعريف مؤهل، يحصل التشغيل على `cc-env` في `PATH` الخاص به. تأتي المساحة من التشغيل، لذا لا يمكن للوكيل التصرف إلا في بيئته، ويمر كل أمر عبر سياسة الإجراءات.
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+مع مكون compose، يسمح رقاقة `docker` أيضًا بـ `docker compose` مع `ps` و`logs` و`exec` و`port` و`restart` و`top`. لا يجوز وضع رايات قبل الفعل، ولا يمكن لـ `logs` المتابعة، ولا يقبل `exec` إلا `-T`. أي شيء آخر ينتهي بالرمز 5 والرسالة «not available in Control Center agent runs».
+
+يمكن لمستودع تستدعي مهاراته أداته الخاصة الاستمرار في ذلك. تصرّح كتلة `agentPassthrough` على مكون `cli` بالأوامر التي يمكن للوكلاء تشغيلها:
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+يسمّي `maps` العملية التي تنطبق سياستها. يفرض `positionalName` ذلك الوسيط على بيئة هذه المساحة، ويرشّح `nameFilter` مخرجات JSON إليها، ويجب أن تُحل كل قيمة `pathFlags` داخل أشجار عمل التشغيل. الأمر الذي لا يطابق أي قاعدة ينتهي بالرمز 5.
+
+العمليات نفسها متاحة كأدوات: `environment_status` و`environment_up` و`environment_down` و`environment_reset` و`environment_destroy` و`environment_restart` و`environment_exec` و`environment_logs` و`environment_run_task` و`environment_launch_app` و`environment_stop_app`. يصل الوكلاء في صندوق الحماية إلى منافذهم مباشرة وإلى أسماء مضيفي بيئتهم عبر وكيل الشبكة الخاص بالتشغيل، لذا اطلب منهم قراءة نقاط النهاية من `environment_status` بدل تخمين عنوان URL.
+
+## طلبات السحب من التفرعات
+
+كود PR من تفرع غير موثوق، وفي الوضع على المضيف يعمل بصفته مستخدم نظام تشغيل الخادم. يقرر `policy.forkPrs` ما يحدث:
+
+| القيمة | الأثر | الافتراضي لـ |
+| --- | --- | --- |
+| `rig` | يعمل ملف compose في VM بلا مطالبة | التعريفات ذات مكونات `compose` و`task` فقط |
+| `approval` | يحتاج كل بدء إلى مسؤول | كل التعريفات الأخرى |
+| `deny` | مرفوض | لا شيء |
+
+- لا تُنسخ `seedFiles` أبدًا إلى تفرع، لأنها عادة أسرار. يُبلغ ملف compose الذي يربط أحدها عن الملف المفقود باسمه.
+- تُتخطى مهام `provision` و`archive` ما لم تكن السياسة `rig`، وعندها تعمل في VM.
+- في الوضع على المضيف، تُرفض على التفرع `privileged` ومساحات أسماء المضيف وربط مقبس Docker و`devices` والروابط خارج أشجار عمل المساحة. في المساحات الموثوقة تكتفي بالتحذير.
+
+## الوضع في منصة rig
+
+يشغّل `"placement": "rig"` مكونات `compose` و`task` في microVM مخصص. التعريفات ذات مكونات `process` أو `cli` أو `app` غير مؤهلة. يعمل ملف compose بلا تعديل، من دون مقبس Docker للمضيف ومن دون بيانات اعتماد المشغّل، ويقتصر الوصول إلى الشبكة على السجلات التي تحتاجها صوره. تُركَّب شجرة العمل مباشرة.
+
+- **ضيوف arm64.** الضيوف arm64 على Apple Silicon، لذا لا تعمل الصور المخصصة لـ amd64 فقط.
+- **تُرفض السجلات الخاصة.** لا يملك الضيوف بيانات اعتماد السجلات، لذا تُرفض الصورة الموجودة في سجل خارج السجلات العامة المعروفة قبل إقلاع VM. يفشل المستودع الخاص في سجل عام عندما يسحبه الضيف.
+- **تخزين 16 جيبيبايت.** تتشارك كل صور المكدس وأحجامه قرصًا واحدًا بسعة 16 GiB، ولا يمكن زيادته.
+- **الإقلاع الأول بطيء.** طبقات الصور خاصة بكل VM، لذا يسحب الإقلاع الأول كل شيء. تحتفظ منصة rig المتوقفة بقرصها.
+- **يجب أن تكون الصور الأساسية مقروءة.** لا يمكن التخطيط لملف Dockerfile يسمي صورته الأساسية عبر متغير، لأن الوصول إلى الشبكة يُثبَّت عند الإقلاع.
+- **العمر.** ينهي `policy.rigTtlHours` الجهاز الافتراضي، بعد 24 ساعة افتراضيًا.
+
+## عقد الحالة لمؤلفي الأدوات
+
+يتوقع مكون `cli` بلا `statusMap` العقد الأصلي `cc-env/1`. يطبع الفعل `status` هذا الكائن على stdout:
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- قيمة `state` هي `ready` أو `starting` أو `stopped` أو `failed` أو `missing`. يقود `missing` إلى `create`، ويقود `stopped` و`failed` إلى `start`. أبلغ عن `missing` برمز الخروج 0: يُحتسب `status` الفاشل `failed`.
+- `state` وحده مطلوب. تُتجاهل الحقول غير المعروفة، وتظهر المخرجات غير القابلة للتحليل كمتدهورة، مع النص الخام كتفصيل.
+- يجب أن يكون عنوان URL استرجاعًا أو `*.localhost` أو تحت `routing.domain`، وإلا يُسقط.
+- يعرض `needsRecreate: true` الإجراء **إعادة الإنشاء** الذي يتخلص من البيانات. لا يتصرف Control Center بناءً عليه من تلقاء نفسه.
+- يطبع الفعل `list` مصفوفة JSON من الأسماء، أو من كائنات تحوي `name`.
+
+تنطبق رموز الخروج على كل فعل:
+
+| الرمز | المعنى |
+| --- | --- |
+| 0 | موافق |
+| 3 | يلزم إعداد المضيف. يفتح **تشغيل في الطرفية** طرفية مساحة والأمر مكتوب دون تشغيل، ثم يحاول **إعادة المحاولة** مجددًا. لا يشغّل Control Center الأمر `sudo` أبدًا |
+| 4 | تلزم المصادقة |
+| 5 | تبعية غير متاحة |
+| غير ذلك | فشل |
+
+يذهب التقدم إلى stderr بصيغة JSON مفصول بأسطر:
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+تظهر أسطر `step` كقائمة خطوات مباشرة وأسطر `note` كما هي. يصبح السطر الأخير من نوع `error` خطأً منظمًا، مع عرض `command` للنسخ. ومن دونه يعرض Control Center آخر 20 سطرًا من stderr. أي شيء ليس JSON هو مخرجات سجل عادية.
+
+## ذات صلة
+
+- [استخدام المساحات](/ar-SA/دليل-المستخدم/أدلة-إرشادية/مساحات/)
+- [إعادة توجيه المنافذ من طرفية](/ar-SA/دليل-المستخدم/أدلة-إرشادية/إعادة-توجيه-المنافذ/)
+- [امنح وكيلًا آلة للاختبار عليها](/ar-SA/دليل-المستخدم/أدلة-إرشادية/استخدام-المنصات/)
+- [تهيئة الضوابط](/ar-SA/دليل-المستخدم/أدلة-إرشادية/تهيئة-الضوابط/)

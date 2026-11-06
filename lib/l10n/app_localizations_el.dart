@@ -94,10 +94,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get keybindingPushToTalk => 'Πιέστε για ομιλία';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'Κρατήστε ή εναλλάξτε την υπαγόρευση φωνής στον συνθέτη μηνυμάτων';
-
-  @override
   String get agentPermissions => 'Δικαιώματα πρακτόρων';
 
   @override
@@ -197,6 +193,9 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'Προσομοιωτής iOS';
+
+  @override
+  String get rigSurfaceAppWindow => 'Παράθυρο εφαρμογής';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -473,6 +472,10 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'Η ζωντανή προβολή χρειάζεται ⁨ffmpeg⁩ σε αυτόν τον κεντρικό. Εγκαταστήστε το ⁨ffmpeg⁩ και ανοίξτε ξανά την καρτέλα.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'Η ζωντανή προβολή χρειάζεται Εγγραφή οθόνης. Παραχωρήστε την στο Control Center από τις Ρυθμίσεις συστήματος και ανοίξτε ξανά την καρτέλα.';
 
   @override
   String get rigStreamEnded => 'Η ζωντανή προβολή τερματίστηκε.';
@@ -1589,10 +1592,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'Άνοιγμα μενού φίλτρων';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'Άνοιγμα του μενού φίλτρων pull request';
 
   @override
   String countSelected(int count) {
@@ -2875,19 +2874,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get cancelEdit => 'Ακύρωση επεξεργασίας';
 
   @override
-  String get categoryCreation => 'Δημιουργία';
-
-  @override
-  String get categoryEditing => 'Επεξεργασία';
-
-  @override
   String get categoryNavigation => 'Πλοήγηση';
-
-  @override
-  String get categorySystem => 'Σύστημα';
-
-  @override
-  String get categoryView => 'Προβολή κατηγορίας';
 
   @override
   String get change => 'Αλλαγή';
@@ -3714,31 +3701,13 @@ class AppLocalizationsEl extends AppLocalizations {
   String get keepSandboxing => 'Διατήρηση sandbox';
 
   @override
-  String get keybindingAddARepositoryDescription => 'Προσθήκη αποθετηρίου';
-
-  @override
   String get keybindingAddRepository => 'Προσθήκη αποθετηρίου';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'Προσθήκη ή αφαίρεση σελιδοδείκτη στο επιλεγμένο άρθρο';
 
   @override
   String get keybindingCommandPalette => 'Παλέτα εντολών';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'Δημιουργία νέου πράκτορα';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'Δημιουργία νέου χώρου εργασίας';
-
-  @override
   String get keybindingFocusSearch => 'Εστίαση στην αναζήτηση';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'Εστίαση στο πεδίο αναζήτησης pull request';
 
   @override
   String get keybindingNewAgent => 'Νέος πράκτορας';
@@ -3759,35 +3728,10 @@ class AppLocalizationsEl extends AppLocalizations {
   String get keybindingOpenArticle => 'Άνοιγμα άρθρου';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'Άνοιγμα ή κλείσιμο του αναδυόμενου εναλλαγής χώρου εργασίας στην πλαϊνή γραμμή';
-
-  @override
   String get keybindingOpenPr => 'Άνοιγμα PR';
 
   @override
   String get keybindingOpenSettings => 'Άνοιγμα ρυθμίσεων';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'Άνοιγμα των ρυθμίσεων της εφαρμογής';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription =>
-      'Άνοιγμα της παλέτας εντολών';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'Άνοιγμα του επιλεγμένου άρθρου';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'Άνοιγμα του επιλεγμένου pull request';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'Άνοιγμα του επιλεγμένου χώρου εργασίας';
 
   @override
   String get keybindingOpenWorkspace => 'Άνοιγμα χώρου εργασίας';
@@ -3805,86 +3749,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get keybindingRefresh => 'Ανανέωση';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'Ανανέωση όλων των ροών';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'Ανανέωση της λίστας pull request';
-
-  @override
-  String get keybindingRescanForAdaptersDescription =>
-      'Επανάληψη σάρωσης προσαρμογέων';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription =>
-      'Επιλογή του επόμενου άρθρου';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription =>
-      'Επιλογή του επόμενου χώρου';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'Επιλογή του προηγούμενου άρθρου';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription =>
-      'Επιλογή του προηγούμενου χώρου';
-
-  @override
   String get keybindingSendMessage => 'Αποστολή μηνύματος';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'Αποστολή του τρέχοντος μηνύματος';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'Εναλλαγή φωτεινής και σκοτεινής λειτουργίας';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'Μετάβαση στον όγδοο χώρο εργασίας';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'Μετάβαση στον πέμπτο χώρο εργασίας';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'Μετάβαση στον πρώτο χώρο εργασίας';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'Μετάβαση στον τέταρτο χώρο εργασίας';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'Μετάβαση στον επόμενο χώρο εργασίας';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'Μετάβαση στον ένατο χώρο εργασίας';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'Μετάβαση στον προηγούμενο χώρο εργασίας';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'Μετάβαση στον δεύτερο χώρο εργασίας';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'Μετάβαση στον έβδομο χώρο εργασίας';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'Μετάβαση στον έκτο χώρο εργασίας';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'Μετάβαση στον τρίτο χώρο εργασίας';
 
   @override
   String get keybindingToggleBookmark => 'Εναλλαγή σελιδοδείκτη';
@@ -3922,13 +3787,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'Χώρος εργασίας 9';
-
-  @override
-  String get keybindings => 'Συντομεύσεις πληκτρολογίου';
-
-  @override
-  String get keybindingsDescription =>
-      'Όλες οι συντομεύσεις πληκτρολογίου. Οι συντομεύσεις είναι σταθερές και δεν μπορούν να επανεκχωρηθούν.';
 
   @override
   String get killRunning => 'Τερματισμός εκτέλεσης';
@@ -4205,11 +4063,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get noSavedArticlesBody =>
       'Τα άρθρα που αποθηκεύετε θα εμφανιστούν εδώ.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'Καμία συντόμευση δεν ταιριάζει με «$query»';
-  }
 
   @override
   String get noSystemFonts => 'Δεν ανιχνεύθηκαν γραμματοσειρές συστήματος.';
@@ -4949,13 +4802,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'Αναζήτηση…';
-
-  @override
-  String get searchShortcuts => 'Αναζήτηση συντομεύσεων…';
-
-  @override
-  String get shortcutUnavailableInBrowser =>
-      'Μη διαθέσιμο στο πρόγραμμα περιήγησης';
 
   @override
   String get searching => 'Αναζήτηση…';
@@ -6760,6 +6606,30 @@ class AppLocalizationsEl extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'Ο χώρος διαγράφηκε';
 
   @override
+  String get triggerEventSpaceArchived => 'Ο χώρος αρχειοθετήθηκε';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged =>
+      'Άλλαξε η προετοιμασία χώρου';
+
+  @override
+  String get triggerEventPrHeadChanged => 'Άλλαξε το head του PR';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged =>
+      'Άλλαξε η κατάσταση περιβάλλοντος';
+
+  @override
+  String get triggerEventEnvironmentReady => 'Το περιβάλλον είναι έτοιμο';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'Το περιβάλλον καταργήθηκε';
+
+  @override
+  String get triggerEventEnvironmentProcessExited =>
+      'Η διεργασία περιβάλλοντος τερματίστηκε';
+
+  @override
   String get triggerExternalPrHelp =>
       'Ένα pull request που ανοίχτηκε στον κεντρικό υπολογιστή κώδικα, όχι από το Control Center.';
 
@@ -6825,6 +6695,34 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'Ένας χώρος συνομιλίας διαγράφεται.';
+
+  @override
+  String get triggerSpaceArchivedHelp =>
+      'Ένας χώρος συνομιλίας αρχειοθετείται.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'Η προετοιμασία των worktree ενός χώρου ξεκινά, ολοκληρώνεται ή αποτυγχάνει.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'Νέα commit προωθούνται σε ανοιχτό pull request.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'Ένα περιβάλλον χώρου περνά σε νέα κατάσταση.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'Ένα περιβάλλον χώρου ξεκίνησε και μπορεί να χρησιμοποιηθεί.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp =>
+      'Ένα περιβάλλον χώρου καταργείται.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'Μια διεργασία που εκτελεί ένα περιβάλλον τερματίζεται.';
 
   @override
   String get navTickets => 'Εισιτήρια';
@@ -9054,19 +8952,6 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'Χρήση και κόστος';
-
-  @override
-  String get usageAndCostDescription =>
-      'Δαπάνη των πρακτόρων σας τις τελευταίες 7 ημέρες, από παρατηρούμενα κόστη εκτελέσεων.';
-
-  @override
-  String get noUsageYet => 'Δεν έχει καταγραφεί ακόμη χρήση.';
-
-  @override
-  String get spentThisWeek => 'δαπανήθηκαν αυτή την εβδομάδα';
-
-  @override
   String get subscriptionUsage => 'Χρήση συνδρομής';
 
   @override
@@ -9282,9 +9167,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get keybindingNewSpace => 'Νέος χώρος';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'Δημιουργία νέου χώρου';
-
-  @override
   String get jumpToLatest => 'Μετάβαση στα πιο πρόσφατα';
 
   @override
@@ -9459,71 +9341,8 @@ class AppLocalizationsEl extends AppLocalizations {
   String get preparingWorkspace => 'Προετοιμασία χώρου εργασίας…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'Εκτέλεση του σεναρίου ρύθμισης για το ⁨$repo⁩…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'Σενάρια';
-
-  @override
-  String get repoScriptsTooltip => 'Ρύθμιση σεναρίων κύκλου ζωής';
-
-  @override
-  String get repoScriptsSetupLabel => 'Σενάριο ρύθμισης';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'Εκτελείται στο worktree του χώρου αμέσως μετά τη δημιουργία — εγκατάσταση εξαρτήσεων, δημιουργία αρχείων. Η αποτυχία σημειώνει τον χώρο ως αποτυχημένο· η επανάληψη το εκτελεί ξανά.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'Σενάριο αρχειοθέτησης';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'Εκτελείται λίγο πριν διαγραφεί το worktree ενός χώρου — καθαρισμός πόρων εκτός του worktree. Η αποτυχία δεν εμποδίζει ποτέ τη διαγραφή.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'Εκτελείται μέσω bash από το worktree, με CC_WORKSPACE_PATH (το worktree), CC_ROOT_PATH (η ρίζα του αποθετηρίου), CC_SPACE_ID, CC_SPACE_NAME και CC_REPO_NAME ορισμένα.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'π.χ. ⁨pnpm install⁩';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'π.χ. ⁨docker compose -p \$CC_SPACE_ID down⁩';
-
-  @override
-  String get repoScriptsRecentRuns => 'Πρόσφατες εκτελέσεις';
-
-  @override
-  String get repoScriptsNoRuns => 'Δεν υπάρχουν ακόμη εκτελέσεις';
-
-  @override
-  String get repoScriptsSaved => 'Τα σενάρια αποθηκεύτηκαν';
-
-  @override
-  String get repoScriptsRunKindSetup => 'Ρύθμιση';
-
-  @override
-  String get repoScriptsRunKindArchive => 'Αρχειοθέτηση';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'Σε εκτέλεση';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'Επιτυχής';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'Απέτυχε';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'Έληξε';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'Κωδικός εξόδου $code';
+  String provisioningRunningTasks(String repo) {
+    return 'Εκτέλεση εργασιών worktree για το ⁨$repo⁩…';
   }
 
   @override
@@ -10332,10 +10151,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get keybindingCheatSheet => 'Συντομεύσεις πληκτρολογίου';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'Εμφάνιση του φύλλου συντομεύσεων πληκτρολογίου για την τρέχουσα οθόνη';
-
-  @override
   String get runPlaybookLabel => 'Εκτέλεση playbook';
 
   @override
@@ -10346,14 +10161,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'Επανάληψη';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'Αναίρεση της τελευταίας αναστρέψιμης ενέργειας';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'Επανάληψη της τελευταίας αναιρεθείσας ενέργειας';
 
   @override
   String get undone => 'Αναιρέθηκε';
@@ -14239,6 +14046,9 @@ class AppLocalizationsEl extends AppLocalizations {
   String get newSkill => 'Νέα δεξιότητα';
 
   @override
+  String get newItemAction => 'Νέο';
+
+  @override
   String get zoomIn => 'Μεγέθυνση';
 
   @override
@@ -14458,6 +14268,9 @@ class AppLocalizationsEl extends AppLocalizations {
   String get steerNow => 'Καθοδήγηση';
 
   @override
+  String get steerForce => 'Διακοπή και αποστολή';
+
+  @override
   String get steeringQueueLabel => 'Μηνύματα καθοδήγησης σε ουρά';
 
   @override
@@ -14506,16 +14319,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'Θα ρωτηθείτε ξανά την επόμενη φορά που ένας πράκτορας χρειάζεται να τρέξει πρόγραμμα από αυτό το αντίγραφο.';
-
-  @override
-  String get repoScriptsTest => 'Δοκιμή';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'Εκτέλεση αυτού του προχείρου σε προσωρινό κλώνο του αποθετηρίου';
-
-  @override
-  String get repoScriptsRunKindTest => 'Δοκιμή';
 
   @override
   String get demoBadgeLabel => 'Demo';
@@ -14731,6 +14534,50 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'Διαδρομή στον διακομιστή';
+
+  @override
+  String get backupScheduledLabel => 'Προγραμματισμένα αντίγραφα ασφαλείας';
+
+  @override
+  String get backupScheduledExplainer =>
+      'Αντίγραφα που αποθηκεύει το pipeline αντιγράφων κάθε χώρου εργασίας. Ορίστε το χρονοδιάγραμμα και τη διατήρηση στο πρότυπο του pipeline.';
+
+  @override
+  String get backupScheduledNone => 'Δεν υπάρχουν ακόμη αντίγραφα ασφαλείας';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count αντίγραφα ασφαλείας',
+      one: '1 αντίγραφο ασφαλείας',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'Τελευταίο αντίγραφο: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'Χρειάζεστε τον ρόλο διαχειριστή σε αυτόν τον χώρο εργασίας για να δείτε τα αντίγραφά του.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'Διαγραφή αυτού του αντιγράφου;';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'Διαγραφή του αντιγράφου της $date του $name από τον διακομιστή; Αυτή η ενέργεια δεν αναιρείται.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'Το αντίγραφο διαγράφηκε.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'Ο χώρος εργασίας διαγράφηκε';
 
   @override
   String get backupRestoreAction => 'Επαναφορά';
@@ -15363,14 +15210,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get ideQuickOpen => 'Μετάβαση σε αρχείο';
 
   @override
-  String get ideQuickOpenDescription =>
-      'Αναζητήστε τα αρχεία της συνομιλίας με βάση το όνομα και ανοίξτε ένα σε καρτέλα';
-
-  @override
-  String get prQuickOpenDescription =>
-      'Αναζητήστε τα αρχεία του pull request με βάση το όνομα και ανοίξτε ένα σε καρτέλα';
-
-  @override
   String get ideQuickOpenHint => 'Αναζήτηση αρχείων με βάση το όνομα';
 
   @override
@@ -15703,6 +15542,15 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'Εξαναγκασμένη φόρτωση';
+
+  @override
+  String get skillEvalHashLabel => 'Hash πακέτου';
+
+  @override
+  String get skillEvalProgressLabel => 'Πρόοδος';
+
+  @override
+  String get skillEvalUpdatesToggle => 'Αξιολογήσεις ενημερώσεων';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -16097,4 +15945,723 @@ class AppLocalizationsEl extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return 'Απομένουν $minutes λ.';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'Τα περιβάλλοντα εκτελούν πραγματικές διεργασίες στον κεντρικό υπολογιστή, οπότε η επίδειξη δεν έχει κανένα.';
+
+  @override
+  String get environmentChecksFailing =>
+      'Ορισμένοι έλεγχοι αποτυγχάνουν στον διακομιστή';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'Τελικά σημεία: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'Υπηρεσίες: $names';
+  }
+
+  @override
+  String get environmentCopied => 'Αντιγράφηκε';
+
+  @override
+  String get environmentCopyCommand => 'Αντιγραφή εντολής';
+
+  @override
+  String get environmentCopyUrl => 'Αντιγραφή URL';
+
+  @override
+  String get environmentDefinition => 'Ορισμός';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ορισμοί',
+      one: '1 ορισμός',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'Καταστροφή';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return 'Το $name και τα δεδομένα του αφαιρούνται. Η Έναρξη δημιουργεί νέο.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'Καταστροφή αυτού του περιβάλλοντος;';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'Εκτέλεση σε υπηρεσία';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'Κωδικός εξόδου $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded =>
+      'Αυτό πρέπει να ρυθμιστεί στον διακομιστή';
+
+  @override
+  String get environmentKindApp => 'Εφαρμογή';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'Διεργασία';
+
+  @override
+  String get environmentKindTask => 'Εργασία';
+
+  @override
+  String get environmentLaunch => 'Εκκίνηση εφαρμογής';
+
+  @override
+  String get environmentLogsGone =>
+      'Αυτά τα αρχεία καταγραφής δεν είναι πλέον διαθέσιμα.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'Αρχεία καταγραφής: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'Αναμονή για έξοδο';
+
+  @override
+  String get environmentMoreActions => 'Περισσότερες ενέργειες περιβάλλοντος';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'Μια αλλαγή απαιτεί εκ νέου δημιουργία αυτού του περιβάλλοντος.';
+
+  @override
+  String get environmentNoStack =>
+      'Εκτελεί μόνο εργασίες worktree, άρα δεν υπάρχει κάτι για έναρξη.';
+
+  @override
+  String get environmentOnTheServer => 'Στον διακομιστή';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Άνοιγμα στο Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'Άνοιγμα προβολής';
+
+  @override
+  String get environmentPlacementRig => 'Σε VM';
+
+  @override
+  String get environmentPreviewTab => 'Περιβάλλον';
+
+  @override
+  String get environmentRebuildRelaunch => 'Νέα δόμηση και επανεκκίνηση';
+
+  @override
+  String get environmentRecreate => 'Εκ νέου δημιουργία';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return 'Το $name καταστρέφεται και ξεκινά ξανά με τις ίδιες επιλογές. Τα δεδομένα του χάνονται.';
+  }
+
+  @override
+  String get environmentRecreateTitle =>
+      'Εκ νέου δημιουργία αυτού του περιβάλλοντος;';
+
+  @override
+  String environmentResetBody(String name) {
+    return 'Το $name επιστρέφει στην αρχική του κατάσταση. Τα δεδομένα που δημιουργήθηκαν έκτοτε χάνονται.';
+  }
+
+  @override
+  String get environmentResetData => 'Επαναφορά δεδομένων';
+
+  @override
+  String get environmentResetTitle => 'Επαναφορά δεδομένων;';
+
+  @override
+  String get environmentRestart => 'Επανεκκίνηση';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count επανεκκινήσεις',
+      one: '1 επανεκκίνηση',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'Εκτέλεση';
+
+  @override
+  String get environmentRunInTerminal => 'Εκτέλεση στο τερματικό';
+
+  @override
+  String get environmentSectionTitle => 'Περιβάλλον';
+
+  @override
+  String get environmentService => 'Υπηρεσία';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'Ενέργειες για $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'Έναρξη περιβάλλοντος';
+
+  @override
+  String get environmentStateCrashed => 'Κατέρρευσε';
+
+  @override
+  String get environmentStatusDegraded => 'Υποβαθμισμένο';
+
+  @override
+  String get environmentStatusDestroying => 'Καταστρέφεται';
+
+  @override
+  String get environmentStatusGone => 'Έχει χαθεί';
+
+  @override
+  String get environmentStatusStopping => 'Διακόπτεται';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'Η διακοπή του $name χάνει τα δεδομένα του και η Έναρξη δεν τα επαναφέρει.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'Διακοπή και απώλεια δεδομένων';
+
+  @override
+  String get environmentStopTitle => 'Διακοπή αυτού του περιβάλλοντος;';
+
+  @override
+  String get environmentTaskNeverRun => 'Δεν έχει εκτελεστεί ακόμη';
+
+  @override
+  String get environmentsAddCheck => 'Προσθήκη ελέγχου';
+
+  @override
+  String get environmentsAddOption => 'Προσθήκη επιλογής';
+
+  @override
+  String get environmentsAddRole => 'Προσθήκη ρόλου';
+
+  @override
+  String get environmentsAdminOnly =>
+      'Μόνο οι διαχειριστές του χώρου εργασίας μπορούν να αλλάζουν ορισμούς.';
+
+  @override
+  String get environmentsAfter => 'Αναμονή για αυτά τα στοιχεία';
+
+  @override
+  String get environmentsAnchor => 'Άγκυρα';
+
+  @override
+  String get environmentsAutoCreate => 'Αυτόματη έναρξη';
+
+  @override
+  String get environmentsAutoCreateAll => 'Σε κάθε κατάλληλο χώρο';
+
+  @override
+  String get environmentsAutoCreateOff => 'Ποτέ';
+
+  @override
+  String get environmentsAutoCreatePrs => 'Σε χώρους pull request';
+
+  @override
+  String get environmentsBlank => 'Κενός ορισμός';
+
+  @override
+  String get environmentsCheckFix => 'Εντολή διόρθωσης';
+
+  @override
+  String get environmentsCheckHint => 'Υπόδειξη';
+
+  @override
+  String get environmentsCommandHelp =>
+      'Τα ορίσματα χωρίζονται με κενά. Βάλτε σε εισαγωγικά όποιο περιέχει κενό.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count στοιχεία',
+      one: '1 στοιχείο',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'Δόμηση εικόνων κατά την έναρξη';
+
+  @override
+  String get environmentsComposeFile => 'Αρχείο compose';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Δεν ήταν δυνατή η ανάγνωση αρχείου compose. Τα ονόματα υπηρεσιών μπορούν ακόμη να μπουν στην προβολή JSON.';
+
+  @override
+  String get environmentsComposeServices => 'Υπηρεσίες';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'Αφήστε όλες τις υπηρεσίες χωρίς επιλογή για να εκτελεστούν όλες.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'Αυτή η εντολή έχει ορίσματα υπό όρους. Επεξεργαστείτε την στην προβολή JSON.';
+
+  @override
+  String get environmentsCwdPath => 'Διαδρομή εργασίας';
+
+  @override
+  String get environmentsCwdRole => 'Ρόλος εργασίας';
+
+  @override
+  String get environmentsDeleteBody =>
+      'Οι χώροι δεν μπορούν πλέον να το ξεκινήσουν. Τα ενεργά περιβάλλοντα συνεχίζουν μέχρι να διακοπούν.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'Διαγραφή $name;';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'Τι μπορεί να ξεκινήσει κάθε χώρος και ποιες εργασίες εκτελούν τα worktree του.';
+
+  @override
+  String get environmentsDraftFromRepo => 'Πρόχειρο από αποθετήριο';
+
+  @override
+  String get environmentsEmpty => 'Δεν υπάρχουν ορισμοί ακόμη';
+
+  @override
+  String get environmentsEnabledWhen => 'Ενεργό όταν';
+
+  @override
+  String get environmentsEndpointRole => 'Ρόλος τελικού σημείου';
+
+  @override
+  String get environmentsFollowPrHead =>
+      'Παρακολούθηση του head του pull request';
+
+  @override
+  String get environmentsForkApproval => 'Κάθε έναρξη χρειάζεται διαχειριστή';
+
+  @override
+  String get environmentsForkDeny => 'Απορρίπτεται';
+
+  @override
+  String get environmentsForkPrs => 'Pull request από fork';
+
+  @override
+  String get environmentsForkRig => 'Εκτέλεση σε VM';
+
+  @override
+  String get environmentsIdleStop => 'Διακοπή μετά από λεπτά αδράνειας';
+
+  @override
+  String get environmentsIsolateHome =>
+      'Ιδιωτικός αρχικός φάκελος για την εφαρμογή';
+
+  @override
+  String get environmentsIssues => 'Διορθώστε αυτά πριν την αποθήκευση';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'Μη έγκυρο JSON: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'Διατηρεί τα δεδομένα του στη διακοπή';
+
+  @override
+  String get environmentsLinkConfirm => 'Σύνδεση και έγκριση';
+
+  @override
+  String get environmentsLinkFile => 'Σύνδεση αρχείου αποθετηρίου';
+
+  @override
+  String get environmentsLinkHelp =>
+      'Διαβάζεται μόνο από τον προεπιλεγμένο κλάδο και εκτελείται μόνο μετά από έγκριση.';
+
+  @override
+  String get environmentsLinkPath => 'Διαδρομή';
+
+  @override
+  String get environmentsMaxRunning => 'Σε εκτέλεση ταυτόχρονα';
+
+  @override
+  String get environmentsNamingProject => 'Έργο';
+
+  @override
+  String get environmentsNamingTemplate => 'Πρότυπο ονόματος';
+
+  @override
+  String get environmentsNew => 'Νέος ορισμός';
+
+  @override
+  String get environmentsNewDefinitionName => 'Νέο περιβάλλον';
+
+  @override
+  String get environmentsNoChecks => 'Αυτός ο ορισμός δεν έχει ελέγχους.';
+
+  @override
+  String get environmentsNoRuns => 'Δεν υπάρχουν δοκιμαστικές εκτελέσεις ακόμη';
+
+  @override
+  String get environmentsOnChange => 'Διαδρομές προς παρακολούθηση';
+
+  @override
+  String get environmentsOptionBool => 'Ναι ή όχι';
+
+  @override
+  String get environmentsOptionEnum => 'Ένα από';
+
+  @override
+  String get environmentsOptionMulti => 'Πολλά από';
+
+  @override
+  String get environmentsOptionValues => 'Τιμές';
+
+  @override
+  String get environmentsPlacement => 'Τοποθέτηση';
+
+  @override
+  String get environmentsPlacementHost => 'Στον κεντρικό υπολογιστή';
+
+  @override
+  String get environmentsPlacementRig => 'Σε VM';
+
+  @override
+  String get environmentsPrepareTask => 'Εργασία προετοιμασίας';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'Κύριο τελικό σημείο';
+
+  @override
+  String get environmentsReadyHttp => 'Έτοιμο όταν απαντά αυτό το URL';
+
+  @override
+  String get environmentsRestartAlways => 'Πάντα';
+
+  @override
+  String get environmentsRestartNever => 'Ποτέ';
+
+  @override
+  String get environmentsRestartOn =>
+      'Επανεκκίνηση όταν αλλάζουν αυτές οι διαδρομές';
+
+  @override
+  String get environmentsRestartOnFailure => 'Σε αποτυχία';
+
+  @override
+  String get environmentsRestartPolicy => 'Επανεκκίνηση';
+
+  @override
+  String get environmentsRigTtl => 'Διάρκεια ζωής VM σε ώρες';
+
+  @override
+  String get environmentsRunChecks => 'Εκτέλεση ξανά';
+
+  @override
+  String get environmentsRunTest => 'Εκτέλεση δοκιμής';
+
+  @override
+  String get environmentsSaved => 'Ο ορισμός αποθηκεύτηκε';
+
+  @override
+  String get environmentsSectionComponents => 'Στοιχεία';
+
+  @override
+  String get environmentsSectionOptions => 'Επιλογές έναρξης';
+
+  @override
+  String get environmentsSectionSeedFiles => 'Αρχικά αρχεία';
+
+  @override
+  String get environmentsSectionVariables => 'Μεταβλητές';
+
+  @override
+  String get environmentsSeedHelp =>
+      'Μία διαδρομή ανά γραμμή, αντιγράφεται από το καταχωρισμένο checkout. Τα pull request από fork δεν τα λαμβάνουν ποτέ.';
+
+  @override
+  String get environmentsShellHelp =>
+      'Τα σύμβολα κράτησης θέσης δεν αναπτύσσονται εδώ. Διαβάστε αντί γι\' αυτά τις μεταβλητές CC_ENV_*.';
+
+  @override
+  String get environmentsSourceApprove => 'Έγκριση αυτής της έκδοσης';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return 'Το $path ταιριάζει με την εγκεκριμένη έκδοση.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'Η εγκεκριμένη έκδοση συνεχίζει να εκτελείται μέχρι να εγκρίνετε αυτή.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'Πηγή';
+
+  @override
+  String get environmentsTestHelp =>
+      'Εκτελεί ένα αναλώσιμο περιβάλλον από άκρη σε άκρη: έλεγχος, έναρξη, αναμονή ετοιμότητας, καταστροφή.';
+
+  @override
+  String get environmentsTestSaveFirst => 'Αποθηκεύστε πρώτα τον ορισμό.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'Χρονικό όριο σε δευτερόλεπτα';
+
+  @override
+  String get environmentsTitle => 'Περιβάλλοντα';
+
+  @override
+  String get environmentsTriggerArchive => 'Πριν διαγραφεί το worktree';
+
+  @override
+  String get environmentsTriggerChange =>
+      'Όταν αλλάζουν οι παρακολουθούμενες διαδρομές';
+
+  @override
+  String get environmentsTriggerCreate => 'Μία φορά ανά περιβάλλον';
+
+  @override
+  String get environmentsTriggerManual => 'Κατόπιν αιτήματος';
+
+  @override
+  String get environmentsTriggerProvision => 'Όταν δημιουργείται το worktree';
+
+  @override
+  String get environmentsTriggerStart => 'Σε κάθε έναρξη';
+
+  @override
+  String get environmentsTriggers => 'Εκτελείται';
+
+  @override
+  String get environmentsUnreadable =>
+      'Αυτός ο πελάτης δεν μπορεί να διαβάσει αυτόν τον ορισμό.';
+
+  @override
+  String get environmentsUpdateAvailable => 'Διαθέσιμη ενημέρωση';
+
+  @override
+  String get environmentsUseShell => 'Χρήση εντολής shell';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'Το εργαλείο εκτελείται τότε στο δικό σας checkout. Θεωρήστε το μόνο για ανάγνωση.';
+
+  @override
+  String get environmentsWhenMissing => 'Όταν λείπει από έναν χώρο';
+
+  @override
+  String get environmentsWhenMissingAdd => 'Προσθήκη στον χώρο';
+
+  @override
+  String get environmentsWhenMissingSkip => 'Παράλειψη';
+
+  @override
+  String get environmentsWhenMissingSource =>
+      'Χρήση του καταχωρισμένου checkout';
+
+  @override
+  String get environmentsUnsupported =>
+      'Αυτός ο διακομιστής δεν υποστηρίζει περιβάλλοντα.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'Χωρίς προβολή: ο διακομιστής δεν μπορεί να καταγράψει αυτό το παράθυρο. Επιτρέψτε την εγγραφή οθόνης για το Control Center στον διακομιστή.';
+
+  @override
+  String get environmentHealthHealthy => 'Υγιές';
+
+  @override
+  String get environmentHealthUnhealthy => 'Μη υγιές';
+
+  @override
+  String get environmentTerminalStale =>
+      'Αυτό το τερματικό άνοιξε πριν ξεκινήσει το περιβάλλον, οπότε δεν έχει τις μεταβλητές του.';
+
+  @override
+  String get environmentTerminalFresh => 'Άνοιγμα νέου τερματικού';
+
+  @override
+  String get environmentsShellStays =>
+      'Ένα σενάριο πολλών γραμμών παραμένει εντολή shell: οι γραμμές του είναι η δομή του.';
+
+  @override
+  String get environmentsOverrides => 'Παρακάμψεις χώρου εργασίας';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'Οι ρυθμίσεις του ίδιου του αρχείου είναι εδώ μόνο για ανάγνωση. Αντιστοιχίστε τους ρόλους του σε αποθετήρια αυτού του χώρου εργασίας ή παρακάμψτε οποιοδήποτε πεδίο ως JSON.';
+
+  @override
+  String get environmentsReposHelp =>
+      'Τα αποθετήρια που χρησιμοποιεί αυτό το περιβάλλον, το καθένα συνδεδεμένο με έναν ρόλο.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'Τι εκτελεί το περιβάλλον, με σειρά έναρξης.';
+
+  @override
+  String get environmentsOptionsHelp =>
+      'Επιλογές που προσφέρονται κατά την έναρξη του περιβάλλοντος.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'Ορίζονται σε εργασίες, διεργασίες, εφαρμογές και τερματικά χώρου.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'Τι χρειάζεται ο κεντρικός υπολογιστής για να τρέξει αυτό το περιβάλλον.';
+
+  @override
+  String get environmentsIdleStopHelp => 'Με 0 δεν σταματά ποτέ.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'Ένας χώρος με αυτό το αποθετήριο μπορεί να ξεκινήσει το περιβάλλον.';
+
+  @override
+  String get environmentsRequiredHelp =>
+      'Το περιβάλλον δεν μπορεί να τρέξει χωρίς αυτό.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'Συγχρονισμός και ανανέωση όταν μετακινείται το head του pull request.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'Χρειάζεται διόρθωση';
+
+  @override
+  String get environmentsCheckFile => 'Αρχείο';
+
+  @override
+  String get environmentsDiscardBody =>
+      'Οι αλλαγές σας σε αυτόν τον ορισμό θα χαθούν.';
+
+  @override
+  String get environmentsWorktreeRuns => 'Εκτελέσεις εργασιών worktree';
+
+  @override
+  String get environmentsNoWorktreeRuns =>
+      'Δεν έχει εκτελεστεί ακόμη καμία εργασία worktree.';
+
+  @override
+  String get environmentsLinkRoles => 'Ρόλοι σε αυτό το αρχείο';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'Δεν ήταν δυνατή η ανάγνωση του αρχείου από το αποθετήριο. Οι ρόλοι μπορούν να αντιστοιχιστούν μετά τη σύνδεση.';
+
+  @override
+  String get guardrailClassHostExecution =>
+      'Εκτέλεση εντολών στον κεντρικό υπολογιστή';
+
+  @override
+  String get environmentUrls => 'URL';
+
+  @override
+  String get environmentScripts => 'Σενάρια';
+
+  @override
+  String get environmentNoneForSpace =>
+      'Δεν υπάρχει περιβάλλον για αυτόν τον χώρο';
+
+  @override
+  String get environmentNoneForPr =>
+      'Δεν υπάρχει περιβάλλον για αυτό το pull request';
+
+  @override
+  String get environmentSetupBody =>
+      'Ένα περιβάλλον εκτελεί τις υπηρεσίες, τα σενάρια και τα URL ενός αποθετηρίου για έναν χώρο. Ρυθμίστε το μία φορά και κάθε χώρος του αποθετηρίου μπορεί να το ξεκινήσει.';
+
+  @override
+  String get environmentSetUp => 'Ρύθμιση περιβάλλοντος';
+
+  @override
+  String get environmentEditDefinition => 'Επεξεργασία ορισμού';
+
+  @override
+  String get environmentOpenPanel => 'Άνοιγμα περιβάλλοντος';
+
+  @override
+  String get environmentNeedsSetup => 'Χρειάζεται ρύθμιση';
+
+  @override
+  String get environmentContinueInTerminal => 'Συνέχεια στο τερματικό';
+
+  @override
+  String get environmentSetupHint =>
+      'Το εργαλείο σάς χρειάζεται σε τερματικό για κωδικό ή ερώτηση. Η εκκίνηση συνεχίζεται όταν τελειώσει.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'Αυτό το τερματικό άνοιξε επειδή η εκκίνηση σάς χρειάζεται';
+
+  @override
+  String get environmentSetupTab => 'Ρύθμιση περιβάλλοντος';
+
+  @override
+  String get environmentsNothingRunning =>
+      'Τίποτα δεν εκτελείται από αυτόν τον ορισμό.';
+
+  @override
+  String get searchPoliciesHint => 'Αναζήτηση πολιτικών...';
+
+  @override
+  String get noPoliciesMatch =>
+      'Καμία πολιτική δεν ταιριάζει με την αναζήτησή σας';
+
+  @override
+  String get memoryPolicyActive => 'Ενεργή';
+
+  @override
+  String get memoryFactType => 'Τύπος';
+
+  @override
+  String get memoryTimesRecalled => 'Φορές ανάκλησης';
+
+  @override
+  String get memorySourceFacts => 'Πηγαία γεγονότα';
+
+  @override
+  String get spaceSetupLogs => 'Αρχεία καταγραφής ρύθμισης';
 }

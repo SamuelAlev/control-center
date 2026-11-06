@@ -1,0 +1,411 @@
+---
+title: Nastavení prostředí
+description: Dej každému prostoru a pull requestu vlastní běžící stack, s compose, vlastním CLI, hlídanými procesy nebo desktopovou aplikací.
+slug: cs-CZ/prirucka/navody/prostredi
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+**Prostředí** je běžící stack jednoho prostoru: služby, které větev potřebuje, izolované od všech ostatních prostorů, viditelné v postranním panelu a dostupné agentům. Mají ho i pull requesty, protože PR už vlastní prostor má.
+
+Správce pracovního prostoru jednou napíše **definici**. Členové pak kliknou na **Start** v části **Prostředí** postranního panelu prostoru nebo PR. Definice jsou uložené v databázi pracovního prostoru, takže větev s funkcí nikdy nezmění, co Control Center spouští, i když nástroje kód této větve dál spouštějí.
+
+## Vytvoření definice
+
+1. Otevři **Nastavení → Pracovní prostor → Prostředí**. Definice mohou měnit jen správci pracovního prostoru.
+2. Klikni na **Nová definice** a pak na **Prázdná definice** nebo **Návrh z repozitáře**. Koncept prohledá repozitář a najde soubory compose, `Procfile` a skripty v `package.json`, výsledek zkontroluješ.
+3. Vyplň formulář, nebo použij kartu **JSON**. Příklady na této stránce jsou tento JSON.
+4. Klikni na **Spustit test**. Spustí se jednorázové prostředí, Control Center počká na jeho připravenost a zruší ho.
+
+Pokud chceš mít definici v repozitáři, použij **Propojit soubor z repozitáře**. Control Center čte soubor jen z výchozí větve a spouští jen verzi schválenou správcem. Novější verze zobrazí **Dostupná aktualizace** a do schválení nic nezmění.
+
+## Nejmenší definice
+
+Jednoduchému repozitáři s compose stačí toto:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+Vše ostatní má výchozí hodnotu: soubor compose se najde, běží všechny služby, přidělí se porty, rozpoznají se koncové body HTTP a prostředí dostane název podle větve.
+
+## Druhy komponent
+
+Prostředí je seřazený seznam komponent. Každá čeká, až bude předchozí připravená, pokud `after` neurčuje jiné, a zastavení probíhá v opačném pořadí. `enabledWhen` podmiňuje komponentu volbou nebo rolí, například `opt.seed`, `!opt.seed` nebo `repo.web`.
+
+| Druh | Kdo ji spouští | K čemu slouží |
+| --- | --- | --- |
+| `compose` | Ovladač compose v Control Center | Libovolný soubor compose, jeden na prostředí |
+| `cli` | Tvůj nástroj. Control Center volá namapovaná slovesa a čte JSON | Nástroj, který sám spravuje životní cyklus, domény a data |
+| `process` | Control Center, v hlídané relaci terminálu | Vývojové servery a workery |
+| `task` | Control Center, jednou na spouštěč | Instalace, migrace, testy |
+| `app` | Control Center, když někdo klikne na **Otevřít** | Desktopová aplikace |
+
+Komponenty `task` přijímají seznam `when`:
+
+| Spouštěč | Kdy běží |
+| --- | --- |
+| `provision` | Při vytvoření worktree (viz úlohy worktree níže) |
+| `create` | Jednou na prostředí a znovu po resetu |
+| `start` | Při každém spuštění |
+| `change` | Po synchronizaci, když změněná cesta odpovídá `onChange` |
+| `manual` | Na vyžádání: **Spustit**, `cc-env run <id>` nebo `environment_run_task` |
+| `archive` | Těsně před zrušením worktree |
+
+Příkaz zadaný jako pole je argv, takže hodnoty voleb nikdy neprocházejí shellem. Řetězec nebo `script` s polem řádků běží pod `bash -lc`. Zástupné symboly jako `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` a `{url.<role>}` se rozvíjejí jen v argv. Příkazy shellu čtou stejné hodnoty jako proměnné `CC_ENV_*`, například `$CC_ENV_PORT_WEB`.
+
+Každý příkaz a terminál prostoru dostane také `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` a v prostorech PR ještě `CC_PR_NUMBER` a `CC_PR_IS_FORK`. S komponentou compose dostanou i `COMPOSE_PROJECT_NAME` a `COMPOSE_FILE`, takže `docker compose exec` v úloze trefí správný projekt.
+
+## Role a pracovní adresář
+
+Definice váže **role** na repozitáře pracovního prostoru, takže jeden stack může pokrýt více repozitářů:
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`: prostor může prostředí spustit, pokud obsahuje alespoň jednu kotevní roli. Když odpovídají dvě definice, vybere ten, kdo spouští.
+- `required`: bez tohoto repozitáře stack nepoběží.
+- `whenMissing`: co se stane, když prostoru role chybí. `addToSpace` přidá repozitář na výchozí větvi a je výchozí pro role `required`. `useSource` předá tvůj registrovaný checkout, se kterým zacházej jako s pouze pro čtení. `skip` nechá proměnnou nenastavenou a je výchozí v ostatních případech.
+- Ke spuštění je potřeba oprávnění `write` ke kotevnímu repozitáři v prostoru a přístup pro čtení ke všem ostatním vázaným repozitářům.
+
+Příkaz běží v první roli z `repos`, kterou prostor má, takže definice s jedním repozitářem to nikdy nezmiňuje. Každá komponenta to může změnit pomocí `"cwd": { "role": "e2e", "path": "packages/ui" }`. Obě pole jsou volitelná.
+
+## Porty a URL
+
+Control Center přiděluje porty hostitele dřív, než se cokoli spustí, z rozsahu společného pro celého hostitele (výchozí 42000 až 49999, v blocích po 32). Port zůstává stejný po celou dobu života prostředí a porty compose se vážou jen na `127.0.0.1`.
+
+- Porty compose není třeba deklarovat. Čti je jako `{port.postgres.5432}` nebo `CC_ENV_PORT_POSTGRES_5432`.
+- Ostatní porty se deklarují tam, kde se používají, pomocí `"port": "web"` nebo `"ports": ["web", "hmr"]`, a čtou se jako `{port.web}`. Proces s portem dostane také `PORT` a `HOST=127.0.0.1`.
+
+Koncové body HTTP dostanou URL na směrovači serveru, který naslouchá na jediném portu loopback:
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>` je větev jako slug, nebo `pr-<n>` v prostoru PR. `<project>` je `naming.project`, jinak název definice.
+- Názvy `*.localhost` směřují na loopback, takže nepotřebují záznamy hosts ani DNS a název hostitele odděluje cookies mezi prostředími.
+- Porty compose odpovídající na HTTP se rozpoznají a `http` na komponentě tento odhad nahradí. Proces potřebuje `"endpoint": { "role": "web", "primary": true }`, což zpřístupní i `{url.web}`.
+- V prohlížeči (VM) použij **Otevřít v Browser (VM)**. `https://web--fix-login--shop.localhost/` tam vede na stejnou trasu.
+- Celý popisek se vejde do 63 znaků, takže dlouhé názvy se zkracují pomocí hashe.
+- Dva koncové body nesdílejí nadřazenou doménu. Aplikace, která potřebuje jednu cookie pro oba, je musí obsluhovat z jednoho koncového bodu.
+
+Pro URL, které musíš zaregistrovat předem, například přesměrování OAuth, dává `"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` pevnou sadu názvů.
+
+`policy` určuje, kdy prostředí běží. `autoCreate` je `off`, `prSpaces` nebo `allSpaces`, `idleStopMinutes` je ve výchozím stavu 240, `followPrHead` synchronizuje prostředí PR, když se posune jeho head, a při `maxRunning` (výchozí 6) nabídne **Start** zastavení prostředí, které se nejdéle nepoužilo.
+
+## Příklad: aplikace compose
+
+Webová aplikace a Postgres z jednoho souboru compose, s gitem ignorovaným `.env`, migracemi a testovací úlohou. `seedFiles` zkopíruje pojmenované soubory z tvého registrovaného checkoutu do každého nového worktree.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+`healthchecks` umožní službě bez vlastní kontroly stavu zdržet další komponentu. Bez ní se běžící kontejner počítá jako připravený a migrace mohou předběhnout databázi, která se ještě spouští.
+
+## Příklad: vlastní CLI
+
+Smyšlený nástroj `acme`, který sám spravuje své kontejnery, domény a TLS. Control Center dodá `{name}` a vše ostatní zjistí ze `status`. Nikdy neodvozuje názvy hostitelů nástroje a nikdy neupravuje `/etc/hosts`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create`, `status` a `destroy` jsou povinné. Control Center volí `create` nebo `start` podle přečteného stavu. Každé sloveso může být místo argv `{ "shell": "…" }`.
+- `statusMap` čte vlastní JSON nástroje pomocí ukazatelů JSON, kde `*` odpovídá každé položce. Pravidla stavu jsou seřazená a vyhrává první shoda. Podmínka je `path` s `equals`, nebo `any` či `none` s `where`.
+- `keepsDataOnStop: false` vypne zastavení při nečinnosti a přidá k **Zastavit** varování před ztrátou dat. Nastav to, když zastavení přijde o data.
+- `routing.mode: "tool"` propojí názvy hostitelů nástroje s prohlížečem (VM) a agenty. Doména musí končit na `.test`, `.localhost` nebo `.internal` a nahlášená URL mimo ni se zahodí.
+
+Tvůj vlastní nástroj může `statusMap` vynechat a vypisovat stavový kontrakt popsaný na konci této stránky.
+
+## Příklad: monorepo pnpm
+
+Jen procesy a úlohy, žádné kontejnery. Webová aplikace najde API přes `{url.api}`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- Každý proces je karta terminálu, kterou můžeš otevřít, číst a psát do ní. Zavření karty ho nezastaví.
+- `ready` přijímá `http`, `tcp` nebo `logMatch`. `restart` je `on-failure` (výchozí), `always` nebo `never`. `restartOn` restartuje proces, když změněná cesta odpovídá.
+- `options` se stanou formulářem u **Start** a `agentDefault` platí pro běhy spuštěné agentem.
+
+## Příklad: desktopová aplikace
+
+Desktopová aplikace s krokem sestavení. Aplikace funguje stejně bez ohledu na technologii, protože Control Center pracuje na úrovni oken systému a v aplikaci nepotřebuje žádný hook ani SDK.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+Aplikace se nespouští s prostředím. Někdo klikne na **Otevřít** a nejdřív běží `prepare`. **Znovu sestavit a spustit** tuto dvojici spustí znovu. Čisté ukončení se zobrazí jako zavřeno, pád ukáže poslední řádky logu bez restartu, restart serveru aplikaci nikdy znovu nespustí a zastavení při nečinnosti nechá běžící aplikaci na pokoji.
+
+### Oprávnění a omezení desktopových aplikací
+
+- V macOS jednou uděl Control Center oprávnění **Záznam obrazovky** a **Zpřístupnění** v Nastavení systému. Hostitel serveru potřebuje grafickou relaci: server bez GUI spuštění aplikace odmítne.
+- Spouštěj binárku přímo. `open -a` předá aplikaci službě LaunchServices a ta opustí strom procesů, který Control Center sleduje. `"window": { "match": { "bundleId": "…" } }` tento případ pokrývá, ale je bezpečné jen s jednou běžící kopií.
+- Okna zůstávají na displeji. macOS nezachytí okno mimo všechny displeje, takže aplikace, kterou používá agent, je vidět na obrazovce serveru. Fokus nepotřebuje.
+- `"isolate": "home"` dá aplikaci soukromý domovský adresář přes `HOME`, `XDG_*` a `CFFIXED_USER_HOME`, takže kopie ze dvou prostorů mohou běžet vedle sebe. `NSUserDefaults` izolované není, takže předvolby Cocoa a `shared_preferences` z Flutteru zůstávají mezi kopiemi sdílené.
+- `isolate` platí jen pro spuštěný proces. Spouštěč nástrojů jako `flutter run` potřebuje skutečný domovský adresář, proto `isolate` kombinuj se sestavenou binárkou. Pokud má aplikace vlastní nastavení, třeba `--user-data-dir`, dej mu přednost.
+- Agenti ovládají okno přes `app_use`, které dosáhne jen na strom procesů tohoto prostředí. Agent vidí okno, ne plochu. Spuštění agentem prochází zásadami akcí a ve výchozím stavu se ptá a vstup agenta se zastaví, dokud má ovládání člověk.
+- `"input": "background"` (výchozí) posílá události procesu. `"foreground"` aktivuje okno a převezme kurzor.
+
+## Úlohy worktree nahrazují skripty repozitáře
+
+Úlohy `provision` a `archive` nahrazují staré skripty nastavení a archivace pro jednotlivé repozitáře. **Stávající skripty byly migrovány automaticky:** každý repozitář se skripty má teď definici pojmenovanou podle repozitáře, s úlohami `setup` a `archive` se stejným textem skriptu. Ikona v řádku repozitáře v **Nastavení → Pracovní prostor → Repozitáře** ji otevře. Minulé běhy skriptů zůstávají jako historie jen pro čtení.
+
+Tyto úlohy se řídí worktree, ne prostředím, takže běží i v prostorech, kde nikdo neklikne na **Start**:
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| Běží | Při vytvoření worktree role, v libovolném prostoru | Těsně před zrušením tohoto worktree |
+| Při selhání | Příprava selže a worktree se zruší | Zaznamená se, nikdy neblokuje smazání |
+| Výchozí časový limit | 5 minut | 2 minuty |
+| Vidí | `CC_WORKSPACE_PATH`, `CC_ROOT_PATH`, `CC_SPACE_*`, `CC_REPO_NAME` | Totéž |
+
+Repozitář bez stacku potřebuje jen definici se svými úlohami. Protože není co spouštět, kotevní role není nutná:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- Prostředí ještě neexistuje, takže tyto úlohy nemohou používat `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` ani `enabledWhen` a nedostávají `env` z definice.
+- Úlohy `provision` a `archive` pro repozitář smí obsahovat jen jedna definice. Ostatní ho mohou vázat na vše ostatní.
+- `"when": ["provision", "change"]` také přeinstaluje závislosti, když se změní lockfile, což skripty nastavení nikdy nedělaly.
+- Úloha běží pro worktree své role `cwd`, takže definice s více repozitáři může nastavit každý zvlášť.
+- Testovací běh nastaví `CC_SCRIPT_TEST=1`. Opakovaný pokus začíná s čistým worktree, takže piš úlohy, které opakované spuštění zvládnou.
+
+## Agenti
+
+Agenti nikdy nedostanou socket Dockeru. V prostoru s vhodnou definicí dostane běh `cc-env` ve svém `PATH`. Prostor se bere z běhu, takže agent může jednat jen ve svém prostředí a každý příkaz prochází zásadami akcí.
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+S komponentou compose povoluje shim `docker` také `docker compose` s `ps`, `logs`, `exec`, `port`, `restart` a `top`. Před slovesem nesmí být žádné přepínače, `logs` nemůže sledovat výstup a `exec` přijímá jen `-T`. Vše ostatní skončí kódem 5 a hláškou „not available in Control Center agent runs“.
+
+Repozitář, jehož dovednosti volají jeho vlastní nástroj, v tom může pokračovat. Blok `agentPassthrough` na komponentě `cli` deklaruje, které příkazy smějí agenti spouštět:
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+`maps` určuje operaci, jejíž zásady platí. `positionalName` vynutí v tomto argumentu prostředí tohoto prostoru, `nameFilter` na něj filtruje výstup JSON a každá hodnota `pathFlags` musí vést dovnitř worktree běhu. Příkaz, který neodpovídá žádnému pravidlu, skončí kódem 5.
+
+Stejné operace existují jako nástroje: `environment_status`, `environment_up`, `environment_down`, `environment_reset`, `environment_destroy`, `environment_restart`, `environment_exec`, `environment_logs`, `environment_run_task`, `environment_launch_app` a `environment_stop_app`. Agenti v sandboxu dosáhnou na své porty přímo a na názvy hostitelů svého prostředí přes proxy běhu, takže jim řekni, ať čtou koncové body z `environment_status` a neuhodují URL.
+
+## Pull requesty z forků
+
+Kódu PR z forku nelze důvěřovat a při umístění na hostiteli běží jako uživatel systému serveru. `policy.forkPrs` rozhoduje, co se stane:
+
+| Hodnota | Účinek | Výchozí pro |
+| --- | --- | --- |
+| `rig` | Soubor compose běží ve VM bez dotazu | Definice jen s komponentami `compose` a `task` |
+| `approval` | Každé spuštění vyžaduje správce | Všechny ostatní definice |
+| `deny` | Odmítnuto | Žádné |
+
+- `seedFiles` se pro fork nikdy nekopírují, protože to bývají tajné údaje. Soubor compose, který některý z nich připojuje, nahlásí chybějící soubor jménem.
+- Úlohy `provision` a `archive` se přeskakují, ledaže je zásada `rig`: pak běží ve VM.
+- Při umístění na hostiteli se na forku odmítají `privileged`, jmenné prostory hostitele, připojení socketu Dockeru, `devices` a připojení mimo worktree prostoru. V důvěryhodných prostorech dávají jen varování.
+
+## Umístění v rigu
+
+`"placement": "rig"` spouští komponenty `compose` a `task` ve vyhrazené microVM. Definice s komponentami `process`, `cli` nebo `app` nejsou způsobilé. Soubor compose běží beze změny, bez socketu Dockeru hostitele a bez přihlašovacích údajů operátora a přístup k síti je omezen na registry, které jeho obrazy potřebují. Worktree je připojený naživo.
+
+- **Hosté arm64.** Hosté jsou na Apple Silicon arm64, takže obrazy jen pro amd64 nepoběží.
+- **Soukromé registry se odmítají.** Hosté nemají přihlašovací údaje k registrům, takže obraz z registru mimo známé veřejné je odmítnut před startem VM. Soukromý repozitář ve veřejném registru selže, když ho host stahuje.
+- **16 GiB úložiště.** Všechny obrazy a svazky stacku sdílejí jeden disk o velikosti 16 GiB a nelze ho zvětšit.
+- **První start je pomalý.** Vrstvy obrazů jsou pro každou VM zvlášť, takže první start stáhne všechno. Zastavený rig si disk ponechá.
+- **Základní obrazy musí jít přečíst.** Dockerfile, který základní obraz určuje proměnnou, nelze naplánovat, protože přístup k síti se pevně určuje při startu.
+- **Životnost.** `policy.rigTtlHours` ukončí VM, ve výchozím stavu po 24 hodinách.
+
+## Stavový kontrakt pro autory nástrojů
+
+Komponenta `cli` bez `statusMap` očekává nativní kontrakt `cc-env/1`. Sloveso `status` vypíše tento objekt na stdout:
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- `state` je `ready`, `starting`, `stopped`, `failed` nebo `missing`. `missing` vede k `create`, `stopped` a `failed` vedou k `start`. Hlas `missing` s návratovým kódem 0: neúspěšný `status` se počítá jako `failed`.
+- Potřeba je jen `state`. Neznámá pole se ignorují a výstup, který nejde zpracovat, se zobrazí jako degradovaný se surovým textem v detailu.
+- URL musí být loopback, `*.localhost` nebo pod `routing.domain`, jinak se zahodí.
+- `needsRecreate: true` zobrazí **Znovu vytvořit**, což zahodí data. Control Center podle toho nikdy nejedná sám.
+- Sloveso `list` vypíše pole JSON s názvy nebo s objekty s `name`.
+
+Návratové kódy platí pro všechna slovesa:
+
+| Kód | Význam |
+| --- | --- |
+| 0 | OK |
+| 3 | Je potřeba nastavit hostitele. **Spustit v terminálu** otevře terminál prostoru s napsaným, ale nespuštěným příkazem a **Zopakovat** pak zkusí akci znovu. Control Center nikdy nespouští `sudo` |
+| 4 | Je potřeba ověření |
+| 5 | Závislost není dostupná |
+| Jiný | Selhání |
+
+Průběh jde na stderr jako JSON oddělený novými řádky:
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+Řádky `step` se zobrazují jako živý seznam kroků a řádky `note` tak, jak jsou. Poslední řádek typu `error` se stane strukturovanou chybou a `command` se nabídne ke zkopírování. Bez něj Control Center ukáže posledních 20 řádků stderr. Vše, co není JSON, je běžný log.
+
+## Související
+
+- [Používejte prostory](/cs-CZ/prirucka/navody/prostory/)
+- [Přesměrujte porty z terminálu](/cs-CZ/prirucka/navody/porty-vm/)
+- [Dejte agentovi stroj na testování](/cs-CZ/prirucka/navody/pouziti-stanic/)
+- [Nastavte guardraily](/cs-CZ/prirucka/navody/nastaveni-guardrailu/)

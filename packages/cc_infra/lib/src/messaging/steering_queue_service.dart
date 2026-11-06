@@ -22,7 +22,7 @@ class EnqueueSteeringResult {
   /// Whether at least one live run can inject mid-run (built-in harness, or a
   /// `claude -p` turn with its stdin open). False for ACP: the card still
   /// queues and converts at run end, but a "steer now" affordance would be a
-  /// lie, so the client hides it.
+  /// lie, so the client offers to stop the run and send the card instead.
   final bool steerable;
 }
 

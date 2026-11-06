@@ -7,6 +7,31 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 
+/// How a microVM's network is carried.
+enum RigNetBackend {
+  /// libkrun's socket interception. Fast and the default, but it proxies the
+  /// guest's own sockets, so bridged container traffic never reaches it.
+  tsi('tsi'),
+
+  /// A real NIC behind smolvm's host-side stack. What Docker needs.
+  virtioNet('virtio-net');
+
+  const RigNetBackend(this.wire);
+
+  /// Stable wire string, and the `--net-backend` value.
+  final String wire;
+
+  /// Parses [value], or null when unknown.
+  static RigNetBackend? fromWire(String? value) {
+    for (final backend in values) {
+      if (backend.wire == value) {
+        return backend;
+      }
+    }
+    return null;
+  }
+}
+
 /// What to boot, how big, how long it may live and what it may reach.
 ///
 /// Deliberately shaped like `SandboxSpec`: same egress-allowlist vocabulary,
@@ -35,6 +60,9 @@ class RigSpec {
     this.repoOwner,
     this.repoName,
     this.homeTheme,
+    this.netBackend,
+    this.storageGb,
+    this.extraMounts = const {},
   }) : memoryMb = memoryMb ?? _defaultMemoryMb(surface, browserEngine),
        cpuCount = cpuCount ?? _defaultCpuCount(surface),
        display = display ?? _defaultDisplay(surface) {
@@ -57,6 +85,9 @@ class RigSpec {
     }
     if (idleTimeout <= Duration.zero) {
       throw ArgumentError.value(idleTimeout, 'idleTimeout', 'Must be positive');
+    }
+    if (storageGb != null && storageGb! < 1) {
+      throw ArgumentError.value(storageGb, 'storageGb', 'Must be >= 1');
     }
   }
 
@@ -93,6 +124,53 @@ class RigSpec {
     openedByUserId: openedByUserId,
   );
 
+  /// A machine for one environment's compose stack and tasks.
+  ///
+  /// [environmentId] is its slot, so two environments in a space are two
+  /// machines. [ttlHours] is `policy.rigTtlHours`. The idle timeout equals the
+  /// TTL because a running stack sends the rig no actions, so idleness says
+  /// nothing here: the TTL ends it first, and the resident-MB budget still
+  /// counts it. [egressAllowlist] comes from `environmentRigEgressHosts`.
+  ///
+  /// [worktreePath] is mounted live rather than synced, and virtio-net is not
+  /// optional: TSI cannot carry bridged container traffic. [storageGb] holds
+  /// every image and volume of the stack, and 16 is also the most the backend
+  /// accepts, because it cannot restart a machine with a larger disk.
+  factory RigSpec.environment({
+    required String conversationId,
+    required String environmentId,
+    required String worktreePath,
+    required List<String> egressAllowlist,
+    int ttlHours = 24,
+    int? memoryMb,
+    int? cpuCount,
+    int storageGb = 16,
+    String? openedByUserId,
+    Map<String, String> extraMounts = const {},
+  }) => RigSpec(
+    surface: RigSurface.environment,
+    egressAllowlist: egressAllowlist,
+    memoryMb: memoryMb,
+    cpuCount: cpuCount,
+    ttl: Duration(hours: ttlHours),
+    idleTimeout: Duration(hours: ttlHours),
+    worktreePath: worktreePath,
+    imageId: environmentImageId,
+    conversationId: conversationId,
+    slotId: environmentId,
+    openedByUserId: openedByUserId,
+    netBackend: RigNetBackend.virtioNet,
+    storageGb: storageGb,
+    extraMounts: extraMounts,
+  );
+
+  /// Whether this machine runs an environment.
+  bool get isEnvironment => surface == RigSurface.environment;
+
+  /// The image id every environment rig boots. Separate from [execImageId]
+  /// because that image deliberately has no Docker.
+  static const String environmentImageId = 'cc-environment-linux';
+
   /// Whether this spec describes a terminal/exec machine rather than one
   /// someone looks at.
   ///
@@ -111,6 +189,17 @@ class RigSpec {
 
   /// Which machine to present.
   final RigSurface surface;
+
+  /// How the guest's network is carried, or null for the backend's default.
+  final RigNetBackend? netBackend;
+
+  /// The size of the guest's storage disk in GiB, or null for the backend's
+  /// default. Container images live on it, once per machine.
+  final int? storageGb;
+
+  /// Further host directories to mount live, by guest path. An environment
+  /// with several repos mounts one worktree each.
+  final Map<String, String> extraMounts;
 
   /// A specific backend to use, or null to let the platform probe and pick.
   /// Naming one that is unavailable is an error, not a silent downgrade.
@@ -250,6 +339,9 @@ class RigSpec {
     String? repoOwner,
     String? repoName,
     RigBrowserHomeTheme? homeTheme,
+    RigNetBackend? netBackend,
+    int? storageGb,
+    Map<String, String>? extraMounts,
   }) => RigSpec(
     surface: surface ?? this.surface,
     backend: backend ?? this.backend,
@@ -271,6 +363,9 @@ class RigSpec {
     repoOwner: repoOwner ?? this.repoOwner,
     repoName: repoName ?? this.repoName,
     homeTheme: homeTheme ?? this.homeTheme,
+    netBackend: netBackend ?? this.netBackend,
+    storageGb: storageGb ?? this.storageGb,
+    extraMounts: extraMounts ?? this.extraMounts,
   );
 
   /// JSON form (RPC + persistence).
@@ -295,6 +390,9 @@ class RigSpec {
     if (repoOwner != null) 'repoOwner': repoOwner,
     if (repoName != null) 'repoName': repoName,
     if (homeTheme != null) 'homeTheme': homeTheme!.wire,
+    if (netBackend != null) 'netBackend': netBackend!.wire,
+    if (storageGb != null) 'storageGb': storageGb,
+    if (extraMounts.isNotEmpty) 'extraMounts': extraMounts,
   };
 
   /// Reads a spec from [json]. Throws [ArgumentError] on an unknown surface —
@@ -342,6 +440,13 @@ class RigSpec {
       repoOwner: json['repoOwner'] as String?,
       repoName: json['repoName'] as String?,
       homeTheme: RigBrowserHomeTheme.fromWire(json['homeTheme'] as String?),
+      netBackend: RigNetBackend.fromWire(json['netBackend'] as String?),
+      storageGb: json['storageGb'] as int?,
+      extraMounts: {
+        if (json['extraMounts'] case final Map<String, dynamic> mounts)
+          for (final entry in mounts.entries)
+            if (entry.value is String) entry.key: entry.value as String,
+      },
     );
   }
 
@@ -369,12 +474,21 @@ class RigSpec {
           RigBrowserEngine.webkit => 2560,
         },
         RigSurface.mobile || RigSurface.ios => 4096,
+        // The floor the constructor accepts. A window rig commits no memory
+        // of its own: the app's belongs to the app, and the resident budget
+        // does not count it.
+        RigSurface.window => 128,
+        // dockerd plus a stack. Elastic in smolvm, but this is what the budget
+        // counts.
+        RigSurface.environment => 4096,
       };
 
   static int _defaultCpuCount(RigSurface surface) => switch (surface) {
     RigSurface.computer => 4,
     RigSurface.browser => 2,
     RigSurface.mobile || RigSurface.ios => 4,
+    RigSurface.window => 1,
+    RigSurface.environment => 4,
   };
 
   static RigDisplaySize _defaultDisplay(RigSurface surface) =>
@@ -416,8 +530,15 @@ class RigSpec {
         agentId == other.agentId &&
         forgeTokenScope == other.forgeTokenScope &&
         repoOwner == other.repoOwner &&
-        repoName == other.repoName;
+        repoName == other.repoName &&
+        netBackend == other.netBackend &&
+        storageGb == other.storageGb &&
+        _sameMounts(extraMounts, other.extraMounts);
   }
+
+  static bool _sameMounts(Map<String, String> a, Map<String, String> b) =>
+      a.length == b.length &&
+      a.entries.every((entry) => b[entry.key] == entry.value);
 
   @override
   int get hashCode => Object.hash(
@@ -439,6 +560,12 @@ class RigSpec {
     forgeTokenScope,
     repoOwner,
     repoName,
+    // Object.hash takes twenty arguments.
+    Object.hash(
+      netBackend,
+      storageGb,
+      Object.hashAllUnordered(extraMounts.keys),
+    ),
   );
 
   /// Why [slotId] is not usable on [surface], or null when it is fine.

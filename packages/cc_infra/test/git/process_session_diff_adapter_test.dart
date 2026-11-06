@@ -150,7 +150,7 @@ void main() {
   test(
     'a tracked file that .gitignore also matches is not a phantom deletion',
     () async {
-      // web-app tracks `.vscode/launch.json.example` and ignores `.vscode/*`.
+      // shop-ui tracks `.vscode/launch.json.example` and ignores `.vscode/*`.
       // The un-ignore rule names `launch.example.json`, which does not match,
       // so a cold `git add -A` drops the file and the review shows it deleted.
       const adapter = ProcessSessionDiffAdapter();

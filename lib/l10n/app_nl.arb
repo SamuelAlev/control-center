@@ -58,7 +58,6 @@
   "dictationHoldToTalkTitle": "Houd vast om te spreken",
   "dictationHoldToTalkDescription": "Houd de microfoonknop of de sneltoets ingedrukt om te dicteren en laat los om te stoppen. Wanneer uit, druk één keer om te starten en nogmaals om te stoppen.",
   "keybindingPushToTalk": "Druk om te spreken",
-  "keybindingPushToTalkDescription": "Spraakdictaat in de berichteneditor vasthouden of omschakelen",
   "agentPermissions": "Agentmachtigingen",
   "agentPermissionsSettingsDescription": "Bepaal wat agents zelf mogen doen, eerst moeten vragen of nooit mogen doen — per werkruimte, agent of ruimte.",
   "agentPermissionsMatrixDescription": "Stel per soort effect een beslissing in. Regels overschrijven elkaar: ruimte gaat vóór agent gaat vóór werkruimte.",
@@ -90,6 +89,7 @@
   "rigSurfaceBrowser": "Browser",
   "rigSurfaceAndroid": "Android",
   "rigSurfaceIosSimulator": "iOS-simulator",
+  "rigSurfaceAppWindow": "App-venster",
   "rigSurfaceBrowserEngine": "{engine}",
   "rigBrowserEngineHint": "Een wegwerp-{engine}, geïsoleerd van je machine. Open een andere engine om dezelfde pagina naast elkaar te vergelijken.",
   "rigPhaseReady": "Klaar",
@@ -195,6 +195,7 @@
   "rigStreamNotAllowed": "Je hebt geen toegang tot deze rig.",
   "rigStreamNotRunning": "Deze rig draait niet meer.",
   "rigStreamNeedsFfmpeg": "Live weergave heeft ffmpeg op deze host nodig. Installeer ffmpeg en open het tabblad opnieuw.",
+  "rigStreamNeedsScreenCapture": "Live weergave vereist Schermopname. Sta dit toe voor Control Center in Systeeminstellingen en open het tabblad opnieuw.",
   "rigStreamEnded": "De live weergave is beëindigd.",
   "rigStreamFailed": "De live weergave kon niet worden geopend.",
   "rigStreamDisconnected": "Niet verbonden met een server.",
@@ -563,7 +564,6 @@
   "prPropertyDiff": "Diff",
   "prPropertyComments": "Reacties",
   "keybindingOpenFilterMenu": "Filtermenu openen",
-  "keybindingOpenThePullRequestFilterMenuDescription": "Het PR-filtermenu openen",
   "countSelected": "{count, plural, =1{1 geselecteerd} other{{count} geselecteerd}}",
   "summary": "Samenvatting",
   "kbMove": "verplaatsen",
@@ -1126,14 +1126,7 @@
   "@cancelEdit": {
     "description": "Tooltip to cancel editing a suggestion"
   },
-  "categoryCreation": "Aanmaken",
-  "categoryEditing": "Bewerken",
   "categoryNavigation": "Navigatie",
-  "categorySystem": "Systeem",
-  "categoryView": "Weergave",
-  "@categoryView": {
-    "description": "Locale string for categoryView"
-  },
   "change": "Wijzigen",
   "changesRequested": "Wijzigingen aangevraagd",
   "spacesMentionSection": "Ruimtes",
@@ -1605,37 +1598,17 @@
   "isolateAgentExecution": "Agentuitvoering isoleren.",
   "justNow": "zojuist",
   "keepSandboxing": "Sandboxing behouden",
-  "keybindingAddARepositoryDescription": "Een repository toevoegen",
-  "@keybindingAddARepositoryDescription": {
-    "description": "Locale string for keybindingAddARepositoryDescription"
-  },
   "keybindingAddRepository": "Repository toevoegen",
   "@keybindingAddRepository": {
     "description": "Locale string for keybindingAddRepository"
-  },
-  "keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription": "Geselecteerd artikel bookmarken of verwijderen",
-  "@keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription": {
-    "description": "Locale string for keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription"
   },
   "keybindingCommandPalette": "Commandopalet",
   "@keybindingCommandPalette": {
     "description": "Locale string for keybindingCommandPalette"
   },
-  "keybindingCreateANewAgentDescription": "Nieuwe agent aanmaken",
-  "@keybindingCreateANewAgentDescription": {
-    "description": "Locale string for keybindingCreateANewAgentDescription"
-  },
-  "keybindingCreateANewWorkspaceDescription": "Nieuwe werkruimte aanmaken",
-  "@keybindingCreateANewWorkspaceDescription": {
-    "description": "Locale string for keybindingCreateANewWorkspaceDescription"
-  },
   "keybindingFocusSearch": "Zoeken focussen",
   "@keybindingFocusSearch": {
     "description": "Locale string for keybindingFocusSearch"
-  },
-  "keybindingFocusThePullRequestSearchFieldDescription": "Het zoekveld voor pull requests focussen",
-  "@keybindingFocusThePullRequestSearchFieldDescription": {
-    "description": "Locale string for keybindingFocusThePullRequestSearchFieldDescription"
   },
   "keybindingNewAgent": "Nieuwe agent",
   "@keybindingNewAgent": {
@@ -1661,10 +1634,6 @@
   "@keybindingOpenArticle": {
     "description": "Locale string for keybindingOpenArticle"
   },
-  "keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription": "Werkruimte-wisselaar-popup in zijbalk openen of sluiten",
-  "@keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription": {
-    "description": "Locale string for keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription"
-  },
   "keybindingOpenPr": "PR openen",
   "@keybindingOpenPr": {
     "description": "Locale string for keybindingOpenPr"
@@ -1672,26 +1641,6 @@
   "keybindingOpenSettings": "Instellingen openen",
   "@keybindingOpenSettings": {
     "description": "Locale string for keybindingOpenSettings"
-  },
-  "keybindingOpenTheApplicationSettingsDescription": "Applicatie-instellingen openen",
-  "@keybindingOpenTheApplicationSettingsDescription": {
-    "description": "Locale string for keybindingOpenTheApplicationSettingsDescription"
-  },
-  "keybindingOpenTheCommandPaletteDescription": "Commandopalet openen",
-  "@keybindingOpenTheCommandPaletteDescription": {
-    "description": "Locale string for keybindingOpenTheCommandPaletteDescription"
-  },
-  "keybindingOpenTheSelectedArticleDescription": "Geselecteerd artikel openen",
-  "@keybindingOpenTheSelectedArticleDescription": {
-    "description": "Locale string for keybindingOpenTheSelectedArticleDescription"
-  },
-  "keybindingOpenTheSelectedPullRequestDescription": "Geselecteerde pull request openen",
-  "@keybindingOpenTheSelectedPullRequestDescription": {
-    "description": "Locale string for keybindingOpenTheSelectedPullRequestDescription"
-  },
-  "keybindingOpenTheSelectedWorkspaceDescription": "Geselecteerde werkruimte openen",
-  "@keybindingOpenTheSelectedWorkspaceDescription": {
-    "description": "Locale string for keybindingOpenTheSelectedWorkspaceDescription"
   },
   "keybindingOpenWorkspace": "Werkruimte openen",
   "@keybindingOpenWorkspace": {
@@ -1713,89 +1662,9 @@
   "@keybindingRefresh": {
     "description": "Locale string for keybindingRefresh"
   },
-  "keybindingRefreshAllFeedsDescription": "Alle feeds vernieuwen",
-  "@keybindingRefreshAllFeedsDescription": {
-    "description": "Locale string for keybindingRefreshAllFeedsDescription"
-  },
-  "keybindingRefreshThePullRequestListDescription": "Pull request-lijst vernieuwen",
-  "@keybindingRefreshThePullRequestListDescription": {
-    "description": "Locale string for keybindingRefreshThePullRequestListDescription"
-  },
-  "keybindingRescanForAdaptersDescription": "Opnieuw scannen naar adapters",
-  "@keybindingRescanForAdaptersDescription": {
-    "description": "Locale string for keybindingRescanForAdaptersDescription"
-  },
-  "keybindingSelectTheNextArticleDescription": "Volgend artikel selecteren",
-  "@keybindingSelectTheNextArticleDescription": {
-    "description": "Locale string for keybindingSelectTheNextArticleDescription"
-  },
-  "keybindingSelectTheNextSpaceDescription": "Volgend ruimte selecteren",
-  "@keybindingSelectTheNextSpaceDescription": {
-    "description": "Locale string for keybindingSelectTheNextSpaceDescription"
-  },
-  "keybindingSelectThePreviousArticleDescription": "Vorig artikel selecteren",
-  "@keybindingSelectThePreviousArticleDescription": {
-    "description": "Locale string for keybindingSelectThePreviousArticleDescription"
-  },
-  "keybindingSelectThePreviousSpaceDescription": "Vorig ruimte selecteren",
-  "@keybindingSelectThePreviousSpaceDescription": {
-    "description": "Locale string for keybindingSelectThePreviousSpaceDescription"
-  },
   "keybindingSendMessage": "Bericht versturen",
   "@keybindingSendMessage": {
     "description": "Locale string for keybindingSendMessage"
-  },
-  "keybindingSendTheCurrentMessageDescription": "Huidige bericht versturen",
-  "@keybindingSendTheCurrentMessageDescription": {
-    "description": "Locale string for keybindingSendTheCurrentMessageDescription"
-  },
-  "keybindingSwitchBetweenLightAndDarkModeDescription": "Wisselen tussen lichte en donkere modus",
-  "@keybindingSwitchBetweenLightAndDarkModeDescription": {
-    "description": "Locale string for keybindingSwitchBetweenLightAndDarkModeDescription"
-  },
-  "keybindingSwitchToTheEighthWorkspaceDescription": "Wisselen naar achtste werkruimte",
-  "@keybindingSwitchToTheEighthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheEighthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheFifthWorkspaceDescription": "Wisselen naar vijfde werkruimte",
-  "@keybindingSwitchToTheFifthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheFifthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheFirstWorkspaceDescription": "Wisselen naar eerste werkruimte",
-  "@keybindingSwitchToTheFirstWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheFirstWorkspaceDescription"
-  },
-  "keybindingSwitchToTheFourthWorkspaceDescription": "Wisselen naar vierde werkruimte",
-  "@keybindingSwitchToTheFourthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheFourthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheNextWorkspaceDescription": "Wisselen naar volgende werkruimte",
-  "@keybindingSwitchToTheNextWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheNextWorkspaceDescription"
-  },
-  "keybindingSwitchToTheNinthWorkspaceDescription": "Wisselen naar negende werkruimte",
-  "@keybindingSwitchToTheNinthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheNinthWorkspaceDescription"
-  },
-  "keybindingSwitchToThePreviousWorkspaceDescription": "Wisselen naar vorige werkruimte",
-  "@keybindingSwitchToThePreviousWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToThePreviousWorkspaceDescription"
-  },
-  "keybindingSwitchToTheSecondWorkspaceDescription": "Wisselen naar tweede werkruimte",
-  "@keybindingSwitchToTheSecondWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheSecondWorkspaceDescription"
-  },
-  "keybindingSwitchToTheSeventhWorkspaceDescription": "Wisselen naar zevende werkruimte",
-  "@keybindingSwitchToTheSeventhWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheSeventhWorkspaceDescription"
-  },
-  "keybindingSwitchToTheSixthWorkspaceDescription": "Wisselen naar zesde werkruimte",
-  "@keybindingSwitchToTheSixthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheSixthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheThirdWorkspaceDescription": "Wisselen naar derde werkruimte",
-  "@keybindingSwitchToTheThirdWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheThirdWorkspaceDescription"
   },
   "keybindingToggleBookmark": "Bookmark wisselen",
   "@keybindingToggleBookmark": {
@@ -1845,8 +1714,6 @@
   "@keybindingWorkspace9": {
     "description": "Locale string for keybindingWorkspace9"
   },
-  "keybindings": "Sneltoetsen",
-  "keybindingsDescription": "Alle sneltoetsen. Sneltoetsen zijn vast en kunnen niet opnieuw worden toegewezen.",
   "killRunning": "Actieve stoppen",
   "languageSystem": "Systeem",
   "leaveACommentEllipsis": "Reactie achterlaten…",
@@ -2023,7 +1890,6 @@
   "@noSavedArticlesBody": {
     "description": "Locale string for noSavedArticlesBody"
   },
-  "noShortcutsMatch": "Geen sneltoetsen komen overeen met \\\"{query}\\\"",
   "noSystemFonts": "Geen systeemlettertypen gedetecteerd.",
   "noTokenSet": "Geen token ingesteld — toegang is onbeperkt.",
   "@noTokenSet": {
@@ -2608,8 +2474,6 @@
   "@searchPlaceholder": {
     "description": "Locale string for searchPlaceholder"
   },
-  "searchShortcuts": "Sneltoetsen zoeken…",
-  "shortcutUnavailableInBrowser": "Niet beschikbaar in de browser",
   "searching": "Zoeken…",
   "@searching": {
     "description": "Locale string for searching"
@@ -3737,6 +3601,13 @@
   "triggerEventMeetingRecordingStopped": "Vergaderopname gestopt",
   "triggerEventSkillUpdated": "Vaardigheid bijgewerkt",
   "triggerEventSpaceDeleted": "Ruimte verwijderd",
+  "triggerEventSpaceArchived": "Ruimte gearchiveerd",
+  "triggerEventSpaceProvisioningChanged": "Inrichting van ruimte gewijzigd",
+  "triggerEventPrHeadChanged": "PR-head gewijzigd",
+  "triggerEventEnvironmentStatusChanged": "Omgevingsstatus gewijzigd",
+  "triggerEventEnvironmentReady": "Omgeving gereed",
+  "triggerEventEnvironmentDestroyed": "Omgeving verwijderd",
+  "triggerEventEnvironmentProcessExited": "Omgevingsproces beëindigd",
   "triggerExternalPrHelp": "Een pull request geopend op de codehost, niet vanuit Control Center.",
   "triggerPrPublishedHelp": "Een pull request geopend vanuit Control Center of door een agent.",
   "triggerPrStatusChangedHelp": "Samengevoegd, gesloten, geopend, heropend of goedgekeurd. Filter op status in de inspector.",
@@ -3754,6 +3625,13 @@
   "triggerMeetingRecordingStoppedHelp": "Een vergaderopname eindigt.",
   "triggerSkillUpdatedHelp": "Een vaardigheid wordt geïnstalleerd of bijgewerkt.",
   "triggerSpaceDeletedHelp": "Een gespreksruimte wordt verwijderd.",
+  "triggerSpaceArchivedHelp": "Een gespreksruimte wordt gearchiveerd.",
+  "triggerSpaceProvisioningChangedHelp": "Het inrichten van de worktrees van een ruimte begint, eindigt of mislukt.",
+  "triggerPrHeadChangedHelp": "Er worden nieuwe commits naar een open pull request gepusht.",
+  "triggerEnvironmentStatusChangedHelp": "Een ruimteomgeving krijgt een nieuwe status.",
+  "triggerEnvironmentReadyHelp": "Een ruimteomgeving is gestart en klaar voor gebruik.",
+  "triggerEnvironmentDestroyedHelp": "Een ruimteomgeving wordt afgebroken.",
+  "triggerEnvironmentProcessExitedHelp": "Een proces dat door een omgeving wordt uitgevoerd, stopt.",
   "navTickets": "Tickets",
   "ticketsTitle": "Tickets",
   "newTicket": "Nieuw ticket",
@@ -4391,10 +4269,6 @@
   "enabledViaEnv": "Ingeschakeld via {key}",
   "costPerMillion": "{input} / {output} per 1M",
   "contextTokens": "{tokens} context",
-  "usageAndCost": "Gebruik en kosten",
-  "usageAndCostDescription": "Uitgaven van je agents over de laatste 7 dagen, op basis van waargenomen runkosten.",
-  "noUsageYet": "Nog geen gebruik geregistreerd.",
-  "spentThisWeek": "deze week besteed",
   "subscriptionUsage": "Abonnementsgebruik",
   "subscriptionUsageUnavailable": "Niet beschikbaar",
   "subscriptionUsageExhausted": "Quotum uitgeput",
@@ -4461,7 +4335,6 @@
   "syncPrHeadFailed": "Kon niet synchroniseren met de PR",
   "spaceLabel": "Ruimte",
   "keybindingNewSpace": "Nieuw ruimte",
-  "keybindingCreateANewSpaceDescription": "Een nieuw ruimte maken",
   "jumpToLatest": "Naar nieuwste",
   "streaming": "Actief",
   "newMessages": "Nieuw",
@@ -4526,37 +4399,11 @@
   "providerLocalReady": "Lokaal · gereed",
   "providerNotConnected": "Niet verbonden",
   "preparingWorkspace": "Werkruimte voorbereiden…",
-  "provisioningRunningSetupScript": "Installatiescript voor {repo} wordt uitgevoerd…",
-  "@provisioningRunningSetupScript": {
+  "provisioningRunningTasks": "Worktree-taken voor {repo} worden uitgevoerd…",
+  "@provisioningRunningTasks": {
     "placeholders": {
       "repo": {
         "type": "String"
-      }
-    }
-  },
-  "repoScriptsTitle": "Scripts",
-  "repoScriptsTooltip": "Levenscyclusscripts configureren",
-  "repoScriptsSetupLabel": "Installatiescript",
-  "repoScriptsSetupHelp": "Draait direct na het aanmaken in de worktree van de ruimte — dependencies installeren, bestanden genereren. Bij een fout wordt de ruimte als mislukt gemarkeerd; opnieuw proberen draait het weer.",
-  "repoScriptsArchiveLabel": "Archiveringsscript",
-  "repoScriptsArchiveHelp": "Draait vlak voordat de worktree van een ruimte wordt verwijderd — ruimt bronnen buiten de worktree op. Een fout blokkeert het verwijderen nooit.",
-  "repoScriptsEnvHelp": "Draait via bash vanuit de worktree, met CC_WORKSPACE_PATH (de worktree), CC_ROOT_PATH (de repo-root), CC_SPACE_ID, CC_SPACE_NAME en CC_REPO_NAME ingesteld.",
-  "repoScriptsSetupPlaceholder": "bijv. pnpm install",
-  "repoScriptsArchivePlaceholder": "bijv. docker compose -p $CC_SPACE_ID down",
-  "repoScriptsRecentRuns": "Recente uitvoeringen",
-  "repoScriptsNoRuns": "Nog geen uitvoeringen",
-  "repoScriptsSaved": "Scripts opgeslagen",
-  "repoScriptsRunKindSetup": "Installatie",
-  "repoScriptsRunKindArchive": "Archivering",
-  "repoScriptsRunStatusRunning": "Bezig",
-  "repoScriptsRunStatusSucceeded": "Geslaagd",
-  "repoScriptsRunStatusFailed": "Mislukt",
-  "repoScriptsRunStatusTimedOut": "Verlopen",
-  "repoScriptsExitCode": "Exitcode {code}",
-  "@repoScriptsExitCode": {
-    "placeholders": {
-      "code": {
-        "type": "int"
       }
     }
   },
@@ -5331,13 +5178,10 @@
   "cheatSheetThisScreen": "Dit scherm",
   "cheatSheetReservedInBrowser": "Gereserveerd door browser",
   "keybindingCheatSheet": "Sneltoetsen",
-  "keybindingShowKeyboardShortcutsDescription": "Het sneltoetsenoverzicht voor het huidige scherm tonen",
   "runPlaybookLabel": "Playbook uitvoeren",
   "playbooksLabel": "Playbooks",
   "keybindingUndo": "Ongedaan maken",
   "keybindingRedo": "Opnieuw",
-  "keybindingUndoLastActionDescription": "Je laatste omkeerbare actie ongedaan maken",
-  "keybindingRedoLastActionDescription": "De laatst ongedaan gemaakte actie opnieuw uitvoeren",
   "undone": "Ongedaan gemaakt",
   "redone": "Opnieuw uitgevoerd",
   "undoFailed": "Kan niet ongedaan maken",
@@ -7553,6 +7397,7 @@
   "resetToDefault": "Standaard herstellen",
   "newAgent": "Nieuwe agent",
   "newSkill": "Nieuwe skill",
+  "newItemAction": "Nieuw",
   "zoomIn": "Inzoomen",
   "zoomOut": "Uitzoomen",
   "resetZoom": "Zoom herstellen",
@@ -7630,6 +7475,7 @@
   "dumpCopied": "Transcript naar het klembord gekopieerd",
   "messageQueueHint": "Blijf typen om vervolgaanpassingen in de wachtrij te zetten",
   "steerNow": "Sturen",
+  "steerForce": "Stoppen en verzenden",
   "steeringQueueLabel": "Wachtende stuurberichten",
   "steeringDeliverUnavailable": "Geen actieve agent kan dit nu oppakken — het blijft in de wachtrij.",
   "reorderSteeringCard": "Wachtend bericht herschikken",
@@ -7645,9 +7491,6 @@
   "sandboxExecGrantBlocked": "Geblokkeerd",
   "sandboxExecGrantRevokeConfirmTitle": "Deze beslissing intrekken?",
   "sandboxExecGrantRevokeConfirmBody": "Je wordt opnieuw gevraagd wanneer een agent de volgende keer een programma vanuit deze kopie moet uitvoeren.",
-  "repoScriptsTest": "Testen",
-  "repoScriptsTestTooltip": "Voer dit concept uit in een wegwerp-kloon van de repo",
-  "repoScriptsRunKindTest": "Test",
   "demoBadgeLabel": "Demo",
   "demoFilePickerTitle": "Demobestanden",
   "@demoFilePickerTitle": {
@@ -7717,6 +7560,16 @@
   "backupSnapshotWorkspaces": "{count, plural, =0{Geen werkruimten} =1{1 werkruimte} other{{count} werkruimten}}",
   "backupSnapshotSkipped": "{count, plural, =1{1 werkruimte niet vastgelegd} other{{count} werkruimten niet vastgelegd}}",
   "backupServerPathLabel": "Pad op de server",
+  "backupScheduledLabel": "Geplande back-ups",
+  "backupScheduledExplainer": "Kopieën die de back-uppipeline van elke werkruimte opslaat. Stel het schema en de bewaartermijn in via de pipelinesjabloon.",
+  "backupScheduledNone": "Nog geen back-ups",
+  "backupScheduledCount": "{count, plural, =1{1 back-up} other{{count} back-ups}}",
+  "backupScheduledLast": "Laatste back-up: {time}",
+  "backupListForbidden": "Je hebt de beheerdersrol in deze werkruimte nodig om de back-ups te zien.",
+  "backupScheduledDeleteTitle": "Deze back-up verwijderen?",
+  "backupScheduledDeleteBody": "De back-up van {date} van {name} van de server verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "backupScheduledDeleteDone": "Back-up verwijderd.",
+  "backupScheduledWorkspaceDeleted": "Werkruimte verwijderd",
   "backupRestoreAction": "Herstellen",
   "backupRestoreTitle": "Werkruimte herstellen",
   "backupRestoreBody": "Dit vervangt alles in {name} door de kopie in deze momentopname. Alles wat die werkruimte sindsdien heeft gedaan, gaat verloren en is niet terug te draaien.",
@@ -8000,8 +7853,6 @@
   "continueWithoutSandbox": "Doorgaan zonder sandbox",
   "sandboxCheckAgain": "Opnieuw controleren",
   "ideQuickOpen": "Ga naar bestand",
-  "ideQuickOpenDescription": "Zoek de bestanden van het gesprek op naam en open er een in een tabblad",
-  "prQuickOpenDescription": "Zoek de bestanden van de pull request op naam en open er een in een tabblad",
   "ideQuickOpenHint": "Bestanden zoeken op naam",
   "ideQuickOpenRecentlyOpened": "Recent geopend",
   "ideQuickOpenOpenToSide": "Aan de zijkant openen",
@@ -8077,6 +7928,9 @@
   "skillEvalFailed": "Mislukt",
   "skillEvalForced": "Geforceerd laden vs afwezig",
   "skillEvalForcedEvent": "Geforceerd geladen",
+  "skillEvalHashLabel": "Pakkethash",
+  "skillEvalProgressLabel": "Voortgang",
+  "skillEvalUpdatesToggle": "Update-evaluaties",
   "skillEvalHashUnavailable": "Pakkethash niet beschikbaar op deze server. Evaluatie is uitgeschakeld.",
   "skillEvalHistory": "Revisiegeschiedenis",
   "skillEvalImproved": "Verbeterd",
@@ -8180,5 +8034,212 @@
   "connectPasteLinkInvalid": "Dat is geen uitnodigings- of koppelingslink van Control Center. Kopieer de hele link en probeer het opnieuw.",
   "connectPasteLinkTarget": "Verbindt met",
   "focusModeEnd": "Focussessie beëindigen",
-  "focusModeRemaining": "Nog {minutes} min"
+  "focusModeRemaining": "Nog {minutes} min",
+  "demoUnavailableEnvironments": "Omgevingen draaien echte processen op de host, dus de demo heeft er geen.",
+  "environmentChecksFailing": "Sommige controles mislukken op de server",
+  "environmentCliEndpoints": "Eindpunten: {names}",
+  "environmentCliServices": "Services: {names}",
+  "environmentCopied": "Gekopieerd",
+  "environmentCopyCommand": "Opdracht kopiëren",
+  "environmentCopyUrl": "URL kopiëren",
+  "environmentDefinition": "Definitie",
+  "environmentDefinitionCount": "{count, plural, =1{1 definitie} other{{count} definities}}",
+  "environmentDestroy": "Vernietigen",
+  "environmentDestroyBody": "{name} en de gegevens worden verwijderd. Starten maakt een nieuwe.",
+  "environmentDestroyTitle": "Deze omgeving vernietigen?",
+  "environmentExec": "Exec",
+  "environmentExecTitle": "Uitvoeren in een service",
+  "environmentExitCode": "Afsluitcode {code}",
+  "environmentHostSetupNeeded": "Dit moet op de server worden ingesteld",
+  "environmentKindApp": "App",
+  "environmentKindCli": "CLI",
+  "environmentKindCompose": "Compose",
+  "environmentKindProcess": "Proces",
+  "environmentKindTask": "Taak",
+  "environmentLaunch": "Openen",
+  "environmentLogsGone": "Deze logs zijn niet meer beschikbaar.",
+  "environmentLogsTab": "Logs: {name}",
+  "environmentLogsWaiting": "Wachten op uitvoer",
+  "environmentMoreActions": "Meer omgevingsacties",
+  "environmentNeedsRecreate": "Door een wijziging moet deze omgeving opnieuw worden gemaakt.",
+  "environmentNoStack": "Voert alleen worktree-taken uit, dus er valt niets te starten.",
+  "environmentOnTheServer": "Op de server",
+  "environmentOpenInBrowserVm": "Openen in Browser (VM)",
+  "environmentOpenViewer": "Viewer openen",
+  "environmentPlacementRig": "In een VM",
+  "environmentPreviewTab": "Omgeving",
+  "environmentRebuildRelaunch": "Opnieuw bouwen en openen",
+  "environmentRecreate": "Opnieuw maken",
+  "environmentRecreateBody": "{name} wordt vernietigd en opnieuw gestart met dezelfde opties. De gegevens gaan verloren.",
+  "environmentRecreateTitle": "Deze omgeving opnieuw maken?",
+  "environmentResetBody": "{name} gaat terug naar de basis. Sindsdien gemaakte gegevens gaan verloren.",
+  "environmentResetData": "Gegevens resetten",
+  "environmentResetTitle": "Gegevens resetten?",
+  "environmentRestart": "Herstarten",
+  "environmentRestarts": "{count, plural, =1{1 herstart} other{{count} herstarts}}",
+  "environmentRun": "Uitvoeren",
+  "environmentRunInTerminal": "Uitvoeren in terminal",
+  "environmentSectionTitle": "Omgeving",
+  "environmentService": "Service",
+  "environmentServiceActions": "Acties voor {name}",
+  "environmentStartTitle": "Omgeving starten",
+  "environmentStateCrashed": "Gecrasht",
+  "environmentStatusDegraded": "Verminderd",
+  "environmentStatusDestroying": "Wordt vernietigd",
+  "environmentStatusGone": "Verdwenen",
+  "environmentStatusStopping": "Wordt gestopt",
+  "environmentStopDataLoss": "Door {name} te stoppen gaan de gegevens verloren, en Starten haalt ze niet terug.",
+  "environmentStopLoseData": "Stoppen en gegevens verliezen",
+  "environmentStopTitle": "Deze omgeving stoppen?",
+  "environmentTaskNeverRun": "Nog niet uitgevoerd",
+  "environmentsAddCheck": "Controle toevoegen",
+  "environmentsAddOption": "Optie toevoegen",
+  "environmentsAddRole": "Rol toevoegen",
+  "environmentsAdminOnly": "Alleen werkruimtebeheerders kunnen definities wijzigen.",
+  "environmentsAfter": "Wachten op deze componenten",
+  "environmentsAnchor": "Anker",
+  "environmentsAutoCreate": "Automatisch starten",
+  "environmentsAutoCreateAll": "In elke geschikte ruimte",
+  "environmentsAutoCreateOff": "Nooit",
+  "environmentsAutoCreatePrs": "In pull-requestruimtes",
+  "environmentsBlank": "Lege definitie",
+  "environmentsCheckFix": "Herstelopdracht",
+  "environmentsCheckHint": "Hint",
+  "environmentsCommandHelp": "Argumenten worden gescheiden door spaties. Zet een argument met een spatie tussen aanhalingstekens.",
+  "environmentsComponentCount": "{count, plural, =1{1 component} other{{count} componenten}}",
+  "environmentsComponentId": "ID",
+  "environmentsComposeBuild": "Images bouwen bij starten",
+  "environmentsComposeFile": "Compose-bestand",
+  "environmentsComposeHttp": "HTTP",
+  "environmentsComposeNoFile": "Kon geen compose-bestand lezen. Servicenamen kunnen nog steeds in de JSON-weergave.",
+  "environmentsComposeServices": "Services",
+  "environmentsComposeServicesHint": "Laat alle services uitgevinkt om ze allemaal uit te voeren.",
+  "environmentsConditionalArgs": "Deze opdracht heeft voorwaardelijke argumenten. Bewerk hem in de JSON-weergave.",
+  "environmentsCwdPath": "Werkpad",
+  "environmentsCwdRole": "Werkrol",
+  "environmentsDeleteBody": "Ruimtes kunnen dit niet meer starten. Draaiende omgevingen blijven draaien tot ze worden gestopt.",
+  "environmentsDeleteTitle": "{name} verwijderen?",
+  "environmentsDescription": "Wat elke ruimte kan starten en welke taken de worktrees uitvoeren.",
+  "environmentsDraftFromRepo": "Concept uit repo",
+  "environmentsEmpty": "Nog geen definities",
+  "environmentsEnabledWhen": "Ingeschakeld wanneer",
+  "environmentsEndpointRole": "Eindpuntrol",
+  "environmentsFollowPrHead": "De head van de pull request volgen",
+  "environmentsForkApproval": "Elke start vereist een beheerder",
+  "environmentsForkDeny": "Geweigerd",
+  "environmentsForkPrs": "Pull requests van forks",
+  "environmentsForkRig": "Uitvoeren in een VM",
+  "environmentsIdleStop": "Stoppen na inactieve minuten",
+  "environmentsIsolateHome": "De app een eigen home geven",
+  "environmentsIssues": "Los dit op voordat je opslaat",
+  "environmentsJsonInvalid": "Geen geldige JSON: {error}",
+  "environmentsKeepsData": "Behoudt gegevens bij stoppen",
+  "environmentsLinkConfirm": "Koppelen en goedkeuren",
+  "environmentsLinkFile": "Repo-bestand koppelen",
+  "environmentsLinkHelp": "Wordt alleen van de standaardbranch gelezen en pas na goedkeuring uitgevoerd.",
+  "environmentsLinkPath": "Pad",
+  "environmentsMaxRunning": "Tegelijk actief",
+  "environmentsNamingProject": "Project",
+  "environmentsNamingTemplate": "Naamsjabloon",
+  "environmentsNew": "Nieuwe definitie",
+  "environmentsNewDefinitionName": "Nieuwe omgeving",
+  "environmentsNoChecks": "Deze definitie heeft geen controles.",
+  "environmentsNoRuns": "Nog geen testruns",
+  "environmentsOnChange": "Paden om te volgen",
+  "environmentsOptionBool": "Ja of nee",
+  "environmentsOptionEnum": "Een van",
+  "environmentsOptionMulti": "Meerdere van",
+  "environmentsOptionValues": "Waarden",
+  "environmentsPlacement": "Plaatsing",
+  "environmentsPlacementHost": "Op de host",
+  "environmentsPlacementRig": "In een VM",
+  "environmentsPrepareTask": "Voorbereidingstaak",
+  "environmentsPrimaryEndpoint": "Primair eindpunt",
+  "environmentsReadyHttp": "Gereed wanneer deze URL antwoordt",
+  "environmentsRestartAlways": "Altijd",
+  "environmentsRestartNever": "Nooit",
+  "environmentsRestartOn": "Herstarten wanneer deze paden wijzigen",
+  "environmentsRestartOnFailure": "Bij fout",
+  "environmentsRestartPolicy": "Herstarten",
+  "environmentsRigTtl": "VM-levensduur in uren",
+  "environmentsRunChecks": "Opnieuw uitvoeren",
+  "environmentsRunTest": "Test uitvoeren",
+  "environmentsSaved": "Definitie opgeslagen",
+  "environmentsSectionComponents": "Componenten",
+  "environmentsSectionOptions": "Startopties",
+  "environmentsSectionSeedFiles": "Seed-bestanden",
+  "environmentsSectionVariables": "Variabelen",
+  "environmentsSeedHelp": "Eén pad per regel, gekopieerd uit de geregistreerde checkout. Pull requests van forks krijgen deze nooit.",
+  "environmentsShellHelp": "Plaatsaanduidingen worden hier niet uitgebreid. Lees in plaats daarvan CC_ENV_*-variabelen.",
+  "environmentsSourceApprove": "Deze versie goedkeuren",
+  "environmentsSourceCurrent": "{path} komt overeen met de goedgekeurde versie.",
+  "environmentsSourceNotice": "De goedgekeurde versie blijft draaien tot je deze goedkeurt.",
+  "environmentsTabJson": "JSON",
+  "environmentsTabSource": "Bron",
+  "environmentsTestHelp": "Voert een wegwerpomgeving van begin tot eind uit: controleren, starten, wachten tot gereed, vernietigen.",
+  "environmentsTestSaveFirst": "Sla eerst de definitie op.",
+  "environmentsTimeoutSeconds": "Time-out in seconden",
+  "environmentsTitle": "Omgevingen",
+  "environmentsTriggerArchive": "Voordat de worktree wordt verwijderd",
+  "environmentsTriggerChange": "Wanneer gevolgde paden wijzigen",
+  "environmentsTriggerCreate": "Eén keer per omgeving",
+  "environmentsTriggerManual": "Op verzoek",
+  "environmentsTriggerProvision": "Wanneer de worktree wordt gemaakt",
+  "environmentsTriggerStart": "Bij elke start",
+  "environmentsTriggers": "Wordt uitgevoerd",
+  "environmentsUnreadable": "Deze client kan deze definitie niet lezen.",
+  "environmentsUpdateAvailable": "Update beschikbaar",
+  "environmentsUseShell": "Een shell-opdracht gebruiken",
+  "environmentsUseSourceWarning": "De tool draait dan op je eigen checkout. Behandel die als alleen-lezen.",
+  "environmentsWhenMissing": "Wanneer een ruimte dit mist",
+  "environmentsWhenMissingAdd": "Aan de ruimte toevoegen",
+  "environmentsWhenMissingSkip": "Overslaan",
+  "environmentsWhenMissingSource": "De geregistreerde checkout gebruiken",
+  "environmentsUnsupported": "Deze server ondersteunt geen omgevingen.",
+  "environmentViewerUnavailable": "Geen viewer: de server kan dit venster niet vastleggen. Sta schermopname toe voor Control Center op de server.",
+  "environmentHealthHealthy": "Gezond",
+  "environmentHealthUnhealthy": "Ongezond",
+  "environmentTerminalStale": "Deze terminal is geopend voordat de omgeving startte en mist daarom de variabelen.",
+  "environmentTerminalFresh": "Nieuwe terminal openen",
+  "environmentsShellStays": "Een script van meerdere regels blijft een shell-opdracht: de regels zijn de structuur.",
+  "environmentsOverrides": "Werkruimte-overschrijvingen",
+  "environmentsOverridesHelp": "De eigen instellingen van het bestand zijn hier alleen-lezen. Koppel de rollen aan repo's van deze werkruimte of overschrijf een veld als JSON.",
+  "environmentsReposHelp": "De repository's die deze omgeving gebruikt, elk gekoppeld aan een rol.",
+  "environmentsComponentsHelp": "Wat de omgeving uitvoert, in startvolgorde.",
+  "environmentsOptionsHelp": "Keuzes die worden aangeboden bij het starten van de omgeving.",
+  "environmentsVariablesHelp": "Ingesteld op taken, processen, apps en ruimteterminals.",
+  "environmentsChecksHelp": "Wat de host nodig heeft om deze omgeving te draaien.",
+  "environmentsIdleStopHelp": "Bij 0 stopt deze nooit.",
+  "environmentsAnchorHelp": "Een ruimte met deze repository kan de omgeving starten.",
+  "environmentsRequiredHelp": "De omgeving kan niet zonder draaien.",
+  "environmentsFollowPrHeadHelp": "Synchroniseren en vernieuwen wanneer de head van de pull request verandert.",
+  "environmentsRecordNeedsFix": "Moet worden opgelost",
+  "environmentsCheckFile": "Bestand",
+  "environmentsDiscardBody": "Je wijzigingen aan deze definitie gaan verloren.",
+  "environmentsWorktreeRuns": "Runs van worktree-taken",
+  "environmentsNoWorktreeRuns": "Er is nog geen worktree-taak uitgevoerd.",
+  "environmentsLinkRoles": "Rollen in dit bestand",
+  "environmentsLinkNoFile": "Kon dat bestand niet uit de repo lezen. Rollen kunnen na het koppelen worden toegewezen.",
+  "guardrailClassHostExecution": "Opdrachten uitvoeren op de host",
+  "environmentUrls": "URL's",
+  "environmentScripts": "Scripts",
+  "environmentNoneForSpace": "Geen omgeving voor deze ruimte",
+  "environmentNoneForPr": "Geen omgeving voor deze pull request",
+  "environmentSetupBody": "Een omgeving draait de services, scripts en URL's van een repo voor één ruimte. Stel hem één keer in en elke ruimte op de repo kan hem starten.",
+  "environmentSetUp": "Omgeving instellen",
+  "environmentEditDefinition": "Definitie bewerken",
+  "environmentOpenPanel": "Omgeving openen",
+  "environmentNeedsSetup": "Instelling vereist",
+  "environmentContinueInTerminal": "Doorgaan in terminal",
+  "environmentSetupHint": "De tool heeft je nodig in een terminal voor een wachtwoord of een vraag. Het starten gaat daarna verder.",
+  "environmentSetupTabReason": "Deze terminal is geopend omdat het starten je nodig heeft",
+  "environmentSetupTab": "Omgeving instellen",
+  "environmentsNothingRunning": "Er draait niets vanuit deze definitie.",
+  "searchPoliciesHint": "Beleidsregels zoeken...",
+  "noPoliciesMatch": "Geen beleidsregels komen overeen met je zoekopdracht",
+  "memoryPolicyActive": "Actief",
+  "memoryFactType": "Type",
+  "memoryTimesRecalled": "Aantal keer opgehaald",
+  "memorySourceFacts": "Bronfeiten",
+  "spaceSetupLogs": "Installatielogboeken"
 }

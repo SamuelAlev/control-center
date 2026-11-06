@@ -283,6 +283,150 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
     return [for (final (_, snapshot) in snapshots) snapshot];
   }
 
+  /// The directory holding [workspaceId]'s scoped backups, which may not exist.
+  Directory _workspaceBackupScope(String workspaceId) {
+    if (!WorkspaceDatabaseManager.isValidWorkspaceId(workspaceId)) {
+      throw ArgumentError.value(workspaceId, 'workspaceId', 'invalid');
+    }
+    _requireRealDirectory(Directory(_backupsDir));
+    _requireRealDirectory(_workspaceBackups);
+    final scope = Directory(
+      '${_workspaceBackups.path}${Platform.pathSeparator}$workspaceId',
+    );
+    _requireRealDirectory(scope);
+    return scope;
+  }
+
+  /// Resolves backup [name] strictly under its workspace's own directory.
+  Directory _workspaceBackupDir(String workspaceId, String name) {
+    if (_snapshotDate(name) == null) {
+      throw ArgumentError.value(name, 'name', 'invalid backup name');
+    }
+    final scope = _workspaceBackupScope(workspaceId);
+    return Directory('${scope.path}${Platform.pathSeparator}$name');
+  }
+
+  @override
+  Future<List<BackupSnapshot>> listWorkspaceBackups(String workspaceId) async {
+    final scope = _workspaceBackupScope(workspaceId);
+    if (!scope.existsSync()) {
+      return const [];
+    }
+    final backups = <(DateTime, BackupSnapshot)>[];
+    for (final entity in scope.listSync(followLinks: false)) {
+      if (entity is! Directory) {
+        continue;
+      }
+      final name = entity.path.split(Platform.pathSeparator).last;
+      final date = _snapshotDate(name);
+      if (date != null) {
+        backups.add((
+          date,
+          _readWorkspaceBackup(entity, name, date, workspaceId),
+        ));
+      }
+    }
+    backups.sort((a, b) => b.$1.compareTo(a.$1));
+    return [for (final (_, backup) in backups) backup];
+  }
+
+  @override
+  Future<String?> workspaceBackupFile(String workspaceId, String name) async {
+    final dir = _workspaceBackupDir(workspaceId, name);
+    if (FileSystemEntity.typeSync(dir.path, followLinks: false) !=
+        FileSystemEntityType.directory) {
+      return null;
+    }
+    final path =
+        '${dir.path}${Platform.pathSeparator}$workspaceDatabaseFileName';
+    return FileSystemEntity.typeSync(path, followLinks: false) ==
+            FileSystemEntityType.file
+        ? path
+        : null;
+  }
+
+  @override
+  Future<void> deleteWorkspaceBackup(String workspaceId, String name) =>
+      _removeSnapshot(_workspaceBackupDir(workspaceId, name));
+
+  @override
+  Future<List<OrphanedWorkspaceBackups>> listOrphanedWorkspaceBackups() async {
+    _requireRealDirectory(Directory(_backupsDir));
+    _requireRealDirectory(_workspaceBackups);
+    if (!_workspaceBackups.existsSync()) {
+      return const [];
+    }
+    // CROSS-WORKSPACE BY DESIGN: this is the install owner's view of leftovers,
+    // and it reads directory names only. No workspace database is opened.
+    final live = (await _workspaces.liveWorkspaceIds()).toSet();
+    final names = await _global.workspaceRegistryDao.namesIncludingDeleted();
+    final orphans = <OrphanedWorkspaceBackups>[];
+    for (final entity in _workspaceBackups.listSync(followLinks: false)) {
+      final id = entity.path.split(Platform.pathSeparator).last;
+      if (entity is! Directory ||
+          !WorkspaceDatabaseManager.isValidWorkspaceId(id) ||
+          live.contains(id)) {
+        continue;
+      }
+      final backups = await listWorkspaceBackups(id);
+      if (backups.isNotEmpty) {
+        orphans.add(
+          OrphanedWorkspaceBackups(
+            workspaceId: id,
+            workspaceName: names[id],
+            backups: backups,
+          ),
+        );
+      }
+    }
+    return orphans;
+  }
+
+  @override
+  Future<void> deleteOrphanedWorkspaceBackup(
+    String workspaceId,
+    String name,
+  ) async {
+    if ((await _workspaces.liveWorkspaceIds()).contains(workspaceId)) {
+      throw StateError('workspace $workspaceId is live');
+    }
+    await deleteWorkspaceBackup(workspaceId, name);
+  }
+
+  /// Reads one scoped backup. It has no manifest, so its directory name gives
+  /// the time and its one database file decides whether it is whole.
+  BackupSnapshot _readWorkspaceBackup(
+    Directory dir,
+    String name,
+    DateTime date,
+    String workspaceId,
+  ) {
+    final path =
+        '${dir.path}${Platform.pathSeparator}$workspaceDatabaseFileName';
+    final file = File(path);
+    // A link is not a backup this service wrote, and a restore would read
+    // through it, so it is reported as missing rather than offered.
+    final restorable =
+        FileSystemEntity.typeSync(path, followLinks: false) ==
+            FileSystemEntityType.file &&
+        file.lengthSync() > 0;
+    return BackupSnapshot(
+      path: dir.path,
+      name: name,
+      createdAt: date,
+      bytes: _directoryBytes(dir),
+      workspaces: [
+        if (restorable)
+          BackupSnapshotWorkspace(
+            workspaceId: workspaceId,
+            path: path,
+            bytes: file.lengthSync(),
+          ),
+      ],
+      complete: restorable,
+    );
+  }
+
   /// Reads one snapshot directory, tolerating every way it can be broken.
   ///
   /// Nothing here throws: an unreadable snapshot is reported as incomplete,

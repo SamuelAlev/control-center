@@ -2,7 +2,7 @@
 title: Stationer
 description: Varje stationsyta, backend, åtgärdsverb, livscykeltillstånd, port, standardvärde och kontrakt – den fullständiga faktakatalogen.
 slug: sv-SE/handbok/referens/stationer
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Bara fakta. För modellen bakom dem, läs [Stationer och avskilda
@@ -18,6 +18,8 @@ miljöer](/sv-SE/handbok/koncept/stationer/); för att öppna en maskin, följ
 | Dator | X11-skrivbord: indata via hypervisorn, bildfångst via gästagenten | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (oaccelererad reservväg, väljs aldrig automatiskt) | Ja |
 | Android | Android över ADB | Googles emulator | `android-emulator` | **Nej** – emulatorn sköter sitt eget nätverk |
 | iOS | iOS-simulator via WebDriverAgent | CoreSimulator | `ios-simulator` | **Nej** – nätverket följer värd-Macen |
+| Appfönster | Fönstren i en skrivbordsapp som startats från en miljö, via operativsystemet | Värdfönster | `host-window` | **Nej** — appen körs på värden med serveranvändarens åtkomst |
+| Miljö | Compose-stacken och uppgifterna i en [miljö](/sv-SE/handbok/how-to-guider/miljoer/) med `rig`-placering | microVM | `smolvm` | Ja |
 
 Terminalen och `computer_use`-ytan delar ytvärdet `computer`; terminalen känns
 igen på sin exec-avbildningsmarkör och återanvänds aldrig som ett styrbart

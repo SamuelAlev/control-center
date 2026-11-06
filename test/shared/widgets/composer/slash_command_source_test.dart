@@ -16,9 +16,9 @@ void main() {
     SlashCommand(name: 'skill:plan', description: 'Workspace planning skill'),
     SlashCommand(name: 'skill:testing', description: 'Workspace testing skill'),
     SlashCommand(
-      name: 'skill:web-app:testing',
+      name: 'skill:shop-ui:testing',
       description: 'Front-end testing conventions',
-      badge: 'web-app',
+      badge: 'shop-ui',
     ),
     SlashCommand(
       name: 'skill:api:migrations',
@@ -29,10 +29,10 @@ void main() {
 
   test('a repo skill carries its repo as the badge', () {
     final hit = source
-        .suggestSync(q('web-app'))
-        .firstWhere((s) => s.label == '/skill:web-app:testing');
-    expect(hit.badge, 'web-app');
-    expect(hit.replacement, '/skill:web-app:testing ');
+        .suggestSync(q('shop-ui'))
+        .firstWhere((s) => s.label == '/skill:shop-ui:testing');
+    expect(hit.badge, 'shop-ui');
+    expect(hit.replacement, '/skill:shop-ui:testing ');
   });
 
   test('a builtin has no badge', () {
@@ -57,7 +57,7 @@ void main() {
   test('a bare name matches both the workspace and repo variants', () {
     final labels = source.suggestSync(q('testing')).map((s) => s.label).toList();
     expect(labels, contains('/skill:testing'));
-    expect(labels, contains('/skill:web-app:testing'));
+    expect(labels, contains('/skill:shop-ui:testing'));
   });
 
   test('typing the namespace narrows to skills only', () {

@@ -2,7 +2,7 @@
 title: Nástroje MCP
 description: Úplný katalog nástrojů MCP, které cc_server registruje, po rodinách.
 slug: cs-CZ/prirucka/referencni-prirucka/nastroje-mcp
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` hostí jeden registr nástrojů MCP (JSON-RPC 2.0), vystavený na hlavním portu serveru (výchozí `9030`) na `POST /mcp` a `GET /sse`, verze protokolu `2024-11-05`. Ke stejnému registru se dostane každý klient: desktop, webové sestavení, externí klienti MCP i vestavěný runtime agenta. Externí servery MCP se dají přemostit do stejného registru jako dynamická vrstva.
@@ -258,6 +258,8 @@ odmítnou. `rig_list` nedeklaruje žádnou — jen čte stav pracovního prostor
 | `ios_use`      | Řídí iOS Simulator přes WebDriverAgent/CoreSimulator: inspekce a vstup, snímky obrazovky, instalace, start, stop a odinstalace aplikací, deep linky a procesy simulátoru ve tvaru argv |
 | `rig_list`     | Vypíše stanice pracovního prostoru s plochou, stavem, velikostí displeje a řadičem |
 | `rig_close`    | Zničí stanici a zahodí stav stroje, který vlastní |
+
+`app_use` je pátý nástroj use: ovládá okna desktopové aplikace spuštěné v prostoru, přímo na hostiteli, ne ve VM, a deklaruje také `fileWriteOutsideWorktree` a `fileDelete`. Tento nástroj i nástroje `environment_*` popisuje stránka [Nastavení prostředí](/cs-CZ/prirucka/navody/prostredi/).
 
 ## Přes MCP se nevystavuje
 

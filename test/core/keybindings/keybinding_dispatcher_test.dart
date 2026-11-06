@@ -24,7 +24,6 @@ Keybinding binding(
   String? when,
 }) => Keybinding(
   id: id,
-  category: KeybindingCategory.view,
   scope: scope,
   chord: KeyChord([stroke]),
   when: when,
@@ -179,7 +178,6 @@ void main() {
       const cmdC = KeyStroke(LogicalKeyboardKey.keyC, cmd: true);
       const chord = Keybinding(
         id: 't.chord',
-        category: KeybindingCategory.view,
         scope: '/x',
         chord: KeyChord([cmdK, cmdC]),
       );

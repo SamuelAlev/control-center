@@ -160,6 +160,7 @@ void main() {
       '/rig/files/rig-1',
       '/backup/workspace',
       '/backup/snapshot',
+      '/backup/stored',
       '/backup/restore',
       '/meeting/audio',
       '/workspace/logo',
@@ -203,6 +204,11 @@ void main() {
       'backup-snapshot:demo-snapshot',
       {'n': 'demo-snapshot'},
     );
+    final stored = signedResource(
+      '/backup/stored',
+      'backup-stored:$workspaceId:demo-backup',
+      {'w': workspaceId, 'n': 'demo-backup'},
+    );
     final restore = signedResource(
       '/backup/restore',
       'backup-restore:$workspaceId',
@@ -214,7 +220,7 @@ void main() {
       HttpStatus.forbidden,
       reason: 'an unknown editor capability cannot open a demo proxy',
     );
-    for (final uri in [rig, clipboard, files, backup]) {
+    for (final uri in [rig, clipboard, files, backup, stored]) {
       expect(
         await resourceStatus(uri),
         HttpStatus.notFound,

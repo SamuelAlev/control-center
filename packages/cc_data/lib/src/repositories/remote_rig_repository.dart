@@ -58,6 +58,7 @@ class RigView {
         !{
           RigSurface.mobile.wire,
           RigSurface.ios.wire,
+          RigSurface.window.wire,
         }.contains(wire['surface']),
     unrestrictedNetwork: wire['unrestricted_network'] as bool? ?? false,
     detail: wire['detail'] as String?,

@@ -2,7 +2,7 @@
 title: Cadangan, ekspor, dan impor
 description: Tata letak snapshot, manifest, setiap operasi cadangan dan rute transfer, serta persisnya file yang dimuat dan tidak dimuat oleh cadangan.
 slug: id-ID/panduan-pengguna/referensi/cadangan
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Semua yang bisa disalin, diserahkan, atau diadopsi Control Center, beserta bentuk persis
@@ -51,7 +51,12 @@ Cadangan itu tidak menyertakan manifest atau `global.db` dan bukan snapshot inst
 Langkah retensi pipeline mingguan hanya menghapus cadangan ruang kerjanya sendiri
 yang lebih tua dari usia yang dikonfigurasi (bawaannya 30 hari); snapshot instalasi
 yang dibuat secara manual tidak pernah dipangkas oleh langkah itu. `server.listBackups`
-hanya mendaftarkan snapshot instalasi, termasuk yang tidak lengkap.
+hanya mendaftarkan snapshot instalasi, termasuk yang tidak lengkap;
+`workspace.listBackups` mendaftarkan cadangan terjadwal satu ruang kerja.
+
+Menghapus ruang kerja membiarkan direktori ini tetap ada. Jadwal ruang kerja itu ikut
+berhenti, sehingga tidak ada lagi yang memangkas cadangan tersebut, dan cadangan itu tetap
+ada sampai pemilik instalasi menghapusnya. `server.listOrphanedBackups` melaporkannya.
 
 
 ### `manifest.json`
@@ -133,6 +138,10 @@ seperti server demo.
 | `server.backupNow`   | mutasi | Instalasi  | **pemilik** instalasi | tidak ada | `{ok, path}`                  |
 | `server.listBackups` | baca   | Instalasi  | **pemilik** instalasi | tidak ada | `{backups: [...]}`            |
 | `server.deleteBackup` | mutasi | Instalasi | **pemilik** instalasi | `name` | `{ok}` |
+| `server.listOrphanedBackups` | baca | Instalasi | **pemilik** instalasi | tidak ada | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | mutasi | Instalasi | **pemilik** instalasi | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | baca | Ruang kerja | `admin` | tidak ada | `{backups: [...]}` |
+| `workspace.deleteBackup` | mutasi | Ruang kerja | `owner` | `name` | `{ok}` |
 | `workspace.export`   | baca   | Ruang kerja | `admin`          | tidak ada     | `{ok, path}`                  |
 | `workspace.import`   | mutasi | Ruang kerja | `owner`         | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutasi | Instalasi* | `owner`          | `id`          | baris pendaftaran ditandai terhapus |
@@ -142,6 +151,14 @@ global; handler-nya memeriksa keanggotaan pemanggil pada ruang kerja yang disebu
 dan mewajibkan `owner`.
 
 `path` di setiap respons adalah path di **host server**.
+
+`server.listOrphanedBackups` mengembalikan satu entri per ruang kerja yang tidak lagi
+aktif: `workspace_id`, `workspace_name` jika pendaftaran masih mengenalnya, dan `backups`.
+Ruang kerja yang dihapus tidak bisa lagi lolos pemeriksaan peran ruang kerja, jadi
+cadangannya menjadi milik pemilik instalasi. `server.deleteOrphanedBackup` menolak ruang
+kerja yang masih aktif, yang cadangannya tetap berada di balik `workspace.deleteBackup`
+dan peran ruang kerja itu sendiri. Kedua operasi penghapusan hanya menerima nama direktori
+stempel waktu yang terdaftar, bukan path.
 
 :::note[Snapshot seluruh instalasi dibatasi pemilik di kedua jalur]
 `server.backupNow`, `server.listBackups`, dan `server.deleteBackup` mewajibkan
@@ -226,27 +243,34 @@ memakai PSK pairing dan peran di bawah ini.
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** ruang kerja |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **pemilik** instalasi |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **admin** ruang kerja; **pemilik** instalasi setelah ruang kerja dihapus |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **pemilik** ruang kerja |
 
-`w` adalah id ruang kerja, `n` nama direktori snapshot, `d` id perangkat pemanggil, `s`
-tanda tangannya. `n` diselesaikan terhadap daftar cadangan alih-alih digabungkan ke akar
-cadangan, sehingga rute itu tidak bisa diarahkan ke direktori yang tidak akan ditampilkan
-oleh daftar.
+`w` adalah id ruang kerja, `n` nama direktori snapshot atau cadangan terjadwal, `d` id
+perangkat pemanggil, `s` tanda tangannya. Pada `/backup/snapshot`, `n` diselesaikan
+terhadap daftar cadangan alih-alih digabungkan ke akar cadangan, sehingga rute itu tidak
+bisa diarahkan ke direktori yang tidak akan ditampilkan oleh daftar. Pada `/backup/stored`,
+`n` harus berupa nama stempel waktu, dan filenya harus berupa file sungguhan di dalam
+direktori cadangan milik ruang kerja itu sendiri.
 
 | Status | Penyebab                                                                            |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | Parameter kueri yang diwajibkan hilang, atau isi unggahan kosong                    |
+| `400`  | Parameter kueri yang diwajibkan hilang, nama cadangan tidak valid, atau isi unggahan kosong |
 | `403`  | Perangkat tidak dikenal atau dicabut, tanda tangan buruk, atau pemanggil tidak memiliki peran itu |
-| `404`  | Tidak ada port cadangan di host ini, atau snapshot/file ruang kerja yang disebut tidak ada |
+| `404`  | Tidak ada port cadangan di host ini, atau file snapshot, cadangan, atau ruang kerja yang disebut tidak ada |
 | `405`  | `/backup/restore` dipanggil dengan apa pun selain `POST`                            |
 | `413`  | Isi unggahan melebihi 8 GiB, baik menurut content-length yang dideklarasikan maupun menurut byte yang benar-benar dibaca |
 | `426`  | Permintaan langsung apa pun ke rute transfer pada listener HTTP publik; gunakan terowongan sumber daya terenkripsi milik klien yang dipasangkan |
 | `500`  | Ekspor atau arsip gagal di sisi server                                              |
 
-Kedua unduhan merespons `Cache-Control: no-store` dengan `Accept-Ranges: none`. Setiap
-permintaan membuat salinan **baru** dan menghapusnya setelah dialirkan, jadi respons yang
-di-cache atau dilanjutkan akan menyambung byte dari dua ekspor berbeda menjadi satu file
-yang tampak valid padahal tidak.
+Ketiga unduhan merespons `Cache-Control: no-store` dengan `Accept-Ranges: none`.
+`/backup/workspace` dan `/backup/snapshot` membuat salinan **baru** per permintaan dan
+menghapusnya setelah dialirkan, jadi respons yang di-cache atau dilanjutkan akan
+menyambung byte dari dua ekspor berbeda menjadi satu file yang tampak valid padahal tidak.
+
+`/backup/stored` adalah pengecualian: rute itu mengalirkan cadangan terjadwal sebagai
+`<workspaceId>-<name>.db` dan membiarkan file itu di tempatnya, karena file itulah
+cadangannya.
 
 `/backup/snapshot` mengembalikan `<name>.zip`, dengan entri relatif terhadap akar snapshot
 sehingga penguraiannya mereproduksi `manifest.json` + `global.db` +
@@ -276,12 +300,12 @@ dihasilkan saat tersimpan.
 | Staging transfer               | `<dataDir>/backups/transfer/` — sebuah meja kerja, dibersihkan oleh rute yang menulisinya |
 | Nama arsip snapshot            | `<snapshot directory name>.zip`                              |
 | Batas unggahan                 | 8 GiB per unggahan terenkripsi ke `/backup/restore`          |
-| Retensi                        | Snapshot instalasi: penghapusan manual. Cadangan ruang kerja: pipeline mingguan, bawaan 30 hari |
+| Retensi                        | Snapshot instalasi: penghapusan manual. Cadangan ruang kerja: pipeline mingguan, bawaan 30 hari, atau penghapusan manual. Cadangan ruang kerja yang dihapus: hanya penghapusan manual |
 
 Direktori `exports/`, `transfer/`, dan `workspace-backups/` bukan snapshot instalasi dan
 dikecualikan dari `server.listBackups`. Hanya direktori terakhir yang memiliki retensi
-terjadwal; menghapus snapshot instalasi memerlukan tindakan eksplisit dari pemilik
-instalasi.
+terjadwal, dan hanya selama ruang kerjanya ada; menghapus snapshot instalasi memerlukan
+tindakan eksplisit dari pemilik instalasi.
 
 ## Lihat juga
 

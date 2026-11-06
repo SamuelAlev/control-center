@@ -11,8 +11,8 @@ enum MemoryChipTone {
 }
 
 /// Quiet metadata chip used across the memory surfaces: neutral fill, hairline
-/// border, secondary text. Keeps Command Blue reserved for action and
-/// selection instead of spending it on category labels.
+/// border, secondary text. Keeps the accent for action and selection instead of
+/// spending it on category labels.
 class MemoryMetaChip extends StatelessWidget {
   /// Creates a [MemoryMetaChip].
   const MemoryMetaChip({
@@ -42,11 +42,11 @@ class MemoryMetaChip extends StatelessWidget {
     final bg = isError ? tokens.bgErrorPrimary : tokens.bgSecondary;
     final border = isError ? tokens.borderErrorSubtle : tokens.borderSecondary;
     final fg = isError ? tokens.textErrorPrimary : tokens.textTertiary;
-    final textStyle =
-        (monospace
-                ? CcTypography.caption.copyWith(fontFamily: 'monospace')
-                : CcTypography.caption)
-            .copyWith(color: fg, fontWeight: FontWeight.w600);
+    final base = CcTypography.caption.copyWith(
+      color: fg,
+      fontWeight: FontWeight.w600,
+    );
+    final textStyle = monospace ? CcFonts.code(textStyle: base) : base;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

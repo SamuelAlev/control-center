@@ -22,7 +22,6 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
-import 'package:cc_domain/core/domain/repositories/repo_script_repository.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/services/agent_mention_parser.dart';
@@ -147,12 +146,10 @@ final codeGraphLookupProvider = Provider<CodeGraphLookupPort>((ref) {
   return RpcCodeGraphLookupRepository(ref.watch(rpcClientProvider));
 });
 
-/// Provides the [RepoScriptRepository] the UI reads through — per-repo
-/// lifecycle scripts (setup/archive) and their recorded runs. The server
-/// owns both persistence and execution; the client only reads config and
-/// watches run rows.
-final repoScriptRepositoryProvider = Provider<RepoScriptRepository>((ref) {
-  return RpcRepoScriptRepository(ref.watch(rpcClientProvider));
+/// Provides the environment client: definitions, live state and actions. The
+/// server owns persistence and execution; the client renders and forwards.
+final environmentRepositoryProvider = Provider<RpcEnvironmentRepository>((ref) {
+  return RpcEnvironmentRepository(ref.watch(rpcClientProvider));
 });
 
 /// Provides the [MessagingRepository] the UI reads through.

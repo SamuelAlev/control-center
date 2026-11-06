@@ -21,6 +21,7 @@ class SettingsSaveBar extends StatelessWidget {
     this.secondaryActions = const [],
     this.saveLabel,
     this.persistentSave = false,
+    this.saveEnabled = true,
   });
 
   /// Whether there is anything to commit.
@@ -58,6 +59,10 @@ class SettingsSaveBar extends StatelessWidget {
   /// surface commits at all — and a bar that materialises on the first
   /// keystroke answers that question too late.
   final bool persistentSave;
+
+  /// False while the form can't be committed as it stands (a field that does
+  /// not parse): Save stays visible but disabled, beside the [error] saying why.
+  final bool saveEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +135,7 @@ class SettingsSaveBar extends StatelessWidget {
                   variant: CcButtonVariant.accent,
                   size: CcButtonSize.sm,
                   loading: busy,
-                  onPressed: (busy || !dirty) ? null : onSave,
+                  onPressed: (busy || !dirty || !saveEnabled) ? null : onSave,
                   child: Text(saveLabel ?? l10n.save),
                 ),
             ],

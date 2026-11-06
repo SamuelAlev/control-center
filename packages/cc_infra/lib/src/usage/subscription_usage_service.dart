@@ -5,23 +5,35 @@ import 'package:cc_infra/src/usage/claude_usage_strategy.dart';
 import 'package:cc_infra/src/usage/codex_usage_strategy.dart';
 import 'package:cc_infra/src/usage/cursor_usage_strategy.dart';
 import 'package:cc_infra/src/usage/kimi_usage_strategy.dart';
+import 'package:cc_infra/src/usage/mistral_usage_strategy.dart';
 import 'package:cc_infra/src/usage/subscription_usage_strategy.dart';
 import 'package:cc_infra/src/usage/zai_usage_strategy.dart';
 import 'package:rhttp/rhttp.dart';
 
-/// The five plan-usage providers, in the order the pill and the popover
-/// render them. A missing account for any of these still yields one
-/// `unconfigured` snapshot so the surface never has a hole.
+/// The plan-usage providers, in the order the pill and the popover render
+/// them. A missing account for any of these still yields one `unconfigured`
+/// snapshot so the surface never has a hole.
 const List<({String id, String name})> kSubscriptionUsageProviders = [
   (id: 'claude', name: 'Claude'),
   (id: 'codex', name: 'Codex'),
   (id: 'zai', name: 'z.ai'),
   (id: 'kimi-code', name: 'Kimi Code'),
   (id: 'cursor', name: 'Cursor'),
+  (id: 'mistral', name: 'Mistral'),
 ];
 
+/// Providers whose credential is a plain API key that MAY carry a plan.
+///
+/// A Mistral key bills pay-as-you-go unless its organization holds a Vibe
+/// plan, and the same key shape serves both. A key without a plan reports
+/// `unconfigured`; it is dropped instead of paged, because it is not an
+/// account of the plan, and only when no key has a plan does the provider fall
+/// back to its single `unconfigured` snapshot.
+const Set<String> _planOptionalProviders = {'mistral'};
+
 /// Fetches live subscription-usage quotas for the AI coding plans — Claude
-/// Code, OpenAI Codex, Cursor, the z.ai (Zhipu) GLM Coding Plan and Kimi Code —
+/// Code, OpenAI Codex, Cursor, the z.ai (Zhipu) GLM Coding Plan, Kimi Code and
+/// the Mistral Vibe plan —
 /// the data behind the title-bar usage pill ("X% used, resets in Y").
 ///
 /// Runs **server-side**. Each provider is its own [SubscriptionUsageStrategy]
@@ -127,22 +139,48 @@ class SubscriptionUsageService {
       'zai': ZaiUsageStrategy(httpClient: _httpClient),
       'kimi-code': KimiUsageStrategy(httpClient: _httpClient),
       'cursor': CursorUsageStrategy(httpClient: _httpClient),
+      'mistral': MistralUsageStrategy(httpClient: _httpClient),
     };
 
-    final futures = <Future<SubscriptionUsage>>[];
+    final futures = <Future<List<SubscriptionUsage>>>[];
     for (final meta in kSubscriptionUsageProviders) {
       final strategy = strategies[meta.id]!;
       final list = byProvider[meta.id] ?? const <SubscriptionUsageAccount>[];
       if (list.isEmpty) {
-        futures.add(strategy.guarded());
+        futures.add(strategy.guarded().then((u) => [u]));
         continue;
       }
       final identify = list.length > 1;
-      for (final account in list) {
-        futures.add(_fetchOne(strategy, account, identify: identify));
-      }
+      final fetched = Future.wait([
+        for (final account in list)
+          _fetchOne(strategy, account, identify: identify),
+      ]);
+      futures.add(
+        _planOptionalProviders.contains(meta.id)
+            ? fetched.then((all) => _withoutPlanless(strategy, all))
+            : fetched,
+      );
     }
-    return Future.wait(futures);
+    return Future.wait(
+      futures,
+    ).then((groups) => groups.expand((g) => g).toList());
+  }
+
+  /// [all] minus the keys that carry no plan, or one nameless `unconfigured`
+  /// snapshot when none does — see [_planOptionalProviders].
+  static List<SubscriptionUsage> _withoutPlanless(
+    SubscriptionUsageStrategy strategy,
+    List<SubscriptionUsage> all,
+  ) {
+    final plans = [
+      for (final u in all)
+        if (u.status != SubscriptionStatus.unconfigured) u,
+    ];
+    if (plans.isNotEmpty) {
+      return plans;
+    }
+    // Nameless, so the pill drops it like any provider that is not set up.
+    return [strategy.unconfigured(all.first.error ?? '')];
   }
 
   /// Usage for ONE Claude Code account, named by its `CLAUDE_CONFIG_DIR`.

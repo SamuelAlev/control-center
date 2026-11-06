@@ -467,6 +467,7 @@ class _CredentialRow extends StatelessWidget {
           ],
           if (onRemove != null)
             CcIconButton(
+              variant: CcButtonVariant.destructive,
               icon: AppIcons.trash2,
               tooltip: oauth ? l10n.providerSignOut : l10n.remove,
               onPressed: busy ? null : onRemove,

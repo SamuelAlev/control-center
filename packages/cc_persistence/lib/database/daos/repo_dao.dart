@@ -136,40 +136,4 @@ class RepoDao extends DatabaseAccessor<WorkspaceDatabase> with _$RepoDaoMixin {
       }
     });
   }
-
-  /// The lifecycle scripts configured for [repoId]. The two columns are read
-  /// as a pair; blank values normalize to null so callers never see a
-  /// whitespace-only "configured" script.
-  Future<({String? setup, String? archive})> getScripts(String repoId) async {
-    final row = await getById(repoId);
-    if (row == null) {
-      return (setup: null, archive: null);
-    }
-    return (
-      setup: _blankToNull(row.setupScript),
-      archive: _blankToNull(row.archiveScript),
-    );
-  }
-
-  /// Replaces the lifecycle scripts for [repoId]. A no-op when the repo does
-  /// not exist in this workspace (an id from another workspace does not
-  /// resolve — the isolation boundary is the database file).
-  Future<void> setScripts(
-    String repoId, {
-    required String? setup,
-    required String? archive,
-  }) async {
-    await (update(reposTable)..where((t) => t.id.equals(repoId))).write(
-      ReposTableCompanion(
-        setupScript: Value(_blankToNull(setup)),
-        archiveScript: Value(_blankToNull(archive)),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
-  }
-
-  static String? _blankToNull(String? value) {
-    final trimmed = value?.trim();
-    return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
-  }
 }

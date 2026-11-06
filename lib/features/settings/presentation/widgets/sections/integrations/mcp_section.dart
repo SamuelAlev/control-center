@@ -173,6 +173,7 @@ class _McpControls extends ConsumerWidget {
                   ? l10n.tokenConfigured
                   : l10n.noTokenSet,
               controlWidth: 200,
+              trailingControl: true,
               child: _TokenActions(
                 hasValue: status.hasToken,
                 onEdit: () => showTokenDialog(

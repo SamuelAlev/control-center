@@ -1,6 +1,8 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -22,6 +24,23 @@ Future<void> _pumpAt(
   });
   await tester.pumpWidget(testWrap(SingleChildScrollView(child: child)));
   await tester.pump();
+}
+
+/// A short control pinned to the row end, as the MCP token row uses it.
+class _TrailingField extends StatelessWidget {
+  const _TrailingField({this.hint});
+
+  final String? hint;
+
+  @override
+  Widget build(BuildContext context) => SettingsField(
+    label: 'Authentication token',
+    description: 'No token set',
+    hint: hint,
+    controlWidth: 200,
+    trailingControl: true,
+    child: const SizedBox(key: Key('control'), width: 60, height: 32),
+  );
 }
 
 void main() {
@@ -103,6 +122,64 @@ void main() {
       expect(narrowControl.dx, equals(narrowLabel.dx));
       expect(narrowControl.dy, greaterThan(narrowLabel.dy));
     });
+
+    testWidgets('a trailing control hugs the row end and the label keeps the '
+        'rest', (tester) async {
+      await _pumpAt(tester, const _TrailingField());
+
+      final row = tester.getRect(find.byType(_TrailingField));
+      final control = tester.getRect(find.byKey(const Key('control')));
+      final label = tester.getRect(find.text('Authentication token'));
+
+      expect(control.right, equals(row.right));
+      expect(control.width, equals(60));
+      expect(label.left, equals(row.left));
+      expect(control.center.dy, equals(row.center.dy));
+    });
+
+    testWidgets('a trailing control mirrors under RTL', (tester) async {
+      tester.view.physicalSize = const Size(900, 700);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        testWrap(
+          const SingleChildScrollView(child: _TrailingField()),
+          textDirection: TextDirection.rtl,
+        ),
+      );
+
+      final row = tester.getRect(find.byType(_TrailingField));
+      final control = tester.getRect(find.byKey(const Key('control')));
+      expect(control.left, equals(row.left));
+    });
+
+    testWidgets('a trailing control keeps its note under the control', (
+      tester,
+    ) async {
+      await _pumpAt(tester, const _TrailingField(hint: 'Rotates on save'));
+
+      final row = tester.getRect(find.byType(_TrailingField));
+      final note = tester.getTopLeft(find.text('Rotates on save'));
+      expect(note.dx, equals(row.right - 200));
+    });
+
+    testWidgets('a capped control without the flag stays by the label', (
+      tester,
+    ) async {
+      await _pumpAt(
+        tester,
+        const SettingsField(
+          label: 'Port',
+          controlWidth: 120,
+          child: SizedBox(key: Key('control'), height: 40),
+        ),
+      );
+
+      expect(
+        tester.getTopLeft(find.byKey(const Key('control'))).dx,
+        equals(kSettingsFieldLabelWidth + AppSpacing.lg),
+      );
+    });
   });
 
   group('SettingsToggle', () {
@@ -143,6 +220,60 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(tester.widget<CcSwitch>(find.byType(CcSwitch)).onChanged, isNull);
     });
+
+    testWidgets('shares its edges with the field rows around it', (
+      tester,
+    ) async {
+      await _pumpAt(
+        tester,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SettingsToggle(
+              title: 'Start on app launch',
+              value: true,
+              onChanged: (_) {},
+            ),
+            const _TrailingField(),
+          ],
+        ),
+      );
+
+      expect(
+        tester.getTopLeft(find.text('Start on app launch')).dx,
+        equals(tester.getTopLeft(find.text('Authentication token')).dx),
+      );
+      expect(
+        tester.getTopRight(find.byType(CcSwitch)).dx,
+        equals(tester.getTopRight(find.byKey(const Key('control'))).dx),
+      );
+    });
+
+    testWidgets('paints no hover wash', (tester) async {
+      await _pumpAt(
+        tester,
+        SettingsToggle(
+          title: 'Start on app launch',
+          value: true,
+          onChanged: (_) {},
+        ),
+      );
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer(location: Offset.zero);
+      await gesture.moveTo(tester.getCenter(find.text('Start on app launch')));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(SettingsToggle));
+      final hover = (context.designSystem ?? DesignSystemTokens.light()).hover;
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox && w.decoration == BoxDecoration(color: hover),
+        ),
+        findsNothing,
+      );
+    });
   });
 
   group('SettingsDisclosure', () {
@@ -182,6 +313,57 @@ void main() {
       expect(find.text('Overridden'), findsOneWidget);
       expect(find.text('the detail'), findsNothing);
     });
+
+    for (final direction in TextDirection.values) {
+      testWidgets('the summary sits at the row end in ${direction.name}', (
+        tester,
+      ) async {
+        const summary = 'Clock skew, signature policy';
+        tester.view.physicalSize = const Size(900, 700);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          testWrap(
+            const SettingsDisclosure(
+              title: 'Advanced',
+              summary: summary,
+              badge: SettingsModifiedBadge(label: 'Changed'),
+              child: Text('the detail'),
+            ),
+            textDirection: direction,
+          ),
+        );
+        await tester.pump();
+
+        // The painted glyphs, not the Text box: the box spans its whole slot
+        // whether or not the text inside it reaches the end.
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.text(summary),
+        );
+        final glyphs = paragraph.getBoxesForSelection(
+          const TextSelection(baseOffset: 0, extentOffset: summary.length),
+        );
+        final header = find.byType(CcTappable).first;
+        final rtl = direction == TextDirection.rtl;
+        final glyphEdge = paragraph
+            .localToGlobal(
+              Offset(rtl ? glyphs.first.left : glyphs.last.right, 0),
+            )
+            .dx;
+        final rowEnd = rtl
+            ? tester.getTopLeft(header).dx + AppSpacing.sm
+            : tester.getTopRight(header).dx - AppSpacing.sm;
+        expect(glyphEdge, moreOrLessEquals(rowEnd, epsilon: 1));
+
+        // The badge stays beside the title rather than following the summary.
+        final gap = rtl
+            ? tester.getTopLeft(find.text('Advanced')).dx -
+                  tester.getTopRight(find.text('Changed')).dx
+            : tester.getTopLeft(find.text('Changed')).dx -
+                  tester.getTopRight(find.text('Advanced')).dx;
+        expect(gap, lessThan(40));
+      });
+    }
   });
 
   group('SettingsEntityRow', () {
@@ -236,6 +418,26 @@ void main() {
       );
 
       // No chevron: nothing to open, so nothing that looks openable.
+      expect(find.byIcon(AppIcons.chevronRight), findsNothing);
+    });
+
+    testWidgets('a row that opens has no chevron beside its actions', (
+      tester,
+    ) async {
+      await _pumpAt(
+        tester,
+        Column(
+          children: [
+            SettingsEntityRow(title: 'Link', onPressed: () {}),
+            SettingsEntityRow(
+              title: 'Expands',
+              detail: const Text('the detail'),
+              onExpandedChanged: (_) {},
+            ),
+          ],
+        ),
+      );
+
       expect(find.byIcon(AppIcons.chevronRight), findsNothing);
     });
   });

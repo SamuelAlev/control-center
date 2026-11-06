@@ -88,10 +88,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get keybindingPushToTalk => 'לחץ ודבר';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'החזק או החלף מצב הכתבה קולית באזור כתיבת ההודעה';
-
-  @override
   String get agentPermissions => 'הרשאות סוכנים';
 
   @override
@@ -186,6 +182,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'סימולטור iOS';
+
+  @override
+  String get rigSurfaceAppWindow => 'חלון יישום';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -457,6 +456,10 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'תצוגה חיה דורשת ⁨ffmpeg⁩ על מארח זה. התקן ⁨ffmpeg⁩ ופתח מחדש את הכרטיסייה.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'תצוגה חיה דורשת הקלטת מסך. אשרו זאת ל-Control Center בהגדרות המערכת ופתחו מחדש את הכרטיסייה.';
 
   @override
   String get rigStreamEnded => 'התצוגה החיה הסתיימה.';
@@ -1563,10 +1566,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'פתח את תפריט הסינון';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'פתח את תפריט הסינון של בקשות המשיכה';
 
   @override
   String countSelected(int count) {
@@ -2838,19 +2837,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get cancelEdit => 'ביטול עריכה';
 
   @override
-  String get categoryCreation => 'יצירה';
-
-  @override
-  String get categoryEditing => 'עריכה';
-
-  @override
   String get categoryNavigation => 'ניווט';
-
-  @override
-  String get categorySystem => 'מערכת';
-
-  @override
-  String get categoryView => 'תצוגת קטגוריות';
 
   @override
   String get change => 'שינוי';
@@ -3668,31 +3655,13 @@ class AppLocalizationsHe extends AppLocalizations {
   String get keepSandboxing => 'השאר ארגז חול';
 
   @override
-  String get keybindingAddARepositoryDescription => 'הוספת מאגר';
-
-  @override
   String get keybindingAddRepository => 'הוסף מאגר';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'הוספת או הסרת סימנייה מהכתבה הנבחרת';
 
   @override
   String get keybindingCommandPalette => 'לוח פקודות';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'יצירת סוכן חדש';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'יצירת סביבת עבודה חדשה';
-
-  @override
   String get keybindingFocusSearch => 'מיקוד בחיפוש';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'מיקוד בשדה חיפוש בקשות המשיכה';
 
   @override
   String get keybindingNewAgent => 'סוכן חדש';
@@ -3713,34 +3682,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get keybindingOpenArticle => 'פתח כתבה';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'פתיחה או סגירה של חלונית החלפת סביבות העבודה בסרגל הצד';
-
-  @override
   String get keybindingOpenPr => 'פתח PR';
 
   @override
   String get keybindingOpenSettings => 'פתח הגדרות';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'פתיחת הגדרות היישום';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription => 'פתיחת לוח הפקודות';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'פתיחת הכתבה הנבחרת';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'פתיחת בקשת המשיכה הנבחרת';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'פתיחת סביבת העבודה הנבחרת';
 
   @override
   String get keybindingOpenWorkspace => 'פתח סביבת עבודה';
@@ -3758,82 +3703,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get keybindingRefresh => 'רענן';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'רענון כל הפידים';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'רענון רשימת בקשות המשיכה';
-
-  @override
-  String get keybindingRescanForAdaptersDescription => 'סריקה מחדש אחר מתאמים';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription => 'בחירת הכתבה הבאה';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription => 'בחירת המרחב הבא';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'בחירת הכתבה הקודמת';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription => 'בחירת המרחב הקודם';
-
-  @override
   String get keybindingSendMessage => 'שלח הודעה';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'שליחת ההודעה הנוכחית';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'מעבר בין מצב בהיר למצב כהה';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'מעבר לסביבת העבודה השמינית';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'מעבר לסביבת העבודה החמישית';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'מעבר לסביבת העבודה הראשונה';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'מעבר לסביבת העבודה הרביעית';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'מעבר לסביבת העבודה הבאה';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'מעבר לסביבת העבודה התשיעית';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'מעבר לסביבת העבודה הקודמת';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'מעבר לסביבת העבודה השנייה';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'מעבר לסביבת העבודה השביעית';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'מעבר לסביבת העבודה השישית';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'מעבר לסביבת העבודה השלישית';
 
   @override
   String get keybindingToggleBookmark => 'הוסף/הסר סימנייה';
@@ -3870,13 +3740,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'סביבת עבודה 9';
-
-  @override
-  String get keybindings => 'קיצורי מקלדת';
-
-  @override
-  String get keybindingsDescription =>
-      'כל קיצורי המקלדת. הקיצורים קבועים ולא ניתן לשנות את ההקצאה שלהם.';
 
   @override
   String get killRunning => 'עצור הרצות פעילות';
@@ -4142,11 +4005,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get noSavedArticlesBody => 'כתבות שתשמור יופיעו כאן.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'אין קיצורים שתואמים ל־\"$query\"';
-  }
 
   @override
   String get noSystemFonts => 'לא זוהו גופני מערכת.';
@@ -4886,12 +4744,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'חיפוש…';
-
-  @override
-  String get searchShortcuts => 'חיפוש קיצורים…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'לא זמין בדפדפן';
 
   @override
   String get searching => 'מחפש…';
@@ -6682,6 +6534,27 @@ class AppLocalizationsHe extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'המרחב נמחק';
 
   @override
+  String get triggerEventSpaceArchived => 'המרחב הועבר לארכיון';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged => 'הקצאת המרחב השתנתה';
+
+  @override
+  String get triggerEventPrHeadChanged => 'ה־head של PR השתנה';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => 'סטטוס הסביבה השתנה';
+
+  @override
+  String get triggerEventEnvironmentReady => 'הסביבה מוכנה';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'הסביבה הוסרה';
+
+  @override
+  String get triggerEventEnvironmentProcessExited => 'תהליך הסביבה הסתיים';
+
+  @override
   String get triggerExternalPrHelp =>
       'בקשת משיכה שנפתחה במארח הקוד, לא מ-Control Center.';
 
@@ -6736,6 +6609,32 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'מרחב שיחה נמחק.';
+
+  @override
+  String get triggerSpaceArchivedHelp => 'מרחב שיחה מועבר לארכיון.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'הקצאת עצי העבודה של מרחב מתחילה, מסתיימת או נכשלת.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'קומיטים חדשים נדחפים לבקשת משיכה פתוחה.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'סביבת מרחב עוברת לסטטוס חדש.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'סביבת מרחב הופעלה ואפשר להשתמש בה.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp => 'סביבת מרחב מפורקת.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'תהליך שהסביבה מריצה מסתיים.';
 
   @override
   String get navTickets => 'כרטיסים';
@@ -8952,19 +8851,6 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'שימוש ועלות';
-
-  @override
-  String get usageAndCostDescription =>
-      'ההוצאה על הסוכנים שלכם ב-7 הימים האחרונים, לפי עלויות הרצה שנצפו.';
-
-  @override
-  String get noUsageYet => 'עדיין לא נרשם שימוש.';
-
-  @override
-  String get spentThisWeek => 'הוצאו השבוע';
-
-  @override
   String get subscriptionUsage => 'שימוש במינוי';
 
   @override
@@ -9172,9 +9058,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get keybindingNewSpace => 'מרחב חדש';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'יצירת מרחב חדש';
-
-  @override
   String get jumpToLatest => 'קפיצה לסוף';
 
   @override
@@ -9343,71 +9226,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get preparingWorkspace => 'מכין את סביבת העבודה…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'מריץ את סקריפט ההקמה של ⁨$repo⁩…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'סקריפטים';
-
-  @override
-  String get repoScriptsTooltip => 'הגדרת סקריפטים למחזור החיים';
-
-  @override
-  String get repoScriptsSetupLabel => 'סקריפט הקמה';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'רץ בעץ העבודה של המרחב מיד לאחר יצירתו — התקנת תלויות, יצירת קבצים. כשל מסמן את המרחב ככושל; ניסיון חוזר מריץ אותו שוב.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'סקריפט ארכוב';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'רץ רגע לפני שעץ העבודה של המרחב נמחק — ניקוי משאבים מחוץ לעץ העבודה. כשל לעולם אינו חוסם מחיקה.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'רץ דרך bash מתוך עץ העבודה, עם המשתנים ⁨CC_WORKSPACE_PATH⁩ (עץ העבודה), ⁨CC_ROOT_PATH⁩ (שורש המאגר), ⁨CC_SPACE_ID⁩, ⁨CC_SPACE_NAME⁩ ו-⁨CC_REPO_NAME⁩.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'לדוגמה: ⁨pnpm install⁩';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'לדוגמה: ⁨docker compose -p \$CC_SPACE_ID down⁩';
-
-  @override
-  String get repoScriptsRecentRuns => 'הרצות אחרונות';
-
-  @override
-  String get repoScriptsNoRuns => 'אין הרצות עדיין';
-
-  @override
-  String get repoScriptsSaved => 'הסקריפטים נשמרו';
-
-  @override
-  String get repoScriptsRunKindSetup => 'הקמה';
-
-  @override
-  String get repoScriptsRunKindArchive => 'ארכוב';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'בביצוע';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'הצליח';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'נכשל';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'פג הזמן הקצוב';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'קוד יציאה $code';
+  String provisioningRunningTasks(String repo) {
+    return 'מריץ את משימות ה-worktree של ⁨$repo⁩…';
   }
 
   @override
@@ -10208,10 +10028,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get keybindingCheatSheet => 'קיצורי מקלדת';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'הצגת דף קיצורי המקלדת של המסך הנוכחי';
-
-  @override
   String get runPlaybookLabel => 'הרצת פלייבוק';
 
   @override
@@ -10222,14 +10038,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'ביצוע מחדש';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'ביטול הפעולה האחרונה הניתנת לביטול';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'ביצוע מחדש של הפעולה האחרונה שבוטלה';
 
   @override
   String get undone => 'בוטל';
@@ -14112,6 +13920,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get newSkill => 'מיומנות חדשה';
 
   @override
+  String get newItemAction => 'חדש';
+
+  @override
   String get zoomIn => 'התקרבות';
 
   @override
@@ -14327,6 +14138,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get steerNow => 'היגוי';
 
   @override
+  String get steerForce => 'עצירה ושליחה';
+
+  @override
   String get steeringQueueLabel => 'הודעות היגוי בתור';
 
   @override
@@ -14374,15 +14188,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'תישאלו שוב בפעם הבאה שסוכן יצטרך להריץ תוכנית מהעותק הזה.';
-
-  @override
-  String get repoScriptsTest => 'בדיקה';
-
-  @override
-  String get repoScriptsTestTooltip => 'הרצת הטיוטה הזו בשכפול זמני של המאגר';
-
-  @override
-  String get repoScriptsRunKindTest => 'בדיקה';
 
   @override
   String get demoBadgeLabel => 'דמו';
@@ -14601,6 +14406,52 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'נתיב על השרת';
+
+  @override
+  String get backupScheduledLabel => 'גיבויים מתוזמנים';
+
+  @override
+  String get backupScheduledExplainer =>
+      'עותקים שנשמרים על ידי צינור הגיבוי של כל סביבת עבודה. הגדירו את התזמון ואת משך השמירה בתבנית הצינור.';
+
+  @override
+  String get backupScheduledNone => 'אין עדיין גיבויים';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count גיבויים',
+      many: '$count גיבויים',
+      two: 'שני גיבויים',
+      one: 'גיבוי אחד',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'גיבוי אחרון: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'צריך תפקיד מנהל בסביבת העבודה הזו כדי לראות את הגיבויים שלה.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'למחוק את הגיבוי הזה?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'למחוק מהשרת את הגיבוי מתאריך $date של $name? אי אפשר לבטל את הפעולה.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'הגיבוי נמחק.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'סביבת העבודה נמחקה';
 
   @override
   String get backupRestoreAction => 'שחזור';
@@ -15211,14 +15062,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get ideQuickOpen => 'מעבר לקובץ';
 
   @override
-  String get ideQuickOpenDescription =>
-      'חיפוש קובצי השיחה לפי שם ופתיחת אחד מהם בכרטיסייה';
-
-  @override
-  String get prQuickOpenDescription =>
-      'חיפוש קובצי בקשת המשיכה לפי שם ופתיחת אחד מהם בכרטיסייה';
-
-  @override
   String get ideQuickOpenHint => 'חיפוש קבצים לפי שם';
 
   @override
@@ -15545,6 +15388,15 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'טעינה כפויה';
+
+  @override
+  String get skillEvalHashLabel => 'גיבוב החבילה';
+
+  @override
+  String get skillEvalProgressLabel => 'התקדמות';
+
+  @override
+  String get skillEvalUpdatesToggle => 'הערכות של עדכונים';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -15933,4 +15785,700 @@ class AppLocalizationsHe extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return 'נותרו $minutes דק׳';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'סביבות מריצות תהליכים אמיתיים במארח, ולכן בהדגמה אין סביבות.';
+
+  @override
+  String get environmentChecksFailing => 'חלק מהבדיקות נכשלות בשרת';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'נקודות קצה: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'שירותים: $names';
+  }
+
+  @override
+  String get environmentCopied => 'הועתק';
+
+  @override
+  String get environmentCopyCommand => 'העתקת פקודה';
+
+  @override
+  String get environmentCopyUrl => 'העתקת כתובת URL';
+
+  @override
+  String get environmentDefinition => 'הגדרה';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count הגדרות',
+      one: 'הגדרה אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'השמדה';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name והנתונים שלו יוסרו. התחלה תיצור חדש.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'להשמיד את הסביבה הזו?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'הרצה בשירות';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'קוד יציאה $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => 'צריך להגדיר את זה בשרת';
+
+  @override
+  String get environmentKindApp => 'אפליקציה';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'תהליך';
+
+  @override
+  String get environmentKindTask => 'משימה';
+
+  @override
+  String get environmentLaunch => 'הפעלת האפליקציה';
+
+  @override
+  String get environmentLogsGone => 'היומנים האלה כבר לא זמינים.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'יומנים: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'ממתין לפלט';
+
+  @override
+  String get environmentMoreActions => 'פעולות נוספות לסביבה';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'שינוי מחייב יצירה מחדש של הסביבה הזו.';
+
+  @override
+  String get environmentNoStack =>
+      'מריץ רק משימות worktree, כך שאין מה להתחיל.';
+
+  @override
+  String get environmentOnTheServer => 'בשרת';
+
+  @override
+  String get environmentOpenInBrowserVm => 'פתיחה ב-Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'פתיחת מציג';
+
+  @override
+  String get environmentPlacementRig => 'ב-VM';
+
+  @override
+  String get environmentPreviewTab => 'סביבה';
+
+  @override
+  String get environmentRebuildRelaunch => 'בנייה והפעלה מחדש';
+
+  @override
+  String get environmentRecreate => 'יצירה מחדש';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name יושמד ויופעל שוב עם אותן אפשרויות. הנתונים שלו יאבדו.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'ליצור מחדש את הסביבה הזו?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name חוזר למצב הבסיס. נתונים שנוצרו מאז יאבדו.';
+  }
+
+  @override
+  String get environmentResetData => 'איפוס נתונים';
+
+  @override
+  String get environmentResetTitle => 'לאפס נתונים?';
+
+  @override
+  String get environmentRestart => 'הפעלה מחדש';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count הפעלות מחדש',
+      one: 'הפעלה מחדש אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'הרצה';
+
+  @override
+  String get environmentRunInTerminal => 'הרצה במסוף';
+
+  @override
+  String get environmentSectionTitle => 'סביבה';
+
+  @override
+  String get environmentService => 'שירות';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'פעולות עבור $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'התחלת סביבה';
+
+  @override
+  String get environmentStateCrashed => 'קרס';
+
+  @override
+  String get environmentStatusDegraded => 'מוגבל';
+
+  @override
+  String get environmentStatusDestroying => 'בהשמדה';
+
+  @override
+  String get environmentStatusGone => 'נעלם';
+
+  @override
+  String get environmentStatusStopping => 'בעצירה';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'עצירת $name מאבדת את הנתונים שלו, והתחלה לא תחזיר אותם.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'עצירה ואובדן נתונים';
+
+  @override
+  String get environmentStopTitle => 'לעצור את הסביבה הזו?';
+
+  @override
+  String get environmentTaskNeverRun => 'עדיין לא הורץ';
+
+  @override
+  String get environmentsAddCheck => 'הוספת בדיקה';
+
+  @override
+  String get environmentsAddOption => 'הוספת אפשרות';
+
+  @override
+  String get environmentsAddRole => 'הוספת תפקיד';
+
+  @override
+  String get environmentsAdminOnly =>
+      'רק מנהלי סביבת העבודה יכולים לשנות הגדרות.';
+
+  @override
+  String get environmentsAfter => 'המתנה לרכיבים האלה';
+
+  @override
+  String get environmentsAnchor => 'עוגן';
+
+  @override
+  String get environmentsAutoCreate => 'התחלה אוטומטית';
+
+  @override
+  String get environmentsAutoCreateAll => 'בכל מרחב מתאים';
+
+  @override
+  String get environmentsAutoCreateOff => 'אף פעם';
+
+  @override
+  String get environmentsAutoCreatePrs => 'במרחבי pull request';
+
+  @override
+  String get environmentsBlank => 'הגדרה ריקה';
+
+  @override
+  String get environmentsCheckFix => 'פקודת תיקון';
+
+  @override
+  String get environmentsCheckHint => 'רמז';
+
+  @override
+  String get environmentsCommandHelp =>
+      'ארגומנטים מופרדים ברווחים. ארגומנט שמכיל רווח יש להקיף במירכאות.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count רכיבים',
+      one: 'רכיב אחד',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'בניית תמונות בעת ההתחלה';
+
+  @override
+  String get environmentsComposeFile => 'קובץ compose';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'לא ניתן לקרוא קובץ compose. עדיין אפשר להזין שמות שירותים בתצוגת JSON.';
+
+  @override
+  String get environmentsComposeServices => 'שירותים';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'השאירו את כל השירותים לא מסומנים כדי להריץ את כולם.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'לפקודה הזו יש ארגומנטים מותנים. ערכו אותה בתצוגת JSON.';
+
+  @override
+  String get environmentsCwdPath => 'נתיב עבודה';
+
+  @override
+  String get environmentsCwdRole => 'תפקיד עבודה';
+
+  @override
+  String get environmentsDeleteBody =>
+      'מרחבים לא יוכלו עוד להתחיל אותה. סביבות פעילות ימשיכו לרוץ עד שייעצרו.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'למחוק את $name?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'מה כל מרחב יכול להתחיל, ואילו משימות ה-worktree שלו מריץ.';
+
+  @override
+  String get environmentsDraftFromRepo => 'טיוטה ממאגר';
+
+  @override
+  String get environmentsEmpty => 'עדיין אין הגדרות';
+
+  @override
+  String get environmentsEnabledWhen => 'מופעל כאשר';
+
+  @override
+  String get environmentsEndpointRole => 'תפקיד נקודת הקצה';
+
+  @override
+  String get environmentsFollowPrHead => 'מעקב אחר ה-head של ה-pull request';
+
+  @override
+  String get environmentsForkApproval => 'כל התחלה דורשת מנהל';
+
+  @override
+  String get environmentsForkDeny => 'נדחה';
+
+  @override
+  String get environmentsForkPrs => 'Pull requests מ-fork';
+
+  @override
+  String get environmentsForkRig => 'הרצה ב-VM';
+
+  @override
+  String get environmentsIdleStop => 'עצירה אחרי דקות חוסר פעילות';
+
+  @override
+  String get environmentsIsolateHome => 'מתן תיקיית בית פרטית לאפליקציה';
+
+  @override
+  String get environmentsIssues => 'יש לתקן את אלה לפני השמירה';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'JSON לא תקין: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'שומר על הנתונים בעצירה';
+
+  @override
+  String get environmentsLinkConfirm => 'קישור ואישור';
+
+  @override
+  String get environmentsLinkFile => 'קישור קובץ ממאגר';
+
+  @override
+  String get environmentsLinkHelp =>
+      'נקרא רק מענף ברירת המחדל, ורץ רק לאחר אישור.';
+
+  @override
+  String get environmentsLinkPath => 'נתיב';
+
+  @override
+  String get environmentsMaxRunning => 'רצות במקביל';
+
+  @override
+  String get environmentsNamingProject => 'פרויקט';
+
+  @override
+  String get environmentsNamingTemplate => 'תבנית שם';
+
+  @override
+  String get environmentsNew => 'הגדרה חדשה';
+
+  @override
+  String get environmentsNewDefinitionName => 'סביבה חדשה';
+
+  @override
+  String get environmentsNoChecks => 'להגדרה הזו אין בדיקות.';
+
+  @override
+  String get environmentsNoRuns => 'עדיין אין הרצות בדיקה';
+
+  @override
+  String get environmentsOnChange => 'נתיבים למעקב';
+
+  @override
+  String get environmentsOptionBool => 'כן או לא';
+
+  @override
+  String get environmentsOptionEnum => 'אחד מתוך';
+
+  @override
+  String get environmentsOptionMulti => 'כמה מתוך';
+
+  @override
+  String get environmentsOptionValues => 'ערכים';
+
+  @override
+  String get environmentsPlacement => 'מיקום';
+
+  @override
+  String get environmentsPlacementHost => 'במארח';
+
+  @override
+  String get environmentsPlacementRig => 'ב-VM';
+
+  @override
+  String get environmentsPrepareTask => 'משימת הכנה';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'נקודת קצה ראשית';
+
+  @override
+  String get environmentsReadyHttp => 'מוכן כשכתובת ה-URL הזו עונה';
+
+  @override
+  String get environmentsRestartAlways => 'תמיד';
+
+  @override
+  String get environmentsRestartNever => 'אף פעם';
+
+  @override
+  String get environmentsRestartOn => 'הפעלה מחדש כשהנתיבים האלה משתנים';
+
+  @override
+  String get environmentsRestartOnFailure => 'בכישלון';
+
+  @override
+  String get environmentsRestartPolicy => 'הפעלה מחדש';
+
+  @override
+  String get environmentsRigTtl => 'אורך חיי ה-VM בשעות';
+
+  @override
+  String get environmentsRunChecks => 'הרצה חוזרת';
+
+  @override
+  String get environmentsRunTest => 'הרצת בדיקה';
+
+  @override
+  String get environmentsSaved => 'ההגדרה נשמרה';
+
+  @override
+  String get environmentsSectionComponents => 'רכיבים';
+
+  @override
+  String get environmentsSectionOptions => 'אפשרויות התחלה';
+
+  @override
+  String get environmentsSectionSeedFiles => 'קובצי בסיס';
+
+  @override
+  String get environmentsSectionVariables => 'משתנים';
+
+  @override
+  String get environmentsSeedHelp =>
+      'נתיב אחד בכל שורה, מועתק מה-checkout הרשום. Pull requests מ-fork לעולם לא מקבלים אותם.';
+
+  @override
+  String get environmentsShellHelp =>
+      'מצייני מיקום לא מורחבים כאן. קראו במקום זאת את משתני CC_ENV_*.';
+
+  @override
+  String get environmentsSourceApprove => 'אישור הגרסה הזו';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path תואם לגרסה המאושרת.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'הגרסה המאושרת ממשיכה לרוץ עד שתאשרו את זו.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'מקור';
+
+  @override
+  String get environmentsTestHelp =>
+      'מריץ סביבה חד-פעמית מקצה לקצה: בדיקה, התחלה, המתנה למוכנות, השמדה.';
+
+  @override
+  String get environmentsTestSaveFirst => 'יש לשמור קודם את ההגדרה.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'זמן קצוב בשניות';
+
+  @override
+  String get environmentsTitle => 'סביבות';
+
+  @override
+  String get environmentsTriggerArchive => 'לפני מחיקת ה-worktree';
+
+  @override
+  String get environmentsTriggerChange => 'כשנתיבים במעקב משתנים';
+
+  @override
+  String get environmentsTriggerCreate => 'פעם אחת לכל סביבה';
+
+  @override
+  String get environmentsTriggerManual => 'לפי בקשה';
+
+  @override
+  String get environmentsTriggerProvision => 'כשה-worktree נוצר';
+
+  @override
+  String get environmentsTriggerStart => 'בכל התחלה';
+
+  @override
+  String get environmentsTriggers => 'מתי רץ';
+
+  @override
+  String get environmentsUnreadable => 'הלקוח הזה לא יכול לקרוא את ההגדרה הזו.';
+
+  @override
+  String get environmentsUpdateAvailable => 'יש עדכון זמין';
+
+  @override
+  String get environmentsUseShell => 'שימוש בפקודת מעטפת';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'הכלי ירוץ אז על ה-checkout שלכם. התייחסו אליו כאל קריאה בלבד.';
+
+  @override
+  String get environmentsWhenMissing => 'כשחסר במרחב';
+
+  @override
+  String get environmentsWhenMissingAdd => 'הוספה למרחב';
+
+  @override
+  String get environmentsWhenMissingSkip => 'דילוג';
+
+  @override
+  String get environmentsWhenMissingSource => 'שימוש ב-checkout הרשום';
+
+  @override
+  String get environmentsUnsupported => 'השרת הזה לא תומך בסביבות.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'אין מציג: השרת לא יכול ללכוד את החלון הזה. אפשרו הקלטת מסך ל-Control Center בשרת.';
+
+  @override
+  String get environmentHealthHealthy => 'תקין';
+
+  @override
+  String get environmentHealthUnhealthy => 'לא תקין';
+
+  @override
+  String get environmentTerminalStale =>
+      'המסוף הזה נפתח לפני שהסביבה התחילה, ולכן חסרים בו המשתנים שלה.';
+
+  @override
+  String get environmentTerminalFresh => 'פתיחת מסוף חדש';
+
+  @override
+  String get environmentsShellStays =>
+      'סקריפט רב-שורתי נשאר פקודת מעטפת: השורות הן המבנה שלו.';
+
+  @override
+  String get environmentsOverrides => 'דריסות של סביבת העבודה';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'ההגדרות של הקובץ עצמו לקריאה בלבד כאן. שייכו את התפקידים שלו למאגרים של סביבת העבודה הזו, או דרסו כל שדה כ-JSON.';
+
+  @override
+  String get environmentsReposHelp =>
+      'המאגרים שהסביבה הזו משתמשת בהם, כל אחד משויך לתפקיד.';
+
+  @override
+  String get environmentsComponentsHelp => 'מה הסביבה מריצה, לפי סדר ההתחלה.';
+
+  @override
+  String get environmentsOptionsHelp => 'אפשרויות שמוצעות כשמתחילים את הסביבה.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'מוגדרים במשימות, תהליכים, אפליקציות ומסופי מרחב.';
+
+  @override
+  String get environmentsChecksHelp => 'מה המארח צריך כדי שהסביבה הזו תרוץ.';
+
+  @override
+  String get environmentsIdleStopHelp => 'הערך 0 לעולם לא עוצר אותה.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'מרחב שמחזיק את המאגר הזה יכול להתחיל את הסביבה.';
+
+  @override
+  String get environmentsRequiredHelp => 'הסביבה לא יכולה לרוץ בלעדיו.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'סנכרון ורענון כשה-head של ה-pull request זז.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'דורש תיקון';
+
+  @override
+  String get environmentsCheckFile => 'קובץ';
+
+  @override
+  String get environmentsDiscardBody => 'העריכות שלכם בהגדרה הזו יאבדו.';
+
+  @override
+  String get environmentsWorktreeRuns => 'הרצות של משימות worktree';
+
+  @override
+  String get environmentsNoWorktreeRuns => 'עדיין לא הורצה אף משימת worktree.';
+
+  @override
+  String get environmentsLinkRoles => 'תפקידים בקובץ הזה';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'לא ניתן לקרוא את הקובץ מהמאגר. אפשר לשייך תפקידים אחרי הקישור.';
+
+  @override
+  String get guardrailClassHostExecution => 'הרצת פקודות במארח';
+
+  @override
+  String get environmentUrls => 'כתובות URL';
+
+  @override
+  String get environmentScripts => 'סקריפטים';
+
+  @override
+  String get environmentNoneForSpace => 'אין סביבה למרחב הזה';
+
+  @override
+  String get environmentNoneForPr => 'אין סביבה לבקשת המשיכה הזו';
+
+  @override
+  String get environmentSetupBody =>
+      'סביבה מריצה את השירותים, הסקריפטים וכתובות ה-URL של מאגר עבור מרחב אחד. הגדירו אותה פעם אחת וכל מרחב במאגר יוכל להפעיל אותה.';
+
+  @override
+  String get environmentSetUp => 'הגדרת סביבה';
+
+  @override
+  String get environmentEditDefinition => 'עריכת ההגדרה';
+
+  @override
+  String get environmentOpenPanel => 'פתיחת הסביבה';
+
+  @override
+  String get environmentNeedsSetup => 'נדרשת הגדרה';
+
+  @override
+  String get environmentContinueInTerminal => 'המשך במסוף';
+
+  @override
+  String get environmentSetupHint =>
+      'הכלי זקוק לך במסוף בשביל סיסמה או שאלה. ההפעלה תמשיך כשזה יסתיים.';
+
+  @override
+  String get environmentSetupTabReason => 'המסוף הזה נפתח כי ההפעלה זקוקה לך';
+
+  @override
+  String get environmentSetupTab => 'הגדרת סביבה';
+
+  @override
+  String get environmentsNothingRunning => 'שום דבר לא פועל מההגדרה הזו.';
+
+  @override
+  String get searchPoliciesHint => 'חיפוש מדיניות...';
+
+  @override
+  String get noPoliciesMatch => 'אין מדיניות שתואמת לחיפוש';
+
+  @override
+  String get memoryPolicyActive => 'פעילה';
+
+  @override
+  String get memoryFactType => 'סוג';
+
+  @override
+  String get memoryTimesRecalled => 'מספר שליפות';
+
+  @override
+  String get memorySourceFacts => 'עובדות מקור';
+
+  @override
+  String get spaceSetupLogs => 'יומני הכנה';
 }

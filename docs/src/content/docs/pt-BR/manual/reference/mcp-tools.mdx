@@ -2,7 +2,7 @@
 title: Ferramentas MCP
 description: Catálogo completo das ferramentas MCP que o cc_server registra, por família.
 slug: pt-BR/manual/referencia/ferramentas-mcp
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 O `cc_server` hospeda um único registro de ferramentas MCP (JSON-RPC 2.0), servido na porta principal do servidor (padrão `9030`) em `POST /mcp` e `GET /sse`, com versão de protocolo `2024-11-05`. Todos os clientes chegam ao mesmo registro: o desktop, a build web, clientes MCP externos e o runtime de agentes integrado. Servidores MCP externos podem ser conectados ao mesmo registro como uma camada dinâmica.
@@ -257,6 +257,8 @@ não declara nenhuma — ela apenas lê o estado do espaço de trabalho. O vocab
 | `ios_use`      | Controla o iOS Simulator por WebDriverAgent/CoreSimulator: inspecionar/entrada, capturas de tela, instalar/iniciar/parar/desinstalar apps, deep links e processos de simulador em formato argv |
 | `rig_list`     | Lista os rigs de um espaço de trabalho com superfície, status, tamanho da tela e controlador  |
 | `rig_close`    | Destrói um rig e descarta o estado da máquina que ele possui                                   |
+
+`app_use` é uma quinta ferramenta use: controla as janelas de um aplicativo de desktop aberto em um espaço, diretamente no host e não em uma VM, e também declara `fileWriteOutsideWorktree` e `fileDelete`. Ela e as ferramentas `environment_*` estão descritas em [Configurar ambientes](/pt-BR/manual/guias/ambientes/).
 
 ## O que não é exposto por MCP
 

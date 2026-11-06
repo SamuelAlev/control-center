@@ -17,7 +17,7 @@ void main() {
           const SingleChildScrollView(
             child: SettingsRow(
               icon: AppIcons.gitBranch,
-              title: 'Frontify/web-app',
+              title: 'Acme/shop-ui',
               subtitle: '',
               trailing: SizedBox(key: trailingKey, width: 40, height: 40),
             ),
@@ -27,7 +27,7 @@ void main() {
 
       expect(find.text(''), findsNothing);
       expect(
-        tester.getCenter(find.text('Frontify/web-app')).dy,
+        tester.getCenter(find.text('Acme/shop-ui')).dy,
         tester.getCenter(find.byKey(trailingKey)).dy,
       );
     });

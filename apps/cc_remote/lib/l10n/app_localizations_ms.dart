@@ -2630,4 +2630,7 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Larian berhenti kerana kelayakan penyedianya tidak lagi berfungsi. Sambung semula dalam Tetapan → Penyedia, kemudian cuba semula giliran ini.';
+
+  @override
+  String get permissionHostExecution => 'Jalankan arahan pada hos';
 }

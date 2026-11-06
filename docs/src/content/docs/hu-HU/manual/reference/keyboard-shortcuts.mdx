@@ -2,10 +2,10 @@
 title: Billentyűparancsok
 description: A billentyűparancsok teljes nyilvántartása hatókör szerint, azzal a feltétellel együtt, amely mellett az egyes parancsok aktiválódnak.
 slug: hu-HU/kezikonyv/referencia/billentyuparancsok
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-A billentyűparancsok egyetlen `const` nyilvántartásból származnak: a `KeybindingRegistry`-ből a `lib/core/constants/keybindings.dart` fájlban. Ez **49 kötést** tartalmaz. A Beállítások → Ön → Gyorsbillentyűk ezt a nyilvántartást **írásvédett referenciaként** jeleníti meg: nincs átkötési felület, és nincs felhasználói gyorsbillentyű-fájl sem.
+A billentyűparancsok egyetlen `const` nyilvántartásból származnak: a `KeybindingRegistry`-ből a `lib/core/constants/keybindings.dart` fájlban. Ez **49 kötést** tartalmaz. A **Billentyűparancsok** párbeszédablak (nyomja meg a `?` billentyűt, vagy nyissa meg a Súgó menüből) a globális és az aktuális képernyőhöz tartozó billentyűparancsokat mutatja. Ez **írásvédett referencia**: nincs átkötési felület, és nincs felhasználói gyorsbillentyű-fájl sem.
 
 Az alábbiakban a `Cmd` az elsődleges parancsmódosító — ⌘ macOS-en, Ctrl Windowson és Linuxon. Egy kötés csak akkor aktiválódik, ha a parancsához az aktuális képernyőn regisztrált kezelő tartozik, és teljesül a `when` feltétele; a `!textInputFocus` azt jelenti, hogy a lenyomás inkább egy fókuszált szövegmezőbe jut tovább.
 
@@ -41,7 +41,7 @@ Nincs számjegyekkel működő navigációs billentyűparancs. A Beérkezett, a 
 | `Enter`          | PR megnyitása        |
 | `F`              | Szűrőmenü megnyitása |
 
-Az `Enter` (`pr.list-open`) szerepel a nyilvántartásban, és megjelenik a gyorsbillentyűk referenciáján, de **a listaképernyő nem regisztrál hozzá kezelőt**, ezért jelenleg nem aktiválódik. Az `F` a szűrőmenüt nyitja meg (`pr.list-open-filter`), nem a keresést.
+Az `Enter` (`pr.list-open`) szerepel a nyilvántartásban, és megjelenik a **Billentyűparancsok** párbeszédablakban, de **a listaképernyő nem regisztrál hozzá kezelőt**, ezért jelenleg nem aktiválódik. Az `F` a szűrőmenüt nyitja meg (`pr.list-open-filter`), nem a keresést.
 
 ## Pull request részletei (2)
 
@@ -90,7 +90,7 @@ A lapváltást (`1`/`2`/`3`), a fájl megtekintettként jelölését és összec
 
 Az „Ugrás fájlra” választót nyit a beszélgetés fájljaival. Ha nem gépel semmit, a legutóbb megnyitott fájlokat listázza; gépeléskor a beszélgetés worktree-jeinek összes fájljában keres. Az `Enter` új lapon nyitja meg a kijelölt fájlt, a `Cmd/Ctrl + Enter` vagy a sor felosztás gombja egy jobb oldali panelen nyitja meg, a nemrég megnyitott fájl sorában lévő `×` pedig eltávolítja a listából.
 
-Az Enterrel küldést a szerkesztő szövegmezője birtokolja; a nyomva beszélhet módot a szerkesztő mikrofon gombja (a saját hardveres billentyűzetkezelője). Mindkettő a beállítások referenciája kedvéért szerepel a nyilvántartásban.
+Az Enterrel küldést a szerkesztő szövegmezője birtokolja; a nyomva beszélhet módot a szerkesztő mikrofon gombja (a saját hardveres billentyűzetkezelője). Mindkettő azért szerepel a nyilvántartásban, hogy a **Billentyűparancsok** párbeszédablak meg tudja jeleníteni őket.
 
 ## Munkaterület-választó (2)
 
@@ -127,7 +127,7 @@ Az `Enter` fókusz nélküli szövegmezőt igényel.
 
 ## A nyilvántartáson kívüli diff-megjelenítő-billentyűk
 
-A PR diff-megjelenítő ezeket maga kezeli (`PrDiffKeyboardHandler`). A keresés/megtekintett/összecsukás csak a beállítások referenciája kedvéért szerepel a nyilvántartás megjegyzéseiben — nincs regisztrált diszpécserkezelő, ezért a diszpécser a diff-nézetre hagyja őket. A gyorsbillentyűk referenciáján nem jelennek meg saját sorokként.
+A PR diff-megjelenítő ezeket maga kezeli (`PrDiffKeyboardHandler`). A keresés/megtekintett/összecsukás csak a nyilvántartás megjegyzéseiben szerepel: nincs regisztrált diszpécserkezelő, ezért a diszpécser a diff-nézetre hagyja őket. A **Billentyűparancsok** párbeszédablakban nem jelennek meg saját sorokként.
 
 | Billentyűparancs | Művelet                                               |
 | ---------------- | ----------------------------------------------------- |

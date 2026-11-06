@@ -170,6 +170,37 @@ void main() {
       expect(eval.nextRunAt, now.add(const Duration(seconds: 3600)));
     });
 
+    test('skip policy holds a skipped interval until its resume slot', () {
+      final now = DateTime.utc(2026, 6, 30, 12);
+      final resume = now.add(const Duration(seconds: 1800));
+      final eval = scheduler.evaluate(
+        _trigger(
+          cron: 'every:3600',
+          lastFiredAt: now.subtract(const Duration(seconds: 10800)),
+          nextRunAt: resume,
+          catchUpPolicy: CronCatchUpPolicy.skip,
+        ),
+        now,
+      );
+      expect(eval.shouldFire, isFalse);
+      expect(eval.nextRunAt, resume);
+    });
+
+    test('skip policy fires a skipped interval at its resume slot', () {
+      final now = DateTime.utc(2026, 6, 30, 12);
+      final eval = scheduler.evaluate(
+        _trigger(
+          cron: 'every:3600',
+          lastFiredAt: now.subtract(const Duration(seconds: 10800)),
+          nextRunAt: now.subtract(const Duration(seconds: 30)),
+          catchUpPolicy: CronCatchUpPolicy.skip,
+        ),
+        now,
+      );
+      expect(eval.shouldFire, isTrue);
+      expect(eval.nextRunAt, now.add(const Duration(seconds: 3600)));
+    });
+
     test('skip policy still fires a single elapsed interval (on time)', () {
       // Just over one period late (< 2 periods) → a normal fire, not a catch-up.
       final now = DateTime.utc(2026, 6, 30, 12);

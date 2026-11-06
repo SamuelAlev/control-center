@@ -2631,4 +2631,7 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Lần chạy đã dừng vì thông tin xác thực của nhà cung cấp không còn hoạt động. Hãy kết nối lại trong Cài đặt → Nhà cung cấp rồi thử lại lượt này.';
+
+  @override
+  String get permissionHostExecution => 'Chạy lệnh trên máy chủ';
 }

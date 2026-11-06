@@ -2,7 +2,7 @@
 title: Sandaran, eksport dan import
 description: Susun atur snapshot, manifes, setiap operasi sandaran dan laluan pemindahan, serta dengan tepat fail yang terkandung dan tidak terkandung dalam sandaran.
 slug: ms-MY/manual-pengguna/rujukan/sandaran
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Semua yang boleh disalin, diserahkan atau diterima pakai oleh Control Center, dan bentuk
@@ -54,7 +54,11 @@ Langkah pengekalan pipeline mingguan hanya membuang sandaran ruang kerjanya send
 yang lebih lama daripada usia yang dikonfigurasikan (30 hari secara lalai); snapshot
 pemasangan yang dicipta secara manual tidak pernah termasuk dalam putaran itu.
 `server.listBackups` menyenaraikan snapshot pemasangan sahaja, termasuk yang tidak
-lengkap.
+lengkap; `workspace.listBackups` menyenaraikan sandaran berjadual satu ruang kerja.
+
+Memadam ruang kerja membiarkan direktori ini di tempatnya. Jadual ruang kerja itu berhenti
+bersamanya, jadi tiada lagi yang memutarkan sandaran tersebut, dan ia kekal sehingga
+pemilik pemasangan membuangnya. `server.listOrphanedBackups` melaporkannya.
 
 
 ### `manifest.json`
@@ -136,6 +140,10 @@ seperti pelayan demo.
 | `server.backupNow`    | ubah   | Pemasangan   | **pemilik** pemasangan | tiada        | `{ok, path}`                   |
 | `server.listBackups`  | baca   | Pemasangan   | **pemilik** pemasangan | tiada        | `{backups: [...]}`             |
 | `server.deleteBackup` | ubah   | Pemasangan   | **pemilik** pemasangan | `name`        | `{ok}`                         |
+| `server.listOrphanedBackups` | baca | Pemasangan | **pemilik** pemasangan | tiada | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | ubah | Pemasangan | **pemilik** pemasangan | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | baca | Ruang kerja | `admin` | tiada | `{backups: [...]}` |
+| `workspace.deleteBackup` | ubah | Ruang kerja | `owner` | `name` | `{ok}` |
 | `workspace.export`    | baca   | Ruang kerja  | `admin`               | tiada         | `{ok, path}`                   |
 | `workspace.import`    | ubah   | Ruang kerja  | `owner`               | `source_path` | `{ok, workspace_id}`           |
 | `workspace.delete`    | ubah   | Pemasangan*  | `owner`               | `id`          | baris pendaftaran ditandakan dipadam |
@@ -145,6 +153,14 @@ global; pengendalinya menyemak keahlian pemanggil dalam ruang kerja yang dinamak
 dan mewajibkan `owner`.
 
 `path` dalam setiap respons ialah laluan pada **hos pelayan**.
+
+`server.listOrphanedBackups` mengembalikan satu entri bagi setiap ruang kerja yang tidak
+lagi aktif: `workspace_id`, `workspace_name` apabila daftar masih mengetahuinya, dan
+`backups`. Ruang kerja yang dipadam tidak lagi boleh melepasi semakan peranan ruang kerja,
+jadi sandarannya menjadi milik pemilik pemasangan. `server.deleteOrphanedBackup` menolak
+ruang kerja yang aktif, yang sandarannya kekal di sebalik `workspace.deleteBackup` dan
+peranan ruang kerja itu sendiri. Kedua-dua operasi padam hanya menerima nama direktori cap
+masa yang tersenarai, bukan laluan.
 
 :::note[Snapshot seluruh pemasangan dikawal pemilik pada kedua-dua jalur]
 `server.backupNow`, `server.listBackups`, dan `server.deleteBackup` memerlukan
@@ -229,27 +245,35 @@ penggandingan dan peranan di bawah.
 | ----------------------- | ------ | --------------- | -------------------------------- | ------------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **Pentadbir** ruang kerja |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **Pemilik** pemasangan    |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **Pentadbir** ruang kerja; **pemilik** pemasangan setelah ruang kerja dipadam |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **Pemilik** ruang kerja   |
 
-`w` ialah id ruang kerja, `n` nama direktori snapshot, `d` id peranti pemanggil, `s`
-tandatangannya. `n` diselesaikan terhadap penyenaraian sandaran dan bukannya dicantumkan
-pada akar sandaran, jadi laluan itu tidak boleh dihalakan ke direktori yang tidak akan
-ditunjukkan oleh penyenaraian.
+`w` ialah id ruang kerja, `n` nama direktori snapshot atau sandaran berjadual, `d` id
+peranti pemanggil, `s` tandatangannya. Pada `/backup/snapshot`, `n` diselesaikan terhadap
+penyenaraian sandaran dan bukannya dicantumkan pada akar sandaran, jadi laluan itu tidak
+boleh dihalakan ke direktori yang tidak akan ditunjukkan oleh penyenaraian. Pada
+`/backup/stored`, ia mesti nama cap masa, dan fail itu mesti fail sebenar di dalam
+direktori sandaran ruang kerja itu sendiri.
 
 | Status | Punca                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | Parameter pertanyaan yang diperlukan hilang, atau badan muat naik kosong            |
+| `400`  | Parameter pertanyaan yang diperlukan hilang, nama sandaran tidak sah, atau badan muat naik kosong |
 | `403`  | Peranti tidak dikenali atau dibatalkan, tandatangan tidak sah, atau pemanggil tiada peranan itu |
-| `404`  | Tiada port sandaran pada hos ini, atau snapshot/fail ruang kerja yang dinamakan tidak wujud |
+| `404`  | Tiada port sandaran pada hos ini, atau fail snapshot, sandaran atau ruang kerja yang dinamakan tidak wujud |
 | `405`  | `/backup/restore` dipanggil dengan apa-apa selain `POST`                            |
 | `413`  | Badan muat naik melebihi 8 GiB, sama ada mengikut content-length yang diisytiharkan atau bait yang benar-benar dibaca |
 | `426`  | Apa-apa permintaan langsung ke laluan pemindahan pada pendengar HTTP awam; gunakan terowong sumber tersulit klien yang digandingkan |
 | `500`  | Eksport atau arkib gagal di sisi pelayan                                            |
 
-Kedua-dua muat turun membalas `Cache-Control: no-store` dengan `Accept-Ranges: none`.
-Setiap permintaan menempa salinan **baharu** dan memadamkannya selepas dialirkan, jadi
-respons yang dicache atau disambung semula akan menyambung bait daripada dua eksport
-berbeza menjadi satu fail yang kelihatan sah tetapi sebenarnya tidak.
+Ketiga-tiga muat turun membalas `Cache-Control: no-store` dengan `Accept-Ranges: none`.
+`/backup/workspace` dan `/backup/snapshot` menempa salinan **baharu** bagi setiap
+permintaan dan memadamkannya selepas dialirkan, jadi respons yang dicache atau disambung
+semula akan menyambung bait daripada dua eksport berbeza menjadi satu fail yang kelihatan
+sah tetapi sebenarnya tidak.
+
+`/backup/stored` ialah pengecualian: ia mengalirkan sandaran berjadual sebagai
+`<workspaceId>-<name>.db` dan membiarkan fail itu di tempatnya, kerana fail itulah
+sandarannya.
 
 `/backup/snapshot` memulangkan `<name>.zip`, dengan entri relatif kepada akar snapshot
 supaya membuka bungkusan menghasilkan semula `manifest.json` + `global.db` +
@@ -279,12 +303,12 @@ terhasil semasa disimpan.
 | Pementasan pemindahan          | `<dataDir>/backups/transfer/` — meja kerja, disapu oleh laluan yang menulisnya |
 | Nama arkib snapshot            | `<snapshot directory name>.zip`                              |
 | Had muat naik                  | 8 GiB per muat naik tersulit ke `/backup/restore`            |
-| Pengekalan                     | Snapshot pemasangan: pemadaman manual. Sandaran ruang kerja: pipeline mingguan, lalai 30 hari |
+| Pengekalan                     | Snapshot pemasangan: pemadaman manual. Sandaran ruang kerja: pipeline mingguan, lalai 30 hari, atau pemadaman manual. Sandaran ruang kerja yang dipadam: pemadaman manual sahaja |
 
 Direktori `exports/`, `transfer/`, dan `workspace-backups/` bukan snapshot pemasangan dan
 dikecualikan daripada `server.listBackups`. Hanya direktori terakhir yang mempunyai
-pengekalan berjadual; memadam snapshot pemasangan memerlukan tindakan eksplisit pemilik
-pemasangan.
+pengekalan berjadual, dan hanya selagi ruang kerjanya wujud; memadam snapshot pemasangan
+memerlukan tindakan eksplisit pemilik pemasangan.
 
 ## Lihat juga
 

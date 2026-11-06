@@ -241,6 +241,7 @@ String _viewLabel(AppLocalizations l10n, IdeSidebarView view) => switch (view) {
   IdeSidebarView.general => l10n.ideTabGeneral,
   IdeSidebarView.explorer => l10n.ideTabExplorer,
   IdeSidebarView.sourceControl => l10n.ideTabSourceControl,
+  IdeSidebarView.environment => l10n.environmentSectionTitle,
   IdeSidebarView.notes => l10n.ideTabNotes,
   IdeSidebarView.artifacts => l10n.artifactsTabLabel,
 };
@@ -250,6 +251,7 @@ IconData viewIcon(IdeSidebarView view) => switch (view) {
   IdeSidebarView.general => AppIcons.layoutDashboard,
   IdeSidebarView.explorer => AppIcons.folderTree,
   IdeSidebarView.sourceControl => AppIcons.gitBranch,
+  IdeSidebarView.environment => AppIcons.boxes,
   IdeSidebarView.notes => AppIcons.notebookText,
   IdeSidebarView.artifacts => AppIcons.layoutTemplate,
 };

@@ -364,6 +364,7 @@ class _RunMetaStrip extends StatelessWidget {
               CcTooltip(
                 message: l10n.deletePipelineRun,
                 child: CcIconButton(
+                  variant: CcButtonVariant.destructive,
                   icon: AppIcons.trash2,
                   semanticLabel: l10n.deletePipelineRun,
                   onPressed: onDelete,

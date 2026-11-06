@@ -38,7 +38,8 @@ class PrCommentField extends ConsumerStatefulWidget {
   });
 
   /// The comment's text controller, owned by the host (which reads it on send
-  /// and may restore a draft into it).
+  /// and may restore a draft into it). A `ComposerTextController` paints the
+  /// draft's Markdown live in the Write tab.
   final TextEditingController controller;
 
   /// The field's focus node.

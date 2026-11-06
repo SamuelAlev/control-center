@@ -2,7 +2,7 @@
 title: Công cụ MCP
 description: Danh mục đầy đủ các công cụ MCP mà cc_server đăng ký, theo từng nhóm.
 slug: vi-VN/so-tay/tham-chieu/cong-cu-mcp
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` vận hành một sổ đăng ký công cụ MCP (JSON-RPC 2.0), được phục vụ trên cổng chính của máy chủ (mặc định `9030`) tại `POST /mcp` và `GET /sse`, phiên bản giao thức `2024-11-05`. Mọi máy khách đều tiếp cận cùng một sổ đăng ký: ứng dụng desktop, bản web, các máy khách MCP bên ngoài và runtime agent tích hợp. Các máy chủ MCP bên ngoài có thể được bắc cầu vào cùng sổ đăng ký như một lớp động.
@@ -259,6 +259,8 @@ vựng động từ cho từng bề mặt nằm trong
 | `ios_use` | Điều khiển iOS Simulator qua WebDriverAgent/CoreSimulator: kiểm tra/đầu vào, ảnh chụp màn hình, cài/chạy/dừng/gỡ ứng dụng, deep link và các tiến trình simulator dạng argv |
 | `rig_list` | Liệt kê các rig của một không gian làm việc kèm bề mặt, trạng thái, kích thước màn hình và bộ điều khiển |
 | `rig_close` | Hủy một rig và vứt bỏ trạng thái cỗ máy thuộc sở hữu của nó |
+
+`app_use` là công cụ use thứ năm: nó điều khiển cửa sổ của ứng dụng máy tính được mở trong space, trực tiếp trên máy chủ thay vì trong VM, và cũng khai báo `fileWriteOutsideWorktree` và `fileDelete`. Công cụ này và các công cụ `environment_*` được mô tả trong [Thiết lập môi trường](/vi-VN/so-tay/huong-dan-thuc-hanh/moi-truong/).
 
 ## Không được phơi ra qua MCP
 

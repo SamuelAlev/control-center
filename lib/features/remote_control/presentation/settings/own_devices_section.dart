@@ -14,10 +14,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// The signed-in user's own paired devices: label, platform, pairing/last-seen
 /// timing, with rename and revoke actions over the server's `pairing.*` ops.
 ///
-/// The row actions used to ride on hover. That made them unreachable on the
-/// phone remote and by keyboard — and "revoke this device" is exactly the
-/// control an operator reaches for from a phone, because the device they want
-/// to revoke is usually the one they are not holding.
+/// A row renames on a click. Revoking sits behind hover, and behind a
+/// confirmation. [SettingsHoverReveal] keeps it reachable on the phone remote
+/// and by keyboard, which matters: "revoke this device" is exactly the control
+/// an operator reaches for from a phone, because the device they want to revoke
+/// is usually the one they are not holding.
 class OwnDevicesSection extends ConsumerWidget {
   /// Creates an [OwnDevicesSection].
   const OwnDevicesSection({super.key});
@@ -30,39 +31,44 @@ class OwnDevicesSection extends ConsumerWidget {
 
     return SectionCard(
       label: l10n.yourDevices,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            l10n.yourDevicesDescription,
-            style: CcTypography.bodySm.copyWith(color: t.textTertiary),
+      count: devicesAsync.value?.length,
+      subtitle: Text(l10n.yourDevicesDescription),
+      padding: EdgeInsets.zero,
+      headerPadding: const EdgeInsetsDirectional.fromSTEB(
+        AppSpacing.lg,
+        14,
+        AppSpacing.lg,
+        0,
+      ),
+      child: devicesAsync.when(
+        loading: () => const Padding(
+          padding: EdgeInsets.all(AppSpacing.md),
+          child: Center(child: CcSpinner()),
+        ),
+        error: (e, _) => Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Text(
+            l10n.couldNotListDevices('$e'),
+            style: CcTypography.bodySm.copyWith(color: t.textErrorPrimary),
           ),
-          const SizedBox(height: 8),
-          devicesAsync.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Center(child: CcSpinner()),
-            ),
-            error: (e, _) => Text(
-              l10n.couldNotListDevices('$e'),
-              style: CcTypography.bodySm.copyWith(color: t.textErrorPrimary),
-            ),
-            data: (devices) {
-              if (devices.isEmpty) {
-                return Text(
-                  l10n.noOwnDevices,
-                  style: CcTypography.bodySm.copyWith(color: t.textTertiary),
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final device in devices) _DeviceRow(device: device),
-                ],
-              );
-            },
-          ),
-        ],
+        ),
+        data: (devices) {
+          if (devices.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Text(
+                l10n.noOwnDevices,
+                style: CcTypography.bodySm.copyWith(color: t.textTertiary),
+              ),
+            );
+          }
+          return SettingsGroup(
+            separator: SettingsGroupSeparator.rule,
+            children: [
+              for (final device in devices) _DeviceRow(device: device),
+            ],
+          );
+        },
       ),
     );
   }
@@ -97,7 +103,6 @@ class _DeviceRowState extends ConsumerState<_DeviceRow> {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final active = _status.isEmpty || _status == 'active';
     return SettingsEntityRow(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       icon: _platformIcon,
       title: _label.isEmpty ? _id : _label,
       tone: active ? CcStatusTone.positive : CcStatusTone.neutral,
@@ -106,28 +111,15 @@ class _DeviceRowState extends ConsumerState<_DeviceRow> {
         l10n,
         CcTypography.caption.copyWith(color: t.textTertiary),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CcIconButton(
-            icon: AppIcons.pencil,
-            size: CcButtonSize.sm,
-            variant: CcButtonVariant.ghost,
-            tooltip: l10n.rename,
-            semanticLabel: l10n.rename,
-            onPressed: () => _rename(context, ref, l10n),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          CcIconButton(
-            icon: AppIcons.trash2,
-            size: CcButtonSize.sm,
-            variant: CcButtonVariant.ghost,
-            color: t.fgErrorPrimary,
-            tooltip: l10n.revoke,
-            semanticLabel: l10n.revoke,
-            onPressed: () => _confirmRevoke(context, ref, l10n),
-          ),
-        ],
+      onPressed: () => _rename(context, ref, l10n),
+      revealTrailing: true,
+      trailing: CcIconButton(
+        icon: AppIcons.trash2,
+        size: CcButtonSize.sm,
+        variant: CcButtonVariant.destructive,
+        tooltip: l10n.revoke,
+        semanticLabel: l10n.revoke,
+        onPressed: () => _confirmRevoke(context, ref, l10n),
       ),
     );
   }

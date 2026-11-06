@@ -2,10 +2,10 @@
 title: Sneltoetsen
 description: Het volledige register van toetscombinaties, per scope, met de voorwaarden waaronder elke sneltoets afgaat.
 slug: nl-NL/handleiding/referentie/sneltoetsen
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Sneltoetsen komen uit één `const`-register, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Het bevat **49 bindings**. Instellingen → Jij → Sneltoetsen toont dat register als een **alleen-lezen naslagwerk**: er is geen UI om sneltoetsen opnieuw toe te wijzen, en er is geen bestand met gebruikerssneltoetsen.
+Sneltoetsen komen uit één `const`-register, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Het bevat **49 bindings**. Het dialoogvenster **Sneltoetsen** (druk op `?`, of open het via het Help-menu) toont de globale sneltoetsen en die van het huidige scherm. Het is een **alleen-lezen naslagwerk**: er is geen UI om sneltoetsen opnieuw toe te wijzen, en er is geen bestand met gebruikerssneltoetsen.
 
 Hieronder is `Cmd` de primaire commandotoets — ⌘ op macOS, Ctrl op Windows en Linux. Een binding gaat alleen af wanneer het bijbehorende commando een geregistreerde handler heeft op het huidige scherm en de `when`-clausule ervan waar is; `!textInputFocus` betekent dat de toets in plaats daarvan wordt doorgegeven aan een tekstveld met focus.
 
@@ -41,7 +41,7 @@ Scope `/pull-requests`. Ze vereisen allemaal `route == '/pull-requests'` en dat 
 | `Enter`   | PR openen        |
 | `F`       | Filtermenu openen |
 
-`Enter` (`pr.list-open`) staat in het register en verschijnt in het sneltoetsenoverzicht, maar **het lijstscherm registreert er geen handler voor**, dus op dit moment gaat hij niet af. `F` opent het filtermenu (`pr.list-open-filter`), niet zoeken.
+`Enter` (`pr.list-open`) staat in het register en verschijnt in het dialoogvenster **Sneltoetsen**, maar **het lijstscherm registreert er geen handler voor**, dus op dit moment gaat hij niet af. `F` opent het filtermenu (`pr.list-open-filter`), niet zoeken.
 
 ## Pull request-detail (2)
 
@@ -90,7 +90,7 @@ Scope `/spaces`. De `when`-clausules gebruiken een regex, zodat ze zowel in de r
 
 Ga naar bestand opent een kiezer over de bestanden van het gesprek. Zonder invoer toont die de bestanden die je het laatst hebt geopend; typen doorzoekt alle bestanden in de worktrees van het gesprek. `Enter` opent het geselecteerde bestand in een nieuw tabblad, `Cmd/Ctrl + Enter` of de splitsknop op de rij opent het in een deelvenster aan de rechterkant, en het `×` op een recente rij haalt het uit de lijst.
 
-Verzenden met Enter valt onder het tekstveld van de composer; druk-om-te-spreken valt onder de microfoonknop van de composer (met een eigen handler voor een hardwaretoetsenbord). Beide staan in het register vermeld voor het instellingenoverzicht.
+Verzenden met Enter valt onder het tekstveld van de composer; druk-om-te-spreken valt onder de microfoonknop van de composer (met een eigen handler voor een hardwaretoetsenbord). Beide staan in het register vermeld zodat het dialoogvenster **Sneltoetsen** ze kan tonen.
 
 ## Werkruimtekiezer (2)
 
@@ -127,7 +127,7 @@ Scope `/newsfeed`. Ze vereisen allemaal `route == '/newsfeed'` en dat er geen te
 
 ## Sneltoetsen van de diff-viewer buiten het register
 
-De PR-diff-viewer handelt deze zelf af (`PrDiffKeyboardHandler`). Zoeken/bekeken/samenvouwen staan alleen in de commentaren van het register vermeld voor het instellingenoverzicht — er is geen dispatcher-handler geregistreerd, dus de dispatcher laat ze aan de diff-weergave. Ze verschijnen niet als eigen rijen in het sneltoetsenoverzicht.
+De PR-diff-viewer handelt deze zelf af (`PrDiffKeyboardHandler`). Zoeken/bekeken/samenvouwen worden alleen genoemd in de commentaren van het register: er is geen dispatcher-handler geregistreerd, dus de dispatcher laat ze aan de diff-weergave. Ze verschijnen niet als eigen rijen in het dialoogvenster **Sneltoetsen**.
 
 | Sneltoets       | Actie                                                |
 | --------------- | ---------------------------------------------------- |

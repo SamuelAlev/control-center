@@ -11,7 +11,8 @@ import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart'
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 // The pure-Dart engine is now injected explicitly: `fileSearch` is a required
 // parameter so a missing `libfff_c` can never silently degrade in production.
-import 'package:cc_natives/cc_natives.dart' show DartFileSearch;
+import 'package:cc_natives/cc_natives.dart'
+    show DartFileSearch, RigWorktreeGuard, RigWorktreeTampered;
 import 'package:cc_server_core/src/repo_ide_data_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -1359,6 +1360,168 @@ void main() {
         ),
         isNull,
       );
+    });
+  });
+
+  // A rig may have this worktree mounted, so its git metadata is not to be
+  // trusted: every host git call goes through RigWorktreeGuard. A marker file
+  // tells whether a planted program ran.
+  group('a worktree a rig has mounted', () {
+    late String wt;
+    late String ran;
+    late RepoIdeDataService svc;
+
+    Future<String> planted() async {
+      final script = p.join(tmp.path, 'planted.sh');
+      await _installHook(script, '#!/bin/sh\ntouch "$ran"\n');
+      return script;
+    }
+
+    setUp(() async {
+      wt = makeRepoDir('wt', {'src/app.dart': 'void main() {}\n'});
+      ran = p.join(tmp.path, 'ran');
+      await _gitInit(wt);
+      RigWorktreeGuard.debugReset();
+      svc = RepoIdeDataService(
+        repoRepository: _FakeRepoRepo(),
+        workspaceRepository: _FakeWorkspaceRepo()..linked['ws'] = {'repo1'},
+        isolatedRepoRepository: _FakeIsolatedRepoRepo()
+          ..bySpace['ws:ch'] = [_worktree('repo1', wt)],
+        fileSearch: DartFileSearch(),
+      );
+    });
+
+    tearDown(() {
+      RigWorktreeGuard.forceRelease(wt);
+      RigWorktreeGuard.debugReset();
+    });
+
+    /// Plants [script] the way a stack would, after the quarantine began.
+    void tamper(String script) {
+      File(p.join(wt, '.git', 'config')).writeAsStringSync(
+        '[core]\n\tfsmonitor = $script\n',
+        mode: FileMode.append,
+      );
+    }
+
+    Future<Map<String, dynamic>?> sync() => svc.syncToPrHead(
+      'ws',
+      'ch',
+      'repo1',
+      headRef: 'refs/pull/1/head',
+      branch: 'pr/1',
+    );
+
+    Future<Map<String, dynamic>?> commit() => svc.commitAndPush(
+      workspaceId: 'ws',
+      spaceId: 'ch',
+      repoId: 'repo1',
+      message: 'change',
+      paths: const ['src/app.dart'],
+      push: false,
+    );
+
+    test('the fixture runs a planted fsmonitor without the guard', () async {
+      final script = await planted();
+      tamper(script);
+      await sync();
+      expect(File(ran).existsSync(), isTrue);
+    });
+
+    test('syncToPrHead switches a known fsmonitor off', () async {
+      tamper(await planted());
+      RigWorktreeGuard.quarantine(wt);
+      await sync();
+      expect(File(ran).existsSync(), isFalse);
+    });
+
+    test('commit runs no hook', () async {
+      await _installHook(
+        p.join(wt, '.git', 'hooks', 'pre-commit'),
+        '#!/bin/sh\ntouch "$ran"\n',
+      );
+      RigWorktreeGuard.quarantine(wt);
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('changed\n');
+      final res = await commit();
+      expect(res?['committed'], isTrue);
+      expect(File(ran).existsSync(), isFalse);
+    });
+
+    test('revert and branch reads work on an intact quarantine', () async {
+      RigWorktreeGuard.quarantine(wt);
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('changed\n');
+      final reverted = await svc.revertFiles('ws', 'ch', 'repo1', [
+        'src/app.dart',
+      ]);
+      expect(reverted?.reverted, 1);
+      final created = await svc.checkoutBranch(
+        workspaceId: 'ws',
+        spaceId: 'ch',
+        repoId: 'repo1',
+        branch: 'feature',
+        create: true,
+      );
+      expect(created, isNotNull);
+    });
+
+    group('with its metadata changed', () {
+      setUp(() async {
+        RigWorktreeGuard.quarantine(wt);
+        tamper(await planted());
+      });
+
+      tearDown(() => expect(File(ran).existsSync(), isFalse));
+
+      test('syncToPrHead refuses and says why', () async {
+        final res = await sync();
+        expect(res?['ok'], isFalse);
+        expect(res?['error'], contains('will not run git there'));
+      });
+
+      test('commit refuses and says why', () async {
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('changed\n');
+        final res = await commit();
+        expect(res?['committed'], isFalse);
+        expect(res?['error'], contains('will not run git there'));
+      });
+
+      test('revert refuses', () async {
+        await expectLater(
+          svc.revertFiles('ws', 'ch', 'repo1', ['src/app.dart']),
+          throwsA(isA<RigWorktreeTampered>()),
+        );
+      });
+
+      test('the _git helper refuses', () async {
+        await expectLater(
+          svc.checkoutBranch(
+            workspaceId: 'ws',
+            spaceId: 'ch',
+            repoId: 'repo1',
+            branch: 'feature',
+            create: true,
+          ),
+          throwsA(isA<RigWorktreeTampered>()),
+        );
+      });
+
+      test('stage and unstage refuse', () async {
+        await expectLater(
+          svc.stageFiles('ws', 'ch', 'repo1', const []),
+          throwsA(isA<RigWorktreeTampered>()),
+        );
+        await expectLater(
+          svc.unstageFiles('ws', 'ch', 'repo1', const []),
+          throwsA(isA<RigWorktreeTampered>()),
+        );
+      });
+
+      test('search finds nothing rather than failing', () async {
+        expect(
+          await svc.searchContentInWorktree('ws', 'ch', 'repo1', 'main'),
+          isEmpty,
+        );
+      });
     });
   });
 

@@ -2,7 +2,7 @@
 title: Rig
 description: Tutte le superfici, i backend, i verbi di azione, gli stati del ciclo di vita, le porte, i valori predefiniti e i contratti dei rig — il catalogo fattuale completo.
 slug: it-IT/manuale/riferimento/rig
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Solo fatti. Per il modello che sta dietro, leggi [Rig e
@@ -18,6 +18,8 @@ guida](/it-IT/manuale/guide/usa-rig/).
 | Computer | Desktop X11: input tramite l'hypervisor, cattura tramite l'agente del guest | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (fallback non accelerato, mai scelto automaticamente) | Sì |
 | Android | Android tramite ADB | L'emulatore di Google | `android-emulator` | **No** — l'emulatore gestisce la propria rete |
 | iOS | Simulatore iOS tramite WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — la rete segue il Mac host |
+| Finestra dell'app | Le finestre di un'app desktop avviata da un ambiente, tramite il sistema operativo | Finestra dell'host | `host-window` | **No** — l'app viene eseguita sull'host con l'accesso dell'utente del server |
+| Ambiente | Lo stack compose e i task di un [ambiente](/it-IT/manuale/guide/ambienti/) con posizionamento `rig` | microVM | `smolvm` | Sì |
 
 Il terminale e la superficie `computer_use` condividono il valore di superficie
 `computer`; il terminale si distingue per il marcatore dell'immagine exec e non

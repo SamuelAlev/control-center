@@ -25,6 +25,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yaml/yaml.dart';
 
 part 'skills_settings_editor.dart';
+part 'skills_settings_rail.dart';
 
 /// Parsed skill metadata (name, content, description) plus its antivirus
 /// posture (PRD 23): lock provenance and the freshest scan verdict for the
@@ -245,12 +246,11 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
   @override
   void initState() {
     super.initState();
-    _nameCtl.addListener(_markDirty);
-    _descCtl.addListener(_markDirty);
-    _bodyCtl.addListener(_markDirty);
     _filterCtl.addListener(() => setState(() {}));
   }
 
+  /// Driven by the fields' `onChanged`, not a controller listener: a controller
+  /// also notifies on selection changes, so focusing a field would count.
   void _markDirty() {
     if (!_dirty) {
       setState(() => _dirty = true);
@@ -655,46 +655,34 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
                   s.description.toLowerCase().contains(filter),
             )
             .toList();
+        final newSkill = CcButton(
+          size: CcButtonSize.sm,
+          onPressed: readOnly ? null : _startNew,
+          icon: AppIcons.plus,
+          semanticLabel: l10n.newSkill,
+          child: Text(l10n.newItemAction),
+        );
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: SectionCard(
             label: l10n.skills,
-            padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-            headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 8),
+            // Top inset matches the card's 12 px header gap, so the header
+            // sits evenly between the card edge and the divider.
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 0),
+            headerAlignment: CrossAxisAlignment.center,
             expands: true,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CcIconButton(
-                  icon: AppIcons.scanSearch,
-                  variant: CcButtonVariant.secondary,
-                  size: CcButtonSize.sm,
-                  tooltip: readOnly ? l10n.demoReadOnlySave : l10n.skillScanAll,
-                  semanticLabel: l10n.skillScanAll,
-                  onPressed: skills.isEmpty || _scanning || readOnly
-                      ? null
-                      : _scanAll,
-                  loading: _scanning,
-                ),
-                const SizedBox(width: 8),
-                readOnly
-                    ? CcTooltip(
-                        message: l10n.demoReadOnlySave,
-                        child: CcButton(
-                          size: CcButtonSize.sm,
-                          onPressed: null,
-                          icon: AppIcons.plus,
-                          child: Text(l10n.newSkill),
-                        ),
-                      )
-                    : CcButton(
-                        size: CcButtonSize.sm,
-                        onPressed: _startNew,
-                        icon: AppIcons.plus,
-                        child: Text(l10n.newSkill),
-                      ),
-              ],
+            trailing: CcIconButton(
+              icon: AppIcons.scanSearch,
+              variant: CcButtonVariant.secondary,
+              size: CcButtonSize.sm,
+              tooltip: readOnly ? l10n.demoReadOnlySave : l10n.skillScanAll,
+              semanticLabel: l10n.skillScanAll,
+              onPressed: skills.isEmpty || _scanning || readOnly
+                  ? null
+                  : _scanAll,
+              loading: _scanning,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -703,10 +691,19 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
                 Expanded(
                   child: SettingsMasterDetail(
                     railWidth: 260,
+                    // The rail owns its insets so the list's viewport, and
+                    // with it the scrollbar, reaches the divider.
+                    railPadding: EdgeInsets.zero,
                     rail: _SkillRailContent(
                       skills: filteredSkills,
                       selectedSkill: _selectedSkill,
                       filterController: _filterCtl,
+                      filterAction: readOnly
+                          ? CcTooltip(
+                              message: l10n.demoReadOnlySave,
+                              child: newSkill,
+                            )
+                          : newSkill,
                       onSelect: (name) => _loadSkill(name, skills),
                     ),
                     detail: editing
@@ -727,6 +724,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
                             dirty: _dirty,
                             saving: _saving,
                             scanning: _scanning,
+                            onEdited: _markDirty,
                             onAttachedChange: (ids) => setState(() {
                               _attachedAgentIds = ids;
                               _dirty = true;
@@ -740,173 +738,6 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
                 ),
               ],
             ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SkillRailContent extends StatelessWidget {
-  const _SkillRailContent({
-    required this.skills,
-    required this.selectedSkill,
-    required this.filterController,
-    required this.onSelect,
-  });
-
-  final List<SkillInfo> skills;
-  final String? selectedSkill;
-  final TextEditingController filterController;
-  final void Function(String name) onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        CcTextField(
-          controller: filterController,
-          hintText: l10n.filterSkillsPlaceholder,
-          size: CcTextFieldSize.sm,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        if (skills.isEmpty)
-          const SettingsRailEmptyNote(message: 'No matches.')
-        else
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              itemCount: skills.length,
-              separatorBuilder: (_, _) => const CcDivider(),
-              itemBuilder: (context, index) {
-                final skill = skills[index];
-                return _SkillsListTile(
-                  skill: skill,
-                  selected: skill.name == selectedSkill,
-                  onTap: () => onSelect(skill.name),
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _SkillsListTile extends StatelessWidget {
-  const _SkillsListTile({
-    required this.skill,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final SkillInfo skill;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final tokens = context.designSystem;
-    final accentColor = tokens?.textPrimary ?? DesignSystemPalette.gray900;
-    // Provenance/state line under the description: origin · lock state ·
-    // scan-freshness. Absent entirely on the legacy (no-scan-surface) path.
-    final meta = <String>[
-      if (skill.origin != null)
-        switch (skill.origin!) {
-          SkillOrigin.manual => l10n.skillOriginManual,
-          SkillOrigin.registry => l10n.skillOriginRegistry,
-          SkillOrigin.github => l10n.skillOriginGithub,
-          SkillOrigin.runtimeLocal => l10n.skillOriginRuntimeLocal,
-        },
-      if (skill.lockState == InstalledSkillLockState.drifted)
-        l10n.skillStateDrifted
-      else if (skill.lockState == InstalledSkillLockState.unmanaged)
-        l10n.skillStateUnmanaged,
-      if (skill.scanVerdict == null && skill.lockState != null)
-        l10n.skillNotScanned
-      else if (skill.scanRulesStale)
-        l10n.skillRulesStale,
-    ].join('  ·  ');
-    final metaColor = skill.lockState == InstalledSkillLockState.drifted
-        ? tokens?.textWarningPrimary
-        : tokens?.textTertiary;
-    // Same interaction treatment as the agent roster / provider / adapter
-    // rails: a hover wash, a stronger wash while pressed or selected, and the
-    // left accent bar for the selected row.
-    return CcTappable(
-      onPressed: onTap,
-      semanticLabel: skill.name,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        final pressed = states.contains(WidgetState.pressed);
-        return Container(
-          decoration: BoxDecoration(
-            color: selected || pressed
-                ? tokens?.hoverStrong
-                : hovered
-                ? tokens?.hover
-                : null,
-            border: BorderDirectional(
-              start: BorderSide(
-                color: selected ? accentColor : const Color(0x00000000),
-                width: 2,
-              ),
-            ),
-          ),
-          padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 12, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      skill.name,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: selected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                        color: tokens?.textPrimary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (skill.scanVerdict != null) ...[
-                    const SizedBox(width: 6),
-                    SkillVerdictBadge(
-                      verdict: skill.scanVerdict!,
-                      compact: true,
-                    ),
-                  ],
-                ],
-              ),
-              if (skill.description.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  skill.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.45,
-                    color: tokens?.textTertiary,
-                  ),
-                ),
-              ],
-              if (meta.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  meta,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10, color: metaColor),
-                ),
-              ],
-            ],
           ),
         );
       },

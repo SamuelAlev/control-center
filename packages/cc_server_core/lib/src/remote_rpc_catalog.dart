@@ -26,8 +26,8 @@ import 'package:cc_domain/core/domain/ports/entitlements_port.dart';
 import 'package:cc_domain/core/domain/ports/forge_credential_port.dart';
 import 'package:cc_domain/core/domain/ports/git_repo_inspector_port.dart';
 import 'package:cc_domain/core/domain/ports/process_detection_port.dart';
-import 'package:cc_domain/core/domain/ports/repo_script_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
+import 'package:cc_domain/core/domain/ports/space_provisioning_log_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_cost_history_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
@@ -35,7 +35,6 @@ import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
 import 'package:cc_domain/core/domain/repositories/file_catalog_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
-import 'package:cc_domain/core/domain/repositories/repo_script_repository.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
 import 'package:cc_domain/core/domain/repositories/run_transcript_repository.dart';
 import 'package:cc_domain/core/domain/repositories/server_settings_repository.dart';
@@ -54,12 +53,12 @@ import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/permission.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
-import 'package:cc_domain/core/domain/value_objects/repo_scripts.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:cc_domain/features/dispatch/domain/repositories/agent_goal_run_repository.dart';
+import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
 import 'package:cc_domain/features/governance/domain/repositories/approval_repository.dart';
 import 'package:cc_domain/features/governance/domain/repositories/goal_repository.dart';
 import 'package:cc_domain/features/governance/domain/repositories/work_product_repository.dart';
@@ -187,6 +186,8 @@ import 'package:cc_server_core/src/catalog/agent_shell_ops.dart';
 import 'package:cc_server_core/src/catalog/catalog_wire.dart';
 import 'package:cc_server_core/src/catalog/code_server_file_ops.dart';
 import 'package:cc_server_core/src/catalog/demo_review_ops.dart';
+import 'package:cc_server_core/src/catalog/editor_layout_cache_ops.dart';
+import 'package:cc_server_core/src/catalog/environment_ops.dart';
 import 'package:cc_server_core/src/catalog/file_discard_ops.dart';
 import 'package:cc_server_core/src/catalog/meeting_ops.dart';
 import 'package:cc_server_core/src/catalog/mobile_space_ops.dart';
@@ -195,6 +196,7 @@ import 'package:cc_server_core/src/catalog/notification_feed_visibility.dart';
 import 'package:cc_server_core/src/catalog/pending_question_watch.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
 import 'package:cc_server_core/src/catalog/provider_oauth_ops.dart';
+import 'package:cc_server_core/src/catalog/space_provisioning_ops.dart';
 import 'package:cc_server_core/src/catalog/space_stack_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_port_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_watch_queries.dart';
@@ -233,6 +235,7 @@ import 'package:uuid/uuid.dart';
 
 export 'catalog/agent_goal_run_ops.dart';
 export 'catalog/catalog_wire.dart';
+export 'catalog/editor_layout_cache_ops.dart';
 export 'catalog/meeting_ops.dart';
 export 'catalog/model_control_ops.dart';
 export 'catalog/pr_review_ops.dart';
@@ -332,16 +335,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   required NewsfeedRepository newsfeedRepository,
   required AgentRepository agentRepository,
   required RepoRepository repoRepository,
-  // Per-repo lifecycle scripts (setup/archive) + their recorded runs. Backs
-  // the `repos.getScripts` / `repos.setScripts` / `repos.watchScriptRuns`
-  // surface. Optional — when null those ops are absent (the repos settings
-  // page hides its scripts affordance) and provisioning runs no scripts.
-  RepoScriptRepository? repoScriptRepository,
-  // The script EXECUTOR (the service the provisioner also uses). Backs
-  // `repos.testScript` — a draft executed in a throwaway clone. Separate from
-  // the repository above because the RPC client never executes anything: only
-  // the server-side service can. Optional — when null the op is absent.
-  RepoScriptPort? repoScripts,
+  EnvironmentPort? environments,
   required SpaceReadRepository spaceReadRepository,
   required MemoryDomainRepository memoryDomainRepository,
   required MemoryAccessGrantRepository memoryAccessGrantRepository,
@@ -1178,6 +1172,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // fleet wiring. Empty on a host with no fleet surface.
   List<RepoOp> extraOps = const [],
   List<WatchQuery> extraWatchQueries = const [],
+  // What a space's workspace preparation is printing. Null on a host that
+  // prepares no worktrees; the stream is then absent.
+  SpaceProvisioningLogPort? spaceProvisioningLog,
   // The project's own GitHub star count, fetched and cached SERVER-side (the
   // client never dials GitHub — all external network I/O belongs to the
   // server). Wired only by the demo composition, so on a production server
@@ -3805,90 +3802,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // Declared only when the host wires a [RepoScriptRepository]. The bodies
-    // are SERVER-EXECUTED shell, which is why they never ride `repos.upsert`:
-    // reads are member-level, but WRITING them is admin-gated and declared
-    // `processSpawn` so the action guard sees the honest worst case.
-    if (repoScriptRepository != null)
-      RepoOp(
-        name: 'repos.getScripts',
-        kind: RepoOpKind.read,
-        requiredArgs: ['repo_id'],
-        handler: (ctx) async {
-          final scripts = await repoScriptRepository.getScripts(
-            ctx.workspaceId!,
-            ctx.args['repo_id'] as String,
-          );
-          return {'scripts': scripts.toJson()};
-        },
-      ),
-    if (repoScriptRepository != null)
-      RepoOp(
-        name: 'repos.setScripts',
-        kind: RepoOpKind.mutate,
-        minRole: WorkspaceRole.admin,
-        actionClasses: const {ActionClass.processSpawn},
-        requiredArgs: ['repo_id'],
-        handler: (ctx) async {
-          final repoId = ctx.args['repo_id'] as String;
-          // An id from another workspace does not resolve here — the write is
-          // simply a no-op on that workspace's file, never a cross-workspace
-          // mutation.
-          if (!await repoRepository.exists(ctx.workspaceId!, repoId)) {
-            throw const NotFoundException('Repo not found');
-          }
-          final scripts = RepoScripts.fromJson(
-            (ctx.args['scripts'] as Map?)?.cast<String, dynamic>(),
-          );
-          await repoScriptRepository.setScripts(
-            ctx.workspaceId!,
-            repoId,
-            scripts,
-          );
-          return {'ok': true};
-        },
-      ),
-    // Test-run a script DRAFT in a throwaway clone of the repo. Same privilege
-    // shape as `repos.setScripts` — it EXECUTES the body — plus the honest
-    // processSpawn action class. The op returns the run id immediately; the
-    // clone, execution and teardown continue server-side, streaming into the
-    // run row the client already watches via `repos.watchScriptRuns`.
-    if (repoScripts != null)
-      RepoOp(
-        name: 'repos.testScript',
-        kind: RepoOpKind.mutate,
-        minRole: WorkspaceRole.admin,
-        actionClasses: const {ActionClass.processSpawn},
-        requiredArgs: ['repo_id', 'kind', 'script'],
-        handler: (ctx) async {
-          final repoId = ctx.args['repo_id'] as String;
-          if (!await repoRepository.exists(ctx.workspaceId!, repoId)) {
-            throw const NotFoundException('Repo not found');
-          }
-          // The lifecycle slot the draft belongs to — a LABEL for the run row,
-          // not a selector of stored scripts (the body is caller-supplied).
-          final kindArg = ctx.args['kind'] as String? ?? '';
-          final kind = switch (kindArg) {
-            'setup' => RepoScriptKind.setup,
-            'archive' => RepoScriptKind.archive,
-            _ => null,
-          };
-          if (kind == null) {
-            throw ArgumentError.value(
-              kindArg,
-              'kind',
-              'Expected "setup" or "archive"',
-            );
-          }
-          final runId = await repoScripts.runTest(
-            workspaceId: ctx.workspaceId!,
-            repoId: repoId,
-            kind: kind,
-            body: ctx.args['script'] as String,
-          );
-          return {'run_id': runId};
-        },
-      ),
     // Register a repo by pointing at a git checkout on the SERVER's filesystem.
     // Workspace-scoped: the inspected repo is linked into the session's bound
     // workspace via the `RepoAdded` event (server-side indexing keys off it).
@@ -4332,6 +4245,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       shells: shells,
       reposExposedBySpace: reposExposedBySpaceArg,
     ),
+    if (environments != null)
+      ...buildEnvironmentOps(
+        environments: environments,
+        reposExposedBySpace: reposExposedBySpaceArg,
+        assertSpaceOwned: assertSpaceOwned,
+      ),
     // Resolves the PR's space worktree (creating + provisioning it if needed)
     // and opens it in the chosen editor on the host's display. Returns the
     // server-side worktree path (opaque to the client).
@@ -4417,41 +4336,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'path': path};
         },
       ),
-    // The messaging IDE layout is persisted per conversation in the SERVER-owned
-    // `cache` table, so a layout saved on one client (desktop) is restored on
-    // another (web). Both ops are workspace-scoped (the `workspaceId` filter is
-    // the isolation boundary). Absent on a host that owns no database.
-    if (cacheRepo != null) ...[
-      RepoOp(
-        name: 'cache.read',
-        kind: RepoOpKind.read,
-        requiredArgs: ['kind', 'key'],
-        handler: (ctx) async {
-          final payload = await cacheRepo.read(
-            ctx.workspaceId!,
-            ctx.args['kind'] as String,
-            ctx.args['key'] as String,
-          );
-          return {'payload': payload};
-        },
-      ),
-      RepoOp(
-        name: 'cache.write',
-        kind: RepoOpKind.mutate,
-        // Internal scratch store — auditing it is noise, not accountability.
-        audited: false,
-        requiredArgs: ['kind', 'key'],
-        handler: (ctx) async {
-          await cacheRepo.put(
-            ctx.workspaceId!,
-            ctx.args['kind'] as String,
-            ctx.args['key'] as String,
-            (ctx.args['payload'] ?? '') as String,
-          );
-          return const {};
-        },
-      ),
-    ],
+    // Editor layouts (messaging space and PR workbench) are persisted per
+    // PERSON in the SERVER-owned `caches` table, so the tab a user last had
+    // open follows them from one device to another. See
+    // [buildEditorLayoutCacheOps] for the kind allowlist and per-user keys.
+    // Absent on a host that owns no database.
+    if (cacheRepo != null) ...buildEditorLayoutCacheOps(cacheRepo),
     // The messaging IDE view reads repo working-tree state from the SERVER (it
     // owns the checkouts). Each op is workspace-scoped + validates repo
     // ownership inside its fetcher, so a session cannot reach into another
@@ -4798,11 +4688,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         name: 'worktree.syncToPrHead',
         kind: RepoOpKind.mutate,
         requiredArgs: ['workspace_id', 'space_id', 'repo_id'],
-        // It fetches from the forge before it checks out, so the honest worst
-        // case reaches the network. Its sibling worktree mutations
-        // (`writeFile`/`revertFiles`) stay inside the isolated worktree and
-        // declare nothing — see the exemptions in
-        // `test/core/action_class_coverage_test.dart`.
+        // It fetches before it checks out, so it reaches the network. Its
+        // siblings (`writeFile`/`revertFiles`) stay in the worktree and declare
+        // nothing: see `test/core/action_class_coverage_test.dart`.
         actionClasses: const {ActionClass.networkEgress},
         handler: (ctx) async {
           return syncPrWorktree(
@@ -5247,6 +5135,21 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             final parsedSurface = RigSurface.fromWire(surface);
             if (parsedSurface == null) {
               throw ValidationException('Unknown rig surface "$surface"');
+            }
+            // A window rig opens against an app a person launched, never on
+            // a client's say-so: this op would otherwise reach a refusal
+            // whose ArgumentError reads as an internal error.
+            if (parsedSurface == RigSurface.window) {
+              throw const ValidationException(
+                'An app window rig opens when its app launches.',
+              );
+            }
+            // Its image, mount and egress come from a resolved definition,
+            // none of which this op carries.
+            if (parsedSurface == RigSurface.environment) {
+              throw const ValidationException(
+                'An environment rig opens when its environment starts.',
+              );
             }
             // Read, not cast: a client that sends a number here produced a
             // raw `TypeError` (mapped to the generic internal error) instead
@@ -6857,7 +6760,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         await messagingRepository.archiveSpace(ctx.workspaceId!, spaceId);
         // Deliberately no SpaceDeleted: archiving is a reversible hide, so
         // nothing (worktree GC, retention sweeps) may tear the space's
-        // resources down — restore expects them intact.
+        // resources down — restore expects them intact. SpaceArchived only
+        // lets a running environment stop; it destroys nothing.
+        eventBus?.publish(
+          SpaceArchived(
+            spaceId: spaceId,
+            workspaceId: ctx.workspaceId!,
+            occurredAt: DateTime.now(),
+          ),
+        );
         return {'ok': true};
       },
     ),
@@ -7107,36 +7018,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'affected_message_ids': affected};
       },
     ),
-    if (retrySpaceProvisioning != null)
-      RepoOp(
-        name: 'messaging.retrySpaceProvisioning',
-        kind: RepoOpKind.mutate,
-        requiredArgs: ['space_id'],
-        handler: (ctx) async {
-          final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
-          await retrySpaceProvisioning(
-            workspaceId: ctx.workspaceId!,
-            spaceId: spaceId,
-          );
-          return {'ok': true};
-        },
-      ),
-    if (cancelSpaceProvisioning != null)
-      RepoOp(
-        name: 'messaging.cancelSpaceProvisioning',
-        kind: RepoOpKind.mutate,
-        requiredArgs: ['space_id'],
-        handler: (ctx) async {
-          final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
-          await cancelSpaceProvisioning(
-            workspaceId: ctx.workspaceId!,
-            spaceId: spaceId,
-          );
-          return {'ok': true};
-        },
-      ),
+    ...buildSpaceProvisioningOps(
+      retry: retrySpaceProvisioning,
+      cancel: cancelSpaceProvisioning,
+      assertSpaceOwned: assertSpaceOwned,
+    ),
 
     // Dispatch ops need a wired [MessagingPort] (null → ops absent). Replies
     // stream via `messaging.watch*`. Every op uses `ctx.workspaceId!` and
@@ -11353,7 +11239,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // data keyed only by login, so NOT workspace-scoped (mirrors
     // `github.currentUser`). Read on the CALLER's own credential: the org/team
     // block is unreadable by an app installation token, so the no-caller lane
-    // failed the whole hover card. App slugs (`parced`, not `parced[bot]`)
+    // failed the whole hover card. App slugs (`acme`, not `acme[bot]`)
     // resolve via `GET /apps/{slug}` after GraphQL `repositoryOwner` misses.
     RepoOp(
       name: 'github.userProfile',
@@ -12812,7 +12698,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       name: 'pipeline_template.upsert',
       kind: RepoOpKind.mutate,
       // Authoring a `bash.script` node schedules a process spawn by proxy —
-      // the same claim `repos.setScripts` makes about a lifecycle script.
+      // the same claim `environments.setDefinition` makes about a task.
       // A demo still exposes the op ([rejectBashNodes] refuses the body);
       // start, triggers firing, and the engine stay unwired there.
       actionClasses: const {ActionClass.processSpawn},
@@ -14238,16 +14124,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           .watchAll(ctx.workspaceId!)
           .map((list) => {'repos': list.map(repoToWire).toList()}),
     ),
-    // Recorded lifecycle script runs (setup/archive), newest first. Workspace-
-    // scoped like the row itself; an optional repo_id narrows to one repo.
-    // Declared only when the host wires a [RepoScriptRepository].
-    if (repoScriptRepository != null)
-      WatchQuery(
-        name: 'repos.watchScriptRuns',
-        handler: (ctx) => repoScriptRepository
-            .watchRuns(ctx.workspaceId!, repoId: ctx.args['repo_id'] as String?)
-            .map((runs) => {'runs': runs.map((r) => r.toJson()).toList()}),
-      ),
     WatchQuery(
       name: 'messaging.watchSpaces',
       handler: (ctx) => messagingRepository
@@ -15952,6 +15828,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       viewerTraceRestricted: viewerTraceRestricted,
     ),
     ...extraWatchQueries,
+    if (environments != null)
+      ...buildEnvironmentWatchQueries(
+        environments: environments,
+        reposExposedBySpace: reposExposedBySpaceArg,
+        requireRepoReadGrant: requireRepoReadGrant,
+        assertSpaceOwned: assertSpaceOwned,
+      ),
+    if (spaceProvisioningLog != null)
+      buildSpaceProvisioningLogWatchQuery(
+        log: spaceProvisioningLog,
+        reposExposedBySpace: reposExposedBySpaceArg,
+        requireRepoReadGrant: requireRepoReadGrant,
+        assertSpaceOwned: assertSpaceOwned,
+      ),
   ]);
 
   return (ops: ops, watch: watch);

@@ -11,6 +11,9 @@ import 'package:control_center/shared/widgets/reference_chip_shell.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Widest the `repo#123` suffix gets before it ellipsizes.
+const double _kMaxSuffixWidth = 120;
+
 /// Inline chip-style preview for a GitHub PR reference rendered inside the
 /// PR detail markdown body / comments.
 ///
@@ -132,7 +135,14 @@ class _LoadingContent extends StatelessWidget {
       children: [
         const CcSpinner(size: 12),
         const SizedBox(width: 6),
-        Text(suffix, style: TextStyle(color: muted, fontSize: 13)),
+        Flexible(
+          child: Text(
+            suffix,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: muted, fontSize: 13),
+          ),
+        ),
       ],
     );
   }
@@ -165,20 +175,33 @@ class _LoadedContent extends StatelessWidget {
           child: Icon(data.icon, size: 14, color: data.color),
         ),
         const SizedBox(width: 6),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxTitleWidth),
-          child: PrTitleText(
-            preview.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textStyle.copyWith(
-              color: titleColor,
-              fontWeight: FontWeight.w500,
+        // The chip sits in a markdown line that can be narrower than the cap.
+        Flexible(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxTitleWidth),
+            child: PrTitleText(
+              preview.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textStyle.copyWith(
+                color: titleColor,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ),
         const SizedBox(width: 6),
-        Text(suffix, style: textStyle.copyWith(color: muted, fontSize: 12)),
+        // A cross-repo suffix carries the repo name, which can outgrow the line
+        // on its own once the title has shrunk away.
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _kMaxSuffixWidth),
+          child: Text(
+            suffix,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: textStyle.copyWith(color: muted, fontSize: 12),
+          ),
+        ),
       ],
     );
   }

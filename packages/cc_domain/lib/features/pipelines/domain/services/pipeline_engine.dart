@@ -1353,7 +1353,7 @@ class PipelineEngine implements PipelineEnginePort {
   ) async {
     final def = await templates.getById(workspaceId, templateId);
     if (def == null) {
-      throw StateError(
+      throw PipelineTemplateNotFoundError(
         'Pipeline template "$templateId" not found for workspace $workspaceId',
       );
     }

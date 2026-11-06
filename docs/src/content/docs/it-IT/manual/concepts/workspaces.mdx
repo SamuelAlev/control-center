@@ -2,7 +2,7 @@
 title: Spazi di lavoro e isolamento
 description: Perché uno spazio di lavoro è un confine di tenant rigido, come la separazione dei database rende strutturale quel confine e cosa lo attraversa deliberatamente.
 slug: it-IT/manuale/concetti/spazi-di-lavoro
-sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
+sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
 ---
 
 ## Che cos'è uno spazio di lavoro?
@@ -110,7 +110,11 @@ istantanee sono complete e consente al proprietario dell'installazione di
 eliminarne una dopo conferma, e ogni spazio di lavoro offre esportazione e
 importazione. La pipeline integrata **Workspace backup** prende solo il database
 di quello spazio di lavoro con cadenza settimanale ed elimina i propri backup più
-vecchi dell'età di conservazione configurata. Ripristinare uno spazio di lavoro
+vecchi dell'età di conservazione configurata. Quei backup sono elencati nella stessa
+pagina per spazio di lavoro, dove ognuno può essere ripristinato, scaricato o eliminato.
+L'eliminazione di uno spazio di lavoro lascia i suoi backup a disposizione del
+proprietario dell'installazione, che può recuperarli o rimuoverli, perché la sua
+pianificazione e la sua conservazione si fermano con esso. Ripristinare uno spazio di lavoro
 da un'istantanea dell'installazione equivale a puntare `workspace.import` sul
 `<workspaceId>/workspace.db` dell'istantanea; ripristinare un'intera
 installazione resta una ricopiatura della directory dell'istantanea a server
@@ -120,11 +124,11 @@ Ciò che nessuna di esse trasporta è il resto della directory dello spazio di l
 
 ## Spostare un backup tra il server e il tuo dispositivo
 
-Tutte le operazioni precedenti parlano in termini di percorsi sul **server**, il che è una risposta completa solo quando il server è la tua macchina. Tre route di trasferimento firmate — [`/backup/workspace`, `/backup/snapshot` e `/backup/restore`](/it-IT/manuale/riferimento/backup/#transfer-routes) — trasportano i byte per ogni altra topologia attraverso il tunnel delle risorse autenticato e cifrato, su connessioni dirette e tramite il relay. Le route HTTP pubbliche non servono byte di backup leggibili, e i percorsi firmati richiedono comunque l'autorizzazione. Nella pagina questo si traduce in un pulsante **Scarica** accanto a ogni esportazione e a ogni istantanea (scegli tu dove finisce) e in **Scegli un file e caricalo** per ripristinare da un file che si trova sulla macchina che stai usando. Il caricamento funziona quando il server non è la tua macchina: `workspace.import` richiede che il file sia già sull'host, ed è così che ci arriva.
+Tutte le operazioni precedenti parlano in termini di percorsi sul **server**, il che è una risposta completa solo quando il server è la tua macchina. Quattro route di trasferimento firmate — [`/backup/workspace`, `/backup/snapshot`, `/backup/stored` e `/backup/restore`](/it-IT/manuale/riferimento/backup/#route-di-trasferimento) — trasportano i byte per ogni altra topologia attraverso il tunnel delle risorse autenticato e cifrato, su connessioni dirette e tramite il relay. Le route HTTP pubbliche non servono byte di backup leggibili, e i percorsi firmati richiedono comunque l'autorizzazione. Nella pagina questo si traduce in un pulsante **Scarica** accanto a ogni esportazione, a ogni istantanea e a ogni backup pianificato (scegli tu dove finisce) e in **Scegli un file e caricalo** per ripristinare da un file che si trova sulla macchina che stai usando. Il caricamento funziona quando il server non è la tua macchina: `workspace.import` richiede che il file sia già sull'host, ed è così che ci arriva.
 
 Vale la pena conoscere tre proprietà:
 
-- **Un download conia una copia nuova e il server non ne conserva nulla.** Scaricare non significa «recuperare il file creato dal pulsante di esportazione» — esporta di nuovo, trasmette quella copia in streaming e la elimina. La risposta è `no-store` con `Accept-Ranges: none` per lo stesso motivo: un intervallo ripreso unirebbe due esportazioni diverse in un unico file che sembra valido e non lo è.
+- **Un download conia una copia nuova e il server non ne conserva nulla.** Scaricare non significa «recuperare il file creato dal pulsante di esportazione» — esporta di nuovo, trasmette quella copia in streaming e la elimina. La risposta è `no-store` con `Accept-Ranges: none` per lo stesso motivo: un intervallo ripreso unirebbe due esportazioni diverse in un unico file che sembra valido e non lo è. Un backup pianificato è l'eccezione: esiste già, quindi scaricarlo trasmette in streaming quel file e lo lascia sul server.
 - **Un caricamento viene trasmesso in streaming su disco, mai bufferizzato**, su entrambe le estremità, e la copia in staging viene eliminata su ogni percorso in uscita — compreso un rifiuto. Un database di spazio di lavoro non è uno screenshot.
 - **Il trasferimento funziona anche tramite relay.** Download e caricamenti usano lo stesso tunnel delle risorse cifrato delle connessioni dirette; non serve un'origine HTTP diretta.
 

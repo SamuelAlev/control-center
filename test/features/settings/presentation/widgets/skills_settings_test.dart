@@ -14,6 +14,7 @@ import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart'
     show workspaceFilesystemPortProvider;
 import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_rail.dart';
 import 'package:control_center/features/settings/presentation/widgets/skills_settings.dart';
 import 'package:control_center/features/settings/providers/skill_security_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -241,7 +242,54 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.text('New skill'), findsOneWidget);
+      expect(find.text('New'), findsOneWidget);
+    });
+
+    testWidgets('rail list reaches the divider, rows keep their inset', (
+      tester,
+    ) async {
+      setView(tester);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...baseOverrides(),
+            skillListProvider.overrideWith(
+              (ref, workspaceId) async => const [
+                SkillInfo(name: 'alpha', content: '', description: ''),
+              ],
+            ),
+            activeWorkspaceIdProvider.overrideWith(
+              () => _TestActiveWorkspaceNotifier('ws-1'),
+            ),
+          ],
+          child: CcTheme(
+            data: CcThemeData.light(),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: CcToastScope(child: Scaffold(body: SkillsSettings())),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final scaffold = find.byType(SettingsMasterDetail);
+      final divider = tester.getTopLeft(scaffold).dx + 260;
+      final list = tester.getRect(
+        find.descendant(of: scaffold, matching: find.byType(ListView)),
+      );
+      final row = tester.getRect(
+        find
+            .ancestor(of: find.text('alpha'), matching: find.byType(CcTappable))
+            .first,
+      );
+
+      // The scrollbar pins to the viewport's edge, so the viewport must end
+      // at the divider while the rows stop short of it.
+      expect(list.right, divider);
+      expect(row.right, divider - AppSpacing.lg);
     });
 
     testWidgets('renders empty skills prompt', (tester) async {
@@ -327,7 +375,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      final newBtn = find.text('New skill');
+      final newBtn = find.text('New');
       expect(newBtn, findsOneWidget);
       await tester.tap(newBtn);
       await tester.pump();
@@ -499,14 +547,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      final newButton = find.widgetWithText(CcButton, 'New skill');
+      final newButton = find.widgetWithText(CcButton, 'New');
       expect(newButton, findsOneWidget);
       await tester.tap(newButton);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
       // Two now: the header's action and the heading of the pane it opened.
-      expect(find.text('New skill'), findsNWidgets(2));
+      expect(find.text('New skill'), findsOneWidget);
     });
   });
 
@@ -807,7 +855,7 @@ void main() {
       expect(find.text('Not available in the demo'), findsNothing);
       expect(
         tester
-            .widget<CcButton>(find.widgetWithText(CcButton, 'New skill'))
+            .widget<CcButton>(find.widgetWithText(CcButton, 'New'))
             .onPressed,
         isNull,
       );
@@ -1034,13 +1082,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      final newBtn = find.widgetWithText(CcButton, 'New skill');
+      final newBtn = find.widgetWithText(CcButton, 'New');
       await tester.tap(newBtn);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
       // The header's action plus the heading of the pane it opened.
-      expect(find.text('New skill'), findsNWidgets(2));
+      expect(find.text('New skill'), findsOneWidget);
       // No delete button for new skills
       expect(find.text('Delete'), findsNothing);
     });
@@ -1091,6 +1139,59 @@ void main() {
       expect(find.text('Unsaved changes'), findsOneWidget);
     });
 
+    testWidgets('focusing a field does not mark the form dirty', (
+      tester,
+    ) async {
+      setView(tester);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...baseOverrides(),
+            skillListProvider.overrideWith(
+              (ref, workspaceId) async => testSkills,
+            ),
+            activeWorkspaceIdProvider.overrideWith(
+              () => _TestActiveWorkspaceNotifier('ws-1'),
+            ),
+            workspaceAgentsProvider.overrideWith(
+              (ref, workspaceId) => Stream.value(const <Agent>[]),
+            ),
+          ],
+          child: CcTheme(
+            data: CcThemeData.light(),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: CcToastScope(child: Scaffold(body: SkillsSettings())),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await tester.tap(find.text('code-review'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // A click only places the caret: the controller notifies, the text is
+      // unchanged, and there is nothing to save.
+      final body = find.byType(EditableText).last;
+      await tester.tap(body);
+      await tester.pump(const Duration(milliseconds: 500));
+      final bodyField = tester.widget<EditableText>(body);
+      expect(bodyField.focusNode.hasFocus, isTrue);
+      bodyField.controller.selection = const TextSelection.collapsed(offset: 3);
+      await tester.pump();
+
+      expect(find.text('Unsaved changes'), findsNothing);
+
+      await tester.enterText(body, 'A real edit');
+      await tester.pump();
+
+      expect(find.text('Unsaved changes'), findsOneWidget);
+    });
+
     testWidgets('save validates empty name', (tester) async {
       setView(tester);
       final fs = FakeFilesystemPort();
@@ -1124,7 +1225,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // Start new skill
-      final newBtn = find.widgetWithText(CcButton, 'New skill');
+      final newBtn = find.widgetWithText(CcButton, 'New');
       await tester.tap(newBtn);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
@@ -1355,7 +1456,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // New skill
-      await tester.tap(find.widgetWithText(CcButton, 'New skill'));
+      await tester.tap(find.widgetWithText(CcButton, 'New'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -1517,7 +1618,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // New
-      await tester.tap(find.widgetWithText(CcButton, 'New skill'));
+      await tester.tap(find.widgetWithText(CcButton, 'New'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -1783,7 +1884,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // New
-      await tester.tap(find.widgetWithText(CcButton, 'New skill'));
+      await tester.tap(find.widgetWithText(CcButton, 'New'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -2052,7 +2153,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      await tester.tap(find.widgetWithText(CcButton, 'New skill'));
+      await tester.tap(find.widgetWithText(CcButton, 'New'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -2117,7 +2218,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      await tester.tap(find.widgetWithText(CcButton, 'New skill'));
+      await tester.tap(find.widgetWithText(CcButton, 'New'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -2178,7 +2279,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      await tester.tap(find.widgetWithText(CcButton, 'New skill'));
+      await tester.tap(find.widgetWithText(CcButton, 'New'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -2242,7 +2343,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      await tester.tap(find.widgetWithText(CcButton, 'New skill'));
+      await tester.tap(find.widgetWithText(CcButton, 'New'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -2664,7 +2765,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // New skill, fill the name, save.
-      await tester.tap(find.widgetWithText(CcButton, 'New skill'));
+      await tester.tap(find.widgetWithText(CcButton, 'New'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
       await tester.enterText(find.byType(CcTextField).at(1), 'risky');

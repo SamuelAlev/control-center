@@ -757,5 +757,6 @@
   "transcriptClaudeSignInExpiredTitle": "Sesja Claude Code wygasła",
   "transcriptClaudeSignInExpiredBody": "Przebieg został zatrzymany, ponieważ jego konto nie uwierzytelnia się już. Zaloguj się ponownie, a następnie ponów turę.",
   "transcriptSignInExpiredTitle": "Sesja dostawcy wygasła",
-  "transcriptSignInExpiredBody": "Przebieg został zatrzymany, ponieważ dane uwierzytelniające dostawcy już nie działają. Połącz go ponownie w Ustawienia → Dostawcy, a następnie ponów turę."
+  "transcriptSignInExpiredBody": "Przebieg został zatrzymany, ponieważ dane uwierzytelniające dostawcy już nie działają. Połącz go ponownie w Ustawienia → Dostawcy, a następnie ponów turę.",
+  "permissionHostExecution": "Uruchamiaj polecenia na hoście"
 }

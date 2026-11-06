@@ -34,12 +34,12 @@ void main() {
       'retried on the CoW backend', () async {
     final rift = _FakeRift(failFirstCreateWith: 'already_exists');
     final result = await adapterFor(rift).provision(
-      sourcePath: '/src/web-app',
+      sourcePath: '/src/shop-ui',
       destParentDir: root.path,
-      name: 'web-app',
+      name: 'shop-ui',
       branch: 'pr/42',
       headRef: 'refs/pull/42/head',
-      authUrl: 'https://github.com/acme/web-app.git',
+      authUrl: 'https://github.com/acme/shop-ui.git',
     );
 
     expect(
@@ -48,7 +48,7 @@ void main() {
       reason: 'degrading here pins this path to git worktree for ever',
     );
     expect(rift.createCalls, 2, reason: 'the create must be retried once');
-    expect(rift.removed, [p.join(root.path, 'web-app')]);
+    expect(rift.removed, [p.join(root.path, 'shop-ui')]);
     expect(rift.gcCalls, greaterThanOrEqualTo(1));
   });
 
@@ -57,17 +57,17 @@ void main() {
     // create is not this layer's call. With nowhere safe to degrade to — the
     // git-worktree backend writes into the user's checkout — the create's own
     // verdict is what the caller gets.
-    Directory(p.join(root.path, 'web-app')).createSync(recursive: true);
+    Directory(p.join(root.path, 'shop-ui')).createSync(recursive: true);
     final rift = _FakeRift(failFirstCreateWith: 'already_exists');
 
     await expectLater(
       adapterFor(rift).provision(
-        sourcePath: '/src/web-app',
+        sourcePath: '/src/shop-ui',
         destParentDir: root.path,
-        name: 'web-app',
+        name: 'shop-ui',
         branch: 'pr/42',
         headRef: 'refs/pull/42/head',
-        authUrl: 'https://github.com/acme/web-app.git',
+        authUrl: 'https://github.com/acme/shop-ui.git',
       ),
       throwsA(
         isA<RiftException>().having((e) => e.code, 'code', 'already_exists'),
@@ -82,13 +82,13 @@ void main() {
     // The first gc runs while the directory is still there, so it cannot see
     // the entry as missing — which is exactly how the stale row above was
     // minted. Only a second pass, after the delete, can prune it.
-    final dir = Directory(p.join(root.path, 'web-app'))
+    final dir = Directory(p.join(root.path, 'shop-ui'))
       ..createSync(recursive: true);
     final rift = _FakeRift(removeLeavesDirectory: true);
 
     await adapterFor(rift).destroy(
       path: dir.path,
-      sourcePath: '/src/web-app',
+      sourcePath: '/src/shop-ui',
       backend: RepoIsolationBackend.rift,
       branch: 'pr/42',
     );

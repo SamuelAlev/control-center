@@ -2642,4 +2642,7 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Запуск остановлен, потому что учётные данные провайдера больше не работают. Переподключите его в Настройки → Провайдеры, затем повторите ход.';
+
+  @override
+  String get permissionHostExecution => 'Выполнение команд на хосте';
 }

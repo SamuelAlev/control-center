@@ -2649,4 +2649,7 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Przebieg został zatrzymany, ponieważ dane uwierzytelniające dostawcy już nie działają. Połącz go ponownie w Ustawienia → Dostawcy, a następnie ponów turę.';
+
+  @override
+  String get permissionHostExecution => 'Uruchamiaj polecenia na hoście';
 }

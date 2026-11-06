@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_activity_tab.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_shell_output_tab.dart';
@@ -201,12 +203,73 @@ void main() {
       expect(activeEditorTabKey(restored), 'terminal:one');
     });
 
-    test('a dropped selection falls back to a surviving tab', () {
-      final layout = _single([_chat('space-1'), transient, terminal]);
+    test('a dropped selection falls back to the tab visited before it', () {
+      final layout = _single([_chat('space-1'), terminal, transient]);
+      addTearDown(layout.dispose);
+      layout.activeLeaf.controller
+        ..selectedIndex = 1
+        ..selectedIndex = 2;
+
+      expect(activeEditorTabKey(reopen(layout)), 'terminal:one');
+    });
+
+    test('a dropped selection with no history falls back to the first tab', () {
+      const payload = '''
+        {"v":1,"root":{"t":"leaf","sel":0,"active":true,"tabs":[
+          {"kind":"chat","label":"Chat","args":{"spaceId":"space-1"}},
+          {"kind":"terminal","label":"Terminal","dedup":"terminal:one"}
+        ]}}
+      ''';
+      final restored = messagingLayoutCodec.decode(payload)!;
+      addTearDown(restored.dispose);
+
+      expect(activeEditorTabKey(restored), MessagingTabKinds.chat);
+    });
+
+    test('each pane saves its selection by tab id', () {
+      final layout = _single([_chat('space-1'), conversation, terminal]);
       addTearDown(layout.dispose);
       layout.activeLeaf.controller.selectedIndex = 1;
 
-      expect(activeEditorTabKey(reopen(layout)), MessagingTabKinds.chat);
+      final saved = jsonDecode(messagingLayoutCodec.encode(layout)) as Map;
+      expect((saved['root'] as Map)['selKey'], 'chat:conversation-2');
+    });
+
+    test('the saved tab id wins over a stale index', () {
+      // Saved with tab ids, then the index drifted (a tab inserted before it
+      // by a client that predates ids, or a hand-edited payload).
+      const payload = '''
+        {"v":1,"root":{"t":"leaf","sel":0,"selKey":"terminal:two",
+          "active":true,"tabs":[
+          {"kind":"chat","label":"Chat","args":{"spaceId":"space-1"}},
+          {"kind":"terminal","label":"Terminal","dedup":"terminal:one"},
+          {"kind":"terminal","label":"Terminal","dedup":"terminal:two"}
+        ]}}
+      ''';
+      final restored = messagingLayoutCodec.decode(payload)!;
+      addTearDown(restored.dispose);
+
+      expect(activeEditorTabKey(restored), 'terminal:two');
+    });
+
+    test('same-kind tabs saved without ids each get their own', () {
+      const payload = '''
+        {"v":1,"root":{"t":"leaf","sel":2,"active":true,"tabs":[
+          {"kind":"chat","label":"Chat","args":{"spaceId":"space-1"}},
+          {"kind":"terminal","label":"Terminal","args":{"termSessionId":"a"}},
+          {"kind":"terminal","label":"Terminal","args":{"termSessionId":"b"}}
+        ]}}
+      ''';
+      final restored = messagingLayoutCodec.decode(payload)!;
+      addTearDown(restored.dispose);
+
+      final tabs = restored.activeLeaf.controller.tabs;
+      expect(tabs.map((t) => t.id).toSet(), hasLength(3));
+      final focused = activeEditorTabKey(restored);
+      expect(restored.activeLeaf.controller.selectedIndex, 2);
+      expect(focused, startsWith('${MessagingTabKinds.terminal}:'));
+      // The minted id is saved, so the next restore lands on the same tab.
+      expect(activeEditorTabKey(reopen(restored)), focused);
     });
 
     test('an unrestorable focused pane falls back to a populated pane', () {

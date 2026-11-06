@@ -55,7 +55,7 @@ void main() {
       'returns an unconfigured snapshot per provider with no credentials',
       () async {
         // Empty environment + null home → no Claude token, no Codex auth dir,
-        // no z.ai key, no Kimi Code token, no Cursor token.
+        // no z.ai key, no Kimi Code token, no Cursor token, no Mistral key.
         final (service, _) = build(
           (request) => httpTextResponse(request, const {}),
           homeDir: null,
@@ -64,7 +64,7 @@ void main() {
 
         final results = await service.fetchAll();
 
-        expect(results, hasLength(5));
+        expect(results, hasLength(6));
         for (final usage in results) {
           expect(usage.status, SubscriptionStatus.unconfigured);
         }
@@ -74,12 +74,20 @@ void main() {
           'zai',
           'kimi-code',
           'cursor',
+          'mistral',
         });
         // Every unconfigured provider explains how to connect it, so the usage
         // card is never a bare blank. The wording is per provider (some name the
         // settings page, some just the sign-in), so this asserts the actionable
         // shape rather than one exact sentence.
-        for (final id in ['claude', 'codex', 'zai', 'kimi-code', 'cursor']) {
+        for (final id in [
+          'claude',
+          'codex',
+          'zai',
+          'kimi-code',
+          'cursor',
+          'mistral',
+        ]) {
           expect(
             results.firstWhere((u) => u.providerId == id).error,
             contains('to see usage'),
@@ -1085,6 +1093,169 @@ void main() {
       )).firstWhere((u) => u.providerId == 'zai');
       expect(zai.status, SubscriptionStatus.error);
       expect(zai.error, 'Timed out');
+    });
+  });
+
+  group('Mistral', () {
+    SubscriptionUsageAccount key(String id, {String? baseUrl}) =>
+        SubscriptionUsageAccount(
+          providerId: 'mistral',
+          accountId: id,
+          apiKey: 'key-$id',
+          baseUrl: baseUrl,
+        );
+
+    List<SubscriptionUsage> mistralOf(List<SubscriptionUsage> all) => [
+      for (final u in all)
+        if (u.providerId == 'mistral') u,
+    ];
+
+    test('reads the monthly Vibe budget with a bearer key', () async {
+      final (service, client) = build((request) {
+        expect(header(request, 'authorization'), 'Bearer key-a');
+        return httpTextResponse(request, {
+          'vibe_budget': {
+            'usage_percentage': 42.5,
+            'initial_budget': 30,
+            'reset_at': '2026-12-01T00:00:00Z',
+            'payg_enabled': false,
+          },
+        });
+      });
+
+      final mistral = mistralOf(
+        await service.fetchAll(
+          accounts: [key('a', baseUrl: 'https://api.mistral.ai/v1')],
+        ),
+      ).single;
+
+      expect(
+        client.requests.single.url,
+        'https://api.mistral.ai/v1/billing/budget',
+      );
+      expect(mistral.status, SubscriptionStatus.ok);
+      expect(mistral.accountId, 'a');
+      final window = mistral.windows.single;
+      expect(window.id, 'month');
+      expect(window.label, 'Monthly');
+      expect(window.usedFraction, closeTo(0.425, 1e-9));
+      expect(window.resetsAt, DateTime.utc(2026, 12));
+    });
+
+    test('a key without a plan collapses to one nameless unconfigured '
+        'snapshot', () async {
+      final (service, _) = build(
+        (request) => httpTextResponse(request, {'vibe_budget': null}),
+      );
+
+      final mistral = mistralOf(
+        await service.fetchAll(accounts: [key('a'), key('b')]),
+      );
+
+      expect(mistral, hasLength(1));
+      expect(mistral.single.status, SubscriptionStatus.unconfigured);
+      // Nameless, so the pill drops it like any provider that is not set up.
+      expect(mistral.single.accountId, isNull);
+    });
+
+    test('a zero allowance is no plan', () async {
+      final (service, _) = build(
+        (request) => httpTextResponse(request, {
+          'vibe_budget': {'usage_percentage': 0, 'initial_budget': 0},
+        }),
+      );
+      final mistral = mistralOf(
+        await service.fetchAll(accounts: [key('a')]),
+      ).single;
+      expect(mistral.status, SubscriptionStatus.unconfigured);
+    });
+
+    test('only the keys that carry a plan are paged', () async {
+      final (service, _) = build(
+        (request) => httpTextResponse(
+          request,
+          header(request, 'authorization') == 'Bearer key-plan'
+              ? {
+                  'vibe_budget': {'usage_percentage': 10, 'initial_budget': 30},
+                }
+              : {'vibe_budget': null},
+        ),
+      );
+
+      final mistral = mistralOf(
+        await service.fetchAll(accounts: [key('metered'), key('plan')]),
+      );
+
+      expect(mistral.map((u) => u.accountId), ['plan']);
+      expect(mistral.single.status, SubscriptionStatus.ok);
+    });
+
+    test('a spent allowance without pay-as-you-go is exhausted', () async {
+      final (service, client) = build(
+        (request) => httpTextResponse(request, {
+          'vibe_budget': {
+            'usage_percentage': 100,
+            'initial_budget': 30,
+            'payg_enabled': false,
+          },
+        }),
+      );
+      final mistral = mistralOf(
+        await service.fetchAll(accounts: [key('a')]),
+      ).single;
+      expect(mistral.status, SubscriptionStatus.exhausted);
+      // The budget answered the pay-as-you-go question itself.
+      expect(client.requests, hasLength(1));
+    });
+
+    test('a spent allowance with pay-as-you-go on the subscription stays '
+        'usable', () async {
+      final (service, client) = build((request) {
+        if (request.url.endsWith('/billing/subscription')) {
+          return httpTextResponse(request, {
+            'plan_name': 'TEAM',
+            'vibe_payg_enabled': true,
+          });
+        }
+        return httpTextResponse(request, {
+          'vibe_budget': {'usage_percentage': 130, 'initial_budget': 30},
+        });
+      });
+      final mistral = mistralOf(
+        await service.fetchAll(accounts: [key('a')]),
+      ).single;
+      expect(mistral.status, SubscriptionStatus.ok);
+      expect(mistral.windows.single.usedFraction, 1.0);
+      expect(client.requests.map((r) => r.url), [
+        'https://api.mistral.ai/v1/billing/budget',
+        'https://api.mistral.ai/v1/billing/subscription',
+      ]);
+    });
+
+    test(
+      'a 403 says the usage is unreadable instead of hiding the plan',
+      () async {
+        final (service, _) = build(
+          (request) => httpTextResponse(request, const {}, statusCode: 403),
+        );
+        final mistral = mistralOf(
+          await service.fetchAll(accounts: [key('a')]),
+        ).single;
+        expect(mistral.status, SubscriptionStatus.error);
+      },
+    );
+
+    test('the key is never sent to a non-Mistral host', () async {
+      final (service, client) = build(
+        (request) => fail('unexpected request to ${request.url}'),
+      );
+      final mistral = mistralOf(
+        await service.fetchAll(
+          accounts: [key('a', baseUrl: 'https://proxy.example.com/v1')],
+        ),
+      ).single;
+      expect(client.requests, isEmpty);
+      expect(mistral.status, SubscriptionStatus.unconfigured);
     });
   });
 }

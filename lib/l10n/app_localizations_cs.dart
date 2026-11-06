@@ -91,10 +91,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get keybindingPushToTalk => 'Stisknout a mluvit';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'Držte nebo přepínejte hlasové diktování v poli zprávy';
-
-  @override
   String get agentPermissions => 'Oprávnění agentů';
 
   @override
@@ -194,6 +190,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'Simulátor iOS';
+
+  @override
+  String get rigSurfaceAppWindow => 'Okno aplikace';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -469,6 +468,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'Živý náhled na tomto hostiteli potřebuje ffmpeg. Nainstalujte ffmpeg a znovu otevřete kartu.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'Živé zobrazení vyžaduje nahrávání obrazovky. Povolte ho aplikaci Control Center v Nastavení systému a znovu otevřete kartu.';
 
   @override
   String get rigStreamEnded => 'Živý náhled skončil.';
@@ -1588,10 +1591,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'Otevřít nabídku filtrů';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'Otevřít nabídku filtrů pull requestů';
 
   @override
   String countSelected(int count) {
@@ -2871,19 +2870,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get cancelEdit => 'Zrušit úpravy';
 
   @override
-  String get categoryCreation => 'Vytváření';
-
-  @override
-  String get categoryEditing => 'Úpravy';
-
-  @override
   String get categoryNavigation => 'Navigace';
-
-  @override
-  String get categorySystem => 'Systém';
-
-  @override
-  String get categoryView => 'Zobrazení kategorie';
 
   @override
   String get change => 'Změnit';
@@ -3713,31 +3700,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get keepSandboxing => 'Ponechat sandboxing';
 
   @override
-  String get keybindingAddARepositoryDescription => 'Přidat repozitář';
-
-  @override
   String get keybindingAddRepository => 'Přidat repozitář';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'Přidat nebo odebrat záložku vybraného článku';
 
   @override
   String get keybindingCommandPalette => 'Paleta příkazů';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'Vytvořit nového agenta';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'Vytvořit nový pracovní prostor';
-
-  @override
   String get keybindingFocusSearch => 'Zaměřit hledání';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'Zaměřit pole hledání pull requestů';
 
   @override
   String get keybindingNewAgent => 'Nový agent';
@@ -3758,35 +3727,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get keybindingOpenArticle => 'Otevřít článek';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'Otevřít nebo zavřít přepínač pracovních prostorů v postranním panelu';
-
-  @override
   String get keybindingOpenPr => 'Otevřít PR';
 
   @override
   String get keybindingOpenSettings => 'Otevřít nastavení';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'Otevřít nastavení aplikace';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription =>
-      'Otevřít paletu příkazů';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'Otevřít vybraný článek';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'Otevřít vybraný pull request';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'Otevřít vybraný pracovní prostor';
 
   @override
   String get keybindingOpenWorkspace => 'Otevřít pracovní prostor';
@@ -3804,84 +3748,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get keybindingRefresh => 'Obnovit';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'Obnovit všechny kanály';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'Obnovit seznam pull requestů';
-
-  @override
-  String get keybindingRescanForAdaptersDescription =>
-      'Znovu vyhledat adaptéry';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription => 'Vybrat další článek';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription => 'Vybrat další prostor';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'Vybrat předchozí článek';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription =>
-      'Vybrat předchozí prostor';
-
-  @override
   String get keybindingSendMessage => 'Odeslat zprávu';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'Odeslat aktuální zprávu';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'Přepnout mezi světlým a tmavým režimem';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'Přepnout na osmý pracovní prostor';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'Přepnout na pátý pracovní prostor';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'Přepnout na první pracovní prostor';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'Přepnout na čtvrtý pracovní prostor';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'Přepnout na další pracovní prostor';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'Přepnout na devátý pracovní prostor';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'Přepnout na předchozí pracovní prostor';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'Přepnout na druhý pracovní prostor';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'Přepnout na sedmý pracovní prostor';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'Přepnout na šestý pracovní prostor';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'Přepnout na třetí pracovní prostor';
 
   @override
   String get keybindingToggleBookmark => 'Přepnout záložku';
@@ -3919,13 +3786,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'Pracovní prostor 9';
-
-  @override
-  String get keybindings => 'Klávesové zkratky';
-
-  @override
-  String get keybindingsDescription =>
-      'Všechny klávesové zkratky. Zkratky jsou pevné a nelze je měnit.';
 
   @override
   String get killRunning => 'Ukončit běžící';
@@ -4201,11 +4061,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get noSavedArticlesBody => 'Články, které uložíte, se tu objeví.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'Žádné zkratky neodpovídají „$query“';
-  }
 
   @override
   String get noSystemFonts => 'Nebyla zjištěna žádná systémová písma.';
@@ -4950,12 +4805,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'Hledat…';
-
-  @override
-  String get searchShortcuts => 'Hledat zkratky…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'V prohlížeči není k dispozici';
 
   @override
   String get searching => 'Hledání…';
@@ -6764,6 +6613,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'Prostor smazán';
 
   @override
+  String get triggerEventSpaceArchived => 'Prostor archivován';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged =>
+      'Příprava prostoru se změnila';
+
+  @override
+  String get triggerEventPrHeadChanged => 'Hlava PR se změnila';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => 'Stav prostředí se změnil';
+
+  @override
+  String get triggerEventEnvironmentReady => 'Prostředí připraveno';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'Prostředí zrušeno';
+
+  @override
+  String get triggerEventEnvironmentProcessExited => 'Proces prostředí skončil';
+
+  @override
   String get triggerExternalPrHelp =>
       'Pull request otevřený na hostiteli kódu, ne z Control Center.';
 
@@ -6825,6 +6696,33 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'Konverzační prostor je smazán.';
+
+  @override
+  String get triggerSpaceArchivedHelp => 'Konverzační prostor je archivován.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'Příprava worktree prostoru začíná, končí nebo selhává.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'Do otevřeného pull requestu přibyly nové commity.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'Prostředí prostoru přešlo do nového stavu.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'Prostředí prostoru se spustilo a lze ho použít.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp =>
+      'Prostředí prostoru je odstraněno.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'Proces spuštěný prostředím skončil.';
 
   @override
   String get navTickets => 'Tickety';
@@ -9064,19 +8962,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'Využití a náklady';
-
-  @override
-  String get usageAndCostDescription =>
-      'Výdaje agentů za posledních 7 dní z pozorovaných nákladů běhů.';
-
-  @override
-  String get noUsageYet => 'Zatím není zaznamenáno žádné využití.';
-
-  @override
-  String get spentThisWeek => 'utraceno tento týden';
-
-  @override
   String get subscriptionUsage => 'Využití předplatného';
 
   @override
@@ -9287,9 +9172,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get keybindingNewSpace => 'Nový prostor';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'Vytvořit nový prostor';
-
-  @override
   String get jumpToLatest => 'Přejít na nejnovější';
 
   @override
@@ -9460,71 +9342,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get preparingWorkspace => 'Příprava pracovního prostoru…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'Spouštění setup skriptu pro $repo…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'Skripty';
-
-  @override
-  String get repoScriptsTooltip => 'Nastavit skripty životního cyklu';
-
-  @override
-  String get repoScriptsSetupLabel => 'Setup skript';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'Běží ve worktree prostoru hned po vytvoření — nainstaluje závislosti, vygeneruje soubory. Selhání označí prostor jako selhaný; opakování ho spustí znovu.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'Archive skript';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'Běží těsně před smazáním worktree prostoru — uklidí zdroje mimo worktree. Selhání smazání nikdy neblokuje.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'Běží přes bash z worktree s nastavenými CC_WORKSPACE_PATH (worktree), CC_ROOT_PATH (kořen repa), CC_SPACE_ID, CC_SPACE_NAME a CC_REPO_NAME.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'např. pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'např. docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => 'Nedávné běhy';
-
-  @override
-  String get repoScriptsNoRuns => 'Zatím žádné běhy';
-
-  @override
-  String get repoScriptsSaved => 'Skripty uloženy';
-
-  @override
-  String get repoScriptsRunKindSetup => 'Setup';
-
-  @override
-  String get repoScriptsRunKindArchive => 'Archive';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'Běží';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'Úspěšně';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'Selhalo';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'Vypršel čas';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'Exit kód $code';
+  String provisioningRunningTasks(String repo) {
+    return 'Spouštění úloh pracovního stromu pro $repo…';
   }
 
   @override
@@ -10331,10 +10150,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get keybindingCheatSheet => 'Klávesové zkratky';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'Zobrazit přehled klávesových zkratek aktuální obrazovky';
-
-  @override
   String get runPlaybookLabel => 'Spustit playbook';
 
   @override
@@ -10345,14 +10160,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'Znovu';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'Vrátit poslední vratnou akci';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'Znovu provést poslední vrácenou akci';
 
   @override
   String get undone => 'Vráceno';
@@ -14269,6 +14076,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get newSkill => 'Nová dovednost';
 
   @override
+  String get newItemAction => 'Nový';
+
+  @override
   String get zoomIn => 'Přiblížit';
 
   @override
@@ -14485,6 +14295,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get steerNow => 'Usměrnit';
 
   @override
+  String get steerForce => 'Zastavit a odeslat';
+
+  @override
   String get steeringQueueLabel => 'Zařazené usměrňující zprávy';
 
   @override
@@ -14532,16 +14345,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'Příště, až agent bude potřebovat spustit program z této kopie, se zeptáme znovu.';
-
-  @override
-  String get repoScriptsTest => 'Test';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'Spustit tento koncept v jednorázovém klonu repozitáře';
-
-  @override
-  String get repoScriptsRunKindTest => 'Test';
 
   @override
   String get demoBadgeLabel => 'Demo';
@@ -14761,6 +14564,52 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'Cesta na serveru';
+
+  @override
+  String get backupScheduledLabel => 'Plánované zálohy';
+
+  @override
+  String get backupScheduledExplainer =>
+      'Kopie ukládané pipeline záloh každého pracovního prostoru. Plán a dobu uchování nastavíte v šabloně pipeline.';
+
+  @override
+  String get backupScheduledNone => 'Zatím žádné zálohy';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count záloh',
+      many: '$count záloh',
+      few: '$count zálohy',
+      one: '1 záloha',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'Poslední záloha: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'K zobrazení záloh tohoto pracovního prostoru potřebujete roli správce.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'Smazat tuto zálohu?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'Smazat zálohu z $date pracovního prostoru $name ze serveru? Tuto akci nelze vrátit zpět.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'Záloha byla smazána.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'Pracovní prostor smazán';
 
   @override
   String get backupRestoreAction => 'Obnovit';
@@ -15379,14 +15228,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get ideQuickOpen => 'Přejít na soubor';
 
   @override
-  String get ideQuickOpenDescription =>
-      'Vyhledejte soubory konverzace podle názvu a otevřete jeden na kartě';
-
-  @override
-  String get prQuickOpenDescription =>
-      'Vyhledejte soubory pull requestu podle názvu a otevřete jeden na kartě';
-
-  @override
   String get ideQuickOpenHint => 'Hledat soubory podle názvu';
 
   @override
@@ -15723,6 +15564,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'Vynucené načtení';
+
+  @override
+  String get skillEvalHashLabel => 'Hash balíčku';
+
+  @override
+  String get skillEvalProgressLabel => 'Průběh';
+
+  @override
+  String get skillEvalUpdatesToggle => 'Vyhodnocování aktualizací';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -16114,4 +15964,715 @@ class AppLocalizationsCs extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return 'Zbývá $minutes min';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'Prostředí spouštějí skutečné procesy na hostiteli, takže demo žádná nemá.';
+
+  @override
+  String get environmentChecksFailing =>
+      'Některé kontroly na serveru selhávají';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'Koncové body: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'Služby: $names';
+  }
+
+  @override
+  String get environmentCopied => 'Zkopírováno';
+
+  @override
+  String get environmentCopyCommand => 'Kopírovat příkaz';
+
+  @override
+  String get environmentCopyUrl => 'Kopírovat URL';
+
+  @override
+  String get environmentDefinition => 'Definice';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count definic',
+      many: '$count definice',
+      few: '$count definice',
+      one: '1 definice',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'Zničit';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name a jeho data budou odstraněna. Spustit vytvoří nové.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'Zničit toto prostředí?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'Spustit ve službě';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'Návratový kód $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => 'Toto je třeba nastavit na serveru';
+
+  @override
+  String get environmentKindApp => 'Aplikace';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'Proces';
+
+  @override
+  String get environmentKindTask => 'Úloha';
+
+  @override
+  String get environmentLaunch => 'Otevřít';
+
+  @override
+  String get environmentLogsGone => 'Tyto logy už nejsou k dispozici.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'Logy: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'Čekání na výstup';
+
+  @override
+  String get environmentMoreActions => 'Další akce prostředí';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'Změna vyžaduje znovu vytvořit toto prostředí.';
+
+  @override
+  String get environmentNoStack =>
+      'Spouští jen úlohy worktree, takže není co spustit.';
+
+  @override
+  String get environmentOnTheServer => 'Na serveru';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Otevřít v Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'Otevřít prohlížeč okna';
+
+  @override
+  String get environmentPlacementRig => 'Ve VM';
+
+  @override
+  String get environmentPreviewTab => 'Prostředí';
+
+  @override
+  String get environmentRebuildRelaunch => 'Znovu sestavit a spustit';
+
+  @override
+  String get environmentRecreate => 'Znovu vytvořit';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name bude zničeno a znovu spuštěno se stejnými volbami. Jeho data se ztratí.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'Znovu vytvořit toto prostředí?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name se vrátí do výchozího stavu. Data vytvořená od té doby se ztratí.';
+  }
+
+  @override
+  String get environmentResetData => 'Obnovit data';
+
+  @override
+  String get environmentResetTitle => 'Obnovit data?';
+
+  @override
+  String get environmentRestart => 'Restartovat';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count restartů',
+      many: '$count restartu',
+      few: '$count restarty',
+      one: '1 restart',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'Spustit';
+
+  @override
+  String get environmentRunInTerminal => 'Spustit v terminálu';
+
+  @override
+  String get environmentSectionTitle => 'Prostředí';
+
+  @override
+  String get environmentService => 'Služba';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'Akce pro $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'Spustit prostředí';
+
+  @override
+  String get environmentStateCrashed => 'Havarovalo';
+
+  @override
+  String get environmentStatusDegraded => 'Omezené';
+
+  @override
+  String get environmentStatusDestroying => 'Ničí se';
+
+  @override
+  String get environmentStatusGone => 'Pryč';
+
+  @override
+  String get environmentStatusStopping => 'Zastavuje se';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'Zastavením $name se ztratí jeho data a Spustit je nevrátí.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'Zastavit a ztratit data';
+
+  @override
+  String get environmentStopTitle => 'Zastavit toto prostředí?';
+
+  @override
+  String get environmentTaskNeverRun => 'Zatím nespuštěno';
+
+  @override
+  String get environmentsAddCheck => 'Přidat kontrolu';
+
+  @override
+  String get environmentsAddOption => 'Přidat volbu';
+
+  @override
+  String get environmentsAddRole => 'Přidat roli';
+
+  @override
+  String get environmentsAdminOnly =>
+      'Definice mohou měnit jen správci pracovního prostoru.';
+
+  @override
+  String get environmentsAfter => 'Počkat na tyto komponenty';
+
+  @override
+  String get environmentsAnchor => 'Kotva';
+
+  @override
+  String get environmentsAutoCreate => 'Spouštět automaticky';
+
+  @override
+  String get environmentsAutoCreateAll => 'V každém vhodném prostoru';
+
+  @override
+  String get environmentsAutoCreateOff => 'Nikdy';
+
+  @override
+  String get environmentsAutoCreatePrs => 'V prostorech pull requestů';
+
+  @override
+  String get environmentsBlank => 'Prázdná definice';
+
+  @override
+  String get environmentsCheckFix => 'Opravný příkaz';
+
+  @override
+  String get environmentsCheckHint => 'Nápověda';
+
+  @override
+  String get environmentsCommandHelp =>
+      'Argumenty se oddělují mezerami. Argument s mezerou dejte do uvozovek.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komponent',
+      many: '$count komponenty',
+      few: '$count komponenty',
+      one: '1 komponenta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'Sestavit obrazy při spuštění';
+
+  @override
+  String get environmentsComposeFile => 'Soubor compose';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Soubor compose se nepodařilo přečíst. Názvy služeb lze stále zadat v zobrazení JSON.';
+
+  @override
+  String get environmentsComposeServices => 'Služby';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'Nechte všechny služby nezaškrtnuté, aby se spustily všechny.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'Tento příkaz má podmíněné argumenty. Upravte ho v zobrazení JSON.';
+
+  @override
+  String get environmentsCwdPath => 'Pracovní cesta';
+
+  @override
+  String get environmentsCwdRole => 'Pracovní role';
+
+  @override
+  String get environmentsDeleteBody =>
+      'Prostory ji už nemohou spustit. Běžící prostředí poběží, dokud se nezastaví.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'Smazat $name?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'Co může každý prostor spustit a jaké úlohy spouštějí jeho worktree.';
+
+  @override
+  String get environmentsDraftFromRepo => 'Návrh z repozitáře';
+
+  @override
+  String get environmentsEmpty => 'Zatím žádné definice';
+
+  @override
+  String get environmentsEnabledWhen => 'Povoleno, když';
+
+  @override
+  String get environmentsEndpointRole => 'Role koncového bodu';
+
+  @override
+  String get environmentsFollowPrHead => 'Sledovat head pull requestu';
+
+  @override
+  String get environmentsForkApproval => 'Každé spuštění vyžaduje správce';
+
+  @override
+  String get environmentsForkDeny => 'Odmítnuto';
+
+  @override
+  String get environmentsForkPrs => 'Pull requesty z forků';
+
+  @override
+  String get environmentsForkRig => 'Spustit ve VM';
+
+  @override
+  String get environmentsIdleStop => 'Zastavit po minutách nečinnosti';
+
+  @override
+  String get environmentsIsolateHome =>
+      'Dát aplikaci soukromý domovský adresář';
+
+  @override
+  String get environmentsIssues => 'Před uložením opravte';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'Neplatný JSON: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'Při zastavení si ponechá data';
+
+  @override
+  String get environmentsLinkConfirm => 'Propojit a schválit';
+
+  @override
+  String get environmentsLinkFile => 'Propojit soubor z repozitáře';
+
+  @override
+  String get environmentsLinkHelp =>
+      'Čte se jen z výchozí větve a spouští se až po schválení.';
+
+  @override
+  String get environmentsLinkPath => 'Cesta';
+
+  @override
+  String get environmentsMaxRunning => 'Běžící současně';
+
+  @override
+  String get environmentsNamingProject => 'Projekt';
+
+  @override
+  String get environmentsNamingTemplate => 'Šablona názvu';
+
+  @override
+  String get environmentsNew => 'Nová definice';
+
+  @override
+  String get environmentsNewDefinitionName => 'Nové prostředí';
+
+  @override
+  String get environmentsNoChecks => 'Tato definice nemá žádné kontroly.';
+
+  @override
+  String get environmentsNoRuns => 'Zatím žádné testovací běhy';
+
+  @override
+  String get environmentsOnChange => 'Sledované cesty';
+
+  @override
+  String get environmentsOptionBool => 'Ano nebo ne';
+
+  @override
+  String get environmentsOptionEnum => 'Jedna z';
+
+  @override
+  String get environmentsOptionMulti => 'Několik z';
+
+  @override
+  String get environmentsOptionValues => 'Hodnoty';
+
+  @override
+  String get environmentsPlacement => 'Umístění';
+
+  @override
+  String get environmentsPlacementHost => 'Na hostiteli';
+
+  @override
+  String get environmentsPlacementRig => 'Ve VM';
+
+  @override
+  String get environmentsPrepareTask => 'Přípravná úloha';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'Hlavní koncový bod';
+
+  @override
+  String get environmentsReadyHttp => 'Připraveno, až tato URL odpoví';
+
+  @override
+  String get environmentsRestartAlways => 'Vždy';
+
+  @override
+  String get environmentsRestartNever => 'Nikdy';
+
+  @override
+  String get environmentsRestartOn => 'Restartovat při změně těchto cest';
+
+  @override
+  String get environmentsRestartOnFailure => 'Při selhání';
+
+  @override
+  String get environmentsRestartPolicy => 'Restartovat';
+
+  @override
+  String get environmentsRigTtl => 'Životnost VM v hodinách';
+
+  @override
+  String get environmentsRunChecks => 'Spustit znovu';
+
+  @override
+  String get environmentsRunTest => 'Spustit test';
+
+  @override
+  String get environmentsSaved => 'Definice uložena';
+
+  @override
+  String get environmentsSectionComponents => 'Komponenty';
+
+  @override
+  String get environmentsSectionOptions => 'Volby spuštění';
+
+  @override
+  String get environmentsSectionSeedFiles => 'Výchozí soubory';
+
+  @override
+  String get environmentsSectionVariables => 'Proměnné';
+
+  @override
+  String get environmentsSeedHelp =>
+      'Jedna cesta na řádek, zkopírováno z registrovaného checkoutu. Pull requesty z forků je nikdy nedostanou.';
+
+  @override
+  String get environmentsShellHelp =>
+      'Zástupné symboly se zde nerozbalují. Čtěte místo toho proměnné CC_ENV_*.';
+
+  @override
+  String get environmentsSourceApprove => 'Schválit tuto verzi';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path odpovídá schválené verzi.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'Schválená verze běží, dokud neschválíte tuto.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'Zdroj';
+
+  @override
+  String get environmentsTestHelp =>
+      'Spustí jednorázové prostředí od začátku do konce: kontrola, spuštění, čekání na připravenost, zničení.';
+
+  @override
+  String get environmentsTestSaveFirst => 'Nejprve definici uložte.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'Časový limit v sekundách';
+
+  @override
+  String get environmentsTitle => 'Prostředí';
+
+  @override
+  String get environmentsTriggerArchive => 'Před smazáním worktree';
+
+  @override
+  String get environmentsTriggerChange => 'Při změně sledovaných cest';
+
+  @override
+  String get environmentsTriggerCreate => 'Jednou na prostředí';
+
+  @override
+  String get environmentsTriggerManual => 'Na vyžádání';
+
+  @override
+  String get environmentsTriggerProvision => 'Při vytvoření worktree';
+
+  @override
+  String get environmentsTriggerStart => 'Při každém spuštění';
+
+  @override
+  String get environmentsTriggers => 'Spouští se';
+
+  @override
+  String get environmentsUnreadable =>
+      'Tento klient nedokáže tuto definici přečíst.';
+
+  @override
+  String get environmentsUpdateAvailable => 'Dostupná aktualizace';
+
+  @override
+  String get environmentsUseShell => 'Použít příkaz shellu';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'Nástroj pak běží nad vaším vlastním checkoutem. Berte ho jako pouze pro čtení.';
+
+  @override
+  String get environmentsWhenMissing => 'Když to prostoru chybí';
+
+  @override
+  String get environmentsWhenMissingAdd => 'Přidat do prostoru';
+
+  @override
+  String get environmentsWhenMissingSkip => 'Přeskočit';
+
+  @override
+  String get environmentsWhenMissingSource => 'Použít registrovaný checkout';
+
+  @override
+  String get environmentsUnsupported => 'Tento server prostředí nepodporuje.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'Bez prohlížeče: server nemůže zachytit toto okno. Povolte na serveru aplikaci Control Center nahrávání obrazovky.';
+
+  @override
+  String get environmentHealthHealthy => 'V pořádku';
+
+  @override
+  String get environmentHealthUnhealthy => 'Nefunkční';
+
+  @override
+  String get environmentTerminalStale =>
+      'Tento terminál byl otevřen před spuštěním prostředí, takže nemá jeho proměnné.';
+
+  @override
+  String get environmentTerminalFresh => 'Otevřít nový terminál';
+
+  @override
+  String get environmentsShellStays =>
+      'Víceřádkový skript zůstává příkazem shellu: jeho řádky jsou jeho strukturou.';
+
+  @override
+  String get environmentsOverrides => 'Přepsání pracovního prostoru';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'Vlastní nastavení souboru jsou zde jen pro čtení. Přiřaďte jeho role k repozitářům tohoto pracovního prostoru nebo přepište libovolné pole jako JSON.';
+
+  @override
+  String get environmentsReposHelp =>
+      'Repozitáře, které toto prostředí používá, každý přiřazený k roli.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'Co prostředí spouští, v pořadí startu.';
+
+  @override
+  String get environmentsOptionsHelp =>
+      'Volby nabízené při spuštění prostředí.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'Nastavují se pro úlohy, procesy, aplikace a terminály prostoru.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'Co hostitel potřebuje, aby toto prostředí běželo.';
+
+  @override
+  String get environmentsIdleStopHelp => '0 ho nikdy nezastaví.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'Prostor s tímto repozitářem může prostředí spustit.';
+
+  @override
+  String get environmentsRequiredHelp => 'Prostředí bez něj nemůže běžet.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'Synchronizovat a obnovit, když se head pull requestu posune.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'Vyžaduje opravu';
+
+  @override
+  String get environmentsCheckFile => 'Soubor';
+
+  @override
+  String get environmentsDiscardBody =>
+      'Vaše úpravy této definice budou ztraceny.';
+
+  @override
+  String get environmentsWorktreeRuns => 'Běhy úloh worktree';
+
+  @override
+  String get environmentsNoWorktreeRuns =>
+      'Zatím neběžela žádná úloha worktree.';
+
+  @override
+  String get environmentsLinkRoles => 'Role v tomto souboru';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'Soubor se z repozitáře nepodařilo přečíst. Role lze přiřadit po propojení.';
+
+  @override
+  String get guardrailClassHostExecution => 'Spouštět příkazy na hostiteli';
+
+  @override
+  String get environmentUrls => 'URL adresy';
+
+  @override
+  String get environmentScripts => 'Skripty';
+
+  @override
+  String get environmentNoneForSpace => 'Tento prostor nemá žádné prostředí';
+
+  @override
+  String get environmentNoneForPr => 'Tento pull request nemá žádné prostředí';
+
+  @override
+  String get environmentSetupBody =>
+      'Prostředí spouští služby, skripty a URL adresy repozitáře pro jeden prostor. Nastavte ho jednou a každý prostor nad repozitářem ho může spustit.';
+
+  @override
+  String get environmentSetUp => 'Nastavit prostředí';
+
+  @override
+  String get environmentEditDefinition => 'Upravit definici';
+
+  @override
+  String get environmentOpenPanel => 'Otevřít prostředí';
+
+  @override
+  String get environmentNeedsSetup => 'Vyžaduje nastavení';
+
+  @override
+  String get environmentContinueInTerminal => 'Pokračovat v terminálu';
+
+  @override
+  String get environmentSetupHint =>
+      'Nástroj vás potřebuje v terminálu kvůli heslu nebo dotazu. Spouštění po dokončení pokračuje.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'Tento terminál se otevřel, protože spouštění vás potřebuje';
+
+  @override
+  String get environmentSetupTab => 'Nastavení prostředí';
+
+  @override
+  String get environmentsNothingRunning => 'Z této definice nic neběží.';
+
+  @override
+  String get searchPoliciesHint => 'Hledat zásady...';
+
+  @override
+  String get noPoliciesMatch => 'Hledání neodpovídají žádné zásady';
+
+  @override
+  String get memoryPolicyActive => 'Aktivní';
+
+  @override
+  String get memoryFactType => 'Typ';
+
+  @override
+  String get memoryTimesRecalled => 'Počet vybavení';
+
+  @override
+  String get memorySourceFacts => 'Zdrojová fakta';
+
+  @override
+  String get spaceSetupLogs => 'Protokoly nastavení';
 }

@@ -2,7 +2,7 @@
 title: Backup și restaurare
 description: Fă un snapshot al instalării, mută un spațiu de lucru între mașini, restaurează un spațiu de lucru sau toate, și păstrează copii în altă parte.
 slug: ro-RO/manual/ghiduri-practice/backup-si-restaurare
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Acest ghid acoperă cele cinci lucruri pe care oamenii le fac de fapt cu backup-urile:
@@ -16,7 +16,7 @@ Tot ce este aici se află în **Setări → Server → Backup și restaurare**.
 
 - Un **client complet** — aplicația desktop sau cea web. Un telefon asociat nu poate declanșa nimic din toate acestea, prin design.
 - Pentru a face, lista, descărca sau șterge un **snapshot de instalare**: **proprietarul** instalării.
-- Pentru acțiunile pe spațiu de lucru: **admin** al acelui spațiu de lucru pentru export, **proprietar** pentru import sau ștergere.
+- Pentru acțiunile pe spațiu de lucru: **admin** al acelui spațiu de lucru pentru a-l exporta sau pentru a-i lista și descărca backup-urile programate, **proprietar** pentru a-l importa sau șterge ori pentru a șterge unul dintre backup-urile sale.
 - Pentru descărcări și încărcări: un client complet asociat, pe o conexiune directă sau prin releul intermediat. Ambele căi cară octeții fișierului prin același tunel de resurse autentificat și criptat cap la cap; releul nu îi poate citi.
 
 :::caution[Snapshot-urile de instalare sunt manuale]
@@ -84,12 +84,36 @@ Backup-urile de spațiu de lucru se află pe server sub
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Nodul de retenție
 șterge doar backup-urile vechi pentru acest spațiu de lucru; nu șterge niciodată
 snapshot-uri de instalare sau backup-uri pentru alte spații de lucru. Aceste fișiere sunt
-doar baze de date. Pentru retenție în afara mașinii, copiază-le independent.
+doar baze de date. Pentru retenție în afara mașinii, descarcă-le sau copiază-le independent.
 
-Aceste backup-uri sunt separate de lista **Snapshot-uri de instalare**. Pentru a restaura
-unul, folosește **Date spațiu de lucru → Importă** cu calea `workspace.db` a backup-ului
-de pe server. Importul înlocuiește baza de date actuală a acelui spațiu de lucru, așa că
-export-o mai întâi dacă s-ar putea să ai nevoie să anulezi restaurarea.
+## Găsește și restaurează un backup programat
+
+**Copii de rezervă programate** se află între **Snapshot-uri de instalare** și
+**Date spațiu de lucru**, cu câte un rând pentru fiecare spațiu de lucru: când a rulat
+ultimul backup, câte au fost păstrate și cât spațiu ocupă. Un spațiu de lucru al cărui
+pipeline nu a produs nimic afișează **Nu există încă copii de rezervă**. Un spațiu de
+lucru al cărui admin nu ești spune acest lucru în rândul său, în loc să-i listeze
+backup-urile.
+
+Extinde un rând pentru a vedea fiecare backup, cele mai noi primele:
+
+- **Restaurează** înlocuiește baza de date actuală a spațiului de lucru cu acest backup. Exportă mai întâi spațiul de lucru dacă s-ar putea să ai nevoie să anulezi operația. Necesită **proprietar**.
+- **Descarcă** salvează fișierul pe mașina pe care o folosești. Backup-ul rămâne pe server.
+- **Copiază calea** copiază locația lui de pe server.
+- **Șterge** elimină definitiv acest backup, după ce tastezi numele spațiului de lucru. Necesită **proprietar**.
+
+### Backup-urile unui spațiu de lucru șters
+
+Ștergerea unui spațiu de lucru îi lasă backup-urile programate pe server și, pentru că
+programul lui se oprește odată cu el, se oprește și retenția: backup-urile rămân până
+când cineva le elimină. **Proprietarul** instalării le vede în aceeași listă, marcate
+**Spațiu de lucru șters**, și le poate descărca sau șterge de acolo. Nimeni altcineva nu
+vede acele rânduri.
+
+Nu au **Restaurează**, pentru că nu există un spațiu de lucru în care să fie restaurate.
+Pentru a aduce unul înapoi, descarcă-l, creează un spațiu de lucru și încarcă fișierul
+așa cum este descris în
+[Mută un spațiu de lucru într-o altă instalare](#mută-un-spațiu-de-lucru-într-o-altă-instalare).
 
 ## Șterge un snapshot de instalare
 
@@ -106,14 +130,16 @@ mașina la care stai, folosește butoanele **Descarcă**:
 
 - Lângă fiecare **spațiu de lucru** de la **Date spațiu de lucru** → **Descarcă**, pentru un singur fișier `.db`.
 - Lângă fiecare **snapshot** de la **Snapshot-uri de instalare** → **Descarcă**, pentru întregul snapshot ca `.zip`.
+- Lângă fiecare backup de la **Copii de rezervă programate** → **Descarcă**, pentru fișierul `.db` al acelui backup.
 
 Pe desktop alegi unde ajunge fișierul, iar notificarea îl indică; pe web ajunge în
-descărcările browserului. În ambele cazuri, amândouă raportează progresul în octeți,
-pentru că acestea sunt cele două payload-uri care ajung la gigaocteți.
+descărcările browserului. În ambele cazuri, toate trei raportează progresul în octeți,
+pentru că aceste payload-uri ajung la gigaocteți.
 
-Ambele creează o copie proaspătă în momentul în care apeși butonul, o transmit în flux și
-șterg copia serverului după aceea — o descărcare nu este „adu fișierul pe care l-a făcut
-butonul de export mai devreme”.
+Descărcările de spațiu de lucru și de snapshot creează o copie proaspătă în momentul în
+care apeși butonul, o transmit în flux și șterg copia serverului după aceea — o descărcare
+nu este „adu fișierul pe care l-a făcut butonul de export mai devreme”. Un backup
+programat este excepția: primești fișierul stocat, iar acesta rămâne pe server.
 
 Dezarhivarea unui snapshot reproduce exact structura snapshot-ului, ceea ce face ca
 restaurarea lui să fie o simplă copiere la loc.

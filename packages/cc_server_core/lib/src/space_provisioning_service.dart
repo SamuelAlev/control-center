@@ -5,6 +5,7 @@ import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
+import 'package:cc_domain/core/domain/ports/space_provisioning_log_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
@@ -14,7 +15,9 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_step.dart';
 import 'package:cc_host/cc_host.dart';
-import 'package:cc_infra/cc_infra.dart' show RepoScriptService;
+
+/// The default budget of one `provision` task.
+const Duration _provisionTaskTimeout = Duration(minutes: 5);
 
 /// PR-review provisioning context: when a space is linked to a pull request,
 /// its repo worktree is checked out at the PR head ref (`headRef`, e.g.
@@ -52,7 +55,9 @@ class SpaceProvisioningService {
     this._spaceRepoIds,
     this._eventBus,
     this._timeout = const Duration(minutes: 10),
-    this._setupScriptedRepoCount,
+    this._provisionTaskRepoCount,
+    this._environmentRepos,
+    this._log,
   });
 
   final RepoWorkspaceProvisionerPort _provisioner;
@@ -99,13 +104,20 @@ class SpaceProvisioningService {
   /// affordance — instead of leaving it behind an eternal spinner.
   final Duration _timeout;
 
-  /// How many of the workspace's repos have a setup script configured, when
-  /// the host can answer. Each scripted repo's setup run is bounded by its own
-  /// timeout (default 5 min) but happens INSIDE this service's watchdog, so
-  /// the watchdog is extended by one budget per scripted repo — otherwise a
-  /// legitimate `pnpm install` would flip the space to `failed` while the
-  /// script was still making progress.
-  final Future<int> Function(String workspaceId)? _setupScriptedRepoCount;
+  /// How many of the workspace's repos have provision tasks, when the host can
+  /// answer. Each such repo's run is bounded by its own timeout (default 5 min)
+  /// but happens INSIDE this service's watchdog, so the watchdog is extended by
+  /// one budget per repo — otherwise a legitimate `pnpm install` would flip the
+  /// space to `failed` while the task was still making progress.
+  final Future<int> Function(String workspaceId)? _provisionTaskRepoCount;
+
+  /// Repos bound to an environment definition. A space holding one needs its
+  /// worktree before any agent joins, because that is what Start runs against.
+  final Future<Set<String>> Function(String workspaceId)? _environmentRepos;
+
+  /// Where the run reports what only it knows: that it started, why it failed
+  /// and how it ended. The provisioner writes the per-repo output itself.
+  final SpaceProvisioningLogPort? _log;
 
   /// Spaces stopped through [cancel], so the run unwinding afterwards reports
   /// "stopped" instead of overwriting it with `failed`.
@@ -144,6 +156,7 @@ class SpaceProvisioningService {
     _cancelledSpaces.remove(key);
     final run = ++_runSeq;
     _latestRun[key] = run;
+    _log?.write(workspaceId, spaceId, 'Preparing workspace');
     await _setStatus(
       workspaceId,
       spaceId,
@@ -172,6 +185,7 @@ class SpaceProvisioningService {
         e,
         st,
       );
+      _log?.write(workspaceId, spaceId, 'Preparation did not complete: $e');
       // `failed` (not `provisioning`) so the UI offers a retry. On a timeout
       // the underlying run is not cancelled — if it eventually finishes it
       // writes its own terminal status over this one, which is strictly newer
@@ -235,12 +249,12 @@ class SpaceProvisioningService {
     await _setStatus(workspaceId, spaceId, status);
   }
 
-  /// The watchdog for this run: the base timeout plus one setup-script budget
-  /// per scripted repo (see [_setupScriptedRepoCount]). Counted over all the
+  /// The watchdog for this run: the base timeout plus one task budget per repo
+  /// with provision tasks (see [_provisionTaskRepoCount]). Counted over all the
   /// workspace's repos rather than just this space's selection — conservative,
   /// and answerable without duplicating the space's scope resolution here.
   Future<Duration> _effectiveTimeout(String workspaceId) async {
-    final counter = _setupScriptedRepoCount;
+    final counter = _provisionTaskRepoCount;
     if (counter == null) {
       return _timeout;
     }
@@ -249,9 +263,9 @@ class SpaceProvisioningService {
       if (count <= 0) {
         return _timeout;
       }
-      return _timeout + RepoScriptService.defaultSetupTimeout * count;
+      return _timeout + _provisionTaskTimeout * count;
     } on Object catch (e) {
-      CcHostLog.warning('space provisioning: scripted repo count failed: $e');
+      CcHostLog.warning('space provisioning: provision task repo count failed: $e');
       return _timeout;
     }
   }
@@ -307,23 +321,29 @@ class SpaceProvisioningService {
     final agents = await _loadAgents(workspaceId, participants);
     if (agents.isEmpty) {
       // No agents yet. A PR space still provisions its repo worktree at the
-      // head so chat/terminal/files work before the first agent is summoned;
-      // an ordinary empty space short-circuits to ready.
-      if (prContext == null) {
+      // head so chat/terminal/files work before the first agent is summoned,
+      // and a space holding an environment's repo needs its worktree for
+      // Start. Any other empty space short-circuits to ready.
+      final worktreeRepos = prContext != null
+          ? targetRepoIds
+          : targetRepoIds.intersection(
+              await _environmentRepos?.call(workspaceId) ?? const {},
+            );
+      if (worktreeRepos.isEmpty) {
         await _finish(workspaceId, spaceId, run, SpaceProvisioningStatus.ready);
         return;
       }
       await _provisioner.ensureSpaceWorkspace(
         workspaceId: workspaceId,
         spaceId: spaceId,
-        agentSlug: '_pr',
+        agentSlug: prContext != null ? '_pr' : '_environment',
         fallbackDir: '',
-        prHeadRef: prContext.headRef,
-        prHeadRepoFullName: prContext.repoFullName,
-        prBranch: prContext.branch,
-        repoAllowlist: targetRepoIds,
+        prHeadRef: prContext?.headRef,
+        prHeadRepoFullName: prContext?.repoFullName,
+        prBranch: prContext?.branch,
+        repoAllowlist: worktreeRepos,
         onRepoProvision: _repoStepEmitter(workspaceId, spaceId),
-        onRepoSetupScript: _setupScriptStepEmitter(workspaceId, spaceId),
+        onRepoProvisionTasks: _provisionTasksStepEmitter(workspaceId, spaceId),
       );
       if (_isStale(workspaceId, spaceId, run)) {
         return;
@@ -331,7 +351,7 @@ class SpaceProvisioningService {
       final ready = await _verify(
         workspaceId: workspaceId,
         spaceId: spaceId,
-        repoCount: targetRepoIds.length,
+        repoCount: worktreeRepos.length,
         overlays: const [],
       );
       await _finish(
@@ -354,12 +374,14 @@ class SpaceProvisioningService {
       try {
         final agentSlug = _slugFor(agent);
         final agentConfigDir = _agentConfigDir(agent.agentMdPath);
+        final agentName = agent.name.isNotEmpty ? agent.name : agentSlug;
+        _log?.write(workspaceId, spaceId, 'Setting up $agentName');
         _emitStep(
           workspaceId,
           spaceId,
           SpaceProvisioningStep(
             kind: SpaceProvisioningStepKind.agent,
-            subject: agent.name.isNotEmpty ? agent.name : agentSlug,
+            subject: agentName,
           ),
         );
         final overlay = await _provisioner.ensureSpaceWorkspace(
@@ -375,7 +397,7 @@ class SpaceProvisioningService {
           // The first agent's call materializes the shared repo worktrees, so
           // its repo steps overwrite the agent step until checkout completes.
           onRepoProvision: _repoStepEmitter(workspaceId, spaceId),
-          onRepoSetupScript: _setupScriptStepEmitter(workspaceId, spaceId),
+          onRepoProvisionTasks: _provisionTasksStepEmitter(workspaceId, spaceId),
         );
         // Track the overlay before writing `.mcp.json` so verification always
         // checks it — a failed write leaves `.mcp.json` absent, which `_verify`
@@ -393,6 +415,15 @@ class SpaceProvisioningService {
           e,
           st,
         );
+        // A stopped run unwinding through here broke nothing, and the log has
+        // already said how it ended.
+        if (!_isStale(workspaceId, spaceId, run)) {
+          _log?.write(
+            workspaceId,
+            spaceId,
+            'Could not set up ${agent.name}: $e',
+          );
+        }
       }
     }
 
@@ -431,6 +462,15 @@ class SpaceProvisioningService {
   ) async {
     await _setProvisioningStatus(workspaceId, spaceId, status);
     _announce(workspaceId, spaceId, status);
+    final ending = switch (status) {
+      SpaceProvisioningStatus.ready => 'Workspace ready',
+      SpaceProvisioningStatus.failed => 'Workspace preparation failed',
+      SpaceProvisioningStatus.cancelled => 'Workspace preparation stopped',
+      _ => null,
+    };
+    if (ending != null) {
+      _log?.write(workspaceId, spaceId, ending);
+    }
   }
 
   /// Publishes a step, fire-and-forget: progress is decorative, so a failed
@@ -498,8 +538,8 @@ class SpaceProvisioningService {
         ),
       );
 
-  /// Same, for the setup script of a freshly materialized repo worktree.
-  void Function(String) _setupScriptStepEmitter(
+  /// Same, for the provision tasks of a freshly materialized repo worktree.
+  void Function(String) _provisionTasksStepEmitter(
     String workspaceId,
     String spaceId,
   ) =>
@@ -507,7 +547,7 @@ class SpaceProvisioningService {
         workspaceId,
         spaceId,
         SpaceProvisioningStep(
-          kind: SpaceProvisioningStepKind.script,
+          kind: SpaceProvisioningStepKind.provisionTasks,
           subject: repoName,
         ),
       );
@@ -564,6 +604,11 @@ class SpaceProvisioningService {
         'space provisioning: $spaceId expected $repoCount worktree(s), '
         'found ${worktrees.length}',
       );
+      _log?.write(
+        workspaceId,
+        spaceId,
+        'Expected $repoCount worktree(s), found ${worktrees.length}',
+      );
       return false;
     }
     for (final overlay in overlays) {
@@ -571,6 +616,7 @@ class SpaceProvisioningService {
         CcHostLog.warning(
           'space provisioning: $spaceId overlay $overlay missing .mcp.json',
         );
+        _log?.write(workspaceId, spaceId, 'Agent setup left no .mcp.json');
         return false;
       }
     }

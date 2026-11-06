@@ -43,6 +43,19 @@ class CronExecutionDao extends DatabaseAccessor<WorkspaceDatabase>
     return true;
   }
 
+  /// Removes the claim on the `(triggerId, plannedAt)` slot so it can be claimed
+  /// again. Used when the claimed slot's run failed to start.
+  Future<void> releaseSlot({
+    required String triggerId,
+    required DateTime plannedAt,
+  }) async {
+    final slot = plannedAt.toUtc();
+    await (delete(cronExecutionsTable)..where(
+          (c) => c.triggerId.equals(triggerId) & c.plannedAt.equals(slot),
+        ))
+        .go();
+  }
+
   /// Recent executions for a trigger, newest slot first (workspace-scoped).
   Future<List<CronExecutionsTableData>> forTrigger(
     String workspaceId,

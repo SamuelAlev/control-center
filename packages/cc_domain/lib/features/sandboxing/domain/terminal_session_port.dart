@@ -74,6 +74,10 @@ abstract interface class TerminalSessionPort {
 
   /// Kills [sessionId]'s shell and releases its sandbox resources. Idempotent.
   /// Throws on a cross-workspace mismatch.
+  ///
+  /// A session with an owner (see [OwnedTerminalSessionPort]) is left running:
+  /// this is what closing a tab sends, and closing the tab of a supervised
+  /// process must not stop it.
   Future<void> kill({required String workspaceId, required String sessionId});
 
   /// The `SandboxBackend` name [sessionId] actually runs under, or null when
@@ -85,4 +89,65 @@ abstract interface class TerminalSessionPort {
   /// "enclosed VM" while running on the host would be the worst possible
   /// label.
   String? backendOf(String sessionId);
+}
+
+/// A session started through [OwnedTerminalSessionPort.spawnOwned].
+class OwnedTerminalSession {
+  /// Creates an [OwnedTerminalSession].
+  const OwnedTerminalSession({
+    required this.sessionId,
+    required this.pid,
+    required this.exitCode,
+  });
+
+  /// Opaque session id, usable with every [TerminalSessionPort] call.
+  final String sessionId;
+
+  /// The OS pid of the command. A PTY child leads its own session, so this is
+  /// also its process group.
+  final int pid;
+
+  /// Completes when the command exits: its code, or `-signal` if killed.
+  final Future<int> exitCode;
+}
+
+/// Terminal sessions that belong to a server-side owner rather than a tab.
+///
+/// The owner tag (`environment:<id>/<component>`) makes the session run a given
+/// command instead of the login shell and survive its tab: only [killOwned],
+/// holding the same tag, ends it. Tabs can still open, read and type into it
+/// through [TerminalSessionPort].
+abstract interface class OwnedTerminalSessionPort {
+  /// Runs [executable] in a new PTY owned by [owner], on the host.
+  ///
+  /// [onOutput] sees every byte from the first one, which a subscriber to
+  /// [TerminalSessionPort.output] can't promise.
+  Future<OwnedTerminalSession> spawnOwned({
+    required String workspaceId,
+    required String owner,
+    required String executable,
+    required String cwd,
+    List<String> arguments = const [],
+    Map<String, String> environment = const {},
+    String? spaceId,
+    int rows = 30,
+    int cols = 120,
+    void Function(List<int> bytes)? onOutput,
+  });
+
+  /// Ends [sessionId]. Throws on a workspace or owner mismatch. Idempotent.
+  Future<void> killOwned({
+    required String workspaceId,
+    required String sessionId,
+    required String owner,
+  });
+
+  /// The owner of [sessionId], or null for an unowned or unknown session.
+  String? ownerOf(String sessionId);
+
+  /// The live sessions of [workspaceId] whose owner starts with [ownerPrefix].
+  List<String> sessionsOwnedBy({
+    required String workspaceId,
+    required String ownerPrefix,
+  });
 }

@@ -30,11 +30,12 @@ bool canDeleteComment({
 
 /// Whether the viewer may rewrite this comment.
 ///
-/// Editing replaces the author's words. Only the author of a comment that is
-/// already on the forge gets that action; a draft is edited in the composer
-/// that still holds it.
+/// Editing replaces the author's words, so a comment on the forge stays with
+/// its author. A draft exists only on the client that wrote it, so the viewer
+/// is its author by construction, even when it still carries the 'You'
+/// placeholder that no login matches.
 bool canEditComment({required bool isAuthor, required bool published}) =>
-    isAuthor && published;
+    !published || isAuthor;
 
 /// A forge permalink for [commentId], or empty when [htmlUrl] is missing.
 ///

@@ -1,0 +1,411 @@
+---
+title: Sett opp miljøer
+description: Gi hvert område og hver pull request sin egen kjørende stack, med compose, en egen CLI, overvåkede prosesser eller en skrivebordsapp.
+slug: nb-NO/handbok/slik-gjor-du/miljoer
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+Et **miljø** er den kjørende stacken til et område: tjenestene en gren trenger, isolert fra alle andre områder, synlig i sidefeltet og tilgjengelig for agenter. Pull requests får også et, fordi en PR allerede har sitt eget område.
+
+En administrator for arbeidsområdet skriver en **definisjon** én gang. Medlemmer klikker deretter **Start** i delen **Miljø** i sidefeltet til et område eller en PR. Definisjoner ligger i databasen til arbeidsområdet, så en funksjonsgren endrer aldri hva Control Center kjører, selv om verktøyene fortsatt kjører koden i grenen.
+
+## Opprett en definisjon
+
+1. Åpne **Innstillinger → Arbeidsområde → Miljøer**. Bare administratorer for arbeidsområdet kan endre definisjoner.
+2. Klikk **Ny definisjon**, og deretter **Tom definisjon** eller **Utkast fra repo**. Et utkast søker gjennom repoet etter compose-filer, en `Procfile` og `package.json`-skript, og du går gjennom resultatet.
+3. Fyll ut skjemaet, eller bruk fanen **JSON**. Eksemplene på denne siden er den JSON-en.
+4. Klikk **Kjør test**. Det starter et engangsmiljø, venter til det er klart og ødelegger det.
+
+Bruk **Koble til en repofil** for å holde en definisjon i et repo. Control Center leser filen bare fra standardgrenen og kjører bare versjonen en administrator har godkjent. En nyere versjon viser **Oppdatering tilgjengelig** og endrer ingenting før den er godkjent.
+
+## Den minste definisjonen
+
+Et enkelt compose-repo trenger bare dette:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+Alt annet har en standardverdi: compose-filen blir funnet, alle tjenester kjører, porter tildeles, HTTP-endepunkter oppdages, og miljøet får navn etter grenen.
+
+## Komponenttyper
+
+Et miljø er en ordnet liste med komponenter. Hver komponent venter til den forrige er klar, med mindre `after` angir andre, og stopp skjer i motsatt rekkefølge. `enabledWhen` gjør en komponent avhengig av et alternativ eller en rolle, for eksempel `opt.seed`, `!opt.seed` eller `repo.web`.
+
+| Type | Hvem kjører den | Brukes til |
+| --- | --- | --- |
+| `compose` | Compose-driveren i Control Center | Alle compose-filer, én per miljø |
+| `cli` | Verktøyet ditt. Control Center kaller tilordnede verb og leser JSON | Et verktøy som eier livssyklusen, domenene og dataene sine |
+| `process` | Control Center, i en overvåket terminaløkt | Utviklingsservere og workers |
+| `task` | Control Center, én gang per utløser | Installasjoner, migreringer, tester |
+| `app` | Control Center, når noen klikker **Åpne** | En skrivebordsapp |
+
+`task`-komponenter tar en `when`-liste:
+
+| Utløser | Kjører |
+| --- | --- |
+| `provision` | Når worktreet opprettes (se worktree-oppgaver nedenfor) |
+| `create` | Én gang per miljø, og igjen etter en tilbakestilling |
+| `start` | Ved hver start |
+| `change` | Etter en synkronisering, når en endret bane samsvarer med `onChange` |
+| `manual` | På forespørsel: **Kjør**, `cc-env run <id>` eller `environment_run_task` |
+| `archive` | Rett før worktreet ødelegges |
+
+En kommando gitt som en array er argv, så alternativverdier går aldri gjennom et skall. En streng, eller `script` med en array av linjer, kjører under `bash -lc`. Plassholdere som `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` og `{url.<role>}` utvides bare i argv. Skallkommandoer leser de samme verdiene som `CC_ENV_*`-variabler, for eksempel `$CC_ENV_PORT_WEB`.
+
+Hver kommando og områdeterminal får også `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` og, i PR-områder, `CC_PR_NUMBER` og `CC_PR_IS_FORK`. Med en compose-komponent får de også `COMPOSE_PROJECT_NAME` og `COMPOSE_FILE`, slik at `docker compose exec` i en oppgave når riktig prosjekt.
+
+## Roller og arbeidsmappe
+
+En definisjon binder **roller** til repoer i arbeidsområdet, slik at én stack kan omfatte flere repoer:
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`: et område kan starte miljøet når det har minst én ankerrolle. Hvis to definisjoner passer, velger den som starter.
+- `required`: stacken kan ikke kjøre uten dette repoet.
+- `whenMissing`: hva som skjer når området mangler rollen. `addToSpace` legger til repoet på standardgrenen og er standard for `required`-roller. `useSource` sender den registrerte utsjekkingen din, som du bør behandle som skrivebeskyttet. `skip` lar variabelen stå tom og er ellers standard.
+- For å starte trengs en `write`-tillatelse på et ankerrepo i området og lesetilgang til alle andre bundne repoer.
+
+En kommando kjører i den første rollen i `repos` som området har, så en definisjon med ett repo nevner det aldri. Enhver komponent kan overstyre det med `"cwd": { "role": "e2e", "path": "packages/ui" }`. Begge feltene er valgfrie.
+
+## Porter og URL-er
+
+Control Center tildeler vertsporter før noe starter, fra et område for hele verten (42000 til 49999 som standard, i blokker på 32). En port forblir den samme i hele miljøets levetid, og compose-porter binder bare til `127.0.0.1`.
+
+- Compose-porter trenger ingen deklarasjon. Les dem som `{port.postgres.5432}` eller `CC_ENV_PORT_POSTGRES_5432`.
+- Andre porter deklareres der de brukes, med `"port": "web"` eller `"ports": ["web", "hmr"]`, og leses som `{port.web}`. En prosess med port får også `PORT` og `HOST=127.0.0.1`.
+
+HTTP-endepunkter får en URL på serverens ruter, som lytter på én loopback-port:
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>` er grenen som slug, eller `pr-<n>` i et PR-område. `<project>` er `naming.project`, ellers definisjonens navn.
+- `*.localhost`-navn peker til loopback, så de trenger verken hosts-oppføringer eller DNS, og vertsnavnet holder informasjonskapsler adskilt mellom miljøer.
+- Compose-porter som svarer på HTTP oppdages, og `http` på komponenten overstyrer gjetningen. En prosess trenger `"endpoint": { "role": "web", "primary": true }`, som også gjør `{url.web}` tilgjengelig.
+- Bruk **Åpne i Browser (VM)** i nettleseren (VM). `https://web--fix-login--shop.localhost/` når samme rute der.
+- Hele etiketten holder seg innenfor 63 tegn, så lange navn forkortes med en hash.
+- To endepunkter deler ikke overordnet domene. En app som trenger én informasjonskapsel på tvers av begge, må levere dem fra ett endepunkt.
+
+For URL-er du må registrere på forhånd, for eksempel OAuth-omdirigeringer, gir `"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` et fast sett med navn.
+
+`policy` bestemmer når miljøer kjører. `autoCreate` er `off`, `prSpaces` eller `allSpaces`, `idleStopMinutes` er 240 som standard, `followPrHead` synkroniserer et PR-miljø når head flytter seg, og med `maxRunning` (standard 6) tilbyr **Start** å stoppe miljøet som ble brukt for lengst siden.
+
+## Eksempel: compose-app
+
+En nettapp og Postgres fra én compose-fil, med en git-ignorert `.env`, migreringer og en testoppgave. `seedFiles` kopierer navngitte filer fra den registrerte utsjekkingen din til hvert nye worktree.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+Med `healthchecks` kan en tjeneste uten egen helsesjekk holde igjen neste komponent. Uten den regnes en kjørende container som klar, og migreringer kan komme før en database som fortsatt starter.
+
+## Eksempel: egen CLI
+
+Et oppdiktet verktøy `acme` som eier containerne, domenene og TLS-en sin. Control Center gir `{name}` og får resten fra `status`. Det utleder aldri vertsnavnene til et verktøy og redigerer aldri `/etc/hosts`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create`, `status` og `destroy` er påkrevd. Control Center velger `create` eller `start` ut fra statusen det leser. Ethvert verb kan være `{ "shell": "…" }` i stedet for argv.
+- `statusMap` leser verktøyets egen JSON med JSON-pekere, der `*` samsvarer med hvert element. Tilstandsregler er ordnet, og det første treffet vinner. En betingelse er `path` med `equals`, eller `any` eller `none` med `where`.
+- `keepsDataOnStop: false` slår av stopp ved inaktivitet og legger til en advarsel om datatap på **Stopp**. Bruk det når stopp mister data.
+- `routing.mode: "tool"` kobler verktøyets vertsnavn til nettleseren (VM) og agenter. Domenet må slutte på `.test`, `.localhost` eller `.internal`, og en rapportert URL utenfor det forkastes.
+
+Et verktøy du eier, kan droppe `statusMap` og skrive ut statuskontrakten som er beskrevet på slutten av denne siden.
+
+## Eksempel: pnpm-monorepo
+
+Bare prosesser og oppgaver, ingen containere. Nettappen finner API-et gjennom `{url.api}`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- Hver prosess er en terminalfane du kan åpne, lese og skrive i. Å lukke fanen stopper den ikke.
+- `ready` tar `http`, `tcp` eller `logMatch`. `restart` er `on-failure` (standard), `always` eller `never`. `restartOn` starter prosessen på nytt når en endret bane samsvarer.
+- `options` blir et skjema ved **Start**, og `agentDefault` gjelder kjøringer en agent starter.
+
+## Eksempel: skrivebordsapp
+
+En skrivebordsapp med et byggetrinn. En app fungerer likt uansett hva den er bygd med, fordi Control Center arbeider på vindusnivå i operativsystemet og ikke trenger noen hook eller SDK i appen.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+En app starter ikke med miljøet. Noen klikker **Åpne**, og `prepare` kjører først. **Bygg på nytt og åpne igjen** kjører det paret på nytt. En ren avslutning vises som lukket, en krasj viser de siste logglinjene uten omstart, en omstart av serveren starter aldri appen på nytt, og stopp ved inaktivitet lar en kjørende app være i fred.
+
+### Tillatelser og begrensninger for skrivebordsapper
+
+- På macOS gir du Control Center **Skjermopptak** og **Tilgjengelighet** én gang i Systeminnstillinger. Serververten trenger en grafisk økt: en hodeløs server nekter å starte en app.
+- Start binærfilen direkte. `open -a` gir appen til LaunchServices, og den forlater prosesstreet Control Center følger. `"window": { "match": { "bundleId": "…" } }` dekker det tilfellet, men er bare trygt med én kjørende kopi.
+- Vinduer blir på en skjerm. macOS tar ikke opp et vindu som står utenfor alle skjermer, så en app en agent bruker, er synlig på serverens skjerm. Den trenger ikke fokus.
+- `"isolate": "home"` gir appen en privat hjemmemappe gjennom `HOME`, `XDG_*` og `CFFIXED_USER_HOME`, slik at kopier fra to områder kan kjøre side om side. `NSUserDefaults` isoleres ikke, så Cocoa-innstillinger og Flutters `shared_preferences` forblir delt mellom kopier.
+- `isolate` gjelder bare den startede prosessen. En verktøykjedestarter som `flutter run` trenger den ekte hjemmemappen, så kombiner `isolate` med en bygd binærfil. Har appen en egen innstilling, som `--user-data-dir`, bør du bruke den.
+- Agenter styrer vinduet med `app_use`, som bare når prosesstreet til dette miljøet. En agent ser vinduet, ikke skrivebordet. Agentstarter går gjennom handlingspolicyen og spør som standard, og agentinndata stopper mens en person har kontrollen.
+- `"input": "background"` (standard) sender hendelser til prosessen. `"foreground"` aktiverer vinduet og tar over markøren.
+
+## Worktree-oppgaver erstatter reposkript
+
+`provision`- og `archive`-oppgaver erstatter de gamle oppsetts- og arkivskriptene per repo. **Eksisterende skript ble migrert automatisk:** hvert repo med skript har nå en definisjon med repoets navn, med oppgavene `setup` og `archive` som inneholder samme skripttekst. Ikonet på raden til et repo under **Innstillinger → Arbeidsområde → Arkiv** åpner den. Tidligere skriptkjøringer beholdes som skrivebeskyttet historikk.
+
+Disse oppgavene følger worktreet, ikke miljøet, så de kjører i områder der ingen klikker **Start**:
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| Kjører | Når rollens worktree opprettes, i et hvilket som helst område | Rett før det worktreet ødelegges |
+| Ved feil | Klargjøringen mislykkes og worktreet ødelegges | Registreres, blokkerer aldri sletting |
+| Standard tidsavbrudd | 5 minutter | 2 minutter |
+| Ser | `CC_WORKSPACE_PATH`, `CC_ROOT_PATH`, `CC_SPACE_*`, `CC_REPO_NAME` | Det samme |
+
+Et repo uten stack trenger bare en definisjon med oppgavene sine. Siden det ikke er noe å starte, trengs ingen ankerrolle:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- Det finnes ikke noe miljø ennå, så disse oppgavene kan ikke bruke `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` eller `enabledWhen`, og de får ikke definisjonens `env`.
+- Bare én definisjon kan ha `provision`- og `archive`-oppgaver for et repo. Andre kan fortsatt binde det til alt annet.
+- `"when": ["provision", "change"]` installerer også på nytt når en låsefil endres, noe oppsettsskript aldri gjorde.
+- En oppgave kjører for worktreet til `cwd`-rollen sin, så en definisjon med flere repoer kan sette opp hvert repo for seg.
+- En testkjøring setter `CC_SCRIPT_TEST=1`. Et nytt forsøk starter fra et rent worktree, så skriv oppgaver som tåler å kjøres på nytt.
+
+## Agenter
+
+Agenter får aldri Docker-socketen. I et område med en kvalifisert definisjon får en kjøring `cc-env` på sin `PATH`. Området kommer fra kjøringen, så en agent kan bare handle på sitt eget miljø, og hver kommando går gjennom handlingspolicyen.
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+Med en compose-komponent tillater et `docker`-shim også `docker compose` med `ps`, `logs`, `exec`, `port`, `restart` og `top`. Ingen flagg kan stå før verbet, `logs` kan ikke følge, og `exec` tar bare `-T`. Alt annet avsluttes med kode 5 og «not available in Control Center agent runs».
+
+Et repo der skills kaller repoets eget verktøy, kan fortsette med det. En `agentPassthrough`-blokk på en `cli`-komponent oppgir hvilke kommandoer agenter kan kjøre:
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+`maps` angir operasjonen som har policyen som gjelder. `positionalName` tvinger det argumentet til miljøet i dette området, `nameFilter` filtrerer JSON-utdata til det, og hver `pathFlags`-verdi må peke inn i kjøringens worktrees. En kommando som ikke samsvarer med noen regel, avsluttes med kode 5.
+
+De samme operasjonene finnes som verktøy: `environment_status`, `environment_up`, `environment_down`, `environment_reset`, `environment_destroy`, `environment_restart`, `environment_exec`, `environment_logs`, `environment_run_task`, `environment_launch_app` og `environment_stop_app`. Agenter i sandkasse når portene sine direkte og miljøets vertsnavn gjennom kjøringens proxy, så be dem lese endepunkter fra `environment_status` i stedet for å gjette en URL.
+
+## Pull requests fra forker
+
+Koden i en fork-PR er ikke klarert, og ved vertsplassering kjører den som serverens OS-bruker. `policy.forkPrs` bestemmer hva som skjer:
+
+| Verdi | Virkning | Standard for |
+| --- | --- | --- |
+| `rig` | Compose-filen kjører i en VM uten spørsmål | Definisjoner med bare `compose`- og `task`-komponenter |
+| `approval` | Hver start krever en administrator | Alle andre definisjoner |
+| `deny` | Avvist | Ingen |
+
+- `seedFiles` kopieres aldri for en fork, fordi de vanligvis er hemmeligheter. En compose-fil som binder en av dem, rapporterer den manglende filen med navn.
+- `provision`- og `archive`-oppgaver hoppes over med mindre policyen er `rig`, og da kjører de i VM-en.
+- Ved vertsplassering avvises `privileged`, vertsnavnerom, en binding av Docker-socketen, `devices` og bindinger utenfor områdets worktrees på en fork. I klarerte områder gir de bare en advarsel.
+
+## Rig-plassering
+
+`"placement": "rig"` kjører `compose`- og `task`-komponenter i en egen microVM. Definisjoner med `process`-, `cli`- eller `app`-komponenter er ikke kvalifisert. Compose-filen kjører uendret, uten vertens Docker-socket og uten operatørens legitimasjon, og nettverkstilgangen er begrenset til registrene bildene trenger. Worktreet monteres direkte.
+
+- **arm64-gjester.** Gjester er arm64 på Apple Silicon, så bilder som bare finnes for amd64, kjører ikke.
+- **Private registre avvises.** Gjester har ingen registerlegitimasjon, så et bilde i et register utenfor de kjente offentlige avvises før VM-en starter. Et privat repository i et offentlig register feiler når gjesten henter det.
+- **16 GiB lagring.** Alle bilder og volumer i stacken deler én disk på 16 GiB, og den kan ikke utvides.
+- **Første oppstart er treg.** Bildelag er per VM, så første oppstart henter alt. En stoppet rig beholder disken.
+- **Basisbilder må kunne leses.** En Dockerfile som oppgir basisbildet gjennom en variabel, kan ikke planlegges, fordi nettverkstilgangen fastsettes ved oppstart.
+- **Levetid.** `policy.rigTtlHours` avslutter VM-en, som standard etter 24 timer.
+
+## Statuskontrakt for verktøyforfattere
+
+En `cli`-komponent uten `statusMap` forventer den opprinnelige kontrakten, `cc-env/1`. Verbet `status` skriver ut dette objektet på stdout:
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- `state` er `ready`, `starting`, `stopped`, `failed` eller `missing`. `missing` fører til `create`, `stopped` og `failed` fører til `start`. Rapporter `missing` med avslutningskode 0: en mislykket `status` teller som `failed`.
+- Bare `state` er nødvendig. Ukjente felt ignoreres, og utdata som ikke kan tolkes, vises som degradert, med råteksten som detalj.
+- En URL må være loopback, `*.localhost` eller under `routing.domain`, ellers forkastes den.
+- `needsRecreate: true` viser **Opprett på nytt**, som forkaster data. Control Center handler aldri på dette alene.
+- Verbet `list` skriver ut en JSON-array med navn, eller med objekter med et `name`.
+
+Avslutningskoder gjelder for alle verb:
+
+| Kode | Betydning |
+| --- | --- |
+| 0 | OK |
+| 3 | Vertsoppsett kreves. **Kjør i terminal** åpner en områdeterminal med kommandoen skrevet inn, men ikke kjørt, og **Prøv på nytt** prøver deretter på nytt. Control Center kjører aldri `sudo` |
+| 4 | Autentisering kreves |
+| 5 | Avhengighet utilgjengelig |
+| Annen | Feil |
+
+Fremdrift går til stderr som linjedelt JSON:
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+`step`-linjer vises som en direkte trinnliste, og `note`-linjer vises som de er. En siste linje av typen `error` blir en strukturert feil, der `command` tilbys for kopiering. Uten den viser Control Center de siste 20 stderr-linjene. Alt som ikke er JSON, er vanlig loggutdata.
+
+## Relatert
+
+- [Bruk områder](/nb-NO/handbok/slik-gjor-du/omrader/)
+- [Videresend porter fra en terminal](/nb-NO/handbok/slik-gjor-du/vm-porter/)
+- [Gi en agent en maskin å teste på](/nb-NO/handbok/slik-gjor-du/bruk-stasjoner/)
+- [Konfigurer tillatelsesregler](/nb-NO/handbok/slik-gjor-du/konfigurer-tillatelsesregler/)

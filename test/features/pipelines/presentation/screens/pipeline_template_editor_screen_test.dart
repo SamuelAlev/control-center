@@ -7,6 +7,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_start.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
@@ -195,6 +196,14 @@ PipelineDefinition _draft() {
   );
 }
 
+PipelineTrigger _manualRow(String id) => PipelineTrigger(
+  id: id,
+  eventType: PipelineTrigger.manualEventType,
+  templateId: _templateId,
+  workspaceId: _workspaceId,
+  enabled: true,
+);
+
 /// cc_ui wraps icon buttons in [CcTooltip], which [CommonFinders.byTooltip]
 /// (Material-only) cannot see — match the button's own tooltip instead.
 Finder _iconButton(String tooltip) =>
@@ -318,6 +327,52 @@ void main() {
       await tester.pump();
 
       expect(find.text('Deploy pipeline'), findsOneWidget);
+      expect(find.text('Unsaved changes'), findsOneWidget);
+    });
+
+    testWidgets('opening a template with a shared entry is not an edit', (
+      tester,
+    ) async {
+      final repo = _FakeTemplateRepo(_draft());
+      final triggers = _FakeTriggerRepo()..items.add(_manualRow('trig-1'));
+      await _pumpEditor(tester, repo, triggers);
+
+      expect(find.text('Unsaved changes'), findsNothing);
+      expect(repo.lastUpsert, isNull);
+
+      // The expansion still happened, so the first real edit saves it.
+      _canvas(tester).onSelectTrigger('trig-1');
+      await tester.pump();
+      expect(find.byType(TriggerNodePanel), findsOneWidget);
+
+      await tester.tap(_iconButton('Rename'));
+      await tester.pump();
+      await tester.enterText(
+        find.byWidgetPredicate((w) => w is CcTextField && w.autofocus),
+        'Deploy pipeline',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(find.text('Unsaved changes'), findsOneWidget);
+
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(repo.lastUpsert?.step('trigger'), isNull);
+      expect(repo.lastUpsert?.step('trig-1'), isNotNull);
+    });
+
+    testWidgets('a row missing from the saved graph still needs saving', (
+      tester,
+    ) async {
+      final saved = syncPipelineTriggerSteps(
+        def: _draft(),
+        rows: [_manualRow('trig-1')],
+      );
+      final repo = _FakeTemplateRepo(saved);
+      final triggers = _FakeTriggerRepo()
+        ..items.addAll([_manualRow('trig-1'), _manualRow('trig-2')]);
+      await _pumpEditor(tester, repo, triggers);
+
       expect(find.text('Unsaved changes'), findsOneWidget);
     });
 

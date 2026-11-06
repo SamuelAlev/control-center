@@ -10,7 +10,9 @@ import 'package:cc_domain/features/guardrails/domain/services/action_guard_servi
 import 'package:cc_domain/features/guardrails/domain/services/shell_action_classifier.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
+import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
 import 'package:cc_infra/src/dispatch/host_commit_signer.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 
@@ -66,13 +68,13 @@ class AgentRunGrant {
 /// A registered run's handle on the gateway: what to put in its environment
 /// and how to point Claude Code's hooks at it.
 class AgentRunLease {
-  AgentRunLease._(this.secret, this.base);
+  AgentRunLease._(this.secret, this.base, {this.repoOwner, this.repoName});
 
   /// Env var carrying [secret] to the agent process.
   static const String tokenEnvKey = 'CC_AGENT_RUN_TOKEN';
 
   /// Header the gateway authenticates a run by.
-  static const String tokenHeader = 'X-CC-Agent-Run';
+  static const String tokenHeader = McpCallScope.runGrantHeader;
 
   /// Env var carrying [base] to the agent process, for the sandbox's signing
   /// shim (`MacosSandbox.sshSignShim`).
@@ -81,12 +83,39 @@ class AgentRunLease {
   /// Path a run posts a git object to for the host to sign.
   static const String signPath = '/agent/git-sign';
 
+  /// Env var carrying the run's forge token, which fetches authenticate with.
+  static const String forgeTokenEnvKey = 'GH_TOKEN';
+
+  /// Answers git's `get` from [forgeTokenEnvKey], so the token stays out of
+  /// URLs, argv and config. Does nothing for `store` and `erase`.
+  static const String _fetchCredentialHelper =
+      '!f() { if test "\$1" = get && test -n "\$$forgeTokenEnvKey"; then '
+      'echo username=x-access-token; '
+      "printf 'password=%s\\n' \"\$$forgeTokenEnvKey\"; fi; }; f";
+
+  /// What an owner or repo name may contain before it enters a git config key.
+  static final RegExp _repoPathPart = RegExp(r'^[A-Za-z0-9_][A-Za-z0-9_.-]*$');
+
+  /// An MCP client config as it reads without this run's secret.
+  ///
+  /// Every run has its own, which is no change of policy: comparing configs
+  /// with it left in would start a fresh native session on every turn.
+  static String withoutRunSecret(String config) =>
+      config.replaceAll(RegExp('"$tokenHeader"\\s*:\\s*"[^"]*",?'), '');
+
   /// The per-run secret. Knowing it lets a process ASK the gateway on the
   /// run's behalf — every answer still comes from the action policy.
   final String secret;
 
   /// Loopback base the run reaches the gateway at (`http://127.0.0.1:<port>`).
   final Uri base;
+
+  /// The worktree's own GitHub repo, when it has one: the only repo the run's
+  /// token fetches.
+  final String? repoOwner;
+
+  /// See [repoOwner].
+  final String? repoName;
 
   String get _gitBase => '$base/agent/git/';
 
@@ -106,12 +135,56 @@ class AgentRunLease {
     ('http.$_gitBase.extraHeader', '$tokenHeader: $secret'),
   ];
 
+  /// `git -c` pairs that let the run fetch its own repo with its forge token.
+  ///
+  /// A sandbox never reaches the user's SSH agent or `~/.ssh`, so an SSH origin
+  /// cannot fetch. These move the run's own repo to HTTPS, where GitHub enforces
+  /// the token's scope and the sandbox's egress rules still apply. Pushes are
+  /// unaffected: [gitConfig]'s `pushInsteadOf` matches the original URL first.
+  ///
+  /// The rewrites name the repo so they outrank a user's global
+  /// `https://github.com/` rewrite to SSH: git takes the longest match. They
+  /// are prefix matches, so a sibling (`widgets-extra`) moves to HTTPS too. The
+  /// helper is what stays exact: its config matches on path segments, so the
+  /// token is offered for this repo and paths under it, which on GitHub are
+  /// the same repo. The empty entry clears the user's helpers, which keeps the
+  /// token out of their keychain.
+  List<(String, String)> get fetchGitConfig {
+    final owner = repoOwner;
+    final name = repoName;
+    if (owner == null ||
+        name == null ||
+        !_repoPathPart.hasMatch(owner) ||
+        !_repoPathPart.hasMatch(name)) {
+      return const [];
+    }
+    final repo = 'https://github.com/$owner/$name';
+    return [
+      for (final origin in [
+        'git@github.com:$owner/$name',
+        'ssh://git@github.com/$owner/$name',
+        repo,
+      ])
+        ('url.$repo.insteadOf', origin),
+      for (final url in [repo, '$repo.git']) ...[
+        ('credential.$url.helper', ''),
+        ('credential.$url.helper', _fetchCredentialHelper),
+      ],
+    ];
+  }
+
   /// Environment for the agent process: the secret plus [gitConfig] appended
-  /// to whatever `GIT_CONFIG_*` entries [env] already carries.
+  /// to whatever `GIT_CONFIG_*` entries [env] already carries, and
+  /// [fetchGitConfig] when [env] holds a forge token to fetch with. Without
+  /// one, the run's origin is left as it is.
   Map<String, String> environment(Map<String, String> env) {
     final out = <String, String>{tokenEnvKey: secret, gatewayEnvKey: '$base'};
     var count = int.tryParse(env['GIT_CONFIG_COUNT'] ?? '') ?? 0;
-    for (final (key, value) in gitConfig) {
+    final hasForgeToken = env[forgeTokenEnvKey]?.isNotEmpty ?? false;
+    for (final (key, value) in [
+      ...gitConfig,
+      if (hasForgeToken) ...fetchGitConfig,
+    ]) {
       out['GIT_CONFIG_KEY_$count'] = key;
       out['GIT_CONFIG_VALUE_$count'] = value;
       count++;
@@ -273,7 +346,26 @@ class AgentRunGateway {
     final bytes = List<int>.generate(32, (_) => _random.nextInt(256));
     final secret = base64Url.encode(bytes).replaceAll('=', '');
     _grants[secret] = grant;
-    return AgentRunLease._(secret, base);
+    return AgentRunLease._(
+      secret,
+      base,
+      repoOwner: grant.repoOwner,
+      repoName: grant.repoName,
+    );
+  }
+
+  /// The MCP scope [secret] proves, or null when it names no open run.
+  McpCallScope? mcpScopeFor(String secret) {
+    final grant = _grants[secret];
+    return grant == null
+        ? null
+        : McpCallScope(
+            workspaceId: grant.workspaceId,
+            agentId: grant.agentId,
+            conversationId: grant.conversationId,
+            spaceId: grant.spaceId,
+            attested: true,
+          );
   }
 
   /// Forgets a run and revokes every write token minted for it.
@@ -319,6 +411,9 @@ class AgentRunGateway {
       if (path.startsWith('/agent/git/github.com/')) {
         return await _git(request, grant, secret);
       }
+      if (path == envPath && request.method == 'POST') {
+        return await _environmentCommand(request, grant);
+      }
       return await _plain(request, HttpStatus.notFound, 'Not found.');
     } on Object catch (e, st) {
       CcInfraLog.warning('agent gateway: $path failed: $e\n$st');
@@ -333,6 +428,71 @@ class AgentRunGateway {
       }
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Environment shims
+
+  /// `cc-env`, the `docker` shim and declared pass-through tools.
+  static const String envPath = '/agent/env';
+
+  /// Serves environment commands. Set once the environment service exists.
+  AgentEnvironmentGateway? environments;
+
+  Future<void> _environmentCommand(
+    HttpRequest request,
+    AgentRunGrant grant,
+  ) async {
+    final environments = this.environments;
+    final spaceId = grant.spaceId;
+    final tool = request.headers.value('X-CC-Env-Tool');
+    if (environments == null || spaceId == null || tool == null) {
+      return _plain(
+        request,
+        HttpStatus.notFound,
+        'This run has no environment.',
+      );
+    }
+    final body = await _readCapped(request, _maxEnvBodyBytes);
+    if (body == null) {
+      return _plain(
+        request,
+        HttpStatus.requestEntityTooLarge,
+        'Command too long.',
+      );
+    }
+    final text = utf8.decode(body, allowMalformed: true);
+    final arguments = text.isEmpty
+        ? const <String>[]
+        : (text.split('\u0000')..removeLast());
+    final result = await environments.handle(
+      AgentEnvironmentCaller(
+        workspaceId: grant.workspaceId,
+        spaceId: spaceId,
+        conversationId: grant.conversationId,
+        runId: grant.runId,
+        agentId: grant.agentId,
+        mode: grant.mode,
+        actingUserId: grant.actingUserId,
+      ),
+      tool,
+      arguments,
+    );
+    final stderr = utf8.encode(result.stderr);
+    // Headers are bounded, and stderr's tail is the useful part.
+    final tail = stderr.length > _maxEnvStderrBytes
+        ? stderr.sublist(stderr.length - _maxEnvStderrBytes)
+        : stderr;
+    request.response
+      ..statusCode = HttpStatus.ok
+      ..headers.set('X-CC-Exit-Code', '${result.exitCode}')
+      ..headers.set('X-CC-Stderr', base64.encode(tail))
+      ..headers.contentType = ContentType.text
+      ..write(result.stdout);
+    await request.response.close();
+  }
+
+  static const int _maxEnvBodyBytes = 1024 * 1024;
+  static const int _maxEnvStderrBytes = 6 * 1024;
 
   // ---------------------------------------------------------------------------
   // Claude Code PreToolUse hook

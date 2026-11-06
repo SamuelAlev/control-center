@@ -2664,4 +2664,8 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Η εκτέλεση σταμάτησε επειδή τα διαπιστευτήρια του παρόχου δεν λειτουργούν πλέον. Συνδέστε τον ξανά στις Ρυθμίσεις → Πάροχοι και επαναλάβετε τον γύρο.';
+
+  @override
+  String get permissionHostExecution =>
+      'Εκτέλεση εντολών στον κεντρικό υπολογιστή';
 }

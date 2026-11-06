@@ -606,6 +606,80 @@ void main() {
       expect(find.text('Persona'), findsOneWidget);
     });
 
+    group('prose fields', () {
+      const systemPrompt = 'Be **direct**.';
+      const persona = '# Voice\n\nWrite `plainly`.';
+
+      EditableText editableWith(WidgetTester tester, String text) => tester
+          .widgetList<EditableText>(find.byType(EditableText))
+          .singleWhere((field) => field.controller.text == text);
+
+      for (final (name, text, styled) in [
+        ('system prompt', systemPrompt, 'direct'),
+        ('persona', persona, 'plainly'),
+      ]) {
+        testWidgets('paints $name Markdown as it is typed', (tester) async {
+          tester.view.physicalSize = const Size(800, 900);
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          await tester.pumpWidget(
+            _wrapAgentForm(
+              agent: _testAgent(systemPrompt: systemPrompt, persona: persona),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 200));
+
+          final span = editableWith(tester, text).controller.buildTextSpan(
+            context: tester.element(find.byType(AgentSettingsForm)),
+            style: const TextStyle(fontSize: 14),
+            withComposing: false,
+          );
+          expect(span.toPlainText(), text);
+          final run = span.children!.cast<TextSpan>().firstWhere(
+            (child) => child.text == styled,
+          );
+          expect(run.style, isNotNull);
+        });
+      }
+
+      testWidgets('grow with their content instead of scrolling inside', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(800, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+        final longPrompt = List.filled(40, 'A line of prompt.').join('\n');
+        final longPersona = List.filled(30, 'A line of persona.').join('\n');
+
+        await tester.pumpWidget(
+          _wrapAgentForm(
+            agent: _testAgent(systemPrompt: longPrompt, persona: longPersona),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+
+        for (final text in [longPrompt, longPersona]) {
+          final field = editableWith(tester, text);
+          expect(field.maxLines, isNull);
+          final area = find.ancestor(
+            of: find.byWidget(field),
+            matching: find.byType(CcTextArea),
+          );
+          final lines = '\n'.allMatches(text).length + 1;
+          expect(tester.getSize(area).height, greaterThan(lines * 14.0));
+        }
+      });
+    });
+
     testWidgets('renders context size presets', (tester) async {
       tester.view.physicalSize = const Size(800, 900);
       tester.view.devicePixelRatio = 1.0;

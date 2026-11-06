@@ -2,7 +2,7 @@
 title: 備份、匯出與匯入
 description: 快照的目錄佈局、清單、每一項備份操作與傳輸路由，以及備份究竟包含與不包含哪些檔案。
 slug: zh-TW/手冊/參考/備份
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Control Center 能夠複製、移交或接納的一切，以及每種產物的確切形態。若要實際進行一次
@@ -45,7 +45,10 @@ Control Center 能夠複製、移交或接納的一切，以及每種產物的�
 它們不包含清單或 `global.db`，也不是安裝快照。
 每週管線的保留步驟只會移除自己所屬工作區中、早於其設定年限（預設 30 天）的備份；
 手動建立的安裝快照絕不會被該步驟汰換。`server.listBackups` 只會列出安裝快照，
-包括未完成的那些。
+包括未完成的那些；`workspace.listBackups` 會列出單一工作區的排程備份。
+
+刪除工作區會保留此目錄。工作區的排程隨之停止，因此不再有任何機制汰換這些備份，它們會
+一直留著，直到安裝擁有者移除它們。`server.listOrphanedBackups` 會回報它們。
 
 
 ### `manifest.json`
@@ -117,6 +120,10 @@ Control Center 能夠複製、移交或接納的一切，以及每種產物的�
 | `server.backupNow`    | mutate | 安裝      | 安裝**擁有者**    | 無            | `{ok, path}`                  |
 | `server.listBackups`  | read   | 安裝      | 安裝**擁有者**    | 無            | `{backups: [...]}`            |
 | `server.deleteBackup` | mutate | 安裝      | 安裝**擁有者**    | `name`        | `{ok}`                        |
+| `server.listOrphanedBackups` | read | 安裝 | 安裝**擁有者** | 無 | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | mutate | 安裝 | 安裝**擁有者** | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | read | 工作區 | `admin` | 無 | `{backups: [...]}` |
+| `workspace.deleteBackup` | mutate | 工作區 | `owner` | `name` | `{ok}` |
 | `workspace.export`    | read   | 工作區    | `admin`           | 無            | `{ok, path}`                  |
 | `workspace.import`    | mutate | 工作區    | `owner`           | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`    | mutate | 安裝*     | `owner`           | `id`          | 登錄資料列被標記為已刪除      |
@@ -125,6 +132,12 @@ Control Center 能夠複製、移交或接納的一切，以及每種產物的�
 呼叫者對所指工作區的成員資格，並要求 `owner`。
 
 每個回應中的 `path` 都是 **伺服器主機**上的路徑。
+
+`server.listOrphanedBackups` 會為每個不再有效的工作區傳回一個項目：`workspace_id`、註冊表
+仍知道時的 `workspace_name`，以及 `backups`。已刪除的工作區無法再通過工作區角色檢查，
+因此其備份歸安裝擁有者所有。`server.deleteOrphanedBackup` 會拒絕仍然有效的工作區，其備份
+仍由 `workspace.deleteBackup` 與該工作區自身的角色把關。這兩個刪除操作都只接受列表中的
+時間戳記目錄名稱，不接受路徑。
 
 :::note[整台安裝的快照在兩條通道上都由擁有者把關]
 `server.backupNow`、`server.listBackups` 與 `server.deleteBackup` 都要求安裝
@@ -201,25 +214,31 @@ Control Center 能夠複製、移交或接納的一切，以及每種產物的�
 | ----------------------- | ------ | --------------- | -------------------------------- | --------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | 工作區**管理員**      |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | 安裝**擁有者**        |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | 工作區**管理員**；工作區刪除後為安裝**擁有者** |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | 工作區**擁有者**      |
 
-`w` 是工作區 id，`n` 是快照目錄名稱，`d` 是發起呼叫的裝置 id，`s` 是簽章。`n` 是
-依據備份列表解析的，而不是直接拼接到備份根目錄上，因此這條路由無法被指向一個列表本
-不會顯示的目錄。
+`w` 是工作區 id，`n` 是快照或排程備份的目錄名稱，`d` 是發起呼叫的裝置 id，`s` 是簽章。在
+`/backup/snapshot` 上，`n` 是依據備份列表解析的，而不是直接拼接到備份根目錄上，因此這條
+路由無法被指向一個列表本不會顯示的目錄。在 `/backup/stored` 上，它必須是時間戳記名稱，且
+檔案必須是該工作區自身備份目錄中的真實檔案。
 
 | 狀態   | 原因                                                                                |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | 缺少必要的查詢參數，或上傳內容為空                                                   |
+| `400`  | 缺少必要的查詢參數、備份名稱無效，或上傳內容為空                                     |
 | `403`  | 裝置未知或已撤銷、簽章錯誤，或呼叫者不具備該角色                                     |
-| `404`  | 此主機上沒有備份連接埠，或所指的快照/工作區檔案不存在                                |
+| `404`  | 此主機上沒有備份連接埠，或所指的快照、備份或工作區檔案不存在                          |
 | `405`  | 以 `POST` 以外的方法呼叫 `/backup/restore`                                           |
 | `413`  | 上傳內容超過 8 GiB，無論是依宣告的 content-length 或依實際讀取的位元組數             |
 | `426`  | 對公開 HTTP 監聽器上傳輸路徑的任何直接請求；請改用已配對用戶端的加密資源隧道 |
 | `500`  | 匯出或封存在伺服器端失敗                                                             |
 
-兩個下載都會回應 `Cache-Control: no-store` 與 `Accept-Ranges: none`。每個請求都會
-產生一份**全新的**副本，並在串流傳送完畢後刪除它，因此被快取或續傳的回應會把兩次不同
-匯出的位元組拼接成一個看起來有效、實則無效的檔案。
+三個下載都會回應 `Cache-Control: no-store` 與 `Accept-Ranges: none`。
+`/backup/workspace` 與 `/backup/snapshot` 每個請求都會產生一份**全新的**副本，並在串流傳送
+完畢後刪除它，因此被快取或續傳的回應會把兩次不同匯出的位元組拼接成一個看起來有效、實則
+無效的檔案。
+
+`/backup/stored` 是例外：它以 `<workspaceId>-<name>.db` 串流傳送排程備份並保留該檔案，
+因為這個檔案就是備份本身。
 
 `/backup/snapshot` 會傳回 `<name>.zip`，其中的項目都相對於快照根目錄，因此解壓縮後
 會重現 `manifest.json` + `global.db` + `<workspaceId>/workspace.db`。項目按排序後的
@@ -244,10 +263,10 @@ Control Center 能夠複製、移交或接納的一切，以及每種產物的�
 | 傳輸暫存                  | `<dataDir>/backups/transfer/`——一塊工作檯，由寫入它的那條路由負責清理 |
 | 快照封存名稱              | `<snapshot directory name>.zip`                               |
 | 上傳上限                  | 每次加密的 `/backup/restore` 上傳 8 GiB                             |
-| 保留策略                  | 安裝快照：手動刪除。工作區備份：每週管線，預設 30 天          |
+| 保留策略                  | 安裝快照：手動刪除。工作區備份：每週管線，預設 30 天，或手動刪除。已刪除工作區的備份：僅手動刪除 |
 
 `exports/`、`transfer/` 與 `workspace-backups/` 目錄都不是安裝快照，也不在
-`server.listBackups` 的範圍內。只有最後一個目錄有排程的保留策略；刪除安裝快照需要
+`server.listBackups` 的範圍內。只有最後一個目錄有排程的保留策略，且僅在其工作區存在期間有效；刪除安裝快照需要
 安裝擁有者明確採取動作。
 
 ## 另請參閱

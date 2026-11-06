@@ -1058,11 +1058,11 @@ class ChatBridgeService {
               when subject.isNotEmpty =>
             'Checking out the pull request in $subject…',
           SpaceProvisioningStep(
-            kind: SpaceProvisioningStepKind.script,
+            kind: SpaceProvisioningStepKind.provisionTasks,
             :final subject,
           )
               when subject.isNotEmpty =>
-            'Running the setup script for $subject…',
+            'Running worktree tasks for $subject…',
           SpaceProvisioningStep(
             kind: SpaceProvisioningStepKind.agent,
             :final subject,

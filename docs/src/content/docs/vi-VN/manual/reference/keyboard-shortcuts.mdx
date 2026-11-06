@@ -2,10 +2,10 @@
 title: Phím tắt
 description: Toàn bộ sổ đăng ký phím tắt, theo phạm vi, kèm điều kiện để mỗi phím tắt kích hoạt.
 slug: vi-VN/so-tay/tham-chieu/phim-tat
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Các phím tắt đến từ một sổ đăng ký `const`, `KeybindingRegistry` trong `lib/core/constants/keybindings.dart`. Sổ này chứa **49 bindings**. Cài đặt → Bạn → Phím tắt hiển thị sổ đăng ký đó dưới dạng **tham chiếu chỉ đọc**: không có giao diện gán lại phím và không có tệp phím tắt của người dùng.
+Các phím tắt đến từ một sổ đăng ký `const`, `KeybindingRegistry` trong `lib/core/constants/keybindings.dart`. Sổ này chứa **49 bindings**. Hộp thoại **Phím tắt** (nhấn `?` hoặc mở từ menu Trợ giúp) hiển thị các phím tắt toàn cục và các phím tắt của màn hình hiện tại. Đây là **tham chiếu chỉ đọc**: không có giao diện gán lại phím và không có tệp phím tắt của người dùng.
 
 `Cmd` dưới đây là phím bổ trợ lệnh chính — ⌘ trên macOS, Ctrl trên Windows và Linux. Một binding chỉ kích hoạt khi lệnh của nó có handler đã đăng ký trên màn hình hiện tại và mệnh đề `when` của nó đúng; `!textInputFocus` nghĩa là phím được chuyển tiếp cho một ô nhập văn bản đang có focus.
 
@@ -41,7 +41,7 @@ Phạm vi `/pull-requests`. Tất cả đều yêu cầu `route == '/pull-reques
 | `Enter`  | Mở PR            |
 | `F`      | Mở menu bộ lọc   |
 
-`Enter` (`pr.list-open`) được khai báo trong sổ đăng ký và xuất hiện trong phần tham chiếu phím tắt, nhưng **màn hình danh sách không đăng ký handler cho nó**, nên hiện tại nó không kích hoạt. `F` mở menu bộ lọc (`pr.list-open-filter`), không phải tìm kiếm.
+`Enter` (`pr.list-open`) được khai báo trong sổ đăng ký và xuất hiện trong hộp thoại **Phím tắt**, nhưng **màn hình danh sách không đăng ký handler cho nó**, nên hiện tại nó không kích hoạt. `F` mở menu bộ lọc (`pr.list-open-filter`), không phải tìm kiếm.
 
 ## Chi tiết pull request (2)
 
@@ -90,7 +90,7 @@ Phạm vi `/spaces`. Các mệnh đề `when` dùng regex nên chúng kích ho�
 
 Đi tới tệp mở một bộ chọn trên các tệp của cuộc hội thoại. Khi chưa gõ gì, bộ chọn liệt kê các tệp bạn mở gần đây nhất; khi gõ, nó tìm trong mọi tệp thuộc các worktree của cuộc hội thoại. `Enter` mở tệp đã chọn trong một thẻ mới, `Cmd/Ctrl + Enter` hoặc nút chia trên hàng mở tệp trong một ngăn ở bên phải, còn `×` trên một hàng gần đây sẽ xóa tệp khỏi danh sách.
 
-Gửi bằng Enter thuộc ô nhập văn bản của trình soạn tin; nhấn để nói thuộc nút mic của trình soạn tin (handler bàn phím cứng riêng của nó). Cả hai đều được liệt kê trong sổ đăng ký để làm tham chiếu trong cài đặt.
+Gửi bằng Enter thuộc ô nhập văn bản của trình soạn tin; nhấn để nói thuộc nút mic của trình soạn tin (handler bàn phím cứng riêng của nó). Cả hai đều được liệt kê trong sổ đăng ký để hộp thoại **Phím tắt** có thể hiển thị chúng.
 
 ## Trình chọn không gian làm việc (2)
 
@@ -127,7 +127,7 @@ Phạm vi `/newsfeed`. Tất cả đều yêu cầu `route == '/newsfeed'` và k
 
 ## Các phím của trình xem diff nằm ngoài sổ đăng ký
 
-Trình xem diff của PR tự xử lý những phím này (`PrDiffKeyboardHandler`). Tìm kiếm/đã xem/thu gọn chỉ được liệt kê trong phần chú thích của sổ đăng ký để làm tham chiếu trong cài đặt — không có handler dispatcher nào được đăng ký, nên dispatcher để chúng cho khung xem diff. Chúng không xuất hiện thành hàng riêng trong phần tham chiếu phím tắt.
+Trình xem diff của PR tự xử lý những phím này (`PrDiffKeyboardHandler`). Tìm kiếm/đã xem/thu gọn chỉ được nhắc đến trong phần chú thích của sổ đăng ký: không có handler dispatcher nào được đăng ký, nên dispatcher để chúng cho khung xem diff. Chúng không xuất hiện thành hàng riêng trong hộp thoại **Phím tắt**.
 
 | Phím tắt        | Hành động                                            |
 | --------------- | ---------------------------------------------------- |

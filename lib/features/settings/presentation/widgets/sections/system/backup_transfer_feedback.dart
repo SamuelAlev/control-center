@@ -1,3 +1,5 @@
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/providers/backup_transfer.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -12,6 +14,9 @@ import 'package:flutter/widgets.dart';
 /// message wins when it sent one — only it knows that the file handed to a
 /// restore was not a workspace database.
 String describeBackupTransferError(AppLocalizations l10n, Object error) {
+  if (error is RemoteRpcException) {
+    return l10n.failedWithError(error.message);
+  }
   if (error is! BackupTransferException) {
     return l10n.failedWithError('$error');
   }
@@ -27,6 +32,16 @@ String describeBackupTransferError(AppLocalizations l10n, Object error) {
   };
 }
 
+/// Whether the server refused the caller, as opposed to failing to answer.
+bool isBackupRefusal(Object error) =>
+    error is RemoteRpcException && error.code == RpcErrorCodes.unauthorized;
+
+/// Says why a workspace's backups could not be listed.
+String describeBackupListError(AppLocalizations l10n, Object error) =>
+    isBackupRefusal(error)
+    ? l10n.backupListForbidden
+    : describeBackupTransferError(l10n, error);
+
 /// Reports where a download landed — or says nothing, when the person dismissed
 /// the save dialog. A cancelled action needs no toast; it was theirs.
 void reportBackupDownload(BuildContext context, BackupDownload result) {
@@ -41,9 +56,7 @@ void reportBackupDownload(BuildContext context, BackupDownload result) {
   if (message == null) {
     return;
   }
-  CcToastScope.maybeOf(
-    context,
-  )?.show(message, variant: CcToastVariant.success);
+  CcToastScope.maybeOf(context)?.show(message, variant: CcToastVariant.success);
 }
 
 /// How much of a backup transfer has moved, as a bar and a byte count.

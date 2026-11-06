@@ -3,13 +3,16 @@ import 'dart:convert';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
+import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:flutter/widgets.dart' show Axis, IconData;
 
 /// Shared JSON codec for editor split trees.
 ///
 /// Persists shape, weights and tab order, plus the selected tab in each pane
-/// and active pane when [persistFocus] is enabled. Never persists live
-/// PTYs/webviews or node ids (minted on decode). Malformed → `null`.
+/// and active pane when [persistFocus] is enabled. A pane's selection is saved
+/// by the tab's [EditorTab.id] (`selKey`), with its index (`sel`) kept for
+/// payloads written before ids were saved. Never persists live PTYs/webviews
+/// or node ids (minted on decode). Malformed → `null`.
 class EditorLayoutCodec {
   /// Creates a codec bound to one host's tab vocabulary.
   const EditorLayoutCodec({
@@ -97,22 +100,24 @@ class EditorLayoutCodec {
   Map<String, Object?> _encodeNode(EditorNode node, String activeLeafId) {
     if (node is EditorLeafNode) {
       final kept = <Map<String, Object?>>[];
-      final tabs = node.controller.tabs;
-      final selected = node.controller.selectedIndex;
-      var selection = 0;
-      for (var i = 0; i < tabs.length; i++) {
-        final encoded = _encodeTab(tabs[i]);
+      final keptTabs = <EditorTab>[];
+      final group = node.controller;
+      for (final tab in group.tabs) {
+        final encoded = _encodeTab(tab);
         if (encoded != null) {
-          if (i == selected) {
-            selection = kept.length;
-          }
           kept.add(encoded);
+          keptTabs.add(tab);
         }
       }
+      final focus = persistFocus ? _savedFocus(group, keptTabs) : null;
       return {
         't': 'leaf',
         'tabs': kept,
-        if (persistFocus) 'sel': selection,
+        if (persistFocus)
+          'sel': focus == null
+              ? 0
+              : keptTabs.indexWhere((t) => identical(t, focus)),
+        if (focus != null) 'selKey': focus.id,
         if (persistFocus && node.id == activeLeafId) 'active': true,
       };
     }
@@ -125,6 +130,27 @@ class EditorLayoutCodec {
         for (final c in split.children) _encodeNode(c, activeLeafId),
       ],
     };
+  }
+
+  /// The tab [group]'s saved selection should name: the selected tab when it
+  /// survives encoding, else the most recently visited tab that does. A tab
+  /// that is never restored (a diff, a review) must not hand the pane back to
+  /// whichever tab happens to come first.
+  EditorTab? _savedFocus(EditorTabGroupController group, List<EditorTab> kept) {
+    if (group.isEmpty || kept.isEmpty) {
+      return null;
+    }
+    final selected = group.tabs[group.selectedIndex];
+    bool survives(EditorTab tab) => kept.any((t) => identical(t, tab));
+    if (survives(selected)) {
+      return selected;
+    }
+    for (final visited in group.visitOrder) {
+      if (survives(visited)) {
+        return visited;
+      }
+    }
+    return null;
   }
 
   /// Encodes a tab, or returns null when it is not safely serialisable (a
@@ -164,22 +190,41 @@ class EditorLayoutCodec {
       final controller = EditorTabGroupController();
       final tabsRaw = raw['tabs'];
       final selected = persistFocus && raw['sel'] is int ? raw['sel'] : 0;
-      var selection = 0;
-      var tabCount = 0;
+      final selectedKey = persistFocus && raw['selKey'] is String
+          ? raw['selKey'] as String
+          : null;
+      // The surviving index of the tab saved at `sel`, -1 when it was omitted.
+      var atSavedIndex = -1;
+      final ids = <String>{};
       if (tabsRaw is List) {
         for (var i = 0; i < tabsRaw.length; i++) {
-          final tab = _decodeTab(tabsRaw[i]);
-          if (tab != null) {
-            if (i == selected) {
-              selection = tabCount;
-            }
-            controller.insert(tabCount++, tab);
+          var tab = _decodeTab(tabsRaw[i]);
+          if (tab == null) {
+            continue;
           }
+          // Same-kind siblings saved without a key would share the kind as
+          // their id; give each later one its own, which the next save keeps.
+          if (!ids.add(tab.id) && tab.dedupKey == null) {
+            tab = EditorTab(
+              kind: tab.kind,
+              label: tab.label,
+              args: tab.args,
+              icon: tab.icon,
+              dedupKey: instanceTabKey(tab.kind),
+            );
+            ids.add(tab.id);
+          }
+          if (i == selected) {
+            atSavedIndex = controller.tabs.length;
+          }
+          controller.insert(controller.tabs.length, tab);
         }
       }
-      // Remap the saved selection around omitted tabs. Missing, stale or
-      // invalid selections fall back to the first surviving tab.
-      controller.selectedIndex = selection;
+      controller.selectedIndex = _decodedSelection(
+        controller.tabs,
+        selectedKey,
+        atSavedIndex,
+      );
       final id = 'leaf-${state.next()}';
       if (!controller.isEmpty) {
         state.firstPopulatedLeafId ??= id;
@@ -270,6 +315,21 @@ class EditorLayoutCodec {
       icon: iconFor(kind),
       dedupKey: dedup is String ? dedup : null,
     );
+  }
+
+  /// Resolves a pane's saved selection against its surviving [tabs]: the tab
+  /// at the saved index when its id still agrees with [key] (exact even when
+  /// two tabs share an id), else the first tab with id [key], else the saved
+  /// index (a payload written before ids were saved), else the first tab.
+  int _decodedSelection(List<EditorTab> tabs, String? key, int atSavedIndex) {
+    if (key == null || (atSavedIndex >= 0 && tabs[atSavedIndex].id == key)) {
+      return atSavedIndex < 0 ? 0 : atSavedIndex;
+    }
+    final byKey = tabs.indexWhere((t) => t.id == key);
+    if (byKey >= 0) {
+      return byKey;
+    }
+    return atSavedIndex < 0 ? 0 : atSavedIndex;
   }
 
   String _firstLeafId(EditorNode node) {

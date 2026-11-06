@@ -1,4 +1,4 @@
-/// Pure-Dart app-server composition for Control Center.
+/// Pure-Dart server composition for Control Center.
 ///
 /// The repo-RPC catalog (tickets / messaging / newsfeed), the WebSocket RPC
 /// server (`LocalRpcServer`), live event forwarding and the paired-device

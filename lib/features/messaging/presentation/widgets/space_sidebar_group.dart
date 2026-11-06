@@ -56,6 +56,11 @@ class _SpaceSidebarGroupState extends ConsumerState<SpaceSidebarGroup> {
 
   @override
   void dispose() {
+    // Starting a drag remounts this card (`childWhenDragging` changes the tree
+    // shape), and the live pointer keeps reaching the old [Listener] through
+    // its cached hit-test path. Dropping the press stops those events touching
+    // the disposed controller.
+    _downAt = null;
     _states.dispose();
     super.dispose();
   }

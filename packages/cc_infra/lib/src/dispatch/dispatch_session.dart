@@ -51,6 +51,7 @@ import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
 import 'package:cc_infra/src/context/snapcompact_compactor.dart';
 import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
+import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/claude_refusal_message.dart';
@@ -403,9 +404,8 @@ class DispatchSession implements SteeringSessionView {
   /// "ask first" leaves it on; the harness web tools still ask per call.
   bool _networkEnabled = true;
 
-  /// The gateway's loopback port, which every sandbox of this run must reach
-  /// (a Linux sandbox has its own network namespace; it is bridged in).
-  List<int> get _gatewayLoopbackPorts => [?_gatewayLease?.base.port];
+  /// What this run may use of its space's environment and gateway.
+  _RunEnvironmentAccess _environment = const _RunEnvironmentAccess();
 
   /// Subscription to sandbox events from the underlying process.
   StreamSubscription<SandboxEvent>? eventsSub;
@@ -1102,6 +1102,7 @@ class DispatchSession implements SteeringSessionView {
       agentId: agentId,
       conversationId: conversationId,
       spaceId: spaceId,
+      runToken: _gatewayLease?.secret,
     );
   }
 
@@ -1280,6 +1281,7 @@ class DispatchSession implements SteeringSessionView {
       mode: mode,
       networkEnabled: _networkEnabled,
       loopbackPorts: _gatewayLoopbackPorts,
+      environmentScope: _environment.scope,
       env: env,
       toolOutputStore: deps.toolOutputStore,
       workspaceId: workspaceId,
@@ -1289,7 +1291,7 @@ class DispatchSession implements SteeringSessionView {
       confirmationPort: deps.confirmationPort,
       // The SAME resolution the CLI profile uses, so both adapters get the
       // same scoped exec roots — and the tool's own cwd never enters into it.
-      execGrantRootsResolver: () => _resolveExecGrantRoots(workspaceId ?? ''),
+      execGrantRootsResolver: () => _execGrants(workspaceId ?? ''),
       // The operator's own `commandPrefix` rules reach the bash gate through
       // this — before it, they were stored, resolvable, editable in the
       // what-if probe, and never consulted at runtime.
@@ -1683,7 +1685,7 @@ class DispatchSession implements SteeringSessionView {
     // necessary: explicit URLs or command-local Git config can avoid rewrites.
     final lease = _gatewayLease;
     if (lease != null) {
-      merged.addAll(lease.environment(merged));
+      merged.addAll(_leaseEnvironment(lease, merged));
     }
     return merged;
   }
@@ -1724,8 +1726,9 @@ class DispatchSession implements SteeringSessionView {
       mode: mode,
       protectedPaths: await _protectedPaths(),
       runnerStateDirs: _runnerStateDirs,
-      execGrantRoots: await _resolveExecGrantRoots(wsId),
+      execGrantRoots: await _execGrants(wsId),
       loopbackPorts: _gatewayLoopbackPorts,
+      environmentScope: _environment.scope,
     );
     final policy = const SandboxPolicyResolver().resolve(
       spec: spec,

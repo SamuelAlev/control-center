@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Pumps a single-route app whose page is wrapped in a
-/// [MouseNavigationHandler], the way the shell wraps every page. Returns the
+/// Pumps an app whose pages are wrapped in one [MouseNavigationHandler], the way
+/// the shell wraps every page. Returns the
 /// router and the provider container so tests can navigate and read history.
 Future<({GoRouter router, ProviderContainer container})> _pump(
   WidgetTester tester,
@@ -15,14 +15,20 @@ Future<({GoRouter router, ProviderContainer container})> _pump(
   final router = GoRouter(
     initialLocation: '/a',
     routes: [
-      GoRoute(
-        path: '/a',
-        builder: (context, state) => Consumer(
+      ShellRoute(
+        builder: (context, state, child) => Consumer(
           builder: (context, ref, _) => MouseNavigationHandler(
             historyController: ref.read(navigationHistoryProvider.notifier),
-            child: const SizedBox.shrink(),
+            child: child,
           ),
         ),
+        routes: [
+          for (final path in const ['/a', '/b', '/c'])
+            GoRoute(
+              path: path,
+              builder: (context, state) => const SizedBox.shrink(),
+            ),
+        ],
       ),
     ],
   );
@@ -38,6 +44,55 @@ Future<({GoRouter router, ProviderContainer container})> _pump(
 }
 
 void main() {
+  testWidgets('a replaced entry is skipped by Back', (tester) async {
+    final (:router, :container) = await _pump(tester);
+    final history = container.read(navigationHistoryProvider.notifier);
+
+    router.go('/b');
+    await tester.pumpAndSettle();
+    history.replace('/c');
+    await tester.pumpAndSettle();
+    expect(router.state.uri.toString(), '/c');
+
+    history.goBack();
+    await tester.pumpAndSettle();
+    expect(router.state.uri.toString(), '/a');
+  });
+
+  testWidgets('replacing twice before it lands navigates once', (tester) async {
+    final (:router, :container) = await _pump(tester);
+    final history = container.read(navigationHistoryProvider.notifier);
+
+    history
+      ..replace('/b')
+      ..replace('/b');
+    await tester.pumpAndSettle();
+
+    // A flag left up would swallow this navigation from the stack.
+    router.go('/c');
+    await tester.pumpAndSettle();
+    history.goBack();
+    await tester.pumpAndSettle();
+    expect(router.state.uri.toString(), '/b');
+  });
+
+  testWidgets('backOr steps back, or to the parent with nothing behind', (
+    tester,
+  ) async {
+    final (:router, :container) = await _pump(tester);
+    final history = container.read(navigationHistoryProvider.notifier);
+
+    history.backOr('/c');
+    await tester.pumpAndSettle();
+    expect(router.state.uri.toString(), '/c');
+
+    router.go('/b');
+    await tester.pumpAndSettle();
+    history.backOr('/a');
+    await tester.pumpAndSettle();
+    expect(router.state.uri.toString(), '/c');
+  });
+
   testWidgets('a query-only navigation joins the back/forward stack', (
     tester,
   ) async {

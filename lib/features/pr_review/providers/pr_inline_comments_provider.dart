@@ -513,15 +513,9 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
     if (entryIndex == -1) {
       return;
     }
-    final old = t.entries[entryIndex];
     threads[i] = t.copyWith(
       entries: [...t.entries]
-        ..[entryIndex] = PrInlineEntry(
-          id: old.id,
-          author: old.author,
-          body: newBody,
-          createdAt: old.createdAt,
-        ),
+        ..[entryIndex] = t.entries[entryIndex].copyWith(body: newBody),
     );
     state = state.copyWith(threads: threads);
   }

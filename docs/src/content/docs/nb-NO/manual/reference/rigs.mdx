@@ -2,7 +2,7 @@
 title: Stasjoner
 description: Alle stasjonsflater, backender, handlingsverb, livssyklustilstander, porter, standardverdier og kontrakter — den fullstendige faktakatalogen.
 slug: nb-NO/handbok/referanse/stasjoner
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Bare fakta. For modellen bak dem, les [Stasjoner og isolerte
@@ -18,6 +18,8 @@ miljøer](/nb-NO/handbok/konsepter/stasjoner/); for å åpne en maskin, følg
 | Datamaskin | X11-skrivebord: inndata via hypervisoren, skjermfangst via gjesteagenten | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (uakselerert reserve, velges aldri automatisk) | Ja |
 | Android | Android via ADB | Googles emulator | `android-emulator` | **Nei** — emulatoren håndterer sitt eget nettverk |
 | iOS | iOS-simulator via WebDriverAgent | CoreSimulator | `ios-simulator` | **Nei** — nettverket følger Mac-verten |
+| Appvindu | Vinduene til en skrivebordsapp startet fra et miljø, gjennom operativsystemet | Vertsvindu | `host-window` | **Nei** — appen kjører på verten med serverbrukerens tilgang |
+| Miljø | Compose-stacken og oppgavene i et [miljø](/nb-NO/handbok/slik-gjor-du/miljoer/) med `rig`-plassering | microVM | `smolvm` | Ja |
 
 Terminalen og `computer_use`-flaten deler flateverdien `computer`; terminalen
 kjennetegnes av exec-bildemarkøren sin og gjenbrukes aldri som et styrbart

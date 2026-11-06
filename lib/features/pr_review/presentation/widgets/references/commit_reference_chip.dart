@@ -120,13 +120,16 @@ class _LoadedContent extends StatelessWidget {
       children: [
         Icon(AppIcons.gitCommitHorizontal, size: 14, color: muted),
         const SizedBox(width: 6),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxTitleWidth),
-          child: PrTitleText(
-            preview.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textStyle.copyWith(color: fg, fontWeight: FontWeight.w500),
+        // The chip sits in a markdown line that can be narrower than the cap.
+        Flexible(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxTitleWidth),
+            child: PrTitleText(
+              preview.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textStyle.copyWith(color: fg, fontWeight: FontWeight.w500),
+            ),
           ),
         ),
         const SizedBox(width: 6),

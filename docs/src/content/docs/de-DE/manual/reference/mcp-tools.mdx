@@ -2,7 +2,7 @@
 title: MCP-Tools
 description: Vollständiger Katalog der MCP-Tools, die cc_server registriert, nach Familie.
 slug: de-DE/handbuch/referenz/mcp-tools
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` betreibt eine MCP-Registrierung (JSON-RPC 2.0) und stellt sie auf dem Hauptport des Servers (Standard `9030`) unter `POST /mcp` und `GET /sse` bereit, Protokollversion `2024-11-05`. Jeder Client erreicht dieselbe Registrierung: der Desktop, der Web-Build, externe MCP-Clients und die eingebaute Agentenlaufzeit. Externe MCP-Server lassen sich als dynamische Schicht in dieselbe Registrierung brücken.
@@ -261,6 +261,8 @@ Verbvokabular je Oberfläche steht in der
 | `ios_use`      | Steuert den iOS-Simulator über WebDriverAgent/CoreSimulator: inspect/input, Screenshots, install/start/stop/uninstall von Apps, Deep Links und argv-förmige Simulatorprozesse |
 | `rig_list`     | Listet die Rigs eines Arbeitsbereichs mit Oberfläche, Status, Anzeigegröße und Controller      |
 | `rig_close`    | Zerstört ein Rig und verwirft den Maschinenzustand, den es besitzt                              |
+
+`app_use` ist ein fünftes Use-Tool: Es steuert die Fenster einer in einem Bereich gestarteten Desktop-App direkt auf dem Host statt in einer VM und deklariert zusätzlich `fileWriteOutsideWorktree` und `fileDelete`. Es und die `environment_*`-Tools sind in [Environments einrichten](/de-DE/handbuch/anleitungen/environments/) beschrieben.
 
 ## Nicht über MCP erreichbar
 

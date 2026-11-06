@@ -424,10 +424,6 @@ export default defineConfig({
                   slug: "manual/guides/add-repos",
                 },
                 {
-                  label: "docs.sidebar.guidesRepoScripts",
-                  slug: "manual/guides/repo-scripts",
-                },
-                {
                   label: "docs.sidebar.guidesManageMemory",
                   slug: "manual/guides/manage-memory",
                 },
@@ -488,6 +484,10 @@ export default defineConfig({
                 {
                   label: "docs.sidebar.guidesSpaces",
                   slug: "manual/guides/spaces",
+                },
+                {
+                  label: "docs.sidebar.guidesEnvironments",
+                  slug: "manual/guides/environments",
                 },
                 {
                   label: "docs.sidebar.guidesMentionAgents",

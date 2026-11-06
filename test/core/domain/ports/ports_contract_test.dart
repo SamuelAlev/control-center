@@ -976,6 +976,7 @@ class _TestRepoIsolationPort implements RepoIsolationPort {
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   }) async => const RepoIsolationResult(
     path: '/tmp/isolated',
     backend: RepoIsolationBackend.rift,
@@ -1010,8 +1011,8 @@ class _TestRepoWorkspaceProvisionerPort
     String? prBranch,
     Set<String>? repoAllowlist,
     void Function(String repoName, {required bool prHead})? onRepoProvision,
-    // Accepted to match the port; the contract fake runs no setup scripts.
-    void Function(String repoName)? onRepoSetupScript,
+    // Accepted to match the port; the contract fake runs no provision tasks.
+    void Function(String repoName)? onRepoProvisionTasks,
     CancellationToken? cancel,
   }) async => '/tmp/conversation';
 

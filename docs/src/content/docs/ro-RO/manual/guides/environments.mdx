@@ -1,0 +1,411 @@
+---
+title: Configurarea mediilor
+description: Oferă fiecărui spațiu și pull request propriul stack în execuție, cu compose, un CLI propriu, procese supravegheate sau o aplicație desktop.
+slug: ro-RO/manual/ghiduri-practice/medii
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+Un **mediu** este stack-ul în execuție al unui spațiu: serviciile de care are nevoie o ramură, izolate de toate celelalte spații, vizibile în bara laterală și accesibile agenților. Primesc unul și pull request-urile, pentru că un PR are deja propriul spațiu.
+
+Un administrator al spațiului de lucru scrie o **definiție** o singură dată. Membrii apasă apoi **Pornește** în secțiunea **Mediu** din bara laterală a unui spațiu sau PR. Definițiile se află în baza de date a spațiului de lucru, așa că o ramură de funcționalitate nu schimbă niciodată ce rulează Control Center, deși instrumentele rulează în continuare codul acelei ramuri.
+
+## Crearea unei definiții
+
+1. Deschide **Setări → Spațiu de lucru → Medii**. Doar administratorii spațiului de lucru pot modifica definițiile.
+2. Apasă **Definiție nouă**, apoi **Definiție goală** sau **Schiță din repo**. O ciornă caută în depozit fișiere compose, un `Procfile` și scripturi `package.json`, iar tu verifici rezultatul.
+3. Completează formularul sau folosește fila **JSON**. Exemplele de pe această pagină sunt acel JSON.
+4. Apasă **Rulează testul**. Pornește un mediu de unică folosință, așteaptă să fie gata și îl distruge.
+
+Pentru a păstra o definiție într-un depozit, folosește **Leagă un fișier din repo**. Control Center citește fișierul doar din ramura implicită și rulează doar versiunea aprobată de un administrator. O versiune mai nouă afișează **Actualizare disponibilă** și nu schimbă nimic până la aprobare.
+
+## Cea mai mică definiție
+
+Unui depozit compose simplu îi ajunge atât:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+Restul are valori implicite: fișierul compose este descoperit, toate serviciile rulează, porturile sunt alocate, punctele finale HTTP sunt detectate, iar mediul primește numele ramurii.
+
+## Tipuri de componente
+
+Un mediu este o listă ordonată de componente. Fiecare așteaptă ca precedenta să fie gata, dacă `after` nu indică altele, iar oprirea are loc în ordine inversă. `enabledWhen` condiționează o componentă de o opțiune sau de un rol, de exemplu `opt.seed`, `!opt.seed` sau `repo.web`.
+
+| Tip | Cine o rulează | La ce folosește |
+| --- | --- | --- |
+| `compose` | Driverul compose din Control Center | Orice fișier compose, unul per mediu |
+| `cli` | Instrumentul tău. Control Center apelează verbe mapate și citește JSON | Un instrument care își gestionează ciclul de viață, domeniile și datele |
+| `process` | Control Center, într-o sesiune de terminal supravegheată | Servere de dezvoltare și workeri |
+| `task` | Control Center, o dată per declanșator | Instalări, migrări, teste |
+| `app` | Control Center, când cineva apasă **Lansează** | O aplicație desktop |
+
+Componentele `task` primesc o listă `when`:
+
+| Declanșator | Când rulează |
+| --- | --- |
+| `provision` | La crearea worktree-ului (vezi mai jos sarcinile de worktree) |
+| `create` | O dată per mediu și din nou după o resetare |
+| `start` | La fiecare pornire |
+| `change` | După o sincronizare, dacă o cale modificată se potrivește cu `onChange` |
+| `manual` | La cerere: **Rulează**, `cc-env run <id>` sau `environment_run_task` |
+| `archive` | Chiar înainte de distrugerea worktree-ului |
+
+O comandă dată ca tablou este argv, așa că valorile opțiunilor nu trec niciodată printr-un shell. Un șir, sau `script` cu un tablou de linii, rulează sub `bash -lc`. Substituentele precum `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` și `{url.<role>}` se expandează doar în argv. Comenzile shell citesc aceleași valori ca variabile `CC_ENV_*`, de exemplu `$CC_ENV_PORT_WEB`.
+
+Fiecare comandă și terminal de spațiu primește și `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` și, în spațiile de PR, `CC_PR_NUMBER` și `CC_PR_IS_FORK`. Cu o componentă compose primesc și `COMPOSE_PROJECT_NAME` și `COMPOSE_FILE`, astfel că `docker compose exec` într-o sarcină ajunge la proiectul potrivit.
+
+## Roluri și director de lucru
+
+O definiție leagă **roluri** de depozitele spațiului de lucru, astfel încât un stack poate cuprinde mai multe depozite:
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`: un spațiu poate porni mediul dacă are cel puțin un rol ancoră. Dacă se potrivesc două definiții, alege persoana care pornește.
+- `required`: stack-ul nu poate rula fără acest depozit.
+- `whenMissing`: ce se întâmplă când spațiului îi lipsește rolul. `addToSpace` adaugă depozitul pe ramura implicită și este valoarea implicită pentru rolurile `required`. `useSource` transmite copia ta înregistrată, pe care trebuie să o tratezi ca doar pentru citire. `skip` lasă variabila nesetată și este implicit în celelalte cazuri.
+- Pornirea necesită o permisiune `write` pe un depozit ancoră din spațiu și acces de citire la toate celelalte depozite legate.
+
+O comandă rulează în primul rol din `repos` pe care îl are spațiul, așa că o definiție cu un singur depozit nu îl menționează niciodată. Orice componentă poate schimba asta cu `"cwd": { "role": "e2e", "path": "packages/ui" }`. Ambele câmpuri sunt opționale.
+
+## Porturi și URL-uri
+
+Control Center alocă porturi de gazdă înainte să pornească ceva, dintr-un interval comun întregii gazde (implicit de la 42000 la 49999, în blocuri de 32). Un port rămâne același pe toată durata de viață a mediului, iar porturile compose se leagă doar la `127.0.0.1`.
+
+- Porturile compose nu trebuie declarate. Citește-le ca `{port.postgres.5432}` sau `CC_ENV_PORT_POSTGRES_5432`.
+- Celelalte porturi se declară acolo unde sunt folosite, cu `"port": "web"` sau `"ports": ["web", "hmr"]`, și se citesc ca `{port.web}`. Un proces cu port primește și `PORT` și `HOST=127.0.0.1`.
+
+Punctele finale HTTP primesc un URL pe routerul serverului, care ascultă pe un singur port loopback:
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>` este ramura sub formă de slug, sau `pr-<n>` într-un spațiu de PR. `<project>` este `naming.project`, altfel numele definiției.
+- Numele `*.localhost` indică loopback, deci nu au nevoie de intrări hosts sau DNS, iar numele de gazdă separă cookie-urile între medii.
+- Porturile compose care răspund la HTTP sunt detectate, iar `http` pe componentă înlocuiește această presupunere. Un proces are nevoie de `"endpoint": { "role": "web", "primary": true }`, care face disponibil și `{url.web}`.
+- În browser (VM), folosește **Deschide în Browser (VM)**. `https://web--fix-login--shop.localhost/` ajunge acolo la aceeași rută.
+- Eticheta întreagă rămâne în limita a 63 de caractere, așa că numele lungi sunt scurtate cu un hash.
+- Două puncte finale nu au un domeniu părinte comun. O aplicație care are nevoie de un cookie pe ambele trebuie să le servească dintr-un singur punct final.
+
+Pentru URL-urile care trebuie înregistrate din timp, cum sunt redirecționările OAuth, `"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` oferă un set fix de nume.
+
+`policy` decide când rulează mediile. `autoCreate` este `off`, `prSpaces` sau `allSpaces`, `idleStopMinutes` are implicit 240, `followPrHead` sincronizează mediul unui PR când se mută head-ul, iar cu `maxRunning` (implicit 6) **Pornește** propune oprirea mediului folosit cel mai demult.
+
+## Exemplu: aplicație compose
+
+O aplicație web și Postgres dintr-un singur fișier compose, cu un `.env` ignorat de git, migrări și o sarcină de testare. `seedFiles` copiază fișiere numite din copia ta înregistrată în fiecare worktree nou.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+`healthchecks` permite unui serviciu fără verificare proprie de sănătate să rețină componenta următoare. Fără ea, un container în execuție contează ca gata, iar migrările pot depăși o bază de date care încă pornește.
+
+## Exemplu: CLI propriu
+
+Un instrument inventat, `acme`, care își gestionează containerele, domeniile și TLS-ul. Control Center oferă `{name}` și află restul din `status`. Nu deduce niciodată numele de gazdă ale unui instrument și nu editează niciodată `/etc/hosts`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create`, `status` și `destroy` sunt obligatorii. Control Center alege `create` sau `start` după starea citită. Orice verb poate fi `{ "shell": "…" }` în loc de argv.
+- `statusMap` citește JSON-ul instrumentului cu pointeri JSON, unde `*` se potrivește cu fiecare element. Regulile de stare sunt ordonate și câștigă prima potrivire. O condiție este `path` cu `equals`, sau `any` ori `none` cu `where`.
+- `keepsDataOnStop: false` dezactivează oprirea la inactivitate și adaugă la **Oprește** un avertisment de pierdere a datelor. Setează-l când oprirea pierde date.
+- `routing.mode: "tool"` conectează numele de gazdă ale instrumentului la browser (VM) și la agenți. Domeniul trebuie să se termine cu `.test`, `.localhost` sau `.internal`, iar un URL raportat în afara lui este eliminat.
+
+Un instrument al tău poate renunța la `statusMap` și poate tipări contractul de stare descris la finalul acestei pagini.
+
+## Exemplu: monorepo pnpm
+
+Doar procese și sarcini, fără containere. Aplicația web găsește API-ul prin `{url.api}`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- Fiecare proces este o filă de terminal pe care o poți deschide, citi și în care poți scrie. Închiderea filei nu îl oprește.
+- `ready` acceptă `http`, `tcp` sau `logMatch`. `restart` este `on-failure` (implicit), `always` sau `never`. `restartOn` repornește procesul când se potrivește o cale modificată.
+- `options` devin un formular la **Pornește**, iar `agentDefault` se aplică rulărilor pornite de un agent.
+
+## Exemplu: aplicație desktop
+
+O aplicație desktop cu un pas de compilare. O aplicație funcționează la fel indiferent de tehnologie, pentru că Control Center lucrează la nivelul ferestrelor sistemului de operare și nu are nevoie de hook sau SDK în aplicație.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+O aplicație nu pornește odată cu mediul. Cineva apasă **Lansează**, iar `prepare` rulează mai întâi. **Recompilează și relansează** rulează din nou această pereche. O ieșire curată apare ca închisă, un crash arată ultimele linii de jurnal fără repornire, o repornire a serverului nu o relansează niciodată, iar oprirea la inactivitate lasă în pace o aplicație care rulează.
+
+### Permisiunile și limitele aplicațiilor desktop
+
+- Pe macOS, acordă o dată aplicației Control Center **Înregistrare ecran** și **Accesibilitate** în Configurări sistem. Gazda serverului are nevoie de o sesiune grafică: un server headless refuză să lanseze o aplicație.
+- Lansează direct binarul. `open -a` predă aplicația către LaunchServices și aceasta iese din arborele de procese urmărit de Control Center. `"window": { "match": { "bundleId": "…" } }` acoperă acest caz, dar e sigur doar cu o singură copie în execuție.
+- Ferestrele rămân pe un ecran. macOS nu capturează o fereastră plasată în afara tuturor ecranelor, așa că o aplicație folosită de un agent este vizibilă pe ecranul serverului. Nu are nevoie de focus.
+- `"isolate": "home"` oferă aplicației un director personal privat prin `HOME`, `XDG_*` și `CFFIXED_USER_HOME`, astfel încât copii din două spații pot rula în paralel. `NSUserDefaults` nu este izolat, așa că preferințele Cocoa și `shared_preferences` din Flutter rămân comune între copii.
+- `isolate` se aplică doar procesului lansat. Un lansator de toolchain precum `flutter run` are nevoie de directorul personal real, așa că asociază `isolate` cu un binar compilat. Dacă aplicația are o setare proprie, cum e `--user-data-dir`, preferă-o.
+- Agenții controlează fereastra cu `app_use`, care ajunge doar la arborele de procese al acestui mediu. Un agent vede fereastra, nu desktopul. Lansările agenților trec prin politica de acțiuni și implicit cer confirmare, iar intrarea agentului se oprește cât timp o persoană are controlul.
+- `"input": "background"` (implicit) trimite evenimente către proces. `"foreground"` activează fereastra și preia cursorul.
+
+## Sarcinile de worktree înlocuiesc scripturile de depozit
+
+Sarcinile `provision` și `archive` înlocuiesc vechile scripturi de configurare și arhivare per depozit. **Scripturile existente au fost migrate automat:** fiecare depozit cu scripturi are acum o definiție cu numele lui, cu sarcinile `setup` și `archive` care păstrează același text de script. Pictograma de pe rândul unui depozit din **Setări → Spațiu de lucru → Depozite** o deschide. Rulările anterioare rămân ca istoric doar pentru citire.
+
+Aceste sarcini urmează worktree-ul, nu mediul, așa că rulează în spații unde nimeni nu apasă **Pornește**:
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| Rulează | La crearea worktree-ului rolului, în orice spațiu | Chiar înainte de distrugerea acelui worktree |
+| La eșec | Provizionarea eșuează și worktree-ul este distrus | Înregistrat, nu blochează niciodată ștergerea |
+| Timp limită implicit | 5 minute | 2 minute |
+| Vede | `CC_WORKSPACE_PATH`, `CC_ROOT_PATH`, `CC_SPACE_*`, `CC_REPO_NAME` | La fel |
+
+Un depozit fără stack are nevoie doar de o definiție cu sarcinile lui. Neavând ce porni, nu necesită rol ancoră:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- Nu există încă un mediu, așa că aceste sarcini nu pot folosi `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` sau `enabledWhen` și nu primesc `env` din definiție.
+- O singură definiție poate avea sarcini `provision` și `archive` pentru un depozit. Celelalte îl pot lega în continuare pentru orice altceva.
+- `"when": ["provision", "change"]` reinstalează și când se schimbă un fișier de blocare, lucru pe care scripturile de configurare nu l-au făcut niciodată.
+- O sarcină rulează pentru worktree-ul rolului ei `cwd`, așa că o definiție cu mai multe depozite poate configura fiecare depozit separat.
+- O rulare de test setează `CC_SCRIPT_TEST=1`. O reîncercare pornește de la un worktree curat, așa că scrie sarcini care suportă o nouă rulare.
+
+## Agenți
+
+Agenții nu primesc niciodată socketul Docker. Într-un spațiu cu o definiție eligibilă, o rulare primește `cc-env` în `PATH`. Spațiul vine din rulare, așa că un agent poate acționa doar asupra propriului mediu, iar fiecare comandă trece prin politica de acțiuni.
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+Cu o componentă compose, un shim `docker` permite și `docker compose` cu `ps`, `logs`, `exec`, `port`, `restart` și `top`. Înainte de verb nu pot exista flaguri, `logs` nu poate urmări ieșirea, iar `exec` acceptă doar `-T`. Orice altceva se încheie cu codul 5 și „not available in Control Center agent runs”.
+
+Un depozit ale cărui skill-uri apelează propriul instrument poate continua așa. Un bloc `agentPassthrough` pe o componentă `cli` declară ce comenzi pot rula agenții:
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+`maps` numește operația a cărei politică se aplică. `positionalName` forțează acel argument la mediul acestui spațiu, `nameFilter` filtrează ieșirea JSON pentru el, iar fiecare valoare `pathFlags` trebuie să se rezolve în interiorul worktree-urilor rulării. O comandă care nu se potrivește cu nicio regulă se încheie cu codul 5.
+
+Aceleași operații există ca instrumente: `environment_status`, `environment_up`, `environment_down`, `environment_reset`, `environment_destroy`, `environment_restart`, `environment_exec`, `environment_logs`, `environment_run_task`, `environment_launch_app` și `environment_stop_app`. Agenții din sandbox ajung direct la porturile lor și la numele de gazdă ale mediului prin proxy-ul rulării, așa că spune-le să citească punctele finale din `environment_status` în loc să ghicească un URL.
+
+## Pull request-uri din fork-uri
+
+Codul unui PR dintr-un fork nu este de încredere, iar la plasarea pe gazdă rulează ca utilizatorul de sistem al serverului. `policy.forkPrs` decide ce se întâmplă:
+
+| Valoare | Efect | Implicit pentru |
+| --- | --- | --- |
+| `rig` | Fișierul compose rulează într-o VM, fără întrebare | Definițiile doar cu componente `compose` și `task` |
+| `approval` | Fiecare pornire necesită un administrator | Toate celelalte definiții |
+| `deny` | Refuzat | Niciuna |
+
+- `seedFiles` nu sunt niciodată copiate pentru un fork, pentru că de obicei sunt secrete. Un fișier compose care montează unul raportează fișierul lipsă pe nume.
+- Sarcinile `provision` și `archive` sunt omise, cu excepția cazului în care politica este `rig`, când rulează în VM.
+- La plasarea pe gazdă, `privileged`, spațiile de nume ale gazdei, montarea socketului Docker, `devices` și montările din afara worktree-urilor spațiului sunt refuzate pe un fork. În spațiile de încredere generează doar un avertisment.
+
+## Plasare în rig
+
+`"placement": "rig"` rulează componentele `compose` și `task` într-o microVM dedicată. Definițiile cu componente `process`, `cli` sau `app` nu sunt eligibile. Fișierul compose rulează nemodificat, fără socketul Docker al gazdei și fără credențialele operatorului, iar accesul la rețea este limitat la registrele de care au nevoie imaginile. Worktree-ul este montat direct.
+
+- **Oaspeți arm64.** Oaspeții sunt arm64 pe Apple Silicon, așa că imaginile doar amd64 nu rulează.
+- **Registrele private sunt refuzate.** Oaspeții nu au credențiale de registru, așa că o imagine dintr-un registru din afara celor publice cunoscute este refuzată înainte de pornirea VM. Un depozit privat dintr-un registru public eșuează când oaspetele îl descarcă.
+- **16 GiB de stocare.** Toate imaginile și volumele stack-ului împart un disc de 16 GiB, care nu poate fi mărit.
+- **Prima pornire este lentă.** Straturile de imagine sunt per VM, așa că prima pornire descarcă totul. Un rig oprit își păstrează discul.
+- **Imaginile de bază trebuie să poată fi citite.** Un Dockerfile care își numește imaginea de bază printr-o variabilă nu poate fi planificat, pentru că accesul la rețea se fixează la pornire.
+- **Durată de viață.** `policy.rigTtlHours` încheie VM-ul, implicit după 24 de ore.
+
+## Contractul de stare pentru autorii de instrumente
+
+O componentă `cli` fără `statusMap` așteaptă contractul nativ, `cc-env/1`. Verbul `status` tipărește acest obiect pe stdout:
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- `state` este `ready`, `starting`, `stopped`, `failed` sau `missing`. `missing` duce la `create`, iar `stopped` și `failed` duc la `start`. Raportează `missing` cu codul de ieșire 0: un `status` eșuat contează ca `failed`.
+- Este necesar doar `state`. Câmpurile necunoscute sunt ignorate, iar ieșirea care nu poate fi analizată apare ca degradată, cu textul brut ca detaliu.
+- Un URL trebuie să fie loopback, `*.localhost` sau sub `routing.domain`, altfel este eliminat.
+- `needsRecreate: true` afișează **Recreează**, care elimină datele. Control Center nu acționează niciodată singur pe baza acestui câmp.
+- Verbul `list` tipărește un tablou JSON de nume, sau de obiecte cu un `name`.
+
+Codurile de ieșire se aplică tuturor verbelor:
+
+| Cod | Semnificație |
+| --- | --- |
+| 0 | OK |
+| 3 | Este necesară configurarea gazdei. **Rulează în terminal** deschide un terminal de spațiu cu comanda scrisă, dar nerulată, apoi **Reîncearcă** încearcă din nou. Control Center nu rulează niciodată `sudo` |
+| 4 | Este necesară autentificarea |
+| 5 | Dependență indisponibilă |
+| Altul | Eșec |
+
+Progresul merge pe stderr ca JSON delimitat prin linii noi:
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+Liniile `step` apar ca listă de pași în timp real, iar liniile `note` sunt afișate ca atare. O ultimă linie de tip `error` devine o eroare structurată, cu `command` oferit pentru copiere. Fără ea, Control Center arată ultimele 20 de linii din stderr. Tot ce nu este JSON este jurnal obișnuit.
+
+## Conținut asociat
+
+- [Folosește spațiile](/ro-RO/manual/ghiduri-practice/spatii/)
+- [Redirecționează porturi dintr-un terminal](/ro-RO/manual/ghiduri-practice/redirectionare-porturi/)
+- [Oferă unui agent o mașină pe care să testeze](/ro-RO/manual/ghiduri-practice/foloseste-statii/)
+- [Configurează guardrail-urile](/ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri/)

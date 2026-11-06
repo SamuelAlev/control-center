@@ -33,6 +33,7 @@ String _fallbackLabel(String kind) => switch (kind) {
   PrTabKinds.sourceControl => 'Source control',
   PrTabKinds.chat => 'Chat',
   PrTabKinds.actions => 'Actions',
+  PrTabKinds.environment => 'Environment',
   _ => 'Review',
 };
 
@@ -42,6 +43,7 @@ String _label(String kind, AppLocalizations l10n) => switch (kind) {
   PrTabKinds.sourceControl => l10n.sourceControl,
   PrTabKinds.chat => l10n.chat,
   PrTabKinds.actions => l10n.actions,
+  PrTabKinds.environment => l10n.environmentSectionTitle,
   _ => l10n.review,
 };
 

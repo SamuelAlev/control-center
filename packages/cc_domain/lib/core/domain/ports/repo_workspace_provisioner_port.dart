@@ -20,7 +20,7 @@ abstract interface class RepoWorkspaceProvisionerPort {
   /// Branch from [ticketKey]/[ticketTitle] else [spaceScratchBranch]; fetches
   /// latest base when remote+token available. [prHeadRef] checks out that ref
   /// on [prBranch] for [prHeadRepoFullName], pristine. [repoAllowlist] null →
-  /// all linked repos. [onRepoProvision]/[onRepoSetupScript] fire on fresh
+  /// all linked repos. [onRepoProvision]/[onRepoProvisionTasks] fire on fresh
   /// materialize only; must not throw. [cancel] kills git and stops; still
   /// returns [fallbackDir] — use [isSpaceProvisioningCancelled].
   Future<String> ensureSpaceWorkspace({
@@ -39,7 +39,7 @@ abstract interface class RepoWorkspaceProvisionerPort {
     String? prBranch,
     Set<String>? repoAllowlist,
     void Function(String repoName, {required bool prHead})? onRepoProvision,
-    void Function(String repoName)? onRepoSetupScript,
+    void Function(String repoName)? onRepoProvisionTasks,
     CancellationToken? cancel,
   });
 

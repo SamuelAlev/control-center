@@ -2,18 +2,28 @@
 //
 //   fvm dart run tool/rig_smoke.dart "<dataDir>" [exec|browser|firefox|webkit|computer]
 //   fvm dart run tool/rig_smoke.dart "<dataDir>" ios <App.app> <bundle-id>
+//   fvm dart run tool/rig_smoke.dart "<dataDir>" environment <worktree>
+//   fvm dart run tool/rig_smoke.dart "<dataDir>" environment-host <worktree>
 //
 // Exec: boot + machine exec + allowlist pass/fail. Browser: engine image +
-// automation verbs. Computer: QEMU image + guest agent + frames.
+// automation verbs. Computer: QEMU image + guest agent + frames. Environment:
+// an unmodified compose stack on virtio-net, proving the port mux and the
+// reverse tunnel there; <worktree> must hold a compose.yaml publishing 18080.
+// Environment-host: the same through RigEnvironmentHost and a real RigService,
+// and its compose.yaml must add a one-shot service.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
+import 'package:cc_domain/features/rigs/domain/entities/rig.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
+import 'package:cc_domain/features/rigs/domain/repositories/rig_repository.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/ios_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_action_result.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/rig_image_settings.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_infra/cc_infra.dart';
@@ -22,8 +32,8 @@ Future<void> main(List<String> args) async {
   if (args.isEmpty) {
     stderr.writeln(
       'usage: dart run tool/rig_smoke.dart <dataDir> '
-      '[exec|browser|firefox|webkit|computer|ios] '
-      '[path-to-built.app bundle-id]',
+      '[exec|browser|firefox|webkit|computer|ios|environment] '
+      '[path-to-built.app bundle-id | worktree]',
     );
     exit(2);
   }
@@ -40,6 +50,24 @@ Future<void> main(List<String> args) async {
       await _smokeBrowser(dataDir, RigBrowserEngine.webkit);
     case 'computer':
       await _smokeDesktop(dataDir);
+    case 'environment':
+      if (args.length != 3) {
+        stderr.writeln(
+          'usage: dart run tool/rig_smoke.dart <dataDir> environment '
+          '<worktree>',
+        );
+        exit(2);
+      }
+      await _smokeEnvironment(dataDir, args[2]);
+    case 'environment-host':
+      if (args.length != 3) {
+        stderr.writeln(
+          'usage: dart run tool/rig_smoke.dart <dataDir> environment-host '
+          '<worktree>',
+        );
+        exit(2);
+      }
+      await _smokeEnvironmentHost(dataDir, args[2]);
     case 'ios':
       if (args.length != 4) {
         stderr.writeln(
@@ -52,6 +80,477 @@ Future<void> main(List<String> args) async {
     default:
       stderr.writeln('unsupported smoke mode: $mode');
       exit(2);
+  }
+}
+
+/// The compose stack's published port, fixed by the file rather than by us.
+const int _environmentStackPort = 18080;
+
+/// Boots an environment rig twice, the second time from the warmed pack, and
+/// proves each thing rig placement depends on.
+///
+/// Every check prints PASS or FAIL. Nothing here is asserted from memory: the
+/// mux and tunnels were only ever measured under TSI, so they run for real.
+Future<void> _smokeEnvironment(String dataDir, String worktree) async {
+  final backend = SmolvmEnclosureBackend(dataDir: dataDir);
+  final probe = await backend.probe();
+  if (!probe.available || !probe.surfaces.contains(RigSurface.environment)) {
+    stderr.writeln('cannot smoke-test: no environment backend here');
+    exit(1);
+  }
+  final binary = backend.resolvedBinary!;
+  final model = {
+    'services': {
+      'web': {'image': 'nginx:1.27-alpine'},
+      'cache': {'image': 'redis:7-alpine'},
+    },
+  };
+  final egress = environmentRigEgressHosts(composeModelImages(model));
+  stdout.writeln('egress from images: $egress');
+
+  var failures = 0;
+  void check(String name, {required bool ok, String detail = ''}) {
+    stdout.writeln(
+      '${ok ? 'PASS' : 'FAIL'} $name${detail.isEmpty ? '' : ': $detail'}',
+    );
+    if (!ok) {
+      failures++;
+    }
+  }
+
+  try {
+    Future<void> boot(String label) async {
+      final rigId =
+          'envsmoke${DateTime.now().millisecondsSinceEpoch % 1000000}';
+      final spec = RigSpec.environment(
+        conversationId: 'smoke',
+        environmentId: 'acme',
+        worktreePath: worktree,
+        egressAllowlist: egress,
+      );
+      final sw = Stopwatch()..start();
+      stdout.writeln('--- $label: launching $rigId');
+      final machine = await backend.launch(
+        rigId: rigId,
+        spec: spec,
+        onProgress: (step) =>
+            stdout.writeln('  [${sw.elapsed.inSeconds}s] $step'),
+      );
+      stdout.writeln('booted in ${sw.elapsed.inSeconds}s as ${machine.name}');
+      try {
+        await _checkEnvironment(
+          backend,
+          binary,
+          machine,
+          spec,
+          worktree,
+          check,
+        );
+      } finally {
+        await backend.destroy(machine);
+      }
+    }
+
+    await boot('cold boot');
+    // The pack builds in the background after a first boot. Wait for it here
+    // so the second boot proves the path every later rig takes.
+    final pack = File(
+      backend.packPathFor(
+        kSmolvmEnvironmentImage,
+        variant: kSmolvmEnvironmentPackVariant,
+      ),
+    );
+    final deadline = DateTime.now().add(const Duration(minutes: 6));
+    while (!pack.existsSync() && DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(seconds: 3));
+    }
+    check('warm pack was built', ok: pack.existsSync());
+    if (pack.existsSync()) {
+      await boot('boot from pack');
+    }
+  } finally {
+    final swept = await backend.sweepOrphanedRuntimes();
+    stdout.writeln('swept $swept leftover machine(s)');
+  }
+  stdout.writeln(failures == 0 ? 'ALL PASSED' : '$failures CHECK(S) FAILED');
+  exit(failures == 0 ? 0 : 1);
+}
+
+/// Rows in memory, so the host can run through a real [RigService] with no
+/// database. Only what the service calls on this path is implemented.
+class _MemoryRigs implements RigRepository {
+  final Map<String, Rig> rows = {};
+
+  @override
+  Future<void> save(String workspaceId, Rig rig) async => rows[rig.id] = rig;
+
+  @override
+  Future<Rig?> getById(String workspaceId, String rigId) async => rows[rigId];
+
+  @override
+  Future<List<Rig>> list(
+    String workspaceId, {
+    bool includeClosed = true,
+  }) async => rows.values.toList();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Runs [RigEnvironmentHost] for real: what the environment service calls.
+Future<void> _smokeEnvironmentHost(String dataDir, String worktree) async {
+  final backend = SmolvmEnclosureBackend(dataDir: dataDir);
+  await backend.probe();
+  final images = RigImageStore(dataDir: dataDir);
+  final rigs = RigService(
+    repository: _MemoryRigs(),
+    qemu: QemuEnclosureBackend(dataDir: dataDir, images: images),
+    smolvm: backend,
+    images: images,
+    reapInterval: const Duration(hours: 1),
+  );
+  final private = Directory.systemTemp.createTempSync('cc_env_private');
+  final host = RigEnvironmentHost(
+    rigs,
+    spaceWorktrees: (_, _) async => [worktree, private.path],
+  );
+  final definition = EnvironmentDefinition.fromJson(const {
+    'id': 'smoke',
+    'name': 'Acme',
+    'repos': {
+      'app': {'repoId': 'repo-1', 'anchor': true},
+    },
+    'components': [
+      {
+        'kind': 'compose',
+        'id': 'stack',
+        'http': ['web'],
+      },
+    ],
+  });
+  var failures = 0;
+  void check(String name, {required bool ok, String detail = ''}) {
+    stdout.writeln(
+      '${ok ? 'PASS' : 'FAIL'} $name${detail.isEmpty ? '' : ': $detail'}',
+    );
+    if (!ok) {
+      failures++;
+    }
+  }
+
+  Future<EnvironmentRigInstance> start() => host.start(
+    workspaceId: 'smoke',
+    spaceId: 'space-1',
+    environmentId: 'env-1',
+    definition: definition,
+    worktrees: {'app': worktree},
+    environment: const {'ACME_MODE': 'smoke'},
+  );
+
+  Future<void> proveEndpoint(String when, EnvironmentRigInstance rig) async {
+    final web = rig.endpoints.where((e) => e.role == 'web');
+    check('the stack publishes a web endpoint $when', ok: web.isNotEmpty);
+    if (web.isNotEmpty) {
+      final body = await _httpGet(web.first.hostPort!);
+      check(
+        'that endpoint answers from the host $when',
+        ok: body.contains('nginx'),
+      );
+    }
+  }
+
+  try {
+    final sw = Stopwatch()..start();
+    final rig = await start();
+    stdout.writeln('started in ${sw.elapsed.inSeconds}s as ${rig.rigId}');
+    check('a stack with a one-shot service comes up', ok: true);
+    await proveEndpoint('on first start', rig);
+    final task = await host.exec(
+      workspaceId: 'smoke',
+      spaceId: 'space-1',
+      rigId: rig.rigId,
+      argv: const ['sh', '-c', 'test -f compose.yaml && echo "\$ACME_MODE"'],
+      environment: const {'ACME_MODE': 'task'},
+    );
+    check(
+      'a task runs in the mounted worktree with its environment',
+      ok: task.stdout.trim() == 'task',
+      detail: task.stderr.trim(),
+    );
+    final denied = await host.exec(
+      workspaceId: 'smoke',
+      spaceId: 'space-1',
+      argv: const [
+        'wget',
+        '-q',
+        '-O',
+        '/dev/null',
+        '--timeout=6',
+        'https://example.com',
+      ],
+    );
+    check('a task cannot leave the allowlist', ok: denied.exitCode != 0);
+
+    await host.stop(workspaceId: 'smoke', rigId: rig.rigId);
+    sw.reset();
+    final again = await start();
+    stdout.writeln('resumed in ${sw.elapsed.inSeconds}s');
+    check('start resumes the same machine', ok: again.rigId == rig.rigId);
+    await proveEndpoint('after a resume', again);
+
+    await host.destroy(workspaceId: 'smoke', rigId: rig.rigId);
+    final left = rigs.environmentRigFor('smoke', 'space-1', 'env-1');
+    check('destroy removes the machine', ok: left == null);
+    final after = await Process.run(backend.resolvedBinary!, [
+      'machine',
+      'ls',
+      '--json',
+    ]);
+    check(
+      'nothing is left in the store',
+      ok: !'${after.stdout}'.contains('ccrig-${rig.rigId}'),
+    );
+
+    File('${private.path}/compose.yaml').writeAsStringSync(
+      'services:\n  web:\n    image: registry.acme.test/x:1\n',
+    );
+    try {
+      await host.start(
+        workspaceId: 'smoke',
+        spaceId: 'space-1',
+        environmentId: 'env-2',
+        definition: definition,
+        worktrees: {'app': private.path},
+        environment: const {},
+      );
+      check('a private registry is refused', ok: false);
+    } on RigPrivateRegistryException catch (e) {
+      check('a private registry is refused', ok: true, detail: e.registry);
+    } finally {
+      private.deleteSync(recursive: true);
+    }
+  } on Object catch (e) {
+    check('the run finished', ok: false, detail: '$e');
+  } finally {
+    await rigs.disposeAll();
+    final swept = await backend.sweepOrphanedRuntimes();
+    stdout.writeln('swept $swept leftover machine(s)');
+  }
+  stdout.writeln(failures == 0 ? 'ALL PASSED' : '$failures CHECK(S) FAILED');
+  exit(failures == 0 ? 0 : 1);
+}
+
+/// Runs every check against one booted environment machine.
+Future<void> _checkEnvironment(
+  SmolvmEnclosureBackend backend,
+  String binary,
+  SmolvmMachine machine,
+  RigSpec spec,
+  String worktree,
+  void Function(String name, {required bool ok, String detail}) check,
+) async {
+  Future<ProcessResult> sh(String script, {int seconds = 120}) => backend.exec(
+    machine,
+    ['sh', '-c', script],
+    workdir: kSmolvmEnvironmentWorkdir,
+    timeout: Duration(seconds: seconds),
+  );
+
+  // The mux, through the real service: discovery, then the host-side bridge.
+  Future<void> proveMux(String when) async {
+    final ports = RigPortsService(
+      runInGuest: (name, command) => Process.run(binary, [
+        'machine',
+        'exec',
+        '--name',
+        name,
+        '--timeout',
+        '20s',
+        '--',
+        'sh',
+        '-c',
+        command,
+      ]),
+      startInGuest: (name, argv) => Process.start(binary, [
+        'machine',
+        'exec',
+        '--name',
+        name,
+        '-i',
+        '--',
+        ...argv,
+      ]),
+      pollInterval: const Duration(seconds: 1),
+    );
+    try {
+      ports.attachExec(
+        rigId: machine.rigId,
+        workspaceId: 'smoke',
+        machineName: machine.name,
+        muxHostPort: machine.portMuxHostPort!,
+      );
+      RigPortForward? forward;
+      final deadline = DateTime.now().add(const Duration(seconds: 40));
+      while (forward == null && DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(seconds: 1));
+        final snapshot = ports.snapshotFor('smoke', machine.rigId);
+        for (final port in snapshot?.ports ?? const <RigPortForward>[]) {
+          if (port.guestPort == _environmentStackPort) {
+            forward = port;
+          }
+        }
+      }
+      check('discovery sees the published port $when', ok: forward != null);
+      if (forward != null) {
+        final body = await _httpGet(forward.hostPort);
+        check(
+          'port mux reaches the container from the host $when',
+          ok: body.contains('nginx'),
+          detail: 'via 127.0.0.1:${forward.hostPort}',
+        );
+      }
+    } finally {
+      await ports.dispose();
+    }
+  }
+
+  final up = await sh('docker compose up -d --wait', seconds: 300);
+  check(
+    'unmodified compose file comes up',
+    ok: up.exitCode == 0,
+    detail: up.exitCode == 0 ? '' : '${up.stderr}',
+  );
+  final named = await sh('docker ps --format "{{.Names}}"');
+  check(
+    'fixed container_name kept',
+    ok: '${named.stdout}'.contains('acme-web'),
+    detail: '${named.stdout}'.trim().replaceAll('\n', ' '),
+  );
+  final dns = await sh('docker exec acme-web ping -c1 -W2 cache');
+  check('service DNS between containers', ok: dns.exitCode == 0);
+
+  final marker = 'host-${DateTime.now().microsecondsSinceEpoch}';
+  final hostFile = File('$worktree/smoke-marker.txt')
+    ..writeAsStringSync(marker);
+  final seen = await sh('cat smoke-marker.txt');
+  check(
+    'live mount: a host edit is visible at once',
+    ok: '${seen.stdout}'.trim() == marker,
+  );
+  final gitConfig = File('$worktree/.git/config');
+  final gitBefore = gitConfig.existsSync() ? gitConfig.readAsStringSync() : '';
+  final wrote = await sh(
+    'echo guest > smoke-guest.txt && '
+    'echo "[core] fsmonitor = /tmp/evil" >> .git/config && echo ok',
+  );
+  check(
+    'the guest can write its view of the worktree',
+    ok: '${wrote.stdout}'.contains('ok'),
+  );
+  check(
+    'no guest write reaches the host worktree',
+    ok: !File('$worktree/smoke-guest.txt').existsSync(),
+  );
+  check(
+    'no guest write reaches the host .git',
+    ok:
+        (gitConfig.existsSync() ? gitConfig.readAsStringSync() : '') ==
+        gitBefore,
+  );
+  final escape = await sh(
+    'umount $kSmolvmEnvironmentWorkdir; '
+    'echo x > ${smolvmEnvironmentLowerDir(kSmolvmEnvironmentWorkdir)}/esc.txt',
+  );
+  check(
+    'guest root cannot write the host after unmounting the overlay',
+    ok: escape.exitCode != 0 && !File('$worktree/esc.txt').existsSync(),
+  );
+  await sh(
+    smolvmEnvironmentOverlayScript(environmentRigMountTargets(spec).keys),
+  );
+  final bind = await sh(
+    'docker run --rm -v $kSmolvmEnvironmentWorkdir:/w redis:7-alpine '
+    'sh -c "echo c > /w/smoke-container.txt && echo ok"',
+  );
+  check(
+    'a container bind of the worktree is writable, and stays in the guest',
+    ok:
+        '${bind.stdout}'.contains('ok') &&
+        !File('$worktree/smoke-container.txt').existsSync(),
+  );
+  hostFile.deleteSync();
+
+  final guestDenied = await sh(
+    'wget -q -O /dev/null --timeout=6 https://example.com',
+  );
+  check('egress denied from the guest', ok: guestDenied.exitCode != 0);
+  final containerDenied = await sh(
+    'docker exec acme-web wget -q -O /dev/null --timeout=6 https://example.com',
+  );
+  check('egress denied from a container', ok: containerDenied.exitCode != 0);
+
+  await proveMux('on virtio-net');
+
+  // The reverse tunnel: a guest dialling its own loopback lands on the host.
+  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+  server.listen((request) async {
+    request.response.write('reverse-tunnel-ok');
+    await request.response.close();
+  });
+  const guestPort = 17777;
+  final tunnel = GuestReverseTunnel(
+    guestPort: guestPort,
+    slots: 1,
+    startChannel: (argv) => Process.start(binary, [
+      'machine',
+      'exec',
+      '--name',
+      machine.name,
+      '-i',
+      '--',
+      ...argv,
+    ]),
+    dialTarget: () => Socket.connect(InternetAddress.loopbackIPv4, server.port),
+  )..start();
+  try {
+    await Future<void>.delayed(const Duration(seconds: 3));
+    final reached = await sh(
+      'wget -q -O - --timeout=8 http://127.0.0.1:$guestPort/',
+    );
+    check(
+      'reverse tunnel reaches the host from the guest on virtio-net',
+      ok: '${reached.stdout}'.contains('reverse-tunnel-ok'),
+      detail: '${reached.stderr}'.trim(),
+    );
+  } finally {
+    tunnel.stop();
+    await server.close(force: true);
+  }
+
+  // A stop keeps the disk, so images survive it.
+  await sh('docker compose down');
+  await backend.stopKeepingDisks(machine);
+  await backend.resume(machine, spec: spec);
+  final images = await sh('docker images --format "{{.Repository}}"');
+  check(
+    'a stopped machine keeps its images',
+    ok: '${images.stdout}'.contains('nginx'),
+  );
+  final again = await sh('docker compose up -d --wait', seconds: 120);
+  check('the stack comes back after a resume', ok: again.exitCode == 0);
+  await proveMux('after a resume');
+}
+
+Future<String> _httpGet(int port) async {
+  final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
+  try {
+    final request = await client.get('127.0.0.1', port, '/');
+    final response = await request.close();
+    return await response.transform(utf8.decoder).join();
+  } on Object catch (e) {
+    return 'request failed: $e';
+  } finally {
+    client.close(force: true);
   }
 }
 

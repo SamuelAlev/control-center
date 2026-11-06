@@ -4,18 +4,20 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/entities/isolated_repo.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/ports/repo_isolation_port.dart';
-import 'package:cc_domain/core/domain/ports/repo_script_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
+import 'package:cc_domain/core/domain/ports/space_provisioning_log_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/services/slugify.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
+import 'package:cc_domain/features/environments/domain/ports/worktree_task_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
 import 'package:cc_domain/features/settings/domain/services/branch_template_resolver.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/git/working_tree_capture.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
+import 'package:cc_infra/src/repos/space_provisioning_log.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
@@ -78,8 +80,9 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     required this._branchTemplate,
     this._spaceExists,
     this._spaceCheckoutScope,
-    this._scripts,
+    this._worktreeTasks,
     this._stacks,
+    this._provisioningLog,
   });
 
   final WorkspaceFilesystemPort _filesystem;
@@ -88,14 +91,20 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
   final WorkspaceRepository _workspaces;
   final Future<String?> Function() _githubToken;
 
-  /// Runs the repos' configured lifecycle scripts (setup after a fresh
-  /// worktree is materialized, archive before one is destroyed). Optional so
-  /// hosts without the script feature (and tests) provision exactly as before.
-  final RepoScriptPort? _scripts;
+  /// Runs `provision` tasks after a fresh worktree is materialized and
+  /// `archive` tasks before one is destroyed, and tears a space's environment
+  /// down first. Optional so hosts without environments (and tests) provision
+  /// exactly as before.
+  final WorktreeTaskPort? _worktreeTasks;
 
   /// Stack layers whose branches must be deleted with the worktree on the
   /// Windows `git worktree` backend. Rift copies die with the directory.
   final SpaceStackRepository? _stacks;
+
+  /// Where a materializing worktree narrates itself. Written here rather than
+  /// by a caller because a space has two provisioning paths, the background
+  /// run and the one a dispatch makes inline, and they share this output.
+  final SpaceProvisioningLogPort? _provisioningLog;
 
   /// Resolves the branch-name template for a workspace.
   ///
@@ -191,7 +200,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     String? prBranch,
     Set<String>? repoAllowlist,
     void Function(String repoName, {required bool prHead})? onRepoProvision,
-    void Function(String repoName)? onRepoSetupScript,
+    void Function(String repoName)? onRepoProvisionTasks,
     CancellationToken? cancel,
   }) async {
     if (workspaceId.isEmpty || spaceId.isEmpty) {
@@ -282,7 +291,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
             // same question.
             baseRef: isPrRepo ? null : repoBranches[repo.id],
             onRepoProvision: onRepoProvision,
-            onRepoSetupScript: onRepoSetupScript,
+            onRepoProvisionTasks: onRepoProvisionTasks,
             cancel: cancelToken,
           );
         } on CancelledException {
@@ -290,6 +299,13 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
           rethrow;
         } catch (e, st) {
           CcInfraLog.error('provision failed for repo ${repo.id}: $e', e, st);
+          // The first line only: what follows is output already in this log.
+          _provisioningLog?.write(
+            workspaceId,
+            spaceId,
+            'Could not prepare ${_displayName(repo)}: '
+            '${'$e'.split('\n').first}',
+          );
         }
       }
 
@@ -311,6 +327,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       return fallbackDir;
     } catch (e, st) {
       CcInfraLog.error('ensureSpaceWorkspace failed: $e', e, st);
+      _provisioningLog?.write(workspaceId, spaceId, 'Preparation failed: $e');
       return fallbackDir;
     } finally {
       // Drop the shared source once the last run using it is done, so a space
@@ -377,7 +394,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     String? prBranch,
     String? baseRef,
     void Function(String repoName, {required bool prHead})? onRepoProvision,
-    void Function(String repoName)? onRepoSetupScript,
+    void Function(String repoName)? onRepoProvisionTasks,
     CancellationToken? cancel,
   }) async {
     final lockKey = '$workspaceId/$spaceId/${repo.id}';
@@ -407,7 +424,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
         prBranch: prBranch,
         baseRef: baseRef,
         onRepoProvision: onRepoProvision,
-        onRepoSetupScript: onRepoSetupScript,
+        onRepoProvisionTasks: onRepoProvisionTasks,
         cancel: cancel,
       );
     } finally {
@@ -432,7 +449,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     String? prBranch,
     String? baseRef,
     void Function(String repoName, {required bool prHead})? onRepoProvision,
-    void Function(String repoName)? onRepoSetupScript,
+    void Function(String repoName)? onRepoProvisionTasks,
     CancellationToken? cancel,
   }) async {
     final existing = await _registry.forUnitRepo(workspaceId, spaceId, repo.id);
@@ -458,10 +475,8 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       await _registry.deleteById(existing.workspaceId, existing.id);
     }
     // Past the reuse check — a worktree is actually being materialized.
-    onRepoProvision?.call(
-      repo.remoteName.isNotEmpty ? repo.remoteName : repo.name,
-      prHead: headRef != null,
-    );
+    final repoName = _displayName(repo);
+    onRepoProvision?.call(repoName, prHead: headRef != null);
 
     final branch = (headRef != null && (prBranch?.isNotEmpty ?? false))
         ? prBranch!
@@ -472,7 +487,6 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
           ).resolve(type: branchType, ticketKey: ticketKey, title: ticketTitle)
         : spaceScratchBranch(spaceId);
 
-    final repoName = repo.remoteName.isNotEmpty ? repo.remoteName : repo.name;
     final name = slugify(repoName).isEmpty ? repo.id : slugify(repoName);
 
     final authUrl = (repo.hasForgeRemote && token != null && token.isNotEmpty)
@@ -495,6 +509,11 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       branch: branch,
     );
 
+    void say(String line) =>
+        _provisioningLog?.write(workspaceId, spaceId, line);
+    say('Preparing $repoName on $branch');
+    final elapsed = Stopwatch()..start();
+
     final RepoIsolationResult result;
     try {
       result = await _isolation.provision(
@@ -516,6 +535,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
         // view. Agent/ticket worktrees stay non-pristine (their scratch survives).
         pristine: headRef != null,
         cancel: cancel,
+        onOutput: _provisioningLog == null ? null : say,
       );
     } on Object {
       // An interrupted (or failed) provision can leave a half-materialized copy
@@ -529,6 +549,8 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       );
       rethrow;
     }
+
+    say('$repoName checked out in ${provisioningElapsed(elapsed.elapsed)}');
 
     final entryId = _uuid.v4();
     await _registry.upsert(
@@ -546,41 +568,50 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       ),
     );
 
-    // The worktree is registered — now the repo's configured setup script
-    // (if any) makes it usable (install deps, generate files). Runs only on a
+    // The worktree is registered — now the repo's `provision` tasks (if any)
+    // make it usable (install deps, generate files). Runs only on a
     // FRESH provision: the reuse path returned above, so a re-dispatch never
     // re-pays an install. A failure tears the unit back down and rethrows so
     // the space's post-hoc verification reports `failed`, exactly like a
     // failed clone would.
-    final scripts = _scripts;
-    if (scripts != null) {
+    final tasks = _worktreeTasks;
+    if (tasks != null) {
       try {
-        if (!await scripts.hasSetupScript(workspaceId, repo.id)) {
+        if (!await tasks.hasProvisionTasks(workspaceId, repo.id)) {
           return;
         }
       } on Object catch (e) {
-        // A lookup failure must not read as "no script" and skip it silently,
+        // A lookup failure must not read as "no tasks" and skip them silently,
         // nor as a provisioning failure — log and let the run itself decide.
         CcInfraLog.warning(
-          'setup script lookup failed for repo ${repo.id}: $e',
+          'provision task lookup failed for repo ${repo.id}: $e',
         );
       }
       cancel?.throwIfCancelled();
-      onRepoSetupScript?.call(
-        repo.remoteName.isNotEmpty ? repo.remoteName : repo.name,
-      );
+      onRepoProvisionTasks?.call(repoName);
+      say('Running provision tasks for $repoName');
+      final taskElapsed = Stopwatch()..start();
       try {
-        await scripts.runSetup(
-          RepoScriptContext(
+        await tasks.runProvision(
+          WorktreeTaskContext(
             workspaceId: workspaceId,
             spaceId: spaceId,
             repoId: repo.id,
             worktreePath: result.path,
             sourcePath: repo.path,
           ),
+          onOutput: _provisioningLog == null ? null : say,
+        );
+        say(
+          'Provision tasks for $repoName finished in '
+          '${provisioningElapsed(taskElapsed.elapsed)}',
         );
       } on Object catch (e, st) {
-        CcInfraLog.error('setup script failed for repo ${repo.id}: $e', e, st);
+        CcInfraLog.error(
+          'provision task failed for repo ${repo.id}: $e',
+          e,
+          st,
+        );
         try {
           await _isolation.destroy(
             path: result.path,
@@ -599,6 +630,10 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       }
     }
   }
+
+  /// The name a repo goes by in progress reports.
+  static String _displayName(Repo repo) =>
+      repo.remoteName.isNotEmpty ? repo.remoteName : repo.name;
 
   /// Best-effort teardown of a worktree that was never registered — before a
   /// provision, so an orphaned copy cannot block it, and after one that failed
@@ -651,7 +686,10 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       return;
     }
     final rows = await _registry.forSpace(workspaceId, spaceId);
-    await _destroyAll([
+    // Only part of the space goes: its environment stays and reconciles
+    // against the repos that are left, which is a degraded state, not data
+    // loss.
+    await _destroyAll(wholeSpace: false, [
       for (final row in rows)
         if (!keepRepoIds.contains(row.repoId)) row,
     ]);
@@ -799,7 +837,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
           .where((r) => p.isWithin(legacy.path, r.path))
           .toList();
       if (displaced.isNotEmpty) {
-        await _destroyAll(displaced);
+        await _destroyAll(displaced, wholeSpace: false);
       }
       if (legacy.existsSync()) {
         await legacy.delete(recursive: true);
@@ -904,27 +942,47 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     await _stacks?.deleteForRepo(row.workspaceId, row.spaceId, row.repoId);
   }
 
-  Future<void> _destroyAll(List<IsolatedRepo> rows) async {
-    for (final row in rows) {
-      // The repo's archive script (when configured) runs while the worktree is
-      // still on disk — its whole job is cleaning up resources OUTSIDE the
-      // worktree, which only makes sense before the copy goes away. It is
-      // best-effort by contract (never throws, bounded by its own timeout) and
-      // belt-and-braces here: a GC path must never be blocked by a script.
-      final scripts = _scripts;
-      if (scripts != null) {
+  Future<void> _destroyAll(
+    List<IsolatedRepo> rows, {
+    bool wholeSpace = true,
+  }) async {
+    final tasks = _worktreeTasks;
+    if (tasks != null && wholeSpace) {
+      // Every worktree release passes through here, whichever route asked for
+      // it, so this is where a space's environment goes first: nothing may keep
+      // running against a directory that is about to disappear.
+      final spaces = <(String, String)>{
+        for (final row in rows)
+          if (row.spaceId.isNotEmpty) (row.workspaceId, row.spaceId),
+      };
+      for (final (workspaceId, spaceId) in spaces) {
         try {
-          await scripts.runArchive(
-            RepoScriptContext(
+          await tasks.beforeRelease(workspaceId, spaceId);
+        } catch (e) {
+          CcInfraLog.warning('environment teardown failed for $spaceId: $e');
+        }
+      }
+    }
+    for (final row in rows) {
+      // `archive` tasks run while the worktree is still on disk — their whole
+      // job is cleaning up resources OUTSIDE the worktree, which only makes
+      // sense before the copy goes away. Best-effort by contract (never
+      // throws, bounded by a timeout) and belt-and-braces here: a GC path must
+      // never be blocked by a task.
+      if (tasks != null) {
+        try {
+          await tasks.runArchive(
+            WorktreeTaskContext(
               workspaceId: row.workspaceId,
               spaceId: row.spaceId,
               repoId: row.repoId,
               worktreePath: row.path,
               sourcePath: row.sourcePath,
+              isPrWorktree: row.branch.startsWith('pr/'),
             ),
           );
         } catch (e) {
-          CcInfraLog.warning('archive script failed for ${row.path}: $e');
+          CcInfraLog.warning('archive task failed for ${row.path}: $e');
         }
       }
       try {

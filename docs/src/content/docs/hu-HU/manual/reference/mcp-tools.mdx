@@ -2,7 +2,7 @@
 title: MCP-eszközök
 description: A cc_server által regisztrált MCP-eszközök teljes katalógusa, eszközcsaládonként.
 slug: hu-HU/kezikonyv/referencia/mcp-eszkozok
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 A `cc_server` egyetlen MCP (JSON-RPC 2.0) eszközregisztert üzemeltet, amely a fő szerverporton (alapértelmezés szerint `9030`) érhető el a `POST /mcp` és a `GET /sse` végponton, `2024-11-05` protokollverzióval. Minden kliens ugyanezt a regisztert éri el: az asztali alkalmazás, a webes build, a külső MCP-kliensek és a beépített ügynökfuttató. A külső MCP-szerverek dinamikus rétegként hidazhatók be ugyanebbe a regiszterbe.
@@ -260,6 +260,8 @@ tartalmazza.
 | `ios_use` | iOS Simulatort vezérel WebDriverAgent/CoreSimulatoron keresztül: vizsgálat/bevitel, képernyőképek, alkalmazások telepítése/indítása/leállítása/eltávolítása, deep linkek és argv alakú szimulátorfolyamatok |
 | `rig_list` | Felsorolja egy munkaterület állomásait felülettel, állapottal, kijelzőmérettel és vezérlővel |
 | `rig_close` | Megsemmisít egy állomást, és elveti a birtokolt gépállapotát |
+
+Az `app_use` egy ötödik use eszköz: egy térben indított asztali alkalmazás ablakait vezérli, közvetlenül a gazdán, nem VM-ben, és a `fileWriteOutsideWorktree` és `fileDelete` osztályokat is deklarálja. Ezt és az `environment_*` eszközöket a [Környezetek beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/kornyezetek/) oldal írja le.
 
 ## Ami nincs MCP-n keresztül kitéve
 

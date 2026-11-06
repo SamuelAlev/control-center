@@ -2,7 +2,7 @@
 title: Çalışma alanları ve yalıtım
 description: Bir çalışma alanının neden katı bir kiracı sınırı olduğu, veritabanı bölünmesinin bu sınırı nasıl yapısal kıldığı ve onu bilinçli olarak neyin aştığı.
 slug: tr-TR/kilavuz/kavramlar/calisma-alanlari
-sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
+sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
 ---
 
 ## Çalışma alanı nedir?
@@ -110,7 +110,11 @@ hangi anlık görüntülerin tam olduğunu gösterir ve kurulum sahibinin onayda
 sonra birini silmesine izin verir; her çalışma alanı da dışa ve içe aktarma
 sunar. Yerleşik **Workspace backup** pipeline'ı haftalık bir programla yalnızca
 o çalışma alanının veritabanını alır ve yapılandırılmış saklama süresinden eski
-kendi yedeklerini siler. Bir çalışma alanını kurulum anlık görüntüsünden geri
+kendi yedeklerini siler. Bu yedekler aynı sayfada çalışma alanı başına listelenir;
+her biri orada geri yüklenebilir, indirilebilir veya silinebilir. Bir çalışma
+alanını silmek, programı ve saklaması onunla birlikte durduğu için yedeklerini
+kurulum sahibinin alması ya da kaldırması üzere geride bırakır. Bir çalışma alanını
+kurulum anlık görüntüsünden geri
 yüklemek, anlık görüntünün `<workspaceId>/workspace.db` yolunu gösteren
 `workspace.import` çağrısıdır; kurulumun tamamını geri yüklemek ise anlık
 görüntü dizininin, sunucu durdurulmuşken geri kopyalanması olarak kalır.
@@ -119,11 +123,11 @@ Hiçbirinin taşımadığı şey, çalışma alanı dizininin geri kalanıdır. 
 
 ## Yedeği sunucu ile cihazınız arasında taşıma
 
-Yukarıdaki her işlem **sunucudaki** yollarla konuşur; bu, yalnızca sunucu kendi makinenizse eksiksiz bir yanıttır. İmzalı üç aktarım rotası — [`/backup/workspace`, `/backup/snapshot` ve `/backup/restore`](/tr-TR/kilavuz/referans/yedekleme/#aktarım-rotaları) — diğer tüm topolojiler için baytları kimliği doğrulanmış ve şifrelenmiş kaynak tüneli üzerinden taşır; hem doğrudan bağlantılarda hem de aktarıcı üzerinden. Genel HTTP rotaları okunabilir yedek baytları sunmaz ve imzalı yollar yine de yetkilendirme gerektirir. Sayfada bu, her dışa aktarmanın ve her anlık görüntünün yanındaki bir **İndir** düğmesidir (nereye ineceğini siz seçersiniz) ve kullandığınız makinede duran bir dosyadan geri yüklemek için **Bir dosya seçin ve yükleyin**. Yükleme, sunucu sizin makineniz olmadığında işler: `workspace.import` dosyanın ana makinede zaten bulunmasını gerektirir ve dosya oraya bu şekilde ulaşır.
+Yukarıdaki her işlem **sunucudaki** yollarla konuşur; bu, yalnızca sunucu kendi makinenizse eksiksiz bir yanıttır. İmzalı dört aktarım rotası — [`/backup/workspace`, `/backup/snapshot`, `/backup/stored` ve `/backup/restore`](/tr-TR/kilavuz/referans/yedekleme/#aktarım-rotaları) — diğer tüm topolojiler için baytları kimliği doğrulanmış ve şifrelenmiş kaynak tüneli üzerinden taşır; hem doğrudan bağlantılarda hem de aktarıcı üzerinden. Genel HTTP rotaları okunabilir yedek baytları sunmaz ve imzalı yollar yine de yetkilendirme gerektirir. Sayfada bu, her dışa aktarmanın, her anlık görüntünün ve her zamanlanmış yedeğin yanındaki bir **İndir** düğmesidir (nereye ineceğini siz seçersiniz) ve kullandığınız makinede duran bir dosyadan geri yüklemek için **Bir dosya seçin ve yükleyin**. Yükleme, sunucu sizin makineniz olmadığında işler: `workspace.import` dosyanın ana makinede zaten bulunmasını gerektirir ve dosya oraya bu şekilde ulaşır.
 
 Bilinmeye değer üç özellik var:
 
-- **İndirme yeni bir kopya üretir ve sunucu ondan hiçbir şey saklamaz.** İndirmek, "dışa aktarma düğmesinin oluşturduğu dosyayı getir" demek değildir — yeniden dışa aktarır, onu akıtır ve siler. Yanıt da aynı nedenle `no-store` ve `Accept-Ranges: none` taşır: kaldığı yerden devam eden bir aralık, iki farklı dışa aktarmayı geçerli görünen ama geçerli olmayan tek bir dosyada birleştirirdi.
+- **İndirme yeni bir kopya üretir ve sunucu ondan hiçbir şey saklamaz.** İndirmek, "dışa aktarma düğmesinin oluşturduğu dosyayı getir" demek değildir — yeniden dışa aktarır, onu akıtır ve siler. Yanıt da aynı nedenle `no-store` ve `Accept-Ranges: none` taşır: kaldığı yerden devam eden bir aralık, iki farklı dışa aktarmayı geçerli görünen ama geçerli olmayan tek bir dosyada birleştirirdi. Zamanlanmış yedek bunun istisnasıdır: zaten var olduğu için indirmek o dosyayı akıtır ve sunucuda bırakır.
 - **Bir yükleme, iki uçta da diske akıtılır, asla arabelleğe alınmaz** ve hazırlanan kopya, her çıkış yolunda — bir ret dahil — silinir. Bir çalışma alanı veritabanı bir ekran görüntüsü değildir.
 - **Aktarım aktarıcı üzerinden de çalışır.** İndirmeler ve yüklemeler, doğrudan bağlantılarla aynı şifrelenmiş kaynak tünelini kullanır; doğrudan bir HTTP kaynağı gerekmez.
 

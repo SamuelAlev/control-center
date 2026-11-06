@@ -11,6 +11,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/presentation/screens/agent_registry_screen.dart';
+import 'package:control_center/features/agents/presentation/widgets/agent_roster.dart';
 import 'package:control_center/features/agents/presentation/widgets/agent_status.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
@@ -1042,6 +1043,42 @@ void main() {
     });
   });
 
+  group('AgentRegistryScreen New button', () {
+    Future<FakeAgentRepository> pumpWith(WidgetTester tester) async {
+      final repo = FakeAgentRepository();
+      await repo.upsert(_testAgent('a1', 'architect', 'Software Architect'));
+      await _pumpAgentsSettings(tester, _crudOverrides(prefs, repo));
+      repo.emit();
+      await tester.pump();
+      return repo;
+    }
+
+    testWidgets('sits to the end of the filter field', (tester) async {
+      await pumpWith(tester);
+
+      final filter = tester.getRect(find.byType(CcTextField).first);
+      final button = tester.getRect(find.widgetWithText(CcButton, 'New'));
+      expect(button.left, greaterThan(filter.right));
+      expect(button.center.dy, filter.center.dy);
+    });
+
+    testWidgets('stays reachable when a narrow layout hides the roster', (
+      tester,
+    ) async {
+      final repo = await pumpWith(tester);
+      tester.view.physicalSize = const Size(600, 700);
+      await tester.pump();
+
+      expect(find.byType(AgentRosterList), findsNothing);
+      await tester.tap(find.widgetWithText(CcButton, 'New'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(repo.saved.length, 2);
+    });
+  });
+
   group('AgentRegistryScreen CRUD', () {
     testWidgets('creates an agent via Add Agent button', (tester) async {
       final repo = FakeAgentRepository();
@@ -1057,7 +1094,7 @@ void main() {
       expect(find.text('architect'), findsAtLeast(1));
       expect(find.text('Software Architect'), findsAtLeast(1));
 
-      await tester.tap(find.text('New agent'));
+      await tester.tap(find.text('New'));
       await tester.pump();
       await tester.pump();
       await tester.pump();
@@ -1511,7 +1548,7 @@ void main() {
       await tester.pump();
 
       // Tap Add agent — CreateAgentUseCase should reject duplicate name
-      await tester.tap(find.text('New agent'));
+      await tester.tap(find.text('New'));
       // Pump a bounded amount so the async create rejects and the error toast
       // animates in — but stay under the toast's 3s auto-dismiss (pumpAndSettle
       // would overshoot it and remove the toast before we assert).

@@ -2,7 +2,7 @@
 title: Strumenti MCP
 description: Catalogo completo degli strumenti MCP che cc_server registra, per famiglia.
 slug: it-IT/manuale/riferimento/strumenti-mcp
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` ospita un unico registro di strumenti MCP (JSON-RPC 2.0), servito sulla porta principale del server (predefinita `9030`) su `POST /mcp` e `GET /sse`, versione del protocollo `2024-11-05`. Ogni client raggiunge lo stesso registro: il desktop, la build web, i client MCP esterni e il runtime integrato degli agenti. I server MCP esterni possono essere collegati allo stesso registro come livello dinamico.
@@ -259,6 +259,8 @@ nel [riferimento sui rig](/it-IT/manuale/riferimento/rig/#action-verbs).
 | `ios_use` | Pilota il simulatore iOS tramite WebDriverAgent/CoreSimulator: ispeziona/invia input, screenshot, installa/avvia/ferma/disinstalla app, deep link e processi del simulatore in forma argv |
 | `rig_list` | Elenca i rig di uno spazio di lavoro con superficie, stato, dimensione del display e controller |
 | `rig_close` | Distruggi un rig e scarta lo stato della macchina che possiede |
+
+`app_use` è un quinto strumento use: guida le finestre di un'app desktop avviata in uno spazio, direttamente sull'host e non in una VM, e dichiara anche `fileWriteOutsideWorktree` e `fileDelete`. Questo strumento e gli strumenti `environment_*` sono descritti in [Configurare gli ambienti](/it-IT/manuale/guide/ambienti/).
 
 ## Non esposti tramite MCP
 

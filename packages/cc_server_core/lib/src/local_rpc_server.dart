@@ -109,39 +109,6 @@ typedef BlobWriter =
       required String mediaType,
     });
 
-/// Writes a throwaway copy of [workspaceId]'s database for a client to
-/// download, or null when the workspace has no file yet.
-///
-/// The file it returns is the route's to DELETE once it has been streamed. That
-/// is the difference between this and the `workspace.export` RPC op, which
-/// writes the same bytes and leaves them: an export's destination is the server
-/// and a download's destination is the caller's disk, so keeping a second copy
-/// per download is how a data directory fills up with files nobody asked for.
-typedef BackupExportWriter =
-    Future<File?> Function({required String workspaceId});
-
-/// Packs snapshot [name] into a single archive file for download, or null when
-/// no snapshot by that name exists. The route deletes the archive afterwards.
-///
-/// A snapshot is a DIRECTORY (`manifest.json`, `global.db`, one file per
-/// workspace), and HTTP hands out one body — so the only way to download "the
-/// backup" rather than its pieces is to pack it here.
-typedef BackupSnapshotArchiver = Future<File?> Function({required String name});
-
-/// Adopts an uploaded workspace database file as [workspaceId]'s, replacing
-/// what is there. Throws with an operator-readable message when the file is not
-/// a workspace database.
-///
-/// This is `workspace.import` reached from the other direction: the RPC op
-/// names a path that already exists on the SERVER, which is unreachable for
-/// anyone whose server is not their own machine. Same validation, same
-/// replacement, different way of getting the bytes there.
-typedef BackupRestoreReader =
-    Future<void> Function({
-      required String workspaceId,
-      required String sourcePath,
-    });
-
 /// Resolves the upstream file URL for one variant of a catalogued font family.
 ///
 /// Returns null when [family] is not in the host's font catalogue, which is what
@@ -360,6 +327,7 @@ class LocalRpcServer implements McpHostServer {
     this.blobPut,
     this.backupExport,
     this.backupSnapshotArchive,
+    this.backupStoredFile,
     this.backupRestore,
     this.isServerOwner,
     this.fontFile,
@@ -447,6 +415,10 @@ class LocalRpcServer implements McpHostServer {
   /// Packs a snapshot directory for `GET /backup/snapshot`. Null on a host with
   /// no backup port — the route then 404s.
   final BackupSnapshotArchiver? backupSnapshotArchive;
+
+  /// Resolves a scheduled backup for `GET /backup/stored`. Null on a host with
+  /// no backup port — the route then 404s.
+  final BackupStoredFileReader? backupStoredFile;
 
   /// Adopts an uploaded database for `POST /backup/restore`. Null on a host
   /// with no backup port — the route then 404s.
@@ -1097,6 +1069,10 @@ class LocalRpcServer implements McpHostServer {
     }
     if (request.uri.path == '/backup/snapshot') {
       await _serveBackupSnapshot(request);
+      return;
+    }
+    if (request.uri.path == '/backup/stored') {
+      await _serveBackupStored(request);
       return;
     }
     if (request.uri.path == '/backup/restore') {

@@ -57,18 +57,18 @@ void main() {
   );
 
   test('lists every repo in the space, not just one', () async {
-    writeSkill('web-app', 'forms');
+    writeSkill('shop-ui', 'forms');
     writeSkill('api', 'migrations');
 
     final all = await catalog().listAll();
     expect(all.map((s) => s.qualifiedName).toList()..sort(), [
       'api:migrations',
-      'web-app:forms',
+      'shop-ui:forms',
     ]);
   });
 
   test('resolves a qualified name', () async {
-    writeSkill('web-app', 'testing');
+    writeSkill('shop-ui', 'testing');
     writeSkill('api', 'testing');
 
     final entry = await catalog().resolve('api:testing');
@@ -77,14 +77,14 @@ void main() {
   });
 
   test('resolves a bare name when exactly one repo ships it', () async {
-    writeSkill('web-app', 'forms');
+    writeSkill('shop-ui', 'forms');
     writeSkill('api', 'migrations');
 
-    expect((await catalog().resolve('forms'))?.repo, 'web-app');
+    expect((await catalog().resolve('forms'))?.repo, 'shop-ui');
   });
 
   test('refuses an ambiguous bare name rather than guessing', () async {
-    writeSkill('web-app', 'testing');
+    writeSkill('shop-ui', 'testing');
     writeSkill('api', 'testing');
 
     // Two repos' `testing` are different instructions; picking one silently

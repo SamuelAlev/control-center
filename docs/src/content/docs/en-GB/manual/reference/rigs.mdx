@@ -2,7 +2,7 @@
 title: Rigs
 description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalogue.
 slug: en-GB/manual/reference/rigs
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Facts only. For the model behind them, read [Rigs and
@@ -18,6 +18,8 @@ guide](/en-GB/manual/guides/use-rigs/).
 | Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
 | Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
 | iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
+| App window | The windows of a desktop app launched from an environment, through the OS | Host window | `host-window` | **No** — the app runs on the host with the server user's access |
+| Environment | The compose stack and tasks of an [environment](/en-GB/manual/guides/environments/) at `rig` placement | microVM | `smolvm` | Yes |
 
 The terminal and the `computer_use` surface share the `computer` surface
 value; the terminal is distinguished by its exec image marker and is never

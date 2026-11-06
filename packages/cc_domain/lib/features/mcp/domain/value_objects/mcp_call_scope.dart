@@ -14,7 +14,19 @@ class McpCallScope {
     this.agentId,
     this.conversationId,
     this.spaceId,
+    this.attested = false,
   });
+
+  /// Header carrying a run's own secret to the MCP transport.
+  static const String runGrantHeader = 'X-CC-Agent-Run';
+
+  /// Whether these values came from the run's grant rather than from headers
+  /// the caller wrote.
+  ///
+  /// The `X-CC-*` identity headers live in a `.mcp.json` the agent can read
+  /// and the bearer token is server-wide, so a sandboxed process can send any
+  /// values it likes. A per-run secret can only name its own run.
+  final bool attested;
 
   /// The workspace the calling agent runs in. When set, tools that declare a
   /// `workspace_id` argument have it overridden to this value.
@@ -114,9 +126,10 @@ class McpCallScope {
           workspaceId == other.workspaceId &&
           agentId == other.agentId &&
           conversationId == other.conversationId &&
-          spaceId == other.spaceId;
+          spaceId == other.spaceId &&
+          attested == other.attested;
 
   @override
   int get hashCode =>
-      Object.hash(workspaceId, agentId, conversationId, spaceId);
+      Object.hash(workspaceId, agentId, conversationId, spaceId, attested);
 }

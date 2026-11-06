@@ -163,7 +163,7 @@ class _ConfiguredLimitRow extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.only(top: AppSpacing.sm),
           child: CcButton(
-            variant: CcButtonVariant.ghost,
+            variant: CcButtonVariant.destructive,
             size: CcButtonSize.sm,
             icon: AppIcons.trash2,
             semanticLabel: l10n.obsQuotaRemoveSemantic(_reportTitle(report)),

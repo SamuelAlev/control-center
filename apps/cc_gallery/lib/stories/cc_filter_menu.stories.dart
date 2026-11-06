@@ -144,7 +144,7 @@ class _FilterMenuDemoState extends State<_FilterMenuDemo> {
           hiddenCountLabel: _hiddenCount,
           options: [
             for (final (repo, count) in [
-              ('acme/test-web-app', 11),
+              ('acme/test-shop-ui', 11),
               ('acme/test-backend', 3),
               ('acme/test', 5),
               ('acme/test-app', 4),

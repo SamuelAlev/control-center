@@ -1,0 +1,411 @@
+---
+title: הגדרת סביבות
+description: תנו לכל מרחב ולכל בקשת משיכה סטאק פועל משלו, עם compose, CLI מותאם, תהליכים מפוקחים או אפליקציית שולחן עבודה.
+slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/סביבות
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+**סביבה** היא הסטאק הפועל של מרחב אחד: השירותים שענף צריך, מבודדים מכל שאר המרחבים, גלויים בסרגל הצד ונגישים לסוכנים. גם בקשות משיכה מקבלות סביבה, כי ל-PR כבר יש מרחב משלו.
+
+מנהל סביבת העבודה כותב **הגדרה** פעם אחת. לאחר מכן חברים לוחצים על **התחל** באזור **סביבה** בסרגל הצד של מרחב או PR. ההגדרות נשמרות במסד הנתונים של סביבת העבודה, ולכן ענף פיצ'ר אף פעם לא משנה את מה ש-Control Center מריץ, אף שהכלים עדיין מריצים את הקוד של אותו ענף.
+
+## יצירת הגדרה
+
+1. פתחו את **הגדרות → סביבת עבודה → סביבות**. רק מנהלי סביבת העבודה יכולים לשנות הגדרות.
+2. לחצו על **הגדרה חדשה**, ואז על **הגדרה ריקה** או **טיוטה ממאגר**. טיוטה סורקת את המאגר בחיפוש אחר קובצי compose, קובץ `Procfile` וסקריפטים של `package.json`, ואתם בודקים את התוצאה.
+3. מלאו את הטופס, או השתמשו בלשונית **JSON**. הדוגמאות בעמוד זה הן אותו JSON.
+4. לחצו על **הרצת בדיקה**. הפעולה מפעילה סביבה חד-פעמית, ממתינה עד שתהיה מוכנה ומשמידה אותה.
+
+כדי לשמור הגדרה במאגר, השתמשו ב-**קישור קובץ ממאגר**. Control Center קורא את הקובץ רק מענף ברירת המחדל ומריץ רק גרסה שמנהל אישר. גרסה חדשה יותר מציגה **יש עדכון זמין** ולא משנה דבר עד שתאושר.
+
+## ההגדרה הקטנה ביותר
+
+למאגר compose פשוט מספיק זה:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+לכל השאר יש ברירת מחדל: קובץ ה-compose מתגלה, כל השירותים רצים, פורטים מוקצים, נקודות קצה של HTTP מזוהות והסביבה נקראת על שם הענף.
+
+## סוגי רכיבים
+
+סביבה היא רשימה מסודרת של רכיבים. כל רכיב ממתין שהקודם יהיה מוכן, אלא אם `after` מציין אחרים, והעצירה מתבצעת בסדר הפוך. `enabledWhen` מתנה רכיב באפשרות או בתפקיד, למשל `opt.seed`, `!opt.seed` או `repo.web`.
+
+| סוג | מי מריץ אותו | שימוש |
+| --- | --- | --- |
+| `compose` | מנהל ה-compose של Control Center | כל קובץ compose, אחד לכל סביבה |
+| `cli` | הכלי שלכם. Control Center קורא לפעלים ממופים וקורא JSON | כלי שמנהל בעצמו מחזור חיים, דומיינים ונתונים |
+| `process` | Control Center, בסשן מסוף מפוקח | שרתי פיתוח ו-workers |
+| `task` | Control Center, פעם אחת לכל טריגר | התקנות, מיגרציות, בדיקות |
+| `app` | Control Center, כשמישהו לוחץ על **הפעלת האפליקציה** | אפליקציית שולחן עבודה |
+
+רכיבי `task` מקבלים רשימת `when`:
+
+| טריגר | מתי רץ |
+| --- | --- |
+| `provision` | כשעץ העבודה נוצר (ראו משימות עץ עבודה בהמשך) |
+| `create` | פעם אחת לכל סביבה, ושוב אחרי איפוס |
+| `start` | בכל הפעלה |
+| `change` | אחרי סנכרון, כשנתיב שהשתנה תואם ל-`onChange` |
+| `manual` | לפי בקשה: **הרצה**, `cc-env run <id>` או `environment_run_task` |
+| `archive` | ממש לפני השמדת עץ העבודה |
+
+פקודה שניתנת כמערך היא argv, ולכן ערכי אפשרויות אף פעם לא עוברים דרך מעטפת. מחרוזת, או `script` עם מערך שורות, רצה תחת `bash -lc`. מצייני מיקום כמו `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` ו-`{url.<role>}` מורחבים רק ב-argv. פקודות מעטפת קוראות את אותם ערכים כמשתני `CC_ENV_*`, כמו `$CC_ENV_PORT_WEB`.
+
+כל פקודה ומסוף מרחב מקבלים גם `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>`, ובמרחבי PR גם `CC_PR_NUMBER` ו-`CC_PR_IS_FORK`. עם רכיב compose הם מקבלים גם `COMPOSE_PROJECT_NAME` ו-`COMPOSE_FILE`, כך ש-`docker compose exec` במשימה מגיע לפרויקט הנכון.
+
+## תפקידים ותיקיית עבודה
+
+הגדרה קושרת **תפקידים** למאגרי סביבת העבודה, כך שסטאק אחד יכול להשתרע על כמה מאגרים:
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`: מרחב יכול להפעיל את הסביבה כשיש בו לפחות תפקיד עוגן אחד. אם שתי הגדרות תואמות, מי שמפעיל בוחר.
+- `required`: הסטאק לא יכול לרוץ בלי מאגר זה.
+- `whenMissing`: מה קורה כשהתפקיד חסר במרחב. `addToSpace` מוסיף את המאגר בענף ברירת המחדל שלו והוא ברירת המחדל לתפקידי `required`. `useSource` מעביר את ה-checkout הרשום שלכם, שיש להתייחס אליו כקריאה בלבד. `skip` משאיר את המשתנה לא מוגדר והוא ברירת המחדל בשאר המקרים.
+- הפעלה דורשת הרשאת `write` על מאגר עוגן במרחב וגישת קריאה לכל מאגר קשור אחר.
+
+פקודה רצה בתפקיד הראשון ב-`repos` שיש למרחב, ולכן הגדרה של מאגר אחד לא מזכירה זאת. כל רכיב יכול לעקוף זאת עם `"cwd": { "role": "e2e", "path": "packages/ui" }`. שני השדות אופציונליים.
+
+## פורטים וכתובות URL
+
+Control Center מקצה פורטים של המארח לפני שמשהו מופעל, מטווח משותף לכל המארח (42000 עד 49999 כברירת מחדל, בבלוקים של 32). פורט נשאר זהה לאורך כל חיי הסביבה, ופורטים של compose נקשרים רק ל-`127.0.0.1`.
+
+- פורטים של compose לא דורשים הצהרה. קראו אותם כ-`{port.postgres.5432}` או `CC_ENV_PORT_POSTGRES_5432`.
+- פורטים אחרים מוצהרים במקום השימוש, עם `"port": "web"` או `"ports": ["web", "hmr"]`, ונקראים כ-`{port.web}`. תהליך עם פורט מקבל גם `PORT` ו-`HOST=127.0.0.1`.
+
+נקודות קצה של HTTP מקבלות כתובת URL בנתב של השרת, שמאזין על פורט loopback אחד:
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>` הוא הענף כ-slug, או `pr-<n>` במרחב PR. `<project>` הוא `naming.project`, ואחרת שם ההגדרה.
+- שמות `*.localhost` מצביעים על loopback, ולכן אינם דורשים רשומות hosts או DNS, ושם המארח מפריד עוגיות בין סביבות.
+- פורטים של compose שעונים ב-HTTP מזוהים, ו-`http` על הרכיב עוקף את הניחוש. תהליך צריך `"endpoint": { "role": "web", "primary": true }`, שגם מאפשר את `{url.web}`.
+- בדפדפן (VM), השתמשו ב-**פתיחה ב-Browser (VM)**. שם `https://web--fix-login--shop.localhost/` מגיע לאותו נתיב.
+- התווית כולה נשארת בגבול 63 תווים, ולכן שמות ארוכים מקוצרים בעזרת גיבוב.
+- לשתי נקודות קצה אין דומיין אב משותף. אפליקציה שצריכה עוגייה אחת לשתיהן חייבת להגיש אותן מנקודת קצה אחת.
+
+לכתובות URL שיש לרשום מראש, כמו הפניות OAuth, `"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` נותן קבוצת שמות קבועה.
+
+`policy` קובע מתי סביבות רצות. `autoCreate` הוא `off`, `prSpaces` או `allSpaces`, ברירת המחדל של `idleStopMinutes` היא 240, `followPrHead` מסנכרן סביבת PR כשה-head זז, ועם `maxRunning` (ברירת מחדל 6) **התחל** מציע לעצור את הסביבה שלא הייתה בשימוש הכי הרבה זמן.
+
+## דוגמה: אפליקציית compose
+
+אפליקציית ווב ו-Postgres מקובץ compose אחד, עם `.env` ש-git מתעלם ממנו, מיגרציות ומשימת בדיקות. `seedFiles` מעתיק קבצים בשם מה-checkout הרשום שלכם לכל עץ עבודה חדש.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+`healthchecks` מאפשר לשירות בלי בדיקת תקינות משלו לעכב את הרכיב הבא. בלעדיו, קונטיינר רץ נחשב מוכן, ומיגרציות עלולות להקדים מסד נתונים שעדיין עולה.
+
+## דוגמה: CLI מותאם
+
+כלי בדיוני `acme` שמנהל בעצמו קונטיינרים, דומיינים ו-TLS. Control Center מספק את `{name}` ולומד את כל השאר מ-`status`. הוא אף פעם לא גוזר שמות מארחים של כלי ולא עורך את `/etc/hosts`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create`, `status` ו-`destroy` הם חובה. Control Center בוחר ב-`create` או ב-`start` לפי הסטטוס שהוא קורא. כל פועל יכול להיות `{ "shell": "…" }` במקום argv.
+- `statusMap` קורא את ה-JSON של הכלי עם מצביעי JSON, כאשר `*` תואם לכל פריט. כללי המצב מסודרים וההתאמה הראשונה מנצחת. תנאי הוא `path` עם `equals`, או `any` או `none` עם `where`.
+- `keepsDataOnStop: false` מכבה עצירה בחוסר פעילות ומוסיף ל-**עצור** אזהרה על אובדן נתונים. הגדירו זאת כשעצירה מאבדת נתונים.
+- `routing.mode: "tool"` מחבר את שמות המארחים של הכלי לדפדפן (VM) ולסוכנים. הדומיין חייב להסתיים ב-`.test`, `.localhost` או `.internal`, וכתובת URL מדווחת מחוץ לו נזרקת.
+
+כלי משלכם יכול לוותר על `statusMap` ולהדפיס את חוזה הסטטוס שמתואר בסוף העמוד.
+
+## דוגמה: מונוריפו pnpm
+
+רק תהליכים ומשימות, בלי קונטיינרים. אפליקציית הווב מוצאת את ה-API דרך `{url.api}`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- כל תהליך הוא לשונית מסוף שאפשר לפתוח, לקרוא ולהקליד בה. סגירת הלשונית לא עוצרת אותו.
+- `ready` מקבל `http`, `tcp` או `logMatch`. `restart` הוא `on-failure` (ברירת המחדל), `always` או `never`. `restartOn` מפעיל מחדש את התהליך כשנתיב שהשתנה תואם.
+- `options` הופכות לטופס ב-**התחל**, ו-`agentDefault` חל על הרצות שסוכן מפעיל.
+
+## דוגמה: אפליקציית שולחן עבודה
+
+אפליקציית שולחן עבודה עם שלב בנייה. אפליקציה עובדת אותו דבר בכל טכנולוגיה, כי Control Center פועל ברמת החלונות של מערכת ההפעלה ולא צריך hook או SDK באפליקציה.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+אפליקציה לא מופעלת עם הסביבה. מישהו לוחץ על **הפעלת האפליקציה**, ו-`prepare` רץ קודם. **בנייה והפעלה מחדש** מריץ את הצמד הזה שוב. יציאה נקייה מוצגת כסגורה, קריסה מציגה את שורות היומן האחרונות בלי הפעלה מחדש, הפעלה מחדש של השרת אף פעם לא פותחת אותה שוב, ועצירה בחוסר פעילות לא נוגעת באפליקציה רצה.
+
+### הרשאות ומגבלות של אפליקציות שולחן עבודה
+
+- ב-macOS, העניקו ל-Control Center פעם אחת **הקלטת מסך** ו**נגישות** בהגדרות המערכת. מארח השרת צריך סשן גרפי: שרת ללא ממשק מסרב להפעיל אפליקציה.
+- הפעילו את הקובץ הבינארי ישירות. `open -a` מעביר את האפליקציה ל-LaunchServices והיא עוזבת את עץ התהליכים ש-Control Center עוקב אחריו. `"window": { "match": { "bundleId": "…" } }` מכסה את המקרה הזה, אבל בטוח רק עם עותק רץ אחד.
+- חלונות נשארים על מסך. macOS לא לוכד חלון שנמצא מחוץ לכל המסכים, ולכן אפליקציה שסוכן משתמש בה גלויה על מסך השרת. היא לא צריכה מיקוד.
+- `"isolate": "home"` נותן לאפליקציה תיקיית בית פרטית דרך `HOME`, `XDG_*` ו-`CFFIXED_USER_HOME`, כך שעותקים משני מרחבים יכולים לרוץ זה לצד זה. `NSUserDefaults` לא מבודד, ולכן העדפות Cocoa ו-`shared_preferences` של Flutter נשארות משותפות בין עותקים.
+- `isolate` חל רק על התהליך שהופעל. משגר של שרשרת כלים כמו `flutter run` צריך את תיקיית הבית האמיתית, ולכן שלבו את `isolate` עם קובץ בינארי בנוי. אם לאפליקציה יש הגדרה משלה, כמו `--user-data-dir`, העדיפו אותה.
+- סוכנים מפעילים את החלון עם `app_use`, שמגיע רק לעץ התהליכים של הסביבה הזו. סוכן רואה את החלון, לא את שולחן העבודה. הפעלות של סוכנים עוברות דרך מדיניות הפעולות ושואלות כברירת מחדל, וקלט הסוכן נעצר בזמן שאדם מחזיק בשליטה.
+- `"input": "background"` (ברירת המחדל) שולח אירועים לתהליך. `"foreground"` מפעיל את החלון ומשתלט על הסמן.
+
+## משימות עץ עבודה מחליפות סקריפטים של מאגר
+
+משימות `provision` ו-`archive` מחליפות את סקריפטי ההתקנה והארכוב הישנים לכל מאגר. **סקריפטים קיימים הועברו אוטומטית:** לכל מאגר שהיו לו סקריפטים יש עכשיו הגדרה בשמו, עם משימות `setup` ו-`archive` שמחזיקות את אותו טקסט. הסמל בשורה של מאגר ב-**הגדרות → סביבת עבודה → מאגרים** פותח אותה. הרצות קודמות נשארות כהיסטוריה לקריאה בלבד.
+
+המשימות האלה עוקבות אחרי עץ העבודה, לא אחרי הסביבה, ולכן רצות גם במרחבים שבהם איש לא לוחץ על **התחל**:
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| רץ | כשעץ העבודה של התפקיד נוצר, בכל מרחב | ממש לפני השמדת אותו עץ עבודה |
+| בכישלון | ההקצאה נכשלת ועץ העבודה מושמד | נרשם, אף פעם לא חוסם מחיקה |
+| זמן קצוב ברירת מחדל | 5 דקות | 2 דקות |
+| רואה | `CC_WORKSPACE_PATH`, `CC_ROOT_PATH`, `CC_SPACE_*`, `CC_REPO_NAME` | אותו דבר |
+
+מאגר בלי סטאק צריך רק הגדרה שמחזיקה את המשימות שלו. מכיוון שאין מה להפעיל, לא צריך תפקיד עוגן:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- עדיין אין סביבה, ולכן המשימות האלה לא יכולות להשתמש ב-`{name}`, `{port.*}`, `{url.*}`, `{opt.*}` או `enabledWhen`, והן לא מקבלות את ה-`env` של ההגדרה.
+- רק הגדרה אחת יכולה להחזיק משימות `provision` ו-`archive` של מאגר. אחרות עדיין יכולות לקשור אותו לכל דבר אחר.
+- `"when": ["provision", "change"]` גם מתקין מחדש כשקובץ נעילה משתנה, דבר שסקריפטי התקנה לא עשו.
+- משימה רצה עבור עץ העבודה של תפקיד ה-`cwd` שלה, ולכן הגדרה מרובת מאגרים יכולה להגדיר כל מאגר בנפרד.
+- הרצת בדיקה מגדירה `CC_SCRIPT_TEST=1`. ניסיון חוזר מתחיל מעץ עבודה נקי, אז כתבו משימות שעומדות בהרצה חוזרת.
+
+## סוכנים
+
+סוכנים אף פעם לא מקבלים את שקע Docker. במרחב עם הגדרה מתאימה, הרצה מקבלת `cc-env` ב-`PATH` שלה. המרחב נגזר מההרצה, ולכן סוכן יכול לפעול רק על הסביבה שלו, וכל פקודה עוברת דרך מדיניות הפעולות.
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+עם רכיב compose, shim של `docker` מאפשר גם `docker compose` עם `ps`, `logs`, `exec`, `port`, `restart` ו-`top`. אסור דגלים לפני הפועל, `logs` לא יכול לעקוב אחר הפלט, ו-`exec` מקבל רק `-T`. כל השאר מסתיים בקוד 5 וב-"not available in Control Center agent runs".
+
+מאגר שהכישורים שלו קוראים לכלי שלו יכול להמשיך בכך. בלוק `agentPassthrough` על רכיב `cli` מצהיר אילו פקודות סוכנים רשאים להריץ:
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+`maps` מציין את הפעולה שהמדיניות שלה חלה. `positionalName` כופה על הארגומנט הזה את הסביבה של המרחב, `nameFilter` מסנן אליה את פלט ה-JSON, וכל ערך `pathFlags` חייב להיפתר בתוך עצי העבודה של ההרצה. פקודה שלא תואמת אף כלל מסתיימת בקוד 5.
+
+אותן פעולות קיימות ככלים: `environment_status`, `environment_up`, `environment_down`, `environment_reset`, `environment_destroy`, `environment_restart`, `environment_exec`, `environment_logs`, `environment_run_task`, `environment_launch_app` ו-`environment_stop_app`. סוכנים בארגז חול מגיעים לפורטים שלהם ישירות ולשמות המארחים של הסביבה דרך ה-proxy של ההרצה, אז בקשו מהם לקרוא נקודות קצה מ-`environment_status` במקום לנחש כתובת URL.
+
+## בקשות משיכה מ-forks
+
+קוד של PR מ-fork אינו מהימן, ובמיקום על המארח הוא רץ כמשתמש מערכת ההפעלה של השרת. `policy.forkPrs` קובע מה קורה:
+
+| ערך | השפעה | ברירת מחדל עבור |
+| --- | --- | --- |
+| `rig` | קובץ ה-compose רץ ב-VM בלי שאלה | הגדרות עם רכיבי `compose` ו-`task` בלבד |
+| `approval` | כל הפעלה דורשת מנהל | כל שאר ההגדרות |
+| `deny` | נדחה | אף אחת |
+
+- `seedFiles` אף פעם לא מועתקים ל-fork, כי בדרך כלל אלה סודות. קובץ compose שקושר אחד מהם מדווח על הקובץ החסר בשמו.
+- משימות `provision` ו-`archive` מדולגות אלא אם המדיניות היא `rig`, ואז הן רצות ב-VM.
+- במיקום על המארח, `privileged`, מרחבי שמות של המארח, קישור של שקע Docker, `devices` וקישורים מחוץ לעצי העבודה של המרחב נדחים ב-fork. במרחבים מהימנים הם רק מזהירים.
+
+## מיקום ב-rig
+
+`"placement": "rig"` מריץ רכיבי `compose` ו-`task` ב-microVM ייעודי. הגדרות עם רכיבי `process`, `cli` או `app` אינן מתאימות. קובץ ה-compose רץ ללא שינוי, בלי שקע Docker של המארח ובלי אישורי המפעיל, וגישת הרשת מוגבלת לרישומים שהתמונות שלו צריכות. עץ העבודה מחובר בזמן אמת.
+
+- **אורחי arm64.** האורחים הם arm64 ב-Apple Silicon, ולכן תמונות amd64 בלבד לא ירוצו.
+- **רישומים פרטיים נדחים.** לאורחים אין אישורי רישום, ולכן תמונה ברישום מחוץ לציבוריים המוכרים נדחית לפני שה-VM עולה. מאגר פרטי ברישום ציבורי נכשל כשהאורח מושך אותו.
+- **אחסון של 16 GiB.** כל התמונות והכרכים של הסטאק חולקים דיסק אחד של 16 GiB, ואי אפשר להגדיל אותו.
+- **העלייה הראשונה איטית.** שכבות התמונה הן לכל VM, ולכן העלייה הראשונה מושכת הכול. rig שנעצר שומר על הדיסק שלו.
+- **תמונות בסיס חייבות להיות קריאות.** קובץ Dockerfile שמציין את תמונת הבסיס דרך משתנה לא ניתן לתכנון, כי גישת הרשת נקבעת בעלייה.
+- **משך חיים.** `policy.rigTtlHours` מסיים את ה-VM, כברירת מחדל אחרי 24 שעות.
+
+## חוזה סטטוס למחברי כלים
+
+רכיב `cli` בלי `statusMap` מצפה לחוזה המקורי, `cc-env/1`. הפועל `status` מדפיס את האובייקט הזה ל-stdout:
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- `state` הוא `ready`, `starting`, `stopped`, `failed` או `missing`. `missing` מוביל ל-`create`, ו-`stopped` ו-`failed` מובילים ל-`start`. דווחו על `missing` עם קוד יציאה 0: `status` שנכשל נחשב `failed`.
+- רק `state` נדרש. שדות לא מוכרים מתעלמים מהם, ופלט שאי אפשר לנתח מוצג כמדורדר, עם הטקסט הגולמי כפירוט.
+- כתובת URL חייבת להיות loopback, `*.localhost` או תחת `routing.domain`, אחרת היא נזרקת.
+- `needsRecreate: true` מציג את **יצירה מחדש**, שזורק נתונים. Control Center אף פעם לא פועל על כך בעצמו.
+- הפועל `list` מדפיס מערך JSON של שמות, או של אובייקטים עם `name`.
+
+קודי יציאה חלים על כל פועל:
+
+| קוד | משמעות |
+| --- | --- |
+| 0 | תקין |
+| 3 | נדרשת הגדרת מארח. **הרצה במסוף** פותח מסוף מרחב עם הפקודה מוקלדת אך לא מורצת, ואז **נסה שוב** מנסה שוב. Control Center אף פעם לא מריץ `sudo` |
+| 4 | נדרש אימות |
+| 5 | תלות לא זמינה |
+| אחר | כישלון |
+
+התקדמות נשלחת ל-stderr כ-JSON מופרד בשורות:
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+שורות `step` מוצגות כרשימת שלבים חיה ושורות `note` מוצגות כמו שהן. שורה אחרונה מסוג `error` הופכת לשגיאה מובנית, ו-`command` מוצע להעתקה. בלעדיה Control Center מציג את 20 שורות ה-stderr האחרונות. כל מה שאינו JSON הוא פלט יומן רגיל.
+
+## קשור
+
+- [שימוש במרחבים](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/מרחבים/)
+- [העברת פורטים ממסוף](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/העברת-פורטים/)
+- [תנו לסוכן מחשב לבדיקות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/שימוש-בתחנות/)
+- [הגדרת מעקות בטיחות](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/הגדרת-מעקות-בטיחות/)

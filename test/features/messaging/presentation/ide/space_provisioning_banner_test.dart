@@ -5,6 +5,7 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_provisio
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_step.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_host.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/conversation_pane.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -17,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../../helpers/active_workspace.dart';
 import '../../../../helpers/fake_rpc_client.dart';
 import '../../../../helpers/test_wrap.dart';
+import '../../../environments/environment_test_support.dart';
 
 const _spaceId = 'space-1';
 const _bannerWidth = 600.0;
@@ -121,6 +123,70 @@ void main() {
     expect(stop.left, closeTo(banner.left + composerHorizontalMargin, 0.5));
   });
 
+  testWidgets('opens the logs while the workspace prepares', (tester) async {
+    final recording = RecordingHost();
+    await _pumpBanner(tester, host: recording.host);
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) => widget is CcIconButton && widget.tooltip == l10n.viewLogs,
+      ),
+    );
+
+    expect(recording.opened, ['provisioning-logs:$_spaceId']);
+  });
+
+  testWidgets('the stop control keeps the trailing edge beside the logs', (
+    tester,
+  ) async {
+    await _pumpBanner(tester, host: RecordingHost().host);
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final banner = tester.getRect(find.byType(SpaceProvisioningBanner));
+    final stop = tester.getRect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is CcIconButton &&
+            widget.tooltip == l10n.stopWorkspacePrepTooltip,
+      ),
+    );
+    expect(stop.right, closeTo(banner.right - composerHorizontalMargin, 0.5));
+  });
+
+  for (final status in [
+    SpaceProvisioningStatus.failed,
+    SpaceProvisioningStatus.cancelled,
+  ]) {
+    testWidgets('offers the logs beside retry when ${status.name}', (
+      tester,
+    ) async {
+      final recording = RecordingHost();
+      await _pumpBanner(tester, host: recording.host, status: status);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      expect(find.widgetWithText(CcButton, l10n.retry), findsOneWidget);
+      await tester.tap(find.widgetWithText(CcButton, l10n.viewLogs));
+
+      expect(recording.opened, ['provisioning-logs:$_spaceId']);
+    });
+  }
+
+  testWidgets('offers no logs where no editor can open them', (tester) async {
+    await _pumpBanner(tester);
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is CcIconButton && widget.tooltip == l10n.viewLogs,
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('a demo offers no logs, even under an editor', (tester) async {
+    await _pumpBanner(tester, isDemo: true, host: RecordingHost().host);
+    expect(find.byType(CcIconButton), findsNothing);
+  });
+
   testWidgets('demo provisioning offers no stop action', (tester) async {
     await _pumpBanner(tester, isDemo: true);
     expect(find.byType(CcIconButton), findsNothing);
@@ -141,7 +207,12 @@ Future<void> _pumpBanner(
   TextDirection textDirection = TextDirection.ltr,
   bool isDemo = false,
   SpaceProvisioningStatus status = SpaceProvisioningStatus.provisioning,
+  EnvironmentHost? host,
 }) async {
+  const banner = SizedBox(
+    width: _bannerWidth,
+    child: SpaceProvisioningBanner(spaceId: _spaceId),
+  );
   await tester.pumpWidget(
     testWrap(
       ProviderScope(
@@ -150,14 +221,13 @@ Future<void> _pumpBanner(
           spaceProvisioningStepProvider.overrideWith(
             (ref, _) => const SpaceProvisioningStep(
               kind: SpaceProvisioningStepKind.prCheckout,
-              subject: 'parced',
+              subject: 'acme',
             ),
           ),
         ],
-        child: const SizedBox(
-          width: _bannerWidth,
-          child: SpaceProvisioningBanner(spaceId: _spaceId),
-        ),
+        child: host == null
+            ? banner
+            : EnvironmentHostScope(host: host, child: banner),
       ),
       textDirection: textDirection,
       isDemo: isDemo,

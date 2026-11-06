@@ -83,7 +83,10 @@ List<String> registryHostsForImageRef(String ref) {
   return switch (registry) {
     'docker.io' || 'registry-1.docker.io' || 'index.docker.io' => const [
       'docker.io',
+      // Hub picks a blob CDN per request, so both have to be admitted or a
+      // pull fails on the days it picks the other one (measured).
       'production.cloudflare.docker.com',
+      'production.cloudfront.docker.com',
     ],
     'ghcr.io' => const ['ghcr.io', 'pkg-containers.githubusercontent.com'],
     'quay.io' => const [
@@ -100,4 +103,82 @@ List<String> registryHostsForImageRef(String ref) {
     'gcr.io' => const ['gcr.io', 'storage.googleapis.com'],
     _ => [registry],
   };
+}
+
+/// Registries an environment rig may pull from without credentials.
+const Set<String> kPublicImageRegistries = {
+  'docker.io',
+  'registry-1.docker.io',
+  'index.docker.io',
+  'ghcr.io',
+  'quay.io',
+  'registry.gitlab.com',
+  'public.ecr.aws',
+  'gcr.io',
+  'mcr.microsoft.com',
+};
+
+/// An environment's image lives on a registry a rig cannot pull from.
+///
+/// Control Center holds no registry credentials for guests, and handing a
+/// machine that runs a fork's compose file a login is exactly what placing it
+/// in a VM avoids. Raised before anything boots.
+class RigPrivateRegistryException implements Exception {
+  /// Creates a [RigPrivateRegistryException].
+  const RigPrivateRegistryException({
+    required this.image,
+    required this.registry,
+  });
+
+  /// The image reference.
+  final String image;
+
+  /// The registry it names.
+  final String registry;
+
+  @override
+  bool operator ==(Object other) =>
+      other is RigPrivateRegistryException &&
+      other.image == image &&
+      other.registry == registry;
+
+  @override
+  int get hashCode => Object.hash(image, registry);
+
+  /// A sentence fit for a person.
+  String get message =>
+      'Image "$image" is on $registry, which is not a known public registry. '
+      'Environment rigs hold no registry credentials, so they can only pull '
+      'public images. Use host placement, or publish the image.';
+
+  @override
+  String toString() => 'RigPrivateRegistryException: $message';
+}
+
+/// The registry [ref] names, normalized the way [registryHostsForImageRef]
+/// reads it.
+String registryOfImageRef(String ref) {
+  final segments = ref.split('/');
+  final first = segments.first;
+  final explicit =
+      segments.length > 1 &&
+      (first.contains('.') || first.contains(':') || first == 'localhost');
+  return explicit ? first.split(':').first : 'docker.io';
+}
+
+/// The `--allow-host` set for an environment that pulls [images].
+///
+/// Throws [RigPrivateRegistryException] for the first image on a registry
+/// outside [kPublicImageRegistries]. A private repository on a public registry
+/// cannot be told apart here; its pull fails inside the guest.
+List<String> environmentRigEgressHosts(Iterable<String> images) {
+  final hosts = <String>{};
+  for (final image in images) {
+    final registry = registryOfImageRef(image);
+    if (!kPublicImageRegistries.contains(registry)) {
+      throw RigPrivateRegistryException(image: image, registry: registry);
+    }
+    hosts.addAll(registryHostsForImageRef(image));
+  }
+  return hosts.toList(growable: false);
 }

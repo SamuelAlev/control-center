@@ -9281,6 +9281,598 @@ class ManagedActionPoliciesTableCompanion
   }
 }
 
+class $EnvironmentSlotLeasesTableTable extends EnvironmentSlotLeasesTable
+    with
+        TableInfo<
+          $EnvironmentSlotLeasesTableTable,
+          EnvironmentSlotLeasesTableData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EnvironmentSlotLeasesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _blockMeta = const VerificationMeta('block');
+  @override
+  late final GeneratedColumn<int> block = GeneratedColumn<int>(
+    'block',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _firstPortMeta = const VerificationMeta(
+    'firstPort',
+  );
+  @override
+  late final GeneratedColumn<int> firstPort = GeneratedColumn<int>(
+    'first_port',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sizeMeta = const VerificationMeta('size');
+  @override
+  late final GeneratedColumn<int> size = GeneratedColumn<int>(
+    'size',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _definitionIdMeta = const VerificationMeta(
+    'definitionId',
+  );
+  @override
+  late final GeneratedColumn<String> definitionId = GeneratedColumn<String>(
+    'definition_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _poolKeyMeta = const VerificationMeta(
+    'poolKey',
+  );
+  @override
+  late final GeneratedColumn<String> poolKey = GeneratedColumn<String>(
+    'pool_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _poolSlotMeta = const VerificationMeta(
+    'poolSlot',
+  );
+  @override
+  late final GeneratedColumn<int> poolSlot = GeneratedColumn<int>(
+    'pool_slot',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    block,
+    firstPort,
+    size,
+    workspaceId,
+    spaceId,
+    definitionId,
+    poolKey,
+    poolSlot,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'environment_slot_leases';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EnvironmentSlotLeasesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('block')) {
+      context.handle(
+        _blockMeta,
+        block.isAcceptableOrUnknown(data['block']!, _blockMeta),
+      );
+    }
+    if (data.containsKey('first_port')) {
+      context.handle(
+        _firstPortMeta,
+        firstPort.isAcceptableOrUnknown(data['first_port']!, _firstPortMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_firstPortMeta);
+    }
+    if (data.containsKey('size')) {
+      context.handle(
+        _sizeMeta,
+        size.isAcceptableOrUnknown(data['size']!, _sizeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sizeMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('definition_id')) {
+      context.handle(
+        _definitionIdMeta,
+        definitionId.isAcceptableOrUnknown(
+          data['definition_id']!,
+          _definitionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_definitionIdMeta);
+    }
+    if (data.containsKey('pool_key')) {
+      context.handle(
+        _poolKeyMeta,
+        poolKey.isAcceptableOrUnknown(data['pool_key']!, _poolKeyMeta),
+      );
+    }
+    if (data.containsKey('pool_slot')) {
+      context.handle(
+        _poolSlotMeta,
+        poolSlot.isAcceptableOrUnknown(data['pool_slot']!, _poolSlotMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {block};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {poolKey, poolSlot},
+    {workspaceId, spaceId, definitionId},
+  ];
+  @override
+  EnvironmentSlotLeasesTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EnvironmentSlotLeasesTableData(
+      block: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}block'],
+      )!,
+      firstPort: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_port'],
+      )!,
+      size: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      definitionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}definition_id'],
+      )!,
+      poolKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pool_key'],
+      ),
+      poolSlot: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pool_slot'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $EnvironmentSlotLeasesTableTable createAlias(String alias) {
+    return $EnvironmentSlotLeasesTableTable(attachedDatabase, alias);
+  }
+}
+
+class EnvironmentSlotLeasesTableData extends DataClass
+    implements Insertable<EnvironmentSlotLeasesTableData> {
+  /// Block index in the configured range.
+  final int block;
+
+  /// First port.
+  final int firstPort;
+
+  /// Ports in the block.
+  final int size;
+
+  /// Holding workspace.
+  final String workspaceId;
+
+  /// Holding space.
+  final String spaceId;
+
+  /// The definition.
+  final String definitionId;
+
+  /// A name pool, when the environment uses one.
+  final String? poolKey;
+
+  /// The pool slot.
+  final int? poolSlot;
+
+  /// When it was taken.
+  final DateTime createdAt;
+  const EnvironmentSlotLeasesTableData({
+    required this.block,
+    required this.firstPort,
+    required this.size,
+    required this.workspaceId,
+    required this.spaceId,
+    required this.definitionId,
+    this.poolKey,
+    this.poolSlot,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['block'] = Variable<int>(block);
+    map['first_port'] = Variable<int>(firstPort);
+    map['size'] = Variable<int>(size);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    map['space_id'] = Variable<String>(spaceId);
+    map['definition_id'] = Variable<String>(definitionId);
+    if (!nullToAbsent || poolKey != null) {
+      map['pool_key'] = Variable<String>(poolKey);
+    }
+    if (!nullToAbsent || poolSlot != null) {
+      map['pool_slot'] = Variable<int>(poolSlot);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  EnvironmentSlotLeasesTableCompanion toCompanion(bool nullToAbsent) {
+    return EnvironmentSlotLeasesTableCompanion(
+      block: Value(block),
+      firstPort: Value(firstPort),
+      size: Value(size),
+      workspaceId: Value(workspaceId),
+      spaceId: Value(spaceId),
+      definitionId: Value(definitionId),
+      poolKey: poolKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(poolKey),
+      poolSlot: poolSlot == null && nullToAbsent
+          ? const Value.absent()
+          : Value(poolSlot),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory EnvironmentSlotLeasesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EnvironmentSlotLeasesTableData(
+      block: serializer.fromJson<int>(json['block']),
+      firstPort: serializer.fromJson<int>(json['firstPort']),
+      size: serializer.fromJson<int>(json['size']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      definitionId: serializer.fromJson<String>(json['definitionId']),
+      poolKey: serializer.fromJson<String?>(json['poolKey']),
+      poolSlot: serializer.fromJson<int?>(json['poolSlot']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'block': serializer.toJson<int>(block),
+      'firstPort': serializer.toJson<int>(firstPort),
+      'size': serializer.toJson<int>(size),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'definitionId': serializer.toJson<String>(definitionId),
+      'poolKey': serializer.toJson<String?>(poolKey),
+      'poolSlot': serializer.toJson<int?>(poolSlot),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  EnvironmentSlotLeasesTableData copyWith({
+    int? block,
+    int? firstPort,
+    int? size,
+    String? workspaceId,
+    String? spaceId,
+    String? definitionId,
+    Value<String?> poolKey = const Value.absent(),
+    Value<int?> poolSlot = const Value.absent(),
+    DateTime? createdAt,
+  }) => EnvironmentSlotLeasesTableData(
+    block: block ?? this.block,
+    firstPort: firstPort ?? this.firstPort,
+    size: size ?? this.size,
+    workspaceId: workspaceId ?? this.workspaceId,
+    spaceId: spaceId ?? this.spaceId,
+    definitionId: definitionId ?? this.definitionId,
+    poolKey: poolKey.present ? poolKey.value : this.poolKey,
+    poolSlot: poolSlot.present ? poolSlot.value : this.poolSlot,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  EnvironmentSlotLeasesTableData copyWithCompanion(
+    EnvironmentSlotLeasesTableCompanion data,
+  ) {
+    return EnvironmentSlotLeasesTableData(
+      block: data.block.present ? data.block.value : this.block,
+      firstPort: data.firstPort.present ? data.firstPort.value : this.firstPort,
+      size: data.size.present ? data.size.value : this.size,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      definitionId: data.definitionId.present
+          ? data.definitionId.value
+          : this.definitionId,
+      poolKey: data.poolKey.present ? data.poolKey.value : this.poolKey,
+      poolSlot: data.poolSlot.present ? data.poolSlot.value : this.poolSlot,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EnvironmentSlotLeasesTableData(')
+          ..write('block: $block, ')
+          ..write('firstPort: $firstPort, ')
+          ..write('size: $size, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('definitionId: $definitionId, ')
+          ..write('poolKey: $poolKey, ')
+          ..write('poolSlot: $poolSlot, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    block,
+    firstPort,
+    size,
+    workspaceId,
+    spaceId,
+    definitionId,
+    poolKey,
+    poolSlot,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EnvironmentSlotLeasesTableData &&
+          other.block == this.block &&
+          other.firstPort == this.firstPort &&
+          other.size == this.size &&
+          other.workspaceId == this.workspaceId &&
+          other.spaceId == this.spaceId &&
+          other.definitionId == this.definitionId &&
+          other.poolKey == this.poolKey &&
+          other.poolSlot == this.poolSlot &&
+          other.createdAt == this.createdAt);
+}
+
+class EnvironmentSlotLeasesTableCompanion
+    extends UpdateCompanion<EnvironmentSlotLeasesTableData> {
+  final Value<int> block;
+  final Value<int> firstPort;
+  final Value<int> size;
+  final Value<String> workspaceId;
+  final Value<String> spaceId;
+  final Value<String> definitionId;
+  final Value<String?> poolKey;
+  final Value<int?> poolSlot;
+  final Value<DateTime> createdAt;
+  const EnvironmentSlotLeasesTableCompanion({
+    this.block = const Value.absent(),
+    this.firstPort = const Value.absent(),
+    this.size = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.definitionId = const Value.absent(),
+    this.poolKey = const Value.absent(),
+    this.poolSlot = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  EnvironmentSlotLeasesTableCompanion.insert({
+    this.block = const Value.absent(),
+    required int firstPort,
+    required int size,
+    required String workspaceId,
+    required String spaceId,
+    required String definitionId,
+    this.poolKey = const Value.absent(),
+    this.poolSlot = const Value.absent(),
+    required DateTime createdAt,
+  }) : firstPort = Value(firstPort),
+       size = Value(size),
+       workspaceId = Value(workspaceId),
+       spaceId = Value(spaceId),
+       definitionId = Value(definitionId),
+       createdAt = Value(createdAt);
+  static Insertable<EnvironmentSlotLeasesTableData> custom({
+    Expression<int>? block,
+    Expression<int>? firstPort,
+    Expression<int>? size,
+    Expression<String>? workspaceId,
+    Expression<String>? spaceId,
+    Expression<String>? definitionId,
+    Expression<String>? poolKey,
+    Expression<int>? poolSlot,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (block != null) 'block': block,
+      if (firstPort != null) 'first_port': firstPort,
+      if (size != null) 'size': size,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (spaceId != null) 'space_id': spaceId,
+      if (definitionId != null) 'definition_id': definitionId,
+      if (poolKey != null) 'pool_key': poolKey,
+      if (poolSlot != null) 'pool_slot': poolSlot,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  EnvironmentSlotLeasesTableCompanion copyWith({
+    Value<int>? block,
+    Value<int>? firstPort,
+    Value<int>? size,
+    Value<String>? workspaceId,
+    Value<String>? spaceId,
+    Value<String>? definitionId,
+    Value<String?>? poolKey,
+    Value<int?>? poolSlot,
+    Value<DateTime>? createdAt,
+  }) {
+    return EnvironmentSlotLeasesTableCompanion(
+      block: block ?? this.block,
+      firstPort: firstPort ?? this.firstPort,
+      size: size ?? this.size,
+      workspaceId: workspaceId ?? this.workspaceId,
+      spaceId: spaceId ?? this.spaceId,
+      definitionId: definitionId ?? this.definitionId,
+      poolKey: poolKey ?? this.poolKey,
+      poolSlot: poolSlot ?? this.poolSlot,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (block.present) {
+      map['block'] = Variable<int>(block.value);
+    }
+    if (firstPort.present) {
+      map['first_port'] = Variable<int>(firstPort.value);
+    }
+    if (size.present) {
+      map['size'] = Variable<int>(size.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (definitionId.present) {
+      map['definition_id'] = Variable<String>(definitionId.value);
+    }
+    if (poolKey.present) {
+      map['pool_key'] = Variable<String>(poolKey.value);
+    }
+    if (poolSlot.present) {
+      map['pool_slot'] = Variable<int>(poolSlot.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EnvironmentSlotLeasesTableCompanion(')
+          ..write('block: $block, ')
+          ..write('firstPort: $firstPort, ')
+          ..write('size: $size, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('definitionId: $definitionId, ')
+          ..write('poolKey: $poolKey, ')
+          ..write('poolSlot: $poolSlot, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$GlobalDatabase extends GeneratedDatabase {
   _$GlobalDatabase(QueryExecutor e) : super(e);
   $GlobalDatabaseManager get managers => $GlobalDatabaseManager(this);
@@ -9311,6 +9903,8 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
       $SsoConnectionsTableTable(this);
   late final $ManagedActionPoliciesTableTable managedActionPoliciesTable =
       $ManagedActionPoliciesTableTable(this);
+  late final $EnvironmentSlotLeasesTableTable environmentSlotLeasesTable =
+      $EnvironmentSlotLeasesTableTable(this);
   late final Index idxUsersHandle = Index(
     'idx_users_handle',
     'CREATE UNIQUE INDEX idx_users_handle ON users (handle)',
@@ -9366,6 +9960,9 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
   );
   late final ManagedActionPolicyDao managedActionPolicyDao =
       ManagedActionPolicyDao(this as GlobalDatabase);
+  late final EnvironmentLeaseDao environmentLeaseDao = EnvironmentLeaseDao(
+    this as GlobalDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -9385,6 +9982,7 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
     serverSettingsTable,
     ssoConnectionsTable,
     managedActionPoliciesTable,
+    environmentSlotLeasesTable,
     idxUsersHandle,
     idxRssArticlesFeedIdGuid,
     idxWorkersStatus,
@@ -14683,6 +15281,311 @@ typedef $$ManagedActionPoliciesTableTableProcessedTableManager =
       ManagedActionPoliciesTableData,
       PrefetchHooks Function()
     >;
+typedef $$EnvironmentSlotLeasesTableTableCreateCompanionBuilder =
+    EnvironmentSlotLeasesTableCompanion Function({
+      Value<int> block,
+      required int firstPort,
+      required int size,
+      required String workspaceId,
+      required String spaceId,
+      required String definitionId,
+      Value<String?> poolKey,
+      Value<int?> poolSlot,
+      required DateTime createdAt,
+    });
+typedef $$EnvironmentSlotLeasesTableTableUpdateCompanionBuilder =
+    EnvironmentSlotLeasesTableCompanion Function({
+      Value<int> block,
+      Value<int> firstPort,
+      Value<int> size,
+      Value<String> workspaceId,
+      Value<String> spaceId,
+      Value<String> definitionId,
+      Value<String?> poolKey,
+      Value<int?> poolSlot,
+      Value<DateTime> createdAt,
+    });
+
+class $$EnvironmentSlotLeasesTableTableFilterComposer
+    extends Composer<_$GlobalDatabase, $EnvironmentSlotLeasesTableTable> {
+  $$EnvironmentSlotLeasesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get block => $composableBuilder(
+    column: $table.block,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get firstPort => $composableBuilder(
+    column: $table.firstPort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get poolKey => $composableBuilder(
+    column: $table.poolKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get poolSlot => $composableBuilder(
+    column: $table.poolSlot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EnvironmentSlotLeasesTableTableOrderingComposer
+    extends Composer<_$GlobalDatabase, $EnvironmentSlotLeasesTableTable> {
+  $$EnvironmentSlotLeasesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get block => $composableBuilder(
+    column: $table.block,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get firstPort => $composableBuilder(
+    column: $table.firstPort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get poolKey => $composableBuilder(
+    column: $table.poolKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get poolSlot => $composableBuilder(
+    column: $table.poolSlot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EnvironmentSlotLeasesTableTableAnnotationComposer
+    extends Composer<_$GlobalDatabase, $EnvironmentSlotLeasesTableTable> {
+  $$EnvironmentSlotLeasesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get block =>
+      $composableBuilder(column: $table.block, builder: (column) => column);
+
+  GeneratedColumn<int> get firstPort =>
+      $composableBuilder(column: $table.firstPort, builder: (column) => column);
+
+  GeneratedColumn<int> get size =>
+      $composableBuilder(column: $table.size, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<String> get definitionId => $composableBuilder(
+    column: $table.definitionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get poolKey =>
+      $composableBuilder(column: $table.poolKey, builder: (column) => column);
+
+  GeneratedColumn<int> get poolSlot =>
+      $composableBuilder(column: $table.poolSlot, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$EnvironmentSlotLeasesTableTableTableManager
+    extends
+        RootTableManager<
+          _$GlobalDatabase,
+          $EnvironmentSlotLeasesTableTable,
+          EnvironmentSlotLeasesTableData,
+          $$EnvironmentSlotLeasesTableTableFilterComposer,
+          $$EnvironmentSlotLeasesTableTableOrderingComposer,
+          $$EnvironmentSlotLeasesTableTableAnnotationComposer,
+          $$EnvironmentSlotLeasesTableTableCreateCompanionBuilder,
+          $$EnvironmentSlotLeasesTableTableUpdateCompanionBuilder,
+          (
+            EnvironmentSlotLeasesTableData,
+            BaseReferences<
+              _$GlobalDatabase,
+              $EnvironmentSlotLeasesTableTable,
+              EnvironmentSlotLeasesTableData
+            >,
+          ),
+          EnvironmentSlotLeasesTableData,
+          PrefetchHooks Function()
+        > {
+  $$EnvironmentSlotLeasesTableTableTableManager(
+    _$GlobalDatabase db,
+    $EnvironmentSlotLeasesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EnvironmentSlotLeasesTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$EnvironmentSlotLeasesTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$EnvironmentSlotLeasesTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> block = const Value.absent(),
+                Value<int> firstPort = const Value.absent(),
+                Value<int> size = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<String> definitionId = const Value.absent(),
+                Value<String?> poolKey = const Value.absent(),
+                Value<int?> poolSlot = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => EnvironmentSlotLeasesTableCompanion(
+                block: block,
+                firstPort: firstPort,
+                size: size,
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                definitionId: definitionId,
+                poolKey: poolKey,
+                poolSlot: poolSlot,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> block = const Value.absent(),
+                required int firstPort,
+                required int size,
+                required String workspaceId,
+                required String spaceId,
+                required String definitionId,
+                Value<String?> poolKey = const Value.absent(),
+                Value<int?> poolSlot = const Value.absent(),
+                required DateTime createdAt,
+              }) => EnvironmentSlotLeasesTableCompanion.insert(
+                block: block,
+                firstPort: firstPort,
+                size: size,
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                definitionId: definitionId,
+                poolKey: poolKey,
+                poolSlot: poolSlot,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $EnvironmentSlotLeasesTableTable,
+                    EnvironmentSlotLeasesTableData
+                  >(table),
+                  BaseReferences<
+                    _$GlobalDatabase,
+                    $EnvironmentSlotLeasesTableTable,
+                    EnvironmentSlotLeasesTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EnvironmentSlotLeasesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$GlobalDatabase,
+      $EnvironmentSlotLeasesTableTable,
+      EnvironmentSlotLeasesTableData,
+      $$EnvironmentSlotLeasesTableTableFilterComposer,
+      $$EnvironmentSlotLeasesTableTableOrderingComposer,
+      $$EnvironmentSlotLeasesTableTableAnnotationComposer,
+      $$EnvironmentSlotLeasesTableTableCreateCompanionBuilder,
+      $$EnvironmentSlotLeasesTableTableUpdateCompanionBuilder,
+      (
+        EnvironmentSlotLeasesTableData,
+        BaseReferences<
+          _$GlobalDatabase,
+          $EnvironmentSlotLeasesTableTable,
+          EnvironmentSlotLeasesTableData
+        >,
+      ),
+      EnvironmentSlotLeasesTableData,
+      PrefetchHooks Function()
+    >;
 
 class $GlobalDatabaseManager {
   final _$GlobalDatabase _db;
@@ -14718,5 +15621,11 @@ class $GlobalDatabaseManager {
       $$ManagedActionPoliciesTableTableTableManager(
         _db,
         _db.managedActionPoliciesTable,
+      );
+  $$EnvironmentSlotLeasesTableTableTableManager
+  get environmentSlotLeasesTable =>
+      $$EnvironmentSlotLeasesTableTableTableManager(
+        _db,
+        _db.environmentSlotLeasesTable,
       );
 }

@@ -3,6 +3,7 @@ import 'package:control_center/features/pr_review/presentation/screens/pull_requ
 import 'package:control_center/features/pr_review/presentation/widgets/mention_autocomplete_field.dart';
 import 'package:control_center/features/pr_review/providers/compose_pr_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_editor.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,7 +26,8 @@ class ComposePrBodyField extends ConsumerStatefulWidget {
 }
 
 class _ComposePrBodyFieldState extends ConsumerState<ComposePrBodyField> {
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _controller =
+      ComposerTextController.markdownOnly();
   final FocusNode _focusNode = FocusNode();
 
   /// The exact body text this widget last seeded from a template (auto-applied

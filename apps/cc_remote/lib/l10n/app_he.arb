@@ -975,5 +975,6 @@
   "transcriptClaudeSignInExpiredTitle": "תוקף הכניסה ל-Claude Code פג",
   "transcriptClaudeSignInExpiredBody": "הריצה נעצרה כי החשבון שלה כבר לא עובר אימות. היכנסו שוב ואז נסו שוב את התור.",
   "transcriptSignInExpiredTitle": "תוקף הכניסה לספק פג",
-  "transcriptSignInExpiredBody": "הריצה נעצרה כי פרטי ההתחברות של הספק כבר לא עובדים. חברו אותו מחדש בהגדרות ← ספקים ואז נסו שוב את התור."
+  "transcriptSignInExpiredBody": "הריצה נעצרה כי פרטי ההתחברות של הספק כבר לא עובדים. חברו אותו מחדש בהגדרות ← ספקים ואז נסו שוב את התור.",
+  "permissionHostExecution": "הרצת פקודות במארח"
 }

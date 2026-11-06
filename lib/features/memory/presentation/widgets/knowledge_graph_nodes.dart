@@ -1,7 +1,9 @@
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/memory/presentation/widgets/confidence_meter.dart';
+import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_chrome.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_chip.dart';
+import 'package:control_center/features/memory/presentation/widgets/memory_excerpt.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -15,6 +17,7 @@ class DomainNode extends StatelessWidget {
     required this.domainLabel,
     required this.factCount,
     required this.policyCount,
+    required this.selected,
     required this.onTap,
   });
 
@@ -27,27 +30,26 @@ class DomainNode extends StatelessWidget {
   /// Number of policies grouped under this domain.
   final int policyCount;
 
-  /// Opens the domain's detail sheet.
+  /// Whether the inspector is showing this node.
+  final bool selected;
+
+  /// Selects this domain.
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return GestureDetector(
+    return GraphNodeSurface(
+      color: tokens.bgBrandPrimary,
+      borderColor: tokens.borderBrand,
+      borderRadius: AppRadii.brLg,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      selected: selected,
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: tokens.bgBrandPrimary,
-          borderRadius: AppRadii.brLg,
-          border: Border.all(color: tokens.borderBrand),
-        ),
-        child: Column(
+      child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -81,7 +83,6 @@ class DomainNode extends StatelessWidget {
               ),
             ),
           ],
-        ),
       ),
     );
   }
@@ -97,6 +98,7 @@ class TopicNode extends StatelessWidget {
     required this.factCount,
     required this.expanded,
     required this.onToggle,
+    required this.selected,
     required this.onTap,
   });
 
@@ -112,7 +114,10 @@ class TopicNode extends StatelessWidget {
   /// Shows or hides this topic's facts.
   final VoidCallback onToggle;
 
-  /// Opens the topic's detail sheet.
+  /// Whether the inspector is showing this node.
+  final bool selected;
+
+  /// Selects this topic.
   final VoidCallback onTap;
 
   @override
@@ -122,26 +127,20 @@ class TopicNode extends StatelessWidget {
     final label = expanded
         ? l10n.memoryGraphHideFacts
         : l10n.memoryGraphShowFacts;
-    return GestureDetector(
+    return GraphNodeSurface(
+      color: tokens.bgSecondary,
+      // An expanded topic heads a column of its own cards, so it takes the ink
+      // border that says "this one is open" — shape, not colour, since the
+      // whole grid is the same neutral.
+      borderColor: expanded ? tokens.borderPrimary : tokens.borderSecondary,
+      borderRadius: AppRadii.brMd,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 6,
+      ),
+      selected: selected,
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: 6,
-        ),
-        decoration: BoxDecoration(
-          // An expanded topic heads a column of its own cards, so it takes the
-          // ink border that says "this one is open" — shape, not colour, since
-          // the whole grid is the same neutral.
-          color: tokens.bgSecondary,
-          borderRadius: AppRadii.brMd,
-          border: Border.all(
-            color: expanded ? tokens.borderPrimary : tokens.borderSecondary,
-          ),
-        ),
-        child: Column(
+      child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +199,6 @@ class TopicNode extends StatelessWidget {
               ),
             ),
           ],
-        ),
       ),
     );
   }
@@ -213,6 +211,7 @@ class FactNode extends StatelessWidget {
     super.key,
     required this.fact,
     required this.supersededCount,
+    required this.selected,
     required this.onTap,
   });
 
@@ -222,57 +221,55 @@ class FactNode extends StatelessWidget {
   /// How many facts this one superseded.
   final int supersededCount;
 
-  /// Opens the fact's detail sheet.
+  /// Whether the inspector is showing this node.
+  final bool selected;
+
+  /// Selects this fact.
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return GestureDetector(
-      onTap: onTap,
-      child: Opacity(
-        opacity: fact.isSuperseded ? 0.55 : 1.0,
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: tokens.bgPrimary,
-            borderRadius: AppRadii.brMd,
-            border: Border.all(color: tokens.borderSecondary),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: MemoryMetaChip(
-                      label: fact.topic,
-                      icon: AppIcons.lightbulb,
-                    ),
+    return Opacity(
+      opacity: fact.isSuperseded ? 0.55 : 1.0,
+      child: GraphNodeSurface(
+        color: tokens.bgPrimary,
+        borderColor: tokens.borderSecondary,
+        borderRadius: AppRadii.brMd,
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        selected: selected,
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Flexible(
+                  child: MemoryMetaChip(
+                    label: fact.topic,
+                    icon: AppIcons.lightbulb,
                   ),
-                  if (supersededCount > 0) ...[
-                    const SizedBox(width: AppSpacing.xs),
-                    MemoryMetaChip(label: 'v${supersededCount + 1}'),
-                  ],
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                fact.content.split('\n').first,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: CcTypography.caption.copyWith(
-                  color: tokens.textSecondary,
-                  height: 1.4,
                 ),
+                if (supersededCount > 0) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  MemoryMetaChip(label: 'v${supersededCount + 1}'),
+                ],
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              memoryPlainExcerpt(fact.content),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: CcTypography.caption.copyWith(
+                color: tokens.textSecondary,
+                height: 1.4,
               ),
-              const SizedBox(height: AppSpacing.sm),
-              ConfidenceMeter(confidence: fact.confidence, compact: true),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            ConfidenceMeter(confidence: fact.confidence, compact: true),
+          ],
         ),
       ),
     );

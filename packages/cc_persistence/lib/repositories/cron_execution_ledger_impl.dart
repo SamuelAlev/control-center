@@ -29,4 +29,12 @@ class CronExecutionLedgerImpl implements CronExecutionLedger {
     triggerId: triggerId,
     plannedAt: plannedAt,
   );
+
+  @override
+  Future<void> releaseSlot({
+    required String workspaceId,
+    required String triggerId,
+    required DateTime plannedAt,
+  }) =>
+      _dao(workspaceId).releaseSlot(triggerId: triggerId, plannedAt: plannedAt);
 }

@@ -68,6 +68,12 @@ class WorkspaceRegistryDao extends DatabaseAccessor<GlobalDatabase>
     return [for (final r in rows) r.id];
   }
 
+  /// Maps every workspace id, soft-deleted ones included, to its name.
+  Future<Map<String, String>> namesIncludingDeleted() async {
+    final rows = await select(workspacesTable).get();
+    return {for (final r in rows) r.id: r.name};
+  }
+
   /// Returns every LIVE workspace id, in the app-wide manual order.
   ///
   /// What the read fan-outs want. A soft-deleted workspace is one a person

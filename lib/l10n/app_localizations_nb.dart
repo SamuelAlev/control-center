@@ -92,10 +92,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get keybindingPushToTalk => 'Trykk for å snakke';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'Hold eller slå av/på stemmediktering i meldingsfeltet';
-
-  @override
   String get agentPermissions => 'Agenttillatelser';
 
   @override
@@ -194,6 +190,9 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'iOS-simulator';
+
+  @override
+  String get rigSurfaceAppWindow => 'Appvindu';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -468,6 +467,10 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'Live-visning trenger ffmpeg på denne verten. Installer ffmpeg og åpne fanen på nytt.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'Direktevisning krever skjermopptak. Gi det til Control Center i Systeminnstillinger og åpne fanen på nytt.';
 
   @override
   String get rigStreamEnded => 'Live-visningen ble avsluttet.';
@@ -1571,10 +1574,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'Åpne filtermeny';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'Åpne filtermenyen for pull requests';
 
   @override
   String countSelected(int count) {
@@ -2847,19 +2846,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get cancelEdit => 'Avbryt redigering';
 
   @override
-  String get categoryCreation => 'Oppretting';
-
-  @override
-  String get categoryEditing => 'Redigering';
-
-  @override
   String get categoryNavigation => 'Navigasjon';
-
-  @override
-  String get categorySystem => 'System';
-
-  @override
-  String get categoryView => 'Kategorivisning';
 
   @override
   String get change => 'Endre';
@@ -3681,31 +3668,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get keepSandboxing => 'Behold sandkasse';
 
   @override
-  String get keybindingAddARepositoryDescription => 'Legg til et arkiv';
-
-  @override
   String get keybindingAddRepository => 'Legg til arkiv';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'Bokmerk eller fjern bokmerke for valgt artikkel';
 
   @override
   String get keybindingCommandPalette => 'Kommandopalett';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'Opprett en ny agent';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'Opprett et nytt arbeidsområde';
-
-  @override
   String get keybindingFocusSearch => 'Fokuser søk';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'Fokuser søkefeltet for pull requests';
 
   @override
   String get keybindingNewAgent => 'Ny agent';
@@ -3726,35 +3695,10 @@ class AppLocalizationsNb extends AppLocalizations {
   String get keybindingOpenArticle => 'Åpne artikkel';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'Åpne eller lukk arbeidsområdebytteren i sidestolpen';
-
-  @override
   String get keybindingOpenPr => 'Åpne PR';
 
   @override
   String get keybindingOpenSettings => 'Åpne innstillinger';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'Åpne appinnstillingene';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription =>
-      'Åpne kommandopaletten';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'Åpne den valgte artikkelen';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'Åpne den valgte pull requesten';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'Åpne det valgte arbeidsområdet';
 
   @override
   String get keybindingOpenWorkspace => 'Åpne arbeidsområde';
@@ -3772,84 +3716,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get keybindingRefresh => 'Oppdater';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'Oppdater alle strømmer';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'Oppdater listen over pull requests';
-
-  @override
-  String get keybindingRescanForAdaptersDescription =>
-      'Skann på nytt etter adaptere';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription => 'Velg neste artikkel';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription => 'Velg neste område';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'Velg forrige artikkel';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription =>
-      'Velg forrige område';
-
-  @override
   String get keybindingSendMessage => 'Send melding';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'Send gjeldende melding';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'Bytt mellom lyst og mørkt modus';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'Bytt til det åttende arbeidsområdet';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'Bytt til det femte arbeidsområdet';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'Bytt til det første arbeidsområdet';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'Bytt til det fjerde arbeidsområdet';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'Bytt til neste arbeidsområde';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'Bytt til det niende arbeidsområdet';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'Bytt til forrige arbeidsområde';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'Bytt til det andre arbeidsområdet';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'Bytt til det sjuende arbeidsområdet';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'Bytt til det sjette arbeidsområdet';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'Bytt til det tredje arbeidsområdet';
 
   @override
   String get keybindingToggleBookmark => 'Slå bokmerke av/på';
@@ -3887,13 +3754,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'Arbeidsområde 9';
-
-  @override
-  String get keybindings => 'Hurtigtaster';
-
-  @override
-  String get keybindingsDescription =>
-      'Alle hurtigtaster. Snarveiene er faste og kan ikke tilordnes på nytt.';
 
   @override
   String get killRunning => 'Avslutt kjørende';
@@ -4163,11 +4023,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get noSavedArticlesBody => 'Artikler du lagrer vises her.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'Ingen snarveier matcher «$query»';
-  }
 
   @override
   String get noSystemFonts => 'Ingen systemskrifter oppdaget.';
@@ -4902,12 +4757,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'Søk…';
-
-  @override
-  String get searchShortcuts => 'Søk i snarveier…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'Utilgjengelig i nettleseren';
 
   @override
   String get searching => 'Søker…';
@@ -6695,6 +6544,28 @@ class AppLocalizationsNb extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'Område slettet';
 
   @override
+  String get triggerEventSpaceArchived => 'Område arkivert';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged =>
+      'Klargjøring av område endret';
+
+  @override
+  String get triggerEventPrHeadChanged => 'PR-head endret';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => 'Miljøstatus endret';
+
+  @override
+  String get triggerEventEnvironmentReady => 'Miljø klart';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'Miljø fjernet';
+
+  @override
+  String get triggerEventEnvironmentProcessExited => 'Miljøprosess avsluttet';
+
+  @override
   String get triggerExternalPrHelp =>
       'En pull-forespørsel åpnet på kodeverten, ikke fra Control Center.';
 
@@ -6757,6 +6628,32 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'Et samtalerom slettes.';
+
+  @override
+  String get triggerSpaceArchivedHelp => 'Et samtalerom arkiveres.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'Klargjøringen av et områdes worktrees starter, fullføres eller mislykkes.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'Nye commits pushes til en åpen pull request.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'Et områdemiljø går over til en ny status.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'Et områdemiljø har startet og kan brukes.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp => 'Et områdemiljø rives ned.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'En prosess som kjøres av et miljø, avsluttes.';
 
   @override
   String get navTickets => 'Saker';
@@ -8960,19 +8857,6 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'Bruk og kostnad';
-
-  @override
-  String get usageAndCostDescription =>
-      'Forbruk på tvers av agentene dine de siste 7 dagene, fra observerte kjøringskostnader.';
-
-  @override
-  String get noUsageYet => 'Ingen bruk registrert ennå.';
-
-  @override
-  String get spentThisWeek => 'brukt denne uken';
-
-  @override
   String get subscriptionUsage => 'Abonnementsbruk';
 
   @override
@@ -9185,9 +9069,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get keybindingNewSpace => 'Nytt område';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'Opprett et nytt område';
-
-  @override
   String get jumpToLatest => 'Hopp til siste';
 
   @override
@@ -9361,71 +9242,8 @@ class AppLocalizationsNb extends AppLocalizations {
   String get preparingWorkspace => 'Forbereder arbeidsområde…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'Kjører oppsettskriptet for $repo…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'Skript';
-
-  @override
-  String get repoScriptsTooltip => 'Konfigurer livssyklusskript';
-
-  @override
-  String get repoScriptsSetupLabel => 'Oppsettskript';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'Kjører i områdets worktree rett etter at det er opprettet — installer avhengigheter, generer filer. En feil merker området som mislykket; nytt forsøk kjører det igjen.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'Arkiveringsskript';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'Kjører like før et områdes worktree slettes — rydd opp i ressurser utenfor worktree. En feil blokkerer aldri sletting.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'Kjører via bash fra worktree, med CC_WORKSPACE_PATH (worktree), CC_ROOT_PATH (arkivroten), CC_SPACE_ID, CC_SPACE_NAME og CC_REPO_NAME satt.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'e.g. pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'e.g. docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => 'Nylige kjøringer';
-
-  @override
-  String get repoScriptsNoRuns => 'Ingen kjøringer ennå';
-
-  @override
-  String get repoScriptsSaved => 'Skript lagret';
-
-  @override
-  String get repoScriptsRunKindSetup => 'Oppsett';
-
-  @override
-  String get repoScriptsRunKindArchive => 'Arkiver';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'Kjører';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'Lyktes';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'Mislyktes';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'Tidsavbrudd';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'Avslutningskode $code';
+  String provisioningRunningTasks(String repo) {
+    return 'Kjører worktree-oppgaver for $repo…';
   }
 
   @override
@@ -10231,10 +10049,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get keybindingCheatSheet => 'Tastatursnarveier';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'Vis tastatursnarveioversikten for gjeldende skjerm';
-
-  @override
   String get runPlaybookLabel => 'Kjør playbook';
 
   @override
@@ -10245,14 +10059,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'Gjør om';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'Angre den siste reversible handlingen din';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'Gjør om den sist angrede handlingen';
 
   @override
   String get undone => 'Angret';
@@ -14109,6 +13915,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get newSkill => 'Ny ferdighet';
 
   @override
+  String get newItemAction => 'Ny';
+
+  @override
   String get zoomIn => 'Zoom inn';
 
   @override
@@ -14325,6 +14134,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get steerNow => 'Styr';
 
   @override
+  String get steerForce => 'Stopp og send';
+
+  @override
   String get steeringQueueLabel => 'Kølagte styringsmeldinger';
 
   @override
@@ -14373,16 +14185,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'Du blir spurt igjen neste gang en agent trenger å kjøre et program fra denne kopien.';
-
-  @override
-  String get repoScriptsTest => 'Test';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'Kjør dette utkastet i en engangsklon av arkivet';
-
-  @override
-  String get repoScriptsRunKindTest => 'Test';
 
   @override
   String get demoBadgeLabel => 'Demo';
@@ -14598,6 +14400,50 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'Sti på serveren';
+
+  @override
+  String get backupScheduledLabel => 'Planlagte sikkerhetskopier';
+
+  @override
+  String get backupScheduledExplainer =>
+      'Kopier lagret av sikkerhetskopi-pipelinen i hvert arbeidsområde. Angi tidsplan og oppbevaring i pipeline-malen.';
+
+  @override
+  String get backupScheduledNone => 'Ingen sikkerhetskopier ennå';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sikkerhetskopier',
+      one: '1 sikkerhetskopi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'Siste sikkerhetskopi: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'Du trenger administratorrollen i dette arbeidsområdet for å se sikkerhetskopiene.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'Slette denne sikkerhetskopien?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'Slette sikkerhetskopien fra $date av $name fra serveren? Dette kan ikke angres.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'Sikkerhetskopien er slettet.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'Arbeidsområdet er slettet';
 
   @override
   String get backupRestoreAction => 'Gjenopprett';
@@ -15217,14 +15063,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get ideQuickOpen => 'Gå til fil';
 
   @override
-  String get ideQuickOpenDescription =>
-      'Søk i samtalens filer etter navn og åpne én i en fane';
-
-  @override
-  String get prQuickOpenDescription =>
-      'Søk i pull requestens filer etter navn og åpne én i en fane';
-
-  @override
   String get ideQuickOpenHint => 'Søk etter filer etter navn';
 
   @override
@@ -15553,6 +15391,15 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'Tvungen innlasting';
+
+  @override
+  String get skillEvalHashLabel => 'Pakkehash';
+
+  @override
+  String get skillEvalProgressLabel => 'Fremdrift';
+
+  @override
+  String get skillEvalUpdatesToggle => 'Evaluering av oppdateringer';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -15946,4 +15793,709 @@ class AppLocalizationsNb extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return '$minutes min igjen';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'Miljøer kjører ekte prosesser på verten, så demoen har ingen.';
+
+  @override
+  String get environmentChecksFailing => 'Noen kontroller feiler på serveren';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'Endepunkter: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'Tjenester: $names';
+  }
+
+  @override
+  String get environmentCopied => 'Kopiert';
+
+  @override
+  String get environmentCopyCommand => 'Kopier kommando';
+
+  @override
+  String get environmentCopyUrl => 'Kopier URL';
+
+  @override
+  String get environmentDefinition => 'Definisjon';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count definisjoner',
+      one: '1 definisjon',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'Ødelegg';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name og dataene fjernes. Start oppretter et nytt.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'Ødelegge dette miljøet?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'Kjør i en tjeneste';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'Avslutningskode $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => 'Dette må settes opp på serveren';
+
+  @override
+  String get environmentKindApp => 'App';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'Prosess';
+
+  @override
+  String get environmentKindTask => 'Oppgave';
+
+  @override
+  String get environmentLaunch => 'Åpne';
+
+  @override
+  String get environmentLogsGone =>
+      'Disse loggene er ikke lenger tilgjengelige.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'Logger: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'Venter på utdata';
+
+  @override
+  String get environmentMoreActions => 'Flere miljøhandlinger';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'En endring krever at dette miljøet opprettes på nytt.';
+
+  @override
+  String get environmentNoStack =>
+      'Kjører bare worktree-oppgaver, så det er ingenting å starte.';
+
+  @override
+  String get environmentOnTheServer => 'På serveren';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Åpne i Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'Åpne visning';
+
+  @override
+  String get environmentPlacementRig => 'I en VM';
+
+  @override
+  String get environmentPreviewTab => 'Miljø';
+
+  @override
+  String get environmentRebuildRelaunch => 'Bygg på nytt og åpne igjen';
+
+  @override
+  String get environmentRecreate => 'Opprett på nytt';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name ødelegges og startes igjen med de samme valgene. Dataene går tapt.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'Opprette dette miljøet på nytt?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name går tilbake til utgangspunktet. Data opprettet siden da går tapt.';
+  }
+
+  @override
+  String get environmentResetData => 'Tilbakestill data';
+
+  @override
+  String get environmentResetTitle => 'Tilbakestille data?';
+
+  @override
+  String get environmentRestart => 'Start på nytt';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count omstarter',
+      one: '1 omstart',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'Kjør';
+
+  @override
+  String get environmentRunInTerminal => 'Kjør i terminal';
+
+  @override
+  String get environmentSectionTitle => 'Miljø';
+
+  @override
+  String get environmentService => 'Tjeneste';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'Handlinger for $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'Start miljø';
+
+  @override
+  String get environmentStateCrashed => 'Krasjet';
+
+  @override
+  String get environmentStatusDegraded => 'Redusert';
+
+  @override
+  String get environmentStatusDestroying => 'Ødelegges';
+
+  @override
+  String get environmentStatusGone => 'Borte';
+
+  @override
+  String get environmentStatusStopping => 'Stopper';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'Når $name stoppes, går dataene tapt, og Start henter dem ikke tilbake.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'Stopp og mist data';
+
+  @override
+  String get environmentStopTitle => 'Stoppe dette miljøet?';
+
+  @override
+  String get environmentTaskNeverRun => 'Ikke kjørt ennå';
+
+  @override
+  String get environmentsAddCheck => 'Legg til kontroll';
+
+  @override
+  String get environmentsAddOption => 'Legg til valg';
+
+  @override
+  String get environmentsAddRole => 'Legg til rolle';
+
+  @override
+  String get environmentsAdminOnly =>
+      'Bare arbeidsområdeadministratorer kan endre definisjoner.';
+
+  @override
+  String get environmentsAfter => 'Vent på disse komponentene';
+
+  @override
+  String get environmentsAnchor => 'Anker';
+
+  @override
+  String get environmentsAutoCreate => 'Start automatisk';
+
+  @override
+  String get environmentsAutoCreateAll => 'I hvert kvalifisert område';
+
+  @override
+  String get environmentsAutoCreateOff => 'Aldri';
+
+  @override
+  String get environmentsAutoCreatePrs => 'I pull request-områder';
+
+  @override
+  String get environmentsBlank => 'Tom definisjon';
+
+  @override
+  String get environmentsCheckFix => 'Rettekommando';
+
+  @override
+  String get environmentsCheckHint => 'Hint';
+
+  @override
+  String get environmentsCommandHelp =>
+      'Argumenter skilles med mellomrom. Sett et argument med mellomrom i anførselstegn.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komponenter',
+      one: '1 komponent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'Bygg avbildninger ved start';
+
+  @override
+  String get environmentsComposeFile => 'Compose-fil';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Kunne ikke lese en compose-fil. Tjenestenavn kan fortsatt legges inn i JSON-visningen.';
+
+  @override
+  String get environmentsComposeServices => 'Tjenester';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'La alle tjenester stå uavkrysset for å kjøre alle.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'Denne kommandoen har betingede argumenter. Rediger den i JSON-visningen.';
+
+  @override
+  String get environmentsCwdPath => 'Arbeidssti';
+
+  @override
+  String get environmentsCwdRole => 'Arbeidsrolle';
+
+  @override
+  String get environmentsDeleteBody =>
+      'Områder kan ikke lenger starte den. Kjørende miljøer fortsetter til de stoppes.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'Slette $name?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'Hva hvert område kan starte, og hvilke oppgaver worktree-ene kjører.';
+
+  @override
+  String get environmentsDraftFromRepo => 'Utkast fra repo';
+
+  @override
+  String get environmentsEmpty => 'Ingen definisjoner ennå';
+
+  @override
+  String get environmentsEnabledWhen => 'Aktivert når';
+
+  @override
+  String get environmentsEndpointRole => 'Endepunktrolle';
+
+  @override
+  String get environmentsFollowPrHead => 'Følg head for pull requesten';
+
+  @override
+  String get environmentsForkApproval => 'Hver start krever en administrator';
+
+  @override
+  String get environmentsForkDeny => 'Avvist';
+
+  @override
+  String get environmentsForkPrs => 'Pull requests fra forks';
+
+  @override
+  String get environmentsForkRig => 'Kjør i en VM';
+
+  @override
+  String get environmentsIdleStop => 'Stopp etter inaktive minutter';
+
+  @override
+  String get environmentsIsolateHome => 'Gi appen et eget hjem';
+
+  @override
+  String get environmentsIssues => 'Rett opp dette før du lagrer';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'Ugyldig JSON: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'Beholder dataene ved stopp';
+
+  @override
+  String get environmentsLinkConfirm => 'Koble til og godkjenn';
+
+  @override
+  String get environmentsLinkFile => 'Koble til en repofil';
+
+  @override
+  String get environmentsLinkHelp =>
+      'Leses bare fra standardgrenen og kjøres først etter godkjenning.';
+
+  @override
+  String get environmentsLinkPath => 'Sti';
+
+  @override
+  String get environmentsMaxRunning => 'Kjører samtidig';
+
+  @override
+  String get environmentsNamingProject => 'Prosjekt';
+
+  @override
+  String get environmentsNamingTemplate => 'Navnemal';
+
+  @override
+  String get environmentsNew => 'Ny definisjon';
+
+  @override
+  String get environmentsNewDefinitionName => 'Nytt miljø';
+
+  @override
+  String get environmentsNoChecks => 'Denne definisjonen har ingen kontroller.';
+
+  @override
+  String get environmentsNoRuns => 'Ingen testkjøringer ennå';
+
+  @override
+  String get environmentsOnChange => 'Stier å overvåke';
+
+  @override
+  String get environmentsOptionBool => 'Ja eller nei';
+
+  @override
+  String get environmentsOptionEnum => 'Én av';
+
+  @override
+  String get environmentsOptionMulti => 'Flere av';
+
+  @override
+  String get environmentsOptionValues => 'Verdier';
+
+  @override
+  String get environmentsPlacement => 'Plassering';
+
+  @override
+  String get environmentsPlacementHost => 'På verten';
+
+  @override
+  String get environmentsPlacementRig => 'I en VM';
+
+  @override
+  String get environmentsPrepareTask => 'Forberedelsesoppgave';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'Primært endepunkt';
+
+  @override
+  String get environmentsReadyHttp => 'Klar når denne URL-en svarer';
+
+  @override
+  String get environmentsRestartAlways => 'Alltid';
+
+  @override
+  String get environmentsRestartNever => 'Aldri';
+
+  @override
+  String get environmentsRestartOn => 'Start på nytt når disse stiene endres';
+
+  @override
+  String get environmentsRestartOnFailure => 'Ved feil';
+
+  @override
+  String get environmentsRestartPolicy => 'Start på nytt';
+
+  @override
+  String get environmentsRigTtl => 'VM-levetid i timer';
+
+  @override
+  String get environmentsRunChecks => 'Kjør på nytt';
+
+  @override
+  String get environmentsRunTest => 'Kjør test';
+
+  @override
+  String get environmentsSaved => 'Definisjon lagret';
+
+  @override
+  String get environmentsSectionComponents => 'Komponenter';
+
+  @override
+  String get environmentsSectionOptions => 'Startvalg';
+
+  @override
+  String get environmentsSectionSeedFiles => 'Startfiler';
+
+  @override
+  String get environmentsSectionVariables => 'Variabler';
+
+  @override
+  String get environmentsSeedHelp =>
+      'Én sti per linje, kopiert fra den registrerte utsjekkingen. Pull requests fra forks får aldri disse.';
+
+  @override
+  String get environmentsShellHelp =>
+      'Plassholdere utvides ikke her. Les CC_ENV_*-variabler i stedet.';
+
+  @override
+  String get environmentsSourceApprove => 'Godkjenn denne versjonen';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path samsvarer med den godkjente versjonen.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'Den godkjente versjonen fortsetter å kjøre til du godkjenner denne.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'Kilde';
+
+  @override
+  String get environmentsTestHelp =>
+      'Kjører et engangsmiljø fra start til slutt: kontroller, start, vent på klar, ødelegg.';
+
+  @override
+  String get environmentsTestSaveFirst => 'Lagre definisjonen først.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'Tidsavbrudd i sekunder';
+
+  @override
+  String get environmentsTitle => 'Miljøer';
+
+  @override
+  String get environmentsTriggerArchive => 'Før worktree slettes';
+
+  @override
+  String get environmentsTriggerChange => 'Når overvåkede stier endres';
+
+  @override
+  String get environmentsTriggerCreate => 'Én gang per miljø';
+
+  @override
+  String get environmentsTriggerManual => 'På forespørsel';
+
+  @override
+  String get environmentsTriggerProvision => 'Når worktree opprettes';
+
+  @override
+  String get environmentsTriggerStart => 'Ved hver start';
+
+  @override
+  String get environmentsTriggers => 'Kjører';
+
+  @override
+  String get environmentsUnreadable =>
+      'Denne klienten kan ikke lese definisjonen.';
+
+  @override
+  String get environmentsUpdateAvailable => 'Oppdatering tilgjengelig';
+
+  @override
+  String get environmentsUseShell => 'Bruk en skallkommando';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'Verktøyet kjører da mot din egen utsjekking. Behandle den som skrivebeskyttet.';
+
+  @override
+  String get environmentsWhenMissing => 'Når et område mangler den';
+
+  @override
+  String get environmentsWhenMissingAdd => 'Legg den til i området';
+
+  @override
+  String get environmentsWhenMissingSkip => 'Hopp over';
+
+  @override
+  String get environmentsWhenMissingSource =>
+      'Bruk den registrerte utsjekkingen';
+
+  @override
+  String get environmentsUnsupported => 'Denne serveren støtter ikke miljøer.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'Ingen visning: serveren kan ikke ta opp dette vinduet. Tillat skjermopptak for Control Center på serveren.';
+
+  @override
+  String get environmentHealthHealthy => 'Frisk';
+
+  @override
+  String get environmentHealthUnhealthy => 'Usunn';
+
+  @override
+  String get environmentTerminalStale =>
+      'Denne terminalen ble åpnet før miljøet startet, og mangler derfor variablene.';
+
+  @override
+  String get environmentTerminalFresh => 'Åpne en ny terminal';
+
+  @override
+  String get environmentsShellStays =>
+      'Et skript over flere linjer forblir en skallkommando: linjene er strukturen.';
+
+  @override
+  String get environmentsOverrides => 'Overstyringer for arbeidsområdet';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'Filens egne innstillinger er skrivebeskyttet her. Knytt rollene til repoene i dette arbeidsområdet, eller overstyr et felt som JSON.';
+
+  @override
+  String get environmentsReposHelp =>
+      'Arkivene dette miljøet bruker, hvert knyttet til en rolle.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'Det miljøet kjører, i startrekkefølge.';
+
+  @override
+  String get environmentsOptionsHelp => 'Valg som tilbys når miljøet startes.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'Settes på oppgaver, prosesser, apper og områdeterminaler.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'Det verten trenger for at dette miljøet skal kjøre.';
+
+  @override
+  String get environmentsIdleStopHelp => '0 stopper det aldri.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'Et område som har dette arkivet, kan starte miljøet.';
+
+  @override
+  String get environmentsRequiredHelp => 'Miljøet kan ikke kjøre uten det.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'Synkroniser og oppdater når head for pull requesten flytter seg.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'Må rettes';
+
+  @override
+  String get environmentsCheckFile => 'Fil';
+
+  @override
+  String get environmentsDiscardBody =>
+      'Endringene dine i definisjonen går tapt.';
+
+  @override
+  String get environmentsWorktreeRuns => 'Kjøringer av worktree-oppgaver';
+
+  @override
+  String get environmentsNoWorktreeRuns =>
+      'Ingen worktree-oppgave har kjørt ennå.';
+
+  @override
+  String get environmentsLinkRoles => 'Roller i denne filen';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'Kunne ikke lese filen fra repoet. Roller kan knyttes etter koblingen.';
+
+  @override
+  String get guardrailClassHostExecution => 'Kjør kommandoer på verten';
+
+  @override
+  String get environmentUrls => 'URL-er';
+
+  @override
+  String get environmentScripts => 'Skript';
+
+  @override
+  String get environmentNoneForSpace => 'Ingen miljø for dette området';
+
+  @override
+  String get environmentNoneForPr => 'Ingen miljø for denne pull-forespørselen';
+
+  @override
+  String get environmentSetupBody =>
+      'Et miljø kjører tjenestene, skriptene og URL-ene til et repo for ett område. Sett det opp én gang, så kan alle områder på repoet starte det.';
+
+  @override
+  String get environmentSetUp => 'Sett opp miljø';
+
+  @override
+  String get environmentEditDefinition => 'Rediger definisjon';
+
+  @override
+  String get environmentOpenPanel => 'Åpne miljø';
+
+  @override
+  String get environmentNeedsSetup => 'Må settes opp';
+
+  @override
+  String get environmentContinueInTerminal => 'Fortsett i terminalen';
+
+  @override
+  String get environmentSetupHint =>
+      'Verktøyet trenger deg i en terminal for et passord eller et spørsmål. Oppstarten fortsetter når det er ferdig.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'Denne terminalen ble åpnet fordi oppstarten trenger deg';
+
+  @override
+  String get environmentSetupTab => 'Miljøoppsett';
+
+  @override
+  String get environmentsNothingRunning =>
+      'Ingenting kjører fra denne definisjonen.';
+
+  @override
+  String get searchPoliciesHint => 'Søk i retningslinjer...';
+
+  @override
+  String get noPoliciesMatch => 'Ingen retningslinjer samsvarer med søket';
+
+  @override
+  String get memoryPolicyActive => 'Aktiv';
+
+  @override
+  String get memoryFactType => 'Type';
+
+  @override
+  String get memoryTimesRecalled => 'Antall hentinger';
+
+  @override
+  String get memorySourceFacts => 'Kildefakta';
+
+  @override
+  String get spaceSetupLogs => 'Oppsettslogger';
 }

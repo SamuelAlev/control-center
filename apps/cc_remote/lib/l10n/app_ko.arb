@@ -757,5 +757,6 @@
   "transcriptClaudeSignInExpiredTitle": "Claude Code 로그인이 만료되었습니다",
   "transcriptClaudeSignInExpiredBody": "계정이 더 이상 인증되지 않아 실행이 중지되었습니다. 다시 로그인한 뒤 이 턴을 재시도하세요.",
   "transcriptSignInExpiredTitle": "제공자 로그인이 만료되었습니다",
-  "transcriptSignInExpiredBody": "제공자 자격 증명이 더 이상 작동하지 않아 실행이 중지되었습니다. 설정 → 제공자에서 다시 연결한 뒤 이 턴을 재시도하세요."
+  "transcriptSignInExpiredBody": "제공자 자격 증명이 더 이상 작동하지 않아 실행이 중지되었습니다. 설정 → 제공자에서 다시 연결한 뒤 이 턴을 재시도하세요.",
+  "permissionHostExecution": "호스트에서 명령 실행"
 }

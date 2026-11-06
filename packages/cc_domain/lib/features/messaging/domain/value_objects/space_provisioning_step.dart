@@ -9,8 +9,8 @@ enum SpaceProvisioningStepKind {
   /// Fetching + checking out a pull request's head in a repo worktree.
   prCheckout,
 
-  /// Running a repo's configured setup script inside its fresh worktree.
-  script,
+  /// Running a repo's `provision` tasks inside its fresh worktree.
+  provisionTasks,
 
   /// Building an agent's overlay cwd (AGENTS.md + skills + `.mcp.json`).
   agent;

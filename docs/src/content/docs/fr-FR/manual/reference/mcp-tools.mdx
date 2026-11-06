@@ -2,7 +2,7 @@
 title: Outils MCP
 description: Catalogue complet des outils MCP enregistrés par cc_server, par famille.
 slug: fr-FR/manuel/reference/outils-mcp
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` héberge un registre d'outils MCP (JSON-RPC 2.0) unique, exposé sur le port principal du serveur (par défaut `9030`) en `POST /mcp` et `GET /sse`, version de protocole `2024-11-05`. Tous les clients atteignent le même registre : l'application de bureau, la version web, les clients MCP externes et le moteur d'agents intégré. Les serveurs MCP externes peuvent être raccordés au même registre sous forme de couche dynamique.
@@ -257,6 +257,8 @@ complet des verbes par surface figure dans la [référence des rigs](/fr-FR/manu
 | `ios_use` | Pilote le simulateur iOS via WebDriverAgent/CoreSimulator : inspecter/saisir, captures d'écran, installer/démarrer/arrêter/désinstaller des applications, liens profonds et processus de simulateur au format argv |
 | `rig_list` | Liste les rigs d'un espace de travail avec leur surface, leur statut, leur taille d'affichage et leur contrôleur |
 | `rig_close` | Détruit un rig et abandonne l'état de machine qu'il possède |
+
+`app_use` est un cinquième outil use : il pilote les fenêtres d’une application de bureau lancée dans un espace, directement sur l’hôte et non dans une VM, et déclare aussi `fileWriteOutsideWorktree` et `fileDelete`. Lui et les outils `environment_*` sont décrits dans [Configurer des environnements](/fr-FR/manuel/guides/environnements/).
 
 ## Non exposés via MCP
 

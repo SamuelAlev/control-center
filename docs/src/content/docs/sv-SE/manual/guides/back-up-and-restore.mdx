@@ -2,7 +2,7 @@
 title: Säkerhetskopiera och återställ
 description: Ta en ögonblicksbild av installationen, flytta en arbetsyta mellan maskiner, återställ en arbetsyta eller alla, och förvara kopior någon annanstans.
 slug: sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Den här guiden täcker de fem saker folk faktiskt gör med säkerhetskopior: tar en,
@@ -16,7 +16,7 @@ Allt här finns under **Inställningar → Server → Säkerhetskopiering och å
 
 - En **fullständig klient** – skrivbordsappen eller webbappen. En parkopplad telefon kan inte starta något av detta, och det är avsiktligt.
 - För att ta, lista, hämta eller radera en **ögonblicksbild av installationen**: installationens **ägare**.
-- För åtgärder per arbetsyta: **admin** för arbetsytan att exportera, **ägare** att importera eller radera den.
+- För åtgärder per arbetsyta: **admin** för arbetsytan att exportera den eller att lista och hämta dess schemalagda säkerhetskopior, **ägare** att importera eller radera den eller att radera en av dess säkerhetskopior.
 - För hämtningar och uppladdningar: en parkopplad fullständig klient på antingen en direkt eller en reläförmedlad anslutning. Båda vägarna bär filbyten genom samma autentiserade, end-to-end-krypterade resurstunnel; reläet kan inte läsa dem.
 
 :::caution[Ögonblicksbilder av installationen är manuella]
@@ -84,12 +84,35 @@ Säkerhetskopior av arbetsytan ligger på servern under
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Bevarandenoden
 raderar bara gamla säkerhetskopior för den här arbetsytan; den raderar aldrig
 ögonblicksbilder av installationen eller säkerhetskopior för andra arbetsytor. De här
-filerna är enbart databasen. För bevarande utanför maskinen kopierar du dem separat.
+filerna är enbart databasen. För bevarande utanför maskinen hämtar du dem eller kopierar dem separat.
 
-De här säkerhetskopiorna är åtskilda från listan **Installationsögonblicksbilder**.
-För att återställa en använder du **Arbetsytedata → Importera** med
-säkerhetskopians `workspace.db`-sökväg på serversidan. Importen ersätter arbetsytans
-aktuella databas, så exportera den först om du kan behöva ångra återställningen.
+## Hitta och återställ en schemalagd säkerhetskopia
+
+**Schemalagda säkerhetskopior** ligger mellan **Installationsögonblicksbilder** och
+**Arbetsytedata**, med en rad per arbetsyta: när dess senaste säkerhetskopia kördes, hur
+många den har behållit och hur mycket utrymme de tar. En arbetsyta vars pipeline inte
+har producerat något visar **Inga säkerhetskopior ännu**. En arbetsyta som du inte är
+admin för säger det på sin rad i stället för att lista sina säkerhetskopior.
+
+Fäll ut en rad för att se varje säkerhetskopia, nyast först:
+
+- **Återställ** ersätter arbetsytans aktuella databas med den här säkerhetskopian. Exportera arbetsytan först om du kan behöva ångra det. Kräver **ägare**.
+- **Hämta** sparar filen på maskinen du använder. Säkerhetskopian ligger kvar på servern.
+- **Kopiera sökväg** kopierar dess plats på servern.
+- **Ta bort** tar bort den här säkerhetskopian permanent, när du har skrivit arbetsytans namn. Kräver **ägare**.
+
+### Säkerhetskopior av en raderad arbetsyta
+
+Att radera en arbetsyta lämnar dess schemalagda säkerhetskopior kvar på servern, och
+eftersom dess schema stoppas med den stoppas även bevarandet: de ligger kvar tills någon
+tar bort dem. Installationens **ägare** ser dem i samma lista, markerade med
+**Arbetsytan har tagits bort**, och kan hämta eller ta bort dem där. Ingen annan ser de
+raderna.
+
+De har ingen **Återställ**, eftersom det inte finns någon arbetsyta att återställa till.
+För att få tillbaka en hämtar du den, skapar en arbetsyta och laddar upp filen enligt
+beskrivningen i
+[Flytta en arbetsyta till en annan installation](#flytta-en-arbetsyta-till-en-annan-installation).
 
 ## Radera en ögonblicksbild av installationen
 
@@ -106,14 +129,16 @@ maskinen du sitter vid använder du knapparna **Hämta**:
 
 - Bredvid varje **arbetsyta** under **Arbetsytedata** → **Hämta**, för en `.db`-fil.
 - Bredvid varje **ögonblicksbild** under **Installationsögonblicksbilder** → **Hämta**, för hela ögonblicksbilden som en `.zip`.
+- Bredvid varje säkerhetskopia under **Schemalagda säkerhetskopior** → **Hämta**, för den säkerhetskopians `.db`-fil.
 
 I skrivbordsappen väljer du var filen hamnar och notisen anger den; i webbappen går
-den till webbläsarens hämtningar. I båda fallen rapporterar båda förloppet i byte,
-eftersom det här är de två nyttolaster som kan uppgå till gigabyte.
+den till webbläsarens hämtningar. I båda fallen rapporterar alla tre förloppet i byte,
+eftersom de här nyttolasterna kan uppgå till gigabyte.
 
-Båda skapar en färsk kopia i samma stund du trycker på knappen, strömmar den och
-raderar serverns kopia efteråt – en hämtning är inte "hämta filen som exportknappen
-skapade tidigare".
+Hämtningarna av arbetsytor och ögonblicksbilder skapar en färsk kopia i samma stund du
+trycker på knappen, strömmar den och raderar serverns kopia efteråt – en hämtning är
+inte "hämta filen som exportknappen skapade tidigare". En schemalagd säkerhetskopia är
+undantaget: du får den lagrade filen, och den ligger kvar på servern.
 
 Att packa upp ett arkiv med en ögonblicksbild återskapar ögonblicksbildens layout
 exakt, vilket är det som gör att återställningen blir en tillbakakopiering.

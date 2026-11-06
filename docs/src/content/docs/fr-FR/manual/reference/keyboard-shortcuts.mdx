@@ -2,10 +2,10 @@
 title: Raccourcis clavier
 description: Le registre complet des raccourcis clavier, par portée, avec les conditions de déclenchement de chaque raccourci.
 slug: fr-FR/manuel/reference/raccourcis-clavier
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Les raccourcis proviennent d’un unique registre `const`, `KeybindingRegistry`, dans `lib/core/constants/keybindings.dart`. Il contient **49 raccourcis**. Paramètres → Vous → Raccourcis clavier affiche ce registre sous forme de **référence en lecture seule** : il n’existe aucune interface de réaffectation ni aucun fichier de raccourcis utilisateur.
+Les raccourcis proviennent d’un unique registre `const`, `KeybindingRegistry`, dans `lib/core/constants/keybindings.dart`. Il contient **49 raccourcis**. La boîte de dialogue **Raccourcis clavier** (appuyez sur `?` ou ouvrez-la depuis le menu Aide) affiche les raccourcis globaux et ceux de l’écran courant. C’est une **référence en lecture seule** : il n’existe aucune interface de réaffectation ni aucun fichier de raccourcis utilisateur.
 
 Dans la suite de cette page, `Cmd` désigne le modificateur de commande principal — ⌘ sous macOS, Ctrl sous Windows et Linux. Un raccourci ne se déclenche que si sa commande dispose d’un gestionnaire enregistré sur l’écran courant et si sa clause `when` est vraie ; `!textInputFocus` signifie que la touche est transmise à un champ de texte qui a le focus.
 
@@ -41,7 +41,7 @@ Portée `/pull-requests`. Tous exigent `route == '/pull-requests'` et qu’aucun
 | `Enter`   | Ouvrir la PR          |
 | `F`       | Ouvrir le menu de filtres |
 
-`Enter` (`pr.list-open`) est déclaré dans le registre et figure dans la référence des raccourcis, mais **l’écran de liste n’enregistre aucun gestionnaire pour cette touche**, il ne se déclenche donc pas actuellement. `F` ouvre le menu de filtres (`pr.list-open-filter`), et non la recherche.
+`Enter` (`pr.list-open`) est déclaré dans le registre et figure dans la boîte de dialogue **Raccourcis clavier**, mais **l’écran de liste n’enregistre aucun gestionnaire pour cette touche**, il ne se déclenche donc pas actuellement. `F` ouvre le menu de filtres (`pr.list-open-filter`), et non la recherche.
 
 ## Détail d’une demande de tirage (2)
 
@@ -90,7 +90,7 @@ Portée `/spaces`. Les clauses `when` utilisent une expression régulière, si b
 
 « Aller au fichier » ouvre un sélecteur sur les fichiers de la conversation. Sans saisie, il liste les fichiers que vous avez ouverts le plus récemment ; la saisie lance une recherche dans tous les fichiers des arbres de travail de la conversation. `Enter` ouvre le fichier sélectionné dans un nouvel onglet, `Cmd/Ctrl + Enter` ou le bouton de division de la ligne l’ouvre dans un volet à droite, et le `×` d’une ligne récente le retire de la liste.
 
-L’envoi par Entrée est géré par le champ de texte du compositeur de messages ; l’appui pour parler est géré par le bouton micro du compositeur (son propre gestionnaire de clavier physique). Les deux figurent dans le registre pour la référence des paramètres.
+L’envoi par Entrée est géré par le champ de texte du compositeur de messages ; l’appui pour parler est géré par le bouton micro du compositeur (son propre gestionnaire de clavier physique). Les deux figurent dans le registre pour que la boîte de dialogue **Raccourcis clavier** puisse les afficher.
 
 ## Sélecteur d’espace de travail (2)
 
@@ -127,7 +127,7 @@ Portée `/newsfeed`. Tous exigent `route == '/newsfeed'` et qu’aucun champ de 
 
 ## Touches de la visionneuse de diff hors du registre
 
-La visionneuse de diff des PR gère ces touches elle-même (`PrDiffKeyboardHandler`). La recherche, l’état « vu » et le repli figurent dans les commentaires du registre uniquement pour la référence des paramètres — aucun gestionnaire de répartiteur n’est enregistré, le répartiteur les laisse donc à la vue de diff. Ils n’apparaissent pas comme des lignes distinctes dans la référence des raccourcis clavier.
+La visionneuse de diff des PR gère ces touches elle-même (`PrDiffKeyboardHandler`). La recherche, l’état « vu » et le repli ne sont mentionnés que dans les commentaires du registre : aucun gestionnaire de répartiteur n’est enregistré, le répartiteur les laisse donc à la vue de diff. Ils n’apparaissent pas comme des lignes distinctes dans la boîte de dialogue **Raccourcis clavier**.
 
 | Raccourci       | Action                                                              |
 | --------------- | ------------------------------------------------------------------- |

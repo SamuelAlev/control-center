@@ -2,7 +2,7 @@
 title: Sauvegarder et restaurer
 description: Prenez un instantané de l’installation, déplacez un espace de travail entre machines, restaurez un seul espace de travail ou tous, et conservez des copies ailleurs.
 slug: fr-CA/manuel/guides/sauvegarder-et-restaurer
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Ce guide couvre les cinq choses que les gens font réellement avec les sauvegardes : en
@@ -17,7 +17,7 @@ Tout ce qui suit se trouve dans **Paramètres → Serveur → Sauvegarde et rest
 
 - Un **client complet** — l’application de bureau ou l’application Web. Un téléphone associé ne peut déclencher aucune de ces opérations, par conception.
 - Pour créer, lister, télécharger ou supprimer un **instantané de l’installation** : le **propriétaire** de l’installation.
-- Pour les opérations par espace de travail : **admin** de cet espace de travail pour exporter, **propriétaire** pour l’importer ou le supprimer.
+- Pour les opérations par espace de travail : **admin** de cet espace de travail pour l’exporter ou pour lister et télécharger ses sauvegardes planifiées, **propriétaire** pour l’importer ou le supprimer ou pour supprimer une de ses sauvegardes.
 - Pour les téléchargements et les téléversements : un client complet associé, sur une connexion directe ou par le relais intermédié. Les deux chemins transportent les octets du fichier par le même tunnel de ressources authentifié et chiffré de bout en bout ; le relais ne peut pas les lire.
 
 :::caution[Les instantanés de l’installation sont manuels]
@@ -91,13 +91,36 @@ Les sauvegardes d’espaces de travail résident sur le serveur sous
 conservation ne supprime que les anciennes sauvegardes de cet espace de travail ; il
 ne supprime jamais les instantanés de l’installation ni les sauvegardes des autres
 espaces de travail. Ces fichiers ne contiennent que des bases de données. Pour une
-conservation hors machine, copiez-les indépendamment.
+conservation hors machine, téléchargez-les ou copiez-les indépendamment.
 
-Ces sauvegardes sont distinctes de la liste **Instantanés de l’installation**. Pour en
-restaurer une, utilisez **Données des espaces de travail → Importer** avec le chemin
-`workspace.db` de la sauvegarde, côté serveur. L’importation remplace la base de
-données actuelle de cet espace de travail ; exportez-la d’abord si vous pourriez avoir
-besoin d’annuler la restauration.
+## Trouver et restaurer une sauvegarde planifiée
+
+**Sauvegardes planifiées** se trouve entre **Instantanés de l’installation** et
+**Données des espaces de travail**, avec une ligne par espace de travail : quand sa
+dernière sauvegarde a été effectuée, combien il en a conservé et l’espace qu’elles
+occupent. Un espace de travail dont le pipeline n’a encore rien produit affiche
+**Aucune sauvegarde pour l'instant**. Un espace de travail dont vous n’êtes pas admin
+l’indique sur sa ligne au lieu de lister ses sauvegardes.
+
+Développez une ligne pour voir chaque sauvegarde, de la plus récente à la plus ancienne :
+
+- **Restaurer** remplace la base de données actuelle de l’espace de travail par cette sauvegarde. Exportez d’abord l’espace de travail si vous pourriez avoir besoin d’annuler l’opération. Exige **propriétaire**.
+- **Télécharger** enregistre le fichier sur la machine que vous utilisez. La sauvegarde reste sur le serveur.
+- **Copier le chemin** copie son emplacement sur le serveur.
+- **Supprimer** retire définitivement cette sauvegarde, une fois que vous avez saisi le nom de l’espace de travail. Exige **propriétaire**.
+
+### Sauvegardes d’un espace de travail supprimé
+
+Supprimer un espace de travail laisse ses sauvegardes planifiées sur le serveur et, comme
+son horaire s’arrête avec lui, la conservation s’arrête aussi : elles restent jusqu’à ce
+que quelqu’un les retire. Le **propriétaire** de l’installation les voit dans la même
+liste, marquées **Espace de travail supprimé**, et peut les y télécharger ou les
+supprimer. Personne d’autre ne voit ces lignes.
+
+Elles n’ont pas de **Restaurer**, car il n’y a aucun espace de travail dans lequel
+restaurer. Pour en récupérer une, téléchargez-la, créez un espace de travail et téléversez
+le fichier comme décrit dans
+[Déplacer un espace de travail vers une autre installation](#déplacer-un-espace-de-travail-vers-une-autre-installation).
 
 ## Supprimer un instantané de l’installation
 
@@ -115,15 +138,17 @@ Lorsque ce n’est pas la machine devant laquelle vous êtes assis, utilisez les
 
 - À côté de chaque **espace de travail**, sous **Données des espaces de travail** → **Télécharger**, pour un seul fichier `.db`.
 - À côté de chaque **instantané**, sous **Instantanés de l’installation** → **Télécharger**, pour l’instantané complet sous forme de `.zip`.
+- À côté de chaque sauvegarde, sous **Sauvegardes planifiées** → **Télécharger**, pour le fichier `.db` de cette sauvegarde.
 
 Sur ordinateur, vous choisissez l’emplacement du fichier et la notification l’indique ;
-sur le Web, il aboutit dans les téléchargements du navigateur. Dans les deux cas, la
-progression est exprimée en octets, car ce sont les deux charges utiles qui atteignent
-des gigaoctets.
+sur le Web, il aboutit dans les téléchargements du navigateur. Dans les deux cas, les trois
+indiquent la progression en octets, car ces charges utiles atteignent des gigaoctets.
 
-Les deux produisent une copie fraîche au moment où vous appuyez sur le bouton, la
-diffusent en continu, puis suppriment la copie du serveur — un téléchargement ne consiste
-pas à « récupérer le fichier créé plus tôt par le bouton d’exportation ».
+Les téléchargements d’espace de travail et d’instantané produisent une copie fraîche au
+moment où vous appuyez sur le bouton, la diffusent en continu, puis suppriment la copie du
+serveur — un téléchargement ne consiste pas à « récupérer le fichier créé plus tôt par le
+bouton d’exportation ». Une sauvegarde planifiée fait exception : vous obtenez le fichier
+stocké, et il reste sur le serveur.
 
 Décompresser une archive d’instantané reproduit exactement la disposition de
 l’instantané, et c’est ce qui fait d’une restauration une simple copie en retour.

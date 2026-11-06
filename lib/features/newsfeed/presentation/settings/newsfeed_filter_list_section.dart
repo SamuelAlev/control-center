@@ -50,8 +50,9 @@ class _FilterListStatus extends ConsumerWidget {
 
     return SectionCard(
       label: l10n.filterLists,
-      padding: const EdgeInsets.fromLTRB(0, 14, 0, 8),
-      headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 8),
+      padding: const EdgeInsets.fromLTRB(0, AppSpacing.md, 0, 8),
+      headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 0),
+      headerAlignment: CrossAxisAlignment.center,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

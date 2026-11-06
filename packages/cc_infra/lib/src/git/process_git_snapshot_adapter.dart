@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/git_snapshot_port.dart';
 import 'package:cc_infra/src/git/working_tree_capture.dart';
+import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
 
 /// A [GitSnapshotPort] that shells out to `git`.
 ///
@@ -48,7 +49,11 @@ class ProcessGitSnapshotAdapter implements GitSnapshotPort {
     List<String> args,
     String workdir,
   ) async {
-    final result = await Process.run('git', args, workingDirectory: workdir);
+    final result = await Process.run(
+      'git',
+      RigWorktreeGuard.gitArgs(args, workingDirectory: workdir),
+      workingDirectory: workdir,
+    );
     return (
       exitCode: result.exitCode,
       stdout: result.stdout as String,

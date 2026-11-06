@@ -859,7 +859,7 @@ class _BulkActionBar extends ConsumerWidget {
           ),
           const SizedBox(width: 6),
           CcButton(
-            variant: CcButtonVariant.secondary,
+            variant: CcButtonVariant.destructive,
             onPressed: () => _confirmDelete(context, ref, ids),
             icon: AppIcons.trash2,
             child: Text(l10n.delete),

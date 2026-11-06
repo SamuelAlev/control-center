@@ -88,6 +88,19 @@ List<PipelineTrigger> sortPipelineTriggers(Iterable<PipelineTrigger> triggers) {
   return list;
 }
 
+/// Whether [def] still has the shared `id: 'trigger'` entry that
+/// [syncPipelineTriggerSteps] expands onto [rows].
+///
+/// That expansion keeps the graph's meaning and is redone on every load, so
+/// it is not an edit. Every built-in template has this shape until it is first
+/// saved.
+bool pipelineHasSharedTriggerEntry(
+  PipelineDefinition def,
+  List<PipelineTrigger> rows,
+) =>
+    def.step('trigger')?.kind == StepKind.trigger &&
+    rows.every((row) => row.id != 'trigger');
+
 /// Makes trigger *rows* and trigger *graph nodes* 1:1.
 ///
 /// Older templates keep one hidden `id: 'trigger'` entry that every

@@ -24,6 +24,9 @@ void main() {
         // Every settings destination, derived from the IA rather than listed
         // by hand — the hand-written copy is exactly what used to drift.
         for (final entry in kSettingsNavItems) entry.route(workspaceIdParam),
+        memoryFactRoute(workspaceIdParam, ':factId'),
+        memoryPolicyRoute(workspaceIdParam, ':policyId'),
+        settingsEnvironmentRoute(workspaceIdParam, ':definitionId'),
         '${settingsPipelinesRoute(workspaceIdParam)}/:templateId',
       };
       final missing = expected.difference(breadcrumbRegistry.keys.toSet());

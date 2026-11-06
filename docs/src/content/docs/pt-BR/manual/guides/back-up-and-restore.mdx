@@ -2,7 +2,7 @@
 title: Fazer backup e restaurar
 description: Tire um instantâneo da instalação, mova um espaço de trabalho entre máquinas, restaure um espaço de trabalho ou todos eles e mantenha cópias em outro lugar.
 slug: pt-BR/manual/guias/backup-e-restauracao
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Este guia cobre as cinco coisas que as pessoas realmente fazem com backups: criar um,
@@ -16,7 +16,7 @@ Tudo aqui fica em **Configurações → Servidor → Backup e restauração**.
 
 - Um **cliente completo** — o app de desktop ou o da web. Um celular emparelhado não dispara nada disso, por design.
 - Para criar, listar, baixar ou excluir um **instantâneo da instalação**: o **owner** da instalação.
-- Para ações por espaço de trabalho: **admin** desse espaço de trabalho para exportar, **owner** para importar ou excluir.
+- Para ações por espaço de trabalho: **admin** desse espaço de trabalho para exportar ou para listar e baixar seus backups agendados, **owner** para importar ou excluir ou para excluir um dos seus backups.
 - Para downloads e uploads: um cliente completo emparelhado, em uma conexão direta ou pelo relay intermediado. Os dois caminhos carregam os bytes do arquivo pelo mesmo túnel de recursos autenticado e cifrado de ponta a ponta; o relay não consegue lê-los.
 
 :::caution[Instantâneos da instalação são manuais]
@@ -84,12 +84,33 @@ Os backups de espaço de trabalho ficam no servidor em
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. O nó de retenção exclui
 apenas backups antigos deste espaço de trabalho; ele nunca exclui instantâneos da instalação
 nem backups de outros espaços de trabalho. Esses arquivos contêm apenas o banco de dados.
-Para retenção fora da máquina, copie-os separadamente.
+Para retenção fora da máquina, baixe-os ou copie-os separadamente.
 
-Esses backups são separados da lista **Instantâneos da instalação**. Para restaurar um, use
-**Dados do espaço de trabalho → Importar** com o caminho `workspace.db` do backup no lado
-do servidor. A importação substitui o banco de dados atual desse espaço de trabalho, então
-exporte-o antes se você puder precisar desfazer a restauração.
+## Encontrar e restaurar um backup agendado
+
+**Backups agendados** fica entre **Instantâneos da instalação** e
+**Dados do espaço de trabalho**, com uma linha por espaço de trabalho: quando o último backup
+foi executado, quantos foram mantidos e o espaço que ocupam. Um espaço de trabalho cujo pipeline ainda não
+produziu nada mostra **Ainda não há backups**. Um espaço de trabalho do qual você não é
+admin informa isso na própria linha em vez de listar os backups.
+
+Expanda uma linha para ver cada backup, do mais recente para o mais antigo:
+
+- **Restaurar** substitui o banco de dados atual do espaço de trabalho por este backup. Exporte o espaço de trabalho antes se você puder precisar desfazer isso. Exige **owner**.
+- **Baixar** salva o arquivo na máquina que você está usando. O backup continua no servidor.
+- **Copiar caminho** copia a localização dele no servidor.
+- **Excluir** remove este backup permanentemente, depois que você digita o nome do espaço de trabalho. Exige **owner**.
+
+### Backups de um espaço de trabalho excluído
+
+Excluir um espaço de trabalho deixa seus backups agendados no servidor e, como o agendamento
+para junto com ele, a retenção também para: eles ficam lá até alguém removê-los. O **owner**
+da instalação os vê na mesma lista, marcados como **Espaço de trabalho excluído**, e pode
+baixá-los ou excluí-los ali. Ninguém mais vê essas linhas.
+
+Eles não têm **Restaurar**, pois não há espaço de trabalho para onde restaurar. Para
+recuperar um, baixe-o, crie um espaço de trabalho e envie o arquivo como descrito em
+[Mover um espaço de trabalho para outra instalação](#mover-um-espaço-de-trabalho-para-outra-instalação).
 
 ## Excluir um instantâneo da instalação
 
@@ -105,14 +126,16 @@ Os caminhos mostrados na página ficam na máquina que executa o `cc_server`. Qu
 
 - Ao lado de cada **espaço de trabalho**, em **Dados do espaço de trabalho** → **Baixar**, para um arquivo `.db`.
 - Ao lado de cada **instantâneo**, em **Instantâneos da instalação** → **Baixar**, para o instantâneo inteiro como um `.zip`.
+- Ao lado de cada backup, em **Backups agendados** → **Baixar**, para o arquivo `.db` desse backup.
 
 No desktop, você escolhe onde o arquivo vai parar e o toast informa o caminho; na web, ele
-vai para os downloads do navegador. De qualquer forma, ambos relatam o progresso em bytes,
-porque essas são as duas cargas que chegam à casa dos gigabytes.
+vai para os downloads do navegador. De qualquer forma, os três relatam o progresso em bytes,
+porque essas cargas chegam à casa dos gigabytes.
 
-Os dois geram uma cópia nova no momento em que você clica no botão, a transmitem em
-streaming e excluem a cópia do servidor depois — um download não é "buscar o arquivo que o
-botão de exportação criou antes".
+Os downloads de espaço de trabalho e de instantâneo geram uma cópia nova no momento em que
+você clica no botão, a transmitem em streaming e excluem a cópia do servidor depois — um
+download não é "buscar o arquivo que o botão de exportação criou antes". Um backup agendado
+é a exceção: você recebe o arquivo armazenado, e ele continua no servidor.
 
 Descompactar um arquivo de instantâneo reproduz o layout do instantâneo exatamente, e é
 isso que faz da restauração uma cópia de volta.

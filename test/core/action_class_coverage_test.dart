@@ -83,8 +83,39 @@ void main() {
       'processSpawn',
       'packageInstall',
     },
+    // Not an enclosure: the app runs on the host with the user's access, so a
+    // click reaches whatever the app reaches. Wider than the VM tools on
+    // purpose, with no allowlist bounding its network or files.
+    'app_use': {
+      'enclosureControl',
+      'networkEgress',
+      'processSpawn',
+      'fileWriteOutsideWorktree',
+      'fileDelete',
+    },
     'rig_close': {'enclosureControl'}, // destroys a machine
     'rig_list': <String>{}, // read-only
+    // Environments: lifecycle runs commands on the host and controls Docker or
+    // a VM; exec and tasks run code; status and logs only read.
+    'environment_status': <String>{},
+    'environment_logs': <String>{},
+    'environment_up': {'enclosureControl', 'hostExecution', 'processSpawn'},
+    'environment_down': {'enclosureControl', 'hostExecution', 'processSpawn'},
+    'environment_reset': {'enclosureControl', 'hostExecution', 'processSpawn'},
+    'environment_destroy': {
+      'enclosureControl',
+      'hostExecution',
+      'processSpawn',
+    },
+    'environment_restart': {
+      'enclosureControl',
+      'hostExecution',
+      'processSpawn',
+    },
+    'environment_exec': {'hostExecution', 'processSpawn'},
+    'environment_run_task': {'hostExecution', 'networkEgress', 'processSpawn'},
+    'environment_launch_app': {'hostExecution', 'processSpawn'},
+    'environment_stop_app': {'hostExecution', 'processSpawn'},
     'ask_user': <String>{}, // blocks on an answer; writes nothing
     // --- Workspace structure (create/mutate repos/spaces/agents/workspaces) ---
     'send_to_agent': {
@@ -257,6 +288,44 @@ void main() {
   // Curated source of truth for the RPC catalog, same contract as the tool
   // maps above: a human reviews every change.
   const expectedRepoOps = <String, Set<String>>{
+    // Environments run the definition's commands on the host as the server's
+    // OS user. Definitions are operator-level code.
+    'environments.setDefinition': {'processSpawn'},
+    'environments.deleteDefinition': {'processSpawn'},
+    'environments.approveSource': {'processSpawn'},
+    'environments.testDefinition': {
+      'enclosureControl',
+      'hostExecution',
+      'processSpawn',
+    },
+    'environment.ensure': {'enclosureControl', 'hostExecution', 'processSpawn'},
+    'environment.down': {'enclosureControl', 'hostExecution', 'processSpawn'},
+    'environment.reset': {'enclosureControl', 'hostExecution', 'processSpawn'},
+    'environment.refresh': {
+      'enclosureControl',
+      'hostExecution',
+      'processSpawn',
+    },
+    'environment.destroy': {
+      'enclosureControl',
+      'hostExecution',
+      'processSpawn',
+    },
+    'environment.exec': {'hostExecution', 'processSpawn'},
+    'environment.startSetup': {'hostExecution', 'processSpawn'},
+    'environment.restartProcess': {
+      'enclosureControl',
+      'hostExecution',
+      'processSpawn',
+    },
+    'environment.stopProcess': {
+      'enclosureControl',
+      'hostExecution',
+      'processSpawn',
+    },
+    'environment.launchApp': {'hostExecution', 'processSpawn'},
+    'environment.stopApp': {'hostExecution', 'processSpawn'},
+    'environment.runTask': {'hostExecution', 'networkEgress', 'processSpawn'},
     // Enclosures: booting spawns a hypervisor, driving one is enclosure
     // control, and the guest reaches the network through the egress proxy.
     'rig.open': {'enclosureControl', 'processSpawn'},
@@ -340,7 +409,7 @@ void main() {
     // Pipeline execution: start/retry spawn bash (and other step bodies);
     // cancel/kill interrupt a live process. Template upsert and trigger
     // writes schedule that spawn by proxy, the same claim as
-    // `repos.setScripts`. Plan/orchestration approve is the same engine
+    // `environments.setDefinition`. Plan/orchestration approve is the same engine
     // reached through another door.
     'pipeline.start': {'processSpawn'},
     'pipeline.cancel': {'processSpawn'},
@@ -353,18 +422,14 @@ void main() {
     'orchestration.approveNodes': {'processSpawn'},
     'orchestration.continueNode': {'processSpawn'},
     'plan.approve': {'processSpawn'},
-    // Per-repo lifecycle scripts: the body is shell the SERVER executes at
-    // the next worktree provision/teardown, so writing it schedules a process
-    // spawn by proxy.
-    'repos.setScripts': {'processSpawn'},
-    // Test-run of a script DRAFT in a throwaway clone: executes the body.
-    'repos.testScript': {'processSpawn'},
   };
 
   /// Op-name prefixes whose MUTATING members reach a real-world effect. A new
   /// op under one of these must declare a class or be argued into
   /// [noEffectExemptions] below.
   const effectFamilies = <String>[
+    'environment.',
+    'environments.',
     'rig.',
     'worktree.',
     // Added with the demo lockdown: these are the families a public host must
@@ -682,7 +747,13 @@ Map<String, Set<String>> _findIntermediates({
   ).listSync().whereType<File>().where((f) => f.path.endsWith('.dart'))) {
     final src = file.readAsStringSync();
     for (final match in re.allMatches(src)) {
-      final body = src.substring(match.start);
+      // Only the intermediate's own body: reading to the end of the file
+      // credits it with the first subclass's override.
+      final next = RegExp(r'\bclass\s+\w+').allMatches(src, match.end);
+      final body = src.substring(
+        match.start,
+        next.isEmpty ? src.length : next.first.start,
+      );
       final override = _overrideRe.firstMatch(body);
       out[match.group(1)!] = override == null
           ? <String>{}

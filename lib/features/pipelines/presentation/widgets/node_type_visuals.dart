@@ -4,10 +4,13 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/services/event_payload_mapper.dart';
 import 'package:cc_domain/features/pipelines/domain/services/node_type_library.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pipelines/presentation/widgets/trigger_event_icons.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/trigger_labels.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
+
+export 'trigger_event_icons.dart';
 
 /// Palette grouping for a pipeline node type. [triggers] is first so the
 /// sidebar pins start-event entries above body types.
@@ -100,32 +103,6 @@ class TriggerPaletteEntry {
 
   /// Leading glyph (matches the on-canvas tile).
   final IconData icon;
-}
-
-/// Glyph for a trigger [eventType]: start-kind icons, then event-family icons.
-IconData iconForTriggerEventType(String eventType) {
-  return switch (eventType) {
-    PipelineTrigger.manualEventType => AppIcons.play,
-    PipelineTrigger.scheduleEventType => AppIcons.clock,
-    PipelineTrigger.webhookEventType => AppIcons.plug,
-    'PullRequestStatusChanged' => AppIcons.gitPullRequest,
-    'PullRequestPublished' => AppIcons.gitPullRequestCreate,
-    'PrMerged' => AppIcons.gitMerge,
-    'ExternalPrDetected' => AppIcons.gitPullRequestArrow,
-    'MessageReceived' => AppIcons.messageSquare,
-    'TicketCreated' ||
-    'TicketAssigned' ||
-    'TicketCompleted' ||
-    'TicketFailed' ||
-    'TicketCancelled' ||
-    'TicketStatusChanged' => AppIcons.ticket,
-    'BudgetThresholdCrossed' => AppIcons.dollarSign,
-    'RepoAdded' => AppIcons.folderGit2,
-    'MeetingRecordingStopped' => AppIcons.mic,
-    'SkillUpdated' => AppIcons.sparkles,
-    'SpaceDeleted' => AppIcons.trash2,
-    _ => AppIcons.zap,
-  };
 }
 
 bool _isSyntheticTrigger(String eventType) {

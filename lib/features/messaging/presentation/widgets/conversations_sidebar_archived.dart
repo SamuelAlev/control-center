@@ -81,7 +81,7 @@ class _ArchivedSpacesDialog extends ConsumerWidget {
                             CcIconButton(
                               icon: AppIcons.trash2,
                               size: CcButtonSize.sm,
-                              variant: CcButtonVariant.ghost,
+                              variant: CcButtonVariant.destructive,
                               tooltip: l10n.deleteSpacePermanently,
                               onPressed: () => unawaited(
                                 _confirmDeletePermanently(context, ref, space),

@@ -159,22 +159,26 @@ mixin _WorktreeChangeGate {
     String? authorName,
     String? authorEmail,
     String? actingUserId,
-  }) => _mutating(
-    () => _commitAndPush(
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      repoId: repoId,
-      message: message,
-      paths: paths,
-      push: push,
-      amend: amend,
-      sync: sync,
-      pushBranch: pushBranch,
-      authorName: authorName,
-      authorEmail: authorEmail,
-      actingUserId: actingUserId,
-    ),
-  );
+  }) => _mutating(() async {
+    try {
+      return await _commitAndPush(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        repoId: repoId,
+        message: message,
+        paths: paths,
+        push: push,
+        amend: amend,
+        sync: sync,
+        pushBranch: pushBranch,
+        authorName: authorName,
+        authorEmail: authorEmail,
+        actingUserId: actingUserId,
+      );
+    } on RigWorktreeTampered catch (e) {
+      return {'committed': false, 'pushed': false, 'error': e.message};
+    }
+  });
 
   /// Push-only publish of the conversation worktree branch to `origin` (needed before forge PR creation).
   /// Never stages/commits/amends/rebases; token via `GIT_CONFIG_PARAMETERS`. Null if no worktree.
@@ -271,15 +275,19 @@ mixin _WorktreeChangeGate {
     String repoId, {
     required String headRef,
     required String branch,
-  }) => _mutating(
-    () => _syncToPrHead(
-      workspaceId,
-      spaceId,
-      repoId,
-      headRef: headRef,
-      branch: branch,
-    ),
-  );
+  }) => _mutating(() async {
+    try {
+      return await _syncToPrHead(
+        workspaceId,
+        spaceId,
+        repoId,
+        headRef: headRef,
+        branch: branch,
+      );
+    } on RigWorktreeTampered catch (e) {
+      return {'ok': false, 'error': e.message};
+    }
+  });
 
   // Implemented by [RepoIdeDataService].
 

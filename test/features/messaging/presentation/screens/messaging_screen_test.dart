@@ -107,6 +107,100 @@ void _seedTerminalLayout(Map<String, String?> cacheStore, String spaceId) {
   );
 }
 
+/// Pumps a messaging screen over two spaces with a server-backed layout
+/// store, `ch-1` saved as chat + terminal. The returned `route` switches the
+/// space.
+Future<
+  ({
+    Map<String, String?> cacheStore,
+    List<String> reads,
+    ValueNotifier<String> route,
+  })
+>
+_pumpRevisitHarness(WidgetTester tester) async {
+  tester.view.physicalSize = const Size(1400, 900);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
+
+  final cacheStore = <String, String?>{};
+  final reads = <String>[];
+  final host = FakeRpcHost();
+  host.onCall = (op, args) {
+    switch (op) {
+      case 'terminal.spawn':
+        return {'session_id': 'srv-1'};
+      case 'cache.read':
+        reads.add(args['key'] as String);
+        return {'payload': cacheStore['${args['kind']}/${args['key']}']};
+      case 'cache.write':
+        cacheStore['${args['kind']}/${args['key']}'] =
+            args['payload'] as String?;
+        return const <String, dynamic>{};
+    }
+    return const <String, dynamic>{};
+  };
+  _seedTerminalLayout(cacheStore, 'ch-1');
+
+  final route = ValueNotifier<String>('ch-1');
+  addTearDown(route.dispose);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        activeWorkspaceIdProvider.overrideWith(
+          () => _TestActiveWorkspaceNotifier(_kWorkspaceId),
+        ),
+        rpcClientProvider.overrideWithValue(host.client()),
+        selectedSpaceIdProvider.overrideWith(
+          () => _TestSelectedSpaceNotifier('ch-1'),
+        ),
+        spacesProvider.overrideWith(
+          (ref) => Stream.value([_testSpaceA, _testSpaceB]),
+        ),
+        workspaceSpacesProvider(
+          _kWorkspaceId,
+        ).overrideWith((ref) => Stream.value([_testSpaceA, _testSpaceB])),
+        agentsProvider.overrideWith((ref) => Stream.value(const [])),
+        workspacesProvider.overrideWith((ref) => Stream.value(const [])),
+        spaceReadRepositoryProvider.overrideWith(
+          (ref) => _FakeSpaceReadRepository(),
+        ),
+        for (final id in ['ch-1', 'ch-2']) ...[
+          spaceParticipantsProvider(
+            id,
+          ).overrideWith((ref) => Stream.value(const [])),
+          spaceFeedWindowedProvider((
+            spaceId: id,
+            conversationId: id,
+          )).overrideWith(
+            (ref) => Stream.value((messages: const [], hasMore: false)),
+          ),
+          spaceMessagesProvider(
+            id,
+          ).overrideWith((ref) => Stream.value(const [])),
+          standingConversationIdProvider(id).overrideWith((ref) async => id),
+        ],
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: _wrap(
+          ValueListenableBuilder<String>(
+            valueListenable: route,
+            builder: (context, id, _) => MessagingScreen(selectedSpaceId: id),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+  return (cacheStore: cacheStore, reads: reads, route: route);
+}
+
 class _TestSelectedSpaceNotifier extends SelectedSpaceNotifier {
   _TestSelectedSpaceNotifier(this._id);
   final String? _id;
@@ -645,90 +739,14 @@ void main() {
 
   // Revisiting a space must not seed a chat-only layout and restore the real
   // one a round-trip later: that built every tab body twice and flashed the
-  // seed. The client's own copy of the layout is on screen on the first frame.
+  // seed. The client's own copy of the layout is on screen on the first frame;
+  // the server is asked again only in the background, for a newer save.
   testWidgets('a revisited space restores its layout without a round-trip', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(1400, 900);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
-    final cacheStore = <String, String?>{};
-    final reads = <String>[];
-    final host = FakeRpcHost();
-    host.onCall = (op, args) {
-      switch (op) {
-        case 'terminal.spawn':
-          return {'session_id': 'srv-1'};
-        case 'cache.read':
-          reads.add(args['key'] as String);
-          return {'payload': cacheStore['${args['kind']}/${args['key']}']};
-        case 'cache.write':
-          cacheStore['${args['kind']}/${args['key']}'] =
-              args['payload'] as String?;
-          return const <String, dynamic>{};
-      }
-      return const <String, dynamic>{};
-    };
-    _seedTerminalLayout(cacheStore, 'ch-1');
-
-    final route = ValueNotifier<String>('ch-1');
-    addTearDown(route.dispose);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          activeWorkspaceIdProvider.overrideWith(
-            () => _TestActiveWorkspaceNotifier(_kWorkspaceId),
-          ),
-          rpcClientProvider.overrideWithValue(host.client()),
-          selectedSpaceIdProvider.overrideWith(
-            () => _TestSelectedSpaceNotifier('ch-1'),
-          ),
-          spacesProvider.overrideWith(
-            (ref) => Stream.value([_testSpaceA, _testSpaceB]),
-          ),
-          workspaceSpacesProvider(
-            _kWorkspaceId,
-          ).overrideWith((ref) => Stream.value([_testSpaceA, _testSpaceB])),
-          agentsProvider.overrideWith((ref) => Stream.value(const [])),
-          workspacesProvider.overrideWith((ref) => Stream.value(const [])),
-          spaceReadRepositoryProvider.overrideWith(
-            (ref) => _FakeSpaceReadRepository(),
-          ),
-          for (final id in ['ch-1', 'ch-2']) ...[
-            spaceParticipantsProvider(
-              id,
-            ).overrideWith((ref) => Stream.value(const [])),
-            spaceFeedWindowedProvider((
-              spaceId: id,
-              conversationId: id,
-            )).overrideWith(
-              (ref) => Stream.value((messages: const [], hasMore: false)),
-            ),
-            spaceMessagesProvider(
-              id,
-            ).overrideWith((ref) => Stream.value(const [])),
-            standingConversationIdProvider(id).overrideWith((ref) async => id),
-          ],
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: _wrap(
-            ValueListenableBuilder<String>(
-              valueListenable: route,
-              builder: (context, id, _) => MessagingScreen(selectedSpaceId: id),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    final harness = await _pumpRevisitHarness(tester);
+    final reads = harness.reads;
+    final route = harness.route;
     final terminalTab = find.text('Terminal');
     expect(terminalTab, findsWidgets, reason: 'restored from the server');
     expect(reads, ['ch-1']);
@@ -743,7 +761,68 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(terminalTab, findsWidgets, reason: 'no seed frame in between');
-    expect(reads, ['ch-1', 'ch-2'], reason: 'ch-1 is not read again');
+    expect(reads, [
+      'ch-1',
+      'ch-2',
+      'ch-1',
+    ], reason: 'ch-1 is shown from memory, then re-checked in the background');
+
+    await tester.pumpWidget(Container());
+    await tester.pumpAndSettle();
+  });
+
+  // The same person on another device moved on since this client last showed
+  // the space. Revisiting shows that newer layout, and leaving again must not
+  // write this client's older copy back over it.
+  testWidgets('a revisited space takes the layout saved on another device', (
+    tester,
+  ) async {
+    final harness = await _pumpRevisitHarness(tester);
+    final route = harness.route;
+    final store = harness.cacheStore;
+    const key = '$editorLayoutCacheKind/ch-1';
+
+    route.value = 'ch-2';
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // The other device closed the terminal: only the chat is left.
+    final tabs = EditorTabGroupController()
+      ..insert(
+        0,
+        EditorTab(
+          kind: MessagingTabKinds.chat,
+          label: 'Chat',
+          args: const {'spaceId': 'ch-1'},
+          dedupKey: MessagingTabKinds.chatSpaceTabKey('ch-1'),
+        ),
+      );
+    store[key] = messagingLayoutCodec.encode(
+      EditorLayoutController.single(controller: tabs),
+    );
+
+    route.value = 'ch-1';
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    // The background read answered: one more frame paints what it brought.
+    await tester.pump();
+    expect(
+      find.text('Terminal'),
+      findsNothing,
+      reason:
+          "this client's remembered terminal tab gave way to the newer save",
+    );
+
+    route.value = 'ch-2';
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final saved = messagingLayoutCodec.decode(store[key]!)!;
+    addTearDown(saved.dispose);
+    expect(
+      saved.allTabs().map((t) => t.kind),
+      isNot(contains(MessagingTabKinds.terminal)),
+      reason: 'leaving must not write the older copy back over the newer one',
+    );
 
     await tester.pumpWidget(Container());
     await tester.pumpAndSettle();
@@ -1239,6 +1318,28 @@ void main() {
 
     // A stale link leaves the restored selection intact.
     router.go('/workspaces/ws-1/spaces/ch-2?tab=terminal:gone');
+    await settle();
+    expect(focusedTab(), 'chat:conv-2');
+    expectRestoredUrl('ch-2', 'chat:conv-2');
+
+    // A local press leaves GoRouter on the tab the space was entered with.
+    // Leaving must save the pressed tab, not re-focus that stale route key on
+    // the way out: enter on the standing chat, press the second conversation,
+    // visit another space and come back.
+    EditorLayoutController liveLayout() =>
+        tester.widget<EditorWorkspace>(find.byType(EditorWorkspace)).layout;
+    liveLayout().focusTab((tab) => tab.args['conversationId'] == null);
+    await settle();
+    router.go('/workspaces/ws-1/spaces/ch-2');
+    await settle();
+    expectRestoredUrl('ch-2', 'chat:space:ch-2');
+    liveLayout().focusTab((tab) => tab.args['conversationId'] == 'conv-2');
+    await settle();
+    expect(focusedTab(), 'chat:conv-2');
+    router.go('/workspaces/ws-1/spaces/ch-1');
+    await settle();
+    expect(focusedTab(), 'terminal');
+    router.go('/workspaces/ws-1/spaces/ch-2');
     await settle();
     expect(focusedTab(), 'chat:conv-2');
     expectRestoredUrl('ch-2', 'chat:conv-2');

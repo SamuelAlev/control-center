@@ -6,9 +6,9 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/review_overlay.dart';
+import 'package:control_center/features/pr_review/providers/pr_comment_draft_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -214,7 +214,7 @@ void main() {
         await tester.tap(find.text('Review'));
         await tester.pump();
         final draft = container.read(
-          textDraftControllerProvider(_reviewDraftKey),
+          prCommentDraftControllerProvider(_reviewDraftKey),
         );
         await tester.pump();
         expect(draft.text, 'older server text');
@@ -277,7 +277,7 @@ void main() {
           ),
         );
         final draft = container.read(
-          textDraftControllerProvider(_reviewDraftKey),
+          prCommentDraftControllerProvider(_reviewDraftKey),
         );
         await tester.tap(find.text('Review'));
         await tester.pump();

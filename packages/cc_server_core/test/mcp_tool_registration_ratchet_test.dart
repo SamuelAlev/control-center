@@ -27,6 +27,7 @@ void main() {
     wiring = [
       'packages/cc_server_core/lib/src/server_mcp_registry.dart',
       'packages/cc_server_core/lib/src/cc_server_runtime.dart',
+      'packages/cc_server_core/lib/src/environments/server_environment_adapters.dart',
     ].map((rel) => File('${root.path}/$rel').readAsStringSync()).join('\n');
   });
 

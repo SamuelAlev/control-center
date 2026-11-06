@@ -260,6 +260,11 @@ class _CcTooltipState extends State<CcTooltip> {
     if (!mounted) {
       return;
     }
+    // Callers pass '' for "nothing to explain in this state" (a demo-only
+    // reason, say). An open panel would be an empty dark box.
+    if (widget.tip == null && (widget.message?.isEmpty ?? true)) {
+      return;
+    }
     // Reset the flip assumption and caret geometry on open; the layout
     // re-reports both immediately.
     _flipped.value = false;

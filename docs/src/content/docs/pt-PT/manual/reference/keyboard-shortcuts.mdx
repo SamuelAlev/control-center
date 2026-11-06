@@ -2,10 +2,10 @@
 title: Atalhos de teclado
 description: O registo completo de atalhos de teclado, por âmbito, com as condições em que cada atalho é acionado.
 slug: pt-PT/manual/referencia/atalhos-de-teclado
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Os atalhos vêm de um único registo `const`, `KeybindingRegistry` em `lib/core/constants/keybindings.dart`. Contém **49 associações**. Definições → Você → Atalhos de teclado apresenta esse registo como uma **referência só de leitura**: não existe interface de reatribuição nem ficheiro de atalhos do utilizador.
+Os atalhos vêm de um único registo `const`, `KeybindingRegistry` em `lib/core/constants/keybindings.dart`. Contém **49 associações**. A caixa de diálogo **Atalhos de teclado** (prima `?` ou abra-a a partir do menu Ajuda) mostra os atalhos globais e os do ecrã atual. É uma **referência só de leitura**: não existe interface de reatribuição nem ficheiro de atalhos do utilizador.
 
 `Cmd` abaixo é o modificador de comando principal — ⌘ no macOS, Ctrl no Windows e no Linux. Uma associação só é acionada quando o respetivo comando tem um handler registado no ecrã atual e a sua cláusula `when` se verifica; `!textInputFocus` significa que a tecla é encaminhada para um campo de texto em foco.
 
@@ -41,7 +41,7 @@ Não existe nenhum atalho de navegação por teclas numéricas. A caixa de entra
 | `Enter` | Abrir PR               |
 | `F`     | Abrir o menu de filtros |
 
-`Enter` (`pr.list-open`) está declarado no registo e aparece na referência de atalhos de teclado, mas **o ecrã da lista não regista um handler para ele**, por isso atualmente não é acionado. `F` abre o menu de filtros (`pr.list-open-filter`), e não a pesquisa.
+`Enter` (`pr.list-open`) está declarado no registo e aparece na caixa de diálogo **Atalhos de teclado**, mas **o ecrã da lista não regista um handler para ele**, por isso atualmente não é acionado. `F` abre o menu de filtros (`pr.list-open-filter`), e não a pesquisa.
 
 ## Detalhe da pull request (2)
 
@@ -90,7 +90,7 @@ Exige `route == '/inbox'` e que nenhum campo de texto esteja em foco.
 
 «Ir para o ficheiro» abre um seletor com os ficheiros da conversa. Sem nada escrito, lista os ficheiros que abriu mais recentemente; ao escrever, pesquisa em todos os ficheiros das worktrees da conversa. `Enter` abre o ficheiro selecionado num novo separador, `Cmd/Ctrl + Enter` ou o botão de dividir na linha abre-o num painel à direita, e o `×` numa linha recente remove-o da lista.
 
-O envio com Enter é gerido pelo campo de texto do compositor; o premir para falar é gerido pelo botão de microfone do compositor (o seu próprio handler de teclado físico). Ambos estão listados no registo para a referência de definições.
+O envio com Enter é gerido pelo campo de texto do compositor; o premir para falar é gerido pelo botão de microfone do compositor (o seu próprio handler de teclado físico). Ambos estão listados no registo para que a caixa de diálogo **Atalhos de teclado** os possa mostrar.
 
 ## Seletor de espaços de trabalho (2)
 
@@ -127,7 +127,7 @@ O envio com Enter é gerido pelo campo de texto do compositor; o premir para fal
 
 ## Teclas do visualizador de diffs fora do registo
 
-O visualizador de diffs das PR trata destas teclas por si próprio (`PrDiffKeyboardHandler`). Pesquisar, visto e recolher estão listados nos comentários do registo apenas para a referência de definições — não está registado nenhum handler do distribuidor, por isso o distribuidor deixa-as à vista de diff. Não aparecem como linhas próprias na referência de atalhos de teclado.
+O visualizador de diffs das PR trata destas teclas por si próprio (`PrDiffKeyboardHandler`). Pesquisar, visto e recolher são apenas referidos nos comentários do registo: não está registado nenhum handler do distribuidor, por isso o distribuidor deixa-as à vista de diff. Não aparecem como linhas próprias na caixa de diálogo **Atalhos de teclado**.
 
 | Atalho          | Ação                                                                              |
 | --------------- | --------------------------------------------------------------------------------- |

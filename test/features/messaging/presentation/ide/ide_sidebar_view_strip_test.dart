@@ -329,8 +329,31 @@ void main() {
         },
       );
 
-      expect(container.read(ideSidebarPinsProvider), {IdeSidebarView.general});
+      // A list saved before the Environment view existed starts it pinned.
+      expect(container.read(ideSidebarPinsProvider), {
+        IdeSidebarView.general,
+        IdeSidebarView.environment,
+      });
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a view added later starts pinned, and unpinning it sticks', (
+      tester,
+    ) async {
+      final container = await pump(
+        tester,
+        prefs: {
+          ideSidebarPinnedViewsKey: [IdeSidebarView.general.name],
+        },
+      );
+      expect(cell(IdeSidebarView.environment), findsOneWidget);
+
+      container
+          .read(ideSidebarPinsProvider.notifier)
+          .toggle(IdeSidebarView.environment);
+      container.invalidate(ideSidebarPinsProvider);
+
+      expect(container.read(ideSidebarPinsProvider), {IdeSidebarView.general});
     });
   });
 }

@@ -22,6 +22,16 @@ class ComposerTextController extends TextEditingController {
   /// Creates a [ComposerTextController].
   ComposerTextController({super.text, this.isResolved});
 
+  /// Creates a controller for a Markdown field outside the composer, such as
+  /// an agent's system prompt.
+  ///
+  /// Such a field holds no attachments, so a `@[file:…]` in it stays plain
+  /// text. With a null [isResolved] it would paint as an attached file.
+  ComposerTextController.markdownOnly({super.text})
+    : isResolved = _noAttachments;
+
+  static bool _noAttachments(String name) => false;
+
   /// Whether the composer still holds an attachment for a reference name.
   ///
   /// Null treats every well-formed reference as resolved — the right default

@@ -2,7 +2,7 @@
 title: Rigs
 description: Setiap permukaan rig, backend, verb tindakan, status siklus hidup, port, default, dan kontrak — katalog faktual yang lengkap.
 slug: id-ID/panduan-pengguna/referensi/rigs
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Hanya fakta. Untuk model di baliknya, baca [Rigs dan
@@ -18,6 +18,8 @@ lingkungan terisolasi](/id-ID/panduan-pengguna/konsep/rigs/); untuk membuka mesi
 | Computer | Desktop X11: masukan melalui hypervisor, tangkapan melalui agen sistem tamu | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (fallback tanpa akselerasi, tidak pernah dipilih otomatis) | Ya |
 | Android | Android melalui ADB | Emulator Google | `android-emulator` | **Tidak** — emulator mengelola jaringannya sendiri |
 | iOS | Simulator iOS melalui WebDriverAgent | CoreSimulator | `ios-simulator` | **Tidak** — jaringan mengikuti Mac host |
+| Jendela aplikasi | Jendela aplikasi desktop yang diluncurkan dari lingkungan, melalui OS | Jendela host | `host-window` | **Tidak** — aplikasi berjalan di host dengan akses pengguna server |
+| Lingkungan | Stack compose dan tugas dari [lingkungan](/id-ID/panduan-pengguna/panduan-praktis/lingkungan/) dengan penempatan `rig` | microVM | `smolvm` | Ya |
 
 Terminal dan permukaan `computer_use` berbagi nilai permukaan `computer`;
 terminal dibedakan oleh penanda image exec-nya dan tidak pernah dipakai ulang

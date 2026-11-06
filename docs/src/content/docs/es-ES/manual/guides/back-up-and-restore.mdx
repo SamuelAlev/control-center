@@ -2,7 +2,7 @@
 title: Hacer copia de seguridad y restaurar
 description: Crea una instantánea de la instalación, mueve un espacio de trabajo entre máquinas, restaura un espacio de trabajo o todos ellos y guarda copias en otro sitio.
 slug: es-ES/manual/guias/copia-de-seguridad-y-restauracion
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Esta guía cubre las cinco cosas que la gente hace de verdad con las copias de
@@ -17,7 +17,7 @@ Todo lo que hay aquí está en **Ajustes → Servidor → Copia de seguridad y r
 
 - Un **cliente completo** — la aplicación de escritorio o la web. Un teléfono emparejado no puede desencadenar nada de esto, por diseño.
 - Para crear, listar, descargar o eliminar una **instantánea de la instalación**: el **propietario** de la instalación.
-- Para las acciones por espacio de trabajo: **administrador** de ese espacio de trabajo para exportar, **propietario** para importarlo o eliminarlo.
+- Para las acciones por espacio de trabajo: **administrador** de ese espacio de trabajo para exportarlo o para listar y descargar sus copias de seguridad programadas, **propietario** para importarlo o eliminarlo o para eliminar una de sus copias de seguridad.
 - Para las descargas y las subidas: un cliente completo emparejado, ya sea por una conexión directa o por el relé intermediado. Ambas rutas transportan los bytes del archivo por el mismo túnel de recursos autenticado y cifrado de extremo a extremo; el relé no puede leerlos.
 
 :::caution[Las instantáneas de la instalación son manuales]
@@ -87,13 +87,36 @@ Las copias de seguridad de espacios de trabajo se guardan en el servidor en
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. El nodo de
 retención solo elimina copias antiguas de este espacio de trabajo; nunca elimina
 instantáneas de la instalación ni copias de otros espacios de trabajo. Estos archivos
-son solo de base de datos. Para retenerlos fuera de la máquina, cópialos por separado.
+son solo de base de datos. Para retenerlos fuera de la máquina, descárgalos o cópialos por
+separado.
 
-Estas copias de seguridad son independientes de la lista **Instantáneas de la
-instalación**. Para restaurar una, usa **Datos del espacio de trabajo → Importar** con la
-ruta `workspace.db` del lado del servidor de la copia. Importar sustituye la base de
-datos actual de ese espacio de trabajo, así que expórtala antes si puede que necesites
-deshacer la restauración.
+## Encontrar y restaurar una copia de seguridad programada
+
+**Copias de seguridad programadas** está entre **Instantáneas de la instalación** y
+**Datos del espacio de trabajo**, con una fila por espacio de trabajo: cuándo se hizo su
+última copia de seguridad, cuántas ha conservado y cuánto espacio ocupan. Un espacio de
+trabajo cuyo pipeline no haya producido nada indica **Aún no hay copias de seguridad**.
+Un espacio de trabajo del que no eres administrador lo indica en su fila en lugar de
+listar sus copias de seguridad.
+
+Expande una fila para ver cada copia de seguridad, de la más reciente a la más antigua:
+
+- **Restaurar** sustituye la base de datos actual del espacio de trabajo por esta copia de seguridad. Exporta antes el espacio de trabajo si puede que necesites deshacerlo. Requiere **propietario**.
+- **Descargar** guarda el archivo en la máquina que estás usando. La copia de seguridad se queda en el servidor.
+- **Copiar ruta** copia su ubicación en el servidor.
+- **Eliminar** borra esta copia de seguridad de forma permanente, una vez que escribes el nombre del espacio de trabajo. Requiere **propietario**.
+
+### Copias de seguridad de un espacio de trabajo eliminado
+
+Eliminar un espacio de trabajo deja sus copias de seguridad programadas en el servidor y,
+como su programación se detiene con él, la retención también se detiene: se quedan ahí
+hasta que alguien las elimine. El **propietario** de la instalación las ve en la misma
+lista, marcadas como **Espacio de trabajo eliminado**, y puede descargarlas o eliminarlas
+ahí. Nadie más ve esas filas.
+
+No tienen **Restaurar**, porque no hay ningún espacio de trabajo en el que restaurar. Para
+recuperar una, descárgala, crea un espacio de trabajo y sube el archivo como se describe
+en [Mover un espacio de trabajo a otra instalación](#mover-un-espacio-de-trabajo-a-otra-instalación).
 
 ## Eliminar una instantánea de la instalación
 
@@ -110,14 +133,17 @@ es la máquina en la que estás, usa los botones **Descargar**:
 
 - Junto a cada **espacio de trabajo**, en **Datos del espacio de trabajo** → **Descargar**, para un solo archivo `.db`.
 - Junto a cada **instantánea**, en **Instantáneas de la instalación** → **Descargar**, para toda la instantánea como un `.zip`.
+- Junto a cada copia de seguridad, en **Copias de seguridad programadas** → **Descargar**, para el archivo `.db` de esa copia.
 
 En escritorio eliges dónde acaba el archivo y el aviso emergente lo indica; en la web va a
-las descargas del navegador. En ambos casos los dos indican el progreso en bytes, porque
-son las dos cargas útiles que llegan a los gigabytes.
+las descargas del navegador. En ambos casos las tres indican el progreso en bytes, porque
+estas cargas útiles llegan a los gigabytes.
 
-Ambos generan una copia nueva en el momento en que pulsas el botón, la transmiten en
-streaming y eliminan después la copia del servidor — una descarga no es «buscar el archivo
-que creó antes el botón de exportar».
+Las descargas de espacio de trabajo y de instantánea generan una copia nueva en el momento
+en que pulsas el botón, la transmiten en streaming y eliminan después la copia del
+servidor — una descarga no es «buscar el archivo que creó antes el botón de exportar». Una
+copia de seguridad programada es la excepción: recibes el archivo almacenado, y este se
+queda en el servidor.
 
 Descomprimir un archivo de instantánea reproduce exactamente la estructura de la
 instantánea, que es lo que hace que restaurarla sea una simple copia de vuelta.

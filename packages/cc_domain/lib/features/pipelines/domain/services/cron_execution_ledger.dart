@@ -12,4 +12,12 @@ abstract interface class CronExecutionLedger {
     required String triggerId,
     required DateTime plannedAt,
   });
+
+  /// Gives a claimed slot back after its run failed to start, so the next tick
+  /// can claim it again. A slot only counts as spent once a run exists for it.
+  Future<void> releaseSlot({
+    required String workspaceId,
+    required String triggerId,
+    required DateTime plannedAt,
+  });
 }

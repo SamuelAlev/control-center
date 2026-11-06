@@ -27,6 +27,7 @@ class SandboxPolicySpec {
     this.runnerStateDirs = const [],
     this.execGrantRoots = const [],
     this.loopbackPorts = const [],
+    this.environmentScope,
   });
 
   /// Sandbox session id.
@@ -89,6 +90,9 @@ class SandboxPolicySpec {
   /// See [SandboxSpec.loopbackPorts].
   final List<int> loopbackPorts;
 
+  /// See [SandboxSpec.environmentScope].
+  final String? environmentScope;
+
   /// Returns a copy with the given overrides.
   ///
   /// Exists for the infra materializer, which resolves symlinked paths to the
@@ -117,6 +121,7 @@ class SandboxPolicySpec {
     runnerStateDirs: runnerStateDirs ?? this.runnerStateDirs,
     execGrantRoots: execGrantRoots ?? this.execGrantRoots,
     loopbackPorts: loopbackPorts,
+    environmentScope: environmentScope,
   );
 }
 
@@ -417,6 +422,7 @@ class SandboxPolicyResolver {
           if (root.isNotEmpty) root,
       ],
       loopbackPorts: spec.loopbackPorts,
+      environmentScope: spec.environmentScope,
     );
   }
 }

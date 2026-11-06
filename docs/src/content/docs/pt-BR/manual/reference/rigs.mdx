@@ -2,7 +2,7 @@
 title: Rigs
 description: Toda superfície de rig, backend, verbo de ação, estado do ciclo de vida, porta, padrão e contrato — o catálogo factual completo.
 slug: pt-BR/manual/referencia/rigs
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Apenas fatos. Para o modelo por trás deles, leia [Rigs e
@@ -18,6 +18,8 @@ guia](/pt-BR/manual/guias/usar-rigs/).
 | Computador | Desktop X11: entrada pelo hipervisor, captura pelo agente do convidado | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (alternativa sem aceleração, nunca escolhida automaticamente) | Sim |
 | Android | Android sobre ADB | Emulador do Google | `android-emulator` | **Não** — o emulador gerencia a própria rede |
 | iOS | Simulador de iOS via WebDriverAgent | CoreSimulator | `ios-simulator` | **Não** — a rede acompanha o Mac host |
+| Janela de aplicativo | As janelas de um aplicativo de desktop aberto a partir de um ambiente, pelo sistema operacional | Janela do host | `host-window` | **Não** — o aplicativo roda no host com o acesso do usuário do servidor |
+| Ambiente | A stack compose e as tarefas de um [ambiente](/pt-BR/manual/guias/ambientes/) com colocação `rig` | microVM | `smolvm` | Sim |
 
 O terminal e a superfície `computer_use` compartilham o valor de superfície
 `computer`; o terminal é distinguido pelo seu marcador de imagem de exec e

@@ -91,10 +91,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get keybindingPushToTalk => 'Натисніть, щоб говорити';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'Утримуйте або перемикайте голосове диктування в полі повідомлення';
-
-  @override
   String get agentPermissions => 'Дозволи агента';
 
   @override
@@ -194,6 +190,9 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'Симулятор iOS';
+
+  @override
+  String get rigSurfaceAppWindow => 'Вікно застосунку';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -468,6 +467,10 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'Для живого перегляду на цьому хості потрібен ffmpeg. Встановіть ffmpeg і знову відкрийте вкладку.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'Для перегляду наживо потрібен запис екрана. Надайте його Control Center у системних параметрах і знову відкрийте вкладку.';
 
   @override
   String get rigStreamEnded => 'Живий перегляд завершено.';
@@ -1587,10 +1590,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'Відкрити меню фільтра';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'Відкрити меню фільтра pull request';
 
   @override
   String countSelected(int count) {
@@ -2875,19 +2874,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get cancelEdit => 'Скасувати редагування';
 
   @override
-  String get categoryCreation => 'Створення';
-
-  @override
-  String get categoryEditing => 'Редагування';
-
-  @override
   String get categoryNavigation => 'Навігація';
-
-  @override
-  String get categorySystem => 'Система';
-
-  @override
-  String get categoryView => 'Перегляд категорій';
 
   @override
   String get change => 'Змінити';
@@ -3716,31 +3703,13 @@ class AppLocalizationsUk extends AppLocalizations {
   String get keepSandboxing => 'Залишити пісочницю';
 
   @override
-  String get keybindingAddARepositoryDescription => 'Додати репозиторій';
-
-  @override
   String get keybindingAddRepository => 'Додати репозиторій';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'Додати або зняти закладку з вибраної статті';
 
   @override
   String get keybindingCommandPalette => 'Палітра команд';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'Створити нового агента';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'Створити новий робочий простір';
-
-  @override
   String get keybindingFocusSearch => 'Фокус на пошук';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'Фокус на поле пошуку pull request';
 
   @override
   String get keybindingNewAgent => 'Новий агент';
@@ -3761,35 +3730,10 @@ class AppLocalizationsUk extends AppLocalizations {
   String get keybindingOpenArticle => 'Відкрити статтю';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'Відкрити або закрити спливне вікно перемикача робочих просторів на бічній панелі';
-
-  @override
   String get keybindingOpenPr => 'Відкрити PR';
 
   @override
   String get keybindingOpenSettings => 'Відкрити налаштування';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'Відкрити налаштування програми';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription =>
-      'Відкрити палітру команд';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'Відкрити вибрану статтю';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'Відкрити вибраний pull request';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'Відкрити вибраний робочий простір';
 
   @override
   String get keybindingOpenWorkspace => 'Відкрити робочий простір';
@@ -3807,86 +3751,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get keybindingRefresh => 'Оновити';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'Оновити всі стрічки';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'Оновити список pull request';
-
-  @override
-  String get keybindingRescanForAdaptersDescription =>
-      'Повторно сканувати адаптери';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription =>
-      'Вибрати наступну статтю';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription =>
-      'Вибрати наступний простір';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'Вибрати попередню статтю';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription =>
-      'Вибрати попередній простір';
-
-  @override
   String get keybindingSendMessage => 'Надіслати повідомлення';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'Надіслати поточне повідомлення';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'Перемкнути світлу та темну тему';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'Перейти до восьмого робочого простору';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'Перейти до п\'ятого робочого простору';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'Перейти до першого робочого простору';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'Перейти до четвертого робочого простору';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'Перейти до наступного робочого простору';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'Перейти до дев\'ятого робочого простору';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'Перейти до попереднього робочого простору';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'Перейти до другого робочого простору';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'Перейти до сьомого робочого простору';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'Перейти до шостого робочого простору';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'Перейти до третього робочого простору';
 
   @override
   String get keybindingToggleBookmark => 'Перемкнути закладку';
@@ -3924,13 +3789,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'Робочий простір 9';
-
-  @override
-  String get keybindings => 'Сполучення клавіш';
-
-  @override
-  String get keybindingsDescription =>
-      'Усі сполучення клавіш. Сполучення фіксовані, їх не можна змінити.';
 
   @override
   String get killRunning => 'Завершити запущені';
@@ -4205,11 +4063,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get noSavedArticlesBody => 'Збережені статті з’являться тут.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'Немає скорочень, що відповідають «$query»';
-  }
 
   @override
   String get noSystemFonts => 'Системних шрифтів не виявлено.';
@@ -4956,12 +4809,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'Пошук…';
-
-  @override
-  String get searchShortcuts => 'Шукати скорочення…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'Недоступно в браузері';
 
   @override
   String get searching => 'Пошук…';
@@ -6766,6 +6613,30 @@ class AppLocalizationsUk extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'Простір видалено';
 
   @override
+  String get triggerEventSpaceArchived => 'Простір заархівовано';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged =>
+      'Підготовку простору змінено';
+
+  @override
+  String get triggerEventPrHeadChanged => 'Head PR змінено';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged =>
+      'Статус середовища змінено';
+
+  @override
+  String get triggerEventEnvironmentReady => 'Середовище готове';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'Середовище знищено';
+
+  @override
+  String get triggerEventEnvironmentProcessExited =>
+      'Процес середовища завершився';
+
+  @override
   String get triggerExternalPrHelp =>
       'Pull request, відкритий на хості коду, а не з Control Center.';
 
@@ -6829,6 +6700,33 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'Простір розмови видаляється.';
+
+  @override
+  String get triggerSpaceArchivedHelp => 'Простір розмови архівується.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'Підготовка робочих дерев простору починається, завершується або зазнає невдачі.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'До відкритого pull request надіслано нові коміти.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'Середовище простору переходить у новий статус.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'Середовище простору запущено, і ним можна користуватися.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp =>
+      'Середовище простору видаляється.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'Процес, запущений середовищем, завершується.';
 
   @override
   String get navTickets => 'Тікети';
@@ -9067,19 +8965,6 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'Використання та вартість';
-
-  @override
-  String get usageAndCostDescription =>
-      'Витрати на агентів за останні 7 днів за спостережуваною вартістю запусків.';
-
-  @override
-  String get noUsageYet => 'Використання ще не зафіксовано.';
-
-  @override
-  String get spentThisWeek => 'витрачено цього тижня';
-
-  @override
   String get subscriptionUsage => 'Використання підписки';
 
   @override
@@ -9292,9 +9177,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get keybindingNewSpace => 'Новий простір';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'Створити новий простір';
-
-  @override
   String get jumpToLatest => 'Перейти до останнього';
 
   @override
@@ -9468,71 +9350,8 @@ class AppLocalizationsUk extends AppLocalizations {
   String get preparingWorkspace => 'Підготовка робочого простору…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'Запуск скрипта налаштування для $repo…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'Скрипти';
-
-  @override
-  String get repoScriptsTooltip => 'Налаштувати скрипти життєвого циклу';
-
-  @override
-  String get repoScriptsSetupLabel => 'Скрипт налаштування';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'Запускається в робочому дереві простору одразу після створення — встановити залежності, згенерувати файли. Помилка позначає простір як невдалий; повторна спроба запускає скрипт знову.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'Скрипт архівування';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'Запускається безпосередньо перед видаленням робочого дерева простору — прибрати ресурси поза робочим деревом. Помилка ніколи не блокує видалення.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'Запускається через bash із робочого дерева; задано CC_WORKSPACE_PATH (робоче дерево), CC_ROOT_PATH (корінь репозиторію), CC_SPACE_ID, CC_SPACE_NAME і CC_REPO_NAME.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'напр. pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'напр. docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => 'Останні запуски';
-
-  @override
-  String get repoScriptsNoRuns => 'Запусків ще не було';
-
-  @override
-  String get repoScriptsSaved => 'Скрипти збережено';
-
-  @override
-  String get repoScriptsRunKindSetup => 'Налаштування';
-
-  @override
-  String get repoScriptsRunKindArchive => 'Архівування';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'Виконується';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'Успішно';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'Невдало';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'Час вичерпано';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'Код виходу $code';
+  String provisioningRunningTasks(String repo) {
+    return 'Запуск завдань worktree для $repo…';
   }
 
   @override
@@ -10340,10 +10159,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get keybindingCheatSheet => 'Сполучення клавіш';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'Показати довідку сполучень клавіш для поточного екрана';
-
-  @override
   String get runPlaybookLabel => 'Запустити плейбук';
 
   @override
@@ -10354,14 +10169,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'Повторити';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'Відмінити останню зворотну дію';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'Повторити останню відмінену дію';
 
   @override
   String get undone => 'Відмінено';
@@ -14287,6 +14094,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get newSkill => 'Нова навичка';
 
   @override
+  String get newItemAction => 'Новий';
+
+  @override
   String get zoomIn => 'Збільшити';
 
   @override
@@ -14505,6 +14315,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get steerNow => 'Скоригувати';
 
   @override
+  String get steerForce => 'Зупинити й надіслати';
+
+  @override
   String get steeringQueueLabel => 'Черга коригувальних повідомлень';
 
   @override
@@ -14552,16 +14365,6 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'Вас запитають знову, коли агент наступного разу потребуватиме запустити програму з цієї копії.';
-
-  @override
-  String get repoScriptsTest => 'Тест';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'Запустити цю чернетку в одноразовому клоні репозиторію';
-
-  @override
-  String get repoScriptsRunKindTest => 'Тест';
 
   @override
   String get demoBadgeLabel => 'Демо';
@@ -14781,6 +14584,52 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'Шлях на сервері';
+
+  @override
+  String get backupScheduledLabel => 'Резервні копії за розкладом';
+
+  @override
+  String get backupScheduledExplainer =>
+      'Копії, які зберігає конвеєр резервного копіювання кожного робочого простору. Розклад і термін зберігання задаються в шаблоні конвеєра.';
+
+  @override
+  String get backupScheduledNone => 'Резервних копій ще немає';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count резервної копії',
+      many: '$count резервних копій',
+      few: '$count резервні копії',
+      one: '$count резервна копія',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'Остання копія: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'Щоб бачити резервні копії цього робочого простору, потрібна роль адміністратора.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'Видалити цю резервну копію?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'Видалити із сервера копію $name від $date? Цю дію неможливо скасувати.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'Резервну копію видалено.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'Робочий простір видалено';
 
   @override
   String get backupRestoreAction => 'Відновити';
@@ -15402,14 +15251,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get ideQuickOpen => 'Перейти до файлу';
 
   @override
-  String get ideQuickOpenDescription =>
-      'Шукайте файли розмови за назвою та відкривайте один у вкладці';
-
-  @override
-  String get prQuickOpenDescription =>
-      'Шукайте файли pull request за назвою та відкривайте один у вкладці';
-
-  @override
   String get ideQuickOpenHint => 'Пошук файлів за назвою';
 
   @override
@@ -15745,6 +15586,15 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'Примусове завантаження';
+
+  @override
+  String get skillEvalHashLabel => 'Хеш пакета';
+
+  @override
+  String get skillEvalProgressLabel => 'Перебіг';
+
+  @override
+  String get skillEvalUpdatesToggle => 'Оцінювання оновлень';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -16137,4 +15987,717 @@ class AppLocalizationsUk extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return 'Залишилося $minutes хв';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'Середовища запускають справжні процеси на хості, тому в демо їх немає.';
+
+  @override
+  String get environmentChecksFailing =>
+      'Деякі перевірки на сервері не проходять';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'Кінцеві точки: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'Сервіси: $names';
+  }
+
+  @override
+  String get environmentCopied => 'Скопійовано';
+
+  @override
+  String get environmentCopyCommand => 'Копіювати команду';
+
+  @override
+  String get environmentCopyUrl => 'Копіювати URL';
+
+  @override
+  String get environmentDefinition => 'Визначення';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count визначення',
+      many: '$count визначень',
+      few: '$count визначення',
+      one: '1 визначення',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'Знищити';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name і його дані буде видалено. Запуск створить нове.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'Знищити це середовище?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'Виконати в сервісі';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'Код виходу $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => 'Це потрібно налаштувати на сервері';
+
+  @override
+  String get environmentKindApp => 'Застосунок';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'Процес';
+
+  @override
+  String get environmentKindTask => 'Завдання';
+
+  @override
+  String get environmentLaunch => 'Відкрити';
+
+  @override
+  String get environmentLogsGone => 'Ці журнали більше недоступні.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'Журнали: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'Очікування виводу';
+
+  @override
+  String get environmentMoreActions => 'Інші дії із середовищем';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'Через зміну це середовище потрібно створити заново.';
+
+  @override
+  String get environmentNoStack =>
+      'Виконує лише завдання worktree, тож запускати нічого.';
+
+  @override
+  String get environmentOnTheServer => 'На сервері';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Відкрити в Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'Відкрити перегляд';
+
+  @override
+  String get environmentPlacementRig => 'У ВМ';
+
+  @override
+  String get environmentPreviewTab => 'Середовище';
+
+  @override
+  String get environmentRebuildRelaunch => 'Перезібрати й перезапустити';
+
+  @override
+  String get environmentRecreate => 'Створити заново';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name буде знищено й запущено знову з тими самими параметрами. Його дані буде втрачено.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'Створити це середовище заново?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name повернеться до базового стану. Дані, створені відтоді, буде втрачено.';
+  }
+
+  @override
+  String get environmentResetData => 'Скинути дані';
+
+  @override
+  String get environmentResetTitle => 'Скинути дані?';
+
+  @override
+  String get environmentRestart => 'Перезапустити';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count перезапуску',
+      many: '$count перезапусків',
+      few: '$count перезапуски',
+      one: '1 перезапуск',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'Виконати';
+
+  @override
+  String get environmentRunInTerminal => 'Виконати в терміналі';
+
+  @override
+  String get environmentSectionTitle => 'Середовище';
+
+  @override
+  String get environmentService => 'Сервіс';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'Дії для $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'Запустити середовище';
+
+  @override
+  String get environmentStateCrashed => 'Збій';
+
+  @override
+  String get environmentStatusDegraded => 'Погіршено';
+
+  @override
+  String get environmentStatusDestroying => 'Знищується';
+
+  @override
+  String get environmentStatusGone => 'Зникло';
+
+  @override
+  String get environmentStatusStopping => 'Зупиняється';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'Зупинка $name втратить його дані, і запуск їх не поверне.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'Зупинити й втратити дані';
+
+  @override
+  String get environmentStopTitle => 'Зупинити це середовище?';
+
+  @override
+  String get environmentTaskNeverRun => 'Ще не виконувалось';
+
+  @override
+  String get environmentsAddCheck => 'Додати перевірку';
+
+  @override
+  String get environmentsAddOption => 'Додати параметр';
+
+  @override
+  String get environmentsAddRole => 'Додати роль';
+
+  @override
+  String get environmentsAdminOnly =>
+      'Змінювати визначення можуть лише адміністратори робочого простору.';
+
+  @override
+  String get environmentsAfter => 'Чекати на ці компоненти';
+
+  @override
+  String get environmentsAnchor => 'Якір';
+
+  @override
+  String get environmentsAutoCreate => 'Запускати автоматично';
+
+  @override
+  String get environmentsAutoCreateAll => 'У кожному придатному просторі';
+
+  @override
+  String get environmentsAutoCreateOff => 'Ніколи';
+
+  @override
+  String get environmentsAutoCreatePrs => 'У просторах pull request';
+
+  @override
+  String get environmentsBlank => 'Порожнє визначення';
+
+  @override
+  String get environmentsCheckFix => 'Команда виправлення';
+
+  @override
+  String get environmentsCheckHint => 'Підказка';
+
+  @override
+  String get environmentsCommandHelp =>
+      'Аргументи розділяються пробілами. Аргумент із пробілом візьміть у лапки.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count компонента',
+      many: '$count компонентів',
+      few: '$count компоненти',
+      one: '1 компонент',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'Збирати образи під час запуску';
+
+  @override
+  String get environmentsComposeFile => 'Файл compose';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Не вдалося прочитати файл compose. Назви сервісів усе ще можна вказати в поданні JSON.';
+
+  @override
+  String get environmentsComposeServices => 'Сервіси';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'Залиште всі сервіси непозначеними, щоб запустити їх усі.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'Ця команда має умовні аргументи. Редагуйте її в поданні JSON.';
+
+  @override
+  String get environmentsCwdPath => 'Робочий шлях';
+
+  @override
+  String get environmentsCwdRole => 'Робоча роль';
+
+  @override
+  String get environmentsDeleteBody =>
+      'Простори більше не зможуть його запускати. Запущені середовища працюватимуть до зупинки.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'Видалити $name?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'Що може запускати кожен простір і які завдання виконують його worktree.';
+
+  @override
+  String get environmentsDraftFromRepo => 'Чернетка з репозиторію';
+
+  @override
+  String get environmentsEmpty => 'Визначень поки немає';
+
+  @override
+  String get environmentsEnabledWhen => 'Увімкнено, коли';
+
+  @override
+  String get environmentsEndpointRole => 'Роль кінцевої точки';
+
+  @override
+  String get environmentsFollowPrHead => 'Стежити за head pull request';
+
+  @override
+  String get environmentsForkApproval => 'Кожен запуск потребує адміністратора';
+
+  @override
+  String get environmentsForkDeny => 'Заборонено';
+
+  @override
+  String get environmentsForkPrs => 'Pull request з форків';
+
+  @override
+  String get environmentsForkRig => 'Запускати у ВМ';
+
+  @override
+  String get environmentsIdleStop => 'Зупиняти після хвилин простою';
+
+  @override
+  String get environmentsIsolateHome =>
+      'Дати застосунку приватний домашній каталог';
+
+  @override
+  String get environmentsIssues => 'Виправте це перед збереженням';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'Недійсний JSON: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'Зберігає дані під час зупинки';
+
+  @override
+  String get environmentsLinkConfirm => 'Пов\'язати й схвалити';
+
+  @override
+  String get environmentsLinkFile => 'Пов\'язати файл репозиторію';
+
+  @override
+  String get environmentsLinkHelp =>
+      'Читається лише з типової гілки й запускається тільки після схвалення.';
+
+  @override
+  String get environmentsLinkPath => 'Шлях';
+
+  @override
+  String get environmentsMaxRunning => 'Запущено одночасно';
+
+  @override
+  String get environmentsNamingProject => 'Проєкт';
+
+  @override
+  String get environmentsNamingTemplate => 'Шаблон назви';
+
+  @override
+  String get environmentsNew => 'Нове визначення';
+
+  @override
+  String get environmentsNewDefinitionName => 'Нове середовище';
+
+  @override
+  String get environmentsNoChecks => 'Це визначення не має перевірок.';
+
+  @override
+  String get environmentsNoRuns => 'Тестових запусків поки немає';
+
+  @override
+  String get environmentsOnChange => 'Відстежувані шляхи';
+
+  @override
+  String get environmentsOptionBool => 'Так або ні';
+
+  @override
+  String get environmentsOptionEnum => 'Одне з';
+
+  @override
+  String get environmentsOptionMulti => 'Кілька з';
+
+  @override
+  String get environmentsOptionValues => 'Значення';
+
+  @override
+  String get environmentsPlacement => 'Розміщення';
+
+  @override
+  String get environmentsPlacementHost => 'На хості';
+
+  @override
+  String get environmentsPlacementRig => 'У ВМ';
+
+  @override
+  String get environmentsPrepareTask => 'Підготовче завдання';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'Основна кінцева точка';
+
+  @override
+  String get environmentsReadyHttp => 'Готово, коли ця URL відповідає';
+
+  @override
+  String get environmentsRestartAlways => 'Завжди';
+
+  @override
+  String get environmentsRestartNever => 'Ніколи';
+
+  @override
+  String get environmentsRestartOn => 'Перезапускати при зміні цих шляхів';
+
+  @override
+  String get environmentsRestartOnFailure => 'У разі збою';
+
+  @override
+  String get environmentsRestartPolicy => 'Перезапустити';
+
+  @override
+  String get environmentsRigTtl => 'Час життя ВМ у годинах';
+
+  @override
+  String get environmentsRunChecks => 'Запустити знову';
+
+  @override
+  String get environmentsRunTest => 'Запустити тест';
+
+  @override
+  String get environmentsSaved => 'Визначення збережено';
+
+  @override
+  String get environmentsSectionComponents => 'Компоненти';
+
+  @override
+  String get environmentsSectionOptions => 'Параметри запуску';
+
+  @override
+  String get environmentsSectionSeedFiles => 'Початкові файли';
+
+  @override
+  String get environmentsSectionVariables => 'Змінні';
+
+  @override
+  String get environmentsSeedHelp =>
+      'Один шлях у рядку, копіюється із зареєстрованого checkout. Pull request з форків їх ніколи не отримують.';
+
+  @override
+  String get environmentsShellHelp =>
+      'Заповнювачі тут не розгортаються. Натомість читайте змінні CC_ENV_*.';
+
+  @override
+  String get environmentsSourceApprove => 'Схвалити цю версію';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path збігається зі схваленою версією.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'Схвалена версія працює, доки ви не схвалите цю.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'Джерело';
+
+  @override
+  String get environmentsTestHelp =>
+      'Запускає одноразове середовище від початку до кінця: перевірка, запуск, очікування готовності, знищення.';
+
+  @override
+  String get environmentsTestSaveFirst => 'Спочатку збережіть визначення.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'Тайм-аут у секундах';
+
+  @override
+  String get environmentsTitle => 'Середовища';
+
+  @override
+  String get environmentsTriggerArchive => 'Перед видаленням worktree';
+
+  @override
+  String get environmentsTriggerChange => 'Коли змінюються відстежувані шляхи';
+
+  @override
+  String get environmentsTriggerCreate => 'Один раз на середовище';
+
+  @override
+  String get environmentsTriggerManual => 'На запит';
+
+  @override
+  String get environmentsTriggerProvision => 'Під час створення worktree';
+
+  @override
+  String get environmentsTriggerStart => 'Під час кожного запуску';
+
+  @override
+  String get environmentsTriggers => 'Запускається';
+
+  @override
+  String get environmentsUnreadable =>
+      'Цей клієнт не може прочитати це визначення.';
+
+  @override
+  String get environmentsUpdateAvailable => 'Доступне оновлення';
+
+  @override
+  String get environmentsUseShell => 'Використати команду оболонки';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'Інструмент працюватиме з вашим власним checkout. Вважайте його лише для читання.';
+
+  @override
+  String get environmentsWhenMissing => 'Коли в просторі цього немає';
+
+  @override
+  String get environmentsWhenMissingAdd => 'Додати до простору';
+
+  @override
+  String get environmentsWhenMissingSkip => 'Пропустити';
+
+  @override
+  String get environmentsWhenMissingSource =>
+      'Використати зареєстрований checkout';
+
+  @override
+  String get environmentsUnsupported => 'Цей сервер не підтримує середовища.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'Немає перегляду: сервер не може захопити це вікно. Дозвольте Control Center запис екрана на сервері.';
+
+  @override
+  String get environmentHealthHealthy => 'Справний';
+
+  @override
+  String get environmentHealthUnhealthy => 'Несправний';
+
+  @override
+  String get environmentTerminalStale =>
+      'Цей термінал відкрито до запуску середовища, тому в ньому немає його змінних.';
+
+  @override
+  String get environmentTerminalFresh => 'Відкрити новий термінал';
+
+  @override
+  String get environmentsShellStays =>
+      'Багаторядковий скрипт лишається командою оболонки: рядки — це його структура.';
+
+  @override
+  String get environmentsOverrides => 'Перевизначення робочого простору';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'Власні налаштування файлу тут лише для читання. Прив\'яжіть його ролі до репозиторіїв цього робочого простору або перевизначте будь-яке поле в JSON.';
+
+  @override
+  String get environmentsReposHelp =>
+      'Репозиторії, які використовує це середовище, кожен прив\'язаний до ролі.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'Що запускає середовище, у порядку старту.';
+
+  @override
+  String get environmentsOptionsHelp =>
+      'Варіанти, що пропонуються під час запуску середовища.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'Задаються для завдань, процесів, застосунків і терміналів простору.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'Що потрібно хосту для роботи цього середовища.';
+
+  @override
+  String get environmentsIdleStopHelp => 'За 0 ніколи не зупиняється.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'Простір із цим репозиторієм може запустити середовище.';
+
+  @override
+  String get environmentsRequiredHelp => 'Без нього середовище не запуститься.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'Синхронізувати й оновлювати, коли head pull request зміщується.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'Потрібно виправити';
+
+  @override
+  String get environmentsCheckFile => 'Файл';
+
+  @override
+  String get environmentsDiscardBody =>
+      'Ваші зміни цього визначення буде втрачено.';
+
+  @override
+  String get environmentsWorktreeRuns => 'Запуски завдань worktree';
+
+  @override
+  String get environmentsNoWorktreeRuns =>
+      'Завдання worktree ще не запускалися.';
+
+  @override
+  String get environmentsLinkRoles => 'Ролі в цьому файлі';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'Не вдалося прочитати файл із репозиторію. Ролі можна прив\'язати після зв\'язування.';
+
+  @override
+  String get guardrailClassHostExecution => 'Виконання команд на хості';
+
+  @override
+  String get environmentUrls => 'URL-адреси';
+
+  @override
+  String get environmentScripts => 'Скрипти';
+
+  @override
+  String get environmentNoneForSpace => 'Для цього простору немає середовища';
+
+  @override
+  String get environmentNoneForPr => 'Для цього pull request немає середовища';
+
+  @override
+  String get environmentSetupBody =>
+      'Середовище запускає сервіси, скрипти й URL-адреси репозиторію для одного простору. Налаштуйте його один раз, і будь-який простір цього репозиторію зможе його запустити.';
+
+  @override
+  String get environmentSetUp => 'Налаштувати середовище';
+
+  @override
+  String get environmentEditDefinition => 'Редагувати визначення';
+
+  @override
+  String get environmentOpenPanel => 'Відкрити середовище';
+
+  @override
+  String get environmentNeedsSetup => 'Потрібне налаштування';
+
+  @override
+  String get environmentContinueInTerminal => 'Продовжити в терміналі';
+
+  @override
+  String get environmentSetupHint =>
+      'Інструменту потрібне ваше введення в терміналі: пароль або відповідь. Після цього запуск продовжиться.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'Цей термінал відкрито, бо для запуску потрібні ваші дії';
+
+  @override
+  String get environmentSetupTab => 'Налаштування середовища';
+
+  @override
+  String get environmentsNothingRunning =>
+      'З цього визначення нічого не запущено.';
+
+  @override
+  String get searchPoliciesHint => 'Пошук політик...';
+
+  @override
+  String get noPoliciesMatch => 'Немає політик, що відповідають запиту';
+
+  @override
+  String get memoryPolicyActive => 'Активна';
+
+  @override
+  String get memoryFactType => 'Тип';
+
+  @override
+  String get memoryTimesRecalled => 'Кількість звернень';
+
+  @override
+  String get memorySourceFacts => 'Вихідні факти';
+
+  @override
+  String get spaceSetupLogs => 'Журнали налаштування';
 }

@@ -13,6 +13,10 @@ import 'package:flutter/widgets.dart';
 /// The whole row is the target. Tapping the text flips the switch — a 40x24
 /// hit area on the far right of a 900px row is a phone-remote failure and a
 /// desktop annoyance, and the switch itself stays keyboard-reachable.
+///
+/// The row paints no hover wash and has no horizontal inset. It shares a column
+/// with `SettingsField` rows, which have neither, so either one reads as this
+/// row sliding out of line with its neighbours.
 class SettingsToggle extends StatelessWidget {
   /// Creates a [SettingsToggle].
   const SettingsToggle({
@@ -65,15 +69,9 @@ class SettingsToggle extends StatelessWidget {
       canRequestFocus: false,
       showFocusRing: false,
       mouseCursor: SystemMouseCursors.click,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered) && enabled;
-        return AnimatedContainer(
-          duration: CcMotion.fast,
-          color: hovered ? tokens.hover : const Color(0x00000000),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.sm,
-          ),
+      builder: (context, _) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [

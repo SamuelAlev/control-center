@@ -2,6 +2,8 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_provisio
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_host.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_terminal_banner.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
@@ -26,8 +28,25 @@ class PrTerminalTab extends ConsumerStatefulWidget {
     super.key,
     required this.pr,
     this.backend,
+    this.attachSessionId,
+    this.initialInput,
+    this.environmentSetup = false,
     this.onTitleChange,
   });
+
+  /// The terminal a tab's [args] describe.
+  factory PrTerminalTab.fromArgs({
+    required PullRequest pr,
+    required Map<String, Object?> args,
+    ValueChanged<String>? onTitleChange,
+  }) => PrTerminalTab(
+    pr: pr,
+    backend: args['backend'] as String?,
+    attachSessionId: args['attachSessionId'] as String?,
+    initialInput: args['initialInput'] as String?,
+    environmentSetup: args[kEnvironmentSetupTabArg] == true,
+    onTitleChange: onTitleChange,
+  );
 
   /// The pull request whose worktree the terminal runs in.
   final PullRequest pr;
@@ -35,6 +54,16 @@ class PrTerminalTab extends ConsumerStatefulWidget {
   /// The `SandboxBackend` name to request (`microvm` = a shell inside the
   /// PR conversation's enclosed VM), or null for the server default.
   final String? backend;
+
+  /// A server PTY to show instead of a new shell (see
+  /// [TerminalSession.attachSessionId]).
+  final String? attachSessionId;
+
+  /// Text typed at the first prompt and left there, never run.
+  final String? initialInput;
+
+  /// Whether a stopped start finishes here, which the tab then explains.
+  final bool environmentSetup;
 
   /// Forwards the shell's OSC title (see [TerminalPanel.onTitleChange]) so the
   /// host can retitle this tab, wezterm/ghostty/iTerm-style.
@@ -48,6 +77,9 @@ class _PrTerminalTabState extends ConsumerState<PrTerminalTab> {
   // Stable per-tab id so the panel's server session survives rebuilds/moves.
   final String _sessionId =
       'pr-terminal-${DateTime.now().microsecondsSinceEpoch}';
+
+  /// When this tab's shell was asked for: the panel spawns it on mount.
+  final DateTime _openedAt = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -80,15 +112,44 @@ class _PrTerminalTabState extends ConsumerState<PrTerminalTab> {
           return _Preparing(label: provisioningStepLabel(l10n, step), t: t);
         }
         final workspaceId = ref.watch(activeWorkspaceIdProvider) ?? '';
-        return TerminalPanel(
+        final host = EnvironmentHostScope.maybeOf(context);
+        final panel = TerminalPanel(
           session: TerminalSession(
             sessionId: _sessionId,
             spaceId: spaceId,
             workspaceId: workspaceId,
             backend: widget.backend,
+            attachSessionId: widget.attachSessionId,
           ),
+          initialInput: widget.initialInput,
           onTitleChange: widget.onTitleChange,
           backgroundColor: t.bgPrimary,
+        );
+        if (widget.environmentSetup) {
+          return Column(
+            children: [
+              EnvironmentSetupBanner(
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+              ),
+              Expanded(child: panel),
+            ],
+          );
+        }
+        if (widget.attachSessionId != null || host == null) {
+          return panel;
+        }
+        return Column(
+          children: [
+            EnvironmentTerminalBanner(
+              workspaceId: workspaceId,
+              spaceId: spaceId,
+              startedAt: _openedAt,
+              onOpenFresh: () =>
+                  host.openPrefilledTerminal(spaceId: spaceId, command: ''),
+            ),
+            Expanded(child: panel),
+          ],
         );
       },
     );

@@ -2662,6 +2662,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'L\'exécution s\'est arrêtée car les identifiants de son fournisseur ne fonctionnent plus. Reconnectez-le dans Paramètres → Fournisseurs, puis relancez le tour.';
+
+  @override
+  String get permissionHostExecution => 'Exécuter des commandes sur l\'hôte';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

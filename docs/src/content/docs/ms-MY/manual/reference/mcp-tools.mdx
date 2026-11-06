@@ -2,7 +2,7 @@
 title: Alat MCP
 description: Katalog lengkap alat MCP yang didaftarkan oleh cc_server, mengikut keluarga.
 slug: ms-MY/manual-pengguna/rujukan/alat-mcp
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` mengehoskan satu daftar alat MCP (JSON-RPC 2.0), disajikan pada port pelayan utama (lalai `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien mencapai daftar yang sama: desktop, binaan web, klien MCP luaran dan masa jalan ejen terbina. Pelayan MCP luaran boleh dijambatkan ke dalam daftar yang sama sebagai lapisan dinamik.
@@ -259,6 +259,8 @@ permukaan ada dalam
 | `ios_use`      | Kawal iOS Simulator melalui WebDriverAgent/CoreSimulator: periksa/masukkan input, tangkapan skrin, pasang/mula/henti/nyahpasang apl, pautan mendalam dan proses simulator berbentuk argv |
 | `rig_list`     | Senaraikan stesen sesuatu ruang kerja berserta permukaan, status, saiz paparan dan pengawal      |
 | `rig_close`    | Musnahkan sesuatu stesen dan buang keadaan mesin yang dimilikinya                                |
+
+`app_use` ialah alat use kelima: ia memandu tetingkap apl desktop yang dilancarkan dalam ruang, terus pada hos dan bukan dalam VM, dan juga mengisytiharkan `fileWriteOutsideWorktree` dan `fileDelete`. Alat ini dan alat `environment_*` diterangkan dalam [Sediakan persekitaran](/ms-MY/manual-pengguna/panduan-cara/persekitaran/).
 
 ## Tidak didedahkan melalui MCP
 

@@ -9,7 +9,7 @@ PullRequest _pr({
   required int number,
   String title = 'A change',
   String body = '',
-  String repoFullName = 'acme/web-app',
+  String repoFullName = 'acme/shop-ui',
   String authorLogin = 'author',
   bool isDraft = false,
   PrState state = PrState.open,
@@ -157,7 +157,7 @@ void main() {
     });
 
     test('repo owner/name filters split repoFullName', () {
-      final pr = _pr(number: 1, repoFullName: 'Acme/Web-App');
+      final pr = _pr(number: 1, repoFullName: 'Acme/Shop-Ui');
       expect(
         prPassesFilters(
           pr,
@@ -169,7 +169,7 @@ void main() {
       expect(
         prPassesFilters(
           pr,
-          filters: const PrListFilters(repoNames: {'web-app'}),
+          filters: const PrListFilters(repoNames: {'shop-ui'}),
           currentLogin: '',
         ),
         isTrue,
@@ -272,18 +272,18 @@ void main() {
         ..toggleAuthor('alice')
         ..toggleRepoName('other');
 
-      notifier.showOnlyRepo('Acme', 'Web-App');
+      notifier.showOnlyRepo('Acme', 'Shop-Ui');
 
       final filters = container.read(prListFiltersProvider);
       expect(filters.repoOwners, {'acme'});
-      expect(filters.repoNames, {'web-app'});
+      expect(filters.repoNames, {'shop-ui'});
       expect(filters.count, 2);
       expect(
         applyFilters(
           [
-            _pr(number: 1, repoFullName: 'Acme/Web-App'),
+            _pr(number: 1, repoFullName: 'Acme/Shop-Ui'),
             _pr(number: 2, repoFullName: 'acme/other'),
-            _pr(number: 3, repoFullName: 'elsewhere/web-app'),
+            _pr(number: 3, repoFullName: 'elsewhere/shop-ui'),
           ],
           filters: filters,
           currentLogin: '',

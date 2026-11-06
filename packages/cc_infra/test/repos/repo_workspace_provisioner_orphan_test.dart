@@ -28,10 +28,10 @@ void main() {
     workspaces = _FakeWorkspaces([
       Repo(
         id: 'repo-1',
-        name: 'web-app',
-        path: '/src/web-app',
+        name: 'shop-ui',
+        path: '/src/shop-ui',
         remoteOwner: 'acme',
-        remoteName: 'web-app',
+        remoteName: 'shop-ui',
         createdAt: DateTime(2026),
         updatedAt: DateTime(2026),
       ),
@@ -52,7 +52,7 @@ void main() {
     }
   });
 
-  String orphanPath() => p.join(root.path, 'spaces', 'sp-1', 'repos', 'web-app');
+  String orphanPath() => p.join(root.path, 'spaces', 'sp-1', 'repos', 'shop-ui');
 
   test('an orphaned worktree directory is reaped before provisioning, so the '
       'first attempt succeeds', () async {
@@ -70,7 +70,7 @@ void main() {
       agentSlug: '_pr',
       fallbackDir: '',
       prHeadRef: 'refs/pull/42/head',
-      prHeadRepoFullName: 'acme/web-app',
+      prHeadRepoFullName: 'acme/shop-ui',
       prBranch: 'pr/42',
       repoAllowlist: const {'repo-1'},
     );
@@ -100,7 +100,7 @@ void main() {
       agentSlug: '_pr',
       fallbackDir: '',
       prHeadRef: 'refs/pull/42/head',
-      prHeadRepoFullName: 'acme/web-app',
+      prHeadRepoFullName: 'acme/shop-ui',
       prBranch: 'pr/42',
       repoAllowlist: const {'repo-1'},
     );
@@ -119,7 +119,7 @@ void main() {
       path: orphanPath(),
       branch: 'pr/42',
       backend: RepoIsolationBackend.rift,
-      sourcePath: '/src/web-app',
+      sourcePath: '/src/shop-ui',
       createdAt: DateTime(2026),
     );
 
@@ -129,7 +129,7 @@ void main() {
       agentSlug: '_pr',
       fallbackDir: '',
       prHeadRef: 'refs/pull/42/head',
-      prHeadRepoFullName: 'acme/web-app',
+      prHeadRepoFullName: 'acme/shop-ui',
       prBranch: 'pr/42',
       repoAllowlist: const {'repo-1'},
     );
@@ -160,6 +160,7 @@ class _RecordingIsolation implements RepoIsolationPort {
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   }) async {
     final path = p.join(destParentDir, name);
     provisioned.add(path);

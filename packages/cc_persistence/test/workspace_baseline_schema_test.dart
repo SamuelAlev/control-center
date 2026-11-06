@@ -1,7 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/features/environments/domain/value_objects/environment_command.dart';
+import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
+import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:test/test.dart';
 
@@ -60,26 +64,16 @@ void main() {
       },
     );
 
-    // Regression: the per-repo lifecycle scripts shipped as v4 (two nullable
-    // `repos` columns + the `repo_script_runs` table). A workspace file from
-    // v3 must be carried forward by the migration step, not seen as "no such
-    // table/column" at the first script write.
-    test('an existing v3 database is migrated to carry repo scripts', () async {
+    // A file from before v4 never had script columns, so the move into
+    // definitions at v21 has nothing to read and must not fail on them.
+    test('a file from before repo scripts migrates without them', () async {
       final dir = await Directory.systemTemp.createTemp('ws_migration_v4_');
       addTearDown(() => dir.delete(recursive: true));
       final file = File('${dir.path}/ws.db');
 
-      // Build a current database, then rewind it to "v3 without the scripts"
-      // (ALTER TABLE DROP COLUMN takes the indexes with the table drop) to
-      // fake a pre-scripts file.
       final setup = WorkspaceDatabase.forTesting(
         NativeDatabase(file),
         workspaceId: 'ws',
-      );
-      await setup.customStatement('DROP TABLE repo_script_runs');
-      await setup.customStatement('ALTER TABLE repos DROP COLUMN setup_script');
-      await setup.customStatement(
-        'ALTER TABLE repos DROP COLUMN archive_script',
       );
       await setup.customStatement('PRAGMA user_version = 3');
       await setup.close();
@@ -90,18 +84,11 @@ void main() {
       );
       addTearDown(db.close);
 
-      final table = await db
-          .customSelect(
-            "SELECT name FROM sqlite_master WHERE type = 'table' "
-            "AND name = 'repo_script_runs'",
-          )
-          .get();
-      expect(table, isNotEmpty);
       final columns = await db
           .customSelect('PRAGMA table_info(repos)')
           .get()
           .then((rows) => rows.map((r) => r.read<String>('name')).toSet());
-      expect(columns, containsAll(['setup_script', 'archive_script']));
+      expect(columns, isNot(contains('setup_script')));
       expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
     });
 
@@ -1479,5 +1466,298 @@ CREATE TABLE conversation_goals (
         expect(resumed.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
       },
     );
+
+    test('a fresh database carries the environment tables', () async {
+      final db = WorkspaceDatabase.forTesting(
+        NativeDatabase.memory(),
+        workspaceId: 'ws',
+      );
+      addTearDown(db.close);
+      Future<Set<String>> columns(String table) => db
+          .customSelect('PRAGMA table_info($table)')
+          .get()
+          .then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+
+      expect(
+        await columns('environment_definitions'),
+        containsAll([
+          'id',
+          'name',
+          'definition_json',
+          'source_repo_id',
+          'source_path',
+          'approved_blob_hash',
+          'overrides_json',
+          'created_by',
+          'created_at',
+          'updated_at',
+        ]),
+      );
+      expect(
+        await columns('space_environments'),
+        containsAll([
+          'id',
+          'space_id',
+          'definition_id',
+          'name',
+          'status',
+          'placement',
+          'rig_id',
+          'ports_json',
+          'endpoints_json',
+          'components_json',
+          'options_json',
+          'warnings_json',
+          'last_error_json',
+          'needs_recreate',
+          'created_by',
+          'created_at',
+          'last_used_at',
+        ]),
+      );
+      expect(
+        await columns('environment_runs'),
+        containsAll([
+          'id',
+          'workspace_id',
+          'space_id',
+          'environment_id',
+          'definition_id',
+          'repo_id',
+          'kind',
+          'label',
+          'status',
+          'started_at',
+          'completed_at',
+          'exit_code',
+          'error',
+          'output_text',
+        ]),
+      );
+    });
+
+    group('v20 -> v21: environments and the repo scripts move', () {
+      late File file;
+
+      setUp(() async {
+        final dir = await Directory.systemTemp.createTemp('ws_migration_v21_');
+        addTearDown(() => dir.delete(recursive: true));
+        file = File('${dir.path}/ws.db');
+      });
+
+      WorkspaceDatabase open() =>
+          WorkspaceDatabase.forTesting(NativeDatabase(file), workspaceId: 'ws');
+
+      /// Builds a v20 file holding [seed]'s repos.
+      // The schema these files had, which the current tables no longer declare.
+      Future<void> addScriptColumns(WorkspaceDatabase db) async {
+        await db.customStatement(
+          'ALTER TABLE repos ADD COLUMN setup_script TEXT',
+        );
+        await db.customStatement(
+          'ALTER TABLE repos ADD COLUMN archive_script TEXT',
+        );
+      }
+
+      Future<Set<String>> repoColumns(WorkspaceDatabase db) => db
+          .customSelect('PRAGMA table_info(repos)')
+          .get()
+          .then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+
+      Future<bool> hasRunsTable(WorkspaceDatabase db) => db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'repo_script_runs'",
+          )
+          .get()
+          .then((rows) => rows.isNotEmpty);
+
+      Future<void> rewind(
+        Future<void> Function(WorkspaceDatabase db) seed,
+      ) async {
+        final setup = open();
+        await addScriptColumns(setup);
+        await seed(setup);
+        await setup.customStatement('DROP TABLE environment_runs');
+        await setup.customStatement('DROP TABLE space_environments');
+        await setup.customStatement('DROP TABLE environment_definitions');
+        await setup.customStatement('PRAGMA user_version = 20');
+        await setup.close();
+      }
+
+      Future<void> addRepo(
+        WorkspaceDatabase db,
+        String id,
+        String name, {
+        String? setup,
+        String? archive,
+      }) async {
+        await db.repoDao.upsertRepo(
+          ReposTableCompanion.insert(id: id, name: name, path: '/src/$id'),
+        );
+        await db.customStatement(
+          'UPDATE repos SET setup_script = ?, archive_script = ? WHERE id = ?',
+          [setup, archive, id],
+        );
+      }
+
+      Future<List<EnvironmentDefinitionsTableData>> definitions(
+        WorkspaceDatabase db,
+      ) => db.environmentDao.definitions();
+
+      EnvironmentDefinition parsed(EnvironmentDefinitionsTableData row) =>
+          EnvironmentDefinition.fromJson(
+            jsonDecode(row.definitionJson) as Map<String, dynamic>,
+          );
+
+      test('creates the tables and their indexes', () async {
+        await rewind((_) async {});
+
+        final db = open();
+        addTearDown(db.close);
+        final names = await db
+            .customSelect('SELECT name FROM sqlite_master')
+            .get()
+            .then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+        expect(
+          names,
+          containsAll([
+            'environment_definitions',
+            'space_environments',
+            'environment_runs',
+            'idx_environment_runs_space',
+            'idx_environment_runs_definition',
+          ]),
+        );
+        expect(await definitions(db), isEmpty);
+      });
+
+      test('a repo with both scripts gets a stackless definition', () async {
+        const setup = 'corepack enable\npnpm i --frozen-lockfile\n';
+        const archive = r'[ -n "$CC_SCRIPT_TEST" ] || echo "${HOME}/{name}"';
+        await rewind(
+          (db) => addRepo(
+            db,
+            'repo-1',
+            'acme/shop',
+            setup: setup,
+            archive: archive,
+          ),
+        );
+
+        final db = open();
+        addTearDown(db.close);
+        final row = (await definitions(db)).single;
+        expect(row.id, 'repo-scripts-repo-1');
+        expect(row.name, 'acme/shop');
+        expect(row.createdBy, isNull);
+        expect(row.createdAt.year, DateTime.now().year);
+
+        final definition = parsed(row);
+        expect(definition.name, 'acme/shop');
+        expect(validateEnvironmentDefinition(definition), isEmpty);
+        expect(
+          validateEnvironmentDefinition(definition, linkedRepoIds: {'repo-1'}),
+          isEmpty,
+        );
+        expect(definition.hasStack, isFalse);
+        final role = definition.repos.single;
+        expect(role.repoId, 'repo-1');
+        expect(role.anchor, isFalse);
+
+        final tasks = definition.components
+            .cast<TaskEnvironmentComponent>()
+            .toList();
+        expect(tasks.map((task) => task.id), ['setup', 'archive']);
+        expect(tasks[0].when, {EnvironmentTaskTrigger.provision});
+        expect(tasks[1].when, {EnvironmentTaskTrigger.archive});
+        expect(tasks[0].timeoutSeconds, 300);
+        expect(tasks[1].timeoutSeconds, 120);
+        expect((tasks[0].command as ShellEnvironmentCommand).body, setup);
+        expect((tasks[1].command as ShellEnvironmentCommand).body, archive);
+      });
+
+      test('a single script yields a single task', () async {
+        await rewind((db) async {
+          await addRepo(db, 'repo-1', 'shop', setup: 'make deps');
+          await addRepo(db, 'repo-2', 'tool', archive: 'make clean');
+        });
+
+        final db = open();
+        addTearDown(db.close);
+        final rows = await definitions(db);
+        expect(rows.map((row) => row.name), ['shop', 'tool']);
+        expect(parsed(rows[0]).components.single.id, 'setup');
+        expect(parsed(rows[1]).components.single.id, 'archive');
+        for (final row in rows) {
+          expect(validateEnvironmentDefinition(parsed(row)), isEmpty);
+        }
+      });
+
+      test('repos without a real script get nothing', () async {
+        await rewind((db) async {
+          await addRepo(db, 'repo-1', 'shop');
+          await addRepo(db, 'repo-2', 'tool', setup: ' \n\t ', archive: '');
+        });
+
+        final db = open();
+        addTearDown(db.close);
+        expect(await definitions(db), isEmpty);
+      });
+
+      test('the scripts live only in the definition afterwards', () async {
+        await rewind((db) async {
+          await addRepo(db, 'repo-1', 'shop', setup: 'make deps');
+          await db.customStatement(
+            'CREATE TABLE repo_script_runs (id TEXT PRIMARY KEY, output TEXT)',
+          );
+          await db.customStatement(
+            "INSERT INTO repo_script_runs VALUES ('run-1', 'ok')",
+          );
+        });
+
+        final db = open();
+        addTearDown(db.close);
+        final moved = await definitions(db);
+        expect(moved.single.definitionJson, contains('make deps'));
+        expect(await hasRunsTable(db), isFalse);
+        expect(
+          await repoColumns(db),
+          isNot(anyOf(contains('setup_script'), contains('archive_script'))),
+        );
+      });
+
+      test('a file already at v21 loses the leftovers too', () async {
+        final setup = open();
+        await addScriptColumns(setup);
+        await setup.customStatement(
+          'CREATE TABLE repo_script_runs (id TEXT PRIMARY KEY)',
+        );
+        await setup.customStatement('PRAGMA user_version = 21');
+        await setup.close();
+
+        final db = open();
+        addTearDown(db.close);
+        expect(await hasRunsTable(db), isFalse);
+        expect(await repoColumns(db), isNot(contains('setup_script')));
+      });
+
+      test('re-entering the step keeps an edited definition', () async {
+        await rewind((db) => addRepo(db, 'repo-1', 'shop', setup: 'make deps'));
+
+        final migrated = open();
+        final row = (await definitions(migrated)).single;
+        await migrated.environmentDao.upsertDefinition(
+          row.toCompanion(false).copyWith(name: const Value('Renamed')),
+        );
+        await migrated.customStatement('PRAGMA user_version = 20');
+        await migrated.close();
+
+        final resumed = open();
+        addTearDown(resumed.close);
+        final rows = await definitions(resumed);
+        expect(rows.single.name, 'Renamed');
+      });
+    });
   });
 }

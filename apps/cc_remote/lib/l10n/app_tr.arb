@@ -757,5 +757,6 @@
   "transcriptClaudeSignInExpiredTitle": "Claude Code oturumunun süresi doldu",
   "transcriptClaudeSignInExpiredBody": "Hesabı artık kimlik doğrulayamadığı için çalışma durdu. Yeniden oturum açın, ardından turu yeniden deneyin.",
   "transcriptSignInExpiredTitle": "Sağlayıcı oturumunun süresi doldu",
-  "transcriptSignInExpiredBody": "Sağlayıcının kimlik bilgisi artık çalışmadığı için çalışma durdu. Ayarlar → Sağlayıcılar bölümünden yeniden bağlayın, ardından turu yeniden deneyin."
+  "transcriptSignInExpiredBody": "Sağlayıcının kimlik bilgisi artık çalışmadığı için çalışma durdu. Ayarlar → Sağlayıcılar bölümünden yeniden bağlayın, ardından turu yeniden deneyin.",
+  "permissionHostExecution": "Ana makinede komut çalıştır"
 }

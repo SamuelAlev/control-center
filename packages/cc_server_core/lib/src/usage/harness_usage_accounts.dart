@@ -4,7 +4,7 @@ import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 
 /// Builds one [SubscriptionUsageAccount] per connected plan login.
 ///
-/// Codex / Cursor / Kimi Code / z.ai all support more than one stored
+/// Codex / Cursor / Kimi Code / z.ai / Mistral all support more than one stored
 /// credential, and the same pinned / round-robin / serial pool Claude Code
 /// uses orders those credentials at dispatch. Usage has to fan out the same
 /// way or the rotation editor would show remaining quota for only the active
@@ -99,6 +99,25 @@ Future<List<SubscriptionUsageAccount>> collectHarnessUsageAccounts({
         accountLabel: _labelOf(cred),
         accessToken: token,
         providerAccountId: cred.accountId,
+        baseUrl: cred.baseUrl,
+      ),
+    );
+  }
+
+  // Every Mistral key is a candidate: the same key shape serves pay-as-you-go
+  // and the Vibe plan, and only the billing endpoint can tell them apart. The
+  // usage service drops the keys that turn out to carry no plan.
+  for (final cred in await store.credentialsFor('mistral')) {
+    final key = cred.apiKey?.trim();
+    if (key == null || key.isEmpty) {
+      continue;
+    }
+    out.add(
+      SubscriptionUsageAccount(
+        providerId: 'mistral',
+        accountId: cred.credentialId,
+        accountLabel: _labelOf(cred),
+        apiKey: key,
         baseUrl: cred.baseUrl,
       ),
     );

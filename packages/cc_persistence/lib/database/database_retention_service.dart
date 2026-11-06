@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/value_objects/editor_layout_cache_kinds.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:cc_persistence/database/cross_workspace_queries.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
@@ -147,7 +148,12 @@ class DatabaseRetentionService {
     );
     total += await _prune(
       'caches',
-      () => db.cacheDao.deleteOlderThan(now.subtract(cacheRetention)),
+      // An editor layout is only rewritten when it changes, so a layout the
+      // person opens daily but never rearranges would otherwise age out.
+      () => db.cacheDao.deleteOlderThan(
+        now.subtract(cacheRetention),
+        exceptKinds: EditorLayoutCacheKinds.all,
+      ),
     );
     total += await _prune(
       'run_transcripts',

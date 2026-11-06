@@ -403,7 +403,7 @@ void main() {
           id: firstCard.id,
           title: firstCard.title,
           status: ChatTaskStatus.inProgress,
-          narration: 'Cloning web-app…',
+          narration: 'Cloning shop-ui…',
           link: firstCard.link,
         ),
       );
@@ -415,7 +415,7 @@ void main() {
       expect(first.single.containsKey('output'), isFalse);
       expect(first.single.containsKey('sources'), isFalse);
       expect(second.single['id'], 'msg-1');
-      expect(second.single['title'], 'Cloning web-app…');
+      expect(second.single['title'], 'Cloning shop-ui…');
       expect(second.single.containsKey('details'), isFalse);
       expect(second.single.containsKey('output'), isFalse);
       expect(second.single.containsKey('sources'), isFalse);

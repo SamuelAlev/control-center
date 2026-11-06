@@ -54,6 +54,7 @@ class TerminalSession {
     required this.workspaceId,
     this.agentId = '',
     this.backend,
+    this.attachSessionId,
   });
 
   /// Unique id for THIS terminal tab — keeps two terminals in the same
@@ -78,6 +79,11 @@ class TerminalSession {
   /// requesting is not getting.
   final String? backend;
 
+  /// An existing server PTY to show instead of spawning a shell: a process an
+  /// environment owns. Closing the tab leaves it running, and when it ends the
+  /// tab ends with it rather than falling back to a fresh shell.
+  final String? attachSessionId;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -86,11 +92,18 @@ class TerminalSession {
           spaceId == other.spaceId &&
           workspaceId == other.workspaceId &&
           agentId == other.agentId &&
-          backend == other.backend;
+          backend == other.backend &&
+          attachSessionId == other.attachSessionId;
 
   @override
-  int get hashCode =>
-      Object.hash(sessionId, spaceId, workspaceId, agentId, backend);
+  int get hashCode => Object.hash(
+    sessionId,
+    spaceId,
+    workspaceId,
+    agentId,
+    backend,
+    attachSessionId,
+  );
 }
 
 /// Interactive xterm-rendered terminal attached, over RPC, to a PTY the
@@ -109,11 +122,15 @@ class TerminalPanel extends ConsumerStatefulWidget {
     this.onShellExit,
     this.onTitleChange,
     this.backgroundColor,
+    this.initialInput,
     super.key,
   });
 
   /// Space + mount metadata.
   final TerminalSession session;
+
+  /// Text typed at the first prompt and left there, never run.
+  final String? initialInput;
 
   /// Called when the server-side shell session ends.
   final VoidCallback? onShellExit;
@@ -153,6 +170,10 @@ class _TerminalPanelState extends ConsumerState<TerminalPanel> {
     // Closures over `widget` so callback swaps in didUpdateWidget track.
     _controller.onTitleChange = (title) => widget.onTitleChange?.call(title);
     _controller.onShellExit = () => widget.onShellExit?.call();
+    final input = widget.initialInput;
+    if (input != null) {
+      _controller.typeOnceReady(input);
+    }
     // A demo server hosts no terminal ops at all, so the spawn is a round trip
     // whose only outcome is `opUnknown`. Skip it: the panel already knows what
     // it will render (see `_terminalBody`), and latency spent being told no is

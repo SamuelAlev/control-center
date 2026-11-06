@@ -2,7 +2,7 @@
 title: 機台
 description: 每一個機台表面、後端、動作動詞、生命週期狀態、連接埠、預設值與契約——完整的事實目錄。
 slug: zh-TW/手冊/參考/機台
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 這裡只談事實。若要了解背後的概念模型，請參閱[機台與
@@ -18,6 +18,8 @@ sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 | 電腦 | X11 桌面：輸入經由 Hypervisor，擷取經由客體代理程式 | QEMU | `qemu-hvf` (macOS)、`qemu-kvm` (Linux)、`qemu-tcg`（未加速的備援，永不自動選用） | 是 |
 | Android | 透過 ADB 的 Android | Google 的模擬器 | `android-emulator` | **否**——模擬器自行管理網路 |
 | iOS | 透過 WebDriverAgent 的 iOS 模擬器 | CoreSimulator | `ios-simulator` | **否**——網路跟隨主機 Mac |
+| 應用程式視窗 | 從環境啟動的桌面應用程式的視窗，透過作業系統存取 | 主機視窗 | `host-window` | **否**——應用程式在主機上以伺服器使用者的權限執行 |
+| 環境 | `rig` 配置下[環境](/zh-TW/手冊/操作指南/環境/)的 compose 堆疊和工作 | microVM | `smolvm` | 是 |
 
 終端機與 `computer_use` 表面共用 `computer` 這個表面值；終端機以其 exec
 映像標記作為區分，且永遠不會被當成可操控的桌面重複使用（反之亦然）。

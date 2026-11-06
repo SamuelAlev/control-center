@@ -77,6 +77,7 @@ class _SsoScimCardState extends ConsumerState<SsoScimCard> {
                 : l10n.ssoScimTokenAbsent,
             layout: SettingsFieldLayout.inline,
             controlWidth: 180,
+            trailingControl: true,
             child: CcButton(
               variant: present
                   ? CcButtonVariant.secondary

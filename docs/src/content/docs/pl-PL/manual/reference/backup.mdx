@@ -2,7 +2,7 @@
 title: Kopia zapasowa, eksport i import
 description: Układ migawki, manifest, każda operacja kopii zapasowej i trasa transferu oraz dokładnie to, które pliki kopia zapasowa zawiera, a których nie.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Wszystko, co Control Center potrafi skopiować, przekazać lub przejąć, oraz dokładny kształt
@@ -51,7 +51,12 @@ Nie zawierają manifestu ani `global.db` i nie są migawkami instalacji.
 Krok retencji cotygodniowego potoku usuwa wyłącznie kopie jego własnego obszaru roboczego
 starsze niż skonfigurowany wiek (domyślnie 30 dni); ręcznie utworzone migawki instalacji
 nigdy nie są przez ten krok rotowane. `server.listBackups` wymienia tylko migawki instalacji,
-w tym niekompletne.
+w tym niekompletne; `workspace.listBackups` wymienia zaplanowane kopie zapasowe jednego
+obszaru roboczego.
+
+Usunięcie obszaru roboczego pozostawia ten katalog na miejscu. Harmonogram obszaru roboczego
+zatrzymuje się wraz z nim, więc nic już nie rotuje tych kopii i pozostają one, dopóki
+właściciel instalacji ich nie usunie. `server.listOrphanedBackups` je zgłasza.
 
 
 ### `manifest.json`
@@ -130,6 +135,10 @@ zapasowych, takim jak serwer demonstracyjny.
 | `server.backupNow`   | zapis  | Instalacja | **właściciel** instalacji | brak  | `{ok, path}`                  |
 | `server.listBackups` | odczyt | Instalacja | **właściciel** instalacji | brak  | `{backups: [...]}`            |
 | `server.deleteBackup` | zapis | Instalacja | **właściciel** instalacji | `name` | `{ok}` |
+| `server.listOrphanedBackups` | odczyt | Instalacja | **właściciel** instalacji | brak | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | zapis | Instalacja | **właściciel** instalacji | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | odczyt | Obszar roboczy | `admin` | brak | `{backups: [...]}` |
+| `workspace.deleteBackup` | zapis | Obszar roboczy | `owner` | `name` | `{ok}` |
 | `workspace.export`   | odczyt | Obszar roboczy | `admin`      | brak          | `{ok, path}`                  |
 | `workspace.import`   | zapis  | Obszar roboczy | `owner`      | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | zapis  | Instalacja* | `owner`         | `id`          | wiersz rejestru oznaczony jako usunięty |
@@ -139,6 +148,14 @@ rejestrze; jej handler sprawdza członkostwo wywołującego w nazwanym obszarze 
 i wymaga roli `owner`.
 
 `path` w każdej odpowiedzi to ścieżka na **hoście serwera**.
+
+`server.listOrphanedBackups` zwraca jeden wpis na każdy obszar roboczy, który już nie jest
+aktywny: `workspace_id`, `workspace_name`, gdy rejestr wciąż go zna, oraz `backups`. Usunięty
+obszar roboczy nie może już przejść sprawdzenia roli w obszarze roboczym, więc jego kopie
+należą do właściciela instalacji. `server.deleteOrphanedBackup` odrzuca aktywny obszar
+roboczy, którego kopie pozostają chronione przez `workspace.deleteBackup` i role tego obszaru
+roboczego. Obie operacje usuwania przyjmują tylko nazwę katalogu ze znacznikiem czasu z
+listy, a nie ścieżkę.
 
 :::note[Migawka całej instalacji wymaga roli właściciela na obu torach]
 `server.backupNow`, `server.listBackups` i `server.deleteBackup` wymagają roli
@@ -221,27 +238,33 @@ ciągiem docelowym przy użyciu jego PSK parowania oraz rolę poniżej.
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **administrator** obszaru roboczego |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **właściciel** instalacji |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **administrator** obszaru roboczego; **właściciel** instalacji po usunięciu obszaru roboczego |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **właściciel** obszaru roboczego |
 
-`w` to identyfikator obszaru roboczego, `n` — nazwa katalogu migawki, `d` — identyfikator
-wywołującego urządzenia, a `s` — podpis. `n` jest rozwiązywane względem listy kopii zapasowych,
-a nie dołączane do katalogu głównego kopii, więc trasy nie da się wycelować w katalog, którego
-lista by nie pokazała.
+`w` to identyfikator obszaru roboczego, `n` — nazwa katalogu migawki lub zaplanowanej kopii
+zapasowej, `d` — identyfikator wywołującego urządzenia, a `s` — podpis. W `/backup/snapshot`
+`n` jest rozwiązywane względem listy kopii zapasowych, a nie dołączane do katalogu głównego
+kopii, więc trasy nie da się wycelować w katalog, którego lista by nie pokazała. W
+`/backup/stored` musi to być nazwa ze znacznikiem czasu, a plik musi być rzeczywistym plikiem
+w katalogu kopii zapasowych tego właśnie obszaru roboczego.
 
 | Status | Przyczyna                                                                          |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | Brakuje wymaganego parametru zapytania albo treść wysyłki jest pusta                |
+| `400`  | Brakuje wymaganego parametru zapytania, nazwa kopii zapasowej jest nieprawidłowa albo treść wysyłki jest pusta |
 | `403`  | Nieznane lub unieważnione urządzenie, nieprawidłowy podpis albo wywołującemu brakuje roli |
-| `404`  | Brak portu kopii zapasowych na tym hoście albo wskazana migawka/plik obszaru roboczego nie istnieje |
+| `404`  | Brak portu kopii zapasowych na tym hoście albo wskazany plik migawki, kopii zapasowej lub obszaru roboczego nie istnieje |
 | `405`  | `/backup/restore` wywołane czymkolwiek innym niż `POST`                             |
 | `413`  | Treść wysyłki przekracza 8 GiB — według zadeklarowanej długości treści albo według faktycznie odczytanych bajtów |
 | `426`  | Każde bezpośrednie żądanie do ścieżki transferu na publicznym nasłuchu HTTP; użyj szyfrowanego tunelu zasobów sparowanego klienta |
 | `500`  | Eksport albo archiwizacja nie powiodły się po stronie serwera                       |
 
-Oba pobierania odpowiadają `Cache-Control: no-store` z `Accept-Ranges: none`. Każde żądanie
-tworzy **świeżą** kopię i usuwa ją po przesłaniu, więc zapamiętana w cache albo wznowiona
-odpowiedź skleiłaby bajty z dwóch różnych eksportów w jeden plik, który wygląda na poprawny,
-a nim nie jest.
+Wszystkie trzy pobierania odpowiadają `Cache-Control: no-store` z `Accept-Ranges: none`.
+`/backup/workspace` i `/backup/snapshot` tworzą **świeżą** kopię na każde żądanie i usuwają ją
+po przesłaniu, więc zapamiętana w cache albo wznowiona odpowiedź skleiłaby bajty z dwóch
+różnych eksportów w jeden plik, który wygląda na poprawny, a nim nie jest.
+
+`/backup/stored` jest wyjątkiem: przesyła zaplanowaną kopię zapasową jako
+`<workspaceId>-<name>.db` i pozostawia plik na miejscu, bo ten plik jest kopią zapasową.
 
 `/backup/snapshot` zwraca `<name>.zip`, a wpisy są względne wobec katalogu głównego migawki,
 więc rozpakowanie odtwarza `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
@@ -270,11 +293,12 @@ sparowanego urządzenia, podpisu celu i właściwej roli obszaru roboczego lub i
 | Obszar tymczasowy transferu    | `<dataDir>/backups/transfer/` — miejsce robocze, czyszczone przez trasę, która do niego pisze |
 | Nazwa archiwum migawki         | `<snapshot directory name>.zip`                              |
 | Limit wysyłki                  | 8 GiB na szyfrowaną wysyłkę `/backup/restore`               |
-| Retencja                       | Migawki instalacji: ręczne usuwanie. Kopie zapasowe obszarów roboczych: cotygodniowy potok, domyślnie 30 dni |
+| Retencja                       | Migawki instalacji: ręczne usuwanie. Kopie zapasowe obszarów roboczych: cotygodniowy potok, domyślnie 30 dni, lub ręczne usuwanie. Kopie zapasowe usuniętego obszaru roboczego: tylko ręczne usuwanie |
 
 Katalogi `exports/`, `transfer/` i `workspace-backups/` nie są migawkami instalacji i są
-wyłączone z `server.listBackups`. Tylko ostatni katalog ma zaplanowaną retencję; usunięcie
-migawki instalacji wymaga wyraźnego działania właściciela instalacji.
+wyłączone z `server.listBackups`. Tylko ostatni katalog ma zaplanowaną retencję i tylko
+dopóki istnieje jego obszar roboczy; usunięcie migawki instalacji wymaga wyraźnego działania
+właściciela instalacji.
 
 ## Zobacz też
 

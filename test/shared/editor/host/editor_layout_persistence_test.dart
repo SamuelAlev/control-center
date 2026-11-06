@@ -215,6 +215,150 @@ void main() {
       expect(persistence.peek(workspaceId: 'ws1', cacheKey: 'space1'), isNull);
     });
 
+    test('an unchanged layout is never written back', () async {
+      // Another device may have saved since: re-sending the copy this client
+      // remembers would replace the person's newer layout.
+      final cache = _FakeCache()..readPayload = 'seed-payload';
+      final persistence = withMemo(cache, EditorLayoutMemo());
+
+      await persistence.restore(workspaceId: 'ws1', cacheKey: 'space1');
+      persistence.flushNow(
+        workspaceId: 'ws1',
+        cacheKey: 'space1',
+        layout: EditorLayoutController.single(),
+      );
+      await pumpEventQueue();
+
+      expect(cache.putCalls, 0);
+    });
+
+    test('a changed layout is written once', () async {
+      final cache = _FakeCache()..readPayload = 'server-payload';
+      final persistence = withMemo(cache, EditorLayoutMemo());
+      await persistence.restore(workspaceId: 'ws1', cacheKey: 'space1');
+
+      for (var i = 0; i < 2; i++) {
+        persistence.flushNow(
+          workspaceId: 'ws1',
+          cacheKey: 'space1',
+          layout: EditorLayoutController.single(),
+        );
+        await pumpEventQueue();
+      }
+
+      expect(cache.putCalls, 1);
+    });
+
+    test('a failed write is sent again by the next save', () async {
+      final cache = _FakeCache()..putError = TimeoutException('slow');
+      final persistence = withMemo(cache, EditorLayoutMemo());
+      void save() => persistence.flushNow(
+        workspaceId: 'ws1',
+        cacheKey: 'space1',
+        layout: EditorLayoutController.single(),
+      );
+
+      save();
+      await pumpEventQueue();
+      cache.putError = null;
+      save();
+      await pumpEventQueue();
+
+      expect(cache.putCalls, 2);
+    });
+
+    test('fetch sees a save from another device the memo predates', () async {
+      final memo = EditorLayoutMemo()
+        ..put('ws1', 'editorLayout', 'space1', 'old', synced: true);
+      final cache = _FakeCache()..readPayload = 'newer';
+      final codec = _RecordingCodec();
+      final persistence = withMemo(cache, memo, codec: codec);
+
+      final fetched = await persistence.fetch(
+        workspaceId: 'ws1',
+        cacheKey: 'space1',
+      );
+
+      expect(fetched.failed, isFalse);
+      expect(fetched.changed, isTrue);
+      expect(codec.lastDecoded, 'newer');
+      expect(memo.get('ws1', 'editorLayout', 'space1'), 'newer');
+    });
+
+    test('fetch of the copy the memo holds is no change', () async {
+      final memo = EditorLayoutMemo()
+        ..put('ws1', 'editorLayout', 'space1', 'same', synced: true);
+      final persistence = withMemo(_FakeCache()..readPayload = 'same', memo);
+
+      final fetched = await persistence.fetch(
+        workspaceId: 'ws1',
+        cacheKey: 'space1',
+      );
+
+      expect(fetched.changed, isFalse);
+    });
+
+    test('a failed fetch is reported and leaves the memo alone', () async {
+      final memo = EditorLayoutMemo()
+        ..put('ws1', 'editorLayout', 'space1', 'old', synced: true);
+      final cache = _FakeCache()..readError = TimeoutException('slow');
+      final persistence = withMemo(cache, memo);
+
+      final fetched = await persistence.fetch(
+        workspaceId: 'ws1',
+        cacheKey: 'space1',
+      );
+
+      expect(fetched.failed, isTrue);
+      expect(fetched.changed, isFalse);
+      expect(memo.get('ws1', 'editorLayout', 'space1'), 'old');
+    });
+
+    test(
+      'an unconfirmed save is not undone by the older server copy',
+      () async {
+        // The save failed (or has not landed): the server still answers with
+        // what it had, which must not read as a newer save from elsewhere.
+        final memo = EditorLayoutMemo();
+        final cache = _FakeCache()
+          ..putError = TimeoutException('slow')
+          ..readPayload = 'older';
+        final persistence = withMemo(cache, memo);
+        persistence.flushNow(
+          workspaceId: 'ws1',
+          cacheKey: 'space1',
+          layout: EditorLayoutController.single(),
+        );
+        await pumpEventQueue();
+
+        final fetched = await persistence.fetch(
+          workspaceId: 'ws1',
+          cacheKey: 'space1',
+        );
+
+        expect(fetched.changed, isFalse);
+        expect(memo.get('ws1', 'editorLayout', 'space1'), 'seed-payload');
+      },
+    );
+
+    test('a save while a fetch is in flight wins over its answer', () async {
+      final gate = Completer<void>();
+      final memo = EditorLayoutMemo();
+      final cache = _GatedCache(gate)..readPayload = 'server';
+      final persistence = withMemo(cache, memo);
+
+      final read = persistence.fetch(workspaceId: 'ws1', cacheKey: 'space1');
+      persistence.flushNow(
+        workspaceId: 'ws1',
+        cacheKey: 'space1',
+        layout: EditorLayoutController.single(),
+      );
+      gate.complete();
+      await read;
+
+      expect(memo.get('ws1', 'editorLayout', 'space1'), 'seed-payload');
+    });
+
     test('entries never cross workspaces', () {
       final memo = EditorLayoutMemo();
       withMemo(_FakeCache(), memo).flushNow(

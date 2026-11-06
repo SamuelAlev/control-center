@@ -28,6 +28,7 @@ class McpRequestHandler {
     required McpConfig config,
     required this.dispatcher,
     this.agentRoutes,
+    this.attestRun,
     this.streamAfter = defaultStreamAfter,
     this.streamHeartbeat = defaultStreamHeartbeat,
   }) : _activeConfig = config;
@@ -40,6 +41,10 @@ class McpRequestHandler {
   /// authenticates with its own per-run secret and refuses non-loopback
   /// callers itself, so the MCP bearer token does not apply. Null 404s them.
   final Future<void> Function(HttpRequest request)? agentRoutes;
+
+  /// The scope a live run's secret proves, or null for a secret that names no
+  /// run. Null means this server can attest nobody.
+  final McpCallScope? Function(String secret)? attestRun;
 
   McpConfig _activeConfig;
 
@@ -729,13 +734,19 @@ class McpRequestHandler {
   /// Inspector, user tooling) get no scope and arguments pass through
   /// verbatim. These headers ride the same bearer-token-authenticated,
   /// loopback-only channel as the request itself, so they are exactly as
-  /// trustworthy as the call.
-  static McpCallScope? _scopeFromHeaders(HttpRequest request) {
+  /// trustworthy as the call, which is not very: a process in the sandbox can
+  /// read them and send others. A run's secret therefore replaces them all.
+  McpCallScope? _scopeFromHeaders(HttpRequest request) {
     String? header(String name) {
       final value = request.headers.value(name);
       return (value == null || value.isEmpty) ? null : value;
     }
 
+    final secret = header(McpCallScope.runGrantHeader);
+    final attested = secret == null ? null : attestRun?.call(secret);
+    if (attested != null) {
+      return attested;
+    }
     final scope = McpCallScope(
       workspaceId: header('X-CC-Workspace-Id'),
       agentId: header('X-CC-Agent-Id'),

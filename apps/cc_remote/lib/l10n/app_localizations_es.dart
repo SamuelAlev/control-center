@@ -2662,6 +2662,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'La ejecución se detuvo porque la credencial de su proveedor ya no funciona. Vuelve a conectarlo en Ajustes → Proveedores y reintenta el turno.';
+
+  @override
+  String get permissionHostExecution => 'Ejecutar comandos en el host';
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

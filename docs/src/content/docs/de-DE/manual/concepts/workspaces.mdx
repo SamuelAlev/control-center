@@ -2,7 +2,7 @@
 title: Arbeitsbereiche und Isolation
 description: Warum ein Arbeitsbereich eine harte Mandantengrenze ist, wie die Aufteilung der Datenbanken diese Grenze strukturell macht und was sie absichtlich überschreitet.
 slug: de-DE/handbuch/konzepte/arbeitsbereiche
-sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
+sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
 ---
 
 ## Was ist ein Arbeitsbereich?
@@ -109,7 +109,10 @@ Die Sicherungsoperationen liegen unter **Einstellungen → Server → Sicherung 
 vollständig sind, und lässt den Eigentümer der Installation einen nach Bestätigung löschen, und jeder
 Arbeitsbereich bietet Export und Import. Die eingebaute Pipeline **Workspace backup**
 sichert nur die Datenbank dieses Arbeitsbereichs im Wochenrhythmus und löscht ihre eigenen
-Sicherungen, die älter sind als das konfigurierte Aufbewahrungsalter. Einen Arbeitsbereich aus einem
+Sicherungen, die älter sind als das konfigurierte Aufbewahrungsalter. Diese Sicherungen stehen auf
+derselben Seite je Arbeitsbereich, wo sich jede wiederherstellen, herunterladen oder löschen lässt. Wird
+ein Arbeitsbereich gelöscht, bleiben seine Sicherungen zurück, damit der Eigentümer der Installation sie
+abholen oder entfernen kann, denn Zeitplan und Aufbewahrung enden mit dem Arbeitsbereich. Einen Arbeitsbereich aus einem
 Installations-Snapshot wiederherzustellen heißt, `workspace.import` auf die
 `<workspaceId>/workspace.db` des Snapshots zu richten; eine ganze Installation wiederherzustellen bleibt ein
 Zurückkopieren des Snapshot-Verzeichnisses bei gestopptem Server.
@@ -118,11 +121,11 @@ Was keine von ihnen mitnimmt, ist der Rest des Arbeitsbereichsverzeichnisses. Ei
 
 ## Eine Sicherung zwischen dem Server und deinem Gerät verschieben
 
-Jede Operation oben spricht in Pfaden auf dem **Server**, und das ist nur dann eine vollständige Antwort, wenn der Server dein eigener Rechner ist. Drei signierte Transfer-Routen — [`/backup/workspace`, `/backup/snapshot` und `/backup/restore`](/de-DE/handbuch/referenz/backup/#transfer-routen) — transportieren die Bytes für jede andere Topologie durch den authentifizierten, verschlüsselten Ressourcen-Tunnel, auf direkten Verbindungen und über das Relay. Die öffentlichen HTTP-Routen liefern keine lesbaren Sicherungsbytes aus, und signierte Pfade erfordern weiterhin eine Autorisierung. Auf der Seite ist das ein Knopf **Herunterladen** neben jedem Export und jedem Snapshot (du wählst, wo die Datei landet), und **Datei auswählen und hochladen**, um aus einer Datei wiederherzustellen, die auf dem Rechner liegt, den du gerade benutzt. Der Upload funktioniert, wenn der Server nicht dein Rechner ist: `workspace.import` braucht die Datei schon auf dem Host, und so kommt sie dorthin.
+Jede Operation oben spricht in Pfaden auf dem **Server**, und das ist nur dann eine vollständige Antwort, wenn der Server dein eigener Rechner ist. Vier signierte Transfer-Routen — [`/backup/workspace`, `/backup/snapshot`, `/backup/stored` und `/backup/restore`](/de-DE/handbuch/referenz/backup/#transfer-routen) — transportieren die Bytes für jede andere Topologie durch den authentifizierten, verschlüsselten Ressourcen-Tunnel, auf direkten Verbindungen und über das Relay. Die öffentlichen HTTP-Routen liefern keine lesbaren Sicherungsbytes aus, und signierte Pfade erfordern weiterhin eine Autorisierung. Auf der Seite ist das ein Knopf **Herunterladen** neben jedem Export, jedem Snapshot und jeder geplanten Sicherung (du wählst, wo die Datei landet), und **Datei auswählen und hochladen**, um aus einer Datei wiederherzustellen, die auf dem Rechner liegt, den du gerade benutzt. Der Upload funktioniert, wenn der Server nicht dein Rechner ist: `workspace.import` braucht die Datei schon auf dem Host, und so kommt sie dorthin.
 
 Drei Eigenschaften solltest du kennen:
 
-- **Ein Download erzeugt eine frische Kopie, und der Server behält nichts davon.** Herunterladen heißt nicht „hol die Datei, die der Export-Knopf erzeugt hat“ — er exportiert erneut, streamt das und löscht es. Die Antwort ist `no-store` mit `Accept-Ranges: none` aus demselben Grund: ein fortgesetzter Range würde zwei verschiedene Exporte zu einer Datei zusammenfügen, die gültig aussieht und es nicht ist.
+- **Ein Download erzeugt eine frische Kopie, und der Server behält nichts davon.** Herunterladen heißt nicht „hol die Datei, die der Export-Knopf erzeugt hat“ — er exportiert erneut, streamt das und löscht es. Die Antwort ist `no-store` mit `Accept-Ranges: none` aus demselben Grund: ein fortgesetzter Range würde zwei verschiedene Exporte zu einer Datei zusammenfügen, die gültig aussieht und es nicht ist. Eine geplante Sicherung ist die Ausnahme: Sie existiert bereits, also streamt ein Download diese Datei und lässt sie auf dem Server.
 - **Ein Upload wird auf die Festplatte gestreamt, nie gepuffert**, an beiden Enden, und die bereitgestellte Kopie wird auf jedem Weg nach draußen gelöscht — auch bei einer Ablehnung. Eine Arbeitsbereichsdatenbank ist kein Screenshot.
 - **Der Transfer funktioniert auch über das Relay.** Downloads und Uploads nutzen denselben verschlüsselten Ressourcen-Tunnel wie direkte Verbindungen; eine direkte HTTP-Origin ist nicht erforderlich.
 

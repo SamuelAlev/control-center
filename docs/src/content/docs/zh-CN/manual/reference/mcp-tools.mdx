@@ -2,7 +2,7 @@
 title: MCP 工具
 description: 按功能族完整列出 cc_server 注册的 MCP 工具。
 slug: zh-CN/手册/参考/mcp-工具
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` 承载一个 MCP（JSON-RPC 2.0）工具注册表，在主服务器端口（默认 `9030`）上以 `POST /mcp` 和 `GET /sse` 对外提供服务，协议版本为 `2024-11-05`。每个客户端触达的都是同一个注册表：桌面端、Web 构建产物、外部 MCP 客户端，以及内置的智能体运行时。外部 MCP 服务器可以作为动态层桥接进同一个注册表。
@@ -254,6 +254,8 @@ sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 | `ios_use`      | 通过 WebDriverAgent/CoreSimulator 驱动 iOS 模拟器：检查/输入、截图、安装/启动/停止/卸载应用、深链接以及 argv 形式的模拟器进程        |
 | `rig_list`     | 列出工作区的机台，含形态、状态、显示尺寸和控制器                                                                                 |
 | `rig_close`    | 销毁一台机台并丢弃它拥有的机器状态                                                                                              |
+
+`app_use` 是第五个 use 工具：它直接在主机上而不是在 VM 中操作空间内启动的桌面应用的窗口，并且还声明 `fileWriteOutsideWorktree` 和 `fileDelete`。此工具和 `environment_*` 工具的说明见[设置环境](/zh-CN/手册/操作指南/环境/)。
 
 ## 未通过 MCP 暴露
 

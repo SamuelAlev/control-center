@@ -295,6 +295,7 @@ class _PlaybookCard extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               CcIconButton(
+                variant: CcButtonVariant.destructive,
                 icon: AppIcons.trash2,
                 semanticLabel: l10n.planPlaybookDelete,
                 onPressed: () => ref

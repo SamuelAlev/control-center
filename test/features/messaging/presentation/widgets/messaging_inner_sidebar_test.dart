@@ -483,6 +483,36 @@ void main() {
       await tester.pumpWidget(Container());
     });
 
+    testWidgets('a mouse drag survives the card remounting under the pointer', (
+      tester,
+    ) async {
+      final fixture = _FolderPreferencesFixture(const []);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: fixture.overrides([_space, _spaceB]),
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final drag = await tester.startGesture(
+        tester.getCenter(find.text('Ops')),
+        kind: PointerDeviceKind.mouse,
+      );
+      // A mouse starts the drag inside the press's slop, so the card is
+      // replaced by `childWhenDragging` while its press is still held.
+      await drag.moveBy(const Offset(3, 0));
+      await tester.pump();
+      await drag.moveBy(const Offset(40, 0));
+      await tester.pump();
+      await drag.up();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('dragging spaces shows an unfile drop zone and moves them', (
       tester,
     ) async {

@@ -1,5 +1,15 @@
 import 'dart:convert';
 
+final RegExp _secretPrompt = RegExp(
+  r'(password|passphrase|passcode|\bpin\b)[^\n]*:\s*$',
+  caseSensitive: false,
+);
+
+/// Whether [recentOutput] ends at a prompt for something that must not be
+/// written down, so the line typed next is an answer rather than a command.
+bool terminalAsksForSecret(String recentOutput) =>
+    _secretPrompt.hasMatch(recentOutput);
+
 /// Reconstructs the command line a PTY write submitted.
 ///
 /// Interactive terminals send one keystroke per `terminal.write`. Typing

@@ -37,7 +37,7 @@ void main() {
     test('anything that is not an overlay has no space root', () {
       // The caller must not turn an operator-chosen path into implicit exec
       // authority just because it contains a directory called `agents`.
-      expect(spaceRootForOverlay('/data/spaces/s1/repos/web-app'), isNull);
+      expect(spaceRootForOverlay('/data/spaces/s1/repos/shop-ui'), isNull);
       expect(spaceRootForOverlay('/data/spaces/s1'), isNull);
       expect(spaceRootForOverlay('/home/me/project'), isNull);
       expect(spaceRootForOverlay(''), isNull);

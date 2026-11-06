@@ -1,17 +1,18 @@
-import 'dart:ui' as ui;
-
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/skills/skill_evaluation_dialog.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/skill_evaluation/skill_campaign_error.dart';
 import 'package:control_center/shared/skill_evaluation/skill_campaign_providers.dart';
+import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+part 'skill_evaluation_panel_sections.dart';
 part 'skill_evaluation_panel_state.dart';
 
 /// Separate behavioral evidence from the installed skill's security scan.
@@ -45,15 +46,34 @@ class SkillEvaluationPanel extends ConsumerStatefulWidget {
       _SkillEvaluationPanelState();
 }
 
+/// Whether a finished campaign left planned trials unobserved.
+bool _isPartial(SkillCampaignView campaign) =>
+    campaign.status == SkillCampaignStatus.completed &&
+    campaign.report?['coverageComplete'] != true;
+
 String _evidenceStatus(AppLocalizations l, SkillCampaignView campaign) {
   if (campaign.staleReason != null) {
     return l.skillEvalStale;
   }
-  if (campaign.status == SkillCampaignStatus.completed &&
-      campaign.report?['coverageComplete'] != true) {
-    return l.skillEvalPartial;
+  return _isPartial(campaign)
+      ? l.skillEvalPartial
+      : _status(l, campaign.status);
+}
+
+CcStatusTone _evidenceTone(SkillCampaignView campaign) {
+  if (campaign.staleReason != null) {
+    return CcStatusTone.caution;
   }
-  return _status(l, campaign.status);
+  return switch (campaign.status) {
+    SkillCampaignStatus.completed =>
+      _isPartial(campaign) ? CcStatusTone.caution : CcStatusTone.positive,
+    SkillCampaignStatus.running => CcStatusTone.positive,
+    SkillCampaignStatus.failed => CcStatusTone.negative,
+    SkillCampaignStatus.interrupted => CcStatusTone.caution,
+    SkillCampaignStatus.queued ||
+    SkillCampaignStatus.cancelling ||
+    SkillCampaignStatus.cancelled => CcStatusTone.neutral,
+  };
 }
 
 String _status(AppLocalizations l, SkillCampaignStatus status) =>

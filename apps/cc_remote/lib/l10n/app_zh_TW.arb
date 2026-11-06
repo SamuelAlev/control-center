@@ -757,5 +757,6 @@
   "transcriptClaudeSignInExpiredTitle": "Claude Code 登入已過期",
   "transcriptClaudeSignInExpiredBody": "執行已停止，因為其帳號無法再通過驗證。請重新登入，然後重試此回合。",
   "transcriptSignInExpiredTitle": "提供者登入已過期",
-  "transcriptSignInExpiredBody": "執行已停止，因為其提供者憑證已失效。請在 設定 → 提供者 中重新連線，然後重試此回合。"
+  "transcriptSignInExpiredBody": "執行已停止，因為其提供者憑證已失效。請在 設定 → 提供者 中重新連線，然後重試此回合。",
+  "permissionHostExecution": "在主機上執行指令"
 }

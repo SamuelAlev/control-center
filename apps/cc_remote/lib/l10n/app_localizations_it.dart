@@ -2659,4 +2659,7 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'L\'esecuzione si è interrotta perché la credenziale del provider non funziona più. Ricollegalo in Impostazioni → Provider, poi riprova il turno.';
+
+  @override
+  String get permissionHostExecution => 'Eseguire comandi sull\'host';
 }

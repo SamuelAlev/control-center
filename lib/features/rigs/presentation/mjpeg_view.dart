@@ -254,10 +254,11 @@ class _MjpegViewState extends State<MjpegView> {
         // The rig is alive and this HOST cannot serve its lane. The reason
         // code says which missing piece, because "the live view could not be
         // opened" sends nobody anywhere.
-        503 =>
-          response.headers['x-rig-stream-error'] == 'ffmpeg-missing'
-              ? 'needsFfmpeg'
-              : 'unavailable',
+        503 => switch (response.headers['x-rig-stream-error']) {
+          'ffmpeg-missing' => 'needsFfmpeg',
+          'screen-capture-denied' => 'needsScreenCapture',
+          _ => 'unavailable',
+        },
         _ => 'http:${response.statusCode}',
       };
 
@@ -380,6 +381,7 @@ class _MjpegViewState extends State<MjpegView> {
             'notAllowed' => l10n.rigStreamNotAllowed,
             'notRunning' => l10n.rigStreamNotRunning,
             'needsFfmpeg' => l10n.rigStreamNeedsFfmpeg,
+            'needsScreenCapture' => l10n.rigStreamNeedsScreenCapture,
             'ended' => l10n.rigStreamEnded,
             _ => l10n.rigStreamFailed,
           },

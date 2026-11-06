@@ -29,7 +29,11 @@ class FakeHttpProxy implements SandboxHttpProxy {
   }
 
   @override
-  void updateConfig({required NetworkConfig network, String? parentProxy}) {
+  void updateConfig({
+    required NetworkConfig network,
+    String? parentProxy,
+    Future<String?> Function(String host)? environmentHost,
+  }) {
     lastNetworkConfig = network;
     lastParentProxy = parentProxy;
   }

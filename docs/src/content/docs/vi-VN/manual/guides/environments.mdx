@@ -1,0 +1,411 @@
+---
+title: Thiết lập môi trường
+description: Cho mỗi space và pull request một stack đang chạy riêng, với compose, CLI tùy chỉnh, tiến trình được giám sát hoặc ứng dụng máy tính.
+slug: vi-VN/so-tay/huong-dan-thuc-hanh/moi-truong
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+**Môi trường** là stack đang chạy của một space: các dịch vụ mà một nhánh cần, tách biệt với mọi space khác, hiển thị trong thanh bên và agent có thể truy cập. Pull request cũng có một môi trường, vì mỗi PR vốn đã có space riêng.
+
+Quản trị viên không gian làm việc viết **định nghĩa** một lần. Sau đó thành viên nhấn **Bắt đầu** trong phần **Môi trường** của thanh bên space hoặc PR. Định nghĩa nằm trong cơ sở dữ liệu của không gian làm việc, nên một nhánh tính năng không bao giờ thay đổi thứ Control Center chạy, dù các công cụ vẫn chạy mã của nhánh đó.
+
+## Tạo định nghĩa
+
+1. Mở **Cài đặt → Không gian làm việc → Môi trường**. Chỉ quản trị viên không gian làm việc mới có thể thay đổi định nghĩa.
+2. Nhấp **Định nghĩa mới**, rồi **Định nghĩa trống** hoặc **Tạo bản nháp từ repo**. Bản nháp quét kho mã để tìm tệp compose, `Procfile` và script trong `package.json`, còn bạn xem lại kết quả.
+3. Điền biểu mẫu, hoặc dùng thẻ **JSON**. Các ví dụ trên trang này chính là JSON đó.
+4. Nhấp **Chạy kiểm thử**. Thao tác này khởi động một môi trường dùng một lần, chờ đến khi sẵn sàng rồi hủy nó.
+
+Để lưu định nghĩa trong kho mã, dùng **Liên kết tệp repo**. Control Center chỉ đọc tệp từ nhánh mặc định và chỉ chạy phiên bản đã được quản trị viên phê duyệt. Phiên bản mới hơn hiện **Có bản cập nhật** và không thay đổi gì cho đến khi được phê duyệt.
+
+## Định nghĩa nhỏ nhất
+
+Một kho mã compose đơn giản chỉ cần chừng này:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+Mọi thứ khác đều có giá trị mặc định: tệp compose được phát hiện, mọi dịch vụ đều chạy, cổng được gán, điểm cuối HTTP được phát hiện và môi trường được đặt tên theo nhánh.
+
+## Các loại thành phần
+
+Môi trường là một danh sách thành phần có thứ tự. Mỗi thành phần chờ thành phần trước sẵn sàng, trừ khi `after` chỉ định thành phần khác, và việc dừng diễn ra theo thứ tự ngược lại. `enabledWhen` ràng buộc một thành phần theo một tùy chọn hoặc vai trò, ví dụ `opt.seed`, `!opt.seed` hoặc `repo.web`.
+
+| Loại | Ai chạy | Dùng cho |
+| --- | --- | --- |
+| `compose` | Trình điều khiển compose của Control Center | Mọi tệp compose, một tệp cho mỗi môi trường |
+| `cli` | Công cụ của bạn. Control Center gọi các động từ đã ánh xạ và đọc JSON | Công cụ tự quản lý vòng đời, tên miền và dữ liệu |
+| `process` | Control Center, trong phiên terminal được giám sát | Máy chủ phát triển và worker |
+| `task` | Control Center, một lần cho mỗi trình kích hoạt | Cài đặt, di chuyển dữ liệu, kiểm thử |
+| `app` | Control Center, khi ai đó nhấp **Khởi chạy** | Ứng dụng máy tính |
+
+Thành phần `task` nhận một danh sách `when`:
+
+| Trình kích hoạt | Chạy khi |
+| --- | --- |
+| `provision` | Worktree được tạo (xem tác vụ worktree bên dưới) |
+| `create` | Một lần cho mỗi môi trường, và lại chạy sau khi đặt lại |
+| `start` | Mỗi lần khởi động |
+| `change` | Sau khi đồng bộ, khi đường dẫn đã đổi khớp với `onChange` |
+| `manual` | Theo yêu cầu: **Chạy**, `cc-env run <id>` hoặc `environment_run_task` |
+| `archive` | Ngay trước khi worktree bị hủy |
+
+Lệnh viết dưới dạng mảng là argv, nên giá trị tùy chọn không bao giờ đi qua shell. Một chuỗi, hoặc `script` với mảng các dòng, chạy dưới `bash -lc`. Các phần giữ chỗ như `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` và `{url.<role>}` chỉ được mở rộng trong argv. Lệnh shell đọc cùng các giá trị đó qua biến `CC_ENV_*`, ví dụ `$CC_ENV_PORT_WEB`.
+
+Mỗi lệnh và terminal của space còn nhận `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` và, trong space của PR, `CC_PR_NUMBER` cùng `CC_PR_IS_FORK`. Khi có thành phần compose, chúng còn nhận `COMPOSE_PROJECT_NAME` và `COMPOSE_FILE`, nên `docker compose exec` trong tác vụ đến đúng dự án.
+
+## Vai trò và thư mục làm việc
+
+Định nghĩa gắn **vai trò** với các kho mã của không gian làm việc, nên một stack có thể trải trên nhiều kho mã:
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`: space có thể khởi động môi trường khi chứa ít nhất một vai trò neo. Nếu hai định nghĩa cùng khớp, người khởi động sẽ chọn.
+- `required`: stack không chạy được nếu thiếu kho mã này.
+- `whenMissing`: điều xảy ra khi space thiếu vai trò. `addToSpace` thêm kho mã ở nhánh mặc định và là mặc định cho vai trò `required`. `useSource` truyền bản checkout đã đăng ký của bạn, cần coi là chỉ đọc. `skip` để biến không được đặt và là mặc định trong các trường hợp khác.
+- Khởi động cần quyền `write` trên một kho mã neo trong space và quyền đọc với mọi kho mã đã gắn khác.
+
+Lệnh chạy trong vai trò đầu tiên của `repos` mà space có, nên định nghĩa một kho mã không cần nhắc đến. Bất kỳ thành phần nào cũng có thể ghi đè bằng `"cwd": { "role": "e2e", "path": "packages/ui" }`. Cả hai trường đều không bắt buộc.
+
+## Cổng và URL
+
+Control Center gán cổng máy chủ trước khi bất cứ thứ gì khởi động, từ một dải dùng chung cho cả máy chủ (mặc định 42000 đến 49999, theo khối 32). Một cổng giữ nguyên trong suốt vòng đời môi trường, và cổng compose chỉ gắn với `127.0.0.1`.
+
+- Cổng compose không cần khai báo. Đọc chúng dưới dạng `{port.postgres.5432}` hoặc `CC_ENV_PORT_POSTGRES_5432`.
+- Các cổng khác được khai báo tại nơi dùng, bằng `"port": "web"` hoặc `"ports": ["web", "hmr"]`, và đọc dưới dạng `{port.web}`. Tiến trình có cổng cũng nhận `PORT` và `HOST=127.0.0.1`.
+
+Điểm cuối HTTP nhận một URL trên bộ định tuyến của máy chủ, vốn lắng nghe trên một cổng loopback:
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>` là nhánh ở dạng slug, hoặc `pr-<n>` trong space của PR. `<project>` là `naming.project`, nếu không thì là tên định nghĩa.
+- Tên `*.localhost` trỏ về loopback nên không cần mục hosts hay DNS, và tên máy giữ cookie tách biệt giữa các môi trường.
+- Cổng compose trả lời HTTP được phát hiện, và `http` trên thành phần sẽ ghi đè phán đoán đó. Tiến trình cần `"endpoint": { "role": "web", "primary": true }`, điều này cũng cung cấp `{url.web}`.
+- Trong trình duyệt (VM), dùng **Mở trong Browser (VM)**. `https://web--fix-login--shop.localhost/` đến cùng tuyến ở đó.
+- Toàn bộ nhãn nằm trong 63 ký tự, nên tên dài được rút ngắn bằng hàm băm.
+- Hai điểm cuối không có chung tên miền cha. Ứng dụng cần một cookie cho cả hai phải phục vụ chúng từ một điểm cuối.
+
+Với URL phải đăng ký trước, như chuyển hướng OAuth, `"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` cho một tập tên cố định.
+
+`policy` quyết định khi nào môi trường chạy. `autoCreate` là `off`, `prSpaces` hoặc `allSpaces`, `idleStopMinutes` mặc định là 240, `followPrHead` đồng bộ môi trường của PR khi head di chuyển, và với `maxRunning` (mặc định 6) **Bắt đầu** đề nghị dừng môi trường lâu chưa dùng nhất.
+
+## Ví dụ: ứng dụng compose
+
+Một ứng dụng web và Postgres từ một tệp compose, với `.env` bị git bỏ qua, các lần di chuyển dữ liệu và một tác vụ kiểm thử. `seedFiles` sao chép các tệp được chỉ định từ bản checkout đã đăng ký vào mỗi worktree mới.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+`healthchecks` cho phép một dịch vụ không có kiểm tra sức khỏe riêng giữ thành phần tiếp theo lại. Nếu không có, container đang chạy được tính là sẵn sàng, và di chuyển dữ liệu có thể chạy trước cơ sở dữ liệu còn đang khởi động.
+
+## Ví dụ: CLI tùy chỉnh
+
+Một công cụ giả định `acme` tự quản lý container, tên miền và TLS. Control Center cung cấp `{name}` và biết mọi thứ khác từ `status`. Nó không bao giờ tự suy ra tên máy của công cụ và không bao giờ sửa `/etc/hosts`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create`, `status` và `destroy` là bắt buộc. Control Center chọn `create` hoặc `start` theo trạng thái đọc được. Bất kỳ động từ nào cũng có thể là `{ "shell": "…" }` thay cho argv.
+- `statusMap` đọc JSON của công cụ bằng con trỏ JSON, trong đó `*` khớp mọi mục. Các quy tắc trạng thái có thứ tự và kết quả khớp đầu tiên thắng. Điều kiện là `path` với `equals`, hoặc `any` hay `none` với `where`.
+- `keepsDataOnStop: false` tắt dừng khi nhàn rỗi và thêm cảnh báo mất dữ liệu vào **Dừng**. Đặt khi việc dừng làm mất dữ liệu.
+- `routing.mode: "tool"` nối tên máy của công cụ với trình duyệt (VM) và agent. Tên miền phải kết thúc bằng `.test`, `.localhost` hoặc `.internal`, và URL được báo cáo ngoài đó bị loại bỏ.
+
+Công cụ của riêng bạn có thể bỏ qua `statusMap` và in hợp đồng trạng thái được mô tả ở cuối trang này.
+
+## Ví dụ: monorepo pnpm
+
+Chỉ có tiến trình và tác vụ, không có container. Ứng dụng web tìm API qua `{url.api}`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- Mỗi tiến trình là một thẻ terminal mà bạn có thể mở, đọc và gõ vào. Đóng thẻ không dừng tiến trình.
+- `ready` nhận `http`, `tcp` hoặc `logMatch`. `restart` là `on-failure` (mặc định), `always` hoặc `never`. `restartOn` khởi động lại tiến trình khi đường dẫn đã đổi khớp.
+- `options` trở thành biểu mẫu tại **Bắt đầu**, và `agentDefault` áp dụng cho lần chạy do agent khởi động.
+
+## Ví dụ: ứng dụng máy tính
+
+Một ứng dụng máy tính có bước build. Ứng dụng hoạt động như nhau dù xây dựng bằng gì, vì Control Center làm việc ở mức cửa sổ của hệ điều hành và không cần hook hay SDK trong ứng dụng.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+Ứng dụng không khởi động cùng môi trường. Ai đó nhấp **Khởi chạy**, và `prepare` chạy trước. **Dựng lại và khởi chạy lại** chạy lại cặp đó. Thoát sạch hiển thị là đã đóng, sự cố hiện các dòng nhật ký cuối và không khởi động lại, khởi động lại máy chủ không bao giờ mở lại ứng dụng, và dừng khi nhàn rỗi không đụng đến ứng dụng đang chạy.
+
+### Quyền và giới hạn của ứng dụng máy tính
+
+- Trên macOS, cấp cho Control Center **Ghi màn hình** và **Trợ năng** một lần trong Cài đặt hệ thống. Máy chủ cần một phiên đồ họa: máy chủ headless từ chối mở ứng dụng.
+- Mở trực tiếp tệp nhị phân. `open -a` giao ứng dụng cho LaunchServices và ứng dụng rời khỏi cây tiến trình mà Control Center theo dõi. `"window": { "match": { "bundleId": "…" } }` xử lý trường hợp đó, nhưng chỉ an toàn khi có một bản đang chạy.
+- Cửa sổ ở lại trên một màn hình. macOS không chụp cửa sổ nằm ngoài mọi màn hình, nên ứng dụng mà agent đang dùng hiện trên màn hình của máy chủ. Không cần tiêu điểm.
+- `"isolate": "home"` cho ứng dụng một thư mục home riêng qua `HOME`, `XDG_*` và `CFFIXED_USER_HOME`, để các bản từ hai space chạy song song. `NSUserDefaults` không được cô lập, nên tùy chọn Cocoa và `shared_preferences` của Flutter vẫn dùng chung giữa các bản.
+- `isolate` chỉ áp dụng cho tiến trình được mở. Trình khởi chạy toolchain như `flutter run` cần home thật, nên hãy dùng `isolate` với tệp nhị phân đã build. Nếu ứng dụng có thiết lập riêng, như `--user-data-dir`, hãy ưu tiên nó.
+- Agent điều khiển cửa sổ bằng `app_use`, chỉ có thể chạm tới cây tiến trình của môi trường này. Agent thấy cửa sổ, không thấy màn hình nền. Lần mở do agent đi qua chính sách hành động và mặc định sẽ hỏi, và đầu vào của agent dừng khi có người đang điều khiển.
+- `"input": "background"` (mặc định) gửi sự kiện tới tiến trình. `"foreground"` kích hoạt cửa sổ và chiếm con trỏ.
+
+## Tác vụ worktree thay thế script kho mã
+
+Tác vụ `provision` và `archive` thay thế các script thiết lập và lưu trữ cũ theo từng kho mã. **Các script hiện có đã được di chuyển tự động:** mỗi kho mã có script giờ có một định nghĩa mang tên kho mã, với các tác vụ `setup` và `archive` giữ nguyên nội dung script. Biểu tượng trên hàng của kho mã trong **Cài đặt → Không gian làm việc → Kho lưu trữ** sẽ mở nó. Các lần chạy script trước được giữ lại làm lịch sử chỉ đọc.
+
+Các tác vụ này đi theo worktree, không theo môi trường, nên chúng chạy cả trong những space không ai nhấp **Bắt đầu**:
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| Chạy khi | Worktree của vai trò được tạo, trong bất kỳ space nào | Ngay trước khi worktree đó bị hủy |
+| Khi lỗi | Cấp phát thất bại và worktree bị hủy | Được ghi lại, không bao giờ chặn việc xóa |
+| Thời gian chờ mặc định | 5 phút | 2 phút |
+| Thấy | `CC_WORKSPACE_PATH`, `CC_ROOT_PATH`, `CC_SPACE_*`, `CC_REPO_NAME` | Giống vậy |
+
+Kho mã không có stack chỉ cần một định nghĩa chứa các tác vụ của nó. Vì không có gì để khởi động, không cần vai trò neo:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- Chưa có môi trường, nên các tác vụ này không thể dùng `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` hoặc `enabledWhen`, và không nhận `env` của định nghĩa.
+- Chỉ một định nghĩa được giữ tác vụ `provision` và `archive` cho một kho mã. Các định nghĩa khác vẫn có thể gắn nó cho những việc còn lại.
+- `"when": ["provision", "change"]` cũng cài lại khi lockfile thay đổi, điều mà script thiết lập chưa từng làm.
+- Tác vụ chạy cho worktree của vai trò `cwd`, nên định nghĩa nhiều kho mã có thể thiết lập từng kho riêng.
+- Lần chạy thử đặt `CC_SCRIPT_TEST=1`. Lần thử lại bắt đầu từ worktree sạch, nên hãy viết tác vụ chịu được việc chạy lại.
+
+## Agent
+
+Agent không bao giờ nhận socket Docker. Trong space có định nghĩa đủ điều kiện, lần chạy nhận `cc-env` trên `PATH` của nó. Space lấy từ lần chạy, nên agent chỉ có thể tác động lên môi trường của mình, và mỗi lệnh đều đi qua chính sách hành động.
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+Với thành phần compose, shim `docker` cũng cho phép `docker compose` với `ps`, `logs`, `exec`, `port`, `restart` và `top`. Không được đặt cờ trước động từ, `logs` không thể theo dõi đầu ra và `exec` chỉ nhận `-T`. Mọi thứ khác thoát với mã 5 và "not available in Control Center agent runs".
+
+Kho mã có kỹ năng gọi công cụ riêng của nó có thể tiếp tục làm vậy. Khối `agentPassthrough` trên thành phần `cli` khai báo các lệnh agent được phép chạy:
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+`maps` chỉ tên thao tác có chính sách được áp dụng. `positionalName` ép đối số đó thành môi trường của space này, `nameFilter` lọc đầu ra JSON theo môi trường đó, và mỗi giá trị `pathFlags` phải trỏ vào bên trong worktree của lần chạy. Lệnh không khớp quy tắc nào thoát với mã 5.
+
+Các thao tác tương tự có dưới dạng công cụ: `environment_status`, `environment_up`, `environment_down`, `environment_reset`, `environment_destroy`, `environment_restart`, `environment_exec`, `environment_logs`, `environment_run_task`, `environment_launch_app` và `environment_stop_app`. Agent trong sandbox tiếp cận cổng của mình trực tiếp và tên máy của môi trường qua proxy của lần chạy, nên hãy bảo chúng đọc điểm cuối từ `environment_status` thay vì đoán URL.
+
+## Pull request từ fork
+
+Mã của PR từ fork không đáng tin, và với vị trí trên máy chủ, nó chạy dưới người dùng hệ điều hành của máy chủ. `policy.forkPrs` quyết định điều xảy ra:
+
+| Giá trị | Tác dụng | Mặc định cho |
+| --- | --- | --- |
+| `rig` | Tệp compose chạy trong VM mà không hỏi | Định nghĩa chỉ có thành phần `compose` và `task` |
+| `approval` | Mỗi lần khởi động cần quản trị viên | Mọi định nghĩa khác |
+| `deny` | Từ chối | Không có |
+
+- `seedFiles` không bao giờ được sao chép cho fork, vì chúng thường là bí mật. Tệp compose gắn một tệp như vậy sẽ báo tên tệp bị thiếu.
+- Tác vụ `provision` và `archive` bị bỏ qua trừ khi chính sách là `rig`, khi đó chúng chạy trong VM.
+- Với vị trí trên máy chủ, `privileged`, không gian tên của máy chủ, gắn socket Docker, `devices` và các gắn kết ngoài worktree của space đều bị từ chối trên fork. Trong space đáng tin, chúng chỉ tạo cảnh báo.
+
+## Vị trí trong rig
+
+`"placement": "rig"` chạy các thành phần `compose` và `task` trong một microVM riêng. Định nghĩa có thành phần `process`, `cli` hoặc `app` không đủ điều kiện. Tệp compose chạy nguyên trạng, không có socket Docker của máy chủ và không có thông tin xác thực của người vận hành, và truy cập mạng giới hạn ở các registry mà image của nó cần. Worktree được gắn trực tiếp.
+
+- **Máy khách arm64.** Máy khách là arm64 trên Apple Silicon, nên image chỉ có amd64 sẽ không chạy.
+- **Registry riêng tư bị từ chối.** Máy khách không có thông tin xác thực registry, nên image trên registry ngoài các registry công khai đã biết bị từ chối trước khi VM khởi động. Kho riêng tư trên registry công khai sẽ thất bại khi máy khách kéo về.
+- **Lưu trữ 16 GiB.** Mọi image và volume của stack dùng chung một đĩa 16 GiB, và không thể tăng.
+- **Lần khởi động đầu chậm.** Lớp image là riêng cho từng VM, nên lần khởi động đầu kéo về mọi thứ. Rig đã dừng vẫn giữ đĩa.
+- **Image gốc phải đọc được.** Dockerfile đặt tên image gốc qua biến thì không lập kế hoạch được, vì truy cập mạng được cố định khi khởi động.
+- **Vòng đời.** `policy.rigTtlHours` kết thúc VM, mặc định sau 24 giờ.
+
+## Hợp đồng trạng thái cho tác giả công cụ
+
+Thành phần `cli` không có `statusMap` mong đợi hợp đồng gốc, `cc-env/1`. Động từ `status` in đối tượng này ra stdout:
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- `state` là `ready`, `starting`, `stopped`, `failed` hoặc `missing`. `missing` dẫn đến `create`, còn `stopped` và `failed` dẫn đến `start`. Báo `missing` với mã thoát 0: một `status` thất bại được tính là `failed`.
+- Chỉ cần `state`. Trường không biết bị bỏ qua, và đầu ra không phân tích được hiển thị là suy giảm, với văn bản thô làm chi tiết.
+- URL phải là loopback, `*.localhost` hoặc nằm dưới `routing.domain`, nếu không sẽ bị loại bỏ.
+- `needsRecreate: true` hiện **Tạo lại**, thao tác này bỏ dữ liệu. Control Center không bao giờ tự hành động theo giá trị này.
+- Động từ `list` in một mảng JSON gồm tên, hoặc gồm đối tượng có `name`.
+
+Mã thoát áp dụng cho mọi động từ:
+
+| Mã | Ý nghĩa |
+| --- | --- |
+| 0 | OK |
+| 3 | Cần thiết lập máy chủ. **Chạy trong terminal** mở terminal của space với lệnh đã gõ nhưng chưa chạy, rồi **Thử lại** thử lại. Control Center không bao giờ chạy `sudo` |
+| 4 | Cần xác thực |
+| 5 | Phụ thuộc không khả dụng |
+| Khác | Thất bại |
+
+Tiến độ được gửi tới stderr dưới dạng JSON phân tách theo dòng:
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+Dòng `step` hiển thị thành danh sách bước trực tiếp và dòng `note` hiển thị nguyên trạng. Dòng cuối có loại `error` trở thành lỗi có cấu trúc, với `command` được đề nghị sao chép. Nếu không có, Control Center hiện 20 dòng stderr cuối. Mọi thứ không phải JSON là đầu ra nhật ký thông thường.
+
+## Liên quan
+
+- [Dùng space](/vi-VN/so-tay/huong-dan-thuc-hanh/space/)
+- [Chuyển tiếp cổng từ terminal](/vi-VN/so-tay/huong-dan-thuc-hanh/cong-vm/)
+- [Cho agent một máy để kiểm thử](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/)
+- [Cấu hình rào chắn](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/)

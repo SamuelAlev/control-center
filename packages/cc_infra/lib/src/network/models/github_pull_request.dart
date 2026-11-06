@@ -23,6 +23,8 @@ class GitHubPullRequest {
     this.baseRef = '',
     this.baseSha = '',
     this.headRef = '',
+    this.headRepoFullName,
+    this.baseRepoFullName,
     this.requestedReviewers = const <GitHubUser>[],
     this.assignees = const <GitHubUser>[],
     this.labels = const <GitHubLabel>[],
@@ -77,6 +79,8 @@ class GitHubPullRequest {
           (base is Map<String, dynamic> ? base['sha'] as String? : null) ?? '',
       headRef:
           (head is Map<String, dynamic> ? head['ref'] as String? : null) ?? '',
+      headRepoFullName: _repoFullName(head),
+      baseRepoFullName: _repoFullName(json['base']),
       requestedReviewers: _parseUsers(json['requested_reviewers']),
       assignees: _parseUsers(json['assignees']),
       labels: _parseLabels(json['labels']),
@@ -130,8 +134,16 @@ class GitHubPullRequest {
     'created_at': createdAt?.toIso8601String(),
     'updated_at': updatedAt?.toIso8601String(),
     'merged_at': mergedAt?.toIso8601String(),
-    'head': <String, dynamic>{'sha': headSha, 'ref': headRef},
-    'base': <String, dynamic>{'ref': baseRef, 'sha': baseSha},
+    'head': <String, dynamic>{
+      'sha': headSha,
+      'ref': headRef,
+      if (headRepoFullName != null) 'repo': {'full_name': headRepoFullName},
+    },
+    'base': <String, dynamic>{
+      'ref': baseRef,
+      'sha': baseSha,
+      if (baseRepoFullName != null) 'repo': {'full_name': baseRepoFullName},
+    },
     'requested_reviewers': requestedReviewers
         .map((u) => u.toJson())
         .toList(growable: false),
@@ -201,6 +213,33 @@ class GitHubPullRequest {
 
   /// Head branch ref (e.g. `feature/auth`).
   final String headRef;
+
+  /// `owner/name` of the head repo. Null when GitHub reports none, which is
+  /// what a deleted fork looks like.
+  final String? headRepoFullName;
+
+  /// `owner/name` of the base repo.
+  final String? baseRepoFullName;
+
+  /// Whether this pull request's code comes from outside the base repo.
+  ///
+  /// Anything short of a positive match counts as a fork: this gates what runs
+  /// on the host, so an unknown head must not read as trusted.
+  bool get isFork {
+    final headName = headRepoFullName;
+    final baseName = baseRepoFullName;
+    return headName == null ||
+        baseName == null ||
+        headName.toLowerCase() != baseName.toLowerCase();
+  }
+
+  static String? _repoFullName(Object? side) {
+    if (side is! Map<String, dynamic>) {
+      return null;
+    }
+    final repo = side['repo'];
+    return repo is Map<String, dynamic> ? repo['full_name'] as String? : null;
+  }
 
   /// Reviewers that have been requested but have not yet reviewed.
   final List<GitHubUser> requestedReviewers;

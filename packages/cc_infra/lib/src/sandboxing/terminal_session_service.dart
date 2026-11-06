@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -183,6 +184,7 @@ Future<Pty> _startTerminalPty({
   required int rows,
   required int cols,
   List<String>? vmShellArgv,
+  Map<String, String> hostEnvironment = const {},
 }) async {
   if (backend == SandboxBackend.microvm) {
     if (vmShellArgv == null || vmShellArgv.isEmpty) {
@@ -207,7 +209,12 @@ Future<Pty> _startTerminalPty({
     );
   }
   if (backend == SandboxBackend.none) {
-    return _startHostShellPty(rows: rows, cols: cols, cwd: cwd);
+    return _startHostShellPty(
+      rows: rows,
+      cols: cols,
+      cwd: cwd,
+      environment: hostEnvironment,
+    );
   }
   final shell = Platform.isMacOS ? '/bin/zsh' : '/bin/bash';
   final config = terminalSandboxConfig(sessionId: sessionId, cwd: cwd);
@@ -239,11 +246,13 @@ Future<Pty> _startHostShellPty({
   required int rows,
   required int cols,
   required String cwd,
+  Map<String, String> environment = const {},
 }) async {
   return Pty.start(
     Platform.isWindows ? 'cmd.exe' : '/bin/zsh',
     arguments: const ['-il'],
     workingDirectory: cwd,
+    environment: environment,
     rows: rows,
     columns: cols,
   );
@@ -256,9 +265,15 @@ class _Session {
     required this.backend,
     required this.pty,
     this.spaceId,
+    this.owner,
+    void Function(List<int> bytes)? onOutput,
   }) : _foreground = TerminalForegroundTracker(shellPid: pty.pid) {
     _ptyOut = pty.output.listen(
-      _output.add,
+      (bytes) {
+        onOutput?.call(bytes);
+        _remember(bytes);
+        _output.add(bytes);
+      },
       onDone: () {
         _stopTitlePolling();
         if (!_output.isClosed) {
@@ -293,6 +308,13 @@ class _Session {
   /// this is non-null; a missing space never broadcasts.
   final String? spaceId;
 
+  /// The server-side owner, or null for a session a tab opened and closes.
+  final String? owner;
+
+  /// Set once the command has exited, after which its pid may be reused and
+  /// must not be signalled.
+  bool exited = false;
+
   /// Releases the VM pin this session holds, if it runs in one. Called exactly
   /// once, on teardown.
   void Function()? releaseVm;
@@ -307,7 +329,57 @@ class _Session {
   bool _sampling = false;
   int _sampleFailures = 0;
 
-  Stream<List<int>> get output => _output.stream;
+  /// What an owned session printed before anyone watched it, bounded.
+  ///
+  /// The process starts before its tab attaches, and a prompt lost in that gap
+  /// leaves a person looking at an empty terminal that is waiting for them. A
+  /// shell needs none of this: it redraws its prompt.
+  late BytesBuilder? _unseen = owner == null ? null : BytesBuilder();
+
+  /// The end of the output, to tell what the next line typed is answering.
+  String _lastOutput = '';
+
+  static const int _unseenLimit = 64 * 1024;
+  static const int _lastOutputLimit = 256;
+
+  void _remember(List<int> bytes) {
+    final unseen = _unseen;
+    if (unseen != null && unseen.length < _unseenLimit) {
+      unseen.add(bytes);
+    }
+    final text = _lastOutput + utf8.decode(bytes, allowMalformed: true);
+    _lastOutput = text.length > _lastOutputLimit
+        ? text.substring(text.length - _lastOutputLimit)
+        : text;
+  }
+
+  /// Whether what the person just typed may be a secret.
+  ///
+  /// An owned session runs a program that isn't a shell, so its input is
+  /// answers rather than commands. Otherwise the prompt decides, for `sudo` or
+  /// `ssh` in a shell. Terminal echo would be the better signal, but the PTY
+  /// doesn't expose it.
+  bool get answersPrompt =>
+      owner != null || terminalAsksForSecret(_lastOutput);
+
+  Stream<List<int>> get output {
+    if (owner == null) {
+      return _output.stream;
+    }
+    return Stream.multi((controller) {
+      final held = _unseen?.takeBytes();
+      _unseen = null;
+      if (held != null && held.isNotEmpty) {
+        controller.add(held);
+      }
+      final subscription = _output.stream.listen(
+        controller.add,
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+      controller.onCancel = subscription.cancel;
+    });
+  }
 
   /// Current foreground title first (so a client attaching mid-run sees the
   /// running job immediately), then every change.
@@ -349,9 +421,11 @@ class _Session {
     _stopTitlePolling();
     await _ptyOut?.cancel();
     _ptyOut = null;
-    try {
-      pty.kill();
-    } catch (_) {}
+    if (!exited) {
+      try {
+        pty.kill();
+      } catch (_) {}
+    }
     if (!_output.isClosed) {
       await _output.close();
     }
@@ -371,7 +445,8 @@ class _Session {
 /// owning `workspaceId` before touching the PTY — a connected client physically
 /// cannot drive another workspace's terminal (the workspace-isolation
 /// invariant).
-class TerminalSessionService implements TerminalSessionPort {
+class TerminalSessionService
+    implements TerminalSessionPort, OwnedTerminalSessionPort {
   /// Creates the service over a [_manager] (sandbox lifecycle), a [filesystem]
   /// (working-dir resolution) and a [_defaultBackend] used when the client does
   /// not name one (the headless server defaults to the host shell).
@@ -390,6 +465,28 @@ class TerminalSessionService implements TerminalSessionPort {
   final TerminalVmShellResolver? _vmShell;
   final TerminalGuestRootsResolver? _guestRoots;
   final RigPortsService? _hostShellPorts;
+
+  /// The space's environment variables, for host shells.
+  ///
+  /// Set once the environment service exists. A failure costs the terminal
+  /// its variables, never the terminal.
+  Future<Map<String, String>> Function(String workspaceId, String spaceId)?
+  hostEnvironment;
+
+  Future<Map<String, String>> _hostEnvironmentFor(
+    String workspaceId,
+    String? spaceId,
+  ) async {
+    final resolver = hostEnvironment;
+    if (resolver == null || spaceId == null || spaceId.isEmpty) {
+      return const {};
+    }
+    try {
+      return await resolver(workspaceId, spaceId);
+    } on Object {
+      return const {};
+    }
+  }
 
   final Map<String, _Session> _sessions = {};
   int _counter = 0;
@@ -473,6 +570,7 @@ class TerminalSessionService implements TerminalSessionPort {
         rows: rows,
         cols: cols,
         vmShellArgv: vmShell?.argv,
+        hostEnvironment: await _hostEnvironmentFor(workspaceId, spaceId),
       );
     } on Object {
       // The pin is taken before the PTY exists, so a spawn failure must give
@@ -550,7 +648,11 @@ class TerminalSessionService implements TerminalSessionPort {
       return TerminalWriteResult.none;
     }
     session.pty.write(Uint8List.fromList(data));
-    return session.commands.feed(data);
+    final outcome = session.commands.feed(data);
+    // The trail keeps that a line was sent. Its text would be the password.
+    return outcome.sent && session.answersPrompt
+        ? const TerminalWriteResult(sent: true)
+        : outcome;
   }
 
   @override
@@ -575,6 +677,15 @@ class TerminalSessionService implements TerminalSessionPort {
     if (session == null) {
       return;
     }
+    if (session.owner != null) {
+      // A tab closing. Its stream subscription already ended; the process
+      // belongs to its owner and keeps running.
+      return;
+    }
+    await _end(sessionId, session);
+  }
+
+  Future<void> _end(String sessionId, _Session session) async {
     _sessions.remove(sessionId);
     await _hostShellPorts?.detach(sessionId);
     await session.dispose();
@@ -582,6 +693,97 @@ class TerminalSessionService implements TerminalSessionPort {
       await _manager.disposeSession(session.sandboxSessionId);
     } catch (_) {}
   }
+
+  @override
+  Future<OwnedTerminalSession> spawnOwned({
+    required String workspaceId,
+    required String owner,
+    required String executable,
+    required String cwd,
+    List<String> arguments = const [],
+    Map<String, String> environment = const {},
+    String? spaceId,
+    int rows = 30,
+    int cols = 120,
+    void Function(List<int> bytes)? onOutput,
+  }) async {
+    if (owner.isEmpty) {
+      throw const ValidationException('An owned terminal needs an owner');
+    }
+    final space = spaceId == null || spaceId.isEmpty ? null : spaceId;
+    final sessionId = 'tty${++_counter}-${space ?? workspaceId}';
+    final pty = Pty.start(
+      executable,
+      arguments: arguments,
+      environment: environment,
+      workingDirectory: cwd,
+      rows: rows,
+      columns: cols,
+    );
+    final session = _Session(
+      workspaceId: workspaceId,
+      sandboxSessionId: '$terminalSandboxSessionPrefix$sessionId',
+      backend: SandboxBackend.none,
+      pty: pty,
+      spaceId: space,
+      owner: owner,
+      onOutput: onOutput,
+    );
+    _sessions[sessionId] = session;
+    _hostShellPorts?.attachHostShell(
+      sessionId: sessionId,
+      workspaceId: workspaceId,
+      conversationId: space,
+      rootPid: pty.pid,
+    );
+    final exitCode = pty.exitCode.then((code) async {
+      session.exited = true;
+      // Nobody closes a supervised session the way a tab closes a shell, so
+      // its exit is what releases it.
+      if (identical(_sessions[sessionId], session)) {
+        await _end(sessionId, session);
+      }
+      return code;
+    });
+    return OwnedTerminalSession(
+      sessionId: sessionId,
+      pid: pty.pid,
+      exitCode: exitCode,
+    );
+  }
+
+  @override
+  Future<void> killOwned({
+    required String workspaceId,
+    required String sessionId,
+    required String owner,
+  }) async {
+    final session = _sessions[sessionId];
+    _assertOwned(session, workspaceId);
+    if (session == null) {
+      return;
+    }
+    if (session.owner != owner) {
+      throw ValidationException(
+        'Terminal session $sessionId does not belong to $owner',
+      );
+    }
+    await _end(sessionId, session);
+  }
+
+  @override
+  String? ownerOf(String sessionId) => _sessions[sessionId]?.owner;
+
+  @override
+  List<String> sessionsOwnedBy({
+    required String workspaceId,
+    required String ownerPrefix,
+  }) => [
+    for (final entry in _sessions.entries)
+      if (entry.value.workspaceId == workspaceId &&
+          (entry.value.owner?.startsWith(ownerPrefix) ?? false))
+        entry.key,
+  ];
 
   @override
   String? backendOf(String sessionId) => _sessions[sessionId]?.backend.name;

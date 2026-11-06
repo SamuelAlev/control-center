@@ -142,4 +142,20 @@ void main() {
     expect(pill.style?.color, DesignSystemTokens.light().accent);
     expect(pill.style?.fontStyle, isNull);
   });
+
+  testWidgets('markdownOnly paints Markdown but never a file pill', (
+    tester,
+  ) async {
+    controller.dispose();
+    controller = ComposerTextController.markdownOnly(
+      text: 'read @[file:a.png] **now**',
+    )..tokens = DesignSystemTokens.light();
+    final span = await spanOf(tester);
+    expect(span.toPlainText(), controller.text);
+    final children = span.children!.cast<TextSpan>();
+    final reference = children.firstWhere((c) => c.text == '@[file:a.png]');
+    expect(reference.style, isNull);
+    final bold = children.firstWhere((c) => c.text == 'now');
+    expect(bold.style?.fontWeight, FontWeight.w600);
+  });
 }

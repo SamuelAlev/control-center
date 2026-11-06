@@ -76,13 +76,15 @@ extension _RenderMethods on _KnowledgeGraphState {
   }
 
   Widget _buildNodeVisual(BuildContext context, String key, NodeData data) {
+    final selected = key == _selectedKey;
     switch (data.type) {
       case NodeType.domain:
         return DomainNode(
           domainLabel: data.domainLabel ?? data.domainSlug ?? '',
           factCount: data.factCount,
           policyCount: data.policyCount,
-          onTap: () => _showNodeSheet(context, key),
+          selected: selected,
+          onTap: () => _select(key),
         );
       case NodeType.topic:
         return TopicNode(
@@ -90,18 +92,21 @@ extension _RenderMethods on _KnowledgeGraphState {
           factCount: data.factCount,
           expanded: _expandedTopics.contains(key),
           onToggle: () => _toggleTopic(key),
-          onTap: () => _showNodeSheet(context, key),
+          selected: selected,
+          onTap: () => _select(key),
         );
       case NodeType.fact:
         return FactNode(
           fact: data.fact!,
           supersededCount: data.supersededFacts.length,
-          onTap: () => _showNodeSheet(context, key),
+          selected: selected,
+          onTap: () => _select(key),
         );
       case NodeType.policy:
         return PolicyNode(
           policy: data.policy!,
-          onTap: () => _showNodeSheet(context, key),
+          selected: selected,
+          onTap: () => _select(key),
         );
     }
   }
@@ -141,6 +146,11 @@ extension _RenderMethods on _KnowledgeGraphState {
     );
   }
 
+  /// The canvas and, when a node is selected, its inspector.
+  ///
+  /// One Stack in both layouts, so a resize can't remount the canvas and lose
+  /// the view. Docked, the canvas gives up the width, which keeps the legend
+  /// and zoom controls clear of the panel.
   Widget _buildGraphCanvas(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
@@ -272,56 +282,6 @@ extension _RenderMethods on _KnowledgeGraphState {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildLegend(BuildContext context) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final l10n = AppLocalizations.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: tokens.bgPrimary,
-        borderRadius: AppRadii.brMd,
-        border: Border.all(color: tokens.borderSecondary),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.legendLabel.toUpperCase(),
-            style: CcTypography.caption.copyWith(
-              color: tokens.textTertiary,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          // Glyphs mirror the node glyphs so the legend reads against the graph.
-          LegendItem(
-            icon: AppIcons.tag,
-            color: tokens.fgBrandPrimary,
-            label: l10n.domain,
-          ),
-          LegendItem(
-            icon: AppIcons.hash,
-            color: tokens.fgQuaternary,
-            label: l10n.topic,
-          ),
-          LegendItem(
-            icon: AppIcons.lightbulb,
-            color: tokens.fgQuaternary,
-            label: l10n.fact,
-          ),
-          LegendItem(
-            icon: AppIcons.scale,
-            color: tokens.fgQuaternary,
-            label: l10n.policy,
-          ),
-        ],
-      ),
     );
   }
 }

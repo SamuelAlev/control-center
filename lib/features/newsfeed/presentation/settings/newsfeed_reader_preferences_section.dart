@@ -21,8 +21,8 @@ class NewsfeedReaderPreferencesSection extends ConsumerWidget {
 
     return SectionCard(
       label: l10n.readerPreferences,
-      padding: const EdgeInsets.fromLTRB(0, 14, 0, 6),
-      headerPadding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      padding: const EdgeInsets.fromLTRB(0, AppSpacing.md, 0, 6),
+      headerPadding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
           _PreferenceTile(

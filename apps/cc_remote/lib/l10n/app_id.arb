@@ -757,5 +757,6 @@
   "transcriptClaudeSignInExpiredTitle": "Login Claude Code kedaluwarsa",
   "transcriptClaudeSignInExpiredBody": "Proses berhenti karena akunnya tidak lagi terautentikasi. Masuk lagi, lalu coba ulang giliran ini.",
   "transcriptSignInExpiredTitle": "Login penyedia kedaluwarsa",
-  "transcriptSignInExpiredBody": "Proses berhenti karena kredensial penyedianya tidak lagi berfungsi. Hubungkan ulang di Pengaturan → Penyedia, lalu coba ulang giliran ini."
+  "transcriptSignInExpiredBody": "Proses berhenti karena kredensial penyedianya tidak lagi berfungsi. Hubungkan ulang di Pengaturan → Penyedia, lalu coba ulang giliran ini.",
+  "permissionHostExecution": "Jalankan perintah di host"
 }

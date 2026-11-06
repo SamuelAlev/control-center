@@ -1,6 +1,6 @@
 # cc_server_core
 
-The **app-server composition root**: wires the pure-Dart pieces
+The **server composition root**: wires the pure-Dart pieces
 (`cc_persistence`, `cc_infra`, `cc_host`, `cc_mcp`, `cc_mcp_client`,
 `cc_domain`) into a running server. This is what the headless `cc_server`
 binary and the desktop's embedded server both boot.

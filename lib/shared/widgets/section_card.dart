@@ -22,6 +22,7 @@ class SectionCard extends StatelessWidget {
     this.child,
     this.padding = const EdgeInsets.fromLTRB(16, 14, 16, 16),
     this.headerPadding,
+    this.headerAlignment = CrossAxisAlignment.start,
     this.expands = false,
   });
 
@@ -53,8 +54,15 @@ class SectionCard extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   /// Override for the header (label/title/subtitle) padding. When null the
-  /// header is laid out inside [padding] with a 12 px gap before [child].
+  /// header is laid out inside [padding]. Either way a 12 px gap separates the
+  /// header from [child], and any bottom inset here adds to it.
   final EdgeInsetsGeometry? headerPadding;
+
+  /// How the heading lines up with [trailing]. Defaults to hanging both from
+  /// the same top line; use [CrossAxisAlignment.center] for a one-line heading
+  /// beside a taller control, where the top line leaves the heading riding
+  /// high.
+  final CrossAxisAlignment headerAlignment;
 
   /// When true the card fills all available cross-axis space and the [child]
   /// stretches to fill the remaining body area. Useful inside [Expanded] or
@@ -92,6 +100,7 @@ class SectionCard extends StatelessWidget {
                 subtitle: subtitle,
                 trailing: trailing,
                 padding: headerPadding,
+                alignment: headerAlignment,
               ),
               if (child != null) const SizedBox(height: 12),
             ],
@@ -111,6 +120,7 @@ class _Header extends StatelessWidget {
     required this.subtitle,
     required this.trailing,
     required this.padding,
+    required this.alignment,
   });
 
   final String? label;
@@ -119,6 +129,7 @@ class _Header extends StatelessWidget {
   final Widget? subtitle;
   final Widget? trailing;
   final EdgeInsetsGeometry? padding;
+  final CrossAxisAlignment alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -181,11 +192,11 @@ class _Header extends StatelessWidget {
       );
     }
 
-    // Top-aligned: a tall trailing (e.g. a 40px button) must not push the
-    // small caps label below the card's top padding — the label anchors the
-    // header, the trailing hangs from the same top line.
+    // Top-aligned by default: a tall trailing (e.g. a 40px button) must not
+    // push the small caps label below the card's top padding — the label
+    // anchors the header, the trailing hangs from the same top line.
     final headerBody = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: alignment,
       children: [
         Expanded(
           child: Column(

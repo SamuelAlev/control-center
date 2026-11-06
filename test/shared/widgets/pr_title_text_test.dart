@@ -161,7 +161,7 @@ void main() {
           const SizedBox(
             width: 400,
             child: PrTitleText(
-              'feat: support `ffy` env',
+              'feat: support `tool` env',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -171,14 +171,14 @@ void main() {
 
       // The whole title stays one string (backticks stripped) and the code
       // run is its own chip, not a background painted on the glyphs.
-      expect(find.text('feat: support ffy env'), findsOneWidget);
-      final code = tester.widget<Text>(find.text('ffy'));
+      expect(find.text('feat: support tool env'), findsOneWidget);
+      final code = tester.widget<Text>(find.text('tool'));
       expect(code.style?.backgroundColor, isNull);
       expect(code.style?.fontFamily, AppFonts.codeFamily);
       expect(code.style?.fontWeight, CcTypography.regularWeight);
 
       final chip = tester.widget<Container>(
-        find.ancestor(of: find.text('ffy'), matching: find.byType(Container)),
+        find.ancestor(of: find.text('tool'), matching: find.byType(Container)),
       );
       expect(chip.padding, kInlineCodeChipPadding);
       final decoration = chip.decoration! as BoxDecoration;
@@ -201,7 +201,7 @@ void main() {
                   child: SizedBox(
                     width: 400,
                     child: PrTitleText(
-                      'feat: support `ffy` env',
+                      'feat: support `tool` env',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -214,10 +214,10 @@ void main() {
       );
 
       final chip = tester.widget<Container>(
-        find.ancestor(of: find.text('ffy'), matching: find.byType(Container)),
+        find.ancestor(of: find.text('tool'), matching: find.byType(Container)),
       );
       expect(chip.padding, kInlineCodeChipPadding);
-      expect(find.text('feat: support ffy env'), findsOneWidget);
+      expect(find.text('feat: support tool env'), findsOneWidget);
     });
 
     testWidgets('keeps a leading prefix on an ellipsized coded title', (

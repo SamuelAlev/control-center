@@ -862,25 +862,25 @@ void main() {
               {
                 'type': 'NOT_FOUND',
                 'message':
-                    "Could not resolve to a User with the login of 'parced'.",
+                    "Could not resolve to a User with the login of 'acme'.",
               },
             ],
           });
         });
-        expect(await b.client.getUserProfile(login: 'parced'), isNull);
+        expect(await b.client.getUserProfile(login: 'acme'), isNull);
       },
     );
 
     test('getUserProfile falls back to GET /apps/{slug}', () async {
       final b = build((r) {
-        if (r.url == '/apps/parced') {
+        if (r.url == '/apps/acme') {
           return _json(r, {
             'id': 42,
-            'slug': 'parced',
-            'name': 'Parced',
+            'slug': 'acme',
+            'name': 'Acme',
             'description': 'A GitHub App',
-            'html_url': 'https://github.com/apps/parced',
-            'external_url': 'https://parced.example',
+            'html_url': 'https://github.com/apps/acme',
+            'external_url': 'https://acme.example',
           });
         }
         return _json(r, {
@@ -889,21 +889,21 @@ void main() {
             {
               'type': 'NOT_FOUND',
               'message':
-                  "Could not resolve to a User with the login of 'parced'.",
+                  "Could not resolve to a User with the login of 'acme'.",
             },
           ],
         });
       });
-      final profile = await b.client.getUserProfile(login: 'parced');
-      expect(profile?.login, 'parced');
-      expect(profile?.name, 'Parced');
+      final profile = await b.client.getUserProfile(login: 'acme');
+      expect(profile?.login, 'acme');
+      expect(profile?.name, 'Acme');
       expect(profile?.bio, 'A GitHub App');
-      expect(profile?.websiteUrl, 'https://parced.example');
+      expect(profile?.websiteUrl, 'https://acme.example');
       expect(
         profile?.avatarUrl,
         'https://avatars.githubusercontent.com/in/42?v=4',
       );
-      expect(b.fake.requests.map((r) => r.url), ['/graphql', '/apps/parced']);
+      expect(b.fake.requests.map((r) => r.url), ['/graphql', '/apps/acme']);
     });
 
     test('getUserProfile does not query GitHub App bot logins', () async {

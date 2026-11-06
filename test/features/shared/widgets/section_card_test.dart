@@ -54,6 +54,44 @@ void main() {
       expect(find.byIcon(AppIcons.settings), findsOneWidget);
     });
 
+    testWidgets('centres the heading on a taller trailing when asked', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testWrap(
+          const SectionCard(
+            label: 'SECTION',
+            count: 6,
+            headerAlignment: CrossAxisAlignment.center,
+            trailing: SizedBox(key: Key('trailing'), width: 80, height: 40),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getCenter(find.text('SECTION')).dy,
+        tester.getCenter(find.byKey(const Key('trailing'))).dy,
+      );
+    });
+
+    testWidgets('hangs the heading from the top line by default', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testWrap(
+          const SectionCard(
+            label: 'SECTION',
+            trailing: SizedBox(key: Key('trailing'), width: 80, height: 40),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getTopLeft(find.text('SECTION')).dy,
+        tester.getTopLeft(find.byKey(const Key('trailing'))).dy,
+      );
+    });
+
     testWidgets('renders with custom padding', (tester) async {
       await tester.pumpWidget(
         testWrap(

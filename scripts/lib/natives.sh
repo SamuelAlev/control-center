@@ -2,8 +2,9 @@
 #
 # Source it: `source scripts/lib/natives.sh` then `cc_natives_for <role> <os>`.
 # Required-native matrix (pinned to runtime by test). Row: base|roles|platforms|description
-# (base without lib/ext; roles desktop|server; platforms all|!windows). rift is the
-# Windows exemption (git worktree backend). Missing native ⇒ refuse to ship/boot.
+# (base without lib/ext; roles desktop|server; platforms all|!windows). rift is
+# exempt on Windows for good (git worktree backend). cc_window is exempt there
+# only until CI builds its source. Missing native ⇒ refuse to ship/boot.
 #
 
 CC_NATIVES=(
@@ -54,6 +55,11 @@ CC_NATIVES=(
   "cc_inference|server|all|semantic embeddings, meeting transcription, diarization, VAD, dictation"
   "cc_saml|server|all|SAML SSO response verification"
   "rift_ffi|server|!windows|copy-on-write worktrees"
+  # TEMPORARY Windows exemption: cc_window_windows.cpp has never been compiled,
+  # so requiring it would fail every Windows release. Until CI builds it, an app
+  # component on Windows fails at Launch with CcWindowUnavailable. Add it to
+  # windows_natives.sh and change this row to `all` together.
+  "cc_window|server|!windows|desktop app windows"
 )
 
 # Linux RUNTIME ABI floor: preflight dlopens, so a newer glibc/libstdc++ symbol

@@ -329,6 +329,7 @@ class _DraftRow extends StatelessWidget {
             onPressed: onEdit,
           ),
           CcIconButton(
+            variant: CcButtonVariant.destructive,
             icon: AppIcons.trash2,
             size: CcButtonSize.sm,
             tooltip: l10n.removeModelAction,

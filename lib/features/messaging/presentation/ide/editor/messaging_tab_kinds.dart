@@ -59,6 +59,14 @@ abstract final class MessagingTabKinds {
   /// agent's context window in a conversation, opened from the context meter.
   static const String contextExplorer = 'contextExplorer';
 
+  /// The live output of one environment process or service. Attaches and reads
+  /// only, so restoring one can never start anything.
+  static const String environmentLogs = 'environmentLogs';
+
+  /// What the space's workspace preparation prints: the copy, the fetch, the
+  /// checkout and any `provision` tasks. Read-only, and it starts nothing.
+  static const String provisioningLogs = 'provisioningLogs';
+
   /// A preview of one composer attachment — the picture, video, PDF or source
   /// file behind an `@[file:…]` reference in the prompt.
   ///
@@ -73,6 +81,11 @@ abstract final class MessagingTabKinds {
   static bool isWebview(String kind) =>
       kind == browser ||
       (kind == codeServer && !CodeServerWindowPool.sharesWindows);
+
+  /// Dedup key (and thus id) of the code-server tab opened on the worktree
+  /// itself rather than on a file. File editors are keyed
+  /// `codeServer:<path>`; the `#` separator keeps this one apart from any path.
+  static const String codeServerWorktreeTabKey = '$codeServer#worktree';
 
   /// Dedup key (and thus `?tab=` URL key) of the chat tab showing
   /// [conversationId]. The one identity scheme for conversation tabs — the
@@ -104,6 +117,7 @@ abstract final class MessagingTabKinds {
       case terminal:
         return AppIcons.terminal;
       case agentShellOutput:
+      case provisioningLogs:
         return AppIcons.terminal;
       case browser:
         return AppIcons.globe;
@@ -128,6 +142,8 @@ abstract final class MessagingTabKinds {
         return AppIcons.activity;
       case contextExplorer:
         return AppIcons.gauge;
+      case environmentLogs:
+        return AppIcons.scrollText;
       case attachment:
         return AppIcons.image;
       default:

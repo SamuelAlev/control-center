@@ -79,13 +79,13 @@ void main() {
   }
 
   test('projects every repo, not only the active one', () async {
-    writeSkill('web-app', '.agents/skills', 'forms');
-    writeSkill('web-app', '.agents/skills', 'routing');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
+    writeSkill('shop-ui', '.agents/skills', 'routing');
     writeSkill('api', '.agents/skills', 'migrations');
 
-    final result = await projector(_FakeScanner()).project('web-app');
+    final result = await projector(_FakeScanner()).project('shop-ui');
 
-    expect(result.repo, 'web-app');
+    expect(result.repo, 'shop-ui');
     expect(result.skills.map((s) => s.name).toList()..sort(), [
       'forms',
       'migrations',
@@ -96,29 +96,29 @@ void main() {
   });
 
   test('a shared slug is qualified and a unique one stays bare', () async {
-    writeSkill('app-server', '.agents/skills', 'rest-endpoints');
-    writeSkill('app-server', '.agents/skills', 'testing');
-    writeSkill('web-app', '.agents/skills', 'forms');
-    writeSkill('web-app', '.agents/skills', 'testing');
+    writeSkill('api-server', '.agents/skills', 'rest-endpoints');
+    writeSkill('api-server', '.agents/skills', 'testing');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
+    writeSkill('shop-ui', '.agents/skills', 'testing');
 
-    await projector(_FakeScanner()).project('web-app');
+    await projector(_FakeScanner()).project('shop-ui');
 
     String qualified(String repo, String slug) =>
         repoSkillInvocationName(repo: repo, slug: slug, shared: true);
     expect(linkedSlugs('.claude/skills'), [
-      qualified('app-server', 'testing'),
+      qualified('api-server', 'testing'),
       'forms',
       'rest-endpoints',
-      qualified('web-app', 'testing'),
+      qualified('shop-ui', 'testing'),
     ]);
   });
 
   test('a swap keeps every repo linked and moves the active one', () async {
-    writeSkill('web-app', '.agents/skills', 'forms');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
     writeSkill('api', '.agents/skills', 'migrations');
 
     final proj = projector(_FakeScanner());
-    await proj.project('web-app');
+    await proj.project('shop-ui');
     final second = await proj.project('api');
 
     expect(second.skills.map((s) => s.name).toList()..sort(), [
@@ -130,9 +130,9 @@ void main() {
   });
 
   test('a null active repo keeps the skills and names no repository', () async {
-    writeSkill('web-app', '.agents/skills', 'forms');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
     final proj = projector(_FakeScanner());
-    await proj.project('web-app');
+    await proj.project('shop-ui');
 
     final cleared = await proj.project(null);
     expect(cleared.skills.map((s) => s.name), ['forms']);
@@ -142,22 +142,22 @@ void main() {
   });
 
   test('re-projecting the same repo is idempotent', () async {
-    writeSkill('web-app', '.agents/skills', 'forms');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
     final proj = projector(_FakeScanner());
-    await proj.project('web-app');
-    final again = await proj.project('web-app');
+    await proj.project('shop-ui');
+    final again = await proj.project('shop-ui');
 
     expect(again.skills.map((s) => s.name), ['forms']);
     expect(linkedSlugs('.claude/skills'), ['forms']);
   });
 
   test('a quarantined skill never lands on disk', () async {
-    writeSkill('web-app', '.agents/skills', 'forms');
-    writeSkill('web-app', '.agents/skills', 'evil');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
+    writeSkill('shop-ui', '.agents/skills', 'evil');
 
     final result = await projector(
       _FakeScanner(quarantine: {'evil'}),
-    ).project('web-app');
+    ).project('shop-ui');
 
     expect(result.skills.map((s) => s.name), ['forms']);
     expect(result.quarantined, ['evil']);
@@ -168,12 +168,12 @@ void main() {
   test(
     'a scanner error withholds the skill rather than admitting it',
     () async {
-      writeSkill('web-app', '.agents/skills', 'forms');
-      writeSkill('web-app', '.agents/skills', 'boom');
+      writeSkill('shop-ui', '.agents/skills', 'forms');
+      writeSkill('shop-ui', '.agents/skills', 'boom');
 
       final result = await projector(
         _FakeScanner(explode: {'boom'}),
-      ).project('web-app');
+      ).project('shop-ui');
 
       expect(result.skills.map((s) => s.name), ['forms']);
       expect(result.quarantined, ['boom']);
@@ -181,21 +181,21 @@ void main() {
   );
 
   test('no scanner projects nothing at all', () async {
-    writeSkill('web-app', '.agents/skills', 'forms');
-    final result = await projector(null).project('web-app');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
+    final result = await projector(null).project('shop-ui');
     expect(result.skills, isEmpty);
     expect(linkedSlugs('.claude/skills'), isEmpty);
   });
 
   test('verdicts are memoized across swaps', () async {
-    writeSkill('web-app', '.agents/skills', 'forms');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
     writeSkill('api', '.agents/skills', 'migrations');
     final scanner = _FakeScanner();
     final proj = projector(scanner);
 
-    await proj.project('web-app');
+    await proj.project('shop-ui');
     await proj.project('api');
-    await proj.project('web-app');
+    await proj.project('shop-ui');
 
     expect(scanner.scanned, [
       'migrations',
@@ -204,17 +204,17 @@ void main() {
   });
 
   test('never writes into .agents/skills', () async {
-    writeSkill('web-app', '.agents/skills', 'forms');
-    await projector(_FakeScanner()).project('web-app');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
+    await projector(_FakeScanner()).project('shop-ui');
     // That path is a symlink to the agent's global config dir in a real
     // overlay; writing there would leak across every space.
     expect(Directory(p.join(overlay, '.agents')).existsSync(), isFalse);
   });
 
   test('an unknown active repo does not drop the others', () async {
-    writeSkill('web-app', '.agents/skills', 'forms');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
     final proj = projector(_FakeScanner());
-    await proj.project('web-app');
+    await proj.project('shop-ui');
 
     final result = await proj.project('does-not-exist');
     expect(result.repo, isNull);
@@ -229,20 +229,20 @@ void main() {
   });
 
   test('a real directory in the projected dir is left alone', () async {
-    writeSkill('web-app', '.agents/skills', 'forms');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
     final owned = Directory(p.join(overlay, '.claude', 'skills', 'hand-made'))
       ..createSync(recursive: true);
     File(
       p.join(owned.path, 'SKILL.md'),
     ).writeAsStringSync('---\nname: x\n---\n');
 
-    await projector(_FakeScanner()).project('web-app');
+    await projector(_FakeScanner()).project('shop-ui');
     expect(linkedSlugs('.claude/skills'), ['forms', 'hand-made']);
   });
 
   test('the projected path is addressable from the overlay', () async {
-    writeSkill('web-app', '.agents/skills', 'forms');
-    final result = await projector(_FakeScanner()).project('web-app');
+    writeSkill('shop-ui', '.agents/skills', 'forms');
+    final result = await projector(_FakeScanner()).project('shop-ui');
     final path = result.skills.single.path;
     expect(p.isWithin(overlay, path), isTrue);
     expect(File(path).existsSync(), isTrue);
@@ -267,23 +267,23 @@ void main() {
         File(p.join(overlay, 'AGENTS.md')).readAsStringSync();
 
     test('keeps the profile and adds the repo section', () async {
-      writeSkill('web-app', '.agents/skills', 'forms');
+      writeSkill('shop-ui', '.agents/skills', 'forms');
       File(
-        p.join(repos, 'web-app', 'AGENTS.md'),
+        p.join(repos, 'shop-ui', 'AGENTS.md'),
       ).writeAsStringSync('Repo house rules.');
 
-      await projector(_FakeScanner()).project('web-app');
+      await projector(_FakeScanner()).project('shop-ui');
 
       final text = overlayAgentsMd();
       expect(text, contains('Agent profile body.'));
-      expect(text, contains('Active repository: web-app'));
+      expect(text, contains('Active repository: shop-ui'));
       expect(text, contains('Repo house rules.'));
       expect(text, contains('forms'));
     });
 
     test('is a real file, not the symlink', () async {
-      writeSkill('web-app', '.agents/skills', 'forms');
-      await projector(_FakeScanner()).project('web-app');
+      writeSkill('shop-ui', '.agents/skills', 'forms');
+      await projector(_FakeScanner()).project('shop-ui');
       expect(
         FileSystemEntity.isLinkSync(p.join(overlay, 'AGENTS.md')),
         isFalse,
@@ -296,16 +296,16 @@ void main() {
     });
 
     test('a swap replaces the section instead of compounding', () async {
-      writeSkill('web-app', '.agents/skills', 'forms');
+      writeSkill('shop-ui', '.agents/skills', 'forms');
       writeSkill('api', '.agents/skills', 'migrations');
       final proj = projector(_FakeScanner());
 
-      await proj.project('web-app');
+      await proj.project('shop-ui');
       await proj.project('api');
 
       final text = overlayAgentsMd();
       expect(text, contains('Active repository: api'));
-      expect(text, isNot(contains('Active repository: web-app')));
+      expect(text, isNot(contains('Active repository: shop-ui')));
       expect(
         '- forms — does forms'.allMatches(text).length,
         1,
@@ -319,9 +319,9 @@ void main() {
     });
 
     test('clearing leaves the profile alone', () async {
-      writeSkill('web-app', '.agents/skills', 'forms');
+      writeSkill('shop-ui', '.agents/skills', 'forms');
       final proj = projector(_FakeScanner());
-      await proj.project('web-app');
+      await proj.project('shop-ui');
       await proj.project(null);
 
       final text = overlayAgentsMd();
@@ -350,9 +350,9 @@ void main() {
       File(
         p.join(overlay, 'AGENTS.md'),
       ).writeAsStringSync('Someone else owns this.');
-      writeSkill('web-app', '.agents/skills', 'forms');
+      writeSkill('shop-ui', '.agents/skills', 'forms');
 
-      await projector(_FakeScanner()).project('web-app');
+      await projector(_FakeScanner()).project('shop-ui');
       expect(overlayAgentsMd(), 'Someone else owns this.');
     });
 

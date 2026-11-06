@@ -788,6 +788,32 @@ String? hostHeaderOf(List<int> head) {
   return null;
 }
 
+/// The port environment URLs use. Fixed so a URL survives a server restart.
+const int kEnvironmentRouterPort = 7355;
+
+/// Where an environment hostname goes.
+class RigEnvironmentRoute {
+  /// Creates a [RigEnvironmentRoute].
+  const RigEnvironmentRoute({
+    required this.workspaceId,
+    required this.host,
+    required this.port,
+    this.tlsContext,
+  });
+
+  /// The workspace this route belongs to.
+  final String workspaceId;
+
+  /// Upstream host, always loopback.
+  final String host;
+
+  /// Upstream port.
+  final int port;
+
+  /// Set when the upstream speaks TLS: trusts the tool's CA.
+  final SecurityContext? tlsContext;
+}
+
 /// Routes dev domains (`myapp.test`) to forwarded guest ports by HTTP Host
 /// header.
 ///
@@ -802,12 +828,36 @@ class RigDomainRouter {
   ///
   /// [_muxPortOf] resolves an exec rig's mux forward. [_hostPortOf] resolves
   /// a host-shell source's published host port when there is no mux — the
-  /// domain then dials that loopback address with no preamble.
-  RigDomainRouter({required this._muxPortOf, this._hostPortOf});
+  /// domain then dials that loopback address with no preamble. [_workspaceOf]
+  /// names the workspace a source belongs to: a workspace's own lane serves a
+  /// domain only when it can say the source is that workspace's.
+  RigDomainRouter({
+    required this._muxPortOf,
+    this._hostPortOf,
+    this._workspaceOf,
+  });
 
   final int? Function(String sourceId) _muxPortOf;
   final int? Function(String sourceId, int guestPort)? _hostPortOf;
+  final String? Function(String sourceId)? _workspaceOf;
   final Map<String, ({String rigId, int guestPort})> _routes = {};
+
+  /// Environment routes by exact hostname.
+  ///
+  /// Kept apart from [_routes] because they answer to a workspace, not a rig:
+  /// every space's environment shares this router, so a caller that can be
+  /// identified is served only its own workspace's names.
+  final Map<String, RigEnvironmentRoute> _environmentRoutes = {};
+
+  /// Hostnames each environment holds, so stopping one removes exactly those.
+  final Map<String, Set<String>> _environmentHosts = {};
+
+  /// Per-workspace plain and TLS lanes for guest tunnels.
+  ///
+  /// Loopback gives a shared listener no caller identity. A lane that belongs
+  /// to one workspace does: a browser rig is only ever tunnelled to its own.
+  final Map<String, ServerSocket> _scopedServers = {};
+  final Map<String, SecureServerSocket> _scopedTlsServers = {};
   ServerSocket? _server;
   SecureServerSocket? _tlsServer;
 
@@ -819,11 +869,48 @@ class RigDomainRouter {
   int? get tlsPort => _tlsServer?.port;
 
   /// Starts the listener. Idempotent.
-  Future<int> start() async {
+  ///
+  /// [preferredPort] keeps environment URLs stable across restarts. A taken
+  /// port falls back to an ephemeral one rather than losing routing: the URLs
+  /// change, which callers see through [port].
+  Future<int> start({int? preferredPort}) =>
+      _starting ??= _start(preferredPort).whenComplete(() => _starting = null);
+
+  /// The bind in flight. Two first callers must share one, or the second binds
+  /// an ephemeral port over the first and URLs change under running stacks.
+  Future<int>? _starting;
+
+  Future<int> _start(int? preferredPort) async {
     final existing = _server;
     if (existing != null) {
       return existing.port;
     }
+    final ServerSocket server;
+    try {
+      server = await ServerSocket.bind(
+        InternetAddress.loopbackIPv4,
+        preferredPort ?? 0,
+      );
+    } on SocketException {
+      if (preferredPort == null) {
+        rethrow;
+      }
+      CcInfraLog.warning(
+        'rig/ports: router port $preferredPort is taken; environment URLs '
+        'will use an ephemeral port until it is free',
+      );
+      return _bindEphemeral();
+    }
+    _server = server;
+    server.listen(
+      (client) => unawaited(_route(client)),
+      onError: (_) {},
+      cancelOnError: false,
+    );
+    return server.port;
+  }
+
+  Future<int> _bindEphemeral() async {
     final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
     _server = server;
     server.listen(
@@ -833,6 +920,88 @@ class RigDomainRouter {
     );
     return server.port;
   }
+
+  /// A plain lane that serves only [workspaceId]'s routes.
+  ///
+  /// Guest tunnels dial this instead of the shared listener.
+  Future<int> startScoped(String workspaceId) async {
+    final existing = _scopedServers[workspaceId];
+    if (existing != null) {
+      return existing.port;
+    }
+    final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    _scopedServers[workspaceId] = server;
+    server.listen(
+      (client) => unawaited(_route(client, scope: workspaceId)),
+      onError: (_) {},
+      cancelOnError: false,
+    );
+    return server.port;
+  }
+
+  /// A TLS lane that serves only [workspaceId]'s routes.
+  Future<int?> startScopedTls(
+    String workspaceId,
+    SecurityContext context,
+  ) async {
+    final existing = _scopedTlsServers[workspaceId];
+    if (existing != null) {
+      return existing.port;
+    }
+    try {
+      final server = await SecureServerSocket.bind(
+        InternetAddress.loopbackIPv4,
+        0,
+        context,
+      );
+      _scopedTlsServers[workspaceId] = server;
+      server.listen(
+        (client) => unawaited(_route(client, scope: workspaceId)),
+        onError: (_) {},
+        cancelOnError: false,
+      );
+      return server.port;
+    } on Object catch (e) {
+      CcInfraLog.warning('rig/ports: scoped HTTPS lane failed: $e');
+      return null;
+    }
+  }
+
+  /// Replaces [environmentId]'s routes with [routes].
+  ///
+  /// Throws [ArgumentError] when a hostname already belongs to another
+  /// environment: silently taking it would send one space's traffic to
+  /// another's stack.
+  void setEnvironmentRoutes(
+    String environmentId,
+    Map<String, RigEnvironmentRoute> routes,
+  ) {
+    final hosts = {for (final host in routes.keys) host.toLowerCase()};
+    final owned = _environmentHosts[environmentId] ?? const <String>{};
+    for (final host in hosts) {
+      if (_environmentRoutes.containsKey(host) && !owned.contains(host)) {
+        throw ArgumentError.value(
+          host,
+          'routes',
+          'That hostname belongs to another environment',
+        );
+      }
+    }
+    owned.forEach(_environmentRoutes.remove);
+    routes.forEach((host, route) {
+      _environmentRoutes[host.toLowerCase()] = route;
+    });
+    _environmentHosts[environmentId] = hosts;
+  }
+
+  /// Removes every route [environmentId] holds.
+  void clearEnvironmentRoutes(String environmentId) {
+    _environmentHosts.remove(environmentId)?.forEach(_environmentRoutes.remove);
+  }
+
+  /// Whether [host] is an environment route.
+  bool hasEnvironmentRoute(String host) =>
+      _environmentRoutes.containsKey(host.toLowerCase());
 
   /// Starts the HTTPS lane: the same Host-header routing behind a TLS
   /// handshake. Idempotent.
@@ -888,7 +1057,7 @@ class RigDomainRouter {
   /// Whether [domain] is currently routed.
   bool hasRoute(String domain) => _routes.containsKey(domain.toLowerCase());
 
-  Future<void> _route(Socket client) async {
+  Future<void> _route(Socket client, {String? scope}) async {
     // Peek the request head. 16 KB is far above any dev request line +
     // headers; a head that will not finish inside it is not HTTP.
     final head = <int>[];
@@ -925,22 +1094,35 @@ class RigDomainRouter {
     }
 
     final host = hostHeaderOf(head);
+    final environmentRoute = host == null ? null : _environmentRoutes[host];
+    if (environmentRoute != null) {
+      if (scope != null && environmentRoute.workspaceId != scope) {
+        await _refuse(client, sub);
+        return;
+      }
+      final upstream = await _dialEnvironment(environmentRoute, host!);
+      if (upstream == null) {
+        await _refuse(client, sub);
+        return;
+      }
+      _splice(client, sub, upstream, head);
+      return;
+    }
     final target = host == null ? null : _routes[host];
+    // Domains are keyed by name alone, so a lane has to ask whose rig this
+    // one leads to. An owner nobody can name is not this workspace's.
+    if (target != null &&
+        scope != null &&
+        _workspaceOf?.call(target.rigId) != scope) {
+      await _refuse(client, sub);
+      return;
+    }
     final muxPort = target == null ? null : _muxPortOf(target.rigId);
     final hostPort = (target == null || muxPort != null)
         ? null
         : _hostPortOf?.call(target.rigId, target.guestPort);
     if (target == null || (muxPort == null && hostPort == null)) {
-      try {
-        client.add(
-          utf8.encode('HTTP/1.1 502 Bad Gateway\r\ncontent-length: 0\r\n\r\n'),
-        );
-        await client.flush();
-      } on Object {
-        // Client already gone.
-      }
-      await sub.cancel();
-      client.destroy();
+      await _refuse(client, sub);
       return;
     }
 
@@ -960,6 +1142,57 @@ class RigDomainRouter {
     if (muxPort != null) {
       upstream.add(utf8.encode('${target.guestPort}\n'));
     }
+    _splice(client, sub, upstream, head);
+  }
+
+  Future<void> _refuse(Socket client, StreamSubscription<List<int>> sub) async {
+    try {
+      client.add(
+        utf8.encode('HTTP/1.1 502 Bad Gateway\r\ncontent-length: 0\r\n\r\n'),
+      );
+      await client.flush();
+    } on Object {
+      // Client already gone.
+    }
+    await sub.cancel();
+    client.destroy();
+  }
+
+  Future<Socket?> _dialEnvironment(
+    RigEnvironmentRoute route,
+    String host,
+  ) async {
+    try {
+      final socket = await Socket.connect(
+        route.host,
+        route.port,
+        timeout: const Duration(seconds: 5),
+      );
+      final context = route.tlsContext;
+      if (context == null) {
+        unawaited(socket.done.catchError((_) {}));
+        return socket;
+      }
+      // Verified against the tool's own CA, with the requested name as SNI:
+      // the same path the tool's own readiness probe takes.
+      final secure = await SecureSocket.secure(
+        socket,
+        host: host,
+        context: context,
+      );
+      unawaited(secure.done.catchError((_) {}));
+      return secure;
+    } on Object {
+      return null;
+    }
+  }
+
+  void _splice(
+    Socket client,
+    StreamSubscription<List<int>> sub,
+    Socket upstream,
+    List<int> head,
+  ) {
     // Replay what was consumed while sniffing the Host header.
     upstream.add(head);
     // Hand the rest of the client stream over.
@@ -1003,6 +1236,16 @@ class RigDomainRouter {
   /// Closes both listeners and every mapping.
   Future<void> dispose() async {
     _routes.clear();
+    _environmentRoutes.clear();
+    _environmentHosts.clear();
+    for (final server in _scopedServers.values) {
+      await server.close();
+    }
+    _scopedServers.clear();
+    for (final server in _scopedTlsServers.values) {
+      await server.close();
+    }
+    _scopedTlsServers.clear();
     final server = _server;
     _server = null;
     await server?.close();

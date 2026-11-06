@@ -89,7 +89,6 @@ class _SkillEvaluationPanelState extends ConsumerState<SkillEvaluationPanel> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
     final readOnly = ref.watch(isDemoServerProvider);
     final history = ref.watch(skillCampaignsProvider(_scope));
     final policy = ref.watch(
@@ -98,180 +97,143 @@ class _SkillEvaluationPanelState extends ConsumerState<SkillEvaluationPanel> {
         skillKey: _skillKey,
       )),
     );
-    final campaigns = [...?history.asData?.value]
+    final hashKnown = widget.currentHash.isNotEmpty;
+    final campaigns = [...?history.value]
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final current = campaigns
-        .where(
-          (c) =>
-              c.skillHash == widget.currentHash &&
-              widget.currentHash.isNotEmpty,
-        )
-        .toList();
+    final current = hashKnown
+        ? campaigns.where((c) => c.skillHash == widget.currentHash).toList()
+        : const <SkillCampaignView>[];
     final latest = current.firstOrNull;
+    final template =
+        current.where((c) => c.id == _policyCampaignId).firstOrNull ?? latest;
+    // Sits under the heading, beside the Start button it often explains.
     final reason = widget.dirty
         ? l.skillEvalUnsaved
-        : widget.currentHash.isEmpty
+        : !hashKnown || !history.hasValue
         ? null
-        : current.isEmpty
+        : latest == null
         ? l.skillEvalNotEvaluated
-        : latest!.staleReason;
-    final template =
-        current.where((c) => c.id == _policyCampaignId).firstOrNull ??
-        current.firstOrNull;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: AppSpacing.lg),
-        Text(
-          l.skillEvalTitle,
-          style: CcTypography.label.copyWith(color: t.textPrimary),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        if (widget.currentHash.isEmpty)
-          Text(
-            l.skillEvalHashUnavailable,
-            style: CcTypography.caption.copyWith(color: t.textSecondary),
-          )
-        else
-          Wrap(
-            spacing: AppSpacing.xs,
-            runSpacing: AppSpacing.xs,
+        : latest.staleReason;
+    final policyView = policy.value;
+    final policyOn = policyView?.enabled == true;
+    final canToggle =
+        !readOnly &&
+        !widget.dirty &&
+        !policy.isLoading &&
+        !policy.hasError &&
+        !_busy &&
+        (policyOn || template != null);
+
+    final actions = _EvaluationActions(
+      readOnly: readOnly,
+      onOpenQuality: () => _quality(latest?.id),
+      onStart: readOnly || widget.dirty || !hashKnown || history.hasError
+          ? null
+          : () => _start(campaigns),
+    );
+    final toggle = SettingsToggle(
+      title: l.skillEvalUpdatesToggle,
+      description: l.skillEvalPolicyNote,
+      value: policyOn,
+      onChanged: canToggle ? (_) => _policy(policyView, template) : null,
+      trailing: _busy ? const CcSpinner(size: 14) : null,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xl),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Two buttons beside the heading leave it no room on a phone.
+          final stacked = constraints.maxWidth < kSettingsFieldInlineBreakpoint;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                l.skillEvalCurrentHash(''),
-                style: CcTypography.caption.copyWith(color: t.textSecondary),
+              SettingsGroup(
+                showRule: true,
+                title: l.skillEvalTitle,
+                description: reason,
+                trailing: stacked ? null : actions,
+                children: [
+                  if (!hashKnown)
+                    CcAlert(
+                      title: l.skillEvalHashUnavailable,
+                      variant: CcAlertVariant.warning,
+                    ),
+                  if (history.hasError)
+                    CcAlert(
+                      title: skillCampaignError(l, history.error!),
+                      variant: CcAlertVariant.danger,
+                    ),
+                  if (history.isLoading && !history.hasValue)
+                    const Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: CcSpinner(size: 16),
+                    )
+                  else if (hashKnown && campaigns.isNotEmpty)
+                    _EvidenceSummary(latest: latest),
+                  if (hashKnown)
+                    SettingsField(
+                      label: l.skillEvalHashLabel,
+                      child: SettingsCopyField(
+                        value: widget.currentHash,
+                        maxLines: 2,
+                      ),
+                    ),
+                  if (stacked) actions,
+                ],
               ),
-              // RTL carve-out: package hashes are code-like identifiers.
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 320),
-                child: Text(
-                  widget.currentHash,
-                  textDirection: ui.TextDirection.ltr,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: CcTypography.caption.copyWith(color: t.textSecondary),
-                ),
+              const SizedBox(height: AppSpacing.lg),
+              SettingsGroup(
+                showRule: true,
+                gap: AppSpacing.md,
+                children: [
+                  // The chosen configuration only applies at the moment the
+                  // policy turns on; while it is on, the policy keeps its own.
+                  if (!policyOn && current.isNotEmpty)
+                    SettingsField(
+                      label: l.skillEvalPolicyTemplate,
+                      child: CcSelect<String>(
+                        semanticLabel: l.skillEvalPolicyTemplate,
+                        value: template?.id,
+                        options: [
+                          for (final c in current)
+                            CcSelectOption(
+                              value: c.id,
+                              label:
+                                  '${c.corpusId} · ${c.modelId} · ${_evidenceStatus(l, c)}',
+                            ),
+                        ],
+                        onChanged: (id) =>
+                            setState(() => _policyCampaignId = id),
+                      ),
+                    ),
+                  if (readOnly)
+                    CcTooltip(message: l.demoReadOnlySave, child: toggle)
+                  else
+                    toggle,
+                  if (history.hasValue && template == null && !policyOn)
+                    _PolicyHint(text: l.skillEvalPolicyNeedsCampaign),
+                  if (policy.hasError)
+                    CcAlert(
+                      title: skillCampaignError(l, policy.error!),
+                      variant: CcAlertVariant.danger,
+                    ),
+                  if (_error != null)
+                    CcAlert(
+                      title: skillCampaignError(l, _error!),
+                      variant: CcAlertVariant.danger,
+                    ),
+                ],
               ),
+              if (campaigns.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _RevisionHistory(campaigns: campaigns, onOpen: _quality),
+              ],
             ],
-          ),
-        const SizedBox(height: AppSpacing.sm),
-        if (history.isLoading && history.asData == null) const CcSpinner(),
-        if (history.hasError) Text(skillCampaignError(l, history.error!)),
-        if (current.isEmpty &&
-            campaigns.isNotEmpty &&
-            widget.currentHash.isNotEmpty)
-          Text(
-            l.skillEvalStale,
-            style: CcTypography.caption.copyWith(color: t.textSecondary),
-          ),
-        if (reason != null)
-          Text(
-            reason,
-            style: CcTypography.bodySm.copyWith(color: t.textSecondary),
-          ),
-        if (latest != null) ...[
-          Text(
-            '${_evidenceStatus(l, latest)} · '
-            '${l.skillEvalProgress(latest.completedAttempts, latest.plannedAttempts)} · ${latest.modelId}',
-            style: CcTypography.bodySm.copyWith(color: t.textPrimary),
-          ),
-          Text(
-            l.skillEvalCoverage(latest.corpusId, latest.repetitions),
-            style: CcTypography.caption.copyWith(color: t.textSecondary),
-          ),
-        ],
-        const SizedBox(height: AppSpacing.sm),
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
-          children: [
-            CcButton(
-              size: CcButtonSize.sm,
-              onPressed:
-                  readOnly ||
-                      widget.dirty ||
-                      widget.currentHash.isEmpty ||
-                      history.hasError
-                  ? null
-                  : () => _start(campaigns),
-              child: Text(l.skillEvalStart),
-            ),
-            CcButton(
-              size: CcButtonSize.sm,
-              variant: CcButtonVariant.secondary,
-              onPressed: () => _quality(latest?.id),
-              child: Text(l.skillEvalOpenQuality),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          l.skillEvalPolicyNote,
-          style: CcTypography.caption.copyWith(color: t.textSecondary),
-        ),
-        if (current.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.sm),
-          CcSelect<String>(
-            label: l.skillEvalPolicyTemplate,
-            value: template?.id,
-            options: [
-              for (final c in current)
-                CcSelectOption(
-                  value: c.id,
-                  label:
-                      '${c.corpusId} · ${c.modelId} · ${_evidenceStatus(l, c)}',
-                ),
-            ],
-            onChanged: (id) => setState(() => _policyCampaignId = id),
-          ),
-        ],
-        if (policy.hasError) Text(skillCampaignError(l, policy.error!)),
-        CcButton(
-          size: CcButtonSize.sm,
-          variant: CcButtonVariant.secondary,
-          onPressed:
-              readOnly ||
-                  widget.dirty ||
-                  policy.isLoading ||
-                  policy.hasError ||
-                  _busy ||
-                  (policy.asData?.value?.enabled != true && template == null)
-              ? null
-              : () => _policy(policy.asData?.value, template),
-          child: Text(
-            policy.asData?.value?.enabled == true
-                ? l.skillEvalDisableUpdates
-                : l.skillEvalEnableUpdates,
-          ),
-        ),
-        if (template == null && policy.asData?.value?.enabled != true)
-          Text(
-            l.skillEvalPolicyNeedsCampaign,
-            style: CcTypography.caption.copyWith(color: t.textSecondary),
-          ),
-        if (_error != null) Text(skillCampaignError(l, _error!)),
-        if (campaigns.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            l.skillEvalHistory,
-            style: CcTypography.label.copyWith(color: t.textPrimary),
-          ),
-          for (final c in campaigns.take(8))
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 320),
-              child: CcButton(
-                size: CcButtonSize.sm,
-                variant: CcButtonVariant.ghost,
-                onPressed: () => _quality(c.id),
-                child: Text(
-                  '${c.skillHash.length > 12 ? c.skillHash.substring(0, 12) : c.skillHash} · ${_evidenceStatus(l, c)} · ${c.modelId}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-        ],
-      ],
+          );
+        },
+      ),
     );
   }
 }

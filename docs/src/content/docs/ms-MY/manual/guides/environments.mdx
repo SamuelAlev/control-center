@@ -1,0 +1,411 @@
+---
+title: Sediakan persekitaran
+description: Beri setiap ruang dan pull request stack berjalannya sendiri, dengan compose, CLI tersuai, proses yang diselia atau apl desktop.
+slug: ms-MY/manual-pengguna/panduan-cara/persekitaran
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+**Persekitaran** ialah stack berjalan bagi satu ruang: perkhidmatan yang diperlukan oleh sesuatu cawangan, diasingkan daripada semua ruang lain, kelihatan di bar sisi dan boleh dicapai oleh ejen. Pull request juga mendapat satu, kerana PR sudah mempunyai ruangnya sendiri.
+
+Pentadbir ruang kerja menulis **definisi** sekali sahaja. Ahli kemudian menekan **Mula** dalam bahagian **Persekitaran** pada bar sisi ruang atau PR. Definisi disimpan dalam pangkalan data ruang kerja, jadi cawangan ciri tidak pernah mengubah apa yang dijalankan Control Center, walaupun alat masih menjalankan kod cawangan itu.
+
+## Cipta definisi
+
+1. Buka **Tetapan → Ruang kerja → Persekitaran**. Hanya pentadbir ruang kerja boleh mengubah definisi.
+2. Klik **Definisi baharu**, kemudian **Definisi kosong** atau **Draf daripada repo**. Draf mengimbas repositori untuk fail compose, `Procfile` dan skrip `package.json`, dan anda menyemak hasilnya.
+3. Isi borang, atau gunakan tab **JSON**. Contoh pada halaman ini ialah JSON tersebut.
+4. Klik **Jalankan ujian**. Ia memulakan persekitaran pakai buang, menunggu sehingga sedia dan memusnahkannya.
+
+Untuk menyimpan definisi dalam repositori, gunakan **Paut fail repo**. Control Center membaca fail hanya daripada cawangan lalai dan menjalankan hanya versi yang diluluskan pentadbir. Versi lebih baharu memaparkan **Kemas kini tersedia** dan tidak mengubah apa-apa sehingga diluluskan.
+
+## Definisi terkecil
+
+Repositori compose yang ringkas hanya memerlukan ini:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+Semua yang lain mempunyai nilai lalai: fail compose ditemui, setiap perkhidmatan berjalan, port diberikan, titik akhir HTTP dikesan dan persekitaran dinamakan mengikut cawangan.
+
+## Jenis komponen
+
+Persekitaran ialah senarai komponen tertib. Setiap satu menunggu komponen sebelumnya sedia, melainkan `after` menamakan yang lain, dan penghentian berjalan secara terbalik. `enabledWhen` menjadikan komponen bergantung pada pilihan atau peranan, contohnya `opt.seed`, `!opt.seed` atau `repo.web`.
+
+| Jenis | Siapa menjalankannya | Kegunaan |
+| --- | --- | --- |
+| `compose` | Pemacu compose Control Center | Mana-mana fail compose, satu bagi setiap persekitaran |
+| `cli` | Alat anda. Control Center memanggil kata kerja yang dipetakan dan membaca JSON | Alat yang memiliki kitaran hayat, domain dan datanya sendiri |
+| `process` | Control Center, dalam sesi terminal yang diselia | Pelayan pembangunan dan worker |
+| `task` | Control Center, sekali bagi setiap pencetus | Pemasangan, migrasi, ujian |
+| `app` | Control Center, apabila seseorang mengklik **Lancarkan** | Apl desktop |
+
+Komponen `task` menerima senarai `when`:
+
+| Pencetus | Berjalan |
+| --- | --- |
+| `provision` | Apabila worktree dicipta (lihat tugasan worktree di bawah) |
+| `create` | Sekali bagi setiap persekitaran, dan sekali lagi selepas tetapan semula |
+| `start` | Pada setiap permulaan |
+| `change` | Selepas penyegerakan, apabila laluan yang berubah sepadan dengan `onChange` |
+| `manual` | Atas permintaan: **Jalankan**, `cc-env run <id>` atau `environment_run_task` |
+| `archive` | Sejurus sebelum worktree dimusnahkan |
+
+Arahan yang diberikan sebagai tatasusunan ialah argv, jadi nilai pilihan tidak pernah melalui shell. Rentetan, atau `script` dengan tatasusunan baris, berjalan di bawah `bash -lc`. Pemegang tempat seperti `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` dan `{url.<role>}` hanya dikembangkan dalam argv. Arahan shell membaca nilai yang sama sebagai pemboleh ubah `CC_ENV_*`, contohnya `$CC_ENV_PORT_WEB`.
+
+Setiap arahan dan terminal ruang juga mendapat `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` dan, dalam ruang PR, `CC_PR_NUMBER` serta `CC_PR_IS_FORK`. Dengan komponen compose, ia juga mendapat `COMPOSE_PROJECT_NAME` dan `COMPOSE_FILE`, supaya `docker compose exec` dalam tugasan mencapai projek yang betul.
+
+## Peranan dan direktori kerja
+
+Definisi mengikat **peranan** kepada repositori ruang kerja, supaya satu stack boleh merangkumi beberapa repositori:
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`: ruang boleh memulakan persekitaran apabila ia mempunyai sekurang-kurangnya satu peranan sauh. Jika dua definisi sepadan, orang yang memulakan memilih.
+- `required`: stack tidak boleh berjalan tanpa repositori ini.
+- `whenMissing`: apa yang berlaku apabila ruang tiada peranan itu. `addToSpace` menambah repositori pada cawangan lalainya dan merupakan lalai untuk peranan `required`. `useSource` menghantar checkout berdaftar anda, yang patut dilayan sebagai baca sahaja. `skip` membiarkan pemboleh ubah tidak ditetapkan dan merupakan lalai selainnya.
+- Memulakan memerlukan kebenaran `write` pada repositori sauh dalam ruang dan akses baca kepada setiap repositori terikat yang lain.
+
+Arahan berjalan dalam peranan pertama dalam `repos` yang dimiliki ruang, jadi definisi satu repositori tidak pernah menyebutnya. Mana-mana komponen boleh mengatasinya dengan `"cwd": { "role": "e2e", "path": "packages/ui" }`. Kedua-dua medan adalah pilihan.
+
+## Port dan URL
+
+Control Center memberikan port hos sebelum apa-apa bermula, daripada julat untuk seluruh hos (42000 hingga 49999 secara lalai, dalam blok 32). Port kekal sama sepanjang hayat persekitaran, dan port compose hanya mengikat kepada `127.0.0.1`.
+
+- Port compose tidak perlu diisytiharkan. Bacanya sebagai `{port.postgres.5432}` atau `CC_ENV_PORT_POSTGRES_5432`.
+- Port lain diisytiharkan di tempat ia digunakan, dengan `"port": "web"` atau `"ports": ["web", "hmr"]`, dan dibaca sebagai `{port.web}`. Proses dengan port juga mendapat `PORT` dan `HOST=127.0.0.1`.
+
+Titik akhir HTTP mendapat URL pada penghala pelayan, yang mendengar pada satu port loopback:
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>` ialah cawangan sebagai slug, atau `pr-<n>` dalam ruang PR. `<project>` ialah `naming.project`, atau nama definisi jika tiada.
+- Nama `*.localhost` menghala ke loopback, jadi ia tidak memerlukan entri hosts atau DNS, dan nama hos memisahkan kuki antara persekitaran.
+- Port compose yang menjawab HTTP dikesan, dan `http` pada komponen mengatasi tekaan itu. Proses memerlukan `"endpoint": { "role": "web", "primary": true }`, yang juga menyediakan `{url.web}`.
+- Dalam pelayar (VM), gunakan **Buka dalam Browser (VM)**. `https://web--fix-login--shop.localhost/` mencapai laluan yang sama di sana.
+- Keseluruhan label kekal dalam 63 aksara, jadi nama panjang dipendekkan dengan cincangan.
+- Dua titik akhir tidak berkongsi domain induk. Apl yang memerlukan satu kuki merentas kedua-duanya mesti menyajikannya daripada satu titik akhir.
+
+Untuk URL yang perlu didaftarkan lebih awal, seperti pengubah hala OAuth, `"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` memberikan set nama yang tetap.
+
+`policy` menentukan bila persekitaran berjalan. `autoCreate` ialah `off`, `prSpaces` atau `allSpaces`, `idleStopMinutes` lalainya 240, `followPrHead` menyegerakkan persekitaran PR apabila head bergerak, dan dengan `maxRunning` (lalai 6) **Mula** menawarkan untuk menghentikan persekitaran yang paling lama tidak digunakan.
+
+## Contoh: apl compose
+
+Apl web dan Postgres daripada satu fail compose, dengan `.env` yang diabaikan git, migrasi dan tugasan ujian. `seedFiles` menyalin fail bernama daripada checkout berdaftar anda ke setiap worktree baharu.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+`healthchecks` membolehkan perkhidmatan tanpa semakan kesihatan sendiri menahan komponen seterusnya. Tanpanya, bekas yang berjalan dikira sedia, dan migrasi boleh mendahului pangkalan data yang masih bermula.
+
+## Contoh: CLI tersuai
+
+Alat rekaan `acme` yang memiliki bekas, domain dan TLS-nya sendiri. Control Center memberikan `{name}` dan mengetahui yang selebihnya daripada `status`. Ia tidak pernah menerbitkan nama hos alat dan tidak pernah menyunting `/etc/hosts`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create`, `status` dan `destroy` diperlukan. Control Center memilih `create` atau `start` berdasarkan status yang dibacanya. Mana-mana kata kerja boleh menjadi `{ "shell": "…" }` dan bukannya argv.
+- `statusMap` membaca JSON alat dengan penuding JSON, dengan `*` sepadan dengan setiap item. Peraturan keadaan adalah tertib dan padanan pertama menang. Syarat ialah `path` dengan `equals`, atau `any` atau `none` dengan `where`.
+- `keepsDataOnStop: false` mematikan penghentian semasa melahu dan menambah amaran kehilangan data pada **Henti**. Tetapkannya apabila penghentian menghilangkan data.
+- `routing.mode: "tool"` menyambungkan nama hos alat kepada pelayar (VM) dan ejen. Domain mesti berakhir dengan `.test`, `.localhost` atau `.internal`, dan URL yang dilaporkan di luarnya dibuang.
+
+Alat milik anda boleh melangkau `statusMap` dan mencetak kontrak status yang diterangkan di hujung halaman ini.
+
+## Contoh: monorepo pnpm
+
+Hanya proses dan tugasan, tanpa bekas. Apl web menemui API melalui `{url.api}`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- Setiap proses ialah tab terminal yang boleh anda buka, baca dan taip. Menutup tab tidak menghentikannya.
+- `ready` menerima `http`, `tcp` atau `logMatch`. `restart` ialah `on-failure` (lalai), `always` atau `never`. `restartOn` memulakan semula proses apabila laluan yang berubah sepadan.
+- `options` menjadi borang pada **Mula**, dan `agentDefault` terpakai pada larian yang dimulakan ejen.
+
+## Contoh: apl desktop
+
+Apl desktop dengan langkah binaan. Apl berfungsi sama walau apa pun teknologinya, kerana Control Center bekerja pada tahap tetingkap OS dan tidak memerlukan hook atau SDK dalam apl.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+Apl tidak bermula bersama persekitaran. Seseorang mengklik **Lancarkan**, dan `prepare` berjalan dahulu. **Bina semula & lancarkan semula** menjalankan pasangan itu semula. Keluar bersih dipaparkan sebagai ditutup, ranap menunjukkan baris log terakhir tanpa mula semula, mula semula pelayan tidak pernah melancarkannya semula, dan penghentian semasa melahu membiarkan apl yang berjalan.
+
+### Kebenaran dan had apl desktop
+
+- Pada macOS, berikan Control Center **Rakaman Skrin** dan **Kebolehcapaian** sekali dalam Tetapan Sistem. Hos pelayan memerlukan sesi GUI: pelayan headless enggan melancarkan apl.
+- Lancarkan binari secara terus. `open -a` menyerahkan apl kepada LaunchServices dan ia meninggalkan pepohon proses yang dijejak Control Center. `"window": { "match": { "bundleId": "…" } }` meliputi kes itu, tetapi hanya selamat dengan satu salinan berjalan.
+- Tetingkap kekal pada paparan. macOS tidak menangkap tetingkap yang diletakkan di luar semua paparan, jadi apl yang digunakan ejen kelihatan pada skrin pelayan. Ia tidak memerlukan fokus.
+- `"isolate": "home"` memberi apl direktori rumah peribadi melalui `HOME`, `XDG_*` dan `CFFIXED_USER_HOME`, supaya salinan daripada dua ruang boleh berjalan seiring. `NSUserDefaults` tidak diasingkan, jadi keutamaan Cocoa dan `shared_preferences` Flutter kekal dikongsi antara salinan.
+- `isolate` hanya terpakai pada proses yang dilancarkan. Pelancar rantai alat seperti `flutter run` memerlukan direktori rumah sebenar, jadi gandingkan `isolate` dengan binari terbina. Jika apl mempunyai tetapan sendiri, seperti `--user-data-dir`, utamakannya.
+- Ejen memandu tetingkap dengan `app_use`, yang hanya boleh mencapai pepohon proses persekitaran ini. Ejen melihat tetingkap, bukan desktop. Pelancaran ejen melalui dasar tindakan dan secara lalai bertanya, dan input ejen berhenti ketika seseorang memegang kawalan.
+- `"input": "background"` (lalai) menghantar peristiwa kepada proses. `"foreground"` mengaktifkan tetingkap dan mengambil alih kursor.
+
+## Tugasan worktree menggantikan skrip repositori
+
+Tugasan `provision` dan `archive` menggantikan skrip persediaan dan arkib lama bagi setiap repositori. **Skrip sedia ada telah dipindahkan secara automatik:** setiap repositori yang mempunyai skrip kini mempunyai definisi dinamakan sempena repositori itu, dengan tugasan `setup` dan `archive` yang menyimpan teks skrip yang sama. Ikon pada baris repositori dalam **Tetapan → Ruang kerja → Repositori** membukanya. Larian skrip terdahulu kekal sebagai sejarah baca sahaja.
+
+Tugasan ini mengikut worktree, bukan persekitaran, jadi ia berjalan dalam ruang yang tiada sesiapa mengklik **Mula**:
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| Berjalan | Apabila worktree peranan dicipta, dalam mana-mana ruang | Sejurus sebelum worktree itu dimusnahkan |
+| Jika gagal | Peruntukan gagal dan worktree dimusnahkan | Direkodkan, tidak pernah menyekat pemadaman |
+| Tamat masa lalai | 5 minit | 2 minit |
+| Melihat | `CC_WORKSPACE_PATH`, `CC_ROOT_PATH`, `CC_SPACE_*`, `CC_REPO_NAME` | Sama |
+
+Repositori tanpa stack hanya memerlukan definisi yang memegang tugasannya. Oleh sebab tiada apa untuk dimulakan, peranan sauh tidak diperlukan:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- Persekitaran belum wujud, jadi tugasan ini tidak boleh menggunakan `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` atau `enabledWhen`, dan tidak mendapat `env` definisi.
+- Hanya satu definisi boleh memegang tugasan `provision` dan `archive` untuk sesuatu repositori. Yang lain masih boleh mengikatnya untuk perkara lain.
+- `"when": ["provision", "change"]` juga memasang semula apabila fail kunci berubah, sesuatu yang tidak pernah dilakukan skrip persediaan.
+- Tugasan berjalan untuk worktree peranan `cwd`-nya, jadi definisi berbilang repositori boleh menyediakan setiap repositori secara berasingan.
+- Larian ujian menetapkan `CC_SCRIPT_TEST=1`. Percubaan semula bermula daripada worktree bersih, jadi tulis tugasan yang tahan dijalankan semula.
+
+## Ejen
+
+Ejen tidak pernah mendapat soket Docker. Dalam ruang dengan definisi yang layak, larian mendapat `cc-env` pada `PATH`-nya. Ruang datang daripada larian, jadi ejen hanya boleh bertindak pada persekitarannya sendiri, dan setiap arahan melalui dasar tindakan.
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+Dengan komponen compose, shim `docker` juga membenarkan `docker compose` dengan `ps`, `logs`, `exec`, `port`, `restart` dan `top`. Tiada bendera boleh datang sebelum kata kerja, `logs` tidak boleh mengikuti output, dan `exec` hanya menerima `-T`. Yang lain keluar dengan kod 5 dan "not available in Control Center agent runs".
+
+Repositori yang kemahirannya memanggil alatnya sendiri boleh terus berbuat demikian. Blok `agentPassthrough` pada komponen `cli` mengisytiharkan arahan yang boleh dijalankan ejen:
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+`maps` menamakan operasi yang dasarnya terpakai. `positionalName` memaksa argumen itu kepada persekitaran ruang ini, `nameFilter` menapis output JSON kepadanya, dan setiap nilai `pathFlags` mesti menghala ke dalam worktree larian. Arahan yang tidak sepadan dengan mana-mana peraturan keluar dengan kod 5.
+
+Operasi yang sama wujud sebagai alat: `environment_status`, `environment_up`, `environment_down`, `environment_reset`, `environment_destroy`, `environment_restart`, `environment_exec`, `environment_logs`, `environment_run_task`, `environment_launch_app` dan `environment_stop_app`. Ejen dalam kotak pasir mencapai port mereka secara terus dan nama hos persekitaran mereka melalui proksi larian, jadi minta mereka membaca titik akhir daripada `environment_status` dan bukannya meneka URL.
+
+## Pull request daripada fork
+
+Kod PR fork tidak dipercayai, dan pada peletakan hos ia berjalan sebagai pengguna OS pelayan. `policy.forkPrs` menentukan apa yang berlaku:
+
+| Nilai | Kesan | Lalai untuk |
+| --- | --- | --- |
+| `rig` | Fail compose berjalan dalam VM tanpa gesaan | Definisi yang hanya ada komponen `compose` dan `task` |
+| `approval` | Setiap permulaan memerlukan pentadbir | Semua definisi lain |
+| `deny` | Ditolak | Tiada |
+
+- `seedFiles` tidak pernah disalin untuk fork, kerana biasanya ia rahsia. Fail compose yang mengikat salah satunya melaporkan fail yang hilang mengikut nama.
+- Tugasan `provision` dan `archive` dilangkau melainkan dasar ialah `rig`, dan dalam keadaan itu ia berjalan dalam VM.
+- Pada peletakan hos, `privileged`, ruang nama hos, ikatan soket Docker, `devices` dan ikatan di luar worktree ruang ditolak pada fork. Dalam ruang yang dipercayai, ia hanya memberi amaran.
+
+## Peletakan rig
+
+`"placement": "rig"` menjalankan komponen `compose` dan `task` dalam microVM khusus. Definisi dengan komponen `process`, `cli` atau `app` tidak layak. Fail compose berjalan tanpa diubah, tanpa soket Docker hos dan tanpa kelayakan pengendali, dan akses rangkaian dihadkan kepada pendaftaran yang diperlukan imejnya. Worktree dilekapkan secara langsung.
+
+- **Tetamu arm64.** Tetamu ialah arm64 pada Apple Silicon, jadi imej amd64 sahaja tidak akan berjalan.
+- **Pendaftaran peribadi ditolak.** Tetamu tiada kelayakan pendaftaran, jadi imej pada pendaftaran di luar yang awam dan dikenali ditolak sebelum VM dihidupkan. Repositori peribadi pada pendaftaran awam gagal apabila tetamu menariknya.
+- **Storan 16 GiB.** Semua imej dan volum stack berkongsi satu cakera 16 GiB, dan ia tidak boleh dinaikkan.
+- **But pertama perlahan.** Lapisan imej adalah bagi setiap VM, jadi but pertama menarik semuanya. Rig yang dihentikan mengekalkan cakeranya.
+- **Imej asas mesti boleh dibaca.** Dockerfile yang menamakan imej asasnya melalui pemboleh ubah tidak boleh dirancang, kerana akses rangkaian ditetapkan semasa but.
+- **Hayat.** `policy.rigTtlHours` menamatkan VM, secara lalai selepas 24 jam.
+
+## Kontrak status untuk pengarang alat
+
+Komponen `cli` tanpa `statusMap` menjangkakan kontrak asli, `cc-env/1`. Kata kerja `status` mencetak objek ini ke stdout:
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- `state` ialah `ready`, `starting`, `stopped`, `failed` atau `missing`. `missing` membawa kepada `create`, manakala `stopped` dan `failed` membawa kepada `start`. Laporkan `missing` dengan kod keluar 0: `status` yang gagal dikira sebagai `failed`.
+- Hanya `state` diperlukan. Medan yang tidak diketahui diabaikan, dan output yang tidak boleh dihuraikan dipaparkan sebagai merosot, dengan teks mentah sebagai butiran.
+- URL mesti loopback, `*.localhost` atau di bawah `routing.domain`, jika tidak ia dibuang.
+- `needsRecreate: true` memaparkan **Cipta semula**, yang membuang data. Control Center tidak pernah bertindak sendiri berdasarkannya.
+- Kata kerja `list` mencetak tatasusunan JSON nama, atau objek dengan `name`.
+
+Kod keluar terpakai pada setiap kata kerja:
+
+| Kod | Maksud |
+| --- | --- |
+| 0 | OK |
+| 3 | Persediaan hos diperlukan. **Jalankan dalam terminal** membuka terminal ruang dengan arahan ditaip tetapi tidak dijalankan, kemudian **Cuba semula** mencuba lagi. Control Center tidak pernah menjalankan `sudo` |
+| 4 | Pengesahan diperlukan |
+| 5 | Kebergantungan tidak tersedia |
+| Lain | Kegagalan |
+
+Kemajuan pergi ke stderr sebagai JSON dipisahkan baris:
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+Baris `step` dipaparkan sebagai senarai langkah langsung dan baris `note` ditunjukkan seadanya. Baris terakhir jenis `error` menjadi ralat berstruktur, dengan `command` ditawarkan untuk disalin. Tanpanya, Control Center menunjukkan 20 baris stderr terakhir. Apa-apa yang bukan JSON ialah output log biasa.
+
+## Berkaitan
+
+- [Gunakan ruang](/ms-MY/manual-pengguna/panduan-cara/ruang/)
+- [Majukan port dari terminal](/ms-MY/manual-pengguna/panduan-cara/port-vm/)
+- [Berikan ejen mesin untuk diuji](/ms-MY/manual-pengguna/panduan-cara/gunakan-stesen/)
+- [Konfigurasikan guardrail](/ms-MY/manual-pengguna/panduan-cara/konfigurasikan-guardrail/)

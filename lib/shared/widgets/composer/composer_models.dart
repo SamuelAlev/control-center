@@ -110,6 +110,10 @@ class MentionSuggestion {
   final String? badge;
 }
 
+/// [ResolvedMention.kind] of an `@token` found in the text rather than picked
+/// from the menu. It may name an agent, a teammate or nothing at all.
+const String unresolvedMentionKind = 'unresolved';
+
 /// A mention that was inserted into the composer and is being sent.
 @immutable
 class ResolvedMention {
@@ -122,7 +126,7 @@ class ResolvedMention {
     this.payload,
   });
 
-  /// Mention kind (e.g. 'agent', 'file', 'space').
+  /// Mention kind (e.g. 'agent', 'file', 'space', [unresolvedMentionKind]).
   final String kind;
 
   /// Mention label text.

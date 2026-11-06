@@ -1038,5 +1038,6 @@
   "transcriptClaudeSignInExpiredTitle": "Innloggingen til Claude Code har utløpt",
   "transcriptClaudeSignInExpiredBody": "Kjøringen stoppet fordi kontoen ikke lenger autentiseres. Logg inn på nytt, og prøv turen igjen.",
   "transcriptSignInExpiredTitle": "Innloggingen til leverandøren har utløpt",
-  "transcriptSignInExpiredBody": "Kjøringen stoppet fordi leverandørens legitimasjon ikke lenger virker. Koble den til på nytt under Innstillinger → Leverandører, og prøv turen igjen."
+  "transcriptSignInExpiredBody": "Kjøringen stoppet fordi leverandørens legitimasjon ikke lenger virker. Koble den til på nytt under Innstillinger → Leverandører, og prøv turen igjen.",
+  "permissionHostExecution": "Kjør kommandoer på verten"
 }

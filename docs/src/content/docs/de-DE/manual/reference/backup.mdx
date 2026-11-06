@@ -2,7 +2,7 @@
 title: Backup, Export und Import
 description: Das Layout der Momentaufnahme, das Manifest, jede Sicherungsoperation und jede Transfer-Route, und genau, welche Dateien eine Sicherung enthält und welche nicht.
 slug: de-DE/handbuch/referenz/backup
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Alles, was Control Center kopieren, übergeben oder übernehmen kann, und die genaue Form jedes
@@ -51,7 +51,12 @@ Sie enthalten kein Manifest und kein `global.db` und sind keine Momentaufnahmen 
 Der Aufbewahrungsschritt der wöchentlichen Pipeline entfernt nur Sicherungen des eigenen Arbeitsbereichs,
 die älter sind als das konfigurierte Alter (standardmäßig 30 Tage). Manuell erstellte Momentaufnahmen
 der Installation fasst dieser Schritt nie an. `server.listBackups` listet nur Momentaufnahmen der
-Installation, auch unvollständige.
+Installation, auch unvollständige; `workspace.listBackups` listet die geplanten Sicherungen
+eines Arbeitsbereichs.
+
+Wird ein Arbeitsbereich gelöscht, bleibt dieses Verzeichnis bestehen. Der Zeitplan des
+Arbeitsbereichs endet damit, also rotiert nichts diese Sicherungen mehr, und sie bleiben, bis
+der Eigentümer der Installation sie entfernt. `server.listOrphanedBackups` meldet sie.
 
 
 ### `manifest.json`
@@ -129,6 +134,10 @@ fehlen sie ganz. Sie werden nicht abgelehnt, sie sind strukturell nicht da.
 | `server.backupNow`    | Schreiben | Installation    | **Eigentümer** der Installation | keine         | `{ok, path}`                          |
 | `server.listBackups`  | Lesen     | Installation    | **Eigentümer** der Installation | keine         | `{backups: [...]}`                    |
 | `server.deleteBackup` | Schreiben | Installation    | **Eigentümer** der Installation | `name`        | `{ok}`                                |
+| `server.listOrphanedBackups` | Lesen | Installation | **Eigentümer** der Installation | keine | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | Schreiben | Installation | **Eigentümer** der Installation | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | Lesen | Arbeitsbereich | `admin` | keine | `{backups: [...]}` |
+| `workspace.deleteBackup` | Schreiben | Arbeitsbereich | `owner` | `name` | `{ok}` |
 | `workspace.export`    | Lesen     | Arbeitsbereich  | `admin`                         | keine         | `{ok, path}`                          |
 | `workspace.import`    | Schreiben | Arbeitsbereich  | `owner`                         | `source_path` | `{ok, workspace_id}`                  |
 | `workspace.delete`    | Schreiben | Installation*   | `owner`                         | `id`          | Registry-Zeile als gelöscht markiert  |
@@ -138,6 +147,14 @@ Registry lebt. Der Handler prüft die Mitgliedschaft des Aufrufers im genannten 
 und verlangt `owner`.
 
 `path` in jeder Antwort ist ein Pfad auf dem **Server-Host**.
+
+`server.listOrphanedBackups` liefert einen Eintrag je Arbeitsbereich, der nicht mehr aktiv ist:
+`workspace_id`, `workspace_name`, solange die Registry ihn noch kennt, und `backups`.
+Ein gelöschter Arbeitsbereich kann keine Rollenprüfung mehr bestehen, also gehören seine
+Sicherungen dem Eigentümer der Installation. `server.deleteOrphanedBackup` lehnt einen aktiven
+Arbeitsbereich ab, dessen Sicherungen hinter `workspace.deleteBackup` und den Rollen dieses
+Arbeitsbereichs bleiben. Beide Löschoperationen akzeptieren nur einen aufgelisteten
+Zeitstempel-Verzeichnisnamen, keinen Pfad.
 
 :::note[Eine Momentaufnahme der ganzen Installation ist auf beiden Bahnen dem Eigentümer vorbehalten]
 `server.backupNow`, `server.listBackups` und `server.deleteBackup` verlangen den
@@ -220,25 +237,30 @@ Zielzeichenkette mit seinem Kopplungs-PSK und die Rolle unten.
 | ----------------------- | ------- | --------------- | -------------------------------- | ------------------------------------ |
 | `/backup/workspace`     | GET     | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **Admin** des Arbeitsbereichs        |
 | `/backup/snapshot`      | GET     | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **Eigentümer** der Installation      |
+| `/backup/stored`        | GET     | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **Admin** des Arbeitsbereichs; **Eigentümer** der Installation, sobald der Arbeitsbereich gelöscht ist |
 | `/backup/restore`       | POST    | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **Eigentümer** des Arbeitsbereichs   |
 
-`w` ist eine Arbeitsbereichs-ID, `n` der Verzeichnisname einer Momentaufnahme, `d` die Geräte-ID des Aufrufers, `s` die
-Signatur. `n` wird gegen die Sicherungsliste aufgelöst und nicht an die Wurzel der Sicherungen
-gehängt, die Route lässt sich also nicht auf ein Verzeichnis richten, das die Liste nicht gezeigt hätte.
+`w` ist eine Arbeitsbereichs-ID, `n` der Verzeichnisname einer Momentaufnahme oder geplanten Sicherung, `d` die Geräte-ID des Aufrufers, `s` die
+Signatur. Bei `/backup/snapshot` wird `n` gegen die Sicherungsliste aufgelöst und nicht an die Wurzel der Sicherungen
+gehängt, die Route lässt sich also nicht auf ein Verzeichnis richten, das die Liste nicht gezeigt hätte. Bei `/backup/stored`
+muss es ein Zeitstempelname sein, und die Datei muss eine echte Datei im eigenen Sicherungsverzeichnis dieses Arbeitsbereichs sein.
 
 | Status | Ursache                                                                              |
 | ------ | ------------------------------------------------------------------------------------ |
-| `400`  | Ein erforderlicher Query-Parameter fehlt, oder der Upload-Body ist leer             |
+| `400`  | Ein erforderlicher Query-Parameter fehlt, ein Sicherungsname ist ungültig, oder der Upload-Body ist leer |
 | `403`  | Unbekanntes oder widerrufenes Gerät, ungültige Signatur, oder dem Aufrufer fehlt die Rolle |
-| `404`  | Kein Backup-Port auf diesem Host, oder die genannte Momentaufnahme bzw. Arbeitsbereichsdatei existiert nicht |
+| `404`  | Kein Backup-Port auf diesem Host, oder die genannte Momentaufnahme, Sicherung oder Arbeitsbereichsdatei existiert nicht |
 | `405`  | `/backup/restore` mit etwas anderem als `POST` aufgerufen                            |
 | `413`  | Der Upload-Body überschreitet 8 GiB, nach deklariertem content-length oder nach den Bytes, die tatsächlich gelesen wurden |
 | `426`  | Jede direkte Anfrage an einen Transfer-Pfad am öffentlichen HTTP-Listener; nutze den verschlüsselten Ressourcen-Tunnel eines gekoppelten Clients |
 | `500`  | Export oder Archiv ist serverseitig fehlgeschlagen                                   |
 
-Beide Downloads antworten mit `Cache-Control: no-store` und `Accept-Ranges: none`. Jede Anfrage
-erzeugt eine **frische** Kopie und löscht sie, sobald sie gestreamt ist. Eine gecachte oder fortgesetzte Antwort
+Alle drei Downloads antworten mit `Cache-Control: no-store` und `Accept-Ranges: none`.
+`/backup/workspace` und `/backup/snapshot` erzeugen je Anfrage eine **frische** Kopie und löschen sie, sobald sie gestreamt ist. Eine gecachte oder fortgesetzte Antwort
 würde Bytes aus zwei verschiedenen Exporten zu einer Datei zusammenfügen, die gültig aussieht und es nicht ist.
+
+`/backup/stored` ist die Ausnahme: Es streamt eine geplante Sicherung als `<workspaceId>-<name>.db`
+und lässt die Datei an ihrem Platz, weil diese Datei die Sicherung ist.
 
 `/backup/snapshot` liefert `<name>.zip`. Die Einträge liegen relativ zur Wurzel der Momentaufnahme, das
 Entpacken stellt also `manifest.json` + `global.db` + `<workspaceId>/workspace.db` wieder her.
@@ -268,11 +290,11 @@ Transportwege verschlüsselt die entstehenden Sicherungsdateien im Ruhezustand.
 | Transfer-Bereitstellung            | `<dataDir>/backups/transfer/` — eine Werkbank, die die Route wegräumt, die hineinschreibt |
 | Archivname der Momentaufnahme      | `<snapshot directory name>.zip`                              |
 | Upload-Obergrenze                  | 8 GiB je verschlüsseltem `/backup/restore`-Upload            |
-| Aufbewahrung                       | Momentaufnahmen der Installation: manuelles Löschen. Arbeitsbereichssicherungen: wöchentliche Pipeline, Standard 30 Tage |
+| Aufbewahrung                       | Momentaufnahmen der Installation: manuelles Löschen. Arbeitsbereichssicherungen: wöchentliche Pipeline, Standard 30 Tage, oder manuelles Löschen. Sicherungen eines gelöschten Arbeitsbereichs: nur manuelles Löschen |
 
 Die Verzeichnisse `exports/`, `transfer/` und `workspace-backups/` sind keine
 Momentaufnahmen der Installation und fehlen in `server.listBackups`. Nur das letzte
-Verzeichnis hat eine geplante Aufbewahrung. Eine Momentaufnahme der Installation zu löschen braucht die
+Verzeichnis hat eine geplante Aufbewahrung, und nur solange sein Arbeitsbereich existiert. Eine Momentaufnahme der Installation zu löschen braucht die
 ausdrückliche Handlung des Eigentümers der Installation.
 
 ## Siehe auch

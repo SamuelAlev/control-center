@@ -1,0 +1,411 @@
+---
+title: Környezetek beállítása
+description: Adjon minden térnek és pull requestnek saját futó stacket, compose-zal, saját CLI-vel, felügyelt folyamatokkal vagy asztali alkalmazással.
+slug: hu-HU/kezikonyv/gyakorlati-utmutatok/kornyezetek
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+A **környezet** egy tér futó stackje: az ág által igényelt szolgáltatások, minden más tértől elszigetelve, az oldalsávon láthatóan és az ügynökök számára elérhetően. A pull requestek is kapnak egyet, mert egy PR-nek már van saját tere.
+
+A munkaterület egyik rendszergazdája egyszer megír egy **definíciót**. A tagok ezután a **Indítás** gombra kattintanak egy tér vagy PR oldalsávjának **Környezet** szakaszában. A definíciók a munkaterület adatbázisában vannak, így egy funkcióág soha nem változtatja meg, mit futtat a Control Center, bár az eszközök továbbra is az ág kódját futtatják.
+
+## Definíció létrehozása
+
+1. Nyissa meg ezt: **Beállítások → Munkaterület → Környezetek**. Definíciókat csak a munkaterület rendszergazdái módosíthatnak.
+2. Kattintson a **Új definíció**, majd a **Üres definíció** vagy a **Vázlat a tárolóból** elemre. A vázlat compose-fájlokat, `Procfile` fájlt és `package.json` szkripteket keres a repóban, az eredményt pedig Ön ellenőrzi.
+3. Töltse ki az űrlapot, vagy használja a **JSON** lapot. Az oldal példái ezt a JSON-t mutatják.
+4. Kattintson a **Teszt futtatása** gombra. Ez elindít egy eldobható környezetet, megvárja, amíg kész, majd megsemmisíti.
+
+Ha a definíciót repóban szeretné tartani, használja a **Tárolófájl összekapcsolása** lehetőséget. A Control Center csak az alapértelmezett ágról olvassa a fájlt, és csak a rendszergazda által jóváhagyott verziót futtatja. Egy újabb verzió a **Frissítés érhető el** jelzést mutatja, és jóváhagyásig semmit sem változtat.
+
+## A legkisebb definíció
+
+Egy egyszerű compose-repónak csak ennyi kell:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+Minden másnak van alapértéke: a compose-fájlt megtalálja, minden szolgáltatás fut, a portok kiosztásra kerülnek, a HTTP-végpontok felismerésre kerülnek, a környezet pedig az ágról kapja a nevét.
+
+## Összetevőtípusok
+
+A környezet összetevők rendezett listája. Mindegyik megvárja, amíg az előző kész, hacsak az `after` másokat nem nevez meg, a leállítás pedig fordított sorrendben történik. Az `enabledWhen` egy beállításhoz vagy szerepkörhöz köti az összetevőt, például `opt.seed`, `!opt.seed` vagy `repo.web`.
+
+| Típus | Ki futtatja | Mire való |
+| --- | --- | --- |
+| `compose` | A Control Center compose-illesztője | Bármely compose-fájl, környezetenként egy |
+| `cli` | Az Ön eszköze. A Control Center leképezett igéket hív és JSON-t olvas | Olyan eszköz, amely maga kezeli az életciklusát, tartományait és adatait |
+| `process` | A Control Center, felügyelt terminálmunkamenetben | Fejlesztői szerverek és workerek |
+| `task` | A Control Center, triggerenként egyszer | Telepítések, migrációk, tesztek |
+| `app` | A Control Center, amikor valaki a **Megnyitás** gombra kattint | Asztali alkalmazás |
+
+A `task` összetevők `when` listát fogadnak:
+
+| Trigger | Mikor fut |
+| --- | --- |
+| `provision` | A worktree létrehozásakor (lásd lentebb a worktree-feladatokat) |
+| `create` | Környezetenként egyszer, és visszaállítás után újra |
+| `start` | Minden indításkor |
+| `change` | Szinkronizálás után, ha egy módosult útvonal illeszkedik az `onChange` mintára |
+| `manual` | Kérésre: **Futtatás**, `cc-env run <id>` vagy `environment_run_task` |
+| `archive` | Közvetlenül a worktree megsemmisítése előtt |
+
+A tömbként megadott parancs argv, így a beállítások értékei soha nem mennek át shellen. Egy karakterlánc, vagy a sorok tömbjét tartalmazó `script` a `bash -lc` alatt fut. Az olyan helyőrzők, mint a `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` és `{url.<role>}`, csak argv-ben helyettesítődnek be. A shell-parancsok ugyanezeket az értékeket `CC_ENV_*` változókként olvassák, például `$CC_ENV_PORT_WEB`.
+
+Minden parancs és térterminál megkapja a `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` változókat, PR-terekben pedig a `CC_PR_NUMBER` és `CC_PR_IS_FORK` változókat is. Compose-összetevővel a `COMPOSE_PROJECT_NAME` és `COMPOSE_FILE` is rendelkezésre áll, így egy feladatban a `docker compose exec` a megfelelő projektet éri el.
+
+## Szerepkörök és munkakönyvtár
+
+A definíció **szerepköröket** köt a munkaterület repóihoz, így egy stack több repót is átfoghat:
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`: egy tér akkor indíthatja a környezetet, ha legalább egy horgony szerepkört tartalmaz. Ha két definíció is illeszkedik, az indító választ.
+- `required`: a stack nem fut e nélkül a repó nélkül.
+- `whenMissing`: mi történik, ha a térből hiányzik a szerepkör. Az `addToSpace` hozzáadja a repót az alapértelmezett ágon, és a `required` szerepkörök alapértéke. A `useSource` az Ön regisztrált checkoutját adja át, amelyet csak olvashatóként kezeljen. A `skip` beállítatlanul hagyja a változót, és egyébként ez az alapérték.
+- Az indításhoz `write` jogosultság kell a tér egy horgonyrepójára, és olvasási hozzáférés minden más kötött repóhoz.
+
+A parancs a `repos` első olyan szerepkörében fut, amely megvan a térben, így az egyrepós definíciónak ezt nem kell említenie. Bármely összetevő felülírhatja ezt ezzel: `"cwd": { "role": "e2e", "path": "packages/ui" }`. Mindkét mező elhagyható.
+
+## Portok és URL-ek
+
+A Control Center még minden indítás előtt kiosztja a gazdaportokat egy az egész gazdára érvényes tartományból (alapértelmezés szerint 42000 és 49999 között, 32-es blokkokban). Egy port a környezet teljes élettartama alatt ugyanaz marad, a compose-portok pedig csak a `127.0.0.1` címhez kötődnek.
+
+- A compose-portokat nem kell deklarálni. Olvassa őket így: `{port.postgres.5432}` vagy `CC_ENV_PORT_POSTGRES_5432`.
+- A többi portot ott kell deklarálni, ahol használják, `"port": "web"` vagy `"ports": ["web", "hmr"]` formában, olvasni pedig `{port.web}` alakban lehet. A porttal rendelkező folyamat megkapja a `PORT` és a `HOST=127.0.0.1` változót is.
+
+A HTTP-végpontok URL-t kapnak a szerver útválasztóján, amely egyetlen loopback porton figyel:
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- A `<name>` az ág slugként, vagy PR-térben `pr-<n>`. A `<project>` a `naming.project`, ennek hiányában a definíció neve.
+- A `*.localhost` nevek a loopbackre mutatnak, így nincs szükség hosts-bejegyzésre vagy DNS-re, a gazdanév pedig elkülöníti a sütiket a környezetek között.
+- A HTTP-re válaszoló compose-portokat felismeri, az összetevő `http` mezője pedig felülírja ezt a találgatást. Egy folyamatnak `"endpoint": { "role": "web", "primary": true }` kell, ami a `{url.web}` értéket is elérhetővé teszi.
+- A böngészőben (VM) használja a **Megnyitás a Browser (VM) nézetben** lehetőséget. A `https://web--fix-login--shop.localhost/` ott ugyanazt az útvonalat éri el.
+- A teljes címke 63 karakteren belül marad, így a hosszú nevek hash segítségével rövidülnek.
+- Két végpontnak nincs közös szülőtartománya. Az az alkalmazás, amelynek mindkettőn egy süti kell, egyetlen végpontról szolgálja ki őket.
+
+Az előre regisztrálandó URL-ekhez, például OAuth-átirányításokhoz a `"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` rögzített névkészletet ad.
+
+A `policy` dönti el, mikor futnak a környezetek. Az `autoCreate` értéke `off`, `prSpaces` vagy `allSpaces`, az `idleStopMinutes` alapértéke 240, a `followPrHead` szinkronizálja a PR-környezetet, ha elmozdul a headje, a `maxRunning` (alapérték 6) esetén pedig a **Indítás** felajánlja a legrégebben használt környezet leállítását.
+
+## Példa: compose-alkalmazás
+
+Egy webalkalmazás és Postgres egy compose-fájlból, git által figyelmen kívül hagyott `.env` fájllal, migrációkkal és tesztfeladattal. A `seedFiles` megnevezett fájlokat másol a regisztrált checkoutból minden új worktree-be.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+A `healthchecks` lehetővé teszi, hogy egy saját állapotellenőrzés nélküli szolgáltatás visszatartsa a következő összetevőt. Enélkül egy futó konténer késznek számít, és a migrációk megelőzhetik a még induló adatbázist.
+
+## Példa: saját CLI
+
+Egy kitalált `acme` eszköz, amely maga kezeli a konténereit, tartományait és TLS-ét. A Control Center a `{name}` értéket adja meg, minden mást a `status` kimenetéből tud meg. Soha nem vezeti le egy eszköz gazdaneveit, és soha nem szerkeszti az `/etc/hosts` fájlt.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- A `create`, `status` és `destroy` kötelező. A Control Center a beolvasott állapot alapján választ `create` és `start` között. Bármely ige lehet argv helyett `{ "shell": "…" }`.
+- A `statusMap` JSON-mutatókkal olvassa az eszköz saját JSON-ját, ahol a `*` minden elemre illeszkedik. Az állapotszabályok rendezettek, és az első találat nyer. A feltétel `path` és `equals`, vagy `any` illetve `none` és `where`.
+- A `keepsDataOnStop: false` kikapcsolja a tétlenségi leállítást, és adatvesztési figyelmeztetést tesz a **Leállítás** elé. Akkor állítsa be, ha a leállítás adatvesztéssel jár.
+- A `routing.mode: "tool"` az eszköz gazdaneveit a böngészőhöz (VM) és az ügynökökhöz kapcsolja. A tartománynak `.test`, `.localhost` vagy `.internal` végződésűnek kell lennie, a rajta kívül jelentett URL-t pedig eldobja.
+
+Egy saját eszköz elhagyhatja a `statusMap` mezőt, és kiírhatja az oldal végén leírt állapotszerződést.
+
+## Példa: pnpm monorepo
+
+Csak folyamatok és feladatok, konténerek nélkül. A webalkalmazás a `{url.api}` révén találja meg az API-t.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- Minden folyamat egy terminállap, amelyet megnyithat, olvashat, és amelybe gépelhet. A lap bezárása nem állítja le.
+- A `ready` lehet `http`, `tcp` vagy `logMatch`. A `restart` lehet `on-failure` (alapérték), `always` vagy `never`. A `restartOn` újraindítja a folyamatot, ha egy módosult útvonal illeszkedik.
+- Az `options` űrlappá válik a **Indítás** gombnál, az `agentDefault` pedig az ügynök által indított futásokra vonatkozik.
+
+## Példa: asztali alkalmazás
+
+Asztali alkalmazás build-lépéssel. Egy alkalmazás ugyanúgy működik, bármivel készült is, mert a Control Center az operációs rendszer ablakszintjén dolgozik, és nem kell hook vagy SDK az alkalmazásba.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+Az alkalmazás nem indul el a környezettel. Valaki a **Megnyitás** gombra kattint, és először a `prepare` fut le. A **Újraépítés és újranyitás** újra lefuttatja ezt a párost. A tiszta kilépés bezártként jelenik meg, az összeomlás az utolsó naplósorokat mutatja újraindítás nélkül, a szerver újraindítása soha nem indítja újra, a tétlenségi leállítás pedig békén hagyja a futó alkalmazást.
+
+### Asztali alkalmazások engedélyei és korlátai
+
+- macOS rendszeren egyszer adja meg a Control Centernek a **Képernyőfelvétel** és a **Kisegítő lehetőségek** engedélyt a Rendszerbeállításokban. A szerver gazdagépének grafikus munkamenet kell: a headless szerver megtagadja az alkalmazás indítását.
+- A binárist közvetlenül indítsa. Az `open -a` átadja az alkalmazást a LaunchServicesnek, és az kikerül a Control Center által követett folyamatfából. A `"window": { "match": { "bundleId": "…" } }` ezt az esetet fedi le, de csak egy futó példánnyal biztonságos.
+- Az ablakok kijelzőn maradnak. A macOS nem rögzít olyan ablakot, amely minden kijelzőn kívül áll, így az ügynök által használt alkalmazás látható a szerver képernyőjén. Fókusz nem kell hozzá.
+- Az `"isolate": "home"` privát saját mappát ad az alkalmazásnak a `HOME`, `XDG_*` és `CFFIXED_USER_HOME` révén, így két tér példányai futhatnak egymás mellett. A `NSUserDefaults` nincs elszigetelve, ezért a Cocoa-beállítások és a Flutter `shared_preferences` tárolója közös marad a példányok között.
+- Az `isolate` csak az indított folyamatra vonatkozik. Egy eszközlánc-indítónak, mint a `flutter run`, a valódi saját mappa kell, ezért az `isolate` beállítást lefordított binárissal párosítsa. Ha az alkalmazásnak van saját beállítása, például `--user-data-dir`, inkább azt használja.
+- Az ügynökök az `app_use` eszközzel vezérlik az ablakot, amely csak ennek a környezetnek a folyamatfáját éri el. Az ügynök az ablakot látja, nem az asztalt. Az ügynöki indítások a műveleti szabályzaton mennek át, és alapértelmezés szerint rákérdeznek, az ügynök bevitele pedig leáll, amíg ember vezérel.
+- Az `"input": "background"` (alapérték) eseményeket küld a folyamatnak. A `"foreground"` aktiválja az ablakot, és átveszi a kurzort.
+
+## A worktree-feladatok felváltják a repószkripteket
+
+A `provision` és `archive` feladatok felváltják a régi, repónkénti beállító és archiváló szkripteket. **A meglévő szkriptek automatikusan átkerültek:** minden szkripttel rendelkező repónak most van egy róla elnevezett definíciója, amelynek `setup` és `archive` feladatai ugyanazt a szkriptszöveget tartalmazzák. A repó sorában lévő ikon a **Beállítások → Munkaterület → Tárolók** oldalon megnyitja. A korábbi szkriptfutások csak olvasható előzményként megmaradnak.
+
+Ezek a feladatok a worktree-t követik, nem a környezetet, így olyan terekben is futnak, ahol senki sem kattint a **Indítás** gombra:
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| Fut | A szerepkör worktree-jének létrehozásakor, bármely térben | Közvetlenül a worktree megsemmisítése előtt |
+| Hiba esetén | A kiépítés meghiúsul, és a worktree megsemmisül | Rögzítésre kerül, soha nem blokkolja a törlést |
+| Alapértelmezett időkorlát | 5 perc | 2 perc |
+| Látja | `CC_WORKSPACE_PATH`, `CC_ROOT_PATH`, `CC_SPACE_*`, `CC_REPO_NAME` | Ugyanazt |
+
+Egy stack nélküli repónak csak egy definíció kell a feladataival. Mivel nincs mit indítani, nem kell horgony szerepkör:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- Még nincs környezet, így ezek a feladatok nem használhatják a `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` vagy `enabledWhen` elemeket, és nem kapják meg a definíció `env` mezőjét.
+- Egy repóhoz csak egy definíció tartalmazhat `provision` és `archive` feladatokat. A többi minden máshoz kötheti.
+- A `"when": ["provision", "change"]` akkor is újratelepít, ha egy zárolási fájl változik, amit a beállító szkriptek sosem tettek.
+- A feladat a `cwd` szerepkörének worktree-jére fut, így egy több repós definíció minden repót külön beállíthat.
+- A tesztfutás beállítja a `CC_SCRIPT_TEST=1` változót. Az újrapróbálás tiszta worktree-ből indul, ezért olyan feladatokat írjon, amelyek elviselik az újrafuttatást.
+
+## Ügynökök
+
+Az ügynökök soha nem kapják meg a Docker-socketet. Megfelelő definícióval rendelkező térben a futás megkapja a `cc-env` parancsot a saját `PATH` útvonalán. A tér a futásból adódik, így az ügynök csak a saját környezetén tud műveletet végezni, és minden parancs átmegy a műveleti szabályzaton.
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+Compose-összetevővel egy `docker` shim is engedélyezi a `docker compose` használatát a `ps`, `logs`, `exec`, `port`, `restart` és `top` alparancsokkal. Az ige előtt nem állhat kapcsoló, a `logs` nem követhet, az `exec` pedig csak `-T` kapcsolót fogad. Minden más 5-ös kóddal és a „not available in Control Center agent runs” üzenettel lép ki.
+
+Az a repó, amelynek képességei a saját eszközét hívják, ezt továbbra is megteheti. Egy `cli` összetevő `agentPassthrough` blokkja megadja, mely parancsokat futtathatják az ügynökök:
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+A `maps` azt a műveletet nevezi meg, amelynek szabályzata érvényes. A `positionalName` erre a tér környezetére kényszeríti az argumentumot, a `nameFilter` erre szűri a JSON-kimenetet, és minden `pathFlags` értéknek a futás worktree-jein belülre kell mutatnia. A szabályra nem illeszkedő parancs 5-ös kóddal lép ki.
+
+Ugyanezek a műveletek eszközként is elérhetők: `environment_status`, `environment_up`, `environment_down`, `environment_reset`, `environment_destroy`, `environment_restart`, `environment_exec`, `environment_logs`, `environment_run_task`, `environment_launch_app` és `environment_stop_app`. A homokozóban futó ügynökök közvetlenül érik el a portjaikat, a környezetük gazdaneveit pedig a futás proxyján át, ezért kérje meg őket, hogy a végpontokat az `environment_status` kimenetéből olvassák, és ne találgassanak URL-t.
+
+## Forkból érkező pull requestek
+
+Egy fork-PR kódja nem megbízható, és gazdaelhelyezés esetén a szerver operációsrendszer-felhasználójaként fut. A `policy.forkPrs` dönti el, mi történik:
+
+| Érték | Hatás | Alapérték ehhez |
+| --- | --- | --- |
+| `rig` | A compose-fájl kérdés nélkül VM-ben fut | Csak `compose` és `task` összetevőket tartalmazó definíciók |
+| `approval` | Minden indításhoz rendszergazda kell | Minden más definíció |
+| `deny` | Elutasítva | Egyik sem |
+
+- A `seedFiles` fájlok forkhoz soha nem másolódnak, mert általában titkok. Az ilyet csatoló compose-fájl név szerint jelenti a hiányzó fájlt.
+- A `provision` és `archive` feladatok kimaradnak, hacsak a szabályzat nem `rig`, ekkor a VM-ben futnak.
+- Gazdaelhelyezésnél egy forkon a `privileged`, a gazda névterei, a Docker-socket csatolása, a `devices` és a tér worktree-jein kívüli csatolások elutasításra kerülnek. Megbízható terekben csak figyelmeztetést adnak.
+
+## Rig-elhelyezés
+
+A `"placement": "rig"` a `compose` és `task` összetevőket dedikált microVM-ben futtatja. A `process`, `cli` vagy `app` összetevőket tartalmazó definíciók nem alkalmasak. A compose-fájl változtatás nélkül fut, a gazda Docker-socketje és az üzemeltető hitelesítő adatai nélkül, a hálózati hozzáférés pedig a képei által igényelt regisztrációs adatbázisokra korlátozódik. A worktree élőben van csatolva.
+
+- **arm64 vendégek.** Apple Siliconon a vendégek arm64-esek, így a csak amd64-es képek nem futnak.
+- **A privát regisztrációs adatbázisok tiltottak.** A vendégeknek nincsenek regisztrációs hitelesítő adataik, így az ismert nyilvánosokon kívüli regisztrációs adatbázisból származó kép már a VM indítása előtt elutasításra kerül. A nyilvános regisztrációs adatbázisban lévő privát tároló akkor hiúsul meg, amikor a vendég letölti.
+- **16 GiB tárhely.** A stack összes képe és kötete egy 16 GiB-os lemezen osztozik, és ez nem növelhető.
+- **Az első indítás lassú.** A képrétegek VM-enként külön vannak, így az első indítás mindent letölt. A leállított rig megtartja a lemezét.
+- **Az alapképeknek olvashatónak kell lenniük.** Az a Dockerfile, amely változóval nevezi meg az alapképét, nem tervezhető, mert a hálózati hozzáférés indításkor rögzül.
+- **Élettartam.** A `policy.rigTtlHours` leállítja a VM-et, alapértelmezés szerint 24 óra után.
+
+## Állapotszerződés eszközkészítőknek
+
+A `statusMap` nélküli `cli` összetevő a natív szerződést, a `cc-env/1` formátumot várja. A `status` ige ezt az objektumot írja a stdout kimenetre:
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- A `state` értéke `ready`, `starting`, `stopped`, `failed` vagy `missing`. A `missing` a `create` igéhez vezet, a `stopped` és a `failed` pedig a `start` igéhez. A `missing` állapotot 0-s kilépési kóddal jelentse: a sikertelen `status` `failed` állapotnak számít.
+- Csak a `state` kötelező. Az ismeretlen mezőket figyelmen kívül hagyja, az értelmezhetetlen kimenet pedig leromlottként jelenik meg, a nyers szöveggel részletként.
+- Az URL-nek loopbacknek, `*.localhost` névnek vagy a `routing.domain` alattinak kell lennie, különben eldobásra kerül.
+- A `needsRecreate: true` megjeleníti a **Újralétrehozás** műveletet, amely eldobja az adatokat. A Control Center erre soha nem lép magától.
+- A `list` ige neveket vagy `name` mezős objektumokat tartalmazó JSON-tömböt ír ki.
+
+A kilépési kódok minden igére érvényesek:
+
+| Kód | Jelentés |
+| --- | --- |
+| 0 | OK |
+| 3 | Gazdabeállítás szükséges. A **Futtatás terminálban** térterminált nyit a begépelt, de le nem futtatott paranccsal, majd a **Újrapróbálás** újra próbálja. A Control Center soha nem futtat `sudo` parancsot |
+| 4 | Hitelesítés szükséges |
+| 5 | Függőség nem érhető el |
+| Egyéb | Hiba |
+
+A folyamat állapota soronként tagolt JSON-ként megy a stderr kimenetre:
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+A `step` sorok élő lépéslistaként jelennek meg, a `note` sorok pedig változatlanul. Egy utolsó `error` típusú sor strukturált hibává válik, és a `command` másolásra kínálkozik. Enélkül a Control Center az utolsó 20 stderr sort mutatja. Minden, ami nem JSON, egyszerű naplókimenet.
+
+## Kapcsolódó
+
+- [Terek használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/terek/)
+- [Portok továbbítása terminálból](/hu-HU/kezikonyv/gyakorlati-utmutatok/porttovabbitas/)
+- [Tesztgép adása egy ügynöknek](/hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata/)
+- [Korlátok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/)

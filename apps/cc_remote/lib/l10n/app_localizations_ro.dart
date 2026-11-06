@@ -2663,4 +2663,7 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Rularea s-a oprit deoarece datele de acces ale furnizorului nu mai funcționează. Reconectează-l în Setări → Furnizori, apoi reîncearcă tura.';
+
+  @override
+  String get permissionHostExecution => 'Rulează comenzi pe gazdă';
 }

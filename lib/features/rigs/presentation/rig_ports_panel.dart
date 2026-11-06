@@ -11,6 +11,9 @@ library;
 
 import 'package:cc_data/cc_data.dart' show RigPortsView;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_endpoint_rows.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_host.dart';
+import 'package:control_center/features/environments/providers/environment_providers.dart';
 import 'package:control_center/features/rigs/presentation/rig_port_rows.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -54,6 +57,7 @@ class RigPortsButton extends ConsumerWidget {
           sessionId: sessionId,
           spaceId: conversationId,
         ),
+        spaceId: conversationId,
       );
     }
     final rig = ref.watch(
@@ -67,14 +71,18 @@ class RigPortsButton extends ConsumerWidget {
     }
     return _PortsTrigger(
       target: PortsTarget.rig(workspaceId: workspaceId, rigId: rig.id),
+      spaceId: conversationId,
     );
   }
 }
 
 class _PortsTrigger extends ConsumerWidget {
-  const _PortsTrigger({required this.target});
+  const _PortsTrigger({required this.target, required this.spaceId});
 
   final PortsTarget target;
+
+  /// The space whose environment endpoints join the list.
+  final String spaceId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -84,10 +92,15 @@ class _PortsTrigger extends ConsumerWidget {
         ? l10n.rigPortsTooltipHost
         : l10n.rigPortsTooltip;
     final async = _watchPorts(ref, target);
-    final count = async.maybeWhen(
-      data: (view) => view.ports.length,
-      orElse: () => 0,
-    );
+    final spaceKey = (workspaceId: target.workspaceId, spaceId: spaceId);
+    final endpoints =
+        ref.watch(spaceEnvironmentProvider(spaceKey))?.endpoints ?? const [];
+    final count =
+        endpoints.length +
+        async.maybeWhen(data: (view) => view.ports.length, orElse: () => 0);
+    // Read here: the popover renders in the root overlay, where the scope
+    // around this tab can't be seen.
+    final host = EnvironmentHostScope.maybeOf(context);
     return CcPopover(
       semanticLabel: tooltip,
       targetAnchor: AlignmentDirectional.topEnd,
@@ -124,8 +137,11 @@ class _PortsTrigger extends ConsumerWidget {
           ),
         ),
       ),
-      overlayBuilder: (context, controller) =>
-          _PortsPopover(target: target),
+      overlayBuilder: (context, controller) => _PortsPopover(
+        target: target,
+        spaceKey: spaceKey,
+        host: host,
+      ),
     );
   }
 }
@@ -146,9 +162,15 @@ AsyncValue<RigPortsView> _watchPorts(WidgetRef ref, PortsTarget target) {
 }
 
 class _PortsPopover extends ConsumerWidget {
-  const _PortsPopover({required this.target});
+  const _PortsPopover({
+    required this.target,
+    required this.spaceKey,
+    required this.host,
+  });
 
   final PortsTarget target;
+  final EnvironmentSpaceKey spaceKey;
+  final EnvironmentHost? host;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -157,6 +179,8 @@ class _PortsPopover extends ConsumerWidget {
     final async = _watchPorts(ref, target);
     final view = async.maybeWhen(data: (v) => v, orElse: () => null);
     final empty = target.isSession ? l10n.rigPortsEmptyHost : l10n.rigPortsEmpty;
+    final endpoints =
+        ref.watch(spaceEnvironmentProvider(spaceKey))?.endpoints ?? const [];
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 360, maxHeight: 420),
       child: Column(
@@ -179,6 +203,19 @@ class _PortsPopover extends ConsumerWidget {
               ),
             ),
           ),
+          if (endpoints.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsetsDirectional.symmetric(
+                horizontal: AppSpacing.md,
+              ),
+              child: EnvironmentEndpointRows(
+                spaceKey: spaceKey,
+                endpoints: endpoints,
+                host: host,
+              ),
+            ),
+            const CcDivider(),
+          ],
           Flexible(
             child: view == null
                 ? const Padding(

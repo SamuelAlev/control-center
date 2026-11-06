@@ -84,6 +84,7 @@ class ProviderAppSecretField extends StatelessWidget {
             )
           : null,
       controlWidth: 200,
+      trailingControl: true,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

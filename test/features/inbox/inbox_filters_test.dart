@@ -24,7 +24,7 @@ Repo _repo(String id, String owner, String name) => Repo(
 PullRequest _pr(
   int number, {
   String? author,
-  String repoFullName = 'acme/web-app',
+  String repoFullName = 'acme/shop-ui',
   String title = 'A change',
   bool isDraft = false,
   List<PrUser> requestedReviewers = const [],
@@ -47,7 +47,7 @@ void main() {
   group('applyInboxFilters', () {
     final byRepo = [
       RepoPullRequests(
-        repo: _repo('a', 'acme', 'web-app'),
+        repo: _repo('a', 'acme', 'shop-ui'),
         prs: [
           _pr(1, author: 'Ada'),
           _pr(2, author: 'grace', isDraft: true),
@@ -59,8 +59,8 @@ void main() {
         ],
       ),
       RepoPullRequests(
-        repo: _repo('b', 'umbrella', 'test-web-app'),
-        prs: [_pr(4, author: 'ada', repoFullName: 'umbrella/test-web-app')],
+        repo: _repo('b', 'umbrella', 'test-shop-ui'),
+        prs: [_pr(4, author: 'ada', repoFullName: 'umbrella/test-shop-ui')],
       ),
     ];
 
@@ -95,7 +95,7 @@ void main() {
         numbers(
           applyInboxFilters(
             byRepo,
-            filters: const PrListFilters(repoNames: {'web-app'}),
+            filters: const PrListFilters(repoNames: {'shop-ui'}),
             viewerLogins: {ForgeHost.github: ''},
             includeDrafts: true,
           ),
@@ -157,11 +157,11 @@ void main() {
         1,
         repoId: 'b',
         owner: 'umbrella',
-        name: 'test-web-app',
+        name: 'test-shop-ui',
         author: 'zoe',
       ),
-      item(2, repoId: 'a', owner: 'acme', name: 'web-app', author: 'me'),
-      item(3, repoId: 'a', owner: 'acme', name: 'web-app', author: 'alice'),
+      item(2, repoId: 'a', owner: 'acme', name: 'shop-ui', author: 'me'),
+      item(3, repoId: 'a', owner: 'acme', name: 'shop-ui', author: 'alice'),
     ];
 
     test('none, status and repository stay flat (one unlabeled group)', () {

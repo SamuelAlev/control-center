@@ -2,7 +2,7 @@
 title: Respaldar y restaurar
 description: Toma una instantánea de la instalación, mueve un espacio de trabajo entre máquinas, restaura un espacio de trabajo o todos, y guarda copias en otro lugar.
 slug: es-MX/manual/guias/respaldar-y-restaurar
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Esta guía cubre las cinco cosas que la gente realmente hace con los respaldos: crear uno,
@@ -16,7 +16,7 @@ Todo lo que hay aquí está en **Ajustes → Servidor → Copia de seguridad y r
 
 - Un **cliente completo** — la aplicación de escritorio o la web. Un teléfono emparejado no puede desencadenar nada de esto, por diseño.
 - Para crear, listar, descargar o eliminar una **instantánea de la instalación**: el **propietario** de la instalación.
-- Para las acciones por espacio de trabajo: **administrador** de ese espacio de trabajo para exportar, **propietario** para importarlo o eliminarlo.
+- Para las acciones por espacio de trabajo: **administrador** de ese espacio de trabajo para exportarlo o para listar y descargar sus respaldos programados, **propietario** para importarlo o eliminarlo o para eliminar uno de sus respaldos.
 - Para las descargas y las subidas: un cliente completo emparejado, ya sea por una conexión directa o por el relevo intermediado. Ambas rutas transportan los bytes del archivo por el mismo túnel de recursos autenticado y cifrado de extremo a extremo; el relevo no puede leerlos.
 
 :::caution[Las instantáneas de la instalación son manuales]
@@ -86,13 +86,36 @@ Los respaldos de espacio de trabajo viven en el servidor bajo
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. El nodo de retención
 solo elimina respaldos antiguos de este espacio de trabajo; nunca elimina instantáneas de
 la instalación ni respaldos de otros espacios de trabajo. Estos archivos son solo de base
-de datos. Para retenerlos fuera de la máquina, cópialos de forma independiente.
+de datos. Para retenerlos fuera de la máquina, descárgalos o cópialos de forma
+independiente.
 
-Estos respaldos son independientes de la lista **Instantáneas de la instalación**. Para
-restaurar uno, usa **Datos del espacio de trabajo → Importar** con la ruta `workspace.db`
-del lado del servidor del respaldo. Importar sustituye la base de datos actual de ese
-espacio de trabajo, así que expórtala primero si podrías necesitar deshacer la
-restauración.
+## Encontrar y restaurar un respaldo programado
+
+**Copias de seguridad programadas** está entre **Instantáneas de la instalación** y
+**Datos del espacio de trabajo**, con una fila por espacio de trabajo: cuándo se ejecutó
+su último respaldo, cuántos ha conservado y cuánto espacio ocupan. Un espacio de trabajo
+cuyo pipeline no haya producido nada indica **Aún no hay copias de seguridad**. Un
+espacio de trabajo del que no eres administrador lo indica en su fila en lugar de listar
+sus respaldos.
+
+Expande una fila para ver cada respaldo, del más reciente al más antiguo:
+
+- **Restaurar** reemplaza la base de datos actual del espacio de trabajo con este respaldo. Exporta primero el espacio de trabajo si podrías necesitar deshacerlo. Requiere **propietario**.
+- **Descargar** guarda el archivo en la máquina que estás usando. El respaldo se queda en el servidor.
+- **Copiar ruta** copia su ubicación en el servidor.
+- **Eliminar** borra este respaldo de forma permanente, una vez que escribes el nombre del espacio de trabajo. Requiere **propietario**.
+
+### Respaldos de un espacio de trabajo eliminado
+
+Eliminar un espacio de trabajo deja sus respaldos programados en el servidor y, como su
+programación se detiene con él, la retención también se detiene: se quedan ahí hasta que
+alguien los elimine. El **propietario** de la instalación los ve en la misma lista,
+marcados como **Espacio de trabajo eliminado**, y puede descargarlos o eliminarlos ahí.
+Nadie más ve esas filas.
+
+No tienen **Restaurar**, porque no hay ningún espacio de trabajo donde restaurar. Para
+recuperar uno, descárgalo, crea un espacio de trabajo y sube el archivo como se describe
+en [Mover un espacio de trabajo a otra instalación](#mover-un-espacio-de-trabajo-a-otra-instalación).
 
 ## Eliminar una instantánea de la instalación
 
@@ -109,14 +132,17 @@ es la máquina en la que estás, usa los botones **Descargar**:
 
 - Junto a cada **espacio de trabajo**, en **Datos del espacio de trabajo** → **Descargar**, para un solo archivo `.db`.
 - Junto a cada **instantánea**, en **Instantáneas de la instalación** → **Descargar**, para toda la instantánea como un `.zip`.
+- Junto a cada respaldo, en **Copias de seguridad programadas** → **Descargar**, para el archivo `.db` de ese respaldo.
 
 En escritorio eliges dónde queda el archivo y el aviso lo indica; en la web va a las
-descargas del navegador. En cualquier caso, ambos reportan el progreso en bytes, porque
-son las dos cargas útiles que llegan a los gigabytes.
+descargas del navegador. En cualquier caso, las tres reportan el progreso en bytes, porque
+estas cargas útiles llegan a los gigabytes.
 
-Ambos generan una copia nueva en el momento en que presionas el botón, la transmiten en
-streaming y eliminan después la copia del servidor — una descarga no es «buscar el archivo
-que creó antes el botón de exportar».
+Las descargas de espacio de trabajo y de instantánea generan una copia nueva en el momento
+en que presionas el botón, la transmiten en streaming y eliminan después la copia del
+servidor — una descarga no es «buscar el archivo que creó antes el botón de exportar». Un
+respaldo programado es la excepción: recibes el archivo almacenado, y este se queda en el
+servidor.
 
 Descomprimir el archivo de una instantánea reproduce exactamente la estructura de la
 instantánea, que es lo que hace que restaurarla sea una copia de vuelta.

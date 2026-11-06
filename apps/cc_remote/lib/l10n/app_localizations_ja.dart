@@ -2561,4 +2561,7 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'プロバイダーの認証情報が使えなくなったため、実行が停止しました。設定 → プロバイダーで再接続してから、このターンを再試行してください。';
+
+  @override
+  String get permissionHostExecution => 'ホストでコマンドを実行';
 }

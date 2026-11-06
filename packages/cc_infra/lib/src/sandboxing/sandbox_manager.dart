@@ -49,6 +49,12 @@ class SandboxManager {
 
   final Map<String, String>? _gitEnvironment;
 
+  /// Maps `(scope, hostname)` to a loopback `host:port` a run may reach.
+  ///
+  /// Set by the runtime once the environment service exists. Null admits
+  /// nothing extra.
+  Future<String?> Function(String scope, String host)? environmentHostResolver;
+
   /// Test-injected proxies. In production these stay null: proxies are
   /// per-session (see [wrap]). `SandboxManager.test` keeps them so a test can
   /// hand in fakes without booting real listeners.
@@ -161,6 +167,7 @@ class SandboxManager {
         parentProxy: config.parentProxy,
         injectedHttp: _httpProxy,
         injectedSocks: _socksProxy,
+        environmentHost: _environmentHostFor(config.network.environmentScope),
       );
     }
 
@@ -269,6 +276,13 @@ class SandboxManager {
     _initFuture = null;
   }
 
+  Future<String?> Function(String host)? _environmentHostFor(String? scope) {
+    if (scope == null) {
+      return null;
+    }
+    return (host) async => environmentHostResolver?.call(scope, host);
+  }
+
   Map<String, String> _proxyEnv({
     required SandboxConfig config,
     required _SessionState session,
@@ -286,8 +300,13 @@ class SandboxManager {
     final socksPort = fromInsideSandbox ? 1080 : session.socksProxy!.port;
     final httpUrl = 'http://127.0.0.1:$httpPort';
     final socksUrl = 'socks5://127.0.0.1:$socksPort';
-    const noProxy =
-        'localhost,127.0.0.1,::1,*.local,.local,'
+    // `localhost` in NO_PROXY is a suffix match for curl and most clients, so
+    // it would send `*.localhost` environment URLs straight at a loopback port
+    // the sandbox denies. A run with an environment drops it: those names go
+    // through this run's proxy, which admits exactly its own.
+    final noProxy =
+        '${config.network.environmentScope == null ? 'localhost,' : ''}'
+        '127.0.0.1,::1,*.local,.local,'
         '169.254.0.0/16,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16';
     // Git-over-SSH through the SOCKS proxy so egress stays gated.
     final gitSsh =
@@ -383,10 +402,15 @@ class _SessionState {
     String? parentProxy,
     SandboxHttpProxy? injectedHttp,
     SandboxSocksProxy? injectedSocks,
+    Future<String?> Function(String host)? environmentHost,
   }) async {
     httpProxy ??=
         injectedHttp ?? await SandboxHttpProxy.start(network: network);
-    httpProxy!.updateConfig(network: network, parentProxy: parentProxy);
+    httpProxy!.updateConfig(
+      network: network,
+      parentProxy: parentProxy,
+      environmentHost: environmentHost,
+    );
     socksProxy ??=
         injectedSocks ?? await SandboxSocksProxy.start(network: network);
     socksProxy!.updateConfig(network: network);

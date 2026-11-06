@@ -4,6 +4,7 @@ import 'package:cc_infra/cc_infra.dart' show BundledMediaTools;
 import 'package:cc_natives/cc_natives.dart'
     show
         CcSaml,
+        CcWindow,
         GrammarManager,
         NativeDirectoryWatcher,
         Pty,
@@ -16,7 +17,8 @@ import 'package:cc_natives/cc_natives.dart'
         rhttpLibraryBaseName,
         samlLibraryBaseName,
         tryOpenFirst,
-        watcherLibraryBaseName;
+        watcherLibraryBaseName,
+        windowLibraryBaseName;
 import 'package:cc_server_core/src/native_preflight.dart';
 import 'package:path/path.dart' as p;
 
@@ -96,6 +98,15 @@ List<NativeRequirement> buildNativeRequirements({
     nativeRequirement(
       '${platformLibraryFileName('rift_ffi')} (copy-on-write worktrees)',
       () async => dylibProbe('rift_ffi', envVar: 'RIFT_FFI_DYLIB')(),
+      requiredOnWindows: false,
+    ),
+    // TODO(windows): cc_window_windows.cpp has never been compiled, so no
+    // Windows build ships this yet and an app component there fails at Launch.
+    // Drop this exemption with the one in scripts/lib/natives.sh, once
+    // windows_natives.sh builds it.
+    nativeRequirement(
+      '${platformLibraryFileName(windowLibraryBaseName)} (desktop app windows)',
+      () async => CcWindow.isAvailable,
       requiredOnWindows: false,
     ),
     nativeRequirement(

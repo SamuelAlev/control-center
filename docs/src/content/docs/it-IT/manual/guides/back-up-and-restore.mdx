@@ -2,7 +2,7 @@
 title: Backup e ripristino
 description: Scatta un'istantanea dell'installazione, sposta uno spazio di lavoro tra macchine, ripristina un solo spazio di lavoro o tutti quanti, e conserva copie altrove.
 slug: it-IT/manuale/guide/backup-e-ripristino
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Questa guida copre le cinque cose che si fanno davvero con i backup: crearne uno,
@@ -16,7 +16,7 @@ Tutto quello che c'è qui vive in **Impostazioni → Server → Backup e riprist
 
 - Un **client completo** — l'app desktop o web. Un telefono associato non può attivare nulla di tutto questo, per scelta progettuale.
 - Per creare, elencare, scaricare o eliminare un'**istantanea dell'installazione**: il **proprietario** dell'installazione.
-- Per le azioni su un singolo spazio di lavoro: **admin** di quello spazio di lavoro per esportarlo, **proprietario** per importarlo o eliminarlo.
+- Per le azioni su un singolo spazio di lavoro: **admin** di quello spazio di lavoro per esportarlo o per elencarne e scaricarne i backup pianificati, **proprietario** per importarlo o eliminarlo o per eliminare uno dei suoi backup.
 - Per i download e gli upload: un client completo associato, su una connessione diretta o tramite relay. Entrambi i percorsi trasportano i byte del file attraverso lo stesso tunnel delle risorse autenticato e cifrato end-to-end; il relay non può leggerli.
 
 :::caution[Le istantanee dell'installazione sono manuali]
@@ -85,13 +85,35 @@ I backup degli spazi di lavoro vivono sul server in
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Il nodo di
 conservazione elimina solo i backup vecchi di questo spazio di lavoro; non elimina mai le
 istantanee dell'installazione né i backup di altri spazi di lavoro. Questi file contengono
-solo database. Per una conservazione fuori dalla macchina, copiali in modo indipendente.
+solo database. Per una conservazione fuori dalla macchina, scaricali o copiali in modo
+indipendente.
 
-Questi backup sono separati dall'elenco **Istantanee dell'installazione**. Per
-ripristinarne uno, usa **Dati dello spazio di lavoro → Importa** con il percorso
-`workspace.db` lato server del backup. L'importazione sostituisce il database attuale di
-quello spazio di lavoro, quindi esportalo prima se potresti aver bisogno di annullare il
-ripristino.
+## Trova e ripristina un backup pianificato
+
+**Backup pianificati** si trova tra **Istantanee dell'installazione** e
+**Dati dello spazio di lavoro**, con una riga per ogni spazio di lavoro: quando è stato
+eseguito l'ultimo backup, quanti ne ha conservati e lo spazio che occupano. Uno spazio di lavoro la cui
+pipeline non ha ancora prodotto nulla mostra **Ancora nessun backup**. Uno spazio di lavoro
+di cui non sei admin lo segnala nella sua riga invece di elencare i backup.
+
+Espandi una riga per vedere ogni backup, dal più recente:
+
+- **Ripristina** sostituisce il database attuale dello spazio di lavoro con questo backup. Esporta prima lo spazio di lavoro se potresti aver bisogno di annullare l'operazione. Richiede **proprietario**.
+- **Scarica** salva il file sulla macchina che stai usando. Il backup resta sul server.
+- **Copia percorso** copia la sua posizione sul server.
+- **Elimina** rimuove definitivamente questo backup, dopo che hai digitato il nome dello spazio di lavoro. Richiede **proprietario**.
+
+### Backup di uno spazio di lavoro eliminato
+
+L'eliminazione di uno spazio di lavoro lascia i suoi backup pianificati sul server e,
+poiché la sua pianificazione si ferma con esso, si ferma anche la conservazione: restano
+finché qualcuno non li rimuove. Il **proprietario** dell'installazione li vede nello stesso
+elenco, contrassegnati con **Spazio di lavoro eliminato**, e può scaricarli o eliminarli da
+lì. Nessun altro vede quelle righe.
+
+Non hanno **Ripristina**, perché non c'è uno spazio di lavoro in cui ripristinarli. Per
+recuperarne uno, scaricalo, crea uno spazio di lavoro e carica il file come descritto in
+[Sposta uno spazio di lavoro su un'altra installazione](#sposta-uno-spazio-di-lavoro-su-unaltra-installazione).
 
 ## Elimina un'istantanea dell'installazione
 
@@ -107,14 +129,16 @@ macchina su cui sei seduto, usa i pulsanti **Scarica**:
 
 - Accanto a ogni **spazio di lavoro**, sotto **Dati dello spazio di lavoro** → **Scarica**, per un singolo file `.db`.
 - Accanto a ogni **istantanea**, sotto **Istantanee dell'installazione** → **Scarica**, per l'intera istantanea come `.zip`.
+- Accanto a ogni backup, sotto **Backup pianificati** → **Scarica**, per il file `.db` di quel backup.
 
 Su desktop scegli dove finisce il file e l'avviso lo indica; sul web finisce nei download
-del browser. In entrambi i casi il progresso è riportato in byte, perché questi sono i due
-payload che arrivano a gigabyte.
+del browser. In entrambi i casi tutti e tre riportano il progresso in byte, perché questi
+payload arrivano a gigabyte.
 
-Entrambi generano una copia nuova nel momento in cui premi il pulsante, la trasmettono in
-streaming e poi eliminano la copia del server — un download non è «recuperare il file che
-il pulsante di esportazione aveva creato prima».
+I download dello spazio di lavoro e dell'istantanea generano una copia nuova nel momento in
+cui premi il pulsante, la trasmettono in streaming e poi eliminano la copia del server — un
+download non è «recuperare il file che il pulsante di esportazione aveva creato prima». Un
+backup pianificato è l'eccezione: ricevi il file archiviato, che resta sul server.
 
 Estrarre un archivio di istantanea riproduce esattamente la struttura dell'istantanea, ed è
 ciò che rende il suo ripristino una semplice copia di ritorno.

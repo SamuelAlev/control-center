@@ -23,6 +23,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:xterm/xterm.dart';
 
+/// How long output must stay quiet before a prompt is assumed to be up.
+const Duration _promptQuietPeriod = Duration(milliseconds: 300);
+
+/// [command] as it may be typed at a prompt without running, or null when it
+/// can't be.
+///
+/// A newline or carriage return would press Enter, and escape sequences could
+/// do worse. Backslash-newline continuations are one command, so they join
+/// with a space. Anything else spread over lines is a script whose meaning
+/// depends on its line breaks: that is offered for copying only.
+String? terminalPrefillText(String command) {
+  final joined = command.trim().replaceAll(RegExp(r'\\\r?\n\s*'), ' ');
+  if (joined.isEmpty || joined.contains(RegExp(r'[\r\n]'))) {
+    return null;
+  }
+  return joined.replaceAll(RegExp(r'[\x00-\x1f\x7f-\x9f]'), '');
+}
+
 /// The three localized lines this controller writes INTO the terminal buffer.
 ///
 /// The controller has no `BuildContext` — it outlives the view, which is the
@@ -98,6 +116,14 @@ class TerminalSessionController extends ChangeNotifier {
   final RemoteRpcClient _rpcClient;
 
   RemoteTerminalRepository? _repo;
+
+  /// When this controller's shell started, or null before it has (or for a
+  /// PTY it attached to rather than started).
+  DateTime? startedAt;
+
+  /// Text waiting for the first prompt. See [typeOnceReady].
+  String? _pendingInput;
+  Timer? _pendingInputTimer;
   String? _sessionId;
   StreamSubscription<String>? _outputSub;
   final Queue<Object> _pendingOutput = Queue<Object>();
@@ -303,6 +329,14 @@ class TerminalSessionController extends ChangeNotifier {
     _notify();
     try {
       final repo = RemoteTerminalRepository(_rpcClient);
+      final attach = session.attachSessionId;
+      if (attach != null) {
+        // The PTY already exists and belongs to its owner: read and type only.
+        _repo = repo;
+        _sessionId = attach;
+        _attach(repo, attach);
+        return;
+      }
       // Pass the conversation id so the server opens the terminal at the
       // conversation root, not a per-tab folder named after this session id.
       final spawned = await repo.spawnSession(
@@ -319,6 +353,7 @@ class TerminalSessionController extends ChangeNotifier {
       _repo = repo;
       _sessionId = sessionId;
       _backend = spawned.backend;
+      startedAt = DateTime.now();
       _attach(repo, sessionId);
     } on RemoteRpcException catch (e) {
       // The connected server doesn't host the terminal ops — degrade honestly.
@@ -339,6 +374,33 @@ class TerminalSessionController extends ChangeNotifier {
         _notify();
       }
     }
+  }
+
+  /// Types [text] at the first prompt and leaves it there.
+  ///
+  /// The fix a tool suggests is shown to a person who decides whether to run
+  /// it, so [terminalPrefillText] strips whatever could press Enter for them.
+  /// Waits for output to go quiet: a shell with a long rc file discards
+  /// typeahead while it starts.
+  void typeOnceReady(String text) {
+    _pendingInput = terminalPrefillText(text);
+  }
+
+  void _armPendingInput() {
+    if (_pendingInput == null) {
+      return;
+    }
+    _pendingInputTimer?.cancel();
+    _pendingInputTimer = Timer(_promptQuietPeriod, () {
+      final repo = _repo;
+      final id = _sessionId;
+      final input = _pendingInput;
+      if (_disposed || repo == null || id == null || input == null) {
+        return;
+      }
+      _pendingInput = null;
+      unawaited(repo.write(id, utf8.encode(input)));
+    });
   }
 
   /// Hardware character input for macOS desktop, hooked into
@@ -472,6 +534,7 @@ class TerminalSessionController extends ChangeNotifier {
             }
             if (text.isNotEmpty) {
               _queueOutput(text);
+              _armPendingInput();
             }
           },
           onError: (Object e) {
@@ -525,6 +588,13 @@ class TerminalSessionController extends ChangeNotifier {
               if (_disposed || generation != _outputGeneration) {
                 return;
               }
+              if (lostSession && session.attachSessionId != null) {
+                // Its owner ended it. A fresh shell here would be a different
+                // thing wearing the process's tab.
+                terminal.write('\r\n[${notices.shellExited}]\r\n');
+                onShellExit?.call();
+                return;
+              }
               if (lostSession) {
                 _sessionLost = true;
                 terminal.write(
@@ -573,6 +643,10 @@ class TerminalSessionController extends ChangeNotifier {
   /// Kills the server session, clears the buffer + cursor + titles and boots
   /// a fresh shell — the old header button's "Restart shell".
   Future<void> restart() async {
+    if (session.attachSessionId != null) {
+      // Not a shell of ours to replace; its environment restarts it.
+      return;
+    }
     await _stopOutput();
     await _titleSub?.cancel();
     _titleSub = null;
@@ -606,6 +680,7 @@ class TerminalSessionController extends ChangeNotifier {
       return;
     }
     _disposed = true;
+    _pendingInputTimer?.cancel();
     await _stopOutput();
     await _titleSub?.cancel();
     _titleSub = null;

@@ -46,8 +46,9 @@ void main() {
         .insert(
           ReposTableCompanion.insert(id: 'repo1', name: 'r', path: '/tmp/r'),
         );
-    // a.dart's largest symbol is `big`. Both files reach `shared`, and b.dart
-    // reaches it directly while a.dart goes through `middle`.
+    // a.dart's largest symbol is `big`. Impact walks reverse dependencies, so
+    // both files reach `shared` through its calls: it calls b.dart's `solo`
+    // directly and a.dart's `big` through `middle`.
     await db.codeGraphDao.upsertSymbols([
       _symbol('small', 'a.dart', lines: 1),
       _symbol('big', 'a.dart', lines: 20),
@@ -56,9 +57,9 @@ void main() {
       _symbol('shared', 'd.dart', lines: 2),
     ]);
     await db.codeGraphDao.upsertEdges([
-      _calls('big', 'middle'),
-      _calls('middle', 'shared'),
-      _calls('solo', 'shared'),
+      _calls('middle', 'big'),
+      _calls('shared', 'middle'),
+      _calls('shared', 'solo'),
     ]);
   });
 
@@ -122,8 +123,11 @@ void main() {
           .cast<Map<String, dynamic>>();
       final shared = nodes.where((n) => n['id'] == 'shared').toList();
       final solo = await db.codeGraphDao.getImpactRadius('ws1', 'solo');
+      final big = await db.codeGraphDao.getImpactRadius('ws1', 'big');
+      expect(big.depthById['shared'], 2);
+      expect(solo.depthById['shared'], 1);
       expect(shared, hasLength(1));
-      expect(shared.single['depth'], solo.depthById['shared']);
+      expect(shared.single['depth'], 1);
     });
   });
 }

@@ -2,7 +2,7 @@ import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// One install snapshot as `server.listBackups` reports it.
+/// One snapshot as `server.listBackups` or `workspace.listBackups` reports it.
 ///
 /// Every path in here is a path on the SERVER's filesystem. That distinction is
 /// load-bearing rather than pedantic: a phone or a browser tab talking to a
@@ -112,6 +112,73 @@ final backupSnapshotsProvider =
       ];
     });
 
+/// One workspace's scheduled backups, newest first.
+///
+/// Per workspace because the server gates it per workspace: a refused one fails
+/// its own row and leaves the others readable. Pipelines write these with no
+/// change feed, so like [backupSnapshotsProvider] it reloads with the page.
+final workspaceBackupsProvider = FutureProvider.autoDispose
+    .family<List<BackupSnapshotView>, String>((ref, workspaceId) async {
+      final data = await ref.watch(rpcClientProvider).call(
+        'workspace.listBackups',
+        {'workspace_id': workspaceId},
+      );
+      return [
+        for (final entry in (data['backups'] as List?) ?? const [])
+          if (entry is Map)
+            BackupSnapshotView.fromJson(entry.cast<String, dynamic>()),
+      ];
+    });
+
+/// Scheduled backups left by a workspace that is no longer live.
+class OrphanedWorkspaceBackupsView {
+  /// Creates an [OrphanedWorkspaceBackupsView].
+  const OrphanedWorkspaceBackupsView({
+    required this.workspaceId,
+    required this.backups,
+    this.workspaceName,
+  });
+
+  /// Decodes one `server.listOrphanedBackups` entry.
+  factory OrphanedWorkspaceBackupsView.fromJson(Map<String, dynamic> json) =>
+      OrphanedWorkspaceBackupsView(
+        workspaceId: json['workspace_id'] as String? ?? '',
+        workspaceName: json['workspace_name'] as String?,
+        backups: [
+          for (final entry in (json['backups'] as List?) ?? const [])
+            if (entry is Map)
+              BackupSnapshotView.fromJson(entry.cast<String, dynamic>()),
+        ],
+      );
+
+  /// The workspace these backups hold.
+  final String workspaceId;
+
+  /// Its name, or null when the registry no longer knows it.
+  final String? workspaceName;
+
+  /// Its backups, newest first.
+  final List<BackupSnapshotView> backups;
+}
+
+/// Every deleted workspace that still has scheduled backups on the server.
+///
+/// Install-owner only: anyone else is refused, which is the normal answer for
+/// them rather than a failure.
+final orphanedWorkspaceBackupsProvider =
+    FutureProvider.autoDispose<List<OrphanedWorkspaceBackupsView>>((ref) async {
+      final data = await ref
+          .watch(rpcClientProvider)
+          .call('server.listOrphanedBackups', const {});
+      return [
+        for (final entry in (data['workspaces'] as List?) ?? const [])
+          if (entry is Map)
+            OrphanedWorkspaceBackupsView.fromJson(
+              entry.cast<String, dynamic>(),
+            ),
+      ];
+    });
+
 /// The backup, export, import and delete actions, in one place.
 final backupActionsProvider = Provider<BackupActions>(BackupActions.new);
 
@@ -144,6 +211,36 @@ class BackupActions {
     } finally {
       // A partial filesystem removal may fail after changing the listing.
       _ref.invalidate(backupSnapshotsProvider);
+    }
+  }
+
+  /// Deletes one scheduled backup of a live workspace by its listed name.
+  Future<void> deleteWorkspaceBackup({
+    required String workspaceId,
+    required String name,
+  }) async {
+    try {
+      await _ref.read(rpcClientProvider).call('workspace.deleteBackup', {
+        'workspace_id': workspaceId,
+        'name': name,
+      });
+    } finally {
+      _ref.invalidate(workspaceBackupsProvider(workspaceId));
+    }
+  }
+
+  /// Deletes one scheduled backup of a workspace that is no longer live.
+  Future<void> deleteOrphanedBackup({
+    required String workspaceId,
+    required String name,
+  }) async {
+    try {
+      await _ref.read(rpcClientProvider).call('server.deleteOrphanedBackup', {
+        'workspace_id': workspaceId,
+        'name': name,
+      });
+    } finally {
+      _ref.invalidate(orphanedWorkspaceBackupsProvider);
     }
   }
 

@@ -55,8 +55,11 @@ class SettingsCopyField extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
+            // RTL carve-out: every value here is a machine string (URL, hash,
+            // key), read left to right whatever the UI direction.
             child: Text(
               text,
+              textDirection: TextDirection.ltr,
               maxLines: maxLines,
               overflow: TextOverflow.ellipsis,
               style: CcFonts.code(

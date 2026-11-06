@@ -49,8 +49,9 @@ class _FeedsCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     return SectionCard(
       label: l10n.feedsCount(feeds.length),
-      padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-      headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 8),
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 0),
+      headerAlignment: CrossAxisAlignment.center,
       trailing: CcButton(
         variant: CcButtonVariant.secondary,
         size: CcButtonSize.sm,
@@ -175,6 +176,7 @@ class _FeedRow extends ConsumerWidget {
             CcTooltip(
               message: isDemo ? l10n.demoUnavailableFeeds : l10n.delete,
               child: CcIconButton(
+                variant: CcButtonVariant.destructive,
                 icon: AppIcons.trash2,
                 semanticLabel: l10n.delete,
                 onPressed: isDemo ? null : () => _confirmDelete(context, ref),

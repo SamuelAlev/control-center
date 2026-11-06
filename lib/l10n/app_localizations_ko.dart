@@ -87,9 +87,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keybindingPushToTalk => '눌러서 말하기';
 
   @override
-  String get keybindingPushToTalkDescription => '메시지 작성창에서 음성 받아쓰기 누르기 또는 토글';
-
-  @override
   String get agentPermissions => '에이전트 권한';
 
   @override
@@ -184,6 +181,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'iOS 시뮬레이터';
+
+  @override
+  String get rigSurfaceAppWindow => '앱 창';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -455,6 +455,10 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       '라이브 뷰에는 이 호스트에 ffmpeg가 필요합니다. ffmpeg를 설치하고 탭을 다시 여세요.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      '실시간 보기에는 화면 기록 권한이 필요합니다. 시스템 설정에서 Control Center에 권한을 부여한 뒤 탭을 다시 여세요.';
 
   @override
   String get rigStreamEnded => '라이브 뷰가 종료되었습니다.';
@@ -1539,10 +1543,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => '필터 메뉴 열기';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      '풀 리퀘스트 필터 메뉴 열기';
 
   @override
   String countSelected(int count) {
@@ -2799,19 +2799,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cancelEdit => '편집 취소';
 
   @override
-  String get categoryCreation => '생성';
-
-  @override
-  String get categoryEditing => '편집';
-
-  @override
   String get categoryNavigation => '탐색';
-
-  @override
-  String get categorySystem => '시스템';
-
-  @override
-  String get categoryView => '카테고리 보기';
 
   @override
   String get change => '변경';
@@ -3618,30 +3606,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keepSandboxing => '샌드박싱 유지';
 
   @override
-  String get keybindingAddARepositoryDescription => '리포지토리 추가';
-
-  @override
   String get keybindingAddRepository => '리포지토리 추가';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      '선택한 아티클 북마크 또는 해제';
 
   @override
   String get keybindingCommandPalette => '커맨드 팔레트';
 
   @override
-  String get keybindingCreateANewAgentDescription => '새 에이전트 만들기';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription => '새 워크스페이스 만들기';
-
-  @override
   String get keybindingFocusSearch => '검색 포커스';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      '풀 리퀘스트 검색 창에 포커스';
 
   @override
   String get keybindingNewAgent => '새 에이전트';
@@ -3662,30 +3633,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keybindingOpenArticle => '아티클 열기';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      '사이드바의 워크스페이스 전환 팝업 열기 또는 닫기';
-
-  @override
   String get keybindingOpenPr => 'PR 열기';
 
   @override
   String get keybindingOpenSettings => '설정 열기';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription => '애플리케이션 설정 열기';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription => '커맨드 팔레트 열기';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription => '선택한 아티클 열기';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription => '선택한 풀 리퀘스트 열기';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription => '선택한 워크스페이스 열기';
 
   @override
   String get keybindingOpenWorkspace => '워크스페이스 열기';
@@ -3703,79 +3654,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keybindingRefresh => '새로 고침';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => '모든 피드 새로 고침';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      '풀 리퀘스트 목록 새로 고침';
-
-  @override
-  String get keybindingRescanForAdaptersDescription => '어댑터 다시 스캔';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription => '다음 아티클 선택';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription => '다음 스페이스 선택';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription => '이전 아티클 선택';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription => '이전 스페이스 선택';
-
-  @override
   String get keybindingSendMessage => '메시지 보내기';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription => '현재 메시지 보내기';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      '라이트 모드와 다크 모드 전환';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      '여덟 번째 워크스페이스로 전환';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      '다섯 번째 워크스페이스로 전환';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      '첫 번째 워크스페이스로 전환';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      '네 번째 워크스페이스로 전환';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription => '다음 워크스페이스로 전환';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      '아홉 번째 워크스페이스로 전환';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      '이전 워크스페이스로 전환';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      '두 번째 워크스페이스로 전환';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      '일곱 번째 워크스페이스로 전환';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      '여섯 번째 워크스페이스로 전환';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      '세 번째 워크스페이스로 전환';
 
   @override
   String get keybindingToggleBookmark => '북마크 토글';
@@ -3812,13 +3691,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => '워크스페이스 9';
-
-  @override
-  String get keybindings => '키 바인딩';
-
-  @override
-  String get keybindingsDescription =>
-      '모든 키보드 단축키입니다. 단축키는 고정되어 있으며 다시 지정할 수 없습니다.';
 
   @override
   String get killRunning => '실행 중 강제 종료';
@@ -4076,11 +3948,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get noSavedArticlesBody => '저장한 아티클이 여기에 나타납니다.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return '\"$query\"와 일치하는 단축키가 없습니다';
-  }
 
   @override
   String get noSystemFonts => '감지된 시스템 글꼴이 없습니다.';
@@ -4800,12 +4667,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get searchPlaceholder => '검색…';
-
-  @override
-  String get searchShortcuts => '단축키 검색…';
-
-  @override
-  String get shortcutUnavailableInBrowser => '브라우저에서는 사용할 수 없습니다';
 
   @override
   String get searching => '검색 중…';
@@ -6557,6 +6418,27 @@ class AppLocalizationsKo extends AppLocalizations {
   String get triggerEventSpaceDeleted => '스페이스 삭제됨';
 
   @override
+  String get triggerEventSpaceArchived => '스페이스 보관됨';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged => '스페이스 프로비저닝 변경';
+
+  @override
+  String get triggerEventPrHeadChanged => 'PR 헤드 변경';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => '환경 상태 변경';
+
+  @override
+  String get triggerEventEnvironmentReady => '환경 준비됨';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => '환경 삭제됨';
+
+  @override
+  String get triggerEventEnvironmentProcessExited => '환경 프로세스 종료됨';
+
+  @override
   String get triggerExternalPrHelp =>
       'Control Center가 아니라 코드 호스트에서 열린 풀 리퀘스트입니다.';
 
@@ -6608,6 +6490,28 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => '대화 스페이스가 삭제됩니다.';
+
+  @override
+  String get triggerSpaceArchivedHelp => '대화 스페이스가 보관됩니다.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      '스페이스 워크트리의 프로비저닝이 시작, 완료 또는 실패합니다.';
+
+  @override
+  String get triggerPrHeadChangedHelp => '열린 풀 리퀘스트에 새 커밋이 푸시됩니다.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp => '스페이스 환경이 새 상태로 바뀝니다.';
+
+  @override
+  String get triggerEnvironmentReadyHelp => '스페이스 환경이 시작되어 사용할 수 있습니다.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp => '스페이스 환경이 해체됩니다.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp => '환경이 실행한 프로세스가 종료됩니다.';
 
   @override
   String get navTickets => '티켓';
@@ -8778,18 +8682,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => '사용량 및 비용';
-
-  @override
-  String get usageAndCostDescription => '지난 7일 동안 에이전트의 관측된 실행 비용입니다.';
-
-  @override
-  String get noUsageYet => '아직 기록된 사용량이 없습니다.';
-
-  @override
-  String get spentThisWeek => '이번 주 사용량';
-
-  @override
   String get subscriptionUsage => '구독 사용량';
 
   @override
@@ -8995,9 +8887,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keybindingNewSpace => '새 스페이스';
 
   @override
-  String get keybindingCreateANewSpaceDescription => '새 스페이스 만들기';
-
-  @override
   String get jumpToLatest => '최신으로 이동';
 
   @override
@@ -9164,71 +9053,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get preparingWorkspace => '워크스페이스를 준비하는 중…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return '$repo 설정 스크립트를 실행하는 중…';
-  }
-
-  @override
-  String get repoScriptsTitle => '스크립트';
-
-  @override
-  String get repoScriptsTooltip => '라이프사이클 스크립트 설정';
-
-  @override
-  String get repoScriptsSetupLabel => '설정 스크립트';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      '스페이스가 생성된 직후 해당 워크트리에서 실행됩니다. 의존성 설치, 파일 생성 등에 사용하세요. 실패하면 스페이스가 실패로 표시되며, 재시도하면 다시 실행됩니다.';
-
-  @override
-  String get repoScriptsArchiveLabel => '아카이브 스크립트';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      '스페이스의 워크트리가 삭제되기 직전에 실행됩니다. 워크트리 바깥의 리소스를 정리하세요. 실패해도 삭제는 막히지 않습니다.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      '워크트리에서 bash로 실행되며 CC_WORKSPACE_PATH(워크트리), CC_ROOT_PATH(저장소 루트), CC_SPACE_ID, CC_SPACE_NAME, CC_REPO_NAME이 설정됩니다.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => '예: pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      '예: docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => '최근 실행';
-
-  @override
-  String get repoScriptsNoRuns => '아직 실행 기록이 없습니다';
-
-  @override
-  String get repoScriptsSaved => '스크립트를 저장했습니다';
-
-  @override
-  String get repoScriptsRunKindSetup => '셋업';
-
-  @override
-  String get repoScriptsRunKindArchive => '아카이브';
-
-  @override
-  String get repoScriptsRunStatusRunning => '실행 중';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => '성공';
-
-  @override
-  String get repoScriptsRunStatusFailed => '실패';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => '시간 초과';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return '종료 코드 $code';
+  String provisioningRunningTasks(String repo) {
+    return '$repo 워크트리 작업을 실행하는 중…';
   }
 
   @override
@@ -10023,10 +9849,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keybindingCheatSheet => '키보드 단축키';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      '현재 화면의 키보드 단축키 치트시트를 표시합니다';
-
-  @override
   String get runPlaybookLabel => '플레이북 실행';
 
   @override
@@ -10037,12 +9859,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get keybindingRedo => '다시 실행';
-
-  @override
-  String get keybindingUndoLastActionDescription => '마지막 되돌릴 수 있는 작업을 취소합니다';
-
-  @override
-  String get keybindingRedoLastActionDescription => '마지막으로 취소한 작업을 다시 실행합니다';
 
   @override
   String get undone => '실행 취소됨';
@@ -13800,6 +13616,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get newSkill => '새 스킬';
 
   @override
+  String get newItemAction => '새로 만들기';
+
+  @override
   String get zoomIn => '확대';
 
   @override
@@ -14011,6 +13830,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get steerNow => '스티어';
 
   @override
+  String get steerForce => '중지하고 보내기';
+
+  @override
   String get steeringQueueLabel => '대기 중인 스티어링 메시지';
 
   @override
@@ -14058,15 +13880,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       '에이전트가 이 복사본에서 프로그램을 다시 실행해야 할 때 다시 묻습니다.';
-
-  @override
-  String get repoScriptsTest => '테스트';
-
-  @override
-  String get repoScriptsTestTooltip => '저장소의 임시 클론에서 이 초안을 실행합니다';
-
-  @override
-  String get repoScriptsRunKindTest => '테스트';
 
   @override
   String get demoBadgeLabel => '데모';
@@ -14278,6 +14091,48 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => '서버 경로';
+
+  @override
+  String get backupScheduledLabel => '예약 백업';
+
+  @override
+  String get backupScheduledExplainer =>
+      '각 워크스페이스의 백업 파이프라인이 저장한 사본입니다. 일정과 보존 기간은 파이프라인 템플릿에서 설정합니다.';
+
+  @override
+  String get backupScheduledNone => '아직 백업이 없습니다';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '백업 $count개',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return '마지막 백업: $time';
+  }
+
+  @override
+  String get backupListForbidden => '이 워크스페이스의 백업을 보려면 관리자 역할이 필요합니다.';
+
+  @override
+  String get backupScheduledDeleteTitle => '이 백업을 삭제할까요?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return '$name의 $date 백업을 서버에서 삭제할까요? 이 작업은 되돌릴 수 없습니다.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => '백업을 삭제했습니다.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => '삭제된 워크스페이스';
 
   @override
   String get backupRestoreAction => '복원';
@@ -14877,12 +14732,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get ideQuickOpen => '파일로 이동';
 
   @override
-  String get ideQuickOpenDescription => '대화의 파일을 이름으로 검색하고 탭에서 엽니다';
-
-  @override
-  String get prQuickOpenDescription => '풀 리퀘스트의 파일을 이름으로 검색하고 탭에서 엽니다';
-
-  @override
   String get ideQuickOpenHint => '이름으로 파일 검색';
 
   @override
@@ -15205,6 +15054,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => '강제 로드';
+
+  @override
+  String get skillEvalHashLabel => '패키지 해시';
+
+  @override
+  String get skillEvalProgressLabel => '진행률';
+
+  @override
+  String get skillEvalUpdatesToggle => '업데이트 평가';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -15583,4 +15441,687 @@ class AppLocalizationsKo extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return '$minutes분 남음';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      '환경은 호스트에서 실제 프로세스를 실행하므로 데모에는 없습니다.';
+
+  @override
+  String get environmentChecksFailing => '서버에서 일부 검사가 실패하고 있습니다';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return '엔드포인트: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return '서비스: $names';
+  }
+
+  @override
+  String get environmentCopied => '복사됨';
+
+  @override
+  String get environmentCopyCommand => '명령 복사';
+
+  @override
+  String get environmentCopyUrl => 'URL 복사';
+
+  @override
+  String get environmentDefinition => '정의';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '정의 $count개',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => '삭제';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name과(와) 해당 데이터가 제거됩니다. 시작하면 새로 만듭니다.';
+  }
+
+  @override
+  String get environmentDestroyTitle => '이 환경을 삭제할까요?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => '서비스에서 실행';
+
+  @override
+  String environmentExitCode(int code) {
+    return '종료 코드 $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => '서버에서 설정해야 합니다';
+
+  @override
+  String get environmentKindApp => '앱';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => '프로세스';
+
+  @override
+  String get environmentKindTask => '작업';
+
+  @override
+  String get environmentLaunch => '실행';
+
+  @override
+  String get environmentLogsGone => '이 로그는 더 이상 사용할 수 없습니다.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return '로그: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => '출력 대기 중';
+
+  @override
+  String get environmentMoreActions => '환경 작업 더 보기';
+
+  @override
+  String get environmentNeedsRecreate => '변경 사항으로 인해 이 환경을 다시 만들어야 합니다.';
+
+  @override
+  String get environmentNoStack => '워크트리 작업만 실행하므로 시작할 항목이 없습니다.';
+
+  @override
+  String get environmentOnTheServer => '서버에 있음';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Browser (VM)에서 열기';
+
+  @override
+  String get environmentOpenViewer => '뷰어 열기';
+
+  @override
+  String get environmentPlacementRig => 'VM에서';
+
+  @override
+  String get environmentPreviewTab => '환경';
+
+  @override
+  String get environmentRebuildRelaunch => '다시 빌드 후 재실행';
+
+  @override
+  String get environmentRecreate => '다시 만들기';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name을(를) 삭제하고 같은 옵션으로 다시 시작합니다. 데이터는 사라집니다.';
+  }
+
+  @override
+  String get environmentRecreateTitle => '이 환경을 다시 만들까요?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name이(가) 기준 상태로 돌아갑니다. 그 이후 만든 데이터는 사라집니다.';
+  }
+
+  @override
+  String get environmentResetData => '데이터 초기화';
+
+  @override
+  String get environmentResetTitle => '데이터를 초기화할까요?';
+
+  @override
+  String get environmentRestart => '다시 시작';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count회 다시 시작',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => '실행';
+
+  @override
+  String get environmentRunInTerminal => '터미널에서 실행';
+
+  @override
+  String get environmentSectionTitle => '환경';
+
+  @override
+  String get environmentService => '서비스';
+
+  @override
+  String environmentServiceActions(String name) {
+    return '$name 작업';
+  }
+
+  @override
+  String get environmentStartTitle => '환경 시작';
+
+  @override
+  String get environmentStateCrashed => '충돌함';
+
+  @override
+  String get environmentStatusDegraded => '저하됨';
+
+  @override
+  String get environmentStatusDestroying => '삭제 중';
+
+  @override
+  String get environmentStatusGone => '사라짐';
+
+  @override
+  String get environmentStatusStopping => '중지 중';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return '$name을(를) 중지하면 데이터가 사라지며 시작해도 복구되지 않습니다.';
+  }
+
+  @override
+  String get environmentStopLoseData => '중지하고 데이터 잃기';
+
+  @override
+  String get environmentStopTitle => '이 환경을 중지할까요?';
+
+  @override
+  String get environmentTaskNeverRun => '아직 실행 안 됨';
+
+  @override
+  String get environmentsAddCheck => '검사 추가';
+
+  @override
+  String get environmentsAddOption => '옵션 추가';
+
+  @override
+  String get environmentsAddRole => '역할 추가';
+
+  @override
+  String get environmentsAdminOnly => '워크스페이스 관리자만 정의를 변경할 수 있습니다.';
+
+  @override
+  String get environmentsAfter => '다음 구성 요소 대기';
+
+  @override
+  String get environmentsAnchor => '앵커';
+
+  @override
+  String get environmentsAutoCreate => '자동 시작';
+
+  @override
+  String get environmentsAutoCreateAll => '모든 대상 스페이스';
+
+  @override
+  String get environmentsAutoCreateOff => '안 함';
+
+  @override
+  String get environmentsAutoCreatePrs => '풀 리퀘스트 스페이스';
+
+  @override
+  String get environmentsBlank => '빈 정의';
+
+  @override
+  String get environmentsCheckFix => '수정 명령';
+
+  @override
+  String get environmentsCheckHint => '힌트';
+
+  @override
+  String get environmentsCommandHelp =>
+      '인수는 공백으로 구분합니다. 공백이 포함된 인수는 따옴표로 묶으세요.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '구성 요소 $count개',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => '시작 시 이미지 빌드';
+
+  @override
+  String get environmentsComposeFile => 'Compose 파일';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Compose 파일을 읽을 수 없습니다. 서비스 이름은 JSON 보기에서 입력할 수 있습니다.';
+
+  @override
+  String get environmentsComposeServices => '서비스';
+
+  @override
+  String get environmentsComposeServicesHint => '모두 실행하려면 모든 서비스를 선택하지 마세요.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      '이 명령에는 조건부 인수가 있습니다. JSON 보기에서 편집하세요.';
+
+  @override
+  String get environmentsCwdPath => '작업 경로';
+
+  @override
+  String get environmentsCwdRole => '작업 역할';
+
+  @override
+  String get environmentsDeleteBody =>
+      '스페이스에서 더 이상 시작할 수 없습니다. 실행 중인 환경은 중지될 때까지 계속 실행됩니다.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return '$name을(를) 삭제할까요?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      '각 스페이스가 시작할 수 있는 항목과 워크트리가 실행하는 작업입니다.';
+
+  @override
+  String get environmentsDraftFromRepo => '저장소에서 초안 만들기';
+
+  @override
+  String get environmentsEmpty => '아직 정의가 없습니다';
+
+  @override
+  String get environmentsEnabledWhen => '활성화 조건';
+
+  @override
+  String get environmentsEndpointRole => '엔드포인트 역할';
+
+  @override
+  String get environmentsFollowPrHead => '풀 리퀘스트의 head 따라가기';
+
+  @override
+  String get environmentsForkApproval => '시작할 때마다 관리자 필요';
+
+  @override
+  String get environmentsForkDeny => '거부됨';
+
+  @override
+  String get environmentsForkPrs => '포크 풀 리퀘스트';
+
+  @override
+  String get environmentsForkRig => 'VM에서 실행';
+
+  @override
+  String get environmentsIdleStop => '유휴 후 중지까지의 분';
+
+  @override
+  String get environmentsIsolateHome => '앱에 전용 홈 제공';
+
+  @override
+  String get environmentsIssues => '저장하기 전에 수정하세요';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return '잘못된 JSON: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => '중지해도 데이터 유지';
+
+  @override
+  String get environmentsLinkConfirm => '연결 및 승인';
+
+  @override
+  String get environmentsLinkFile => '저장소 파일 연결';
+
+  @override
+  String get environmentsLinkHelp => '기본 브랜치에서만 읽고 승인된 후에만 실행합니다.';
+
+  @override
+  String get environmentsLinkPath => '경로';
+
+  @override
+  String get environmentsMaxRunning => '동시 실행 수';
+
+  @override
+  String get environmentsNamingProject => '프로젝트';
+
+  @override
+  String get environmentsNamingTemplate => '이름 템플릿';
+
+  @override
+  String get environmentsNew => '새 정의';
+
+  @override
+  String get environmentsNewDefinitionName => '새 환경';
+
+  @override
+  String get environmentsNoChecks => '이 정의에는 검사가 없습니다.';
+
+  @override
+  String get environmentsNoRuns => '아직 테스트 실행이 없습니다';
+
+  @override
+  String get environmentsOnChange => '감시할 경로';
+
+  @override
+  String get environmentsOptionBool => '예 또는 아니요';
+
+  @override
+  String get environmentsOptionEnum => '하나 선택';
+
+  @override
+  String get environmentsOptionMulti => '여러 개 선택';
+
+  @override
+  String get environmentsOptionValues => '값';
+
+  @override
+  String get environmentsPlacement => '배치';
+
+  @override
+  String get environmentsPlacementHost => '호스트에서';
+
+  @override
+  String get environmentsPlacementRig => 'VM에서';
+
+  @override
+  String get environmentsPrepareTask => '준비 작업';
+
+  @override
+  String get environmentsPrimaryEndpoint => '기본 엔드포인트';
+
+  @override
+  String get environmentsReadyHttp => '이 URL이 응답하면 준비 완료';
+
+  @override
+  String get environmentsRestartAlways => '항상';
+
+  @override
+  String get environmentsRestartNever => '안 함';
+
+  @override
+  String get environmentsRestartOn => '이 경로가 변경되면 다시 시작';
+
+  @override
+  String get environmentsRestartOnFailure => '실패 시';
+
+  @override
+  String get environmentsRestartPolicy => '다시 시작';
+
+  @override
+  String get environmentsRigTtl => 'VM 수명(시간)';
+
+  @override
+  String get environmentsRunChecks => '다시 실행';
+
+  @override
+  String get environmentsRunTest => '테스트 실행';
+
+  @override
+  String get environmentsSaved => '정의가 저장되었습니다';
+
+  @override
+  String get environmentsSectionComponents => '구성 요소';
+
+  @override
+  String get environmentsSectionOptions => '시작 옵션';
+
+  @override
+  String get environmentsSectionSeedFiles => '시드 파일';
+
+  @override
+  String get environmentsSectionVariables => '변수';
+
+  @override
+  String get environmentsSeedHelp =>
+      '한 줄에 경로 하나씩, 등록된 체크아웃에서 복사합니다. 포크 풀 리퀘스트는 받지 않습니다.';
+
+  @override
+  String get environmentsShellHelp =>
+      '여기서는 자리표시자가 확장되지 않습니다. 대신 CC_ENV_* 변수를 읽으세요.';
+
+  @override
+  String get environmentsSourceApprove => '이 버전 승인';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path은(는) 승인된 버전과 일치합니다.';
+  }
+
+  @override
+  String get environmentsSourceNotice => '이 버전을 승인할 때까지 승인된 버전이 계속 실행됩니다.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => '소스';
+
+  @override
+  String get environmentsTestHelp =>
+      '일회용 환경을 처음부터 끝까지 실행합니다: 검사, 시작, 준비 대기, 삭제.';
+
+  @override
+  String get environmentsTestSaveFirst => '먼저 정의를 저장하세요.';
+
+  @override
+  String get environmentsTimeoutSeconds => '제한 시간(초)';
+
+  @override
+  String get environmentsTitle => '환경';
+
+  @override
+  String get environmentsTriggerArchive => '워크트리 삭제 전';
+
+  @override
+  String get environmentsTriggerChange => '감시 경로 변경 시';
+
+  @override
+  String get environmentsTriggerCreate => '환경당 한 번';
+
+  @override
+  String get environmentsTriggerManual => '요청 시';
+
+  @override
+  String get environmentsTriggerProvision => '워크트리 생성 시';
+
+  @override
+  String get environmentsTriggerStart => '시작할 때마다';
+
+  @override
+  String get environmentsTriggers => '실행 시점';
+
+  @override
+  String get environmentsUnreadable => '이 클라이언트는 이 정의를 읽을 수 없습니다.';
+
+  @override
+  String get environmentsUpdateAvailable => '업데이트 있음';
+
+  @override
+  String get environmentsUseShell => '셸 명령 사용';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      '도구가 사용자의 체크아웃에서 실행됩니다. 읽기 전용으로 취급하세요.';
+
+  @override
+  String get environmentsWhenMissing => '스페이스에 없을 때';
+
+  @override
+  String get environmentsWhenMissingAdd => '스페이스에 추가';
+
+  @override
+  String get environmentsWhenMissingSkip => '건너뛰기';
+
+  @override
+  String get environmentsWhenMissingSource => '등록된 체크아웃 사용';
+
+  @override
+  String get environmentsUnsupported => '이 서버는 환경을 지원하지 않습니다.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      '뷰어 없음: 서버가 이 창을 캡처할 수 없습니다. 서버에서 Control Center의 화면 기록을 허용하세요.';
+
+  @override
+  String get environmentHealthHealthy => '정상';
+
+  @override
+  String get environmentHealthUnhealthy => '비정상';
+
+  @override
+  String get environmentTerminalStale => '이 터미널은 환경이 시작되기 전에 열려 환경 변수가 없습니다.';
+
+  @override
+  String get environmentTerminalFresh => '새 터미널 열기';
+
+  @override
+  String get environmentsShellStays =>
+      '여러 줄 스크립트는 셸 명령으로 유지됩니다. 줄이 곧 구조이기 때문입니다.';
+
+  @override
+  String get environmentsOverrides => '워크스페이스 재정의';
+
+  @override
+  String get environmentsOverridesHelp =>
+      '파일 자체 설정은 여기서 읽기 전용입니다. 역할을 이 워크스페이스의 저장소에 연결하거나 JSON으로 필드를 재정의하세요.';
+
+  @override
+  String get environmentsReposHelp => '이 환경이 사용하는 리포지토리이며, 각각 역할에 연결됩니다.';
+
+  @override
+  String get environmentsComponentsHelp => '환경이 실행하는 항목을 시작 순서대로 표시합니다.';
+
+  @override
+  String get environmentsOptionsHelp => '환경을 시작할 때 제공되는 선택 항목입니다.';
+
+  @override
+  String get environmentsVariablesHelp => '작업, 프로세스, 앱, 스페이스 터미널에 설정됩니다.';
+
+  @override
+  String get environmentsChecksHelp => '이 환경을 실행하기 위해 호스트에 필요한 항목입니다.';
+
+  @override
+  String get environmentsIdleStopHelp => '0이면 중지되지 않습니다.';
+
+  @override
+  String get environmentsAnchorHelp => '이 리포지토리가 있는 스페이스에서 환경을 시작할 수 있습니다.';
+
+  @override
+  String get environmentsRequiredHelp => '이것이 없으면 환경을 실행할 수 없습니다.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      '풀 리퀘스트의 head가 이동하면 동기화하고 새로 고칩니다.';
+
+  @override
+  String get environmentsRecordNeedsFix => '수정 필요';
+
+  @override
+  String get environmentsCheckFile => '파일';
+
+  @override
+  String get environmentsDiscardBody => '이 정의에 대한 편집 내용이 사라집니다.';
+
+  @override
+  String get environmentsWorktreeRuns => '워크트리 작업 실행';
+
+  @override
+  String get environmentsNoWorktreeRuns => '아직 실행된 워크트리 작업이 없습니다.';
+
+  @override
+  String get environmentsLinkRoles => '이 파일의 역할';
+
+  @override
+  String get environmentsLinkNoFile =>
+      '저장소에서 파일을 읽을 수 없습니다. 연결한 뒤에 역할을 지정할 수 있습니다.';
+
+  @override
+  String get guardrailClassHostExecution => '호스트에서 명령 실행';
+
+  @override
+  String get environmentUrls => 'URL';
+
+  @override
+  String get environmentScripts => '스크립트';
+
+  @override
+  String get environmentNoneForSpace => '이 스페이스에는 환경이 없습니다';
+
+  @override
+  String get environmentNoneForPr => '이 풀 리퀘스트에는 환경이 없습니다';
+
+  @override
+  String get environmentSetupBody =>
+      '환경은 저장소의 서비스, 스크립트, URL을 하나의 스페이스에서 실행합니다. 한 번 설정하면 저장소의 모든 스페이스에서 시작할 수 있습니다.';
+
+  @override
+  String get environmentSetUp => '환경 설정';
+
+  @override
+  String get environmentEditDefinition => '정의 편집';
+
+  @override
+  String get environmentOpenPanel => '환경 열기';
+
+  @override
+  String get environmentNeedsSetup => '설정 필요';
+
+  @override
+  String get environmentContinueInTerminal => '터미널에서 계속';
+
+  @override
+  String get environmentSetupHint =>
+      '도구가 비밀번호나 확인을 위해 터미널 입력을 기다리고 있습니다. 끝나면 시작이 이어집니다.';
+
+  @override
+  String get environmentSetupTabReason => '시작하려면 입력이 필요해 이 터미널을 열었습니다';
+
+  @override
+  String get environmentSetupTab => '환경 설정';
+
+  @override
+  String get environmentsNothingRunning => '이 정의에서 실행 중인 항목이 없습니다.';
+
+  @override
+  String get searchPoliciesHint => '정책 검색...';
+
+  @override
+  String get noPoliciesMatch => '검색과 일치하는 정책이 없습니다';
+
+  @override
+  String get memoryPolicyActive => '활성';
+
+  @override
+  String get memoryFactType => '유형';
+
+  @override
+  String get memoryTimesRecalled => '불러온 횟수';
+
+  @override
+  String get memorySourceFacts => '출처 사실';
+
+  @override
+  String get spaceSetupLogs => '설정 로그';
 }

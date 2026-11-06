@@ -33,6 +33,7 @@ class _FakeIsolation extends Fake implements RepoIsolationPort {
     String? authUrl,
     String? headRef,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   }) async {
     provisioned.add({
       'sourcePath': sourcePath,

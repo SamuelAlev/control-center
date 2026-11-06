@@ -86,6 +86,10 @@ class _FakePrInlineCommentsController extends PrInlineCommentsController {
 
   @override
   PrInlineCommentsState build() => PrInlineCommentsState();
+
+  void seed(PrInlineThread thread) {
+    state = state.copyWith(threads: [...state.threads, thread]);
+  }
 }
 
 PrInlineCommentsController _createController(PrRef pr) {
@@ -142,7 +146,219 @@ PrInlineThread _thread({
   );
 }
 
+/// A queued comment as a viewer with no resolved identity writes it: 'You'
+/// matches no login, so authorship cannot be what allows the edit.
+PrInlineThread _queued({bool isSuggestion = false, String? body}) => _thread(
+  isSuggestion: isSuggestion,
+  syncState: PrInlineSyncState.pendingReview,
+  entries: [
+    PrInlineEntry(
+      id: 'e1',
+      author: 'You',
+      body: body ?? 'Generic url',
+      createdAt: DateTime(2024, 6, 15),
+    ),
+  ],
+);
+
+/// Hosts the first thread of the real controller, as the diff does: the card
+/// is rebuilt from controller state, so a saved edit has to arrive through it.
+Widget _liveThread(
+  void Function(_FakePrInlineCommentsController) onController,
+) {
+  return _wrap(
+    Consumer(
+      builder: (context, ref, _) {
+        final state = ref.watch(prInlineCommentsControllerProvider(_prRef));
+        final controller =
+            ref.read(prInlineCommentsControllerProvider(_prRef).notifier)
+                as _FakePrInlineCommentsController;
+        onController(controller);
+        return state.threads.isEmpty
+            ? const SizedBox.shrink()
+            : PrInlineThreadBlock(
+                thread: state.threads.first,
+                controller: controller,
+              );
+      },
+    ),
+  );
+}
+
+Future<void> _openMenu(WidgetTester tester) async {
+  await tester.tap(
+    find.byWidgetPredicate(
+      (widget) =>
+          widget is CcIconButton && widget.icon == AppIcons.moreHorizontal,
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
+Future<void> _startEdit(WidgetTester tester) async {
+  await _openMenu(tester);
+  await tester.tap(find.text('Edit comment'));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
 void main() {
+  group('PrInlineThreadBlock - editing an unsent comment', () {
+    testWidgets('a queued comment can be rewritten from its menu', (
+      tester,
+    ) async {
+      late _FakePrInlineCommentsController controller;
+      await tester.pumpWidget(_liveThread((c) => controller = c));
+      await tester.pump();
+      controller.seed(_queued());
+      await tester.pump();
+
+      await _startEdit(tester);
+      await tester.enterText(find.byType(CcTextField), '  Preview url  ');
+      await tester.pump();
+      await tester.tap(find.text('Save'));
+      await tester.pump();
+      await tester.pump();
+
+      final thread = controller.threads.single;
+      expect(thread.entries.single.body, 'Preview url');
+      expect(thread.isPendingReview, isTrue);
+      expect(find.byType(CcTextField), findsNothing);
+      expect(find.textContaining('Preview url'), findsWidgets);
+      expect(find.textContaining('Generic url'), findsNothing);
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    testWidgets('cancel keeps the comment and the next edit starts fresh', (
+      tester,
+    ) async {
+      late _FakePrInlineCommentsController controller;
+      await tester.pumpWidget(_liveThread((c) => controller = c));
+      await tester.pump();
+      controller.seed(_queued());
+      await tester.pump();
+
+      await _startEdit(tester);
+      await tester.enterText(find.byType(CcTextField), 'Abandoned');
+      await tester.pump();
+      await tester.tap(find.text('Cancel'));
+      await tester.pump();
+
+      expect(controller.threads.single.entries.single.body, 'Generic url');
+      expect(find.byType(CcTextField), findsNothing);
+
+      await _startEdit(tester);
+      expect(find.widgetWithText(CcTextField, 'Abandoned'), findsNothing);
+      expect(find.widgetWithText(CcTextField, 'Generic url'), findsOneWidget);
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    testWidgets('a blank comment cannot be saved', (tester) async {
+      late _FakePrInlineCommentsController controller;
+      await tester.pumpWidget(_liveThread((c) => controller = c));
+      await tester.pump();
+      controller.seed(_queued());
+      await tester.pump();
+
+      await _startEdit(tester);
+      await tester.enterText(find.byType(CcTextField), '   ');
+      await tester.pump();
+
+      final save = tester.widget<CcButton>(
+        find.ancestor(of: find.text('Save'), matching: find.byType(CcButton)),
+      );
+      expect(save.onPressed, isNull);
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    testWidgets('an edit survives its card scrolling out of the diff', (
+      tester,
+    ) async {
+      final controller = _createController(_prRef);
+      final block = PrInlineThreadBlock(
+        thread: _queued(),
+        controller: controller,
+      );
+      await tester.pumpWidget(_wrap(block));
+      await tester.pump();
+
+      await _startEdit(tester);
+      await tester.enterText(find.byType(CcTextField), 'Half written');
+      await tester.pump();
+
+      await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+      await tester.pump();
+      await tester.pumpWidget(_wrap(block));
+      await tester.pump();
+
+      expect(find.widgetWithText(CcTextField, 'Half written'), findsOneWidget);
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    testWidgets('a queued suggestion opens its whole text from the menu', (
+      tester,
+    ) async {
+      final controller = _createController(_prRef);
+      await tester.pumpWidget(
+        _wrap(
+          PrInlineThreadBlock(
+            thread: _queued(
+              isSuggestion: true,
+              body: 'Rename\n```suggestion\nfinal a = 1;\n```',
+            ),
+            controller: controller,
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.byIcon(AppIcons.pencil), findsOneWidget);
+
+      await _startEdit(tester);
+
+      expect(find.byIcon(AppIcons.pencil), findsNothing);
+      expect(find.textContaining('Rename'), findsWidgets);
+      expect(find.byType(CcTextField), findsOneWidget);
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    for (final (name, state) in [
+      ('an in-flight', PrInlineSyncState.pending),
+      ('a posted', PrInlineSyncState.synced),
+    ]) {
+      testWidgets('$name comment offers no local edit', (tester) async {
+        final controller = _createController(_prRef);
+        await tester.pumpWidget(
+          _wrap(
+            PrInlineThreadBlock(
+              thread: _thread(syncState: state),
+              controller: controller,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await _openMenu(tester);
+
+        expect(find.text('Copy thread as Markdown'), findsOneWidget);
+        expect(find.text('Edit comment'), findsNothing);
+
+        await tester.pumpWidget(Container());
+        await tester.pump(const Duration(milliseconds: 200));
+      });
+    }
+  });
+
   group('PrInlineThreadBlock', () {
     testWidgets('renders thread with single entry', (tester) async {
       final controller = _createController(_prRef);

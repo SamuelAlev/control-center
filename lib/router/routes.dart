@@ -251,10 +251,6 @@ String settingsNotificationsRoute(String workspaceId) =>
 String settingsAgentAttributionRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/you/attribution';
 
-/// Settings → You → Keybindings (a read-only reference over the const registry).
-String settingsKeybindingsRoute(String workspaceId) =>
-    '/workspaces/$workspaceId/settings/you/keybindings';
-
 /// Settings → You → Audio (microphone, dictation, meeting detection,
 /// soundscape output).
 String settingsAudioRoute(String workspaceId) =>
@@ -311,6 +307,18 @@ String settingsAgentsRoute(String workspaceId) =>
 /// Settings → Workspace → Repositories.
 String settingsReposRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/workspace/repositories';
+
+/// Settings → Workspace → Environments.
+String settingsEnvironmentsRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/workspace/environments';
+
+/// Stands in for the id of a definition that has not been saved yet. Stored
+/// definitions have UUIDs, so it cannot name one.
+const settingsNewEnvironmentId = 'new';
+
+/// One definition, open on Settings → Workspace → Environments.
+String settingsEnvironmentRoute(String workspaceId, String definitionId) =>
+    '${settingsEnvironmentsRoute(workspaceId)}/$definitionId';
 
 /// Settings → Workspace → Skills.
 String settingsSkillsRoute(String workspaceId) =>
@@ -438,6 +446,14 @@ String planStudioRoute(String workspaceId, String kind, String id) =>
 /// under `/settings` so the settings sub-sidebar stays mounted.
 String memoryRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/memory';
+
+/// One fact, open on the Memory screen.
+String memoryFactRoute(String workspaceId, String factId) =>
+    '${memoryRoute(workspaceId)}/facts/$factId';
+
+/// One policy, open on the Memory screen.
+String memoryPolicyRoute(String workspaceId, String policyId) =>
+    '${memoryRoute(workspaceId)}/policies/$policyId';
 
 /// Meetings list screen (local meeting notes).
 String meetingsRoute(String workspaceId) => '/workspaces/$workspaceId/meetings';

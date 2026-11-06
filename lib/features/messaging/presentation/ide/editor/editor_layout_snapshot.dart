@@ -34,6 +34,9 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
     // A context breakdown belongs to a specific conversation and agent;
     // restore re-inspects exactly that conversation or drops incomplete tabs.
     MessagingTabKinds.contextExplorer,
+    // Reattaches to the output and nothing else: reopening a layout never
+    // starts an environment.
+    MessagingTabKinds.environmentLogs,
   },
   // An attachment preview is anchored to an in-memory registry entry that a
   // restart does not survive — a dropped picture's bytes were never persisted
@@ -44,6 +47,9 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
     MessagingTabKinds.review,
     // Output ids identify live process caches, not durable documents.
     MessagingTabKinds.agentShellOutput,
+    // A preparation log lives in the server's memory and matters while the
+    // preparation does, not the next morning.
+    MessagingTabKinds.provisioningLogs,
     MessagingTabKinds.attachment,
   },
   // An ENCLOSED terminal boots a VM on first attach, so a restored one gets
@@ -53,7 +59,9 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
   // — the "a rig tab never auto-starts, including on layout restore"
   // invariant, defeated through the adjacent terminal path.
   rewriteArgsOnDecode: _deferResourceStart,
-  transientArgs: {EditorLayoutCodec.deferStartArg},
+  // A typed-but-not-run command belongs to the press that opened the tab; a
+  // restored shell must come back with an empty prompt.
+  transientArgs: {EditorLayoutCodec.deferStartArg, 'initialInput'},
   requiredStringArgs: {
     MessagingTabKinds.chat: ['spaceId'],
     MessagingTabKinds.codeServer: ['spaceId'],
@@ -69,6 +77,7 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
       'conversationId',
       'agentId',
     ],
+    MessagingTabKinds.environmentLogs: ['workspaceId', 'spaceId', 'target'],
   },
   iconFor: MessagingTabKinds.iconFor,
 );

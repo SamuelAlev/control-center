@@ -68,6 +68,28 @@ abstract final class PrTabKinds {
   /// webview) so it can be reconciled from detection.
   static const String preview = 'pr.preview';
 
+  /// Everything about the PR's environment: status, URLs, components,
+  /// scripts and what ran. Viewing it starts nothing; it offers Start.
+  static const String environment = 'pr.environment';
+
+  /// The live output of one environment process or service on this PR's space.
+  /// Attaches and reads only, so restoring one can never start anything.
+  static const String environmentLogs = 'pr.environmentLogs';
+
+  /// What the PR space's workspace preparation prints. The server holds it for
+  /// a while in memory, so like its messaging twin it is never restored.
+  static const String provisioningLogs = 'pr.provisioningLogs';
+
+  /// Whether a tab of [kind] carries its own label (a filename, a log's name)
+  /// rather than one fixed for the kind.
+  static bool hasOwnLabel(String kind) => const {
+    file,
+    codeServer,
+    environmentLogs,
+    provisioningLogs,
+    preview,
+  }.contains(kind);
+
   /// Whether [kind] is a heavyweight webview surface subject to the body host's
   /// LRU suspension (its live platform view is torn down when hidden beyond the
   /// cap and rebuilt on reveal). A code-server tab holds no webview of its own
@@ -111,6 +133,12 @@ abstract final class PrTabKinds {
         return AppIcons.monitor;
       case preview:
         return AppIcons.rocket;
+      case environmentLogs:
+        return AppIcons.scrollText;
+      case provisioningLogs:
+        return AppIcons.terminal;
+      case environment:
+        return AppIcons.boxes;
       default:
         return AppIcons.fileText;
     }

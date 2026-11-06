@@ -47,6 +47,7 @@ void main() {
   Future<LocalRpcServer> serve({
     BackupExportWriter? export,
     BackupSnapshotArchiver? snapshot,
+    BackupStoredFileReader? stored,
     BackupRestoreReader? restore,
     WorkspaceRole? role,
     String? owner,
@@ -67,6 +68,7 @@ void main() {
           : null,
       backupExport: export,
       backupSnapshotArchive: snapshot,
+      backupStoredFile: stored,
       backupRestore: restore,
       backupUploadDir: uploadDir ?? '${tmp.path}/transfer',
       isServerOwner: (u) async => u == (owner ?? userId),
@@ -161,6 +163,7 @@ void main() {
     for (final path in [
       '/backup/workspace?w=$workspaceId&d=$deviceId&s=${sign('backup-workspace:$workspaceId')}',
       '/backup/snapshot?n=snap&d=$deviceId&s=${sign('backup-snapshot:snap')}',
+      '/backup/stored?w=$workspaceId&n=snap&d=$deviceId&s=${sign('backup-stored:$workspaceId:snap')}',
     ]) {
       final response = await publicGet(server, path);
       await response.drain<void>();
@@ -353,6 +356,144 @@ void main() {
       await resp.body.drain<void>();
 
       expect(resp.statusCode, 403);
+    });
+  });
+
+  group('GET /backup/stored', () {
+    const backup = '2026-11-01T03-00-50-427661Z';
+    const goneWorkspace = 'ws-gone';
+
+    String path(String workspace, {String name = backup}) =>
+        '/backup/stored?w=$workspace&n=$name&d=$deviceId'
+        '&s=${sign('backup-stored:$workspace:$name')}';
+
+    File writeBackup() =>
+        File('${tmp.path}/workspace.db')..writeAsBytesSync(const [9, 8, 7]);
+
+    test('streams the backup and leaves it on the server', () async {
+      final file = writeBackup();
+      final server = await serve(
+        stored: ({required workspaceId, required name}) async => file,
+        role: WorkspaceRole.admin,
+      );
+
+      final resp = await get(server, path(workspaceId));
+      final bytes = await resp.body.expand((c) => c).toList();
+
+      expect(resp.statusCode, 200);
+      expect(bytes, const [9, 8, 7]);
+      // The other download routes delete what they stream. Here that would
+      // destroy the backup being collected, so wait out the same window.
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(file.existsSync(), isTrue);
+    });
+
+    test('requires admin, not merely membership', () async {
+      var read = false;
+      final server = await serve(
+        stored: ({required workspaceId, required name}) async {
+          read = true;
+          return writeBackup();
+        },
+        role: WorkspaceRole.member,
+      );
+
+      final resp = await get(server, path(workspaceId));
+      await resp.body.drain<void>();
+
+      expect(resp.statusCode, 403);
+      expect(read, isFalse);
+    });
+
+    test('the install owner gets nothing extra on a live workspace', () async {
+      var read = false;
+      final server = await serve(
+        stored: ({required workspaceId, required name}) async {
+          read = true;
+          return writeBackup();
+        },
+        role: WorkspaceRole.member,
+        owner: userId,
+      );
+
+      final resp = await get(server, path(workspaceId));
+      await resp.body.drain<void>();
+
+      expect(resp.statusCode, 403);
+      expect(read, isFalse);
+    });
+
+    test('a deleted workspace is served to the install owner', () async {
+      final file = writeBackup();
+      final server = await serve(
+        stored: ({required workspaceId, required name}) async => file,
+      );
+
+      final resp = await get(server, path(goneWorkspace));
+      await resp.body.drain<void>();
+
+      expect(resp.statusCode, 200);
+      expect(file.existsSync(), isTrue);
+    });
+
+    test('a deleted workspace is refused to everyone else', () async {
+      var read = false;
+      final server = await serve(
+        stored: ({required workspaceId, required name}) async {
+          read = true;
+          return writeBackup();
+        },
+        owner: ownerId,
+      );
+
+      final resp = await get(server, path(goneWorkspace));
+      await resp.body.drain<void>();
+
+      expect(resp.statusCode, 403);
+      expect(read, isFalse);
+    });
+
+    test('refuses a signature for another backup', () async {
+      final server = await serve(
+        stored: ({required workspaceId, required name}) async => writeBackup(),
+      );
+
+      final resp = await get(
+        server,
+        '/backup/stored?w=$workspaceId&n=other&d=$deviceId'
+        '&s=${sign('backup-stored:$workspaceId:$backup')}',
+      );
+      await resp.body.drain<void>();
+
+      expect(resp.statusCode, 403);
+    });
+
+    test('an invalid name is a bad request, and a missing one a 404', () async {
+      final server = await serve(
+        stored: ({required workspaceId, required name}) async {
+          if (name == 'bad') {
+            throw ArgumentError.value(name);
+          }
+          return null;
+        },
+      );
+
+      final bad = await get(server, path(workspaceId, name: 'bad'));
+      await bad.body.drain<void>();
+      final missing = await get(server, path(workspaceId));
+      await missing.body.drain<void>();
+
+      expect(bad.statusCode, 400);
+      expect(missing.statusCode, 404);
+    });
+
+    test('404s on a host with no backup port (a demo server)', () async {
+      final server = await serve();
+
+      final resp = await get(server, path(workspaceId));
+      await resp.body.drain<void>();
+
+      expect(resp.statusCode, 404);
     });
   });
 

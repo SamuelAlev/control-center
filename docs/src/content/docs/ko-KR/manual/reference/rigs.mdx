@@ -2,7 +2,7 @@
 title: 리그
 description: 모든 리그 표면, 백엔드, 동작 동사, 수명주기 상태, 포트, 기본값과 계약 — 완전한 사실 카탈로그입니다.
 slug: ko-KR/매뉴얼/레퍼런스/리그
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 사실만 다룹니다. 그 배경이 되는 모델은 [리그와
@@ -18,6 +18,8 @@ sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 | 컴퓨터 | X11 데스크톱: 입력은 하이퍼바이저로, 캡처는 게스트 에이전트로 | QEMU | `qemu-hvf`(macOS), `qemu-kvm`(Linux), `qemu-tcg`(가속 없는 폴백, 자동으로 선택되지 않음) | 예 |
 | Android | ADB를 통한 Android | Google의 에뮬레이터 | `android-emulator` | **아니요** — 에뮬레이터가 자체 네트워킹을 관리합니다 |
 | iOS | WebDriverAgent를 통한 iOS 시뮬레이터 | CoreSimulator | `ios-simulator` | **아니요** — 네트워킹은 호스트 Mac을 따릅니다 |
+| 앱 창 | 환경에서 실행한 데스크톱 앱의 창(OS를 통해) | 호스트 창 | `host-window` | **아니요** — 앱은 서버 사용자의 권한으로 호스트에서 실행됩니다 |
+| 환경 | `rig` 배치의 [환경](/ko-KR/매뉴얼/사용-가이드/환경/)에 있는 compose 스택과 작업 | microVM | `smolvm` | 예 |
 
 터미널과 `computer_use` 표면은 `computer` 표면 값을 공유합니다. 터미널은
 exec 이미지 마커로 구별되며, 조작 가능한 데스크톱으로 재사용되지 않습니다(그

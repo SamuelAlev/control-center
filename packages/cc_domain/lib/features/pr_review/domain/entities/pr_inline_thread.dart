@@ -184,6 +184,18 @@ class PrInlineThread {
   /// Whether this thread is queued for the next review submission.
   bool get isPendingReview => syncState == PrInlineSyncState.pendingReview;
 
+  /// Whether this thread's text exists only on this client, so rewriting it
+  /// here is the whole edit. False while a post is in flight: that request
+  /// already carries the old body, and the new one would never reach the forge.
+  bool get isUnsent =>
+      serverId == null &&
+      switch (syncState) {
+        PrInlineSyncState.local ||
+        PrInlineSyncState.pendingReview ||
+        PrInlineSyncState.error => true,
+        PrInlineSyncState.pending || PrInlineSyncState.synced => false,
+      };
+
   /// isSuggestion.
   bool get isSuggestion => kind == PrInlineThreadKind.suggestion;
 

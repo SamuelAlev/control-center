@@ -90,7 +90,7 @@ class DetectDeploymentPreviewsUseCase {
   }
 
   /// A context names a preview when it mentions "preview" anywhere, e.g.
-  /// `netlify/test-web-app/deploy-preview` or `vercel – Preview`.
+  /// `netlify/test-shop-ui/deploy-preview` or `vercel – Preview`.
   bool _isPreviewContext(String context) =>
       context.toLowerCase().contains('preview');
 

@@ -2,7 +2,7 @@
 title: MCP-tools
 description: Volledige catalogus van de MCP-tools die cc_server registreert, per familie.
 slug: nl-NL/handleiding/referentie/mcp-tools
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` host één MCP-toolregister (JSON-RPC 2.0), aangeboden op de hoofdpoort van de server (standaard `9030`) via `POST /mcp` en `GET /sse`, met protocolversie `2024-11-05`. Elke client komt op hetzelfde register uit: de desktop, de webbuild, externe MCP-clients en de ingebouwde agentruntime. Externe MCP-servers kunnen als dynamische laag in hetzelfde register worden opgenomen.
@@ -259,6 +259,8 @@ werkwoordenvocabulaire per oppervlak staat in de
 | `ios_use`      | Bestuur de iOS Simulator via WebDriverAgent/CoreSimulator: inspecteren/invoeren, screenshots, apps installeren/starten/stoppen/verwijderen, deep links en simulatorprocessen in argv-vorm |
 | `rig_list`     | Toon de rigs van een werkruimte met oppervlak, status, weergavegrootte en controller            |
 | `rig_close`    | Vernietig een rig en gooi de bijbehorende machinestatus weg                                     |
+
+`app_use` is een vijfde use-tool: het bestuurt de vensters van een desktop-app die in een ruimte is gestart, rechtstreeks op de host en niet in een VM, en declareert ook `fileWriteOutsideWorktree` en `fileDelete`. Deze tool en de `environment_*`-tools staan beschreven in [Omgevingen instellen](/nl-NL/handleiding/gidsen/omgevingen/).
 
 ## Niet beschikbaar via MCP
 

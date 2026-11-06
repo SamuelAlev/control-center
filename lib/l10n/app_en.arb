@@ -54,7 +54,6 @@
   "focusConversation": "Focus conversation",
   "ideAgentActivity": "Agent activity",
   "keybindingPushToTalk": "Push to talk",
-  "keybindingPushToTalkDescription": "Hold or toggle voice dictation in the message composer",
   "agentPermissions": "Agent permissions",
   "agentPermissionsSettingsDescription": "Decide what agents can do on their own, must ask about first, or can never do — per workspace, agent, or space.",
   "agentPermissionsMatrixDescription": "Set a decision for each kind of effect. Rules cascade: space overrides agent overrides workspace overrides mode preset. The most specific rule wins.",
@@ -86,6 +85,7 @@
   "rigSurfaceBrowser": "Browser",
   "rigSurfaceAndroid": "Android",
   "rigSurfaceIosSimulator": "iOS Simulator",
+  "rigSurfaceAppWindow": "App window",
   "@rigTabBrowserEngine": {
     "description": "Rig tab label naming the browser engine.",
     "placeholders": {
@@ -276,6 +276,7 @@
   "rigStreamNotAllowed": "You do not have access to this rig.",
   "rigStreamNotRunning": "This rig is no longer running.",
   "rigStreamNeedsFfmpeg": "Live view needs ffmpeg on this host. Install ffmpeg and reopen the tab.",
+  "rigStreamNeedsScreenCapture": "Live view needs Screen Recording. Grant it to Control Center in System Settings and reopen the tab.",
   "rigStreamEnded": "The live view ended.",
   "rigStreamFailed": "The live view could not be opened.",
   "rigStreamDisconnected": "Not connected to a server.",
@@ -841,7 +842,6 @@
   "prPropertyDiff": "Diff",
   "prPropertyComments": "Comments",
   "keybindingOpenFilterMenu": "Open filter menu",
-  "keybindingOpenThePullRequestFilterMenuDescription": "Open the pull request filter menu",
   "@mergeCountReady": {
     "placeholders": {
       "count": {
@@ -2048,14 +2048,7 @@
   "@cancelEdit": {
     "description": "Tooltip to cancel editing a suggestion"
   },
-  "categoryCreation": "Creation",
-  "categoryEditing": "Editing",
   "categoryNavigation": "Navigation",
-  "categorySystem": "System",
-  "categoryView": "Category view",
-  "@categoryView": {
-    "description": "Locale string for categoryView"
-  },
   "change": "Change",
   "@change": {
     "description": "Change"
@@ -3032,37 +3025,17 @@
     "description": "Relative time: less than a few seconds ago"
   },
   "keepSandboxing": "Keep sandboxing",
-  "keybindingAddARepositoryDescription": "Add a repository",
-  "@keybindingAddARepositoryDescription": {
-    "description": "Locale string for keybindingAddARepositoryDescription"
-  },
   "keybindingAddRepository": "Add repository",
   "@keybindingAddRepository": {
     "description": "Locale string for keybindingAddRepository"
-  },
-  "keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription": "Bookmark or unbookmark the selected article",
-  "@keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription": {
-    "description": "Locale string for keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription"
   },
   "keybindingCommandPalette": "Command palette",
   "@keybindingCommandPalette": {
     "description": "Locale string for keybindingCommandPalette"
   },
-  "keybindingCreateANewAgentDescription": "Create a new agent",
-  "@keybindingCreateANewAgentDescription": {
-    "description": "Locale string for keybindingCreateANewAgentDescription"
-  },
-  "keybindingCreateANewWorkspaceDescription": "Create a new workspace",
-  "@keybindingCreateANewWorkspaceDescription": {
-    "description": "Locale string for keybindingCreateANewWorkspaceDescription"
-  },
   "keybindingFocusSearch": "Focus search",
   "@keybindingFocusSearch": {
     "description": "Locale string for keybindingFocusSearch"
-  },
-  "keybindingFocusThePullRequestSearchFieldDescription": "Focus the pull request search field",
-  "@keybindingFocusThePullRequestSearchFieldDescription": {
-    "description": "Locale string for keybindingFocusThePullRequestSearchFieldDescription"
   },
   "keybindingNewAgent": "New agent",
   "@keybindingNewAgent": {
@@ -3088,10 +3061,6 @@
   "@keybindingOpenArticle": {
     "description": "Locale string for keybindingOpenArticle"
   },
-  "keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription": "Open or close the workspace switcher popup in the sidebar",
-  "@keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription": {
-    "description": "Locale string for keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription"
-  },
   "keybindingOpenPr": "Open PR",
   "@keybindingOpenPr": {
     "description": "Locale string for keybindingOpenPr"
@@ -3099,26 +3068,6 @@
   "keybindingOpenSettings": "Open settings",
   "@keybindingOpenSettings": {
     "description": "Locale string for keybindingOpenSettings"
-  },
-  "keybindingOpenTheApplicationSettingsDescription": "Open the application settings",
-  "@keybindingOpenTheApplicationSettingsDescription": {
-    "description": "Locale string for keybindingOpenTheApplicationSettingsDescription"
-  },
-  "keybindingOpenTheCommandPaletteDescription": "Open the command palette",
-  "@keybindingOpenTheCommandPaletteDescription": {
-    "description": "Locale string for keybindingOpenTheCommandPaletteDescription"
-  },
-  "keybindingOpenTheSelectedArticleDescription": "Open the selected article",
-  "@keybindingOpenTheSelectedArticleDescription": {
-    "description": "Locale string for keybindingOpenTheSelectedArticleDescription"
-  },
-  "keybindingOpenTheSelectedPullRequestDescription": "Open the selected pull request",
-  "@keybindingOpenTheSelectedPullRequestDescription": {
-    "description": "Locale string for keybindingOpenTheSelectedPullRequestDescription"
-  },
-  "keybindingOpenTheSelectedWorkspaceDescription": "Open the selected workspace",
-  "@keybindingOpenTheSelectedWorkspaceDescription": {
-    "description": "Locale string for keybindingOpenTheSelectedWorkspaceDescription"
   },
   "keybindingOpenWorkspace": "Open workspace",
   "@keybindingOpenWorkspace": {
@@ -3140,89 +3089,9 @@
   "@keybindingRefresh": {
     "description": "Locale string for keybindingRefresh"
   },
-  "keybindingRefreshAllFeedsDescription": "Refresh all feeds",
-  "@keybindingRefreshAllFeedsDescription": {
-    "description": "Locale string for keybindingRefreshAllFeedsDescription"
-  },
-  "keybindingRefreshThePullRequestListDescription": "Refresh the pull request list",
-  "@keybindingRefreshThePullRequestListDescription": {
-    "description": "Locale string for keybindingRefreshThePullRequestListDescription"
-  },
-  "keybindingRescanForAdaptersDescription": "Rescan for adapters",
-  "@keybindingRescanForAdaptersDescription": {
-    "description": "Locale string for keybindingRescanForAdaptersDescription"
-  },
-  "keybindingSelectTheNextArticleDescription": "Select the next article",
-  "@keybindingSelectTheNextArticleDescription": {
-    "description": "Locale string for keybindingSelectTheNextArticleDescription"
-  },
-  "keybindingSelectTheNextSpaceDescription": "Select the next space",
-  "@keybindingSelectTheNextSpaceDescription": {
-    "description": "Locale string for keybindingSelectTheNextSpaceDescription"
-  },
-  "keybindingSelectThePreviousArticleDescription": "Select the previous article",
-  "@keybindingSelectThePreviousArticleDescription": {
-    "description": "Locale string for keybindingSelectThePreviousArticleDescription"
-  },
-  "keybindingSelectThePreviousSpaceDescription": "Select the previous space",
-  "@keybindingSelectThePreviousSpaceDescription": {
-    "description": "Locale string for keybindingSelectThePreviousSpaceDescription"
-  },
   "keybindingSendMessage": "Send message",
   "@keybindingSendMessage": {
     "description": "Locale string for keybindingSendMessage"
-  },
-  "keybindingSendTheCurrentMessageDescription": "Send the current message",
-  "@keybindingSendTheCurrentMessageDescription": {
-    "description": "Locale string for keybindingSendTheCurrentMessageDescription"
-  },
-  "keybindingSwitchBetweenLightAndDarkModeDescription": "Switch between light and dark mode",
-  "@keybindingSwitchBetweenLightAndDarkModeDescription": {
-    "description": "Locale string for keybindingSwitchBetweenLightAndDarkModeDescription"
-  },
-  "keybindingSwitchToTheEighthWorkspaceDescription": "Switch to the eighth workspace",
-  "@keybindingSwitchToTheEighthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheEighthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheFifthWorkspaceDescription": "Switch to the fifth workspace",
-  "@keybindingSwitchToTheFifthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheFifthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheFirstWorkspaceDescription": "Switch to the first workspace",
-  "@keybindingSwitchToTheFirstWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheFirstWorkspaceDescription"
-  },
-  "keybindingSwitchToTheFourthWorkspaceDescription": "Switch to the fourth workspace",
-  "@keybindingSwitchToTheFourthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheFourthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheNextWorkspaceDescription": "Switch to the next workspace",
-  "@keybindingSwitchToTheNextWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheNextWorkspaceDescription"
-  },
-  "keybindingSwitchToTheNinthWorkspaceDescription": "Switch to the ninth workspace",
-  "@keybindingSwitchToTheNinthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheNinthWorkspaceDescription"
-  },
-  "keybindingSwitchToThePreviousWorkspaceDescription": "Switch to the previous workspace",
-  "@keybindingSwitchToThePreviousWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToThePreviousWorkspaceDescription"
-  },
-  "keybindingSwitchToTheSecondWorkspaceDescription": "Switch to the second workspace",
-  "@keybindingSwitchToTheSecondWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheSecondWorkspaceDescription"
-  },
-  "keybindingSwitchToTheSeventhWorkspaceDescription": "Switch to the seventh workspace",
-  "@keybindingSwitchToTheSeventhWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheSeventhWorkspaceDescription"
-  },
-  "keybindingSwitchToTheSixthWorkspaceDescription": "Switch to the sixth workspace",
-  "@keybindingSwitchToTheSixthWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheSixthWorkspaceDescription"
-  },
-  "keybindingSwitchToTheThirdWorkspaceDescription": "Switch to the third workspace",
-  "@keybindingSwitchToTheThirdWorkspaceDescription": {
-    "description": "Locale string for keybindingSwitchToTheThirdWorkspaceDescription"
   },
   "keybindingToggleBookmark": "Toggle bookmark",
   "@keybindingToggleBookmark": {
@@ -3271,11 +3140,6 @@
   "keybindingWorkspace9": "Workspace 9",
   "@keybindingWorkspace9": {
     "description": "Locale string for keybindingWorkspace9"
-  },
-  "keybindings": "Keybindings",
-  "keybindingsDescription": "All keyboard shortcuts. Shortcuts are fixed and cannot be reassigned.",
-  "@keybindingsDescription": {
-    "description": "All keyboard shortcuts. Shortcuts are fixed and cannot be reassigned."
   },
   "killRunning": "Kill running",
   "languageSystem": "System",
@@ -3501,15 +3365,6 @@
   "noSavedArticlesBody": "Articles you save will appear here.",
   "@noSavedArticlesBody": {
     "description": "Empty state body for saved articles"
-  },
-  "noShortcutsMatch": "No shortcuts match \"{query}\"",
-  "@noShortcutsMatch": {
-    "description": "Empty state in keybindings search",
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
   },
   "noSystemFonts": "No system fonts detected.",
   "noTokenSet": "No token set — access is unrestricted.",
@@ -4212,14 +4067,6 @@
   "searchPlaceholder": "Search…",
   "@searchPlaceholder": {
     "description": "Locale string for searchPlaceholder"
-  },
-  "searchShortcuts": "Search shortcuts…",
-  "@searchShortcuts": {
-    "description": "Search shortcuts…"
-  },
-  "shortcutUnavailableInBrowser": "Unavailable in the browser",
-  "@shortcutUnavailableInBrowser": {
-    "description": "Note shown next to a keyboard shortcut that the browser reserves (e.g. ⌘T, ⌘W, ⌘1–9) so it only works in the desktop app"
   },
   "searching": "Searching…",
   "@searching": {
@@ -6265,6 +6112,13 @@
   "triggerEventMeetingRecordingStopped": "Meeting recording stopped",
   "triggerEventSkillUpdated": "Skill updated",
   "triggerEventSpaceDeleted": "Space deleted",
+  "triggerEventSpaceArchived": "Space archived",
+  "triggerEventSpaceProvisioningChanged": "Space provisioning changed",
+  "triggerEventPrHeadChanged": "PR head changed",
+  "triggerEventEnvironmentStatusChanged": "Environment status changed",
+  "triggerEventEnvironmentReady": "Environment ready",
+  "triggerEventEnvironmentDestroyed": "Environment destroyed",
+  "triggerEventEnvironmentProcessExited": "Environment process exited",
   "triggerExternalPrHelp": "A pull request opened on the code host, not from Control Center.",
   "triggerPrPublishedHelp": "A pull request opened from Control Center or by an agent.",
   "triggerPrStatusChangedHelp": "Merged, closed, opened, reopened, or approved. Filter by status in the inspector.",
@@ -6282,6 +6136,13 @@
   "triggerMeetingRecordingStoppedHelp": "A meeting recording finishes.",
   "triggerSkillUpdatedHelp": "A skill is installed or updated.",
   "triggerSpaceDeletedHelp": "A conversation space is deleted.",
+  "triggerSpaceArchivedHelp": "A conversation space is archived.",
+  "triggerSpaceProvisioningChangedHelp": "Setup of a space's worktrees starts, finishes, or fails.",
+  "triggerPrHeadChangedHelp": "New commits are pushed to an open pull request.",
+  "triggerEnvironmentStatusChangedHelp": "A space environment moves to a new status.",
+  "triggerEnvironmentReadyHelp": "A space environment has started and can be used.",
+  "triggerEnvironmentDestroyedHelp": "A space environment is torn down.",
+  "triggerEnvironmentProcessExitedHelp": "A process run by an environment exits.",
   "navTickets": "Tickets",
   "ticketsTitle": "Tickets",
   "newTicket": "New ticket",
@@ -8027,10 +7888,6 @@
       }
     }
   },
-  "usageAndCost": "Usage & cost",
-  "usageAndCostDescription": "Spend across your agents over the last 7 days, from observed run costs.",
-  "noUsageYet": "No usage recorded yet.",
-  "spentThisWeek": "spent this week",
   "subscriptionUsage": "Subscription usage",
   "subscriptionUsageUnavailable": "Unavailable",
   "subscriptionUsageExhausted": "Quota exhausted",
@@ -8149,7 +8006,6 @@
   "syncPrHeadFailed": "Couldn't sync to the PR head",
   "spaceLabel": "Space",
   "keybindingNewSpace": "New space",
-  "keybindingCreateANewSpaceDescription": "Create a new space",
   "jumpToLatest": "Jump to latest",
   "streaming": "Streaming",
   "newMessages": "New",
@@ -8277,37 +8133,11 @@
   "providerLocalReady": "Local · ready",
   "providerNotConnected": "Not connected",
   "preparingWorkspace": "Preparing workspace…",
-  "provisioningRunningSetupScript": "Running the setup script for {repo}…",
-  "@provisioningRunningSetupScript": {
+  "provisioningRunningTasks": "Running worktree tasks for {repo}…",
+  "@provisioningRunningTasks": {
     "placeholders": {
       "repo": {
         "type": "String"
-      }
-    }
-  },
-  "repoScriptsTitle": "Scripts",
-  "repoScriptsTooltip": "Configure lifecycle scripts",
-  "repoScriptsSetupLabel": "Setup script",
-  "repoScriptsSetupHelp": "Runs in the space's worktree right after it is created — install dependencies, generate files. A failure marks the space as failed; retry runs it again.",
-  "repoScriptsArchiveLabel": "Archive script",
-  "repoScriptsArchiveHelp": "Runs just before a space's worktree is deleted — clean up resources outside the worktree. A failure never blocks deletion.",
-  "repoScriptsEnvHelp": "Runs via bash from the worktree, with CC_WORKSPACE_PATH (the worktree), CC_ROOT_PATH (the repo root), CC_SPACE_ID, CC_SPACE_NAME and CC_REPO_NAME set.",
-  "repoScriptsSetupPlaceholder": "e.g. pnpm install",
-  "repoScriptsArchivePlaceholder": "e.g. docker compose -p $CC_SPACE_ID down",
-  "repoScriptsRecentRuns": "Recent runs",
-  "repoScriptsNoRuns": "No runs yet",
-  "repoScriptsSaved": "Scripts saved",
-  "repoScriptsRunKindSetup": "Setup",
-  "repoScriptsRunKindArchive": "Archive",
-  "repoScriptsRunStatusRunning": "Running",
-  "repoScriptsRunStatusSucceeded": "Succeeded",
-  "repoScriptsRunStatusFailed": "Failed",
-  "repoScriptsRunStatusTimedOut": "Timed out",
-  "repoScriptsExitCode": "Exit code {code}",
-  "@repoScriptsExitCode": {
-    "placeholders": {
-      "code": {
-        "type": "int"
       }
     }
   },
@@ -9099,13 +8929,10 @@
   "cheatSheetThisScreen": "This screen",
   "cheatSheetReservedInBrowser": "Browser reserved",
   "keybindingCheatSheet": "Keyboard shortcuts",
-  "keybindingShowKeyboardShortcutsDescription": "Show the keyboard shortcut cheat-sheet for the current screen",
   "runPlaybookLabel": "Run playbook",
   "playbooksLabel": "Playbooks",
   "keybindingUndo": "Undo",
   "keybindingRedo": "Redo",
-  "keybindingUndoLastActionDescription": "Undo your last reversible action",
-  "keybindingRedoLastActionDescription": "Redo the last undone action",
   "undone": "Undone",
   "redone": "Redone",
   "undoFailed": "Couldn't undo",
@@ -12716,11 +12543,15 @@
   },
   "newAgent": "New agent",
   "@newAgent": {
-    "description": "Primary action in the agents card header: create an agent"
+    "description": "Create an agent: the empty state's button, and the accessible name of the roster's New button"
   },
   "newSkill": "New skill",
   "@newSkill": {
-    "description": "Primary action in the skills card header: create a skill"
+    "description": "Create a skill: the editor's heading for an unsaved skill, and the accessible name of the rail's New button"
+  },
+  "newItemAction": "New",
+  "@newItemAction": {
+    "description": "Short button beside a list's filter field that creates an item in that list, such as an agent or a skill"
   },
   "zoomIn": "Zoom in",
   "@zoomIn": {
@@ -13016,6 +12847,7 @@
   },
   "messageQueueHint": "Keep typing to queue follow-up changes",
   "steerNow": "Steer",
+  "steerForce": "Stop and send",
   "steeringQueueLabel": "Queued steering messages",
   "steeringDeliverUnavailable": "No running agent can take that right now — it stays queued.",
   "reorderSteeringCard": "Reorder queued message",
@@ -13058,9 +12890,6 @@
   "@sandboxExecGrantRevokeConfirmBody": {
     "description": "Confirm dialog body when revoking a grant"
   },
-  "repoScriptsTest": "Test",
-  "repoScriptsTestTooltip": "Run this draft in a throwaway clone of the repo",
-  "repoScriptsRunKindTest": "Test",
   "demoBadgeLabel": "Demo",
   "@demoBadgeLabel": {
     "description": "Persistent badge in the app shell header when connected to a public demo server"
@@ -13310,6 +13139,64 @@
   "backupServerPathLabel": "Path on the server",
   "@backupServerPathLabel": {
     "description": "Label above a filesystem path that lives on the server host"
+  },
+  "backupScheduledLabel": "Scheduled backups",
+  "@backupScheduledLabel": {
+    "description": "Heading of the Settings section listing each workspace's pipeline backups"
+  },
+  "backupScheduledExplainer": "Copies saved by each workspace's backup pipeline. Set the schedule and retention in the pipeline's template.",
+  "@backupScheduledExplainer": {
+    "description": "Explains where scheduled workspace backups come from and where to configure them"
+  },
+  "backupScheduledNone": "No backups yet",
+  "@backupScheduledNone": {
+    "description": "Status of a workspace whose backup pipeline has saved nothing yet"
+  },
+  "backupScheduledCount": "{count, plural, =1{1 backup} other{{count} backups}}",
+  "@backupScheduledCount": {
+    "description": "How many scheduled backups a workspace has",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupScheduledLast": "Last backup {time}",
+  "@backupScheduledLast": {
+    "description": "When a workspace was last backed up; time is a relative phrase such as '5 days ago'",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "backupListForbidden": "You need the admin role on this workspace to see its backups.",
+  "@backupListForbidden": {
+    "description": "Shown on a workspace row when the server refuses to list its backups"
+  },
+  "backupScheduledDeleteTitle": "Delete this backup?",
+  "@backupScheduledDeleteTitle": {
+    "description": "Title of the confirmation before deleting one scheduled backup"
+  },
+  "backupScheduledDeleteBody": "Delete the {date} backup of {name} from the server? This cannot be undone.",
+  "@backupScheduledDeleteBody": {
+    "description": "Confirmation body before deleting one scheduled backup",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "backupScheduledDeleteDone": "Backup deleted.",
+  "@backupScheduledDeleteDone": {
+    "description": "Toast after one scheduled backup was deleted"
+  },
+  "backupScheduledWorkspaceDeleted": "Workspace deleted",
+  "@backupScheduledWorkspaceDeleted": {
+    "description": "Status of a row listing backups left by a deleted workspace"
   },
   "backupRestoreAction": "Restore",
   "@backupRestoreAction": {
@@ -13906,10 +13793,6 @@
   "@sandboxCheckAgain": {"description": "Onboarding sandbox step button that re-detects the sandbox after the user installed the missing tools"},
   "ideQuickOpen": "Go to file",
   "@ideQuickOpen": {"description": "Keyboard shortcut label (⌘P / Ctrl+P) for the IDE quick open file picker."},
-  "ideQuickOpenDescription": "Search the conversation's files by name and open one in a tab",
-  "@ideQuickOpenDescription": {"description": "Keyboard shortcut description for the IDE quick open file picker."},
-  "prQuickOpenDescription": "Search the pull request's files by name and open one in a tab",
-  "@prQuickOpenDescription": {"description": "Keyboard shortcut description for the pull request page's quick open file picker (⌘P / Ctrl+P)."},
   "ideQuickOpenHint": "Search files by name",
   "@ideQuickOpenHint": {"description": "Placeholder in the quick open picker's search field."},
   "ideQuickOpenRecentlyOpened": "Recently opened",
@@ -14055,6 +13938,12 @@
   "@skillEvalForced": {"description": "Skill campaign operator interface."},
   "skillEvalForcedEvent": "Forced load",
   "@skillEvalForcedEvent": {"description": "Skill campaign operator interface."},
+  "skillEvalHashLabel": "Package hash",
+  "@skillEvalHashLabel": {"description": "Label for the content hash of the installed skill revision."},
+  "skillEvalProgressLabel": "Progress",
+  "@skillEvalProgressLabel": {"description": "Label for how many evaluation attempts have finished."},
+  "skillEvalUpdatesToggle": "Update evaluations",
+  "@skillEvalUpdatesToggle": {"description": "Title of the switch that starts a budgeted evaluation when a skill is saved."},
   "skillEvalHashUnavailable": "Package hash unavailable on this server. Evaluation is disabled.",
   "@skillEvalHashUnavailable": {"description": "Skill campaign operator interface."},
   "skillEvalHistory": "Revision history",
@@ -14262,5 +14151,433 @@
   "focusModeEnd": "End focus session",
   "@focusModeEnd": {"description": "Menu item in the sidebar that ends the running focus session"},
   "focusModeRemaining": "{minutes}m left",
-  "@focusModeRemaining": {"description": "Time left in the running focus session, shown as the tooltip and menu heading of its sidebar entry", "placeholders": {"minutes": {"type": "int"}}}
+  "@focusModeRemaining": {"description": "Time left in the running focus session, shown as the tooltip and menu heading of its sidebar entry", "placeholders": {"minutes": {"type": "int"}}},
+  "demoUnavailableEnvironments": "Environments run real processes on the host, so the demo has none.",
+  "@demoUnavailableEnvironments": {"description": "Space environments: demoUnavailableEnvironments"},
+  "environmentChecksFailing": "Some checks are failing on the server",
+  "@environmentChecksFailing": {"description": "Space environments: environmentChecksFailing"},
+  "environmentCliEndpoints": "Endpoints: {names}",
+  "@environmentCliEndpoints": {"description": "Space environments: environmentCliEndpoints", "placeholders": {"names": {"type": "String"}}},
+  "environmentCliServices": "Services: {names}",
+  "@environmentCliServices": {"description": "Space environments: environmentCliServices", "placeholders": {"names": {"type": "String"}}},
+  "environmentCopied": "Copied",
+  "@environmentCopied": {"description": "Space environments: environmentCopied"},
+  "environmentCopyCommand": "Copy command",
+  "@environmentCopyCommand": {"description": "Space environments: environmentCopyCommand"},
+  "environmentCopyUrl": "Copy URL",
+  "@environmentCopyUrl": {"description": "Space environments: environmentCopyUrl"},
+  "environmentDefinition": "Definition",
+  "@environmentDefinition": {"description": "Space environments: environmentDefinition"},
+  "environmentDefinitionCount": "{count, plural, =1{1 definition} other{{count} definitions}}",
+  "@environmentDefinitionCount": {"description": "Space environments: environmentDefinitionCount", "placeholders": {"count": {"type": "int"}}},
+  "environmentDestroy": "Destroy",
+  "@environmentDestroy": {"description": "Space environments: environmentDestroy"},
+  "environmentDestroyBody": "{name} and its data are removed. Start creates a new one.",
+  "@environmentDestroyBody": {"description": "Space environments: environmentDestroyBody", "placeholders": {"name": {"type": "String"}}},
+  "environmentDestroyTitle": "Destroy this environment?",
+  "@environmentDestroyTitle": {"description": "Space environments: environmentDestroyTitle"},
+  "environmentExec": "Exec",
+  "@environmentExec": {"description": "Space environments: environmentExec"},
+  "environmentExecTitle": "Run in a service",
+  "@environmentExecTitle": {"description": "Space environments: environmentExecTitle"},
+  "environmentExitCode": "Exit code {code}",
+  "@environmentExitCode": {"description": "Space environments: environmentExitCode", "placeholders": {"code": {"type": "int"}}},
+  "environmentHostSetupNeeded": "This needs setting up on the server",
+  "@environmentHostSetupNeeded": {"description": "Space environments: environmentHostSetupNeeded"},
+  "environmentKindApp": "App",
+  "@environmentKindApp": {"description": "Space environments: environmentKindApp"},
+  "environmentKindCli": "CLI",
+  "@environmentKindCli": {"description": "Space environments: environmentKindCli"},
+  "environmentKindCompose": "Compose",
+  "@environmentKindCompose": {"description": "Space environments: environmentKindCompose"},
+  "environmentKindProcess": "Process",
+  "@environmentKindProcess": {"description": "Space environments: environmentKindProcess"},
+  "environmentKindTask": "Task",
+  "@environmentKindTask": {"description": "Space environments: environmentKindTask"},
+  "environmentLaunch": "Launch",
+  "@environmentLaunch": {"description": "Space environments: environmentLaunch"},
+  "environmentLogsGone": "These logs are no longer available.",
+  "@environmentLogsGone": {"description": "Space environments: environmentLogsGone"},
+  "environmentLogsTab": "Logs: {name}",
+  "@environmentLogsTab": {"description": "Space environments: environmentLogsTab", "placeholders": {"name": {"type": "String"}}},
+  "environmentLogsWaiting": "Waiting for output",
+  "@environmentLogsWaiting": {"description": "Space environments: environmentLogsWaiting"},
+  "environmentMoreActions": "More environment actions",
+  "@environmentMoreActions": {"description": "Space environments: environmentMoreActions"},
+  "environmentNeedsRecreate": "A change needs this environment recreated.",
+  "@environmentNeedsRecreate": {"description": "Space environments: environmentNeedsRecreate"},
+  "environmentNoStack": "Runs worktree tasks only, so there is nothing to start.",
+  "@environmentNoStack": {"description": "Space environments: environmentNoStack"},
+  "environmentOnTheServer": "On the server",
+  "@environmentOnTheServer": {"description": "Space environments: environmentOnTheServer"},
+  "environmentOpenInBrowserVm": "Open in Browser (VM)",
+  "@environmentOpenInBrowserVm": {"description": "Space environments: environmentOpenInBrowserVm"},
+  "environmentOpenViewer": "Open viewer",
+  "@environmentOpenViewer": {"description": "Space environments: environmentOpenViewer"},
+  "environmentPlacementRig": "In a VM",
+  "@environmentPlacementRig": {"description": "Space environments: environmentPlacementRig"},
+  "environmentPreviewTab": "Environment",
+  "@environmentPreviewTab": {"description": "Space environments: environmentPreviewTab"},
+  "environmentRebuildRelaunch": "Rebuild & relaunch",
+  "@environmentRebuildRelaunch": {"description": "Space environments: environmentRebuildRelaunch"},
+  "environmentRecreate": "Recreate",
+  "@environmentRecreate": {"description": "Space environments: environmentRecreate"},
+  "environmentRecreateBody": "{name} is destroyed and started again with the same options. Its data is lost.",
+  "@environmentRecreateBody": {"description": "Space environments: environmentRecreateBody", "placeholders": {"name": {"type": "String"}}},
+  "environmentRecreateTitle": "Recreate this environment?",
+  "@environmentRecreateTitle": {"description": "Space environments: environmentRecreateTitle"},
+  "environmentResetBody": "{name} returns to its baseline. Data created since then is lost.",
+  "@environmentResetBody": {"description": "Space environments: environmentResetBody", "placeholders": {"name": {"type": "String"}}},
+  "environmentResetData": "Reset data",
+  "@environmentResetData": {"description": "Space environments: environmentResetData"},
+  "environmentResetTitle": "Reset data?",
+  "@environmentResetTitle": {"description": "Space environments: environmentResetTitle"},
+  "environmentRestart": "Restart",
+  "@environmentRestart": {"description": "Space environments: environmentRestart"},
+  "environmentRestarts": "{count, plural, =1{1 restart} other{{count} restarts}}",
+  "@environmentRestarts": {"description": "Space environments: environmentRestarts", "placeholders": {"count": {"type": "int"}}},
+  "environmentRun": "Run",
+  "@environmentRun": {"description": "Space environments: environmentRun"},
+  "environmentRunInTerminal": "Run in terminal",
+  "@environmentRunInTerminal": {"description": "Space environments: environmentRunInTerminal"},
+  "environmentSectionTitle": "Environment",
+  "@environmentSectionTitle": {"description": "Space environments: environmentSectionTitle"},
+  "environmentService": "Service",
+  "@environmentService": {"description": "Space environments: environmentService"},
+  "environmentServiceActions": "Actions for {name}",
+  "@environmentServiceActions": {"description": "Space environments: environmentServiceActions", "placeholders": {"name": {"type": "String"}}},
+  "environmentStartTitle": "Start environment",
+  "@environmentStartTitle": {"description": "Space environments: environmentStartTitle"},
+  "environmentStateCrashed": "Crashed",
+  "@environmentStateCrashed": {"description": "Space environments: environmentStateCrashed"},
+  "environmentStatusDegraded": "Degraded",
+  "@environmentStatusDegraded": {"description": "Space environments: environmentStatusDegraded"},
+  "environmentStatusDestroying": "Destroying",
+  "@environmentStatusDestroying": {"description": "Space environments: environmentStatusDestroying"},
+  "environmentStatusGone": "Gone",
+  "@environmentStatusGone": {"description": "Space environments: environmentStatusGone"},
+  "environmentStatusStopping": "Stopping",
+  "@environmentStatusStopping": {"description": "Space environments: environmentStatusStopping"},
+  "environmentStopDataLoss": "Stopping {name} loses its data, and Start won't bring it back.",
+  "@environmentStopDataLoss": {"description": "Space environments: environmentStopDataLoss", "placeholders": {"name": {"type": "String"}}},
+  "environmentStopLoseData": "Stop and lose data",
+  "@environmentStopLoseData": {"description": "Space environments: environmentStopLoseData"},
+  "environmentStopTitle": "Stop this environment?",
+  "@environmentStopTitle": {"description": "Space environments: environmentStopTitle"},
+  "environmentTaskNeverRun": "Not run yet",
+  "@environmentTaskNeverRun": {"description": "Space environments: environmentTaskNeverRun"},
+  "environmentsAddCheck": "Add check",
+  "@environmentsAddCheck": {"description": "Space environments: environmentsAddCheck"},
+  "environmentsAddOption": "Add option",
+  "@environmentsAddOption": {"description": "Space environments: environmentsAddOption"},
+  "environmentsAddRole": "Add role",
+  "@environmentsAddRole": {"description": "Space environments: environmentsAddRole"},
+  "environmentsAdminOnly": "Only workspace admins can change definitions.",
+  "@environmentsAdminOnly": {"description": "Space environments: environmentsAdminOnly"},
+  "environmentsAfter": "Wait for these components",
+  "@environmentsAfter": {"description": "Space environments: environmentsAfter"},
+  "environmentsAnchor": "Anchor",
+  "@environmentsAnchor": {"description": "Space environments: environmentsAnchor"},
+  "environmentsAutoCreate": "Start automatically",
+  "@environmentsAutoCreate": {"description": "Space environments: environmentsAutoCreate"},
+  "environmentsAutoCreateAll": "In every eligible space",
+  "@environmentsAutoCreateAll": {"description": "Space environments: environmentsAutoCreateAll"},
+  "environmentsAutoCreateOff": "Never",
+  "@environmentsAutoCreateOff": {"description": "Space environments: environmentsAutoCreateOff"},
+  "environmentsAutoCreatePrs": "In pull request spaces",
+  "@environmentsAutoCreatePrs": {"description": "Space environments: environmentsAutoCreatePrs"},
+  "environmentsBlank": "Blank definition",
+  "@environmentsBlank": {"description": "Space environments: environmentsBlank"},
+  "environmentsCheckFix": "Fix command",
+  "@environmentsCheckFix": {"description": "Space environments: environmentsCheckFix"},
+  "environmentsCheckHint": "Hint",
+  "@environmentsCheckHint": {"description": "Space environments: environmentsCheckHint"},
+  "environmentsCommandHelp": "Arguments are separated by spaces. Quote one that contains a space.",
+  "@environmentsCommandHelp": {"description": "Space environments: environmentsCommandHelp"},
+  "environmentsComponentCount": "{count, plural, =1{1 component} other{{count} components}}",
+  "@environmentsComponentCount": {"description": "Space environments: environmentsComponentCount", "placeholders": {"count": {"type": "int"}}},
+  "environmentsComponentId": "ID",
+  "@environmentsComponentId": {"description": "Space environments: environmentsComponentId"},
+  "environmentsComposeBuild": "Build images on start",
+  "@environmentsComposeBuild": {"description": "Space environments: environmentsComposeBuild"},
+  "environmentsComposeFile": "Compose file",
+  "@environmentsComposeFile": {"description": "Space environments: environmentsComposeFile"},
+  "environmentsComposeHttp": "HTTP",
+  "@environmentsComposeHttp": {"description": "Space environments: environmentsComposeHttp"},
+  "environmentsComposeNoFile": "Couldn't read a compose file. Service names can still go in the JSON view.",
+  "@environmentsComposeNoFile": {"description": "Space environments: environmentsComposeNoFile"},
+  "environmentsComposeServices": "Services",
+  "@environmentsComposeServices": {"description": "Space environments: environmentsComposeServices"},
+  "environmentsComposeServicesHint": "Leave every service unchecked to run them all.",
+  "@environmentsComposeServicesHint": {"description": "Space environments: environmentsComposeServicesHint"},
+  "environmentsConditionalArgs": "This command has conditional arguments. Edit it in the JSON view.",
+  "@environmentsConditionalArgs": {"description": "Space environments: environmentsConditionalArgs"},
+  "environmentsCwdPath": "Working path",
+  "@environmentsCwdPath": {"description": "Space environments: environmentsCwdPath"},
+  "environmentsCwdRole": "Working role",
+  "@environmentsCwdRole": {"description": "Space environments: environmentsCwdRole"},
+  "environmentsDeleteBody": "Spaces can no longer start it. Running environments keep running until they are stopped.",
+  "@environmentsDeleteBody": {"description": "Space environments: environmentsDeleteBody"},
+  "environmentsDeleteTitle": "Delete {name}?",
+  "@environmentsDeleteTitle": {"description": "Space environments: environmentsDeleteTitle", "placeholders": {"name": {"type": "String"}}},
+  "environmentsDescription": "What each space can start, and the tasks its worktrees run.",
+  "@environmentsDescription": {"description": "Space environments: environmentsDescription"},
+  "environmentsDraftFromRepo": "Draft from repo",
+  "@environmentsDraftFromRepo": {"description": "Space environments: environmentsDraftFromRepo"},
+  "environmentsEmpty": "No definitions yet",
+  "@environmentsEmpty": {"description": "Space environments: environmentsEmpty"},
+  "environmentsEnabledWhen": "Enabled when",
+  "@environmentsEnabledWhen": {"description": "Space environments: environmentsEnabledWhen"},
+  "environmentsEndpointRole": "Endpoint role",
+  "@environmentsEndpointRole": {"description": "Space environments: environmentsEndpointRole"},
+  "environmentsFollowPrHead": "Follow the pull request's head",
+  "@environmentsFollowPrHead": {"description": "Space environments: environmentsFollowPrHead"},
+  "environmentsForkApproval": "Each start needs an admin",
+  "@environmentsForkApproval": {"description": "Space environments: environmentsForkApproval"},
+  "environmentsForkDeny": "Refused",
+  "@environmentsForkDeny": {"description": "Space environments: environmentsForkDeny"},
+  "environmentsForkPrs": "Fork pull requests",
+  "@environmentsForkPrs": {"description": "Space environments: environmentsForkPrs"},
+  "environmentsForkRig": "Run in a VM",
+  "@environmentsForkRig": {"description": "Space environments: environmentsForkRig"},
+  "environmentsIdleStop": "Stop after idle minutes",
+  "@environmentsIdleStop": {"description": "Space environments: environmentsIdleStop"},
+  "environmentsIsolateHome": "Give the app a private home",
+  "@environmentsIsolateHome": {"description": "Space environments: environmentsIsolateHome"},
+  "environmentsIssues": "Fix these before saving",
+  "@environmentsIssues": {"description": "Space environments: environmentsIssues"},
+  "environmentsJsonInvalid": "Not valid JSON: {error}",
+  "@environmentsJsonInvalid": {"description": "Space environments: environmentsJsonInvalid", "placeholders": {"error": {"type": "String"}}},
+  "environmentsKeepsData": "Keeps its data when stopped",
+  "@environmentsKeepsData": {"description": "Space environments: environmentsKeepsData"},
+  "environmentsLinkConfirm": "Link and approve",
+  "@environmentsLinkConfirm": {"description": "Space environments: environmentsLinkConfirm"},
+  "environmentsLinkFile": "Link a repo file",
+  "@environmentsLinkFile": {"description": "Space environments: environmentsLinkFile"},
+  "environmentsLinkHelp": "Read from the default branch only, and run only once approved.",
+  "@environmentsLinkHelp": {"description": "Space environments: environmentsLinkHelp"},
+  "environmentsLinkPath": "Path",
+  "@environmentsLinkPath": {"description": "Space environments: environmentsLinkPath"},
+  "environmentsMaxRunning": "Running at once",
+  "@environmentsMaxRunning": {"description": "Space environments: environmentsMaxRunning"},
+  "environmentsNamingProject": "Project",
+  "@environmentsNamingProject": {"description": "Space environments: environmentsNamingProject"},
+  "environmentsNamingTemplate": "Name template",
+  "@environmentsNamingTemplate": {"description": "Space environments: environmentsNamingTemplate"},
+  "environmentsNew": "New definition",
+  "@environmentsNew": {"description": "Space environments: environmentsNew"},
+  "environmentsNewDefinitionName": "New environment",
+  "@environmentsNewDefinitionName": {"description": "Space environments: environmentsNewDefinitionName"},
+  "environmentsNoChecks": "This definition has no checks.",
+  "@environmentsNoChecks": {"description": "Space environments: environmentsNoChecks"},
+  "environmentsNoRuns": "No test runs yet",
+  "@environmentsNoRuns": {"description": "Space environments: environmentsNoRuns"},
+  "environmentsOnChange": "Paths to watch",
+  "@environmentsOnChange": {"description": "Space environments: environmentsOnChange"},
+  "environmentsOptionBool": "Yes or no",
+  "@environmentsOptionBool": {"description": "Space environments: environmentsOptionBool"},
+  "environmentsOptionEnum": "One of",
+  "@environmentsOptionEnum": {"description": "Space environments: environmentsOptionEnum"},
+  "environmentsOptionMulti": "Several of",
+  "@environmentsOptionMulti": {"description": "Space environments: environmentsOptionMulti"},
+  "environmentsOptionValues": "Values",
+  "@environmentsOptionValues": {"description": "Space environments: environmentsOptionValues"},
+  "environmentsPlacement": "Placement",
+  "@environmentsPlacement": {"description": "Space environments: environmentsPlacement"},
+  "environmentsPlacementHost": "On the host",
+  "@environmentsPlacementHost": {"description": "Space environments: environmentsPlacementHost"},
+  "environmentsPlacementRig": "In a VM",
+  "@environmentsPlacementRig": {"description": "Space environments: environmentsPlacementRig"},
+  "environmentsPrepareTask": "Prepare task",
+  "@environmentsPrepareTask": {"description": "Space environments: environmentsPrepareTask"},
+  "environmentsPrimaryEndpoint": "Primary endpoint",
+  "@environmentsPrimaryEndpoint": {"description": "Space environments: environmentsPrimaryEndpoint"},
+  "environmentsReadyHttp": "Ready when this URL answers",
+  "@environmentsReadyHttp": {"description": "Space environments: environmentsReadyHttp"},
+  "environmentsRestartAlways": "Always",
+  "@environmentsRestartAlways": {"description": "Space environments: environmentsRestartAlways"},
+  "environmentsRestartNever": "Never",
+  "@environmentsRestartNever": {"description": "Space environments: environmentsRestartNever"},
+  "environmentsRestartOn": "Restart when these paths change",
+  "@environmentsRestartOn": {"description": "Space environments: environmentsRestartOn"},
+  "environmentsRestartOnFailure": "On failure",
+  "@environmentsRestartOnFailure": {"description": "Space environments: environmentsRestartOnFailure"},
+  "environmentsRestartPolicy": "Restart",
+  "@environmentsRestartPolicy": {"description": "Space environments: environmentsRestartPolicy"},
+  "environmentsRigTtl": "VM lifetime in hours",
+  "@environmentsRigTtl": {"description": "Space environments: environmentsRigTtl"},
+  "environmentsRunChecks": "Run again",
+  "@environmentsRunChecks": {"description": "Space environments: environmentsRunChecks"},
+  "environmentsRunTest": "Run test",
+  "@environmentsRunTest": {"description": "Space environments: environmentsRunTest"},
+  "environmentsSaved": "Definition saved",
+  "@environmentsSaved": {"description": "Space environments: environmentsSaved"},
+  "environmentsSectionComponents": "Components",
+  "@environmentsSectionComponents": {"description": "Space environments: environmentsSectionComponents"},
+  "environmentsSectionOptions": "Start options",
+  "@environmentsSectionOptions": {"description": "Space environments: environmentsSectionOptions"},
+  "environmentsSectionSeedFiles": "Seed files",
+  "@environmentsSectionSeedFiles": {"description": "Space environments: environmentsSectionSeedFiles"},
+  "environmentsSectionVariables": "Variables",
+  "@environmentsSectionVariables": {"description": "Space environments: environmentsSectionVariables"},
+  "environmentsSeedHelp": "One path per line, copied from the registered checkout. Fork pull requests never receive these.",
+  "@environmentsSeedHelp": {"description": "Space environments: environmentsSeedHelp"},
+  "environmentsShellHelp": "Placeholders aren't expanded here. Read CC_ENV_* variables instead.",
+  "@environmentsShellHelp": {"description": "Space environments: environmentsShellHelp"},
+  "environmentsSourceApprove": "Approve this version",
+  "@environmentsSourceApprove": {"description": "Space environments: environmentsSourceApprove"},
+  "environmentsSourceCurrent": "{path} matches the approved version.",
+  "@environmentsSourceCurrent": {"description": "Space environments: environmentsSourceCurrent", "placeholders": {"path": {"type": "String"}}},
+  "environmentsSourceNotice": "The approved version keeps running until you approve this one.",
+  "@environmentsSourceNotice": {"description": "Space environments: environmentsSourceNotice"},
+  "environmentsTabJson": "JSON",
+  "@environmentsTabJson": {"description": "Space environments: environmentsTabJson"},
+  "environmentsTabSource": "Source",
+  "@environmentsTabSource": {"description": "Space environments: environmentsTabSource"},
+  "environmentsTestHelp": "Runs a throwaway environment end to end: check, start, wait for ready, destroy.",
+  "@environmentsTestHelp": {"description": "Space environments: environmentsTestHelp"},
+  "environmentsTestSaveFirst": "Save the definition first.",
+  "@environmentsTestSaveFirst": {"description": "Space environments: environmentsTestSaveFirst"},
+  "environmentsTimeoutSeconds": "Timeout in seconds",
+  "@environmentsTimeoutSeconds": {"description": "Space environments: environmentsTimeoutSeconds"},
+  "environmentsTitle": "Environments",
+  "@environmentsTitle": {"description": "Space environments: environmentsTitle"},
+  "environmentsTriggerArchive": "Before the worktree is deleted",
+  "@environmentsTriggerArchive": {"description": "Space environments: environmentsTriggerArchive"},
+  "environmentsTriggerChange": "When watched paths change",
+  "@environmentsTriggerChange": {"description": "Space environments: environmentsTriggerChange"},
+  "environmentsTriggerCreate": "Once per environment",
+  "@environmentsTriggerCreate": {"description": "Space environments: environmentsTriggerCreate"},
+  "environmentsTriggerManual": "On request",
+  "@environmentsTriggerManual": {"description": "Space environments: environmentsTriggerManual"},
+  "environmentsTriggerProvision": "When the worktree is created",
+  "@environmentsTriggerProvision": {"description": "Space environments: environmentsTriggerProvision"},
+  "environmentsTriggerStart": "On every start",
+  "@environmentsTriggerStart": {"description": "Space environments: environmentsTriggerStart"},
+  "environmentsTriggers": "Runs",
+  "@environmentsTriggers": {"description": "Space environments: environmentsTriggers"},
+  "environmentsUnreadable": "This client can't read this definition.",
+  "@environmentsUnreadable": {"description": "Space environments: environmentsUnreadable"},
+  "environmentsUpdateAvailable": "Update available",
+  "@environmentsUpdateAvailable": {"description": "Space environments: environmentsUpdateAvailable"},
+  "environmentsUseShell": "Use a shell command",
+  "@environmentsUseShell": {"description": "Space environments: environmentsUseShell"},
+  "environmentsUseSourceWarning": "The tool then runs against your own checkout. Treat it as read-only.",
+  "@environmentsUseSourceWarning": {"description": "Space environments: environmentsUseSourceWarning"},
+  "environmentsWhenMissing": "When a space lacks it",
+  "@environmentsWhenMissing": {"description": "Space environments: environmentsWhenMissing"},
+  "environmentsWhenMissingAdd": "Add it to the space",
+  "@environmentsWhenMissingAdd": {"description": "Space environments: environmentsWhenMissingAdd"},
+  "environmentsWhenMissingSkip": "Skip it",
+  "@environmentsWhenMissingSkip": {"description": "Space environments: environmentsWhenMissingSkip"},
+  "environmentsWhenMissingSource": "Use the registered checkout",
+  "@environmentsWhenMissingSource": {"description": "Space environments: environmentsWhenMissingSource"},
+  "environmentsUnsupported": "This server doesn't support environments.",
+  "@environmentsUnsupported": {"description": "Space environments: environmentsUnsupported"},
+  "environmentViewerUnavailable": "No viewer: the server can't capture this window. Allow Screen Recording for Control Center on the server.",
+  "@environmentViewerUnavailable": {"description": "Space environments: environmentViewerUnavailable"},
+  "environmentHealthHealthy": "Healthy",
+  "@environmentHealthHealthy": {"description": "Space environments: environmentHealthHealthy"},
+  "environmentHealthUnhealthy": "Unhealthy",
+  "@environmentHealthUnhealthy": {"description": "Space environments: environmentHealthUnhealthy"},
+  "environmentTerminalStale": "This terminal opened before the environment started, so it lacks its variables.",
+  "@environmentTerminalStale": {"description": "Space environments: environmentTerminalStale"},
+  "environmentTerminalFresh": "Open a fresh terminal",
+  "@environmentTerminalFresh": {"description": "Space environments: environmentTerminalFresh"},
+  "environmentsShellStays": "A multi-line script stays a shell command: its lines are its structure.",
+  "@environmentsShellStays": {"description": "Space environments: environmentsShellStays"},
+  "environmentsOverrides": "Workspace overrides",
+  "@environmentsOverrides": {"description": "Space environments: environmentsOverrides"},
+  "environmentsOverridesHelp": "The file's own settings are read-only here. Bind its roles to this workspace's repos, or override any field as JSON.",
+  "@environmentsOverridesHelp": {"description": "Space environments: environmentsOverridesHelp"},
+  "environmentsReposHelp": "The repositories this environment uses, each bound to a role.",
+  "@environmentsReposHelp": {"description": "Space environments: environmentsReposHelp"},
+  "environmentsComponentsHelp": "What the environment runs, in start order.",
+  "@environmentsComponentsHelp": {"description": "Space environments: environmentsComponentsHelp"},
+  "environmentsOptionsHelp": "Choices offered when someone starts the environment.",
+  "@environmentsOptionsHelp": {"description": "Space environments: environmentsOptionsHelp"},
+  "environmentsVariablesHelp": "Set on tasks, processes, apps and space terminals.",
+  "@environmentsVariablesHelp": {"description": "Space environments: environmentsVariablesHelp"},
+  "environmentsChecksHelp": "What the host needs for this environment to run.",
+  "@environmentsChecksHelp": {"description": "Space environments: environmentsChecksHelp"},
+  "environmentsIdleStopHelp": "0 never stops it.",
+  "@environmentsIdleStopHelp": {"description": "Space environments: environmentsIdleStopHelp"},
+  "environmentsAnchorHelp": "A space holding this repository can start the environment.",
+  "@environmentsAnchorHelp": {"description": "Space environments: environmentsAnchorHelp"},
+  "environmentsRequiredHelp": "The environment can't run without it.",
+  "@environmentsRequiredHelp": {"description": "Space environments: environmentsRequiredHelp"},
+  "environmentsFollowPrHeadHelp": "Sync and refresh when the pull request's head moves.",
+  "@environmentsFollowPrHeadHelp": {"description": "Space environments: environmentsFollowPrHeadHelp"},
+  "environmentsRecordNeedsFix": "Needs a fix",
+  "@environmentsRecordNeedsFix": {"description": "Space environments: environmentsRecordNeedsFix"},
+  "environmentsCheckFile": "File",
+  "@environmentsCheckFile": {"description": "Space environments: environmentsCheckFile"},
+  "environmentsDiscardBody": "Your edits to this definition will be lost.",
+  "@environmentsDiscardBody": {"description": "Space environments: environmentsDiscardBody"},
+  "environmentsWorktreeRuns": "Worktree task runs",
+  "@environmentsWorktreeRuns": {"description": "Space environments: environmentsWorktreeRuns"},
+  "environmentsNoWorktreeRuns": "No worktree task has run yet.",
+  "@environmentsNoWorktreeRuns": {"description": "Space environments: environmentsNoWorktreeRuns"},
+  "environmentsLinkRoles": "Roles in this file",
+  "@environmentsLinkRoles": {"description": "Space environments: environmentsLinkRoles"},
+  "environmentsLinkNoFile": "Couldn't read that file from the repo. Roles can be bound after linking.",
+  "@environmentsLinkNoFile": {"description": "Space environments: environmentsLinkNoFile"},
+  "guardrailClassHostExecution": "Run commands on the host",
+  "@guardrailClassHostExecution": {"description": "Guardrail action class: running commands on the host outside any sandbox, at an agent's request"},
+  "environmentUrls": "URLs",
+  "@environmentUrls": {"description": "Environment panel copy."},
+  "environmentScripts": "Scripts",
+  "@environmentScripts": {"description": "Environment panel copy."},
+  "environmentNoneForSpace": "No environment for this space",
+  "@environmentNoneForSpace": {"description": "Environment panel copy."},
+  "environmentNoneForPr": "No environment for this pull request",
+  "@environmentNoneForPr": {"description": "Environment panel copy."},
+  "environmentSetupBody": "An environment runs a repo's services, scripts and URLs for one space. Set it up once and every space on the repo can start it.",
+  "@environmentSetupBody": {"description": "Environment panel copy."},
+  "environmentSetUp": "Set up environment",
+  "@environmentSetUp": {"description": "Environment panel copy."},
+  "environmentEditDefinition": "Edit definition",
+  "@environmentEditDefinition": {"description": "Environment panel copy."},
+  "environmentOpenPanel": "Open environment",
+  "@environmentOpenPanel": {"description": "Environment panel copy."},
+  "environmentNeedsSetup": "Needs setup",
+  "@environmentNeedsSetup": {"description": "Status of an environment that stopped because a person has to do something on the host, such as adding hostnames with sudo."},
+  "environmentContinueInTerminal": "Continue in terminal",
+  "@environmentContinueInTerminal": {"description": "Environment host setup: the terminal tab a stopped start finishes in."},
+  "environmentSetupHint": "The tool needs you in a terminal, for a password or a prompt. Starting carries on when it finishes.",
+  "@environmentSetupHint": {"description": "Environment host setup: the terminal tab a stopped start finishes in."},
+  "environmentSetupTabReason": "This terminal opened because the start needs you",
+  "@environmentSetupTabReason": {"description": "Heading of the notice on a terminal tab that opened by itself after a Start stopped for a person. Says why the tab appeared."},
+  "environmentSetupTab": "Environment setup",
+  "@environmentSetupTab": {"description": "Environment host setup: the terminal tab a stopped start finishes in."},
+  "environmentsNothingRunning": "Nothing is running from this definition.",
+  "@environmentsNothingRunning": {"description": "Empty state of the Running tab of an environment definition."},
+  "searchPoliciesHint": "Search policies...",
+  "@searchPoliciesHint": {
+    "description": "Placeholder for the policy search field."
+  },
+  "noPoliciesMatch": "No policies match your search",
+  "@noPoliciesMatch": {
+    "description": "Empty state when a policy search matches nothing."
+  },
+  "memoryPolicyActive": "Active",
+  "@memoryPolicyActive": {
+    "description": "Label for a memory policy being switched on."
+  },
+  "memoryFactType": "Type",
+  "@memoryFactType": {
+    "description": "Label for the kind of a memory fact, such as instruction or error."
+  },
+  "memoryTimesRecalled": "Times recalled",
+  "@memoryTimesRecalled": {
+    "description": "How many times agents have recalled a memory fact."
+  },
+  "memorySourceFacts": "Source facts",
+  "@memorySourceFacts": {
+    "description": "Heading above the facts a memory policy was derived from."
+  },
+  "spaceSetupLogs": "Setup logs",
+  "@spaceSetupLogs": {
+    "description": "Title of the tab following what a space's workspace preparation prints: the copy, the fetch, the checkout and any setup tasks."
+  }
 }

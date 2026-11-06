@@ -90,10 +90,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get keybindingPushToTalk => 'دبا کر بولیں';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'میسج کمپوزر میں وائس ڈکٹیشن دبا کر رکھیں یا ٹوگل کریں';
-
-  @override
   String get agentPermissions => 'ایجنٹ اجازتیں';
 
   @override
@@ -188,6 +184,9 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'iOS سمیولیٹر';
+
+  @override
+  String get rigSurfaceAppWindow => 'ایپ ونڈو';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -460,6 +459,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'لائیو ویو کے لیے اس ہوسٹ پر ⁨ffmpeg⁩ چاہیے۔ ⁨ffmpeg⁩ انسٹال کریں اور ٹیب دوبارہ کھولیں۔';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'لائیو ویو کے لیے اسکرین ریکارڈنگ درکار ہے۔ سسٹم سیٹنگز میں Control Center کو اجازت دیں اور ٹیب دوبارہ کھولیں۔';
 
   @override
   String get rigStreamEnded => 'لائیو ویو ختم ہو گیا۔';
@@ -1559,10 +1562,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'فلٹر مینو کھولیں';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'pull request فلٹر مینو کھولیں';
 
   @override
   String countSelected(int count) {
@@ -2831,19 +2830,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get cancelEdit => 'ترمیم منسوخ کریں';
 
   @override
-  String get categoryCreation => 'تخلیق';
-
-  @override
-  String get categoryEditing => 'ترمیم';
-
-  @override
   String get categoryNavigation => 'نیویگیشن';
-
-  @override
-  String get categorySystem => 'سسٹم';
-
-  @override
-  String get categoryView => 'زمرہ منظر';
 
   @override
   String get change => 'بدلیں';
@@ -3662,30 +3649,13 @@ class AppLocalizationsUr extends AppLocalizations {
   String get keepSandboxing => 'سینڈ باکسنگ رکھیں';
 
   @override
-  String get keybindingAddARepositoryDescription => 'ریپوزٹری شامل کریں';
-
-  @override
   String get keybindingAddRepository => 'ریپوزٹری شامل کریں';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'منتخب مضمون بک مارک یا ان بک مارک کریں';
 
   @override
   String get keybindingCommandPalette => 'کمانڈ پیلیٹ';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'نیا ایجنٹ بنائیں';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription => 'نیا ورک اسپیس بنائیں';
-
-  @override
   String get keybindingFocusSearch => 'تلاش پر فوکس';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'pull request تلاش فیلڈ پر فوکس';
 
   @override
   String get keybindingNewAgent => 'نیا ایجنٹ';
@@ -3706,34 +3676,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get keybindingOpenArticle => 'مضمون کھولیں';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'سائڈ بار میں ورک اسپیس سوئچر پاپ اپ کھولیں یا بند کریں';
-
-  @override
   String get keybindingOpenPr => 'PR کھولیں';
 
   @override
   String get keybindingOpenSettings => 'ترتیبات کھولیں';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'ایپلیکیشن ترتیبات کھولیں';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription => 'کمانڈ پیلیٹ کھولیں';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'منتخب مضمون کھولیں';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'منتخب pull request کھولیں';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'منتخب ورک اسپیس کھولیں';
 
   @override
   String get keybindingOpenWorkspace => 'ورک اسپیس کھولیں';
@@ -3751,85 +3697,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get keybindingRefresh => 'تازہ کریں';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'تمام فیڈز تازہ کریں';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'pull request فہرست تازہ کریں';
-
-  @override
-  String get keybindingRescanForAdaptersDescription =>
-      'اڈاپٹرز دوبارہ اسکین کریں';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription =>
-      'اگلا مضمون منتخب کریں';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription => 'اگلی اسپیس منتخب کریں';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'پچھلا مضمون منتخب کریں';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription =>
-      'پچھلی اسپیس منتخب کریں';
-
-  @override
   String get keybindingSendMessage => 'پیغام بھیجیں';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'موجودہ پیغام بھیجیں';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'روشن اور تاریک موڈ کے درمیان سوئچ کریں';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'آٹھویں ورک اسپیس پر سوئچ کریں';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'پانچویں ورک اسپیس پر سوئچ کریں';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'پہلے ورک اسپیس پر سوئچ کریں';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'چوتھے ورک اسپیس پر سوئچ کریں';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'اگلے ورک اسپیس پر سوئچ کریں';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'نویں ورک اسپیس پر سوئچ کریں';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'پچھلے ورک اسپیس پر سوئچ کریں';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'دوسرے ورک اسپیس پر سوئچ کریں';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'ساتویں ورک اسپیس پر سوئچ کریں';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'چھٹے ورک اسپیس پر سوئچ کریں';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'تیسرے ورک اسپیس پر سوئچ کریں';
 
   @override
   String get keybindingToggleBookmark => 'بک مارک ٹوگل کریں';
@@ -3866,13 +3734,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'ورک اسپیس 9';
-
-  @override
-  String get keybindings => 'کی بائنڈنگز';
-
-  @override
-  String get keybindingsDescription =>
-      'تمام کی بورڈ شارٹ کٹس۔ شارٹ کٹس مقرر ہیں اور دوبارہ تفویض نہیں ہو سکتے۔';
 
   @override
   String get killRunning => 'چلتے ہوئے ختم کریں';
@@ -4142,11 +4003,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get noSavedArticlesBody =>
       'جو مضامین آپ محفوظ کریں گے وہ یہاں نظر آئیں گے۔';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'کوئی شارٹ کٹ \"⁨$query⁩\" سے میل نہیں کھاتا';
-  }
 
   @override
   String get noSystemFonts => 'کوئی سسٹم فونٹ نہیں ملا۔';
@@ -4878,12 +4734,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'تلاش…';
-
-  @override
-  String get searchShortcuts => 'شارٹ کٹس تلاش کریں…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'براؤزر میں دستیاب نہیں';
 
   @override
   String get searching => 'تلاش ہو رہی ہے…';
@@ -6665,6 +6515,28 @@ class AppLocalizationsUr extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'اسپیس حذف ہو گئی';
 
   @override
+  String get triggerEventSpaceArchived => 'اسپیس آرکائیو ہو گئی';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged => 'اسپیس کی تیاری بدل گئی';
+
+  @override
+  String get triggerEventPrHeadChanged => 'PR کا head بدل گیا';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => 'ماحول کی حیثیت بدل گئی';
+
+  @override
+  String get triggerEventEnvironmentReady => 'ماحول تیار ہے';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'ماحول ختم کر دیا گیا';
+
+  @override
+  String get triggerEventEnvironmentProcessExited =>
+      'ماحول کا پراسیس ختم ہو گیا';
+
+  @override
   String get triggerExternalPrHelp =>
       'کوڈ ہوسٹ پر کھلی پل ریکویسٹ، Control Center سے نہیں۔';
 
@@ -6726,6 +6598,32 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'گفتگو کی اسپیس حذف ہوتی ہے۔';
+
+  @override
+  String get triggerSpaceArchivedHelp => 'گفتگو کی اسپیس آرکائیو ہوتی ہے۔';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'اسپیس کے worktree کی تیاری شروع، مکمل یا ناکام ہوتی ہے۔';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'کھلی pull request میں نئی کمٹس پش ہوتی ہیں۔';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'اسپیس کا ماحول نئی حیثیت میں جاتا ہے۔';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'اسپیس کا ماحول شروع ہو گیا ہے اور استعمال کے قابل ہے۔';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp => 'اسپیس کا ماحول ہٹایا جاتا ہے۔';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'ماحول کا چلایا ہوا پراسیس ختم ہوتا ہے۔';
 
   @override
   String get navTickets => 'ٹکٹس';
@@ -8929,19 +8827,6 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'استعمال اور لاگت';
-
-  @override
-  String get usageAndCostDescription =>
-      'گزشتہ 7 دنوں میں آپ کے ایجنٹس کا خرچ، مشاہدہ شدہ رن لاگت سے۔';
-
-  @override
-  String get noUsageYet => 'ابھی کوئی استعمال ریکارڈ نہیں۔';
-
-  @override
-  String get spentThisWeek => 'اس ہفتے خرچ';
-
-  @override
   String get subscriptionUsage => 'سبسکرپشن استعمال';
 
   @override
@@ -9152,9 +9037,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get keybindingNewSpace => 'نئی اسپیس';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'نئی اسپیس بنائیں';
-
-  @override
   String get jumpToLatest => 'تازہ ترین پر جائیں';
 
   @override
@@ -9325,71 +9207,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get preparingWorkspace => 'ورک اسپیس تیار ہو رہا ہے…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return '⁨$repo⁩ کا سیٹ اپ اسکرپٹ چل رہا ہے…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'اسکرپٹس';
-
-  @override
-  String get repoScriptsTooltip => 'لائف سائیکل اسکرپٹس کنفیگر کریں';
-
-  @override
-  String get repoScriptsSetupLabel => 'سیٹ اپ اسکرپٹ';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'اسپیس کا worktree بننے کے فوراً بعد چلتا ہے — ڈیپینڈنسیز انسٹال، فائلیں جنریٹ۔ ناکامی اسپیس کو ناکام نشان زد کرتی ہے؛ دوبارہ کوشش اسے پھر چلاتی ہے۔';
-
-  @override
-  String get repoScriptsArchiveLabel => 'آرکائیو اسکرپٹ';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'اسپیس کا worktree حذف ہونے سے ٹھیک پہلے چلتا ہے — worktree سے باہر وسائل صاف کریں۔ ناکامی حذف کو کبھی نہیں روکتی۔';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'worktree سے bash کے ذریعے چلتا ہے، ⁨CC_WORKSPACE_PATH⁩ (worktree)، ⁨CC_ROOT_PATH⁩ (ریپو روٹ)، ⁨CC_SPACE_ID⁩، ⁨CC_SPACE_NAME⁩ اور ⁨CC_REPO_NAME⁩ سیٹ۔';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'مثال: ⁨pnpm install⁩';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'مثال: ⁨docker compose -p \$CC_SPACE_ID down⁩';
-
-  @override
-  String get repoScriptsRecentRuns => 'حالیہ رنز';
-
-  @override
-  String get repoScriptsNoRuns => 'ابھی کوئی رن نہیں';
-
-  @override
-  String get repoScriptsSaved => 'اسکرپٹس محفوظ ہو گئیں';
-
-  @override
-  String get repoScriptsRunKindSetup => 'سیٹ اپ';
-
-  @override
-  String get repoScriptsRunKindArchive => 'آرکائیو';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'چل رہا ہے';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'کامیاب';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'ناکام';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'وقت ختم';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'ایگزٹ کوڈ $code';
+  String provisioningRunningTasks(String repo) {
+    return '⁨$repo⁩ کے worktree ٹاسک چل رہے ہیں…';
   }
 
   @override
@@ -10193,10 +10012,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get keybindingCheatSheet => 'کی بورڈ شارٹ کٹس';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'موجودہ اسکرین کا کی بورڈ شارٹ کٹ چیٹ شیٹ دکھائیں';
-
-  @override
   String get runPlaybookLabel => 'پلے بک چلائیں';
 
   @override
@@ -10207,13 +10022,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'ریڈو';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'اپنا آخری قابلِ واپسی ایکشن انڈو کریں';
-
-  @override
-  String get keybindingRedoLastActionDescription => 'آخری انڈو ایکشن ریڈو کریں';
 
   @override
   String get undone => 'انڈو ہو گیا';
@@ -14054,6 +13862,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get newSkill => 'نئی مہارت';
 
   @override
+  String get newItemAction => 'نیا';
+
+  @override
   String get zoomIn => 'زوم اِن';
 
   @override
@@ -14268,6 +14079,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get steerNow => 'اسٹیئر';
 
   @override
+  String get steerForce => 'روکیں اور بھیجیں';
+
+  @override
   String get steeringQueueLabel => 'قطار میں اسٹیئرنگ پیغامات';
 
   @override
@@ -14315,15 +14129,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'اگلی بار ایجنٹ اس کاپی سے پروگرام چلانا چاہے تو دوبارہ پوچھا جائے گا۔';
-
-  @override
-  String get repoScriptsTest => 'ٹیسٹ';
-
-  @override
-  String get repoScriptsTestTooltip => 'ریپو کے عارضی کلون میں یہ ڈرافٹ چلائیں';
-
-  @override
-  String get repoScriptsRunKindTest => 'ٹیسٹ';
 
   @override
   String get demoBadgeLabel => 'ڈیمو';
@@ -14539,6 +14344,50 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'سرور پر پاتھ';
+
+  @override
+  String get backupScheduledLabel => 'طے شدہ بیک اپ';
+
+  @override
+  String get backupScheduledExplainer =>
+      'ہر ورک اسپیس کی بیک اپ پائپ لائن کی محفوظ کردہ نقول۔ شیڈول اور برقرار رکھنے کی مدت پائپ لائن کے ٹیمپلیٹ میں طے کریں۔';
+
+  @override
+  String get backupScheduledNone => 'ابھی کوئی بیک اپ نہیں';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count بیک اپ',
+      one: '1 بیک اپ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'آخری بیک اپ: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'اس ورک اسپیس کے بیک اپ دیکھنے کے لیے آپ کو ایڈمن کردار درکار ہے۔';
+
+  @override
+  String get backupScheduledDeleteTitle => 'یہ بیک اپ حذف کریں؟';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return '$name کا $date کا بیک اپ سرور سے حذف کریں؟ اسے واپس نہیں کیا جا سکتا۔';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'بیک اپ حذف ہو گیا۔';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'ورک اسپیس حذف شدہ';
 
   @override
   String get backupRestoreAction => 'بحال کریں';
@@ -15156,14 +15005,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get ideQuickOpen => 'فائل پر جائیں';
 
   @override
-  String get ideQuickOpenDescription =>
-      'گفتگو کی فائلیں نام سے تلاش کریں اور ایک کو ٹیب میں کھولیں';
-
-  @override
-  String get prQuickOpenDescription =>
-      'pull request کی فائلیں نام سے تلاش کریں اور ایک کو ٹیب میں کھولیں';
-
-  @override
   String get ideQuickOpenHint => 'نام سے فائلیں تلاش کریں';
 
   @override
@@ -15493,6 +15334,15 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'زبردستی لوڈ';
+
+  @override
+  String get skillEvalHashLabel => 'پیکیج کا ہیش';
+
+  @override
+  String get skillEvalProgressLabel => 'پیش رفت';
+
+  @override
+  String get skillEvalUpdatesToggle => 'اپ ڈیٹ کی جانچ';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -15883,4 +15733,706 @@ class AppLocalizationsUr extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return '$minutes منٹ باقی';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'ماحول میزبان پر حقیقی عمل چلاتے ہیں، اس لیے ڈیمو میں کوئی ماحول نہیں۔';
+
+  @override
+  String get environmentChecksFailing => 'سرور پر کچھ جانچیں ناکام ہو رہی ہیں';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'اینڈ پوائنٹس: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'سروسز: $names';
+  }
+
+  @override
+  String get environmentCopied => 'کاپی ہو گیا';
+
+  @override
+  String get environmentCopyCommand => 'کمانڈ کاپی کریں';
+
+  @override
+  String get environmentCopyUrl => 'URL کاپی کریں';
+
+  @override
+  String get environmentDefinition => 'تعریف';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تعریفیں',
+      one: '1 تعریف',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'تباہ کریں';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name اور اس کا ڈیٹا ہٹا دیا جائے گا۔ شروع کرنے پر نیا بنے گا۔';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'کیا یہ ماحول تباہ کرنا ہے؟';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'سروس میں چلائیں';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'ایگزٹ کوڈ $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => 'اسے سرور پر سیٹ اپ کرنا ہوگا';
+
+  @override
+  String get environmentKindApp => 'ایپ';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'عمل';
+
+  @override
+  String get environmentKindTask => 'ٹاسک';
+
+  @override
+  String get environmentLaunch => 'ایپ کھولیں';
+
+  @override
+  String get environmentLogsGone => 'یہ لاگز اب دستیاب نہیں۔';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'لاگز: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'آؤٹ پٹ کا انتظار ہے';
+
+  @override
+  String get environmentMoreActions => 'ماحول کے مزید اقدامات';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'ایک تبدیلی کے باعث اس ماحول کو دوبارہ بنانا ہوگا۔';
+
+  @override
+  String get environmentNoStack =>
+      'صرف worktree ٹاسک چلاتا ہے، اس لیے شروع کرنے کو کچھ نہیں۔';
+
+  @override
+  String get environmentOnTheServer => 'سرور پر';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Browser (VM) میں کھولیں';
+
+  @override
+  String get environmentOpenViewer => 'ویوئر کھولیں';
+
+  @override
+  String get environmentPlacementRig => 'VM میں';
+
+  @override
+  String get environmentPreviewTab => 'ماحول';
+
+  @override
+  String get environmentRebuildRelaunch => 'دوبارہ بنائیں اور کھولیں';
+
+  @override
+  String get environmentRecreate => 'دوبارہ بنائیں';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name تباہ ہو کر انہی اختیارات کے ساتھ دوبارہ شروع ہوگا۔ اس کا ڈیٹا ضائع ہو جائے گا۔';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'کیا یہ ماحول دوبارہ بنانا ہے؟';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name اپنی بنیادی حالت پر واپس جائے گا۔ اس کے بعد بنا ڈیٹا ضائع ہو جائے گا۔';
+  }
+
+  @override
+  String get environmentResetData => 'ڈیٹا ری سیٹ کریں';
+
+  @override
+  String get environmentResetTitle => 'کیا ڈیٹا ری سیٹ کرنا ہے؟';
+
+  @override
+  String get environmentRestart => 'ری اسٹارٹ';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ری اسٹارٹس',
+      one: '1 ری اسٹارٹ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'چلائیں';
+
+  @override
+  String get environmentRunInTerminal => 'ٹرمینل میں چلائیں';
+
+  @override
+  String get environmentSectionTitle => 'ماحول';
+
+  @override
+  String get environmentService => 'سروس';
+
+  @override
+  String environmentServiceActions(String name) {
+    return '$name کے اقدامات';
+  }
+
+  @override
+  String get environmentStartTitle => 'ماحول شروع کریں';
+
+  @override
+  String get environmentStateCrashed => 'کریش ہو گیا';
+
+  @override
+  String get environmentStatusDegraded => 'متاثر';
+
+  @override
+  String get environmentStatusDestroying => 'تباہ ہو رہا ہے';
+
+  @override
+  String get environmentStatusGone => 'ختم';
+
+  @override
+  String get environmentStatusStopping => 'رک رہا ہے';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return '$name کو روکنے سے اس کا ڈیٹا ضائع ہوگا، اور شروع کرنے سے واپس نہیں آئے گا۔';
+  }
+
+  @override
+  String get environmentStopLoseData => 'روکیں اور ڈیٹا کھوئیں';
+
+  @override
+  String get environmentStopTitle => 'کیا یہ ماحول روکنا ہے؟';
+
+  @override
+  String get environmentTaskNeverRun => 'ابھی نہیں چلا';
+
+  @override
+  String get environmentsAddCheck => 'جانچ شامل کریں';
+
+  @override
+  String get environmentsAddOption => 'اختیار شامل کریں';
+
+  @override
+  String get environmentsAddRole => 'کردار شامل کریں';
+
+  @override
+  String get environmentsAdminOnly =>
+      'صرف ورک اسپیس کے منتظمین تعریفیں بدل سکتے ہیں۔';
+
+  @override
+  String get environmentsAfter => 'ان اجزا کا انتظار کریں';
+
+  @override
+  String get environmentsAnchor => 'اینکر';
+
+  @override
+  String get environmentsAutoCreate => 'خود بخود شروع کریں';
+
+  @override
+  String get environmentsAutoCreateAll => 'ہر اہل اسپیس میں';
+
+  @override
+  String get environmentsAutoCreateOff => 'کبھی نہیں';
+
+  @override
+  String get environmentsAutoCreatePrs => 'پل ریکویسٹ اسپیسز میں';
+
+  @override
+  String get environmentsBlank => 'خالی تعریف';
+
+  @override
+  String get environmentsCheckFix => 'درستی کی کمانڈ';
+
+  @override
+  String get environmentsCheckHint => 'اشارہ';
+
+  @override
+  String get environmentsCommandHelp =>
+      'دلائل خالی جگہوں سے الگ ہوتے ہیں۔ خالی جگہ والی دلیل کو اقتباس میں رکھیں۔';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count اجزا',
+      one: '1 جزو',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'شروع پر امیجز بنائیں';
+
+  @override
+  String get environmentsComposeFile => 'Compose فائل';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Compose فائل نہیں پڑھی جا سکی۔ سروس کے نام پھر بھی JSON منظر میں لکھے جا سکتے ہیں۔';
+
+  @override
+  String get environmentsComposeServices => 'سروسز';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'سب چلانے کے لیے تمام سروسز غیر منتخب رہنے دیں۔';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'اس کمانڈ میں مشروط دلائل ہیں۔ اسے JSON منظر میں ترمیم کریں۔';
+
+  @override
+  String get environmentsCwdPath => 'کام کا راستہ';
+
+  @override
+  String get environmentsCwdRole => 'کام کا کردار';
+
+  @override
+  String get environmentsDeleteBody =>
+      'اسپیسز اسے مزید شروع نہیں کر سکیں گی۔ چلتے ماحول رکنے تک چلتے رہیں گے۔';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'کیا $name حذف کرنا ہے؟';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'ہر اسپیس کیا شروع کر سکتی ہے، اور اس کے worktrees کون سے ٹاسک چلاتے ہیں۔';
+
+  @override
+  String get environmentsDraftFromRepo => 'ریپو سے مسودہ';
+
+  @override
+  String get environmentsEmpty => 'ابھی کوئی تعریف نہیں';
+
+  @override
+  String get environmentsEnabledWhen => 'فعال جب';
+
+  @override
+  String get environmentsEndpointRole => 'اینڈ پوائنٹ کردار';
+
+  @override
+  String get environmentsFollowPrHead => 'پل ریکویسٹ کے head کی پیروی کریں';
+
+  @override
+  String get environmentsForkApproval => 'ہر آغاز کے لیے منتظم درکار ہے';
+
+  @override
+  String get environmentsForkDeny => 'مسترد';
+
+  @override
+  String get environmentsForkPrs => 'فورک پل ریکویسٹس';
+
+  @override
+  String get environmentsForkRig => 'VM میں چلائیں';
+
+  @override
+  String get environmentsIdleStop => 'فارغ منٹوں کے بعد روکیں';
+
+  @override
+  String get environmentsIsolateHome => 'ایپ کو نجی ہوم دیں';
+
+  @override
+  String get environmentsIssues => 'محفوظ کرنے سے پہلے انہیں درست کریں';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'غلط JSON: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'رکنے پر اپنا ڈیٹا رکھتا ہے';
+
+  @override
+  String get environmentsLinkConfirm => 'لنک اور منظور کریں';
+
+  @override
+  String get environmentsLinkFile => 'ریپو فائل لنک کریں';
+
+  @override
+  String get environmentsLinkHelp =>
+      'صرف ڈیفالٹ برانچ سے پڑھا جاتا ہے اور منظوری کے بعد ہی چلتا ہے۔';
+
+  @override
+  String get environmentsLinkPath => 'راستہ';
+
+  @override
+  String get environmentsMaxRunning => 'ایک ساتھ چل رہے';
+
+  @override
+  String get environmentsNamingProject => 'پروجیکٹ';
+
+  @override
+  String get environmentsNamingTemplate => 'نام کا سانچہ';
+
+  @override
+  String get environmentsNew => 'نئی تعریف';
+
+  @override
+  String get environmentsNewDefinitionName => 'نیا ماحول';
+
+  @override
+  String get environmentsNoChecks => 'اس تعریف میں کوئی جانچ نہیں۔';
+
+  @override
+  String get environmentsNoRuns => 'ابھی کوئی ٹیسٹ رن نہیں';
+
+  @override
+  String get environmentsOnChange => 'نگرانی کے راستے';
+
+  @override
+  String get environmentsOptionBool => 'ہاں یا نہیں';
+
+  @override
+  String get environmentsOptionEnum => 'ان میں سے ایک';
+
+  @override
+  String get environmentsOptionMulti => 'ان میں سے کئی';
+
+  @override
+  String get environmentsOptionValues => 'قدریں';
+
+  @override
+  String get environmentsPlacement => 'مقام';
+
+  @override
+  String get environmentsPlacementHost => 'میزبان پر';
+
+  @override
+  String get environmentsPlacementRig => 'VM میں';
+
+  @override
+  String get environmentsPrepareTask => 'تیاری کا ٹاسک';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'بنیادی اینڈ پوائنٹ';
+
+  @override
+  String get environmentsReadyHttp => 'تیار جب یہ URL جواب دے';
+
+  @override
+  String get environmentsRestartAlways => 'ہمیشہ';
+
+  @override
+  String get environmentsRestartNever => 'کبھی نہیں';
+
+  @override
+  String get environmentsRestartOn => 'ان راستوں کے بدلنے پر ری اسٹارٹ کریں';
+
+  @override
+  String get environmentsRestartOnFailure => 'ناکامی پر';
+
+  @override
+  String get environmentsRestartPolicy => 'ری اسٹارٹ';
+
+  @override
+  String get environmentsRigTtl => 'VM کی مدت گھنٹوں میں';
+
+  @override
+  String get environmentsRunChecks => 'دوبارہ چلائیں';
+
+  @override
+  String get environmentsRunTest => 'ٹیسٹ چلائیں';
+
+  @override
+  String get environmentsSaved => 'تعریف محفوظ ہو گئی';
+
+  @override
+  String get environmentsSectionComponents => 'اجزا';
+
+  @override
+  String get environmentsSectionOptions => 'آغاز کے اختیارات';
+
+  @override
+  String get environmentsSectionSeedFiles => 'ابتدائی فائلیں';
+
+  @override
+  String get environmentsSectionVariables => 'متغیرات';
+
+  @override
+  String get environmentsSeedHelp =>
+      'ہر سطر میں ایک راستہ، رجسٹرڈ checkout سے کاپی ہوتا ہے۔ فورک پل ریکویسٹس کو یہ کبھی نہیں ملتیں۔';
+
+  @override
+  String get environmentsShellHelp =>
+      'یہاں پلیس ہولڈرز نہیں پھیلتے۔ اس کے بجائے CC_ENV_* متغیرات پڑھیں۔';
+
+  @override
+  String get environmentsSourceApprove => 'یہ ورژن منظور کریں';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path منظور شدہ ورژن سے میل کھاتا ہے۔';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'منظور شدہ ورژن چلتا رہے گا جب تک آپ اسے منظور نہ کریں۔';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'ماخذ';
+
+  @override
+  String get environmentsTestHelp =>
+      'ایک عارضی ماحول شروع سے آخر تک چلاتا ہے: جانچ، آغاز، تیاری کا انتظار، تباہی۔';
+
+  @override
+  String get environmentsTestSaveFirst => 'پہلے تعریف محفوظ کریں۔';
+
+  @override
+  String get environmentsTimeoutSeconds => 'سیکنڈ میں ٹائم آؤٹ';
+
+  @override
+  String get environmentsTitle => 'ماحول';
+
+  @override
+  String get environmentsTriggerArchive => 'worktree حذف ہونے سے پہلے';
+
+  @override
+  String get environmentsTriggerChange => 'جب نگرانی کے راستے بدلیں';
+
+  @override
+  String get environmentsTriggerCreate => 'ہر ماحول میں ایک بار';
+
+  @override
+  String get environmentsTriggerManual => 'درخواست پر';
+
+  @override
+  String get environmentsTriggerProvision => 'جب worktree بنے';
+
+  @override
+  String get environmentsTriggerStart => 'ہر آغاز پر';
+
+  @override
+  String get environmentsTriggers => 'کب چلتا ہے';
+
+  @override
+  String get environmentsUnreadable => 'یہ کلائنٹ اس تعریف کو نہیں پڑھ سکتا۔';
+
+  @override
+  String get environmentsUpdateAvailable => 'اپ ڈیٹ دستیاب ہے';
+
+  @override
+  String get environmentsUseShell => 'شیل کمانڈ استعمال کریں';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'ٹول پھر آپ کے اپنے checkout پر چلتا ہے۔ اسے صرف پڑھنے کے لیے سمجھیں۔';
+
+  @override
+  String get environmentsWhenMissing => 'جب اسپیس میں نہ ہو';
+
+  @override
+  String get environmentsWhenMissingAdd => 'اسپیس میں شامل کریں';
+
+  @override
+  String get environmentsWhenMissingSkip => 'چھوڑ دیں';
+
+  @override
+  String get environmentsWhenMissingSource => 'رجسٹرڈ checkout استعمال کریں';
+
+  @override
+  String get environmentsUnsupported => 'یہ سرور ماحول کو سپورٹ نہیں کرتا۔';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'کوئی ویوئر نہیں: سرور اس ونڈو کو کیپچر نہیں کر سکتا۔ سرور پر Control Center کو اسکرین ریکارڈنگ کی اجازت دیں۔';
+
+  @override
+  String get environmentHealthHealthy => 'صحت مند';
+
+  @override
+  String get environmentHealthUnhealthy => 'خراب';
+
+  @override
+  String get environmentTerminalStale =>
+      'یہ ٹرمینل ماحول شروع ہونے سے پہلے کھلا تھا، اس لیے اس میں ماحول کے متغیرات نہیں۔';
+
+  @override
+  String get environmentTerminalFresh => 'نیا ٹرمینل کھولیں';
+
+  @override
+  String get environmentsShellStays =>
+      'کئی سطروں والا اسکرپٹ شیل کمانڈ ہی رہتا ہے: سطریں اس کی ساخت ہیں۔';
+
+  @override
+  String get environmentsOverrides => 'ورک اسپیس اوور رائیڈز';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'فائل کی اپنی ترتیبات یہاں صرف پڑھنے کے لیے ہیں۔ اس کے کرداروں کو اس ورک اسپیس کی ریپوز سے جوڑیں یا کسی بھی فیلڈ کو JSON کے طور پر اوور رائیڈ کریں۔';
+
+  @override
+  String get environmentsReposHelp =>
+      'وہ ریپوزٹریز جو یہ ماحول استعمال کرتا ہے، ہر ایک کسی رول سے منسلک ہے۔';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'ماحول جو کچھ چلاتا ہے، آغاز کی ترتیب میں۔';
+
+  @override
+  String get environmentsOptionsHelp =>
+      'ماحول شروع کرتے وقت پیش کیے جانے والے انتخاب۔';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'ٹاسکس، پروسیسز، ایپس اور اسپیس ٹرمینلز پر سیٹ ہوتے ہیں۔';
+
+  @override
+  String get environmentsChecksHelp =>
+      'اس ماحول کو چلانے کے لیے ہوسٹ کو کیا درکار ہے۔';
+
+  @override
+  String get environmentsIdleStopHelp => '0 اسے کبھی نہیں روکتا۔';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'جس اسپیس میں یہ ریپوزٹری ہو وہ ماحول شروع کر سکتی ہے۔';
+
+  @override
+  String get environmentsRequiredHelp => 'اس کے بغیر ماحول نہیں چل سکتا۔';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'پل ریکویسٹ کا head بدلنے پر سنک اور ریفریش کریں۔';
+
+  @override
+  String get environmentsRecordNeedsFix => 'درستی درکار ہے';
+
+  @override
+  String get environmentsCheckFile => 'فائل';
+
+  @override
+  String get environmentsDiscardBody =>
+      'اس تعریف میں آپ کی ترامیم ضائع ہو جائیں گی۔';
+
+  @override
+  String get environmentsWorktreeRuns => 'worktree ٹاسک رنز';
+
+  @override
+  String get environmentsNoWorktreeRuns =>
+      'ابھی تک کوئی worktree ٹاسک نہیں چلا۔';
+
+  @override
+  String get environmentsLinkRoles => 'اس فائل میں کردار';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'ریپو سے فائل نہیں پڑھی جا سکی۔ لنک کرنے کے بعد کردار جوڑے جا سکتے ہیں۔';
+
+  @override
+  String get guardrailClassHostExecution => 'میزبان پر کمانڈز چلائیں';
+
+  @override
+  String get environmentUrls => 'URLs';
+
+  @override
+  String get environmentScripts => 'اسکرپٹس';
+
+  @override
+  String get environmentNoneForSpace => 'اس اسپیس کے لیے کوئی ماحول نہیں';
+
+  @override
+  String get environmentNoneForPr => 'اس پل ریکویسٹ کے لیے کوئی ماحول نہیں';
+
+  @override
+  String get environmentSetupBody =>
+      'ماحول ایک ریپو کی سروسز، اسکرپٹس اور URLs کو ایک اسپیس کے لیے چلاتا ہے۔ اسے ایک بار سیٹ اپ کریں اور ریپو کی ہر اسپیس اسے شروع کر سکے گی۔';
+
+  @override
+  String get environmentSetUp => 'ماحول سیٹ اپ کریں';
+
+  @override
+  String get environmentEditDefinition => 'تعریف میں ترمیم کریں';
+
+  @override
+  String get environmentOpenPanel => 'ماحول کھولیں';
+
+  @override
+  String get environmentNeedsSetup => 'سیٹ اپ درکار ہے';
+
+  @override
+  String get environmentContinueInTerminal => 'ٹرمینل میں جاری رکھیں';
+
+  @override
+  String get environmentSetupHint =>
+      'ٹول کو پاس ورڈ یا سوال کے لیے ٹرمینل میں آپ کی ضرورت ہے۔ مکمل ہونے پر آغاز جاری رہے گا۔';
+
+  @override
+  String get environmentSetupTabReason =>
+      'یہ ٹرمینل اس لیے کھلا کیونکہ آغاز کو آپ کی ضرورت ہے';
+
+  @override
+  String get environmentSetupTab => 'ماحول کا سیٹ اپ';
+
+  @override
+  String get environmentsNothingRunning => 'اس تعریف سے کچھ نہیں چل رہا۔';
+
+  @override
+  String get searchPoliciesHint => 'پالیسیاں تلاش کریں...';
+
+  @override
+  String get noPoliciesMatch => 'آپ کی تلاش سے کوئی پالیسی مماثل نہیں';
+
+  @override
+  String get memoryPolicyActive => 'فعال';
+
+  @override
+  String get memoryFactType => 'قسم';
+
+  @override
+  String get memoryTimesRecalled => 'بازیافت کی تعداد';
+
+  @override
+  String get memorySourceFacts => 'ماخذ حقائق';
+
+  @override
+  String get spaceSetupLogs => 'سیٹ اپ لاگز';
 }

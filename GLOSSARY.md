@@ -86,6 +86,18 @@ Names and distinctions used across the domain. This is not a field inventory; en
 - **MeetingActionItem / MeetingDecision:** structured rows extracted from summarization, not markdown parsing. **MeetingOutcome:** parser for agent output; only structured output writes those rows; degraded text retains raw transcript. **formatMeetingTranscript:** renders timestamped speaker lines for processing.
 - **VoiceProfile:** workspace-specific voice model used to recognize speakers across recordings. Mic/system audio, transcription and diarization run on device.
 
+## Environments Bounded Context
+
+- **EnvironmentDefinition:** admin-authored, workspace-stored description of a stack: roles, components, naming, routing and policy.
+- **SpaceEnvironment:** the running or stopped instance of a definition in one space.
+- **Component:** one part of a definition: `compose`, `cli`, `process`, `task` or `app`.
+- **Role:** a name in a definition bound to a workspace repo. An **anchor** role makes a space eligible to start the environment.
+- **Setup logs:** what a space's workspace preparation prints (copy, fetch, checkout, `provision` tasks), followed from the provisioning banner. Live diagnostics in server memory, not a record; see [ARCH.md](ARCH.md).
+- **Worktree task:** a task with a `provision` or `archive` trigger. It follows the worktree and runs with or without an environment.
+- **Lease:** a block of host ports held by a space, stable for the environment's life.
+- **Placement:** where a definition runs: `host` as the server's OS user, or `rig` in a microVM.
+- **Tool routing:** a tool owns its domains, TLS and proxy; CC passes a name and reads URLs from its status.
+
 ## Settings Bounded Context
 
 - **Adapter:** agent runtime definition, including executable identity where applicable. **DetectedAdapter:** status/version/path found on the host. **AcpModel:** model advertised for an ACP-compatible runner.

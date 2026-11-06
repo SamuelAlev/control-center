@@ -96,9 +96,19 @@ class CacheDao extends DatabaseAccessor<WorkspaceDatabase>
   /// The caches table is an SWR staleness buffer (PR diffs/files/HTML blobs can
   /// run to megabytes per row); entries that haven't been refreshed in weeks are
   /// dead weight on disk. The nightly sweep runs this once per workspace.
-  Future<int> deleteOlderThan(DateTime cutoff) => (delete(
-    cachesTable,
-  )..where((t) => t.updatedAt.isSmallerThanValue(cutoff))).go();
+  ///
+  /// [exceptKinds] are spared: rows that are durable state rather than a
+  /// staleness buffer (a person's editor layouts), which nothing refetches.
+  Future<int> deleteOlderThan(
+    DateTime cutoff, {
+    Set<String> exceptKinds = const {},
+  }) =>
+      (delete(cachesTable)..where(
+            (t) =>
+                t.updatedAt.isSmallerThanValue(cutoff) &
+                t.kind.isNotIn(exceptKinds),
+          ))
+          .go();
 
   /// Deletes every entry whose key starts with [keyPrefix] within a
   /// `(workspaceId, kind)`. Useful when one logical entity spans multiple

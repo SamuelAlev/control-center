@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
 import 'package:crypto/crypto.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
@@ -187,7 +188,7 @@ Future<({int exitCode, String stdout, String stderr})> _git(
 }) async {
   final result = await Process.run(
     'git',
-    args,
+    RigWorktreeGuard.gitArgs(args, workingDirectory: workdir),
     workingDirectory: workdir,
     environment: env,
   );

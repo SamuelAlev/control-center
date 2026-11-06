@@ -5,6 +5,7 @@ import 'package:cc_domain/features/mcp/domain/mcp_config.dart';
 import 'package:cc_domain/features/mcp/domain/mcp_server_status.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart'
     show McpToolRegistry;
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_mcp/cc_mcp.dart';
 import 'package:path/path.dart' as p;
 
@@ -60,6 +61,10 @@ class ServerMcpControl implements McpServerControl {
   /// Serves `/agent/…` on every listener the MCP surface is mounted on. Set
   /// by the runtime before the surface starts; see [McpRequestHandler.agentRoutes].
   Future<void> Function(HttpRequest request)? agentRoutes;
+
+  /// Proves a run's identity from its secret. Set with [agentRoutes]; see
+  /// [McpRequestHandler.attestRun].
+  McpCallScope? Function(String secret)? attestRun;
   McpRequestHandler? _handler;
   McpHttpServer? _companion;
   McpHostServer? _mainServer;
@@ -155,6 +160,7 @@ class ServerMcpControl implements McpServerControl {
       config: McpConfig(token: _config.token, enabled: true),
       dispatcher: _dispatcher,
       agentRoutes: agentRoutes,
+      attestRun: attestRun,
     );
     final main = _mainServer;
     // Bind the companion first so a bind failure (port in use) aborts before
@@ -249,13 +255,15 @@ class ServerMcpControl implements McpServerControl {
   /// MCP client config for a spawned agent CLI (call after [ensureRunningForDispatch]).
   /// Headers: optional `Authorization`; `X-CC-Workspace-Id`/`Agent-Id`/`Conversation-Id`/`Space-Id`
   /// (handler forces workspace, fills empty scope args — space ≠ conversation for guardrails);
-  /// `X-CC-Toolset-Rev` busts client tool-list caches when the catalogue changes.
+  /// `X-CC-Toolset-Rev` busts client tool-list caches when the catalogue changes;
+  /// [runToken] proves the run to tools that reach the host.
   Future<String> writeAgentMcpConfig(
     File target, {
     String? workspaceId,
     String? agentId,
     String? conversationId,
     String? spaceId,
+    String? runToken,
   }) async {
     await _ensureLoaded();
     final headers = <String, String>{
@@ -267,6 +275,8 @@ class ServerMcpControl implements McpServerControl {
       if (conversationId != null && conversationId.isNotEmpty)
         'X-CC-Conversation-Id': conversationId,
       if (spaceId != null && spaceId.isNotEmpty) 'X-CC-Space-Id': spaceId,
+      if (runToken != null && runToken.isNotEmpty)
+        McpCallScope.runGrantHeader: runToken,
       'X-CC-Toolset-Rev': _dispatcher.registry.toolsetRevision,
     };
     // Agents always dial loopback: the companion when one is bound (TLS

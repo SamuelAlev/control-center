@@ -119,6 +119,29 @@ class SpaceDeleted implements DomainEvent {
   final DateTime occurredAt;
 }
 
+/// Fired when a conversation/space is archived.
+///
+/// An archived space keeps its worktrees and can come back, so listeners treat
+/// this as idle, not as teardown: environments stop if they can do so safely.
+/// [SpaceDeleted] is the event that releases resources.
+class SpaceArchived implements DomainEvent {
+  /// Creates a [SpaceArchived] event.
+  const SpaceArchived({
+    required this.spaceId,
+    required this.occurredAt,
+    required this.workspaceId,
+  });
+
+  /// The archived space's id.
+  final String spaceId;
+
+  /// Owning workspace.
+  final String workspaceId;
+
+  @override
+  final DateTime occurredAt;
+}
+
 /// Fired when a new conversation/space is created.
 ///
 /// Emitted by the messaging service after the space row is committed (the

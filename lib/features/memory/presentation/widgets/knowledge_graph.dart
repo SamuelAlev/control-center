@@ -1,20 +1,19 @@
+import 'dart:async';
 import 'dart:math' show max, min;
 
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_domain/core/domain/entities/memory_policy.dart';
 import 'package:cc_domain/features/memory/domain/entities/memory_domain.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/di/providers.dart';
-import 'package:control_center/features/memory/presentation/widgets/fact_edit_dialog.dart';
 import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_chrome.dart';
 import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_data.dart';
+import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_inspector.dart';
 import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_layout.dart';
-import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_node_sheet.dart';
 import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_nodes.dart';
 import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_painter.dart';
 import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_policy_node.dart';
+import 'package:control_center/features/memory/presentation/widgets/memory_actions.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_error_view.dart';
-import 'package:control_center/features/memory/presentation/widgets/policy_edit_dialog.dart';
 import 'package:control_center/features/memory/providers/memory_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -22,24 +21,28 @@ import 'package:control_center/shared/widgets/canvas/canvas_wheel_pan.dart';
 import 'package:control_center/shared/widgets/canvas/canvas_zoom_controls.dart';
 import 'package:control_center/shared/widgets/dot_grid_background.dart';
 import 'package:control_center/shared/widgets/empty_state.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
 
 part 'knowledge_graph_actions.dart';
 part 'knowledge_graph_layout_logic.dart';
 part 'knowledge_graph_rendering.dart';
+part 'knowledge_graph_shell.dart';
 
 // Interaction bounds for the canvas viewport.
 const _minScale = 0.25;
 const _maxScale = 4.0;
 // Slack added around the content so nodes stay draggable past the edges.
 const _canvasMargin = 600.0;
-// The pan leash. Infinite on purpose: unlike the plan DAG and the org chart,
-// this canvas has DRAGGABLE nodes, so a person moves a card into the slack
+// The pan leash. Infinite on purpose: unlike the plan DAG, this canvas has
+// DRAGGABLE nodes, so a person moves a card into the slack
 // around the graph and then expects to follow it there. A finite boundary
 // would also snap the transform the first time it was dragged out of bounds,
 // which reads as the graph jumping. "Fit to view" is the way back.
 const _boundaryMargin = double.infinity;
+// Below this width the inspector covers the canvas instead of sitting beside
+// it: a phone has no room for both.
+const _inspectorDockBreakpoint = 760.0;
 
 /// Interactive knowledge graph: domains, topics, facts, policies on a canvas.
 ///
@@ -120,6 +123,14 @@ class _KnowledgeGraphState extends ConsumerState<KnowledgeGraph> {
   List<MemoryDomain>? _lastDomains;
   bool _hasCentered = false;
 
+  /// The node the inspector is showing. Holds a key rather than the payload, so
+  /// a live update reaches the inspector and a deleted node simply closes it.
+  String? _selectedKey;
+
+  void _select(String key) => setState(() => _selectedKey = key);
+
+  void _clearSelection() => setState(() => _selectedKey = null);
+
   void _retry() {
     ref.invalidate(memoryFactsProvider(widget.workspaceId));
     ref.invalidate(memoryPoliciesProvider(widget.workspaceId));
@@ -185,7 +196,7 @@ class _KnowledgeGraphState extends ConsumerState<KnowledgeGraph> {
               _lastDomains = domains;
               _rebuildGraph(facts, policies, domains);
             }
-            return _buildGraphCanvas(context);
+            return _buildGraphShell(context);
           },
           loading: () => const Center(child: CcSpinner()),
           error: (e, _) => MemoryErrorView(error: e, onRetry: _retry),

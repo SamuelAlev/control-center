@@ -2,10 +2,10 @@
 title: Scorciatoie da tastiera
 description: L'intero registro delle associazioni di tasti, per ambito, con le condizioni in cui ciascuna scorciatoia si attiva.
 slug: it-IT/manuale/riferimento/scorciatoie-da-tastiera
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Le scorciatoie provengono da un unico registro `const`, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Contiene **49 associazioni**. Impostazioni → Tu → Tasti rapidi mostra quel registro come **riferimento di sola lettura**: non esiste un'interfaccia per riassegnare i tasti né un file di scorciatoie utente.
+Le scorciatoie provengono da un unico registro `const`, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. Contiene **49 associazioni**. La finestra di dialogo **Scorciatoie da tastiera** (premi `?` oppure aprila dal menu Aiuto) mostra le scorciatoie globali e quelle della schermata corrente. È un **riferimento di sola lettura**: non esiste un'interfaccia per riassegnare i tasti né un file di scorciatoie utente.
 
 Nel seguito `Cmd` indica il modificatore di comando principale: ⌘ su macOS, Ctrl su Windows e Linux. Un'associazione si attiva solo quando il suo comando ha un gestore registrato nella schermata corrente e la sua clausola `when` è soddisfatta; `!textInputFocus` significa invece che il tasto viene passato a un campo di testo attivo.
 
@@ -41,7 +41,7 @@ Ambito `/pull-requests`. Tutte richiedono `route == '/pull-requests'` e nessun c
 | `Enter`     | Apri PR                |
 | `F`         | Apri il menu dei filtri |
 
-`Enter` (`pr.list-open`) è dichiarato nel registro e compare nel riferimento dei tasti, ma **la schermata dell'elenco non registra un gestore per esso**, quindi al momento non si attiva. `F` apre il menu dei filtri (`pr.list-open-filter`), non la ricerca.
+`Enter` (`pr.list-open`) è dichiarato nel registro e compare nella finestra di dialogo **Scorciatoie da tastiera**, ma **la schermata dell'elenco non registra un gestore per esso**, quindi al momento non si attiva. `F` apre il menu dei filtri (`pr.list-open-filter`), non la ricerca.
 
 ## Dettaglio della pull request (2)
 
@@ -90,7 +90,7 @@ Ambito `/spaces`. Le clausole `when` usano una regex, quindi si attivano sia nel
 
 «Vai al file» apre un selettore sui file della conversazione. Senza digitare nulla elenca i file aperti più di recente; digitando cerca in tutti i file dei worktree della conversazione. `Enter` apre il file selezionato in una nuova scheda, `Cmd/Ctrl + Enter` o il pulsante di divisione sulla riga lo apre in un riquadro a destra e la `×` su una riga recente lo rimuove dall’elenco.
 
-L'invio con Invio è gestito dal campo di testo dell'editor dei messaggi; il premi per parlare è gestito dal pulsante microfono dell'editor dei messaggi (con un proprio gestore della tastiera hardware). Entrambi sono elencati nel registro per il riferimento delle impostazioni.
+L'invio con Invio è gestito dal campo di testo dell'editor dei messaggi; il premi per parlare è gestito dal pulsante microfono dell'editor dei messaggi (con un proprio gestore della tastiera hardware). Entrambi sono elencati nel registro affinché la finestra di dialogo **Scorciatoie da tastiera** possa mostrarli.
 
 ## Selettore dello spazio di lavoro (2)
 
@@ -127,7 +127,7 @@ Ambito `/newsfeed`. Tutte richiedono `route == '/newsfeed'` e nessun campo di te
 
 ## Tasti del visualizzatore di diff fuori dal registro
 
-Il visualizzatore di diff delle PR gestisce questi tasti da sé (`PrDiffKeyboardHandler`). Ricerca, visualizzato e compressione sono elencati nei commenti del registro solo per il riferimento delle impostazioni: non è registrato alcun gestore nel dispatcher, quindi il dispatcher li lascia alla vista di diff. Non compaiono come righe proprie nel riferimento dei tasti.
+Il visualizzatore di diff delle PR gestisce questi tasti da sé (`PrDiffKeyboardHandler`). Ricerca, visualizzato e compressione sono solo annotati nei commenti del registro: non è registrato alcun gestore nel dispatcher, quindi il dispatcher li lascia alla vista di diff. Non compaiono come righe proprie nella finestra di dialogo **Scorciatoie da tastiera**.
 
 | Scorciatoia     | Azione                                                |
 | --------------- | ----------------------------------------------------- |

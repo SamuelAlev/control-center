@@ -126,6 +126,7 @@ class _FakeChannel implements RemoteRpcChannelPort {
         'terminal.titles' => 'fake-sub-titles',
         'terminal.watchPorts' => 'fake-sub-ports',
         'rig.watchPorts' => 'fake-sub-rig-ports',
+        'environment.watch' => 'fake-sub-environment',
         _ => 'fake-sub-${++_outputSubscriptions}',
       };
       _incoming.add({

@@ -31,6 +31,8 @@ bash "$SCRIPT_DIR/build_inference.sh" "$DEST"
 # SAML SSO (pure-Rust; no C toolchain beyond cargo itself).
 bash "$SCRIPT_DIR/build_saml.sh" "$DEST"
 bash "$SCRIPT_DIR/build_media.sh" "$DEST"
+# Desktop app windows (cc_window_windows.cpp is built separately, once CI does).
+bash "$SCRIPT_DIR/build_window.sh" "$DEST"
 
 echo "==> Staged native libraries:"
 ls -la "$DEST"

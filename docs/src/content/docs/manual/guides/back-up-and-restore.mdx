@@ -14,7 +14,7 @@ Everything here lives at **Settings → Server → Backup & restore**.
 
 - A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
 - To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
+- For per-workspace actions: **admin** of that workspace to export it or to list and download its scheduled backups, **owner** to import or delete it or to delete one of its backups.
 - For downloads and uploads: a paired full client on either a direct or brokered-relay connection. Both paths carry the file bytes through the same authenticated, end-to-end encrypted resource tunnel; the relay cannot read them.
 
 :::caution[Install snapshots are manual]
@@ -79,12 +79,32 @@ Workspace backups live on the server under
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
 node deletes only old backups for this workspace; it never deletes install snapshots
 or backups for other workspaces. These files are database-only. For off-machine
-retention, copy them independently.
+retention, download them or copy them independently.
 
-These backups are separate from the **Install snapshots** list. To restore one,
-use **Workspace data → Import** with the backup's server-side `workspace.db`
-path. Import replaces that workspace's current database, so export it first if
-you may need to undo the restore.
+## Find and restore a scheduled backup
+
+**Scheduled backups** sits between **Install snapshots** and **Workspace data**, with
+one row per workspace: when its last backup ran, how many it has kept and the space
+they take. A workspace whose pipeline has not produced anything says **No backups yet**.
+A workspace you are not an admin of says so in its row instead of listing its backups.
+
+Expand a row to see each backup, newest first:
+
+- **Restore** replaces the workspace's current database with this backup. Export the workspace first if you may need to undo it. Needs **owner**.
+- **Download** saves the file on the machine you are using. The backup stays on the server.
+- **Copy path** copies its location on the server.
+- **Delete** removes this backup permanently, once you type the workspace's name. Needs **owner**.
+
+### Backups of a deleted workspace
+
+Deleting a workspace leaves its scheduled backups on the server, and because its
+schedule stops with it, retention stops too: they stay until someone removes them. The
+install **owner** sees them in the same list, marked **Workspace deleted**, and can
+download or delete them there. Nobody else sees those rows.
+
+They have no **Restore**, since there is no workspace to restore into. To bring one
+back, download it, create a workspace, and upload the file as described in
+[Move a workspace to another install](#move-a-workspace-to-another-install).
 
 ## Delete an install snapshot
 
@@ -100,14 +120,16 @@ machine you are sitting at, use the **Download** buttons:
 
 - Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
 - Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+- Beside each backup under **Scheduled backups** → **Download**, for that backup's `.db` file.
 
 On desktop you pick where the file lands and the toast names it; on web it goes to the
-browser's downloads. Either way both report progress in bytes, because these are the two
-payloads that run to gigabytes.
+browser's downloads. Either way all three report progress in bytes, because these
+payloads run to gigabytes.
 
-Both mint a fresh copy at the moment you press the button, stream it, and delete the
-server's copy afterwards — a download is not "fetch the file the export button made
-earlier".
+The workspace and snapshot downloads mint a fresh copy at the moment you press the
+button, stream it, and delete the server's copy afterwards — a download is not "fetch
+the file the export button made earlier". A scheduled backup is the exception: you get
+the stored file, and it stays on the server.
 
 Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
 restoring it a copy back.

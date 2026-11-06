@@ -1,0 +1,411 @@
+---
+title: ماحول سیٹ اپ کریں
+description: ہر اسپیس اور ہر پل ریکویسٹ کو اس کا اپنا چلتا ہوا اسٹیک دیں، compose، اپنے CLI، نگرانی شدہ پروسیسز یا ڈیسک ٹاپ ایپ کے ساتھ۔
+slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ماحول
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+**ماحول** ایک اسپیس کا چلتا ہوا اسٹیک ہے: وہ سروسز جو کسی برانچ کو درکار ہیں، باقی تمام اسپیسز سے الگ، سائیڈ بار میں نظر آتی ہیں اور ایجنٹس کی پہنچ میں ہیں۔ پل ریکویسٹس کو بھی ایک ملتا ہے، کیونکہ PR کی اپنی اسپیس پہلے سے ہوتی ہے۔
+
+ورک اسپیس ایڈمن ایک بار **تعریف** لکھتا ہے۔ پھر ممبرز اسپیس یا PR کی سائیڈ بار کے **ماحول** حصے میں **شروع** دباتے ہیں۔ تعریفیں ورک اسپیس کے ڈیٹا بیس میں رہتی ہیں، اس لیے فیچر برانچ کبھی نہیں بدلتی کہ Control Center کیا چلاتا ہے، اگرچہ ٹولز پھر بھی اس برانچ کا کوڈ چلاتے ہیں۔
+
+## تعریف بنائیں
+
+1. **ترتیبات → ورک اسپیس → ماحول** کھولیں۔ صرف ورک اسپیس ایڈمن تعریفیں بدل سکتے ہیں۔
+2. **نئی تعریف** پر کلک کریں، پھر **خالی تعریف** یا **ریپو سے مسودہ** پر۔ ڈرافٹ ریپو میں compose فائلیں، `Procfile` اور `package.json` اسکرپٹس تلاش کرتا ہے، اور نتیجے کا جائزہ آپ لیتے ہیں۔
+3. فارم بھریں، یا **JSON** ٹیب استعمال کریں۔ اس صفحے کی مثالیں وہی JSON ہیں۔
+4. **ٹیسٹ چلائیں** پر کلک کریں۔ یہ ایک عارضی ماحول شروع کرتا ہے، تیار ہونے تک انتظار کرتا ہے اور اسے ختم کر دیتا ہے۔
+
+تعریف کو ریپو میں رکھنے کے لیے **ریپو فائل لنک کریں** استعمال کریں۔ Control Center فائل صرف ڈیفالٹ برانچ سے پڑھتا ہے اور صرف وہی ورژن چلاتا ہے جسے ایڈمن نے منظور کیا ہو۔ نیا ورژن **اپ ڈیٹ دستیاب ہے** دکھاتا ہے اور منظوری تک کچھ نہیں بدلتا۔
+
+## سب سے چھوٹی تعریف
+
+سادہ compose ریپو کو بس اتنا چاہیے:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+باقی ہر چیز کا ڈیفالٹ ہے: compose فائل خود مل جاتی ہے، ہر سروس چلتی ہے، پورٹس تفویض ہوتے ہیں، HTTP اینڈ پوائنٹس کا پتہ چلتا ہے اور ماحول کا نام برانچ پر رکھا جاتا ہے۔
+
+## کمپوننٹ کی اقسام
+
+ماحول کمپوننٹس کی ترتیب وار فہرست ہے۔ ہر کمپوننٹ پچھلے کے تیار ہونے کا انتظار کرتا ہے، الا یہ کہ `after` کسی اور کا نام لے، اور روکنا الٹی ترتیب میں ہوتا ہے۔ `enabledWhen` کمپوننٹ کو کسی آپشن یا رول سے مشروط کرتا ہے، مثلاً `opt.seed`، `!opt.seed` یا `repo.web`۔
+
+| قسم | کون چلاتا ہے | استعمال |
+| --- | --- | --- |
+| `compose` | Control Center کا compose ڈرائیور | کوئی بھی compose فائل، ہر ماحول میں ایک |
+| `cli` | آپ کا ٹول۔ Control Center میپ شدہ افعال بلاتا ہے اور JSON پڑھتا ہے | ایسا ٹول جو اپنا لائف سائیکل، ڈومینز اور ڈیٹا خود سنبھالتا ہے |
+| `process` | Control Center، نگرانی شدہ ٹرمینل سیشن میں | ڈیو سرورز اور ورکرز |
+| `task` | Control Center، ہر ٹرگر پر ایک بار | انسٹال، مائیگریشنز، ٹیسٹ |
+| `app` | Control Center، جب کوئی **ایپ کھولیں** پر کلک کرے | ڈیسک ٹاپ ایپ |
+
+`task` کمپوننٹس `when` فہرست لیتے ہیں:
+
+| ٹرگر | کب چلتا ہے |
+| --- | --- |
+| `provision` | جب worktree بنتا ہے (نیچے worktree ٹاسکس دیکھیں) |
+| `create` | ہر ماحول میں ایک بار، اور ری سیٹ کے بعد دوبارہ |
+| `start` | ہر شروع پر |
+| `change` | سنک کے بعد، جب بدلا ہوا پاتھ `onChange` سے ملے |
+| `manual` | درخواست پر: **چلائیں**، `cc-env run <id>` یا `environment_run_task` |
+| `archive` | worktree ختم ہونے سے عین پہلے |
+
+ارے کی صورت میں دی گئی کمانڈ argv ہوتی ہے، اس لیے آپشن کی قدریں کبھی شیل سے نہیں گزرتیں۔ اسٹرنگ، یا لائنوں کی ارے والا `script`، `bash -lc` کے تحت چلتا ہے۔ `{name}`، `{branch}`، `{stateDir}`، `{repo.<role>}`، `{port.<key>}`، `{opt.<key>}` اور `{url.<role>}` جیسے پلیس ہولڈرز صرف argv میں پھیلتے ہیں۔ شیل کمانڈز یہی قدریں `CC_ENV_*` متغیرات سے پڑھتی ہیں، جیسے `$CC_ENV_PORT_WEB`۔
+
+ہر کمانڈ اور اسپیس ٹرمینل کو `CC_ENV_NAME`، `CC_ENV_STATE_DIR`، `CC_ENV_URL`، `CC_SPACE_ID`، `CC_REPO_PATH_<ROLE>` بھی ملتے ہیں، اور PR اسپیسز میں `CC_PR_NUMBER` اور `CC_PR_IS_FORK` بھی۔ compose کمپوننٹ کے ساتھ `COMPOSE_PROJECT_NAME` اور `COMPOSE_FILE` بھی ملتے ہیں، اس لیے ٹاسک میں `docker compose exec` درست پروجیکٹ تک پہنچتا ہے۔
+
+## رولز اور ورکنگ ڈائریکٹری
+
+تعریف **رولز** کو ورک اسپیس ریپوز سے جوڑتی ہے، تاکہ ایک اسٹیک کئی ریپوز پر پھیل سکے:
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`: اسپیس ماحول شروع کر سکتی ہے جب اس میں کم از کم ایک اینکر رول ہو۔ اگر دو تعریفیں ملیں تو شروع کرنے والا چنتا ہے۔
+- `required`: اس ریپو کے بغیر اسٹیک نہیں چل سکتا۔
+- `whenMissing`: اسپیس میں رول نہ ہونے پر کیا ہو۔ `addToSpace` ریپو کو ڈیفالٹ برانچ پر شامل کرتا ہے اور `required` رولز کا ڈیفالٹ ہے۔ `useSource` آپ کا رجسٹرڈ چیک آؤٹ دیتا ہے، جسے صرف پڑھنے کے لیے سمجھیں۔ `skip` متغیر کو خالی چھوڑتا ہے اور باقی صورتوں میں ڈیفالٹ ہے۔
+- شروع کرنے کے لیے اسپیس میں اینکر ریپو پر `write` اجازت اور باقی ہر جڑے ریپو تک پڑھنے کی رسائی درکار ہے۔
+
+کمانڈ `repos` کے اس پہلے رول میں چلتی ہے جو اسپیس کے پاس ہو، اس لیے ایک ریپو والی تعریف میں اس کا ذکر نہیں ہوتا۔ کوئی بھی کمپوننٹ `"cwd": { "role": "e2e", "path": "packages/ui" }` سے اسے بدل سکتا ہے۔ دونوں فیلڈز اختیاری ہیں۔
+
+## پورٹس اور URLs
+
+Control Center کچھ بھی شروع ہونے سے پہلے پورے ہوسٹ کی مشترکہ رینج سے ہوسٹ پورٹس تفویض کرتا ہے (ڈیفالٹ 42000 سے 49999، 32 کے بلاکس میں)۔ پورٹ ماحول کی پوری زندگی میں وہی رہتا ہے، اور compose پورٹس صرف `127.0.0.1` سے جڑتے ہیں۔
+
+- compose پورٹس کو ڈیکلیئر کرنے کی ضرورت نہیں۔ انہیں `{port.postgres.5432}` یا `CC_ENV_PORT_POSTGRES_5432` کے طور پر پڑھیں۔
+- باقی پورٹس وہیں ڈیکلیئر ہوتے ہیں جہاں استعمال ہوں، `"port": "web"` یا `"ports": ["web", "hmr"]` سے، اور `{port.web}` کے طور پر پڑھے جاتے ہیں۔ پورٹ والے پروسیس کو `PORT` اور `HOST=127.0.0.1` بھی ملتے ہیں۔
+
+HTTP اینڈ پوائنٹس کو سرور کے راؤٹر پر URL ملتا ہے، جو ایک loopback پورٹ پر سنتا ہے:
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>` برانچ کا slug ہے، یا PR اسپیس میں `pr-<n>`۔ `<project>` `naming.project` ہے، ورنہ تعریف کا نام۔
+- `*.localhost` نام loopback کی طرف جاتے ہیں، اس لیے hosts اندراج یا DNS درکار نہیں، اور ہوسٹ نیم ماحولوں کے درمیان کوکیز الگ رکھتا ہے۔
+- HTTP کا جواب دینے والے compose پورٹس کا پتہ چل جاتا ہے، اور کمپوننٹ پر `http` اس اندازے کی جگہ لیتا ہے۔ پروسیس کو `"endpoint": { "role": "web", "primary": true }` چاہیے، جس سے `{url.web}` بھی دستیاب ہوتا ہے۔
+- براؤزر (VM) میں **Browser (VM) میں کھولیں** استعمال کریں۔ وہاں `https://web--fix-login--shop.localhost/` اسی روٹ تک پہنچتا ہے۔
+- پورا لیبل 63 حروف کے اندر رہتا ہے، اس لیے لمبے نام ہیش سے چھوٹے کیے جاتے ہیں۔
+- دو اینڈ پوائنٹس کا مشترکہ پیرنٹ ڈومین نہیں ہوتا۔ جس ایپ کو دونوں پر ایک کوکی چاہیے اسے دونوں ایک اینڈ پوائنٹ سے پیش کرنے ہوں گے۔
+
+جن URLs کو پہلے سے رجسٹر کرنا ہو، جیسے OAuth ری ڈائریکٹس، ان کے لیے `"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` ناموں کا مقررہ سیٹ دیتا ہے۔
+
+`policy` طے کرتی ہے کہ ماحول کب چلیں۔ `autoCreate` کی قدر `off`، `prSpaces` یا `allSpaces` ہے، `idleStopMinutes` کا ڈیفالٹ 240 ہے، `followPrHead` head ہلنے پر PR ماحول کو سنک کرتا ہے، اور `maxRunning` (ڈیفالٹ 6) کے ساتھ **شروع** سب سے پرانے استعمال شدہ ماحول کو روکنے کی پیشکش کرتا ہے۔
+
+## مثال: compose ایپ
+
+ایک compose فائل سے ویب ایپ اور Postgres، git سے نظرانداز `.env`، مائیگریشنز اور ٹیسٹ ٹاسک کے ساتھ۔ `seedFiles` نامزد فائلیں آپ کے رجسٹرڈ چیک آؤٹ سے ہر نئے worktree میں کاپی کرتا ہے۔
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+`healthchecks` اس سروس کو بھی اگلے کمپوننٹ کو روکنے دیتا ہے جس کی اپنی ہیلتھ چیک نہ ہو۔ اس کے بغیر چلتا کنٹینر تیار مانا جاتا ہے، اور مائیگریشنز ابھی شروع ہوتے ڈیٹا بیس سے آگے نکل سکتی ہیں۔
+
+## مثال: اپنا CLI
+
+ایک فرضی ٹول `acme` جو اپنے کنٹینرز، ڈومینز اور TLS خود سنبھالتا ہے۔ Control Center `{name}` دیتا ہے اور باقی سب `status` سے جانتا ہے۔ یہ کبھی ٹول کے ہوسٹ نیم اخذ نہیں کرتا اور کبھی `/etc/hosts` میں ترمیم نہیں کرتا۔
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create`، `status` اور `destroy` لازمی ہیں۔ Control Center پڑھی گئی حالت سے `create` یا `start` چنتا ہے۔ کوئی بھی فعل argv کے بجائے `{ "shell": "…" }` ہو سکتا ہے۔
+- `statusMap` ٹول کا اپنا JSON، JSON پوائنٹرز سے پڑھتا ہے، جہاں `*` ہر آئٹم سے ملتا ہے۔ حالت کے اصول ترتیب وار ہیں اور پہلا میل جیتتا ہے۔ شرط `path` کے ساتھ `equals` ہے، یا `any` یا `none` کے ساتھ `where`۔
+- `keepsDataOnStop: false` آئیڈل اسٹاپ بند کرتا ہے اور **روکیں** میں ڈیٹا ضائع ہونے کی وارننگ شامل کرتا ہے۔ اسے تب سیٹ کریں جب روکنے سے ڈیٹا ضائع ہو۔
+- `routing.mode: "tool"` ٹول کے ہوسٹ نیمز کو براؤزر (VM) اور ایجنٹس سے جوڑتا ہے۔ ڈومین کا اختتام `.test`، `.localhost` یا `.internal` پر ہونا چاہیے، اور اس سے باہر رپورٹ شدہ URL چھوڑ دیا جاتا ہے۔
+
+آپ کا اپنا ٹول `statusMap` چھوڑ کر اس صفحے کے آخر میں بیان کردہ اسٹیٹس کنٹریکٹ پرنٹ کر سکتا ہے۔
+
+## مثال: pnpm مونو ریپو
+
+صرف پروسیسز اور ٹاسکس، کوئی کنٹینر نہیں۔ ویب ایپ `{url.api}` کے ذریعے API ڈھونڈتی ہے۔
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- ہر پروسیس ایک ٹرمینل ٹیب ہے جسے آپ کھول، پڑھ اور اس میں ٹائپ کر سکتے ہیں۔ ٹیب بند کرنے سے وہ نہیں رکتا۔
+- `ready` `http`، `tcp` یا `logMatch` لیتا ہے۔ `restart` کی قدر `on-failure` (ڈیفالٹ)، `always` یا `never` ہے۔ `restartOn` بدلا ہوا پاتھ ملنے پر پروسیس دوبارہ شروع کرتا ہے۔
+- `options` **شروع** پر فارم بن جاتے ہیں، اور `agentDefault` ایجنٹ کی شروع کردہ رنز پر لاگو ہوتا ہے۔
+
+## مثال: ڈیسک ٹاپ ایپ
+
+بلڈ مرحلے والی ڈیسک ٹاپ ایپ۔ ایپ کسی بھی ٹیکنالوجی سے بنی ہو ایک ہی طرح کام کرتی ہے، کیونکہ Control Center آپریٹنگ سسٹم کی ونڈو سطح پر کام کرتا ہے اور ایپ میں کوئی ہک یا SDK نہیں چاہیے۔
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+ایپ ماحول کے ساتھ شروع نہیں ہوتی۔ کوئی **ایپ کھولیں** پر کلک کرتا ہے اور پہلے `prepare` چلتا ہے۔ **دوبارہ بنائیں اور کھولیں** یہ جوڑا دوبارہ چلاتا ہے۔ صاف اخراج بند کے طور پر دکھتا ہے، کریش آخری لاگ لائنیں دکھاتا ہے اور دوبارہ شروع نہیں کرتا، سرور کی دوبارہ شروعات اسے کبھی نہیں کھولتی، اور آئیڈل اسٹاپ چلتی ایپ کو نہیں چھیڑتا۔
+
+### ڈیسک ٹاپ ایپ کی اجازتیں اور حدود
+
+- macOS پر سسٹم سیٹنگز میں Control Center کو ایک بار **Screen Recording** اور **Accessibility** کی اجازت دیں۔ سرور ہوسٹ کو GUI سیشن چاہیے: headless سرور ایپ چلانے سے انکار کرتا ہے۔
+- بائنری کو براہ راست چلائیں۔ `open -a` ایپ کو LaunchServices کے حوالے کرتا ہے اور وہ اس پروسیس ٹری سے نکل جاتی ہے جسے Control Center ٹریک کرتا ہے۔ `"window": { "match": { "bundleId": "…" } }` یہ صورت سنبھالتا ہے، لیکن صرف ایک چلتی کاپی کے ساتھ محفوظ ہے۔
+- ونڈوز ڈسپلے پر رہتی ہیں۔ macOS تمام ڈسپلے سے باہر رکھی ونڈو کیپچر نہیں کرتا، اس لیے ایجنٹ کے زیر استعمال ایپ سرور کی اسکرین پر نظر آتی ہے۔ اسے فوکس درکار نہیں۔
+- `"isolate": "home"` ایپ کو `HOME`، `XDG_*` اور `CFFIXED_USER_HOME` کے ذریعے نجی ہوم دیتا ہے، تاکہ دو اسپیسز کی کاپیاں ساتھ ساتھ چل سکیں۔ `NSUserDefaults` الگ نہیں ہوتا، اس لیے Cocoa ترجیحات اور Flutter کا `shared_preferences` کاپیوں میں مشترک رہتے ہیں۔
+- `isolate` صرف شروع کیے گئے پروسیس پر لاگو ہوتا ہے۔ `flutter run` جیسے ٹول چین لانچر کو اصل ہوم چاہیے، اس لیے `isolate` کو بنی ہوئی بائنری کے ساتھ استعمال کریں۔ اگر ایپ کی اپنی سیٹنگ ہو، جیسے `--user-data-dir`، تو اسے ترجیح دیں۔
+- ایجنٹس `app_use` سے ونڈو چلاتے ہیں، جو صرف اس ماحول کے پروسیس ٹری تک پہنچتا ہے۔ ایجنٹ ونڈو دیکھتا ہے، ڈیسک ٹاپ نہیں۔ ایجنٹ کی لانچ ایکشن پالیسی سے گزرتی ہے اور ڈیفالٹ طور پر پوچھتی ہے، اور جب کسی انسان کے پاس کنٹرول ہو تو ایجنٹ کا ان پٹ رک جاتا ہے۔
+- `"input": "background"` (ڈیفالٹ) ایونٹس پروسیس کو بھیجتا ہے۔ `"foreground"` ونڈو فعال کرتا ہے اور کرسر سنبھال لیتا ہے۔
+
+## worktree ٹاسکس ریپو اسکرپٹس کی جگہ لیتے ہیں
+
+`provision` اور `archive` ٹاسکس ہر ریپو کے پرانے سیٹ اپ اور آرکائیو اسکرپٹس کی جگہ لیتے ہیں۔ **موجودہ اسکرپٹس خودکار طور پر منتقل ہو چکے ہیں:** جس ریپو میں اسکرپٹس تھے اب اس کے نام کی ایک تعریف ہے، جس کے `setup` اور `archive` ٹاسکس میں وہی اسکرپٹ متن ہے۔ **ترتیبات → ورک اسپیس → ریپوزٹریز** میں ریپو کی قطار کا آئیکن اسے کھولتا ہے۔ پچھلی اسکرپٹ رنز صرف پڑھنے والی تاریخ کے طور پر رہتی ہیں۔
+
+یہ ٹاسکس ماحول نہیں بلکہ worktree کے ساتھ چلتے ہیں، اس لیے ان اسپیسز میں بھی چلتے ہیں جہاں کوئی **شروع** نہیں دباتا:
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| چلتا ہے | جب رول کا worktree بنے، کسی بھی اسپیس میں | اس worktree کے ختم ہونے سے عین پہلے |
+| ناکامی پر | پروویژننگ ناکام ہوتی ہے اور worktree ختم ہوتا ہے | درج ہوتا ہے، حذف کرنے کو کبھی نہیں روکتا |
+| ڈیفالٹ ٹائم آؤٹ | 5 منٹ | 2 منٹ |
+| دیکھتا ہے | `CC_WORKSPACE_PATH`، `CC_ROOT_PATH`، `CC_SPACE_*`، `CC_REPO_NAME` | وہی |
+
+بغیر اسٹیک والے ریپو کو صرف ایسی تعریف چاہیے جس میں اس کے ٹاسکس ہوں۔ شروع کرنے کو کچھ نہ ہونے کی وجہ سے اینکر رول درکار نہیں:
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- ابھی کوئی ماحول نہیں، اس لیے یہ ٹاسکس `{name}`، `{port.*}`، `{url.*}`، `{opt.*}` یا `enabledWhen` استعمال نہیں کر سکتے، اور انہیں تعریف کا `env` نہیں ملتا۔
+- کسی ریپو کے `provision` اور `archive` ٹاسکس صرف ایک تعریف رکھ سکتی ہے۔ دوسری تعریفیں باقی کاموں کے لیے اسے جوڑ سکتی ہیں۔
+- `"when": ["provision", "change"]` لاک فائل بدلنے پر بھی دوبارہ انسٹال کرتا ہے، جو سیٹ اپ اسکرپٹس نے کبھی نہیں کیا۔
+- ٹاسک اپنے `cwd` رول کے worktree کے لیے چلتا ہے، اس لیے کئی ریپوز والی تعریف ہر ریپو کو الگ سیٹ اپ کر سکتی ہے۔
+- ٹیسٹ رن `CC_SCRIPT_TEST=1` سیٹ کرتا ہے۔ دوبارہ کوشش صاف worktree سے شروع ہوتی ہے، اس لیے ایسے ٹاسکس لکھیں جو دوبارہ چلنا برداشت کر سکیں۔
+
+## ایجنٹس
+
+ایجنٹس کو کبھی Docker ساکٹ نہیں ملتا۔ اہل تعریف والی اسپیس میں رن کو اپنے `PATH` پر `cc-env` ملتا ہے۔ اسپیس رن سے آتی ہے، اس لیے ایجنٹ صرف اپنے ماحول پر عمل کر سکتا ہے، اور ہر کمانڈ ایکشن پالیسی سے گزرتی ہے۔
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+compose کمپوننٹ کے ساتھ `docker` شم `ps`، `logs`، `exec`، `port`، `restart` اور `top` کے ساتھ `docker compose` کی بھی اجازت دیتا ہے۔ فعل سے پہلے کوئی فلیگ نہیں آ سکتا، `logs` فالو نہیں کر سکتا اور `exec` صرف `-T` لیتا ہے۔ باقی سب کوڈ 5 اور "not available in Control Center agent runs" کے ساتھ ختم ہوتا ہے۔
+
+جس ریپو کی اسکلز اس کا اپنا ٹول بلاتی ہیں وہ ایسا کرتا رہ سکتا ہے۔ `cli` کمپوننٹ پر `agentPassthrough` بلاک بتاتا ہے کہ ایجنٹس کون سی کمانڈز چلا سکتے ہیں:
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+`maps` اس آپریشن کا نام ہے جس کی پالیسی لاگو ہوتی ہے۔ `positionalName` اس آرگیومنٹ کو اس اسپیس کے ماحول پر مجبور کرتا ہے، `nameFilter` JSON آؤٹ پٹ کو اسی تک فلٹر کرتا ہے، اور ہر `pathFlags` قدر رن کے worktrees کے اندر ہونی چاہیے۔ جو کمانڈ کسی اصول سے نہ ملے وہ کوڈ 5 پر ختم ہوتی ہے۔
+
+یہی آپریشن ٹولز کے طور پر بھی ہیں: `environment_status`، `environment_up`، `environment_down`، `environment_reset`، `environment_destroy`، `environment_restart`، `environment_exec`، `environment_logs`، `environment_run_task`، `environment_launch_app` اور `environment_stop_app`۔ سینڈ باکس میں ایجنٹس اپنے پورٹس تک براہ راست اور ماحول کے ہوسٹ نیمز تک رن کی پراکسی سے پہنچتے ہیں، اس لیے انہیں کہیں کہ URL کا اندازہ لگانے کے بجائے `environment_status` سے اینڈ پوائنٹس پڑھیں۔
+
+## فورک پل ریکویسٹس
+
+فورک PR کا کوڈ قابل اعتماد نہیں، اور ہوسٹ پلیسمنٹ میں یہ سرور کے OS صارف کے طور پر چلتا ہے۔ `policy.forkPrs` طے کرتا ہے کہ کیا ہو:
+
+| قدر | اثر | ڈیفالٹ برائے |
+| --- | --- | --- |
+| `rig` | compose فائل بغیر پوچھے VM میں چلتی ہے | صرف `compose` اور `task` کمپوننٹس والی تعریفیں |
+| `approval` | ہر شروع پر ایڈمن درکار ہے | باقی تمام تعریفیں |
+| `deny` | مسترد | کوئی نہیں |
+
+- `seedFiles` فورک کے لیے کبھی کاپی نہیں ہوتیں، کیونکہ عموماً راز ہوتی ہیں۔ ان میں سے کسی کو جوڑنے والی compose فائل گمشدہ فائل کا نام بتاتی ہے۔
+- `provision` اور `archive` ٹاسکس چھوڑ دیے جاتے ہیں، الا یہ کہ پالیسی `rig` ہو، تب وہ VM میں چلتے ہیں۔
+- ہوسٹ پلیسمنٹ میں فورک پر `privileged`، ہوسٹ نیم اسپیسز، Docker ساکٹ بائنڈ، `devices` اور اسپیس کے worktrees سے باہر بائنڈز مسترد ہوتے ہیں۔ قابل اعتماد اسپیسز میں یہ صرف وارننگ دیتے ہیں۔
+
+## رگ پلیسمنٹ
+
+`"placement": "rig"` `compose` اور `task` کمپوننٹس کو مخصوص microVM میں چلاتا ہے۔ `process`، `cli` یا `app` کمپوننٹس والی تعریفیں اہل نہیں۔ compose فائل بغیر تبدیلی چلتی ہے، بغیر ہوسٹ Docker ساکٹ اور آپریٹر کی اسناد کے، اور نیٹ ورک رسائی صرف ان رجسٹریز تک ہوتی ہے جو اس کی امیجز کو چاہییں۔ worktree لائیو ماؤنٹ ہوتا ہے۔
+
+- **arm64 گیسٹس۔** Apple Silicon پر گیسٹس arm64 ہیں، اس لیے صرف amd64 امیجز نہیں چلیں گی۔
+- **نجی رجسٹریز مسترد ہوتی ہیں۔** گیسٹس کے پاس رجسٹری اسناد نہیں، اس لیے معلوم عوامی رجسٹریز سے باہر کی امیج VM بوٹ ہونے سے پہلے مسترد ہو جاتی ہے۔ عوامی رجسٹری پر نجی ریپوزٹری تب ناکام ہوتی ہے جب گیسٹ اسے کھینچتا ہے۔
+- **16 GiB اسٹوریج۔** اسٹیک کی تمام امیجز اور والیومز ایک 16 GiB ڈسک بانٹتے ہیں، اور اسے بڑھایا نہیں جا سکتا۔
+- **پہلا بوٹ سست ہے۔** امیج لیئرز ہر VM کی الگ ہوتی ہیں، اس لیے پہلا بوٹ سب کچھ کھینچتا ہے۔ رکی ہوئی رگ اپنی ڈسک رکھتی ہے۔
+- **بیس امیجز پڑھنے کے قابل ہوں۔** جو Dockerfile بیس امیج کا نام متغیر سے دے اس کی منصوبہ بندی نہیں ہو سکتی، کیونکہ نیٹ ورک رسائی بوٹ پر طے ہو جاتی ہے۔
+- **مدت۔** `policy.rigTtlHours` VM ختم کرتا ہے، ڈیفالٹ طور پر 24 گھنٹے بعد۔
+
+## ٹول مصنفین کے لیے اسٹیٹس کنٹریکٹ
+
+`statusMap` کے بغیر `cli` کمپوننٹ مقامی کنٹریکٹ `cc-env/1` کی توقع کرتا ہے۔ فعل `status` یہ آبجیکٹ stdout پر پرنٹ کرتا ہے:
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- `state` کی قدر `ready`، `starting`، `stopped`، `failed` یا `missing` ہے۔ `missing` سے `create` ہوتا ہے، `stopped` اور `failed` سے `start`۔ `missing` کو ایگزٹ کوڈ 0 کے ساتھ رپورٹ کریں: ناکام `status` کو `failed` گنا جاتا ہے۔
+- صرف `state` ضروری ہے۔ نامعلوم فیلڈز نظرانداز ہوتی ہیں، اور ناقابل تجزیہ آؤٹ پٹ خام متن کی تفصیل کے ساتھ خراب حالت میں دکھتا ہے۔
+- URL کو loopback، `*.localhost` یا `routing.domain` کے تحت ہونا چاہیے، ورنہ چھوڑ دیا جاتا ہے۔
+- `needsRecreate: true` **دوبارہ بنائیں** دکھاتا ہے، جو ڈیٹا ضائع کرتا ہے۔ Control Center اس پر خود کبھی عمل نہیں کرتا۔
+- فعل `list` ناموں کی JSON ارے پرنٹ کرتا ہے، یا `name` والے آبجیکٹس کی۔
+
+ایگزٹ کوڈز ہر فعل پر لاگو ہوتے ہیں:
+
+| کوڈ | مطلب |
+| --- | --- |
+| 0 | ٹھیک |
+| 3 | ہوسٹ سیٹ اپ درکار ہے۔ **ٹرمینل میں چلائیں** اسپیس ٹرمینل کھولتا ہے جس میں کمانڈ ٹائپ ہوتی ہے مگر چلتی نہیں، پھر **دوبارہ کوشش** دوبارہ کوشش کرتا ہے۔ Control Center کبھی `sudo` نہیں چلاتا |
+| 4 | تصدیق درکار ہے |
+| 5 | انحصار دستیاب نہیں |
+| دیگر | ناکامی |
+
+پیش رفت stderr پر لائن سے الگ JSON کے طور پر جاتی ہے:
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+`step` لائنیں لائیو مراحل کی فہرست کے طور پر اور `note` لائنیں جوں کی توں دکھتی ہیں۔ `error` قسم کی آخری لائن منظم خرابی بن جاتی ہے، اور `command` کاپی کے لیے پیش ہوتا ہے۔ اس کے بغیر Control Center آخری 20 stderr لائنیں دکھاتا ہے۔ جو JSON نہ ہو وہ عام لاگ آؤٹ پٹ ہے۔
+
+## متعلقہ
+
+- [اسپیسز استعمال کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اسپیسز/)
+- [ٹرمنل سے پورٹس فارورڈ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/پورٹس-فارورڈ-کریں/)
+- [ایجنٹ کو ٹیسٹ کے لیے مشین دیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/رگز-استعمال-کریں/)
+- [گارڈریلز کنفیگر کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/گارڈریلز-کنفیگر-کریں/)

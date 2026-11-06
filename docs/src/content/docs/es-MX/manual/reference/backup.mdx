@@ -2,7 +2,7 @@
 title: Respaldo, exportación e importación
 description: La estructura de la instantánea, el manifiesto, cada operación de respaldo y ruta de transferencia, y exactamente qué archivos contiene y no contiene un respaldo.
 slug: es-MX/manual/referencia/respaldo
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Todo lo que Control Center puede copiar, entregar o adoptar, y la forma exacta de cada
@@ -54,7 +54,12 @@ El paso de retención del pipeline semanal solo elimina los respaldos de su
 propio espacio de trabajo con una antigüedad mayor a la configurada (30 días de
 forma predeterminada); las instantáneas de la instalación creadas a mano nunca
 se rotan con ese paso. `server.listBackups` solo lista instantáneas de la
-instalación, incluidas las incompletas.
+instalación, incluidas las incompletas; `workspace.listBackups` lista los respaldos
+programados de un espacio de trabajo.
+
+Eliminar un espacio de trabajo deja este directorio en su lugar. La programación del espacio
+de trabajo se detiene con él, así que ya nada rota esos respaldos, y se quedan ahí hasta que
+el propietario de la instalación los elimine. `server.listOrphanedBackups` los reporta.
 
 
 ### `manifest.json`
@@ -137,6 +142,10 @@ de respaldo conectado, como el servidor de demostración.
 | `server.backupNow`   | mutación | Instalación       | **propietario** de la instalación   | ninguno       | `{ok, path}`                  |
 | `server.listBackups` | lectura  | Instalación       | **propietario** de la instalación   | ninguno       | `{backups: [...]}`            |
 | `server.deleteBackup` | mutación | Instalación      | **propietario** de la instalación   | `name`        | `{ok}`                        |
+| `server.listOrphanedBackups` | lectura | Instalación | **propietario** de la instalación | ninguno | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | mutación | Instalación | **propietario** de la instalación | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | lectura | Espacio de trabajo | `admin` | ninguno | `{backups: [...]}` |
+| `workspace.deleteBackup` | mutación | Espacio de trabajo | `owner` | `name` | `{ok}` |
 | `workspace.export`   | lectura  | Espacio de trabajo | `admin`                            | ninguno       | `{ok, path}`                  |
 | `workspace.import`   | mutación | Espacio de trabajo | `owner`                            | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutación | Instalación*       | `owner`                            | `id`          | Fila del registro marcada como eliminada |
@@ -146,6 +155,15 @@ global; su manejador comprueba la pertenencia del llamador al espacio de trabajo
 indicado y requiere `owner`.
 
 `path` en cada respuesta es una ruta en el **host del servidor**.
+
+`server.listOrphanedBackups` devuelve una entrada por cada espacio de trabajo que ya no está
+activo: `workspace_id`, `workspace_name` cuando el registro aún lo conoce, y `backups`.
+Un espacio de trabajo eliminado ya no puede pasar una verificación de rol de espacio de
+trabajo, así que sus respaldos pertenecen al propietario de la instalación.
+`server.deleteOrphanedBackup` rechaza un espacio de trabajo activo, cuyos respaldos siguen
+protegidos por `workspace.deleteBackup` y por los roles de ese espacio de trabajo. Ambas
+operaciones de eliminación solo aceptan un nombre de directorio de marca de tiempo listado,
+no una ruta.
 
 :::note[Una instantánea de toda la instalación está restringida al propietario en ambos carriles]
 `server.backupNow`, `server.listBackups` y `server.deleteBackup` requieren ser
@@ -235,27 +253,34 @@ usando su PSK de emparejamiento y el rol de más abajo.
 | ----------------------- | ------ | --------------- | -------------------------------- | ------------------------------------ |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** del espacio de trabajo     |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **propietario** de la instalación    |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **admin** del espacio de trabajo; **propietario** de la instalación una vez eliminado el espacio de trabajo |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **propietario** del espacio de trabajo |
 
-`w` es un id de espacio de trabajo, `n` un nombre de directorio de instantánea, `d` el id
-del dispositivo que llama y `s` la firma. `n` se resuelve contra el listado de respaldos en
+`w` es un id de espacio de trabajo, `n` un nombre de directorio de instantánea o de respaldo
+programado, `d` el id del dispositivo que llama y `s` la firma. En `/backup/snapshot`, `n` se
+resuelve contra el listado de respaldos en
 lugar de concatenarse a la raíz de respaldos, así que la ruta no puede apuntarse a un
-directorio que el listado no habría mostrado.
+directorio que el listado no habría mostrado. En `/backup/stored` debe ser un nombre de marca
+de tiempo, y el archivo debe ser un archivo real dentro del directorio de respaldos propio de
+ese espacio de trabajo.
 
 | Estado | Causa                                                                                   |
 | ------ | --------------------------------------------------------------------------------------- |
-| `400`  | Falta un parámetro de consulta requerido, o el cuerpo de una subida está vacío           |
+| `400`  | Falta un parámetro de consulta requerido, un nombre de respaldo no es válido, o el cuerpo de una subida está vacío |
 | `403`  | Dispositivo desconocido o revocado, firma incorrecta, o el llamador no tiene el rol      |
-| `404`  | No hay puerto de respaldo en este host, o la instantánea o el archivo de espacio de trabajo indicado no existe |
+| `404`  | No hay puerto de respaldo en este host, o la instantánea, el respaldo o el archivo de espacio de trabajo indicado no existe |
 | `405`  | Se llamó a `/backup/restore` con algo distinto de `POST`                                 |
 | `413`  | El cuerpo de la subida supera los 8 GiB, ya sea por el content-length declarado o por los bytes realmente leídos |
 | `426`  | Cualquier solicitud directa a una ruta de transferencia en el listener HTTP público; usa el túnel de recursos cifrado de un cliente emparejado |
 | `500`  | La exportación o el archivado falló en el servidor                                       |
 
-Ambas descargas responden `Cache-Control: no-store` con `Accept-Ranges: none`. Cada
-solicitud acuña una copia **nueva** y la elimina una vez transmitida, así que una respuesta
+Las tres descargas responden `Cache-Control: no-store` con `Accept-Ranges: none`.
+`/backup/workspace` y `/backup/snapshot` acuñan una copia **nueva** por solicitud y la eliminan una vez transmitida, así que una respuesta
 en caché o reanudada empalmaría bytes de dos exportaciones distintas en un archivo que
 parece válido y no lo es.
+
+`/backup/stored` es la excepción: transmite un respaldo programado como `<workspaceId>-<name>.db`
+y deja el archivo en su lugar, porque ese archivo es el respaldo.
 
 `/backup/snapshot` devuelve `<name>.zip`, con entradas relativas a la raíz de la
 instantánea, de modo que al descomprimir se reproduce `manifest.json` + `global.db` +
@@ -286,11 +311,11 @@ reposo.
 | Preparación de transferencias       | `<dataDir>/backups/transfer/` — un banco de trabajo, barrido por la ruta que lo escribe |
 | Nombre del archivo comprimido de la instantánea | `<snapshot directory name>.zip`                   |
 | Límite de subida                    | 8 GiB por subida cifrada a `/backup/restore`                 |
-| Retención                           | Instantáneas de la instalación: eliminación manual. Respaldos de espacio de trabajo: pipeline semanal, 30 días de forma predeterminada |
+| Retención                           | Instantáneas de la instalación: eliminación manual. Respaldos de espacio de trabajo: pipeline semanal, 30 días de forma predeterminada, o eliminación manual. Respaldos de un espacio de trabajo eliminado: solo eliminación manual |
 
 Los directorios `exports/`, `transfer/` y `workspace-backups/` no son
 instantáneas de la instalación y quedan excluidos de `server.listBackups`. Solo
-el último directorio tiene retención programada; eliminar una instantánea de la
+el último directorio tiene retención programada, y solo mientras exista su espacio de trabajo; eliminar una instantánea de la
 instalación requiere una acción explícita del propietario de la instalación.
 
 ## Ver también

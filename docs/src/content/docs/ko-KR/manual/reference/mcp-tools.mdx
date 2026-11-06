@@ -2,7 +2,7 @@
 title: MCP 도구
 description: cc_server가 등록하는 MCP 도구를 패밀리별로 정리한 전체 카탈로그입니다.
 slug: ko-KR/매뉴얼/레퍼런스/mcp-도구
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server`는 하나의 MCP(JSON-RPC 2.0) 도구 레지스트리를 호스팅하며, 메인 서버 포트(기본값 `9030`)에서 `POST /mcp`와 `GET /sse`로 제공되고 프로토콜 버전은 `2024-11-05`입니다. 데스크톱, 웹 빌드, 외부 MCP 클라이언트, 내장 에이전트 런타임 등 모든 클라이언트가 같은 레지스트리에 도달합니다. 외부 MCP 서버는 동적 계층으로서 같은 레지스트리에 브리지될 수 있습니다.
@@ -258,6 +258,8 @@ sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
 | `ios_use`      | WebDriverAgent/CoreSimulator를 통해 iOS 시뮬레이터를 조작합니다: 검사/입력, 스크린샷, 앱 설치/시작/중지/설치 해제, 딥 링크, argv 형태의 시뮬레이터 프로세스 |
 | `rig_list`     | 워크스페이스의 리그를 표면, 상태, 디스플레이 크기, 컨트롤러와 함께 나열합니다                          |
 | `rig_close`    | 리그를 파괴하고 그 리그가 소유한 머신 상태를 버립니다                                                   |
+
+`app_use`는 다섯 번째 use 도구입니다. 스페이스에서 실행한 데스크톱 앱의 창을 VM이 아니라 호스트에서 직접 조작하며, `fileWriteOutsideWorktree`와 `fileDelete`도 선언합니다. 이 도구와 `environment_*` 도구는 [환경 설정하기](/ko-KR/매뉴얼/사용-가이드/환경/)에 설명되어 있습니다.
 
 ## MCP로 노출되지 않는 것
 

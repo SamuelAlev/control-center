@@ -26,6 +26,30 @@ void main() {
       expect(find.text('Tooltip body'), findsNothing);
     });
 
+    testWidgets('an empty message opens no panel', (tester) async {
+      await tester.pumpWidget(
+        ccTestApp(
+          const Center(
+            child: CcTooltip(
+              message: '',
+              showDelay: Duration(milliseconds: 100),
+              child: SizedBox(width: 40, height: 40),
+            ),
+          ),
+        ),
+      );
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      await gesture.moveTo(tester.getCenter(find.byType(SizedBox).first));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump();
+
+      expect(find.byType(Text), findsNothing);
+    });
+
     testWidgets('shows the message after the hover dwell elapses', (
       tester,
     ) async {

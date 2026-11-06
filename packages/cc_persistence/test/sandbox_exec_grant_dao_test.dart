@@ -39,7 +39,7 @@ void main() {
       final g = grant(id: 'g1', path: '/data/spaces/s1/repos');
       expect(g.covers('/data/spaces/s1/repos'), isTrue);
       expect(
-        g.covers('/data/spaces/s1/repos/web-app/node_modules/.bin/husky'),
+        g.covers('/data/spaces/s1/repos/shop-ui/node_modules/.bin/husky'),
         isTrue,
       );
       expect(

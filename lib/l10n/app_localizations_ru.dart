@@ -91,10 +91,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get keybindingPushToTalk => 'Нажмите, чтобы говорить';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'Удерживайте или переключайте голосовую диктовку в поле сообщения';
-
-  @override
   String get agentPermissions => 'Разрешения агента';
 
   @override
@@ -194,6 +190,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'Симулятор iOS';
+
+  @override
+  String get rigSurfaceAppWindow => 'Окно приложения';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -467,6 +466,10 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'Для живого просмотра на этом хосте нужен ffmpeg. Установите ffmpeg и откройте вкладку снова.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'Для просмотра в реальном времени нужна запись экрана. Разрешите её для Control Center в Системных настройках и снова откройте вкладку.';
 
   @override
   String get rigStreamEnded => 'Живой просмотр завершён.';
@@ -1587,10 +1590,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'Открыть меню фильтров';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'Открыть меню фильтров pull request';
 
   @override
   String countSelected(int count) {
@@ -2871,19 +2870,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cancelEdit => 'Отменить правку';
 
   @override
-  String get categoryCreation => 'Создание';
-
-  @override
-  String get categoryEditing => 'Редактирование';
-
-  @override
   String get categoryNavigation => 'Навигация';
-
-  @override
-  String get categorySystem => 'Система';
-
-  @override
-  String get categoryView => 'Вид по категориям';
 
   @override
   String get change => 'Изменить';
@@ -3713,31 +3700,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get keepSandboxing => 'Оставить песочницу';
 
   @override
-  String get keybindingAddARepositoryDescription => 'Добавить репозиторий';
-
-  @override
   String get keybindingAddRepository => 'Добавить репозиторий';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'Добавить или убрать закладку у выбранной статьи';
 
   @override
   String get keybindingCommandPalette => 'Палитра команд';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'Создать нового агента';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'Создать новое рабочее пространство';
-
-  @override
   String get keybindingFocusSearch => 'Перейти к поиску';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'Перейти к полю поиска pull request';
 
   @override
   String get keybindingNewAgent => 'Новый агент';
@@ -3758,35 +3727,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get keybindingOpenArticle => 'Открыть статью';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'Открыть или закрыть всплывающий переключатель рабочих пространств на боковой панели';
-
-  @override
   String get keybindingOpenPr => 'Открыть PR';
 
   @override
   String get keybindingOpenSettings => 'Открыть настройки';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'Открыть настройки приложения';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription =>
-      'Открыть палитру команд';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'Открыть выбранную статью';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'Открыть выбранный pull request';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'Открыть выбранное рабочее пространство';
 
   @override
   String get keybindingOpenWorkspace => 'Открыть рабочее пространство';
@@ -3804,86 +3748,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get keybindingRefresh => 'Обновить';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'Обновить все ленты';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'Обновить список pull request';
-
-  @override
-  String get keybindingRescanForAdaptersDescription =>
-      'Повторно найти адаптеры';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription =>
-      'Выбрать следующую статью';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription =>
-      'Выбрать следующее пространство';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'Выбрать предыдущую статью';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription =>
-      'Выбрать предыдущее пространство';
-
-  @override
   String get keybindingSendMessage => 'Отправить сообщение';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'Отправить текущее сообщение';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'Переключить светлую и тёмную тему';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'Переключиться на восьмое рабочее пространство';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'Переключиться на пятое рабочее пространство';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'Переключиться на первое рабочее пространство';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'Переключиться на четвёртое рабочее пространство';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'Переключиться на следующее рабочее пространство';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'Переключиться на девятое рабочее пространство';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'Переключиться на предыдущее рабочее пространство';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'Переключиться на второе рабочее пространство';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'Переключиться на седьмое рабочее пространство';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'Переключиться на шестое рабочее пространство';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'Переключиться на третье рабочее пространство';
 
   @override
   String get keybindingToggleBookmark => 'Переключить закладку';
@@ -3921,13 +3786,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'Рабочее пространство 9';
-
-  @override
-  String get keybindings => 'Сочетания клавиш';
-
-  @override
-  String get keybindingsDescription =>
-      'Все сочетания клавиш. Их нельзя переназначить.';
 
   @override
   String get killRunning => 'Прервать выполнение';
@@ -4202,11 +4060,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get noSavedArticlesBody => 'Сохранённые статьи появятся здесь.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'Нет сочетаний клавиш по запросу «$query»';
-  }
 
   @override
   String get noSystemFonts => 'Системные шрифты не обнаружены.';
@@ -4953,12 +4806,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'Поиск…';
-
-  @override
-  String get searchShortcuts => 'Поиск сочетаний клавиш…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'Недоступно в браузере';
 
   @override
   String get searching => 'Идёт поиск…';
@@ -6765,6 +6612,29 @@ class AppLocalizationsRu extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'Пространство удалено';
 
   @override
+  String get triggerEventSpaceArchived => 'Пространство заархивировано';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged =>
+      'Подготовка пространства изменилась';
+
+  @override
+  String get triggerEventPrHeadChanged => 'Head PR изменён';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => 'Статус окружения изменён';
+
+  @override
+  String get triggerEventEnvironmentReady => 'Окружение готово';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'Окружение уничтожено';
+
+  @override
+  String get triggerEventEnvironmentProcessExited =>
+      'Процесс окружения завершён';
+
+  @override
   String get triggerExternalPrHelp =>
       'Pull request, открытый на хосте кода, а не из Control Center.';
 
@@ -6828,6 +6698,33 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'Пространство беседы удаляется.';
+
+  @override
+  String get triggerSpaceArchivedHelp => 'Пространство беседы архивируется.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'Подготовка рабочих деревьев пространства начинается, завершается или прерывается ошибкой.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'В открытый pull request отправлены новые коммиты.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'Окружение пространства переходит в новый статус.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'Окружение пространства запущено и готово к работе.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp =>
+      'Окружение пространства удаляется.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'Процесс, запущенный окружением, завершается.';
 
   @override
   String get navTickets => 'Тикеты';
@@ -9066,19 +8963,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'Использование и стоимость';
-
-  @override
-  String get usageAndCostDescription =>
-      'Расходы по агентам за последние 7 дней по фактической стоимости запусков.';
-
-  @override
-  String get noUsageYet => 'Использование пока не зафиксировано.';
-
-  @override
-  String get spentThisWeek => 'потрачено на этой неделе';
-
-  @override
   String get subscriptionUsage => 'Использование подписки';
 
   @override
@@ -9292,10 +9176,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get keybindingNewSpace => 'Новое пространство';
 
   @override
-  String get keybindingCreateANewSpaceDescription =>
-      'Создать новое пространство';
-
-  @override
   String get jumpToLatest => 'К последнему';
 
   @override
@@ -9468,71 +9348,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get preparingWorkspace => 'Подготовка рабочего пространства…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'Запуск скрипта настройки для $repo…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'Скрипты';
-
-  @override
-  String get repoScriptsTooltip => 'Настроить скрипты жизненного цикла';
-
-  @override
-  String get repoScriptsSetupLabel => 'Скрипт настройки';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'Запускается в рабочем дереве пространства сразу после создания — установка зависимостей, генерация файлов. При ошибке пространство помечается как сбойное; повтор запускает скрипт снова.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'Скрипт архивации';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'Запускается непосредственно перед удалением рабочего дерева пространства — очистка ресурсов вне рабочего дерева. Ошибка не блокирует удаление.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'Запускается через bash из рабочего дерева; заданы CC_WORKSPACE_PATH (рабочее дерево), CC_ROOT_PATH (корень репозитория), CC_SPACE_ID, CC_SPACE_NAME и CC_REPO_NAME.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'например, pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'например, docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => 'Недавние запуски';
-
-  @override
-  String get repoScriptsNoRuns => 'Запусков пока нет';
-
-  @override
-  String get repoScriptsSaved => 'Скрипты сохранены';
-
-  @override
-  String get repoScriptsRunKindSetup => 'Настройка';
-
-  @override
-  String get repoScriptsRunKindArchive => 'Архивация';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'Выполняется';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'Успешно';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'Ошибка';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'Время истекло';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'Код выхода $code';
+  String provisioningRunningTasks(String repo) {
+    return 'Запуск задач worktree для $repo…';
   }
 
   @override
@@ -10344,10 +10161,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get keybindingCheatSheet => 'Сочетания клавиш';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'Показать шпаргалку сочетаний клавиш для текущего экрана';
-
-  @override
   String get runPlaybookLabel => 'Запустить плейбук';
 
   @override
@@ -10358,14 +10171,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'Повторить';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'Отменить последнее обратимое действие';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'Повторить последнее отменённое действие';
 
   @override
   String get undone => 'Отменено';
@@ -14288,6 +14093,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get newSkill => 'Новый навык';
 
   @override
+  String get newItemAction => 'Новый';
+
+  @override
   String get zoomIn => 'Увеличить';
 
   @override
@@ -14505,6 +14313,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get steerNow => 'Направить';
 
   @override
+  String get steerForce => 'Остановить и отправить';
+
+  @override
   String get steeringQueueLabel => 'Сообщения управления в очереди';
 
   @override
@@ -14552,16 +14363,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'Спросим снова, когда агенту понадобится запустить программу из этой копии.';
-
-  @override
-  String get repoScriptsTest => 'Тест';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'Запустить этот черновик в одноразовом клоне репозитория';
-
-  @override
-  String get repoScriptsRunKindTest => 'Тест';
 
   @override
   String get demoBadgeLabel => 'Демо';
@@ -14781,6 +14582,52 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'Путь на сервере';
+
+  @override
+  String get backupScheduledLabel => 'Резервные копии по расписанию';
+
+  @override
+  String get backupScheduledExplainer =>
+      'Копии, которые сохраняет конвейер резервного копирования каждого рабочего пространства. Расписание и срок хранения задаются в шаблоне конвейера.';
+
+  @override
+  String get backupScheduledNone => 'Резервных копий пока нет';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count резервной копии',
+      many: '$count резервных копий',
+      few: '$count резервные копии',
+      one: '$count резервная копия',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'Последняя копия: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'Чтобы видеть резервные копии этого рабочего пространства, нужна роль администратора.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'Удалить эту резервную копию?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'Удалить с сервера копию $name от $date? Это действие нельзя отменить.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'Резервная копия удалена.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'Рабочее пространство удалено';
 
   @override
   String get backupRestoreAction => 'Восстановить';
@@ -15403,14 +15250,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get ideQuickOpen => 'Перейти к файлу';
 
   @override
-  String get ideQuickOpenDescription =>
-      'Найдите файлы беседы по имени и откройте один во вкладке';
-
-  @override
-  String get prQuickOpenDescription =>
-      'Найдите файлы pull request по имени и откройте один во вкладке';
-
-  @override
   String get ideQuickOpenHint => 'Поиск файлов по имени';
 
   @override
@@ -15747,6 +15586,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'Принудительная загрузка';
+
+  @override
+  String get skillEvalHashLabel => 'Хеш пакета';
+
+  @override
+  String get skillEvalProgressLabel => 'Ход выполнения';
+
+  @override
+  String get skillEvalUpdatesToggle => 'Оценки обновлений';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -16139,4 +15987,718 @@ class AppLocalizationsRu extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return 'Осталось $minutes мин';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'Окружения запускают настоящие процессы на хосте, поэтому в демо их нет.';
+
+  @override
+  String get environmentChecksFailing =>
+      'Некоторые проверки на сервере не проходят';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'Конечные точки: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'Сервисы: $names';
+  }
+
+  @override
+  String get environmentCopied => 'Скопировано';
+
+  @override
+  String get environmentCopyCommand => 'Копировать команду';
+
+  @override
+  String get environmentCopyUrl => 'Копировать URL';
+
+  @override
+  String get environmentDefinition => 'Определение';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count определения',
+      many: '$count определений',
+      few: '$count определения',
+      one: '1 определение',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'Уничтожить';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name и его данные будут удалены. Запуск создаст новое.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'Уничтожить это окружение?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'Выполнить в сервисе';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'Код выхода $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => 'Это нужно настроить на сервере';
+
+  @override
+  String get environmentKindApp => 'Приложение';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'Процесс';
+
+  @override
+  String get environmentKindTask => 'Задача';
+
+  @override
+  String get environmentLaunch => 'Открыть';
+
+  @override
+  String get environmentLogsGone => 'Эти логи больше недоступны.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'Логи: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'Ожидание вывода';
+
+  @override
+  String get environmentMoreActions => 'Другие действия с окружением';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'Из-за изменения это окружение нужно пересоздать.';
+
+  @override
+  String get environmentNoStack =>
+      'Выполняет только задачи worktree, поэтому запускать нечего.';
+
+  @override
+  String get environmentOnTheServer => 'На сервере';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Открыть в Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'Открыть просмотр';
+
+  @override
+  String get environmentPlacementRig => 'В ВМ';
+
+  @override
+  String get environmentPreviewTab => 'Окружение';
+
+  @override
+  String get environmentRebuildRelaunch => 'Пересобрать и перезапустить';
+
+  @override
+  String get environmentRecreate => 'Пересоздать';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name будет уничтожено и запущено снова с теми же параметрами. Его данные будут потеряны.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'Пересоздать это окружение?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name вернётся к исходному состоянию. Данные, созданные с тех пор, будут потеряны.';
+  }
+
+  @override
+  String get environmentResetData => 'Сбросить данные';
+
+  @override
+  String get environmentResetTitle => 'Сбросить данные?';
+
+  @override
+  String get environmentRestart => 'Перезапустить';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count перезапуска',
+      many: '$count перезапусков',
+      few: '$count перезапуска',
+      one: '1 перезапуск',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'Выполнить';
+
+  @override
+  String get environmentRunInTerminal => 'Выполнить в терминале';
+
+  @override
+  String get environmentSectionTitle => 'Окружение';
+
+  @override
+  String get environmentService => 'Сервис';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'Действия для $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'Запустить окружение';
+
+  @override
+  String get environmentStateCrashed => 'Сбой';
+
+  @override
+  String get environmentStatusDegraded => 'Деградировало';
+
+  @override
+  String get environmentStatusDestroying => 'Уничтожается';
+
+  @override
+  String get environmentStatusGone => 'Удалено';
+
+  @override
+  String get environmentStatusStopping => 'Останавливается';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'При остановке $name потеряет свои данные, и запуск их не вернёт.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'Остановить и потерять данные';
+
+  @override
+  String get environmentStopTitle => 'Остановить это окружение?';
+
+  @override
+  String get environmentTaskNeverRun => 'Ещё не запускалась';
+
+  @override
+  String get environmentsAddCheck => 'Добавить проверку';
+
+  @override
+  String get environmentsAddOption => 'Добавить параметр';
+
+  @override
+  String get environmentsAddRole => 'Добавить роль';
+
+  @override
+  String get environmentsAdminOnly =>
+      'Менять определения могут только администраторы рабочего пространства.';
+
+  @override
+  String get environmentsAfter => 'Ждать эти компоненты';
+
+  @override
+  String get environmentsAnchor => 'Якорь';
+
+  @override
+  String get environmentsAutoCreate => 'Запускать автоматически';
+
+  @override
+  String get environmentsAutoCreateAll => 'В каждом подходящем пространстве';
+
+  @override
+  String get environmentsAutoCreateOff => 'Никогда';
+
+  @override
+  String get environmentsAutoCreatePrs => 'В пространствах pull request';
+
+  @override
+  String get environmentsBlank => 'Пустое определение';
+
+  @override
+  String get environmentsCheckFix => 'Команда исправления';
+
+  @override
+  String get environmentsCheckHint => 'Подсказка';
+
+  @override
+  String get environmentsCommandHelp =>
+      'Аргументы разделяются пробелами. Аргумент с пробелом заключите в кавычки.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count компонента',
+      many: '$count компонентов',
+      few: '$count компонента',
+      one: '1 компонент',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'Собирать образы при запуске';
+
+  @override
+  String get environmentsComposeFile => 'Файл compose';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Не удалось прочитать файл compose. Имена сервисов всё ещё можно указать в режиме JSON.';
+
+  @override
+  String get environmentsComposeServices => 'Сервисы';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'Оставьте все сервисы неотмеченными, чтобы запустить их все.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'У этой команды есть условные аргументы. Измените её в режиме JSON.';
+
+  @override
+  String get environmentsCwdPath => 'Рабочий путь';
+
+  @override
+  String get environmentsCwdRole => 'Рабочая роль';
+
+  @override
+  String get environmentsDeleteBody =>
+      'Пространства больше не смогут его запускать. Работающие окружения продолжат работу до остановки.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'Удалить $name?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'Что может запускать каждое пространство и какие задачи выполняют его worktree.';
+
+  @override
+  String get environmentsDraftFromRepo => 'Черновик из репозитория';
+
+  @override
+  String get environmentsEmpty => 'Определений пока нет';
+
+  @override
+  String get environmentsEnabledWhen => 'Включено, когда';
+
+  @override
+  String get environmentsEndpointRole => 'Роль конечной точки';
+
+  @override
+  String get environmentsFollowPrHead => 'Следовать за head pull request';
+
+  @override
+  String get environmentsForkApproval => 'Каждый запуск требует администратора';
+
+  @override
+  String get environmentsForkDeny => 'Запрещено';
+
+  @override
+  String get environmentsForkPrs => 'Pull request из форков';
+
+  @override
+  String get environmentsForkRig => 'Запускать в ВМ';
+
+  @override
+  String get environmentsIdleStop => 'Останавливать после минут простоя';
+
+  @override
+  String get environmentsIsolateHome =>
+      'Дать приложению личный домашний каталог';
+
+  @override
+  String get environmentsIssues => 'Исправьте это перед сохранением';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'Недопустимый JSON: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'Сохраняет данные при остановке';
+
+  @override
+  String get environmentsLinkConfirm => 'Связать и одобрить';
+
+  @override
+  String get environmentsLinkFile => 'Связать файл репозитория';
+
+  @override
+  String get environmentsLinkHelp =>
+      'Читается только из ветки по умолчанию и запускается только после одобрения.';
+
+  @override
+  String get environmentsLinkPath => 'Путь';
+
+  @override
+  String get environmentsMaxRunning => 'Одновременно запущено';
+
+  @override
+  String get environmentsNamingProject => 'Проект';
+
+  @override
+  String get environmentsNamingTemplate => 'Шаблон имени';
+
+  @override
+  String get environmentsNew => 'Новое определение';
+
+  @override
+  String get environmentsNewDefinitionName => 'Новое окружение';
+
+  @override
+  String get environmentsNoChecks => 'В этом определении нет проверок.';
+
+  @override
+  String get environmentsNoRuns => 'Тестовых запусков пока нет';
+
+  @override
+  String get environmentsOnChange => 'Отслеживаемые пути';
+
+  @override
+  String get environmentsOptionBool => 'Да или нет';
+
+  @override
+  String get environmentsOptionEnum => 'Один из';
+
+  @override
+  String get environmentsOptionMulti => 'Несколько из';
+
+  @override
+  String get environmentsOptionValues => 'Значения';
+
+  @override
+  String get environmentsPlacement => 'Размещение';
+
+  @override
+  String get environmentsPlacementHost => 'На хосте';
+
+  @override
+  String get environmentsPlacementRig => 'В ВМ';
+
+  @override
+  String get environmentsPrepareTask => 'Подготовительная задача';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'Основная конечная точка';
+
+  @override
+  String get environmentsReadyHttp => 'Готово, когда этот URL отвечает';
+
+  @override
+  String get environmentsRestartAlways => 'Всегда';
+
+  @override
+  String get environmentsRestartNever => 'Никогда';
+
+  @override
+  String get environmentsRestartOn => 'Перезапускать при изменении этих путей';
+
+  @override
+  String get environmentsRestartOnFailure => 'При сбое';
+
+  @override
+  String get environmentsRestartPolicy => 'Перезапустить';
+
+  @override
+  String get environmentsRigTtl => 'Время жизни ВМ в часах';
+
+  @override
+  String get environmentsRunChecks => 'Запустить снова';
+
+  @override
+  String get environmentsRunTest => 'Запустить тест';
+
+  @override
+  String get environmentsSaved => 'Определение сохранено';
+
+  @override
+  String get environmentsSectionComponents => 'Компоненты';
+
+  @override
+  String get environmentsSectionOptions => 'Параметры запуска';
+
+  @override
+  String get environmentsSectionSeedFiles => 'Начальные файлы';
+
+  @override
+  String get environmentsSectionVariables => 'Переменные';
+
+  @override
+  String get environmentsSeedHelp =>
+      'Один путь в строке, копируется из зарегистрированного checkout. Pull request из форков их никогда не получают.';
+
+  @override
+  String get environmentsShellHelp =>
+      'Заполнители здесь не раскрываются. Вместо них читайте переменные CC_ENV_*.';
+
+  @override
+  String get environmentsSourceApprove => 'Одобрить эту версию';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path совпадает с одобренной версией.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'Одобренная версия продолжает работать, пока вы не одобрите эту.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'Источник';
+
+  @override
+  String get environmentsTestHelp =>
+      'Запускает одноразовое окружение от начала до конца: проверка, запуск, ожидание готовности, уничтожение.';
+
+  @override
+  String get environmentsTestSaveFirst => 'Сначала сохраните определение.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'Тайм-аут в секундах';
+
+  @override
+  String get environmentsTitle => 'Окружения';
+
+  @override
+  String get environmentsTriggerArchive => 'Перед удалением worktree';
+
+  @override
+  String get environmentsTriggerChange => 'При изменении отслеживаемых путей';
+
+  @override
+  String get environmentsTriggerCreate => 'Один раз на окружение';
+
+  @override
+  String get environmentsTriggerManual => 'По запросу';
+
+  @override
+  String get environmentsTriggerProvision => 'При создании worktree';
+
+  @override
+  String get environmentsTriggerStart => 'При каждом запуске';
+
+  @override
+  String get environmentsTriggers => 'Запускается';
+
+  @override
+  String get environmentsUnreadable =>
+      'Этот клиент не может прочитать определение.';
+
+  @override
+  String get environmentsUpdateAvailable => 'Доступно обновление';
+
+  @override
+  String get environmentsUseShell => 'Использовать команду оболочки';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'Инструмент будет работать с вашим собственным checkout. Считайте его доступным только для чтения.';
+
+  @override
+  String get environmentsWhenMissing => 'Когда в пространстве этого нет';
+
+  @override
+  String get environmentsWhenMissingAdd => 'Добавить в пространство';
+
+  @override
+  String get environmentsWhenMissingSkip => 'Пропустить';
+
+  @override
+  String get environmentsWhenMissingSource =>
+      'Использовать зарегистрированный checkout';
+
+  @override
+  String get environmentsUnsupported =>
+      'Этот сервер не поддерживает окружения.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'Нет просмотра: сервер не может захватить это окно. Разрешите Control Center запись экрана на сервере.';
+
+  @override
+  String get environmentHealthHealthy => 'Исправен';
+
+  @override
+  String get environmentHealthUnhealthy => 'Неисправен';
+
+  @override
+  String get environmentTerminalStale =>
+      'Этот терминал открыт до запуска окружения, поэтому в нём нет его переменных.';
+
+  @override
+  String get environmentTerminalFresh => 'Открыть новый терминал';
+
+  @override
+  String get environmentsShellStays =>
+      'Многострочный скрипт остаётся командой оболочки: строки — это его структура.';
+
+  @override
+  String get environmentsOverrides => 'Переопределения рабочего пространства';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'Собственные настройки файла здесь только для чтения. Привяжите его роли к репозиториям этого рабочего пространства или переопределите любое поле в JSON.';
+
+  @override
+  String get environmentsReposHelp =>
+      'Репозитории, которые использует это окружение, каждый привязан к роли.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'Что запускает окружение, в порядке старта.';
+
+  @override
+  String get environmentsOptionsHelp =>
+      'Варианты, предлагаемые при запуске окружения.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'Задаются для задач, процессов, приложений и терминалов пространства.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'Что нужно хосту для работы этого окружения.';
+
+  @override
+  String get environmentsIdleStopHelp => 'При 0 никогда не останавливается.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'Пространство с этим репозиторием может запустить окружение.';
+
+  @override
+  String get environmentsRequiredHelp => 'Без него окружение не запустится.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'Синхронизировать и обновлять при смещении head pull request.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'Нужно исправить';
+
+  @override
+  String get environmentsCheckFile => 'Файл';
+
+  @override
+  String get environmentsDiscardBody =>
+      'Ваши изменения этого определения будут потеряны.';
+
+  @override
+  String get environmentsWorktreeRuns => 'Запуски задач worktree';
+
+  @override
+  String get environmentsNoWorktreeRuns =>
+      'Задачи worktree ещё не запускались.';
+
+  @override
+  String get environmentsLinkRoles => 'Роли в этом файле';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'Не удалось прочитать файл из репозитория. Роли можно привязать после связывания.';
+
+  @override
+  String get guardrailClassHostExecution => 'Выполнение команд на хосте';
+
+  @override
+  String get environmentUrls => 'URL-адреса';
+
+  @override
+  String get environmentScripts => 'Скрипты';
+
+  @override
+  String get environmentNoneForSpace => 'У этого пространства нет окружения';
+
+  @override
+  String get environmentNoneForPr => 'У этого pull request нет окружения';
+
+  @override
+  String get environmentSetupBody =>
+      'Окружение запускает сервисы, скрипты и URL-адреса репозитория для одного пространства. Настройте его один раз, и любое пространство этого репозитория сможет его запустить.';
+
+  @override
+  String get environmentSetUp => 'Настроить окружение';
+
+  @override
+  String get environmentEditDefinition => 'Изменить определение';
+
+  @override
+  String get environmentOpenPanel => 'Открыть окружение';
+
+  @override
+  String get environmentNeedsSetup => 'Требуется настройка';
+
+  @override
+  String get environmentContinueInTerminal => 'Продолжить в терминале';
+
+  @override
+  String get environmentSetupHint =>
+      'Инструменту нужен ввод в терминале: пароль или ответ на вопрос. После этого запуск продолжится.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'Этот терминал открыт, потому что для запуска нужны ваши действия';
+
+  @override
+  String get environmentSetupTab => 'Настройка окружения';
+
+  @override
+  String get environmentsNothingRunning =>
+      'Из этого определения ничего не запущено.';
+
+  @override
+  String get searchPoliciesHint => 'Поиск политик...';
+
+  @override
+  String get noPoliciesMatch => 'Нет политик, соответствующих запросу';
+
+  @override
+  String get memoryPolicyActive => 'Активна';
+
+  @override
+  String get memoryFactType => 'Тип';
+
+  @override
+  String get memoryTimesRecalled => 'Число обращений';
+
+  @override
+  String get memorySourceFacts => 'Исходные факты';
+
+  @override
+  String get spaceSetupLogs => 'Журналы настройки';
 }

@@ -2654,6 +2654,9 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'A execução parou porque a credencial do provedor não funciona mais. Reconecte-o em Configurações → Provedores e tente o turno outra vez.';
+
+  @override
+  String get permissionHostExecution => 'Executar comandos no host';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).

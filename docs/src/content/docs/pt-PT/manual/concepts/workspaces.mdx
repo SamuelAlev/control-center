@@ -2,7 +2,7 @@
 title: Espaços de trabalho e isolamento
 description: Porque é que um espaço de trabalho é uma fronteira rígida entre inquilinos, como a divisão da base de dados torna essa fronteira estrutural e o que a atravessa deliberadamente.
 slug: pt-PT/manual/conceitos/espacos-de-trabalho
-sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
+sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
 ---
 
 ## O que é um espaço de trabalho?
@@ -110,7 +110,10 @@ instantâneos estão completos e permite ao proprietário da instalação elimin
 confirmação, e cada espaço de trabalho oferece exportação e importação. O pipeline
 integrado **Workspace backup** recolhe apenas a base de dados desse espaço de trabalho
 numa agenda semanal e elimina as suas próprias cópias de segurança com idade superior à
-retenção configurada. Restaurar um espaço de trabalho a partir de um instantâneo da
+retenção configurada. Essas cópias de segurança aparecem na mesma página por espaço de
+trabalho, onde cada uma pode ser restaurada, descarregada ou eliminada. Eliminar um espaço de
+trabalho deixa as suas cópias de segurança para o proprietário da instalação as recolher ou
+remover, uma vez que o agendamento e a retenção param com ele. Restaurar um espaço de trabalho a partir de um instantâneo da
 instalação é apontar `workspace.import` ao `<workspaceId>/workspace.db` do instantâneo;
 restaurar uma instalação completa continua a ser uma cópia de volta do diretório do
 instantâneo com o servidor parado.
@@ -119,11 +122,11 @@ O que nenhuma delas transporta é o resto do diretório do espaço de trabalho. 
 
 ## Mover uma cópia de segurança entre o servidor e o seu dispositivo
 
-Todas as operações acima falam em caminhos no **servidor**, o que só é uma resposta completa quando o servidor é a sua própria máquina. Três rotas de transferência assinadas — [`/backup/workspace`, `/backup/snapshot` e `/backup/restore`](/pt-PT/manual/referencia/copia-de-seguranca/#transfer-routes) — transportam os bytes em qualquer outra topologia através do túnel de recursos autenticado e cifrado, em ligações diretas e pelo relay. As rotas HTTP públicas não servem bytes de cópia de segurança legíveis, e os caminhos assinados continuam a exigir autorização. Na página, isto traduz-se num botão **Descarregar** junto a cada exportação e a cada instantâneo (escolhe onde fica) e em **Escolher um ficheiro e enviar** para restaurar a partir de um ficheiro que esteja na máquina que está a utilizar. O envio funciona quando o servidor não é a sua máquina: `workspace.import` precisa que o ficheiro já esteja no host, e é assim que ele lá chega.
+Todas as operações acima falam em caminhos no **servidor**, o que só é uma resposta completa quando o servidor é a sua própria máquina. Quatro rotas de transferência assinadas — [`/backup/workspace`, `/backup/snapshot`, `/backup/stored` e `/backup/restore`](/pt-PT/manual/referencia/copia-de-seguranca/#rotas-de-transferência) — transportam os bytes em qualquer outra topologia através do túnel de recursos autenticado e cifrado, em ligações diretas e pelo relay. As rotas HTTP públicas não servem bytes de cópia de segurança legíveis, e os caminhos assinados continuam a exigir autorização. Na página, isto traduz-se num botão **Descarregar** junto a cada exportação, a cada instantâneo e a cada cópia de segurança agendada (escolhe onde fica) e em **Escolher um ficheiro e enviar** para restaurar a partir de um ficheiro que esteja na máquina que está a utilizar. O envio funciona quando o servidor não é a sua máquina: `workspace.import` precisa que o ficheiro já esteja no host, e é assim que ele lá chega.
 
 Vale a pena conhecer três propriedades:
 
-- **Um descarregamento gera uma cópia nova e o servidor não guarda nada dela.** Descarregar não é “ir buscar o ficheiro que o botão de exportação criou” — exporta outra vez, transmite esse resultado em fluxo e elimina-o. A resposta é `no-store` com `Accept-Ranges: none` pela mesma razão: um intervalo retomado iria juntar duas exportações diferentes num único ficheiro que parece válido e não é.
+- **Um descarregamento gera uma cópia nova e o servidor não guarda nada dela.** Descarregar não é “ir buscar o ficheiro que o botão de exportação criou” — exporta outra vez, transmite esse resultado em fluxo e elimina-o. A resposta é `no-store` com `Accept-Ranges: none` pela mesma razão: um intervalo retomado iria juntar duas exportações diferentes num único ficheiro que parece válido e não é. Uma cópia de segurança agendada é a exceção: já existe, por isso descarregá-la transmite esse ficheiro em fluxo e mantém-no no servidor.
 - **Um envio é transmitido em fluxo para o disco, nunca colocado em buffer**, em ambas as extremidades, e a cópia preparada é eliminada em todas as saídas — incluindo numa recusa. Uma base de dados de espaço de trabalho não é uma captura de ecrã.
 - **A transferência também funciona pelo relay.** Os descarregamentos e os envios usam o mesmo túnel de recursos cifrado das ligações diretas; não é precisa uma origem HTTP direta.
 

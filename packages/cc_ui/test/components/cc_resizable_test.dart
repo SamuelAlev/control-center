@@ -128,6 +128,31 @@ void main() {
     },
   );
 
+  testWidgets('a zero-thickness divider paints nothing until hovered', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      harness(
+        CcResizable(
+          axis: Axis.horizontal,
+          dividerThickness: 0,
+          regions: regions(),
+        ),
+      ),
+    );
+    final line = lineOf(tester);
+    expect(tester.getSize(line).width, 0);
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: Offset.zero);
+    addTearDown(gesture.removePointer);
+    await gesture.moveTo(tester.getCenter(find.byType(MouseRegion).first));
+    await tester.pump(); // onEnter — the hover-intent timer starts
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(tester.getSize(line).width, 2);
+  });
+
   testWidgets('dragging thickens the line immediately and resets on release', (
     tester,
   ) async {

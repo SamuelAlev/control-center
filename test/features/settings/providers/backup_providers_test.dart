@@ -43,6 +43,80 @@ void main() {
     return container;
   }
 
+  test('workspace backups are asked for by explicit workspace id', () async {
+    final calls = <(String, Map<String, dynamic>)>[];
+    final host = FakeRpcHost();
+    host.onCall = (op, args) {
+      calls.add((op, args));
+      return {
+        'backups': [snapshotJson()],
+      };
+    };
+
+    final backups = await containerFor(
+      host,
+    ).read(workspaceBackupsProvider('ws-2').future);
+
+    expect(calls.single.$1, 'workspace.listBackups');
+    expect(calls.single.$2['workspace_id'], 'ws-2');
+    expect(backups.single.workspaces.single.workspaceId, 'ws-1');
+  });
+
+  test('deleting a backup names it and refreshes that workspace', () async {
+    final ops = <String>[];
+    final calls = <Map<String, dynamic>>[];
+    final host = FakeRpcHost();
+    host.onCall = (op, args) {
+      ops.add(op);
+      if (op == 'workspace.deleteBackup') {
+        calls.add(args);
+        return {'ok': true};
+      }
+      return {'backups': const <Map<String, dynamic>>[]};
+    };
+    final container = containerFor(host);
+    final keepAlive = container.listen(
+      workspaceBackupsProvider('ws-1'),
+      (_, _) {},
+    );
+    addTearDown(keepAlive.close);
+    await container.read(workspaceBackupsProvider('ws-1').future);
+
+    await container
+        .read(backupActionsProvider)
+        .deleteWorkspaceBackup(workspaceId: 'ws-1', name: 'snap');
+    await container.read(workspaceBackupsProvider('ws-1').future);
+
+    expect(calls.single['workspace_id'], 'ws-1');
+    expect(calls.single['name'], 'snap');
+    expect(ops.where((op) => op == 'workspace.listBackups'), hasLength(2));
+  });
+
+  test('decodes the backups of a deleted workspace', () async {
+    final host = FakeRpcHost();
+    host.onCall = (op, args) {
+      expect(op, 'server.listOrphanedBackups');
+      return {
+        'workspaces': [
+          {
+            'workspace_id': 'ws-gone',
+            'workspace_name': 'Old project',
+            'backups': [snapshotJson()],
+          },
+          {'workspace_id': 'ws-unknown', 'backups': <Map<String, dynamic>>[]},
+        ],
+      };
+    };
+
+    final orphans = await containerFor(
+      host,
+    ).read(orphanedWorkspaceBackupsProvider.future);
+
+    expect(orphans.first.workspaceName, 'Old project');
+    expect(orphans.first.backups, hasLength(1));
+    expect(orphans.last.workspaceName, isNull);
+  });
+
   test('decodes every field of a listed snapshot', () async {
     final host = FakeRpcHost();
     host.onCall = (op, args) {

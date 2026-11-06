@@ -8,6 +8,7 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/agent_avatar.dart';
 import 'package:control_center/shared/widgets/canvas/canvas_zoom_controls.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -218,6 +219,100 @@ void main() {
       final reset = tester.getCenter(find.byType(AgentAvatar).first);
       expect(reset.dx, closeTo(fitted.dx, 0.5));
       expect(reset.dy, closeTo(fitted.dy, 0.5));
+    });
+
+    group('on a chart shorter than the viewport', () {
+      // Two generations of cards are far shorter than the pane, so the chart
+      // plus any fixed margin is too. The viewer zeroes an axis whose boundary
+      // the viewport overflows: the first drag threw the fitted chart to the
+      // top and that axis never moved again. The pane is narrow on purpose:
+      // only the height may overflow, because a viewport past the boundary on
+      // BOTH axes takes the viewer's other branch and freezes instead.
+      Future<void> pumpShortChart(WidgetTester tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          _wrap([
+            _node('ceo', reports: [_node('architect'), _node('engineer')]),
+          ]),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      Offset ceo(WidgetTester tester) =>
+          tester.getCenter(find.byType(AgentAvatar).first);
+
+      /// Bare canvas, clear of the cards and the corner controls.
+      Offset canvasPoint(WidgetTester tester) =>
+          tester.getTopLeft(find.byType(InteractiveViewer)) +
+          const Offset(40, 40);
+
+      testWidgets('the first drag does not throw it off its fitted spot', (
+        tester,
+      ) async {
+        await pumpShortChart(tester);
+        final fitted = ceo(tester);
+
+        final gesture = await tester.startGesture(
+          canvasPoint(tester),
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.moveBy(const Offset(0, 4));
+        await tester.pump();
+        await gesture.moveBy(const Offset(0, 4));
+        await tester.pump();
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        expect(ceo(tester).dx, closeTo(fitted.dx, 8));
+        expect(ceo(tester).dy, closeTo(fitted.dy, 8));
+      });
+
+      testWidgets('a drag pans it both up and down', (tester) async {
+        await pumpShortChart(tester);
+
+        Future<void> dragBy(Offset delta) async {
+          final gesture = await tester.startGesture(
+            canvasPoint(tester),
+            kind: PointerDeviceKind.mouse,
+          );
+          // The first move only claims the gesture, so it is not measured.
+          await gesture.moveBy(Offset(0, delta.dy.sign * 4));
+          await tester.pump();
+          await gesture.moveBy(delta);
+          await tester.pump();
+          await gesture.up();
+          await tester.pumpAndSettle();
+        }
+
+        final start = ceo(tester);
+        await dragBy(const Offset(0, 100));
+        final lowered = ceo(tester);
+        expect(lowered.dy, greaterThan(start.dy + 90));
+
+        await dragBy(const Offset(0, -200));
+        expect(ceo(tester).dy, lessThan(lowered.dy - 190));
+      });
+
+      testWidgets('a mouse wheel pans it both up and down', (tester) async {
+        await pumpShortChart(tester);
+        final start = ceo(tester);
+
+        final mouse = TestPointer(1, PointerDeviceKind.mouse)
+          ..hover(canvasPoint(tester));
+        await tester.sendEventToBinding(mouse.scroll(const Offset(0, -120)));
+        await tester.pumpAndSettle();
+        expect(ceo(tester).dy, closeTo(start.dy + 120, 1));
+
+        await tester.sendEventToBinding(mouse.scroll(const Offset(0, 240)));
+        await tester.pumpAndSettle();
+        expect(ceo(tester).dy, closeTo(start.dy - 120, 1));
+      });
     });
   });
 }

@@ -1,7 +1,7 @@
 /// @docImport 'src/native_runtime.dart';
 /// @docImport 'src/native_unavailable.dart';
 /// Dart FFI surface for runtime-loaded natives: rift, fff, tree-sitter,
-/// cc_watcher, aec, lame, pty, cc_inference, cc_saml, rhttp.
+/// cc_watcher, aec, lame, pty, cc_inference, cc_saml, cc_window, rhttp.
 ///
 /// Bindings/loaders only — dylibs from `scripts/natives/*.sh`, bundled as
 /// `DynamicLoadingBundled` assets. Missing native = hard failure
@@ -30,6 +30,7 @@ export 'src/code_index/tree_sitter_parser.dart';
 export 'src/file_search/dart_file_search.dart';
 export 'src/file_search/fff_file_search.dart';
 export 'src/file_search/file_search.dart';
+export 'src/git/rig_worktree_guard.dart';
 export 'src/http/rhttp_runtime.dart';
 export 'src/inference/cc_inference_bindings.dart';
 export 'src/inference/embedding/text_embedder.dart';
@@ -51,3 +52,4 @@ export 'src/saml/saml_library.dart';
 export 'src/watch/directory_change_watcher.dart';
 export 'src/watch/native_directory_watcher.dart';
 export 'src/watch/watcher_ffi_bindings.dart';
+export 'src/window/cc_window.dart';

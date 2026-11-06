@@ -6,9 +6,9 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart'
     show repoAccessForWorkspaceProvider;
 import 'package:control_center/features/repos/presentation/widgets/repo_index_button.dart';
-import 'package:control_center/features/repos/presentation/widgets/repo_scripts_dialog.dart';
 import 'package:control_center/features/repos/presentation/widgets/show_add_repo_dialog.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_hover_reveal.dart';
 import 'package:control_center/features/settings/settings_shortcuts.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
@@ -108,8 +108,8 @@ class _ReposList extends ConsumerWidget {
             RepoAccessBanner(repos: inaccessible),
             SectionCard(
               label: l10n.reposCount(repos.length),
-              padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-              headerPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const EdgeInsets.only(top: AppSpacing.md),
+              headerPadding: const EdgeInsets.symmetric(horizontal: 16),
               child: repos.isEmpty
                   ? const _EmptyState()
                   : _ReorderableRepoList(
@@ -256,6 +256,7 @@ class _RepoRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
     final inaccessible =
         ref.watch(repoAccessForWorkspaceProvider(workspaceId)).value ??
         const [];
@@ -263,145 +264,162 @@ class _RepoRow extends ConsumerWidget {
     final demo = ref.watch(isDemoServerProvider);
     final workspace = demo ? ref.watch(activeWorkspaceDisplayProvider) : null;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      child: Row(
-        children: [
-          if (dragIndex != null) ...[
-            ReorderableDragStartListener(
-              index: dragIndex!,
-              child: MouseRegion(
-                cursor: SystemMouseCursors.grab,
-                child: Icon(
-                  AppIcons.gripVertical,
-                  size: 16,
-                  color: tokens.fgTertiary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-          ],
-          // The demo org is named `helix`, which is also a real GitHub account.
-          // `github.com/helix.png` is that person's photo, so the demo shows
-          // the workspace mark (the Helix logo) instead of fetching it.
-          if (demo && repo.hasForgeRemote)
-            WorkspaceAvatar(
-              name: workspace?.name ?? repo.remoteOwner,
-              workspaceId: workspace?.workspaceId ?? workspaceId,
-              hasLogo: workspace?.hasLogo ?? false,
-              size: 32,
-            )
-          // `github.com/<owner>.png` is a GitHub-only convention; the other
-          // forges have no equivalent guessable owner avatar, so they fall back
-          // to initials rather than requesting a URL that 404s.
-          else if (repo.hasForgeRemote)
-            GitHubUserAvatar(
-              login: repo.remoteOwner,
-              avatarUrl: repo.forge == ForgeHost.github
-                  ? 'https://github.com/${repo.remoteOwner}.png'
-                  : '',
-              size: 32,
-            )
-          else
-            const CcAvatar(size: 32, icon: AppIcons.folder),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        repo.name,
-                        style: CcTypography.body.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: tokens.textPrimary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+    // The whole row edits the link. Demo rows are a fixture, so they neither
+    // open it nor report hover, and their disabled actions stay in view to
+    // carry the reason in a tooltip.
+    return CcTappable(
+      onPressed: demo ? null : () => _editGitHubLink(context, ref),
+      semanticLabel: repo.name,
+      semanticButton: !demo,
+      builder: (context, states) {
+        final active =
+            demo ||
+            states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused);
+        return AnimatedContainer(
+          duration: CcMotion.fast,
+          color: states.contains(WidgetState.hovered)
+              ? tokens.hover
+              : const Color(0x00000000),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Row(
+            children: [
+              if (dragIndex != null) ...[
+                ReorderableDragStartListener(
+                  index: dragIndex!,
+                  // Claims the tap, so a click on the handle that never
+                  // becomes a drag does not fall through and open the row.
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {},
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.grab,
+                      child: Icon(
+                        AppIcons.gripVertical,
+                        size: 16,
+                        color: tokens.fgTertiary,
                       ),
                     ),
-                    // Which forge this repo lives on. A workspace may mix
-                    // them, and the name alone cannot say — two repos can be
-                    // `acme/web` on different forges and behave differently
-                    // (what a review can do, where a link goes).
-                    if (repo.hasForgeRemote) ...[
-                      const SizedBox(width: 8),
-                      CcBadge(label: repo.forge.displayName),
-                    ],
-                    // The server's credential cannot see this repo (see the
-                    // banner above the list for the fix).
-                    if (noAccess) ...[
-                      const SizedBox(width: 8),
-                      CcBadge(
-                        label: AppLocalizations.of(context).repoNoAccessBadge,
-                        variant: CcBadgeVariant.warning,
-                        icon: AppIcons.lock,
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
+              // The demo org is named `helix`, which is also a real GitHub account.
+              // `github.com/helix.png` is that person's photo, so the demo shows
+              // the workspace mark (the Helix logo) instead of fetching it.
+              if (demo && repo.hasForgeRemote)
+                WorkspaceAvatar(
+                  name: workspace?.name ?? repo.remoteOwner,
+                  workspaceId: workspace?.workspaceId ?? workspaceId,
+                  hasLogo: workspace?.hasLogo ?? false,
+                  size: 32,
+                )
+              // `github.com/<owner>.png` is a GitHub-only convention; the other
+              // forges have no equivalent guessable owner avatar, so they fall back
+              // to initials rather than requesting a URL that 404s.
+              else if (repo.hasForgeRemote)
+                GitHubUserAvatar(
+                  login: repo.remoteOwner,
+                  avatarUrl: repo.forge == ForgeHost.github
+                      ? 'https://github.com/${repo.remoteOwner}.png'
+                      : '',
+                  size: 32,
+                )
+              else
+                const CcAvatar(size: 32, icon: AppIcons.folder),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            repo.name,
+                            style: CcTypography.body.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: tokens.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        // Which forge this repo lives on. A workspace may mix
+                        // them, and the name alone cannot say — two repos can be
+                        // `acme/web` on different forges and behave differently
+                        // (what a review can do, where a link goes).
+                        if (repo.hasForgeRemote) ...[
+                          const SizedBox(width: 8),
+                          CcBadge(label: repo.forge.displayName),
+                        ],
+                        // The server's credential cannot see this repo (see the
+                        // banner above the list for the fix).
+                        if (noAccess) ...[
+                          const SizedBox(width: 8),
+                          CcBadge(
+                            label: l10n.repoNoAccessBadge,
+                            variant: CcBadgeVariant.warning,
+                            icon: AppIcons.lock,
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      repo.path,
+                      style: CcTypography.caption.copyWith(
+                        color: tokens.textTertiary,
+                        height: 1.4,
                       ),
-                    ],
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  repo.path,
-                  style: CcTypography.caption.copyWith(
-                    color: tokens.textTertiary,
-                    height: 1.4,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          RepoIndexButton(repo: repo, workspaceId: workspaceId),
-          // Per-repo lifecycle scripts (setup/archive), edited in a dialog and
-          // executed server-side against a space's worktree of this repo.
-          CcTooltip(
-            message: AppLocalizations.of(context).repoScriptsTooltip,
-            child: CcButton(
-              variant: CcButtonVariant.ghost,
-              size: CcButtonSize.sm,
-              onPressed: () => showRepoScriptsDialog(
-                context,
-                workspaceId: workspaceId,
+              ),
+              const SizedBox(width: 8),
+              RepoIndexButton(
                 repo: repo,
+                workspaceId: workspaceId,
+                rowActive: active,
               ),
-              child: Icon(
-                AppIcons.terminal,
-                size: 16,
-                color: tokens.fgTertiary,
+              const SizedBox(width: AppSpacing.xs),
+              SettingsHoverReveal(
+                active: active,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: AppSpacing.xs,
+                  children: [
+                    CcIconButton(
+                      icon: AppIcons.link,
+                      color: tokens.fgTertiary,
+                      size: CcButtonSize.sm,
+                      tooltip: demo
+                          ? l10n.demoUnavailableRepos
+                          : l10n.githubLink,
+                      semanticLabel: l10n.githubLink,
+                      // demo: the repository list is a fixture — read-only.
+                      onPressed: demo
+                          ? null
+                          : () => _editGitHubLink(context, ref),
+                    ),
+                    CcIconButton(
+                      icon: AppIcons.trash2,
+                      variant: CcButtonVariant.destructive,
+                      size: CcButtonSize.sm,
+                      tooltip: demo ? l10n.demoUnavailableRepos : l10n.remove,
+                      semanticLabel: l10n.remove,
+                      // demo: the repository list is a fixture — read-only.
+                      onPressed: demo
+                          ? null
+                          : () => _confirmRemove(context, ref),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-          CcButton(
-            variant: CcButtonVariant.ghost,
-            size: CcButtonSize.sm,
-            onPressed: () => _editGitHubLink(context, ref),
-            child: Icon(
-              AppIcons.link,
-              size: 16,
-              color: repo.hasForgeRemote
-                  ? tokens.textPrimary
-                  : tokens.fgTertiary,
-            ),
-          ),
-          CcTooltip(
-            message: ref.watch(isDemoServerProvider)
-                ? AppLocalizations.of(context).demoUnavailableRepos
-                : '',
-            child: CcButton(
-              variant: CcButtonVariant.ghost,
-              size: CcButtonSize.sm,
-              // demo: the repository list is a fixture — read-only.
-              onPressed: ref.watch(isDemoServerProvider)
-                  ? null
-                  : () => _confirmRemove(context, ref),
-              child: Icon(AppIcons.trash2, size: 16, color: tokens.fgTertiary),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

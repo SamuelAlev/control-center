@@ -389,6 +389,7 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
                 ),
               ),
               CcIconButton(
+                variant: CcButtonVariant.destructive,
                 icon: AppIcons.trash2,
                 tooltip: l10n.delete,
                 onPressed: widget.onDelete,

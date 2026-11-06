@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_restore_flow.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/settings/providers/backup_providers.dart';
 import 'package:control_center/features/settings/providers/backup_transfer.dart';
@@ -60,57 +61,22 @@ class _BackupSnapshotsSectionState
     }
   }
 
-  /// Adopts one workspace file out of a snapshot.
-  ///
-  /// This IS `workspace.import` — the snapshot's per-workspace path is exactly
-  /// what that op takes as its source — so restoring and importing cannot drift
-  /// into two mechanisms that treat the same file differently.
   Future<void> _restore(
     BackupSnapshotWorkspaceView entry,
     String workspaceName,
-  ) async {
-    final l10n = AppLocalizations.of(context);
-    final confirmed = await showCcConfirmDialog(
-      context: context,
-      title: l10n.backupRestoreTitle,
-      message: l10n.backupRestoreBody(workspaceName),
-      confirmLabel: l10n.backupRestoreAction,
-      cancelLabel: l10n.cancel,
-      danger: true,
-      typeToConfirm: workspaceName,
-      typeToConfirmLabels: appTypeToConfirmLabels(context),
-    );
-    if (!confirmed || !mounted) {
-      return;
-    }
-    setState(() => _restoring = '${entry.workspaceId}:${entry.path}');
-    try {
-      await ref
-          .read(backupActionsProvider)
-          .importWorkspace(
-            workspaceId: entry.workspaceId,
-            sourcePath: entry.path,
-          );
-      if (!mounted) {
-        return;
-      }
-      CcToastScope.maybeOf(context)?.show(
-        l10n.backupRestoreDone(workspaceName),
-        variant: CcToastVariant.success,
-      );
-    } on Object catch (e) {
-      if (!mounted) {
-        return;
-      }
-      CcToastScope.maybeOf(
-        context,
-      )?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
-    } finally {
+  ) => restoreWorkspaceFromBackup(
+    context,
+    actions: ref.read(backupActionsProvider),
+    entry: entry,
+    workspaceName: workspaceName,
+    onBusy: (busy) {
       if (mounted) {
-        setState(() => _restoring = null);
+        setState(
+          () => _restoring = busy ? '${entry.workspaceId}:${entry.path}' : null,
+        );
       }
-    }
-  }
+    },
+  );
 
   Future<void> _deleteSnapshot(BackupSnapshotView snapshot) async {
     final l10n = AppLocalizations.of(context);

@@ -5,9 +5,10 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// A [CacheRepository] backed by the SERVER over the `cache.read` / `cache.write`
 /// RPC ops.
 ///
-/// The messaging IDE editor layout is persisted per conversation in the
-/// server-owned `cache` table, so a layout saved on one client (desktop) is
-/// restored on another (web) and vice versa. Both platforms resolve the same
+/// Editor layouts are persisted in the server-owned `caches` table, per space
+/// or PR and per person (the server derives the owner from the session), so a
+/// layout saved on one of someone's clients (desktop) is restored on another
+/// (web) and vice versa. Only editor-layout kinds are reachable. Both platforms resolve the same
 /// RPC client — a connected `cc_server` (spawned locally by desktop self-serve,
 /// or a remote instance) — so this single implementation drives both targets
 /// with no per-platform binding.

@@ -2,7 +2,7 @@
 title: Säkerhetskopia, export och import
 description: Ögonblicksbildens struktur, manifestet, varje säkerhetskopieringsåtgärd och överföringsväg, och exakt vilka filer en säkerhetskopia innehåller och inte innehåller.
 slug: sv-SE/handbok/referens/sakerhetskopia
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Allt som Control Center kan kopiera, lämna över eller ta över, och den exakta formen på
@@ -52,7 +52,12 @@ installationsögonblicksbilder. Veckopipelinens bevarandesteg tar bara bort
 säkerhetskopior från sin egen arbetsyta som är äldre än den konfigurerade åldern
 (30 dagar som standard); manuellt skapade installationsögonblicksbilder roteras
 aldrig av det steget. `server.listBackups` listar bara
-installationsögonblicksbilder, även ofullständiga sådana.
+installationsögonblicksbilder, även ofullständiga sådana; `workspace.listBackups` listar
+en arbetsytas schemalagda säkerhetskopior.
+
+Att radera en arbetsyta lämnar den här katalogen kvar. Arbetsytans schema stoppas med
+den, så inget roterar längre de säkerhetskopiorna, och de ligger kvar tills
+installationens ägare tar bort dem. `server.listOrphanedBackups` rapporterar dem.
 
 
 ### `manifest.json`
@@ -134,6 +139,10 @@ säkerhetskopiering är inkopplad, som demoservern.
 | `server.backupNow`   | mutate | Installation | installationens **ägare** | inga      | `{ok, path}`                  |
 | `server.listBackups` | read   | Installation | installationens **ägare** | inga      | `{backups: [...]}`            |
 | `server.deleteBackup` | mutate | Installation | installationens **ägare** | `name`    | `{ok}`                        |
+| `server.listOrphanedBackups` | read | Installation | installationens **ägare** | inga | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | mutate | Installation | installationens **ägare** | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | read | Arbetsyta | `admin` | inga | `{backups: [...]}` |
+| `workspace.deleteBackup` | mutate | Arbetsyta | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Arbetsyta  | `admin`               | inga          | `{ok, path}`                  |
 | `workspace.import`   | mutate | Arbetsyta  | `owner`               | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | Installation* | `owner`           | `id`          | registerrad markerad som borttagen |
@@ -143,6 +152,14 @@ registret; dess hanterare kontrollerar anroparens medlemskap i den namngivna arb
 och kräver `owner`.
 
 `path` i varje svar är en sökväg på **servervärden**.
+
+`server.listOrphanedBackups` returnerar en post per arbetsyta som inte längre är aktiv:
+`workspace_id`, `workspace_name` när registret fortfarande känner till det, och `backups`.
+En raderad arbetsyta kan inte längre klara en rollkontroll för arbetsytan, så dess
+säkerhetskopior tillhör installationens ägare. `server.deleteOrphanedBackup` nekar en
+aktiv arbetsyta, vars säkerhetskopior förblir bakom `workspace.deleteBackup` och den
+arbetsytans egna roller. Båda borttagningsåtgärderna accepterar bara ett listat
+katalognamn med tidsstämpel, inte en sökväg.
 
 :::note[En ögonblicksbild av hela installationen kräver ägare på båda kanalerna]
 `server.backupNow`, `server.listBackups` och `server.deleteBackup` kräver
@@ -225,27 +242,33 @@ signatur över dess målsträng med dess parkopplings-PSK och rollen nedan.
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Arbetsytans **admin** |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Installationens **ägare** |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Arbetsytans **admin**; installationens **ägare** när arbetsytan har raderats |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Arbetsytans **ägare** |
 
-`w` är ett arbetsyte-id, `n` ett namn på en ögonblicksbildskatalog, `d` det anropande
-enhets-id:t och `s` signaturen. `n` löses upp mot listan över säkerhetskopior i stället
-för att fogas till backups-roten, så vägen kan inte riktas mot en katalog som listningen
-inte skulle ha visat.
+`w` är ett arbetsyte-id, `n` ett namn på en katalog för en ögonblicksbild eller en
+schemalagd säkerhetskopia, `d` det anropande enhets-id:t och `s` signaturen. På
+`/backup/snapshot` löses `n` upp mot listan över säkerhetskopior i stället för att fogas
+till backups-roten, så vägen kan inte riktas mot en katalog som listningen inte skulle ha
+visat. På `/backup/stored` måste det vara ett tidsstämpelnamn, och filen måste vara en
+verklig fil i den arbetsytans egen katalog för säkerhetskopior.
 
 | Status | Orsak                                                                               |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | En obligatorisk frågeparameter saknas, eller så är en uppladdningskropp tom           |
+| `400`  | En obligatorisk frågeparameter saknas, ett namn på en säkerhetskopia är ogiltigt, eller så är en uppladdningskropp tom |
 | `403`  | Okänd eller återkallad enhet, felaktig signatur, eller så saknar anroparen rollen     |
-| `404`  | Ingen port för säkerhetskopiering på den här värden, eller så finns inte den namngivna ögonblicksbilden/arbetsytefilen |
+| `404`  | Ingen port för säkerhetskopiering på den här värden, eller så finns inte den namngivna ögonblicksbilden, säkerhetskopian eller arbetsytefilen |
 | `405`  | `/backup/restore` anropad med något annat än `POST`                                  |
 | `413`  | Uppladdningskroppen överstiger 8 GiB, antingen enligt angiven content-length eller enligt antalet faktiskt lästa byten |
 | `426`  | Varje direkt begäran till en överföringsväg på den publika HTTP-lyssnaren; använd en parkopplad klients krypterade resurstunnel |
 | `500`  | Exporten eller arkiveringen misslyckades på serversidan                               |
 
-Båda hämtningarna svarar med `Cache-Control: no-store` och `Accept-Ranges: none`. Varje
-begäran skapar en **färsk** kopia och raderar den när den har strömmats, så ett
-cachelagrat eller återupptaget svar skulle sammanfoga byten från två olika exporter till
-en fil som ser giltig ut men inte är det.
+Alla tre hämtningarna svarar med `Cache-Control: no-store` och `Accept-Ranges: none`.
+`/backup/workspace` och `/backup/snapshot` skapar en **färsk** kopia per begäran och raderar
+den när den har strömmats, så ett cachelagrat eller återupptaget svar skulle sammanfoga
+byten från två olika exporter till en fil som ser giltig ut men inte är det.
+
+`/backup/stored` är undantaget: den strömmar en schemalagd säkerhetskopia som
+`<workspaceId>-<name>.db` och lämnar filen kvar, eftersom den filen är säkerhetskopian.
 
 `/backup/snapshot` returnerar `<name>.zip`, med poster relativa till ögonblicksbildens
 rot så att uppackning återskapar `manifest.json` + `global.db` +
@@ -275,11 +298,11 @@ säkerhetskopiefilerna i vila.
 | Mellanlagring för överföringar | `<dataDir>/backups/transfer/` – en arbetsbänk som städas av vägen som skriver till den |
 | Ögonblicksbildens arkivnamn    | `<snapshot directory name>.zip`                              |
 | Övre gräns för uppladdning     | 8 GiB per krypterad `/backup/restore`-uppladdning            |
-| Bevarande                      | Installationsögonblicksbilder: manuell borttagning. Säkerhetskopior av arbetsytor: veckopipeline, 30 dagar som standard |
+| Bevarande                      | Installationsögonblicksbilder: manuell borttagning. Säkerhetskopior av arbetsytor: veckopipeline, 30 dagar som standard, eller manuell borttagning. Säkerhetskopior av en raderad arbetsyta: endast manuell borttagning |
 
 Katalogerna `exports/`, `transfer/` och `workspace-backups/` är inte
 installationsögonblicksbilder och utesluts från `server.listBackups`. Bara den sista
-katalogen har schemalagt bevarande; att radera en installationsögonblicksbild kräver
+katalogen har schemalagt bevarande, och bara så länge dess arbetsyta finns; att radera en installationsögonblicksbild kräver
 installationens ägares uttryckliga åtgärd.
 
 ## Se även

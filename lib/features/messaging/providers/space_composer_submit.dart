@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/telemetry/telemetry.dart';
@@ -7,6 +9,7 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/messaging_mention_sources.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/messaging_slash_commands.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/space_local_command_dispatch.dart';
+import 'package:control_center/features/messaging/providers/conversation_agent_gate.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/pending_space_sends_provider.dart';
 import 'package:control_center/features/messaging/providers/space_message_send_provider.dart';
@@ -55,6 +58,12 @@ Future<void> submitSpaceComposer({
     return;
   }
   final content = dispatched;
+  // An unloaded roster counts as no mention: the message then steers the run
+  // already working here, which still reaches an agent.
+  final agentMentions = agentMentionCount(
+    submission,
+    roster: ref.read(workspaceAgentsProvider(workspaceId)).value ?? const [],
+  );
   void trackSent(String delivery) => ref.track(
     AnalyticsEvents.messageSent(
       workspaceId: workspaceId,
@@ -63,28 +72,27 @@ Future<void> submitSpaceComposer({
       delivery: delivery,
       charCount: content.length,
       attachmentCount: submission.attachments.length,
-      agentMentionCount: submission.mentions
-          .where((m) => m.kind == 'agent')
-          .length,
-      otherMentionCount: submission.mentions
-          .where((m) => m.kind != 'agent')
-          .length,
+      agentMentionCount: agentMentions,
+      otherMentionCount: math.max(
+        0,
+        submission.mentions.length - agentMentions,
+      ),
       slashCommand: command,
     ),
   );
 
   // Mid-run steering: if agents are already working in this conversation and
-  // the user submits a conversational message (no @agent, no slash command),
-  // the submission becomes a QUEUED STEERING CARD (the strip below the trail)
-  // instead of a new turn — the server persists it as a conversation row, live
-  // harness runs inject it at their next turn boundary, and anything still
-  // queued when the last run ends is converted to a normal message.
+  // the user submits a conversational message (no mention of a real agent, no
+  // slash command), the submission becomes a QUEUED STEERING CARD (the strip
+  // below the trail) instead of a new turn — the server persists it as a
+  // conversation row, live harness runs inject it at their next turn boundary,
+  // and anything still queued when the last run ends is converted to a normal
+  // message.
   // Files were uploaded on insertion; queued steering reuses their catalog
   // ids without moving bytes again.
   // No toast: the card appearing in the strip IS the feedback.
-  final hasAgentMention = submission.mentions.any((m) => m.kind == 'agent');
   if (!parsedCommand.isCommand &&
-      !hasAgentMention &&
+      agentMentions == 0 &&
       (content.trim().isNotEmpty || submission.attachments.isNotEmpty)) {
     final activeRuns =
         ref

@@ -2628,4 +2628,7 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Proses berhenti karena kredensial penyedianya tidak lagi berfungsi. Hubungkan ulang di Pengaturan → Penyedia, lalu coba ulang giliran ini.';
+
+  @override
+  String get permissionHostExecution => 'Jalankan perintah di host';
 }

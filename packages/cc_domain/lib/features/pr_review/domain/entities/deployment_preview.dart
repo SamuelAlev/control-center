@@ -37,7 +37,7 @@ class DeploymentPreview {
     this.updatedAt,
   });
 
-  /// A short label for the site this preview belongs to (e.g. `test-web-app`, `test-backend`). May be empty when it can't be derived; the UI falls back to a generic label then.
+  /// A short label for the site this preview belongs to (e.g. `test-shop-ui`, `test-backend`). May be empty when it can't be derived; the UI falls back to a generic label then.
   final String siteName;
 
   /// The preview URL.

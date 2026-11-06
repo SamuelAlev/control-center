@@ -89,10 +89,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get keybindingPushToTalk => 'กดเพื่อพูด';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'กดค้างหรือสลับการป้อนด้วยเสียงในช่องเขียนข้อความ';
-
-  @override
   String get agentPermissions => 'สิทธิ์ของเอเจนต์';
 
   @override
@@ -187,6 +183,9 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'เครื่องจำลอง iOS';
+
+  @override
+  String get rigSurfaceAppWindow => 'หน้าต่างแอป';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -460,6 +459,10 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'มุมมองสดต้องมี ffmpeg บนโฮสต์นี้ ติดตั้ง ffmpeg แล้วเปิดแท็บใหม่';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'มุมมองสดต้องใช้การบันทึกหน้าจอ อนุญาตให้ Control Center ในการตั้งค่าระบบ แล้วเปิดแท็บอีกครั้ง';
 
   @override
   String get rigStreamEnded => 'มุมมองสดสิ้นสุดแล้ว';
@@ -1556,10 +1559,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'เปิดเมนูตัวกรอง';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'เปิดเมนูตัวกรอง pull request';
 
   @override
   String countSelected(int count) {
@@ -2826,19 +2825,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get cancelEdit => 'ยกเลิกการแก้ไข';
 
   @override
-  String get categoryCreation => 'การสร้าง';
-
-  @override
-  String get categoryEditing => 'การแก้ไข';
-
-  @override
   String get categoryNavigation => 'การนำทาง';
-
-  @override
-  String get categorySystem => 'ระบบ';
-
-  @override
-  String get categoryView => 'มุมมองหมวดหมู่';
 
   @override
   String get change => 'เปลี่ยน';
@@ -3652,30 +3639,13 @@ class AppLocalizationsTh extends AppLocalizations {
   String get keepSandboxing => 'ใช้แซนด์บ็อกซ์ต่อไป';
 
   @override
-  String get keybindingAddARepositoryDescription => 'เพิ่มรีโพสิทอรี';
-
-  @override
   String get keybindingAddRepository => 'เพิ่มรีโพสิทอรี';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'บุ๊กมาร์กหรือเลิกบุ๊กมาร์กบทความที่เลือก';
 
   @override
   String get keybindingCommandPalette => 'จานคำสั่ง';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'สร้างเอเจนต์ใหม่';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription => 'สร้างเวิร์กสเปซใหม่';
-
-  @override
   String get keybindingFocusSearch => 'โฟกัสการค้นหา';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'โฟกัสช่องค้นหา pull request';
 
   @override
   String get keybindingNewAgent => 'เอเจนต์ใหม่';
@@ -3696,34 +3666,10 @@ class AppLocalizationsTh extends AppLocalizations {
   String get keybindingOpenArticle => 'เปิดบทความ';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'เปิดหรือปิดป๊อปอัปสลับเวิร์กสเปซในแถบข้าง';
-
-  @override
   String get keybindingOpenPr => 'เปิด PR';
 
   @override
   String get keybindingOpenSettings => 'เปิดการตั้งค่า';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'เปิดการตั้งค่าแอป';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription => 'เปิดจานคำสั่ง';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'เปิดบทความที่เลือก';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'เปิด pull request ที่เลือก';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'เปิดเวิร์กสเปซที่เลือก';
 
   @override
   String get keybindingOpenWorkspace => 'เปิดเวิร์กสเปซ';
@@ -3741,81 +3687,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get keybindingRefresh => 'รีเฟรช';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'รีเฟรชฟีดทั้งหมด';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'รีเฟรชรายการ pull request';
-
-  @override
-  String get keybindingRescanForAdaptersDescription => 'สแกนอะแดปเตอร์อีกครั้ง';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription => 'เลือกบทความถัดไป';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription => 'เลือกสเปซถัดไป';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'เลือกบทความก่อนหน้า';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription => 'เลือกสเปซก่อนหน้า';
-
-  @override
   String get keybindingSendMessage => 'ส่งข้อความ';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription => 'ส่งข้อความปัจจุบัน';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'สลับระหว่างโหมดสว่างและมืด';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'สลับไปเวิร์กสเปซที่แปด';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'สลับไปเวิร์กสเปซที่ห้า';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'สลับไปเวิร์กสเปซแรก';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'สลับไปเวิร์กสเปซที่สี่';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'สลับไปเวิร์กสเปซถัดไป';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'สลับไปเวิร์กสเปซที่เก้า';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'สลับไปเวิร์กสเปซก่อนหน้า';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'สลับไปเวิร์กสเปซที่สอง';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'สลับไปเวิร์กสเปซที่เจ็ด';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'สลับไปเวิร์กสเปซที่หก';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'สลับไปเวิร์กสเปซที่สาม';
 
   @override
   String get keybindingToggleBookmark => 'สลับบุ๊กมาร์ก';
@@ -3852,13 +3724,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'เวิร์กสเปซ 9';
-
-  @override
-  String get keybindings => 'ทางลัดคีย์บอร์ด';
-
-  @override
-  String get keybindingsDescription =>
-      'ทางลัดคีย์บอร์ดทั้งหมด ทางลัดถูกกำหนดตายตัวและกำหนดใหม่ไม่ได้';
 
   @override
   String get killRunning => 'ฆ่าที่กำลังรัน';
@@ -4124,11 +3989,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get noSavedArticlesBody => 'บทความที่คุณบันทึกจะปรากฏที่นี่';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'ไม่มีทางลัดที่ตรงกับ \"$query\"';
-  }
 
   @override
   String get noSystemFonts => 'ไม่พบแบบอักษรของระบบ';
@@ -4858,12 +4718,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'ค้นหา…';
-
-  @override
-  String get searchShortcuts => 'ค้นหาทางลัด…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'ใช้ไม่ได้ในเบราว์เซอร์';
 
   @override
   String get searching => 'กำลังค้นหา…';
@@ -6636,6 +6490,28 @@ class AppLocalizationsTh extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'สเปซถูกลบ';
 
   @override
+  String get triggerEventSpaceArchived => 'สเปซถูกเก็บถาวร';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged => 'การจัดเตรียมสเปซเปลี่ยน';
+
+  @override
+  String get triggerEventPrHeadChanged => 'head ของ PR เปลี่ยน';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => 'สถานะสภาพแวดล้อมเปลี่ยน';
+
+  @override
+  String get triggerEventEnvironmentReady => 'สภาพแวดล้อมพร้อม';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'สภาพแวดล้อมถูกทำลาย';
+
+  @override
+  String get triggerEventEnvironmentProcessExited =>
+      'โพรเซสของสภาพแวดล้อมจบการทำงาน';
+
+  @override
   String get triggerExternalPrHelp =>
       'คำขอพุลที่เปิดบนโฮสต์โค้ด ไม่ใช่จาก Control Center';
 
@@ -6693,6 +6569,32 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'สเปซสนทนาถูกลบ';
+
+  @override
+  String get triggerSpaceArchivedHelp => 'สเปซสนทนาถูกเก็บถาวร';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'การจัดเตรียม worktree ของสเปซเริ่มต้น เสร็จสิ้น หรือล้มเหลว';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'มีการพุชคอมมิตใหม่ไปยังพูลรีเควสต์ที่เปิดอยู่';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'สภาพแวดล้อมของสเปซเปลี่ยนเป็นสถานะใหม่';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'สภาพแวดล้อมของสเปซเริ่มทำงานแล้วและใช้งานได้';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp => 'สภาพแวดล้อมของสเปซถูกรื้อถอน';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'โพรเซสที่สภาพแวดล้อมรันอยู่จบการทำงาน';
 
   @override
   String get navTickets => 'ตั๋วงาน';
@@ -8883,19 +8785,6 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'การใช้งานและค่าใช้จ่าย';
-
-  @override
-  String get usageAndCostDescription =>
-      'การใช้จ่ายของเอเจนต์ในช่วง 7 วันที่ผ่านมา จากค่าใช้จ่ายรันที่สังเกตได้';
-
-  @override
-  String get noUsageYet => 'ยังไม่มีการใช้งานที่บันทึก';
-
-  @override
-  String get spentThisWeek => 'ใช้จ่ายสัปดาห์นี้';
-
-  @override
   String get subscriptionUsage => 'การใช้งานการสมัคร';
 
   @override
@@ -9103,9 +8992,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get keybindingNewSpace => 'สเปซใหม่';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'สร้างสเปซใหม่';
-
-  @override
   String get jumpToLatest => 'ไปยังล่าสุด';
 
   @override
@@ -9277,71 +9163,8 @@ class AppLocalizationsTh extends AppLocalizations {
   String get preparingWorkspace => 'กำลังเตรียมเวิร์กสเปซ…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'กำลังรันสคริปต์ตั้งค่าสำหรับ $repo…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'สคริปต์';
-
-  @override
-  String get repoScriptsTooltip => 'กำหนดสคริปต์วงจรชีวิต';
-
-  @override
-  String get repoScriptsSetupLabel => 'สคริปต์ตั้งค่า';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'รันใน worktree ของสเปซทันทีหลังสร้าง — ติดตั้งดีเพนเดนซี สร้างไฟล์ หากล้มเหลว สเปซจะถูกทำเครื่องหมายล้มเหลว การลองใหม่จะรันอีกครั้ง';
-
-  @override
-  String get repoScriptsArchiveLabel => 'สคริปต์เก็บถาวร';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'รันก่อนลบ worktree ของสเปซ — ทำความสะอาดทรัพยากรนอก worktree ความล้มเหลวไม่กั้นการลบ';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'รันผ่าน bash จาก worktree โดยตั้ง CC_WORKSPACE_PATH (worktree), CC_ROOT_PATH (รากรีโพ), CC_SPACE_ID, CC_SPACE_NAME และ CC_REPO_NAME';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'เช่น pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'เช่น docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => 'รันล่าสุด';
-
-  @override
-  String get repoScriptsNoRuns => 'ยังไม่มีรัน';
-
-  @override
-  String get repoScriptsSaved => 'บันทึกสคริปต์แล้ว';
-
-  @override
-  String get repoScriptsRunKindSetup => 'ตั้งค่า';
-
-  @override
-  String get repoScriptsRunKindArchive => 'เก็บถาวร';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'กำลังรัน';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'สำเร็จ';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'ล้มเหลว';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'หมดเวลา';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'รหัสออก $code';
+  String provisioningRunningTasks(String repo) {
+    return 'กำลังรันงาน worktree สำหรับ $repo…';
   }
 
   @override
@@ -10138,10 +9961,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get keybindingCheatSheet => 'ทางลัดแป้นพิมพ์';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'แสดงแผ่นทางลัดแป้นพิมพ์ของหน้าจอปัจจุบัน';
-
-  @override
   String get runPlaybookLabel => 'รันเพลย์บุ๊ก';
 
   @override
@@ -10152,14 +9971,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'ทำซ้ำ';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'เลิกทำการกระทำล่าสุดที่ย้อนได้';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'ทำซ้ำการกระทำที่เลิกทำล่าสุด';
 
   @override
   String get undone => 'เลิกทำแล้ว';
@@ -13980,6 +13791,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get newSkill => 'สกิลใหม่';
 
   @override
+  String get newItemAction => 'ใหม่';
+
+  @override
   String get zoomIn => 'ซูมเข้า';
 
   @override
@@ -14193,6 +14007,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get steerNow => 'ชี้นำ';
 
   @override
+  String get steerForce => 'หยุดและส่ง';
+
+  @override
   String get steeringQueueLabel => 'ข้อความชี้นำที่คิวไว้';
 
   @override
@@ -14241,15 +14058,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'คุณจะถูกถามอีกครั้งครั้งหน้าที่เอเจนต์ต้องรันโปรแกรมจากสำเนานี้';
-
-  @override
-  String get repoScriptsTest => 'ทดสอบ';
-
-  @override
-  String get repoScriptsTestTooltip => 'รันฉบับร่างนี้ในโคลนทิ้งได้ของรีโพ';
-
-  @override
-  String get repoScriptsRunKindTest => 'ทดสอบ';
 
   @override
   String get demoBadgeLabel => 'เดโม';
@@ -14464,6 +14272,49 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'พาธบนเซิร์ฟเวอร์';
+
+  @override
+  String get backupScheduledLabel => 'การสำรองข้อมูลตามกำหนดเวลา';
+
+  @override
+  String get backupScheduledExplainer =>
+      'สำเนาที่บันทึกโดยไปป์ไลน์สำรองข้อมูลของแต่ละเวิร์กสเปซ ตั้งกำหนดเวลาและระยะเวลาเก็บรักษาได้ในเทมเพลตของไปป์ไลน์';
+
+  @override
+  String get backupScheduledNone => 'ยังไม่มีข้อมูลสำรอง';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ข้อมูลสำรอง $count รายการ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'สำรองล่าสุด: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'ต้องมีบทบาทผู้ดูแลในเวิร์กสเปซนี้จึงจะดูข้อมูลสำรองได้';
+
+  @override
+  String get backupScheduledDeleteTitle => 'ลบข้อมูลสำรองนี้หรือไม่';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'ลบข้อมูลสำรองวันที่ $date ของ $name ออกจากเซิร์ฟเวอร์หรือไม่ การดำเนินการนี้ย้อนกลับไม่ได้';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'ลบข้อมูลสำรองแล้ว';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'ลบเวิร์กสเปซแล้ว';
 
   @override
   String get backupRestoreAction => 'กู้คืน';
@@ -15073,14 +14924,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get ideQuickOpen => 'ไปที่ไฟล์';
 
   @override
-  String get ideQuickOpenDescription =>
-      'ค้นหาไฟล์ของการสนทนาตามชื่อและเปิดหนึ่งไฟล์ในแท็บ';
-
-  @override
-  String get prQuickOpenDescription =>
-      'ค้นหาไฟล์ของ pull request ตามชื่อและเปิดหนึ่งไฟล์ในแท็บ';
-
-  @override
   String get ideQuickOpenHint => 'ค้นหาไฟล์ตามชื่อ';
 
   @override
@@ -15404,6 +15247,15 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'บังคับโหลด';
+
+  @override
+  String get skillEvalHashLabel => 'แฮชแพ็กเกจ';
+
+  @override
+  String get skillEvalProgressLabel => 'ความคืบหน้า';
+
+  @override
+  String get skillEvalUpdatesToggle => 'การประเมินการอัปเดต';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -15793,4 +15645,701 @@ class AppLocalizationsTh extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return 'เหลือ $minutes นาที';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'สภาพแวดล้อมรันโปรเซสจริงบนโฮสต์ เดโมจึงไม่มีสภาพแวดล้อม';
+
+  @override
+  String get environmentChecksFailing =>
+      'การตรวจสอบบางรายการล้มเหลวบนเซิร์ฟเวอร์';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'ปลายทาง: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'บริการ: $names';
+  }
+
+  @override
+  String get environmentCopied => 'คัดลอกแล้ว';
+
+  @override
+  String get environmentCopyCommand => 'คัดลอกคำสั่ง';
+
+  @override
+  String get environmentCopyUrl => 'คัดลอก URL';
+
+  @override
+  String get environmentDefinition => 'คำจำกัดความ';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count คำจำกัดความ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'ทำลาย';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name และข้อมูลจะถูกลบ การเริ่มจะสร้างใหม่';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'ทำลายสภาพแวดล้อมนี้ไหม';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'รันในบริการ';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'รหัสออก $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => 'ต้องตั้งค่าส่วนนี้บนเซิร์ฟเวอร์';
+
+  @override
+  String get environmentKindApp => 'แอป';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'โปรเซส';
+
+  @override
+  String get environmentKindTask => 'งาน';
+
+  @override
+  String get environmentLaunch => 'เปิดแอป';
+
+  @override
+  String get environmentLogsGone => 'บันทึกเหล่านี้ไม่พร้อมใช้งานแล้ว';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'บันทึก: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'กำลังรอเอาต์พุต';
+
+  @override
+  String get environmentMoreActions => 'การดำเนินการสภาพแวดล้อมเพิ่มเติม';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'การเปลี่ยนแปลงทำให้ต้องสร้างสภาพแวดล้อมนี้ใหม่';
+
+  @override
+  String get environmentNoStack =>
+      'รันเฉพาะงานของ worktree จึงไม่มีอะไรให้เริ่ม';
+
+  @override
+  String get environmentOnTheServer => 'บนเซิร์ฟเวอร์';
+
+  @override
+  String get environmentOpenInBrowserVm => 'เปิดใน Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'เปิดตัวแสดงผล';
+
+  @override
+  String get environmentPlacementRig => 'ใน VM';
+
+  @override
+  String get environmentPreviewTab => 'สภาพแวดล้อม';
+
+  @override
+  String get environmentRebuildRelaunch => 'บิลด์ใหม่และเปิดอีกครั้ง';
+
+  @override
+  String get environmentRecreate => 'สร้างใหม่';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name จะถูกทำลายและเริ่มใหม่ด้วยตัวเลือกเดิม ข้อมูลจะหายไป';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'สร้างสภาพแวดล้อมนี้ใหม่ไหม';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name จะกลับสู่สถานะพื้นฐาน ข้อมูลที่สร้างหลังจากนั้นจะหายไป';
+  }
+
+  @override
+  String get environmentResetData => 'รีเซ็ตข้อมูล';
+
+  @override
+  String get environmentResetTitle => 'รีเซ็ตข้อมูลไหม';
+
+  @override
+  String get environmentRestart => 'รีสตาร์ท';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'รีสตาร์ท $count ครั้ง',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'รัน';
+
+  @override
+  String get environmentRunInTerminal => 'รันในเทอร์มินัล';
+
+  @override
+  String get environmentSectionTitle => 'สภาพแวดล้อม';
+
+  @override
+  String get environmentService => 'บริการ';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'การดำเนินการของ $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'เริ่มสภาพแวดล้อม';
+
+  @override
+  String get environmentStateCrashed => 'ขัดข้อง';
+
+  @override
+  String get environmentStatusDegraded => 'ประสิทธิภาพลดลง';
+
+  @override
+  String get environmentStatusDestroying => 'กำลังทำลาย';
+
+  @override
+  String get environmentStatusGone => 'หายไป';
+
+  @override
+  String get environmentStatusStopping => 'กำลังหยุด';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'การหยุด $name จะทำให้ข้อมูลหาย และการเริ่มจะไม่นำกลับมา';
+  }
+
+  @override
+  String get environmentStopLoseData => 'หยุดและเสียข้อมูล';
+
+  @override
+  String get environmentStopTitle => 'หยุดสภาพแวดล้อมนี้ไหม';
+
+  @override
+  String get environmentTaskNeverRun => 'ยังไม่ได้รัน';
+
+  @override
+  String get environmentsAddCheck => 'เพิ่มการตรวจสอบ';
+
+  @override
+  String get environmentsAddOption => 'เพิ่มตัวเลือก';
+
+  @override
+  String get environmentsAddRole => 'เพิ่มบทบาท';
+
+  @override
+  String get environmentsAdminOnly =>
+      'เฉพาะผู้ดูแลเวิร์กสเปซเท่านั้นที่เปลี่ยนคำจำกัดความได้';
+
+  @override
+  String get environmentsAfter => 'รอคอมโพเนนต์เหล่านี้';
+
+  @override
+  String get environmentsAnchor => 'จุดยึด';
+
+  @override
+  String get environmentsAutoCreate => 'เริ่มอัตโนมัติ';
+
+  @override
+  String get environmentsAutoCreateAll => 'ในทุกสเปซที่มีสิทธิ์';
+
+  @override
+  String get environmentsAutoCreateOff => 'ไม่เลย';
+
+  @override
+  String get environmentsAutoCreatePrs => 'ในสเปซของพูลรีเควสต์';
+
+  @override
+  String get environmentsBlank => 'คำจำกัดความว่าง';
+
+  @override
+  String get environmentsCheckFix => 'คำสั่งแก้ไข';
+
+  @override
+  String get environmentsCheckHint => 'คำแนะนำ';
+
+  @override
+  String get environmentsCommandHelp =>
+      'อาร์กิวเมนต์คั่นด้วยช่องว่าง ใส่เครื่องหมายคำพูดให้อาร์กิวเมนต์ที่มีช่องว่าง';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count คอมโพเนนต์',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'บิลด์อิมเมจเมื่อเริ่ม';
+
+  @override
+  String get environmentsComposeFile => 'ไฟล์ compose';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'อ่านไฟล์ compose ไม่ได้ ยังใส่ชื่อบริการในมุมมอง JSON ได้';
+
+  @override
+  String get environmentsComposeServices => 'บริการ';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'ไม่ต้องเลือกบริการใดเพื่อรันทั้งหมด';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'คำสั่งนี้มีอาร์กิวเมนต์แบบมีเงื่อนไข แก้ไขในมุมมอง JSON';
+
+  @override
+  String get environmentsCwdPath => 'พาธทำงาน';
+
+  @override
+  String get environmentsCwdRole => 'บทบาททำงาน';
+
+  @override
+  String get environmentsDeleteBody =>
+      'สเปซจะเริ่มไม่ได้อีก สภาพแวดล้อมที่รันอยู่จะทำงานต่อจนกว่าจะหยุด';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'ลบ $name ไหม';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'สิ่งที่แต่ละสเปซเริ่มได้ และงานที่ worktree ของสเปซรัน';
+
+  @override
+  String get environmentsDraftFromRepo => 'ร่างจากรีโพ';
+
+  @override
+  String get environmentsEmpty => 'ยังไม่มีคำจำกัดความ';
+
+  @override
+  String get environmentsEnabledWhen => 'เปิดใช้เมื่อ';
+
+  @override
+  String get environmentsEndpointRole => 'บทบาทปลายทาง';
+
+  @override
+  String get environmentsFollowPrHead => 'ตาม head ของพูลรีเควสต์';
+
+  @override
+  String get environmentsForkApproval => 'ทุกการเริ่มต้องมีผู้ดูแล';
+
+  @override
+  String get environmentsForkDeny => 'ปฏิเสธ';
+
+  @override
+  String get environmentsForkPrs => 'พูลรีเควสต์จาก fork';
+
+  @override
+  String get environmentsForkRig => 'รันใน VM';
+
+  @override
+  String get environmentsIdleStop => 'หยุดหลังไม่มีการใช้งานกี่นาที';
+
+  @override
+  String get environmentsIsolateHome => 'ให้แอปมีโฮมส่วนตัว';
+
+  @override
+  String get environmentsIssues => 'แก้ไขรายการเหล่านี้ก่อนบันทึก';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'JSON ไม่ถูกต้อง: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'เก็บข้อมูลไว้เมื่อหยุด';
+
+  @override
+  String get environmentsLinkConfirm => 'ลิงก์และอนุมัติ';
+
+  @override
+  String get environmentsLinkFile => 'ลิงก์ไฟล์ในรีโพ';
+
+  @override
+  String get environmentsLinkHelp =>
+      'อ่านจากสาขาเริ่มต้นเท่านั้น และรันหลังอนุมัติเท่านั้น';
+
+  @override
+  String get environmentsLinkPath => 'พาธ';
+
+  @override
+  String get environmentsMaxRunning => 'รันพร้อมกัน';
+
+  @override
+  String get environmentsNamingProject => 'โปรเจกต์';
+
+  @override
+  String get environmentsNamingTemplate => 'เทมเพลตชื่อ';
+
+  @override
+  String get environmentsNew => 'คำจำกัดความใหม่';
+
+  @override
+  String get environmentsNewDefinitionName => 'สภาพแวดล้อมใหม่';
+
+  @override
+  String get environmentsNoChecks => 'คำจำกัดความนี้ไม่มีการตรวจสอบ';
+
+  @override
+  String get environmentsNoRuns => 'ยังไม่มีการทดสอบ';
+
+  @override
+  String get environmentsOnChange => 'พาธที่เฝ้าดู';
+
+  @override
+  String get environmentsOptionBool => 'ใช่หรือไม่';
+
+  @override
+  String get environmentsOptionEnum => 'หนึ่งรายการจาก';
+
+  @override
+  String get environmentsOptionMulti => 'หลายรายการจาก';
+
+  @override
+  String get environmentsOptionValues => 'ค่า';
+
+  @override
+  String get environmentsPlacement => 'ตำแหน่งที่วาง';
+
+  @override
+  String get environmentsPlacementHost => 'บนโฮสต์';
+
+  @override
+  String get environmentsPlacementRig => 'ใน VM';
+
+  @override
+  String get environmentsPrepareTask => 'งานเตรียมการ';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'ปลายทางหลัก';
+
+  @override
+  String get environmentsReadyHttp => 'พร้อมเมื่อ URL นี้ตอบกลับ';
+
+  @override
+  String get environmentsRestartAlways => 'เสมอ';
+
+  @override
+  String get environmentsRestartNever => 'ไม่เลย';
+
+  @override
+  String get environmentsRestartOn => 'รีสตาร์ทเมื่อพาธเหล่านี้เปลี่ยน';
+
+  @override
+  String get environmentsRestartOnFailure => 'เมื่อล้มเหลว';
+
+  @override
+  String get environmentsRestartPolicy => 'รีสตาร์ท';
+
+  @override
+  String get environmentsRigTtl => 'อายุการใช้งาน VM เป็นชั่วโมง';
+
+  @override
+  String get environmentsRunChecks => 'รันอีกครั้ง';
+
+  @override
+  String get environmentsRunTest => 'รันการทดสอบ';
+
+  @override
+  String get environmentsSaved => 'บันทึกคำจำกัดความแล้ว';
+
+  @override
+  String get environmentsSectionComponents => 'คอมโพเนนต์';
+
+  @override
+  String get environmentsSectionOptions => 'ตัวเลือกการเริ่ม';
+
+  @override
+  String get environmentsSectionSeedFiles => 'ไฟล์ตั้งต้น';
+
+  @override
+  String get environmentsSectionVariables => 'ตัวแปร';
+
+  @override
+  String get environmentsSeedHelp =>
+      'หนึ่งพาธต่อบรรทัด คัดลอกจาก checkout ที่ลงทะเบียนไว้ พูลรีเควสต์จาก fork จะไม่ได้รับไฟล์เหล่านี้';
+
+  @override
+  String get environmentsShellHelp =>
+      'ที่นี่จะไม่ขยายตัวยึดตำแหน่ง ให้อ่านตัวแปร CC_ENV_* แทน';
+
+  @override
+  String get environmentsSourceApprove => 'อนุมัติเวอร์ชันนี้';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path ตรงกับเวอร์ชันที่อนุมัติแล้ว';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'เวอร์ชันที่อนุมัติแล้วจะรันต่อจนกว่าคุณจะอนุมัติเวอร์ชันนี้';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'แหล่งที่มา';
+
+  @override
+  String get environmentsTestHelp =>
+      'รันสภาพแวดล้อมแบบใช้แล้วทิ้งตั้งแต่ต้นจนจบ: ตรวจสอบ เริ่ม รอให้พร้อม ทำลาย';
+
+  @override
+  String get environmentsTestSaveFirst => 'บันทึกคำจำกัดความก่อน';
+
+  @override
+  String get environmentsTimeoutSeconds => 'หมดเวลาเป็นวินาที';
+
+  @override
+  String get environmentsTitle => 'สภาพแวดล้อม';
+
+  @override
+  String get environmentsTriggerArchive => 'ก่อนลบ worktree';
+
+  @override
+  String get environmentsTriggerChange => 'เมื่อพาธที่เฝ้าดูเปลี่ยน';
+
+  @override
+  String get environmentsTriggerCreate => 'ครั้งเดียวต่อสภาพแวดล้อม';
+
+  @override
+  String get environmentsTriggerManual => 'ตามคำขอ';
+
+  @override
+  String get environmentsTriggerProvision => 'เมื่อสร้าง worktree';
+
+  @override
+  String get environmentsTriggerStart => 'ทุกครั้งที่เริ่ม';
+
+  @override
+  String get environmentsTriggers => 'รันเมื่อ';
+
+  @override
+  String get environmentsUnreadable => 'ไคลเอนต์นี้อ่านคำจำกัดความนี้ไม่ได้';
+
+  @override
+  String get environmentsUpdateAvailable => 'มีอัปเดต';
+
+  @override
+  String get environmentsUseShell => 'ใช้คำสั่งเชลล์';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'เครื่องมือจะรันบน checkout ของคุณเอง ให้ถือว่าอ่านอย่างเดียว';
+
+  @override
+  String get environmentsWhenMissing => 'เมื่อสเปซไม่มี';
+
+  @override
+  String get environmentsWhenMissingAdd => 'เพิ่มลงในสเปซ';
+
+  @override
+  String get environmentsWhenMissingSkip => 'ข้าม';
+
+  @override
+  String get environmentsWhenMissingSource => 'ใช้ checkout ที่ลงทะเบียนไว้';
+
+  @override
+  String get environmentsUnsupported => 'เซิร์ฟเวอร์นี้ไม่รองรับสภาพแวดล้อม';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'ไม่มีตัวแสดงผล: เซิร์ฟเวอร์จับภาพหน้าต่างนี้ไม่ได้ อนุญาตการบันทึกหน้าจอให้ Control Center บนเซิร์ฟเวอร์';
+
+  @override
+  String get environmentHealthHealthy => 'ปกติ';
+
+  @override
+  String get environmentHealthUnhealthy => 'ผิดปกติ';
+
+  @override
+  String get environmentTerminalStale =>
+      'เทอร์มินัลนี้เปิดก่อนสภาพแวดล้อมเริ่ม จึงไม่มีตัวแปรของสภาพแวดล้อม';
+
+  @override
+  String get environmentTerminalFresh => 'เปิดเทอร์มินัลใหม่';
+
+  @override
+  String get environmentsShellStays =>
+      'สคริปต์หลายบรรทัดยังคงเป็นคำสั่งเชลล์ เพราะบรรทัดคือโครงสร้างของมัน';
+
+  @override
+  String get environmentsOverrides => 'การแทนที่ของเวิร์กสเปซ';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'การตั้งค่าของไฟล์เองเป็นแบบอ่านอย่างเดียวที่นี่ ผูกบทบาทกับรีโพของเวิร์กสเปซนี้ หรือแทนที่ฟิลด์ใดก็ได้ด้วย JSON';
+
+  @override
+  String get environmentsReposHelp =>
+      'รีโพสิทอรีที่สภาพแวดล้อมนี้ใช้ แต่ละรายการผูกกับบทบาท';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'สิ่งที่สภาพแวดล้อมรัน ตามลำดับการเริ่ม';
+
+  @override
+  String get environmentsOptionsHelp => 'ตัวเลือกที่แสดงเมื่อเริ่มสภาพแวดล้อม';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'ตั้งค่าบนงาน โพรเซส แอป และเทอร์มินัลของสเปซ';
+
+  @override
+  String get environmentsChecksHelp =>
+      'สิ่งที่โฮสต์ต้องมีเพื่อรันสภาพแวดล้อมนี้';
+
+  @override
+  String get environmentsIdleStopHelp => 'ค่า 0 จะไม่หยุดเลย';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'สเปซที่มีรีโพสิทอรีนี้เริ่มสภาพแวดล้อมได้';
+
+  @override
+  String get environmentsRequiredHelp => 'สภาพแวดล้อมรันไม่ได้หากไม่มีสิ่งนี้';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'ซิงก์และรีเฟรชเมื่อ head ของพูลรีเควสต์ขยับ';
+
+  @override
+  String get environmentsRecordNeedsFix => 'ต้องแก้ไข';
+
+  @override
+  String get environmentsCheckFile => 'ไฟล์';
+
+  @override
+  String get environmentsDiscardBody => 'การแก้ไขคำจำกัดความนี้จะหายไป';
+
+  @override
+  String get environmentsWorktreeRuns => 'การรันงาน worktree';
+
+  @override
+  String get environmentsNoWorktreeRuns => 'ยังไม่มีงาน worktree ที่รัน';
+
+  @override
+  String get environmentsLinkRoles => 'บทบาทในไฟล์นี้';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'อ่านไฟล์จากรีโพไม่ได้ ผูกบทบาทได้หลังจากลิงก์';
+
+  @override
+  String get guardrailClassHostExecution => 'รันคำสั่งบนโฮสต์';
+
+  @override
+  String get environmentUrls => 'URL';
+
+  @override
+  String get environmentScripts => 'สคริปต์';
+
+  @override
+  String get environmentNoneForSpace => 'ไม่มีสภาพแวดล้อมสำหรับพื้นที่นี้';
+
+  @override
+  String get environmentNoneForPr => 'ไม่มีสภาพแวดล้อมสำหรับ pull request นี้';
+
+  @override
+  String get environmentSetupBody =>
+      'สภาพแวดล้อมจะรันบริการ สคริปต์ และ URL ของรีโพสำหรับหนึ่งพื้นที่ ตั้งค่าครั้งเดียวแล้วทุกพื้นที่ของรีโพจะเริ่มใช้งานได้';
+
+  @override
+  String get environmentSetUp => 'ตั้งค่าสภาพแวดล้อม';
+
+  @override
+  String get environmentEditDefinition => 'แก้ไขคำนิยาม';
+
+  @override
+  String get environmentOpenPanel => 'เปิดสภาพแวดล้อม';
+
+  @override
+  String get environmentNeedsSetup => 'ต้องตั้งค่า';
+
+  @override
+  String get environmentContinueInTerminal => 'ดำเนินการต่อในเทอร์มินัล';
+
+  @override
+  String get environmentSetupHint =>
+      'เครื่องมือต้องการให้คุณป้อนรหัสผ่านหรือตอบคำถามในเทอร์มินัล การเริ่มจะดำเนินต่อเมื่อเสร็จ';
+
+  @override
+  String get environmentSetupTabReason =>
+      'เปิดเทอร์มินัลนี้เพราะการเริ่มต้องการให้คุณดำเนินการ';
+
+  @override
+  String get environmentSetupTab => 'ตั้งค่าสภาพแวดล้อม';
+
+  @override
+  String get environmentsNothingRunning => 'ไม่มีสิ่งใดทำงานจากคำนิยามนี้';
+
+  @override
+  String get searchPoliciesHint => 'ค้นหานโยบาย...';
+
+  @override
+  String get noPoliciesMatch => 'ไม่มีนโยบายที่ตรงกับการค้นหา';
+
+  @override
+  String get memoryPolicyActive => 'ใช้งานอยู่';
+
+  @override
+  String get memoryFactType => 'ประเภท';
+
+  @override
+  String get memoryTimesRecalled => 'จำนวนครั้งที่เรียกคืน';
+
+  @override
+  String get memorySourceFacts => 'ข้อเท็จจริงต้นทาง';
+
+  @override
+  String get spaceSetupLogs => 'บันทึกการตั้งค่า';
 }

@@ -2,7 +2,7 @@
 title: Záloha a obnovení
 description: Pořiď snímek instalace, přesuň pracovní prostor mezi stroji, obnov jeden pracovní prostor nebo všechny a drž kopie jinde.
 slug: cs-CZ/prirucka/navody/zaloha-a-obnoveni
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Zálohy se v praxi používají na pět věcí: pořídit snímek, stáhnout ho, přesunout
@@ -16,7 +16,7 @@ Všechno odsud je v **Nastavení → Server → Záloha a obnovení**.
 
 - **Plný klient**, tedy desktopová nebo webová aplikace. Spárovaný telefon z toho schválně nespustí nic.
 - Pořídit, vypsat, stáhnout nebo smazat **snímek instalace** smí **vlastník** instalace.
-- U akcí jednoho pracovního prostoru: **admin** toho prostoru pro export, **vlastník** pro import nebo smazání.
+- U akcí jednoho pracovního prostoru: **admin** toho prostoru pro export nebo pro výpis a stažení jeho plánovaných záloh, **vlastník** pro import, smazání nebo pro smazání některé z jeho záloh.
 - Stahování a nahrávání chce spárovaný plný klient na přímém spojení nebo přes zprostředkované relé. Obě cesty přenesou bajty souboru stejným ověřeným, od konce ke konci šifrovaným tunelem prostředků; relé je nepřečte.
 
 :::caution[Snímky instalace jsou ruční]
@@ -83,12 +83,34 @@ Zálohy pracovního prostoru leží na serveru v
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Uzel
 uchování maže jen staré zálohy tohoto pracovního prostoru. Snímky instalace
 ani zálohy jiných prostorů nemaže. Jsou to jen databáze. Pro uchování mimo
-stroj je zkopíruj zvlášť.
+stroj si je stáhni nebo je zkopíruj zvlášť.
 
-Tyhle zálohy jsou oddělené od seznamu **Snímky instalace**. Obnovíš je přes
-**Data pracovního prostoru → Importovat** s cestou k `workspace.db` na serveru.
-Import nahradí aktuální databázi toho pracovního prostoru, takže ho nejdřív
-exportuj, když budeš chtít obnovení vrátit.
+## Najdi a obnov plánovanou zálohu
+
+**Plánované zálohy** leží mezi **Snímky instalace** a **Data pracovního prostoru**,
+s jedním řádkem na pracovní prostor: kdy proběhla jeho poslední záloha, kolik jich má
+uchovaných a kolik místa zabírají. U pracovního prostoru, jehož pipeline zatím nic
+nevytvořila, stojí **Zatím žádné zálohy**. Pracovní prostor, ve kterém nejsi admin, to
+řekne ve svém řádku a zálohy nevypíše.
+
+Rozbal řádek a uvidíš každou zálohu, od nejnovější:
+
+- **Obnovit** nahradí aktuální databázi pracovního prostoru touto zálohou. Když to možná budeš chtít vrátit, pracovní prostor nejdřív exportuj. Vyžaduje roli **vlastník**.
+- **Stáhnout** uloží soubor na stroj, který právě používáš. Záloha zůstane na serveru.
+- **Kopírovat cestu** zkopíruje její umístění na serveru.
+- **Smazat** tuhle zálohu trvale odstraní, jakmile napíšeš název pracovního prostoru. Vyžaduje roli **vlastník**.
+
+### Zálohy smazaného pracovního prostoru
+
+Smazání pracovního prostoru nechá jeho plánované zálohy na serveru, a protože s ním
+skončí i jeho plán, skončí i uchování: zálohy zůstanou, dokud je někdo neodstraní. Ve
+stejném seznamu je vidí **vlastník** instalace s označením **Pracovní prostor smazán**
+a může je tam stáhnout nebo smazat. Nikdo jiný tyhle řádky nevidí.
+
+Nemají **Obnovit**, protože není žádný pracovní prostor, do kterého by se obnovovalo.
+Když chceš některou vrátit, stáhni ji, vytvoř pracovní prostor a nahraj soubor podle
+postupu v části
+[Přesuň pracovní prostor na jinou instalaci](#přesuň-pracovní-prostor-na-jinou-instalaci).
 
 ## Smaž snímek instalace
 
@@ -104,14 +126,16 @@ kterého sedíš, použij tlačítka **Stáhnout**:
 
 - Vedle každého **pracovního prostoru** pod **Data pracovního prostoru** → **Stáhnout**, jeden soubor `.db`.
 - Vedle každého **snímku** pod **Snímky instalace** → **Stáhnout**, celý snímek jako `.zip`.
+- Vedle každé zálohy pod **Plánované zálohy** → **Stáhnout**, soubor `.db` té zálohy.
 
 Na desktopu vybereš, kam soubor spadne, a toast ho pojmenuje. Na webu jde do
-stahování prohlížeče. V obou případech se průběh hlásí v bajtech, protože
-právě tyhle dva přenosy sahají do gigabajtů.
+stahování prohlížeče. V obou případech všechna tři stažení hlásí průběh v bajtech,
+protože tyhle přenosy sahají do gigabajtů.
 
-Obě tlačítka v okamžiku stisku vytvoří čerstvou kopii, přenesou ji proudem a
-kopii na serveru potom smažou. Stažení není „vyzvedni soubor, který dřív
-udělalo tlačítko exportu“.
+Stažení pracovního prostoru a snímku v okamžiku stisku vytvoří čerstvou kopii, přenese
+ji proudem a kopii na serveru potom smaže. Stažení není „vyzvedni soubor, který dřív
+udělalo tlačítko exportu“. Výjimkou je plánovaná záloha: dostaneš uložený soubor a ten
+zůstane na serveru.
 
 Rozbalení archivu snímku zopakuje jeho rozložení přesně, a proto je obnovení
 zase jen kopie zpátky.

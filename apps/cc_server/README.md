@@ -34,7 +34,7 @@ On a new data dir, pair **before** starting the server; `pair` opens the databas
 # from apps/cc_server, after building
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
-  --bind any --host 192.168.1.42 --client-url https://your-web-app.example
+  --bind any --host 192.168.1.42 --client-url https://your-client.example
 ```
 
 `pair` upserts an active device, mints a PSK, writes it to `<data-dir>/secrets.json` and prints the server address, device ID and key. With `--client-url`, it also prints a QR/deep link for the web client. `--device` defaults to `web-client`; `--label` and `--host` control the display name and reachable URL. Re-pairing rotates the PSK. The printed **v1** link pairs WebSocket-RPC web clients; the phone app requires a separate **v2** `PairingPayload` from the first-party pairing panel, including its full connection descriptor. Do not use the CLI's v1 QR for `cc_remote`.

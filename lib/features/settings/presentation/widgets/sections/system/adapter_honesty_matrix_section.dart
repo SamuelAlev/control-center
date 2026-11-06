@@ -116,6 +116,16 @@ const Map<ActionClass, Map<_GuardrailAdapter, _Enforcement>> _matrix = {
     _GuardrailAdapter.mcpHttp: _Enforcement.policyGate,
     _GuardrailAdapter.sandboxFloor: _Enforcement.notEnforceable,
   },
+  // Environment tasks, processes, compose stacks and pass-through tools run on
+  // the host as the server's user, at an agent's request, through server-side
+  // tools. The gate is ours whatever runner asked; the agent's own sandbox has
+  // nothing to intercept, because the command never runs inside it.
+  ActionClass.hostExecution: {
+    _GuardrailAdapter.harness: _Enforcement.policyGate,
+    _GuardrailAdapter.claudeCli: _Enforcement.policyGate,
+    _GuardrailAdapter.mcpHttp: _Enforcement.policyGate,
+    _GuardrailAdapter.sandboxFloor: _Enforcement.notEnforceable,
+  },
 };
 
 /// A read-only reference table (PRD 24 §4): per adapter, at which layer each

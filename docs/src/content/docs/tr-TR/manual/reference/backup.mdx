@@ -2,7 +2,7 @@
 title: Yedekleme, dışa ve içe aktarma
 description: Anlık görüntü düzeni, manifest, her yedekleme işlemi ve aktarım rotası ile bir yedeğin hangi dosyaları içerdiği ve içermediği.
 slug: tr-TR/kilavuz/referans/yedekleme
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Control Center'ın kopyalayabileceği, devredebileceği ya da devralabileceği her şey ve
@@ -51,7 +51,12 @@ yaşar. Bir manifest ya da `global.db` içermezler ve kurulum anlık görüntüs
 Haftalık pipeline'ın saklama adımı, yalnızca kendi çalışma alanının yapılandırılmış
 yaşından (varsayılan olarak 30 gün) eski yedeklerini kaldırır; elle oluşturulan kurulum
 anlık görüntüleri o adım tarafından hiçbir zaman rotasyona tabi tutulmaz.
-`server.listBackups` yalnızca kurulum anlık görüntülerini listeler, eksik olanlar dahil.
+`server.listBackups` yalnızca kurulum anlık görüntülerini listeler, eksik olanlar dahil;
+`workspace.listBackups` bir çalışma alanının zamanlanmış yedeklerini listeler.
+
+Bir çalışma alanını silmek bu dizini yerinde bırakır. Çalışma alanının programı onunla
+birlikte durur; bu nedenle bu yedekleri artık hiçbir şey rotasyona tabi tutmaz ve kurulum
+sahibi kaldırana kadar kalırlar. `server.listOrphanedBackups` bunları bildirir.
 
 
 ### `manifest.json`
@@ -132,6 +137,10 @@ olarak eksiktirler.
 | `server.backupNow`    | mutate | Kurulum        | kurulum **sahibi**     | yok           | `{ok, path}`                  |
 | `server.listBackups`  | read   | Kurulum        | kurulum **sahibi**     | yok           | `{backups: [...]}`            |
 | `server.deleteBackup` | mutate | Kurulum        | kurulum **sahibi**     | `name`        | `{ok}`                        |
+| `server.listOrphanedBackups` | read | Kurulum | kurulum **sahibi** | yok | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | mutate | Kurulum | kurulum **sahibi** | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | read | Çalışma alanı | `admin` | yok | `{backups: [...]}` |
+| `workspace.deleteBackup` | mutate | Çalışma alanı | `owner` | `name` | `{ok}` |
 | `workspace.export`    | read   | Çalışma alanı  | `admin`                | yok           | `{ok, path}`                  |
 | `workspace.import`    | mutate | Çalışma alanı  | `owner`                | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`    | mutate | Kurulum*       | `owner`                | `id`          | kayıt defteri satırı silinmiş olarak işaretlenir |
@@ -141,6 +150,14 @@ olarak eksiktirler.
 gerektirir.
 
 Her yanıttaki `path`, **sunucu makinesindeki** bir yoldur.
+
+`server.listOrphanedBackups`, artık etkin olmayan her çalışma alanı için bir girdi
+döndürür: `workspace_id`, kayıt defteri hâlâ biliyorsa `workspace_name` ve `backups`.
+Silinmiş bir çalışma alanı artık çalışma alanı rol denetiminden geçemez; bu nedenle
+yedekleri kurulum sahibine aittir. `server.deleteOrphanedBackup` etkin bir çalışma alanını
+reddeder; onun yedekleri `workspace.deleteBackup` ve o çalışma alanının kendi rollerinin
+arkasında kalır. Her iki silme işlemi de yol değil, yalnızca listelenmiş bir zaman damgası
+dizin adı kabul eder.
 
 :::note[Tüm kurulumun anlık görüntüsü her iki hatta da sahip kapısından geçer]
 `server.backupNow`, `server.listBackups` ve `server.deleteBackup`, `GET /backup/snapshot`
@@ -223,26 +240,34 @@ eşleştirme PSK'si ve aşağıdaki rolle denetler.
 | ------------------- | ------ | ------------- | ------------------------------ | ------------------------- |
 | `/backup/workspace` | GET    | `w`, `d`, `s` | `backup-workspace:<workspaceId>` | Çalışma alanı **yöneticisi** |
 | `/backup/snapshot`  | GET    | `n`, `d`, `s` | `backup-snapshot:<name>`         | Kurulum **sahibi**        |
+| `/backup/stored`    | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Çalışma alanı **yöneticisi**; çalışma alanı silindikten sonra kurulum **sahibi** |
 | `/backup/restore`   | POST   | `w`, `d`, `s` | `backup-restore:<workspaceId>`   | Çalışma alanı **sahibi**  |
 
-`w` bir çalışma alanı kimliği, `n` bir anlık görüntü dizini adı, `d` çağıran cihazın
-kimliği, `s` ise imzadır. `n`, yedekleme köküne eklenmek yerine yedekleme listesine karşı
-çözümlenir; böylece rota, listenin göstermeyeceği bir dizine yöneltilemez.
+`w` bir çalışma alanı kimliği, `n` bir anlık görüntü veya zamanlanmış yedek dizini adı,
+`d` çağıran cihazın kimliği, `s` ise imzadır. `/backup/snapshot` üzerinde `n`, yedekleme
+köküne eklenmek yerine yedekleme listesine karşı çözümlenir; böylece rota, listenin
+göstermeyeceği bir dizine yöneltilemez. `/backup/stored` üzerinde bir zaman damgası adı
+olmalıdır ve dosya, o çalışma alanının kendi yedek dizini içinde gerçek bir dosya
+olmalıdır.
 
 | Durum | Neden                                                                              |
 | ----- | ----------------------------------------------------------------------------------- |
-| `400` | Gerekli bir sorgu parametresi eksik ya da bir yükleme gövdesi boş                   |
+| `400` | Gerekli bir sorgu parametresi eksik, bir yedek adı geçersiz ya da bir yükleme gövdesi boş |
 | `403` | Bilinmeyen ya da iptal edilmiş cihaz, hatalı imza veya çağıranda gerekli rolün olmaması |
-| `404` | Bu makinede yedekleme portu yok ya da adı geçen anlık görüntü/çalışma alanı dosyası mevcut değil |
+| `404` | Bu makinede yedekleme portu yok ya da adı geçen anlık görüntü, yedek veya çalışma alanı dosyası mevcut değil |
 | `405` | `/backup/restore` rotasının `POST` dışında bir yöntemle çağrılması                   |
 | `413` | Yükleme gövdesinin, bildirilen content-length'e göre ya da gerçekte okunan baytlara göre 8 GiB'ı aşması |
 | `426` | Genel HTTP dinleyicisindeki bir aktarım rotasına yapılan her doğrudan istek; eşleştirilmiş bir istemcinin şifrelenmiş kaynak tünelini kullanın |
 | `500` | Dışa aktarma ya da arşivleme sunucu tarafında başarısız oldu                        |
 
-Her iki indirme de `Cache-Control: no-store` ve `Accept-Ranges: none` ile yanıt verir.
-Her istek **yeni** bir kopya üretir ve akıtıldıktan sonra onu siler; dolayısıyla
-önbelleğe alınmış ya da kaldığı yerden devam eden bir yanıt, iki farklı dışa aktarımın
-baytlarını geçerli görünen ama geçerli olmayan tek bir dosyada birleştirirdi.
+Üç indirme de `Cache-Control: no-store` ve `Accept-Ranges: none` ile yanıt verir.
+`/backup/workspace` ve `/backup/snapshot` her istekte **yeni** bir kopya üretir ve
+akıtıldıktan sonra onu siler; dolayısıyla önbelleğe alınmış ya da kaldığı yerden devam
+eden bir yanıt, iki farklı dışa aktarımın baytlarını geçerli görünen ama geçerli olmayan
+tek bir dosyada birleştirirdi.
+
+`/backup/stored` bunun istisnasıdır: zamanlanmış bir yedeği `<workspaceId>-<name>.db`
+olarak akıtır ve dosyayı yerinde bırakır, çünkü yedek o dosyanın kendisidir.
 
 `/backup/snapshot`, `<name>.zip` döndürür; girdiler anlık görüntü köküne göre göreli
 olduğundan arşivi açmak `manifest.json` + `global.db` +
@@ -271,11 +296,11 @@ cihazı, hedef imzasını ve geçerli çalışma alanı ya da kurulum rolünü g
 | Aktarım hazırlama          | `<dataDir>/backups/transfer/` — bir çalışma tezgâhı; onu yazan rota tarafından süpürülür |
 | Anlık görüntü arşiv adı    | `<snapshot directory name>.zip`                              |
 | Yükleme üst sınırı         | `/backup/restore` rotasına yapılan her şifrelenmiş yükleme başına 8 GiB |
-| Saklama                    | Kurulum anlık görüntüleri: elle silme. Çalışma alanı yedekleri: haftalık pipeline, varsayılan 30 gün |
+| Saklama                    | Kurulum anlık görüntüleri: elle silme. Çalışma alanı yedekleri: haftalık pipeline, varsayılan 30 gün, ya da elle silme. Silinmiş bir çalışma alanının yedekleri: yalnızca elle silme |
 
 `exports/`, `transfer/` ve `workspace-backups/` dizinleri kurulum anlık görüntüsü
 değildir ve `server.listBackups` dışında tutulur. Zamanlanmış saklama yalnızca son
-dizin için geçerlidir; bir kurulum anlık görüntüsünü silmek, kurulum sahibinin açık
+dizin için ve yalnızca çalışma alanı var olduğu sürece geçerlidir; bir kurulum anlık görüntüsünü silmek, kurulum sahibinin açık
 eylemini gerektirir.
 
 ## Ayrıca bakınız

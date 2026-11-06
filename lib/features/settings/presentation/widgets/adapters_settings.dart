@@ -5,7 +5,6 @@ import 'package:control_center/features/settings/presentation/widgets/adapters/a
 import 'package:control_center/features/settings/presentation/widgets/adapters/adapter_rail.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/providers_models_section.dart';
-import 'package:control_center/features/settings/presentation/widgets/usage_summary_card.dart';
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/features/settings/settings_shortcuts.dart';
@@ -91,9 +90,6 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
               const SizedBox(height: AppSpacing.xl),
               // Model catalog & provider governance (PRD 05).
               const ProvidersModelsSection(),
-              const SizedBox(height: AppSpacing.xl),
-              // Usage & cost summary (PRD 05).
-              const UsageSummaryCard(),
             ],
           ),
         ),
@@ -129,13 +125,8 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
     return SectionCard(
       label: l10n.detectedRunners,
       count: detected.length,
-      padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-      headerPadding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        0,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      headerPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: detected.isEmpty
           ? Padding(
               padding: const EdgeInsets.fromLTRB(

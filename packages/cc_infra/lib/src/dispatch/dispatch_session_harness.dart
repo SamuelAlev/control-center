@@ -335,7 +335,7 @@ extension _DispatchSessionHarness on DispatchSession {
     // `bash` pushes through the gateway exactly like a CLI adapter's shell.
     final lease = _gatewayLease;
     if (lease != null) {
-      harnessToolEnv.addAll(lease.environment(harnessToolEnv));
+      harnessToolEnv.addAll(_leaseEnvironment(lease, harnessToolEnv));
     }
 
     final runConfig = await HarnessRunConfig.load(

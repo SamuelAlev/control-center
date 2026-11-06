@@ -5,6 +5,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/environments/presentation/widgets/pr_environment_section.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_checks_ui_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
@@ -19,6 +20,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_label_
 import 'package:control_center/features/pr_review/presentation/widgets/pr_status_badge.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/reviewer_picker_flyout.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/ship_show_ask_badge.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/workflow_status_icon.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/ship_show_ask_provider.dart';
@@ -33,6 +35,8 @@ import 'package:control_center/shared/widgets/github_user_hover_target.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+export 'package:control_center/features/pr_review/presentation/widgets/workflow_status_icon.dart';
 
 /// Tab index of the Actions tab inside the PR detail body. Kept here so the
 /// sidebar can request a switch via the [prChecksUiProvider] without taking
@@ -52,6 +56,7 @@ class PrSidebar extends ConsumerWidget {
     this.canEdit = false,
     this.optimisticMyState,
     this.onOpenFileInDiff,
+    this.onOpenEnvironment,
   });
 
   /// The pull request displayed in this sidebar.
@@ -75,6 +80,9 @@ class PrSidebar extends ConsumerWidget {
   /// tree-sorted file list — the Overview tab uses it to switch to the Diff tab
   /// and jump to that file. Null disables the file-tap affordance.
   final ValueChanged<int>? onOpenFileInDiff;
+
+  /// Opens the PR's Environment tab. Null hides the action.
+  final VoidCallback? onOpenEnvironment;
 
   /// Whether the checks stream has produced an answer yet. Passed in because
   /// the Overview tab already watches it for the rest of the page.
@@ -146,6 +154,11 @@ class PrSidebar extends ConsumerWidget {
               ],
             ),
           ),
+        ),
+        PrEnvironmentSection(
+          workspaceId: prRef.workspaceId,
+          pr: pr,
+          onOpenPanel: onOpenEnvironment,
         ),
         _ChecksRailRow(
           workflows: workflows,
@@ -944,60 +957,6 @@ class _ChecksRailRow extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-/// Reusable status glyph used by both the sidebar and the Actions tab.
-class WorkflowStatusIcon extends StatelessWidget {
-  /// Creates a [WorkflowStatusIcon].
-  const WorkflowStatusIcon({super.key, required this.status, this.size = 16});
-
-  /// Aggregated workflow status to render.
-  final WorkflowStatus status;
-
-  /// Icon size in logical pixels.
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final style = workflowStatusStyle(status, context);
-    if (status == WorkflowStatus.running) {
-      return CcSpinner(size: size, color: style.color);
-    }
-    return Icon(style.icon, size: size, color: style.color);
-  }
-}
-
-/// Visual style descriptor for a [WorkflowStatus].
-({IconData icon, Color color, String label}) workflowStatusStyle(
-  WorkflowStatus status,
-  BuildContext context,
-) {
-  switch (status) {
-    case WorkflowStatus.running:
-      return (
-        icon: AppIcons.loader,
-        color: ReviewStatusColors.running,
-        label: AppLocalizations.of(context).running,
-      );
-    case WorkflowStatus.success:
-      return (
-        icon: AppIcons.checkCircle2,
-        color: ReviewStatusColors.success,
-        label: AppLocalizations.of(context).passed,
-      );
-    case WorkflowStatus.failure:
-      return (
-        icon: AppIcons.xCircle,
-        color: ReviewStatusColors.failure,
-        label: AppLocalizations.of(context).failed,
-      );
-    case WorkflowStatus.neutral:
-      return (
-        icon: AppIcons.minusCircle,
-        color: ReviewStatusColors.neutral,
-        label: AppLocalizations.of(context).neutral,
-      );
   }
 }
 

@@ -393,8 +393,8 @@ class _FakeRepoProvisioner implements RepoWorkspaceProvisionerPort {
     String? prBranch,
     Set<String>? repoAllowlist,
     void Function(String repoName, {required bool prHead})? onRepoProvision,
-    // Accepted to match the port; the fake never triggers a setup script.
-    void Function(String repoName)? onRepoSetupScript,
+    // Accepted to match the port; the fake never triggers a provision task.
+    void Function(String repoName)? onRepoProvisionTasks,
     CancellationToken? cancel,
   }) async {
     ensureCalled = true;

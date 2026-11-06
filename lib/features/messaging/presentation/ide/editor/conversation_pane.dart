@@ -7,6 +7,7 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_provisio
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_host.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
@@ -445,6 +446,9 @@ class SpaceProvisioningBanner extends ConsumerWidget {
     final isDemo = ref.watch(isDemoServerProvider);
     final l10n = AppLocalizations.of(context);
     final ds = context.designSystem ?? DesignSystemTokens.light();
+    // No editor to open a tab in (or a demo, which prepares nothing) means no
+    // logs to offer.
+    final host = isDemo ? null : EnvironmentHostScope.maybeOf(context);
 
     if (status.isStopped) {
       // Stopped and failed share the shape (a retry unblocks both) and differ
@@ -481,6 +485,15 @@ class SpaceProvisioningBanner extends ConsumerWidget {
                 ),
               ),
             ),
+            if (host != null) ...[
+              CcButton(
+                variant: CcButtonVariant.ghost,
+                size: CcButtonSize.sm,
+                onPressed: () => host.openProvisioningLogs(spaceId: spaceId),
+                child: Text(l10n.viewLogs),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+            ],
             if (!isDemo)
               CcButton(
                 variant: CcButtonVariant.secondary,
@@ -544,6 +557,12 @@ class SpaceProvisioningBanner extends ConsumerWidget {
               ],
             ),
           ),
+          if (host != null)
+            CcIconButton(
+              icon: AppIcons.terminal,
+              tooltip: l10n.viewLogs,
+              onPressed: () => host.openProvisioningLogs(spaceId: spaceId),
+            ),
           // Only real servers prepare repo worktrees. The public demo's
           // repo-less spaces become ready without a stoppable operation.
           if (!isDemo)

@@ -8,6 +8,7 @@ import 'package:control_center/features/meetings/presentation/screens/meeting_de
 import 'package:control_center/features/meetings/presentation/screens/meeting_record_screen.dart';
 import 'package:control_center/features/meetings/presentation/screens/meetings_screen.dart';
 import 'package:control_center/features/memory/presentation/screens/memory_screen.dart';
+import 'package:control_center/features/memory/providers/memory_providers.dart';
 import 'package:control_center/features/messaging/presentation/screens/messaging_screen.dart';
 import 'package:control_center/features/messaging/presentation/screens/spaces_home_screen.dart';
 import 'package:control_center/features/newsfeed/presentation/screens/article_webview_screen.dart'
@@ -33,7 +34,7 @@ import 'package:control_center/features/settings/presentation/screens/appearance
 import 'package:control_center/features/settings/presentation/screens/audio_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/backup_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/diagnostics_settings_screen.dart';
-import 'package:control_center/features/settings/presentation/screens/keybindings_settings_screen.dart';
+import 'package:control_center/features/settings/presentation/screens/environments_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/links_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/mcp_servers_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/meetings_settings_screen.dart';
@@ -208,6 +209,72 @@ class _AdaptiveNoTransitionRoute<T> extends PageRoute<T> {
 /// locations.
 Page<void> buildPage(GoRouterState state, Widget child, {ValueKey? key}) =>
     AdaptivePage<void>(key: key ?? state.pageKey, child: child);
+
+/// The Memory screen's list and record locations. SIBLINGS sharing one page key,
+/// like the tickets and calendar routes: the one [MemoryScreen] updates in place,
+/// so the list's search, scroll position and graph survive an open record.
+List<GoRoute> memoryRoutes() {
+  const pageKey = ValueKey('memory_screen');
+  MemoryRecordRef record(
+    GoRouterState state,
+    MemoryRecordKind kind,
+    String param,
+  ) => (
+    workspaceId: state.pathParameters['workspaceId']!,
+    kind: kind,
+    id: state.pathParameters[param]!,
+  );
+  return [
+    GoRoute(
+      path: memoryRoute(workspaceIdParam),
+      pageBuilder: (context, state) =>
+          buildPage(state, _absorb(const MemoryScreen()), key: pageKey),
+    ),
+    GoRoute(
+      path: memoryFactRoute(workspaceIdParam, ':factId'),
+      pageBuilder: (context, state) => buildPage(
+        state,
+        _absorb(
+          MemoryScreen(record: record(state, MemoryRecordKind.fact, 'factId')),
+        ),
+        key: pageKey,
+      ),
+    ),
+    GoRoute(
+      path: memoryPolicyRoute(workspaceIdParam, ':policyId'),
+      pageBuilder: (context, state) => buildPage(
+        state,
+        _absorb(
+          MemoryScreen(
+            record: record(state, MemoryRecordKind.policy, 'policyId'),
+          ),
+        ),
+        key: pageKey,
+      ),
+    ),
+  ];
+}
+
+/// Settings → Environments' list and definition locations, siblings sharing one
+/// page key (see [memoryRoutes]). The page reads the id off the route.
+List<GoRoute> environmentSettingsRoutes() {
+  const pageKey = ValueKey('environments_settings_screen');
+  Page<void> page(BuildContext context, GoRouterState state) => buildPage(
+    state,
+    _absorb(const EnvironmentsSettingsScreen()),
+    key: pageKey,
+  );
+  return [
+    GoRoute(
+      path: settingsEnvironmentsRoute(workspaceIdParam),
+      pageBuilder: page,
+    ),
+    GoRoute(
+      path: settingsEnvironmentRoute(workspaceIdParam, ':definitionId'),
+      pageBuilder: page,
+    ),
+  ];
+}
 
 /// Provides the configured [GoRouter] instance.
 final routerProvider = Provider<GoRouter>((ref) {
@@ -463,11 +530,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
-            path: settingsKeybindingsRoute(workspaceIdParam),
-            pageBuilder: (context, state) =>
-                buildPage(state, _absorb(const KeybindingsSettingsScreen())),
-          ),
-          GoRoute(
             path: settingsAudioRoute(workspaceIdParam),
             pageBuilder: (context, state) =>
                 buildPage(state, _absorb(const AudioSettingsScreen())),
@@ -515,6 +577,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) =>
                 buildPage(state, _absorb(const AgentsSettingsScreen())),
           ),
+          ...environmentSettingsRoutes(),
           GoRoute(
             path: settingsReposRoute(workspaceIdParam),
             pageBuilder: (context, state) =>
@@ -693,11 +756,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          GoRoute(
-            path: memoryRoute(workspaceIdParam),
-            pageBuilder: (context, state) =>
-                buildPage(state, _absorb(const MemoryScreen())),
-          ),
+          ...memoryRoutes(),
           GoRoute(
             path: meetingsRoute(workspaceIdParam),
             pageBuilder: (context, state) =>

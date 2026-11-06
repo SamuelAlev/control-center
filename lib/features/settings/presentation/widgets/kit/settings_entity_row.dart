@@ -1,12 +1,15 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_hover_reveal.dart';
 import 'package:flutter/widgets.dart';
 
 /// Collapsed settings list row (provider, runner, MCP server, rig image).
 ///
 /// Anatomy: status marker ([statusLabel] required with [tone]), name + identity
-/// line, meta, optional trailing control, chevron if [detail] exists. Detail
-/// builds only when opened.
+/// line, meta, optional trailing control. Detail builds only when opened.
+///
+/// A row that opens says so with its hover wash and cursor, not a chevron: one
+/// at the row's end sits beside the trailing actions, where it is a misclick
+/// away from a delete.
 class SettingsEntityRow extends StatelessWidget {
   /// Creates a [SettingsEntityRow].
   const SettingsEntityRow({
@@ -15,18 +18,31 @@ class SettingsEntityRow extends StatelessWidget {
     this.subtitle,
     this.subtitleWidget,
     this.icon,
+    this.leading,
     this.tone,
     this.statusLabel,
     this.meta = const [],
     this.trailing,
+    this.hoverTrailing,
     this.detail,
     this.expanded = false,
     this.onExpandedChanged,
+    this.onPressed,
+    this.revealTrailing = false,
     this.padding = const EdgeInsets.symmetric(
       horizontal: AppSpacing.lg,
       vertical: AppSpacing.md,
     ),
-  });
+    this.detailPadding = const EdgeInsetsDirectional.fromSTEB(
+      AppSpacing.lg + 28 + AppSpacing.md,
+      0,
+      AppSpacing.lg,
+      AppSpacing.lg,
+    ),
+  }) : assert(
+         onPressed == null || detail == null,
+         'A row either opens elsewhere or expands in place',
+       );
 
   /// The thing's display name.
   final String title;
@@ -43,6 +59,10 @@ class SettingsEntityRow extends StatelessWidget {
   /// Optional glyph for the status marker. Defaults to a dot.
   final IconData? icon;
 
+  /// Replaces the status marker, for a row whose opening glyph has more to say
+  /// than a tone. Keep it the marker's 28px, so [detailPadding] still lines up.
+  final Widget? leading;
+
   /// Drives the marker colour and the status tag.
   final CcStatusTone? tone;
 
@@ -56,6 +76,11 @@ class SettingsEntityRow extends StatelessWidget {
   /// The one control usable without opening the row.
   final Widget? trailing;
 
+  /// An action held out of sight until the row is hovered or focused, sitting
+  /// before a [trailing] that stays visible. For a row that shows state in
+  /// [trailing]; use [revealTrailing] when nothing needs to stay in view.
+  final Widget? hoverTrailing;
+
   /// Everything else. Built only while [expanded].
   final Widget? detail;
 
@@ -66,26 +91,37 @@ class SettingsEntityRow extends StatelessWidget {
   /// the row permanently open.
   final ValueChanged<bool>? onExpandedChanged;
 
+  /// Makes the whole row a link to somewhere else.
+  final VoidCallback? onPressed;
+
+  /// Keeps [trailing] out of sight until the row is hovered or focused.
+  final bool revealTrailing;
+
   /// Insets around the header.
   final EdgeInsetsGeometry padding;
 
+  /// Insets around [detail]. The default sits under the title.
+  final EdgeInsetsGeometry detailPadding;
+
   bool get _expandable => detail != null && onExpandedChanged != null;
+
+  bool get _interactive => _expandable || onPressed != null;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
 
     final header = CcTappable(
-      onPressed: _expandable ? () => onExpandedChanged!(!expanded) : null,
+      onPressed: _expandable ? () => onExpandedChanged!(!expanded) : onPressed,
       semanticLabel: title,
-      semanticButton: _expandable,
-      canRequestFocus: _expandable,
-      showFocusRing: _expandable,
-      mouseCursor: _expandable
+      semanticButton: _interactive,
+      canRequestFocus: _interactive,
+      showFocusRing: _interactive,
+      mouseCursor: _interactive
           ? SystemMouseCursors.click
           : SystemMouseCursors.basic,
       builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered) && _expandable;
+        final hovered = states.contains(WidgetState.hovered) && _interactive;
         return AnimatedContainer(
           duration: CcMotion.fast,
           color: hovered ? tokens.hover : const Color(0x00000000),
@@ -93,7 +129,7 @@ class SettingsEntityRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _StatusMarker(icon: icon, tone: tone),
+              leading ?? _StatusMarker(icon: icon, tone: tone),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -151,22 +187,26 @@ class SettingsEntityRow extends StatelessWidget {
                   ],
                 ),
               ),
+              if (hoverTrailing != null) ...[
+                const SizedBox(width: AppSpacing.md),
+                SettingsHoverReveal(
+                  active:
+                      states.contains(WidgetState.hovered) ||
+                      states.contains(WidgetState.focused),
+                  child: hoverTrailing!,
+                ),
+              ],
               if (trailing != null) ...[
                 const SizedBox(width: AppSpacing.md),
-                trailing!,
-              ],
-              if (_expandable) ...[
-                const SizedBox(width: AppSpacing.sm),
-                AnimatedRotation(
-                  turns: expanded ? 0.25 : 0,
-                  duration: CcMotion.resolveToggle(context, CcMotion.fast),
-                  curve: CcMotion.standard,
-                  child: Icon(
-                    AppIcons.chevronRight,
-                    size: 16,
-                    color: tokens.fgTertiary,
-                  ),
-                ),
+                if (revealTrailing)
+                  SettingsHoverReveal(
+                    active:
+                        states.contains(WidgetState.hovered) ||
+                        states.contains(WidgetState.focused),
+                    child: trailing!,
+                  )
+                else
+                  trailing!,
               ],
             ],
           ),
@@ -186,15 +226,7 @@ class SettingsEntityRow extends StatelessWidget {
         CcCollapsible(
           expanded: onExpandedChanged == null || expanded,
           duration: CcMotion.normal,
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(
-              AppSpacing.lg + 28 + AppSpacing.md,
-              0,
-              AppSpacing.lg,
-              AppSpacing.lg,
-            ),
-            child: detail,
-          ),
+          child: Padding(padding: detailPadding, child: detail),
         ),
       ],
     );
@@ -220,7 +252,9 @@ class _StatusMarker extends StatelessWidget {
       CcStatusTone.negative => (t.danger, t.dangerSoft),
       CcStatusTone.caution => (t.warn, t.warnSoft),
       CcStatusTone.info => (t.accent, t.accentSoft),
-      CcStatusTone.neutral || null => (t.fgTertiary, t.bgSecondary),
+      // Translucent, like the tones above: an opaque fill reads as a hole in
+      // the row's hover wash.
+      CcStatusTone.neutral || null => (t.fgTertiary, t.hover),
     };
     return Container(
       width: 28,

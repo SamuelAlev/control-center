@@ -2,7 +2,7 @@
 title: Espaces de travail et isolation
 description: Pourquoi un espace de travail constitue une frontière de locataire stricte, comment la séparation des bases de données rend cette frontière structurelle et ce qui la franchit délibérément.
 slug: fr-FR/manuel/concepts/espaces-de-travail
-sourceHash: 66b14a55508f5d7d8049707a8c2f5c90d0e96cf4
+sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
 ---
 
 ## Qu’est-ce qu’un espace de travail ?
@@ -266,7 +266,11 @@ propriétaire de l’installation d’en supprimer un après confirmation, et ch
 espace de travail propose l’export et l’import. Le pipeline intégré
 **Workspace backup** ne prend que la base de données de cet espace de travail,
 selon une planification hebdomadaire, et supprime ses propres sauvegardes plus
-anciennes que l’âge de rétention configuré. Restaurer un espace de travail à
+anciennes que l’âge de rétention configuré. Ces sauvegardes sont listées sur la
+même page par espace de travail, où chacune peut être restaurée, téléchargée ou
+supprimée. Supprimer un espace de travail laisse ses sauvegardes derrière lui pour
+que le propriétaire de l’installation les récupère ou les retire, puisque sa
+planification et sa rétention s’arrêtent avec lui. Restaurer un espace de travail à
 partir d’un instantané de l’installation revient à pointer `workspace.import` sur
 le `<workspaceId>/workspace.db` de l’instantané ; restaurer une installation
 entière reste une recopie du répertoire d’instantanés, serveur arrêté.
@@ -283,14 +287,14 @@ contient le tableau complet.
 ## Déplacer une sauvegarde entre le serveur et votre appareil
 
 Toutes les opérations ci-dessus s’expriment en chemins sur le **serveur**, ce qui
-n’est une réponse complète que lorsque le serveur est votre propre machine. Trois
-routes de transfert signées — [`/backup/workspace`, `/backup/snapshot` et `/backup/restore`](/fr-FR/manuel/reference/sauvegarde/#transfer-routes) —
+n’est une réponse complète que lorsque le serveur est votre propre machine. Quatre
+routes de transfert signées — [`/backup/workspace`, `/backup/snapshot`, `/backup/stored` et `/backup/restore`](/fr-FR/manuel/reference/sauvegarde/#routes-de-transfert) —
 transportent les octets pour toutes les autres topologies par le tunnel de
 ressources authentifié et chiffré, sur les connexions directes comme via le
 relais. Les routes HTTP publiques ne servent pas d’octets de sauvegarde lisibles,
 et les chemins signés exigent tout de même une autorisation. Dans la page, il
 s’agit d’un bouton **Télécharger** à côté de chaque
-export et de chaque instantané (vous choisissez où il atterrit), et de **Choisir
+export, de chaque instantané et de chaque sauvegarde planifiée (vous choisissez où il atterrit), et de **Choisir
 un fichier et l’envoyer** pour restaurer à partir d’un fichier présent sur la
 machine que vous utilisez. L’envoi fonctionne lorsque le serveur n’est
 pas votre machine : `workspace.import` exige que le fichier soit déjà sur
@@ -303,7 +307,8 @@ Trois propriétés méritent d’être connues :
   d’export » — le serveur exporte de nouveau, diffuse le résultat, puis le
   supprime. La réponse est `no-store` avec `Accept-Ranges: none` pour la même
   raison : une plage reprise recollerait deux exports différents en un fichier
-  qui paraît valide et ne l’est pas.
+  qui paraît valide et ne l’est pas. Une sauvegarde planifiée fait exception : elle
+  existe déjà, donc la télécharger diffuse ce fichier et le laisse sur le serveur.
 - **Un envoi est diffusé en flux vers le disque, jamais mis en mémoire tampon**,
   aux deux extrémités, et la copie mise en attente est supprimée sur tous les
   chemins de sortie — y compris en cas de refus. Une base de données d’espace de

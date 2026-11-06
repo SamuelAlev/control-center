@@ -41,6 +41,31 @@ abstract interface class DatabaseBackupPort {
   /// a half-written snapshot is exactly what an operator needs to see.
   Future<List<BackupSnapshot>> listBackups();
 
+  /// Every scoped backup [backupWorkspace] has left for [workspaceId], newest
+  /// first.
+  ///
+  /// Reuses [BackupSnapshot]: its [BackupSnapshot.workspaces] holds the one
+  /// restorable file, or nothing when that file is missing or empty, which also
+  /// makes [BackupSnapshot.complete] false.
+  Future<List<BackupSnapshot>> listWorkspaceBackups(String workspaceId);
+
+  /// The database file of scoped backup [name], or null when there is no
+  /// such backup or it holds no real file. Names a backup, never a path.
+  Future<String?> workspaceBackupFile(String workspaceId, String name);
+
+  /// Deletes one scoped backup of [workspaceId] by its listed directory [name].
+  Future<void> deleteWorkspaceBackup(String workspaceId, String name);
+
+  /// Scoped backups left by workspaces that are no longer live, grouped by
+  /// workspace. Nothing prunes these: a deleted workspace's schedule stops, so
+  /// they stay until the install owner removes them.
+  Future<List<OrphanedWorkspaceBackups>> listOrphanedWorkspaceBackups();
+
+  /// [deleteWorkspaceBackup] for a workspace that is no longer live. Throws
+  /// when [workspaceId] is live: those backups belong to that workspace's own
+  /// roles, and being the install owner does not grant them.
+  Future<void> deleteOrphanedWorkspaceBackup(String workspaceId, String name);
+
   /// Writes a snapshot of a single workspace and returns the absolute path of
   /// the `.db` file that was written.
   ///
@@ -106,6 +131,25 @@ class BackupSnapshot {
   /// crash or a full disk. It is still listed: hiding it is how an operator
   /// comes to believe they have a backup they do not.
   final bool complete;
+}
+
+/// The scoped backups of one workspace that is no longer live.
+class OrphanedWorkspaceBackups {
+  /// Creates an [OrphanedWorkspaceBackups].
+  const OrphanedWorkspaceBackups({
+    required this.workspaceId,
+    required this.backups,
+    this.workspaceName,
+  });
+
+  /// The workspace these backups hold.
+  final String workspaceId;
+
+  /// Its name, or null when the registry no longer knows the workspace.
+  final String? workspaceName;
+
+  /// Its backups, newest first.
+  final List<BackupSnapshot> backups;
 }
 
 /// One workspace's file inside a [BackupSnapshot].

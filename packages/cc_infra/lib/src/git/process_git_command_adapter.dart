@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:cc_domain/core/domain/ports/git_command_port.dart';
 import 'package:cc_harness/cancellation.dart';
+import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
 
 /// Adapter that shells out to the system `git` binary.
 class ProcessGitCommandAdapter implements GitCommandPort {
@@ -81,7 +82,7 @@ class ProcessGitCommandAdapter implements GitCommandPort {
   }) async {
     final process = await Process.start(
       'git',
-      args,
+      RigWorktreeGuard.gitArgs(args, workingDirectory: workdir),
       workingDirectory: workdir,
       environment: _buildEnv(env),
       runInShell: false,
@@ -244,7 +245,7 @@ class ProcessGitCommandAdapter implements GitCommandPort {
     try {
       process = await Process.start(
         'git',
-        args,
+        RigWorktreeGuard.gitArgs(args, workingDirectory: workdir),
         workingDirectory: workdir,
         environment: _buildEnv(env),
         runInShell: false,

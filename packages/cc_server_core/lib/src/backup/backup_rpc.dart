@@ -6,7 +6,9 @@ import 'package:cc_server_core/src/catalog/catalog_wire.dart';
 
 /// The whole-install snapshot lane and the per-workspace export/import pair
 /// (`server.backupNow`, `server.listBackups`, `server.deleteBackup`,
-/// `workspace.export`, `workspace.import`).
+/// `server.listOrphanedBackups`, `server.deleteOrphanedBackup`,
+/// `workspace.listBackups`, `workspace.deleteBackup`, `workspace.export`,
+/// `workspace.import`).
 ///
 /// Extracted from `remote_rpc_catalog.dart` into an `extraOps` pack so the
 /// catalog does not grow (QUALITY.md R10). Empty when the host wires no
@@ -68,6 +70,82 @@ List<RepoOp> buildBackupOps({required DatabaseBackupPort? databaseBackup}) {
       requiredArgs: ['name'],
       handler: (ctx) async {
         await databaseBackup.deleteBackup(ctx.args['name'] as String);
+        return {'ok': true};
+      },
+    ),
+    // Lists the scheduled backups of ONE workspace, newest first. Same gate as
+    // exporting it: each entry names a file holding that workspace's entire
+    // history, so the install-wide `server.listBackups` lane stays out of it.
+    // Each entry's `workspaces[0].path` is what `workspace.import` takes back.
+    RepoOp(
+      name: 'workspace.listBackups',
+      kind: RepoOpKind.read,
+      minRole: WorkspaceRole.admin,
+      requiredCapability: SessionCapability.fullClient,
+      handler: (ctx) async {
+        final backups = await databaseBackup.listWorkspaceBackups(
+          ctx.workspaceId!,
+        );
+        return {
+          'backups': [for (final b in backups) backupSnapshotToWire(b)],
+        };
+      },
+    ),
+    // Removes one scheduled backup. Owner, like restoring: it destroys a
+    // recovery point. Takes the listed name, never a path; persistence resolves
+    // it strictly under this workspace's own backups.
+    RepoOp(
+      name: 'workspace.deleteBackup',
+      kind: RepoOpKind.mutate,
+      minRole: WorkspaceRole.owner,
+      requiredCapability: SessionCapability.fullClient,
+      requiredArgs: ['name'],
+      handler: (ctx) async {
+        await databaseBackup.deleteWorkspaceBackup(
+          ctx.workspaceId!,
+          ctx.args['name'] as String,
+        );
+        return {'ok': true};
+      },
+    ),
+    // Backups left by workspaces that are no longer live. A deleted workspace
+    // cannot pass a workspace-scoped gate, and its schedule has stopped, so
+    // without this lane the files stay on disk with nobody able to see them.
+    // Owner-only for the same reason as the snapshot lane above.
+    RepoOp(
+      name: 'server.listOrphanedBackups',
+      kind: RepoOpKind.read,
+      workspaceScoped: false,
+      requiredCapability: SessionCapability.fullClient,
+      serverAuthority: ServerAuthority.serverOwner,
+      handler: (ctx) async {
+        final orphans = await databaseBackup.listOrphanedWorkspaceBackups();
+        return {
+          'workspaces': [
+            for (final o in orphans)
+              {
+                'workspace_id': o.workspaceId,
+                if (o.workspaceName != null) 'workspace_name': o.workspaceName,
+                'backups': [for (final b in o.backups) backupSnapshotToWire(b)],
+              },
+          ],
+        };
+      },
+    ),
+    // Refuses a live workspace in persistence: this lane has no workspace role
+    // check, so it must not reach backups that have one.
+    RepoOp(
+      name: 'server.deleteOrphanedBackup',
+      kind: RepoOpKind.mutate,
+      workspaceScoped: false,
+      requiredCapability: SessionCapability.fullClient,
+      serverAuthority: ServerAuthority.serverOwner,
+      requiredArgs: ['workspace_id', 'name'],
+      handler: (ctx) async {
+        await databaseBackup.deleteOrphanedWorkspaceBackup(
+          ctx.args['workspace_id'] as String,
+          ctx.args['name'] as String,
+        );
         return {'ok': true};
       },
     ),

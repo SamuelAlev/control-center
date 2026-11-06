@@ -25,7 +25,7 @@ class GitHubCommitStatus {
         updatedAt: parseDate(json['updated_at'] ?? json['created_at']),
       );
 
-  /// The status context, e.g. `netlify/test-web-app/deploy-preview`.
+  /// The status context, e.g. `netlify/test-shop-ui/deploy-preview`.
   final String context;
 
   /// The raw GitHub state string (`success` / `pending` / `failure` / `error`).

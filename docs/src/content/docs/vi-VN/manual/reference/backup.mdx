@@ -2,7 +2,7 @@
 title: Sao lưu, xuất và nhập
 description: Bố cục ảnh chụp, manifest, mọi thao tác sao lưu và tuyến truyền tải, cùng chính xác những tệp mà một bản sao lưu có và không chứa.
 slug: vi-VN/so-tay/tham-chieu/sao-luu
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Mọi thứ Control Center có thể sao chép, chuyển giao hoặc nhận, cùng hình dạng chính
@@ -50,7 +50,12 @@ Chúng không bao gồm manifest hay `global.db` và không phải ảnh chụp 
 Bước lưu trữ của quy trình hằng tuần chỉ xóa các bản sao lưu của chính không gian
 làm việc đó cũ hơn tuổi đã cấu hình (mặc định 30 ngày); các ảnh chụp bản cài đặt
 do người dùng tạo thủ công không bao giờ bị bước đó xoay vòng. `server.listBackups`
-chỉ liệt kê ảnh chụp bản cài đặt, kể cả những ảnh chưa hoàn tất.
+chỉ liệt kê ảnh chụp bản cài đặt, kể cả những ảnh chưa hoàn tất; `workspace.listBackups`
+liệt kê các bản sao lưu theo lịch của một không gian làm việc.
+
+Xóa một không gian làm việc vẫn để nguyên thư mục này. Lịch của không gian làm việc dừng
+cùng với nó, nên không còn gì xoay vòng các bản sao lưu đó nữa, và chúng ở lại cho đến khi
+chủ sở hữu bản cài đặt xóa chúng. `server.listOrphanedBackups` báo cáo chúng.
 
 
 ### `manifest.json`
@@ -130,6 +135,10 @@ nối cổng sao lưu, chẳng hạn máy chủ demo.
 | `server.backupNow`   | thay đổi | Bản cài đặt | **chủ sở hữu** bản cài đặt | không có | `{ok, path}`           |
 | `server.listBackups` | đọc    | Bản cài đặt   | **chủ sở hữu** bản cài đặt | không có | `{backups: [...]}`   |
 | `server.deleteBackup` | thay đổi | Bản cài đặt | **chủ sở hữu** bản cài đặt | `name` | `{ok}`                |
+| `server.listOrphanedBackups` | đọc | Bản cài đặt | **chủ sở hữu** bản cài đặt | không có | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | thay đổi | Bản cài đặt | **chủ sở hữu** bản cài đặt | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | đọc | Không gian làm việc | `admin` | không có | `{backups: [...]}` |
+| `workspace.deleteBackup` | thay đổi | Không gian làm việc | `owner` | `name` | `{ok}` |
 | `workspace.export`   | đọc    | Không gian làm việc | `admin`     | không có      | `{ok, path}`                  |
 | `workspace.import`   | thay đổi | Không gian làm việc | `owner`   | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | thay đổi | Bản cài đặt* | `owner`      | `id`          | hàng sổ đăng ký được đánh dấu đã xóa |
@@ -139,6 +148,15 @@ toàn cục; trình xử lý của nó kiểm tra tư cách thành viên của b
 việc được nêu tên và yêu cầu `owner`.
 
 `path` trong mọi phản hồi là một đường dẫn trên **máy chủ**.
+
+`server.listOrphanedBackups` trả về một mục cho mỗi không gian làm việc không còn hoạt
+động: `workspace_id`, `workspace_name` khi sổ đăng ký vẫn biết tên đó, và `backups`. Một
+không gian làm việc đã xóa không thể qua kiểm tra vai trò không gian làm việc nữa, nên các
+bản sao lưu của nó thuộc về chủ sở hữu bản cài đặt. `server.deleteOrphanedBackup` từ chối
+một không gian làm việc đang hoạt động, vì các bản sao lưu của nó vẫn nằm sau
+`workspace.deleteBackup` và các vai trò riêng của không gian làm việc đó. Cả hai thao tác
+xóa chỉ chấp nhận tên một thư mục dấu thời gian có trong danh sách, không chấp nhận đường
+dẫn.
 
 :::note[Ảnh chụp toàn bộ bản cài đặt đều yêu cầu chủ sở hữu ở cả hai làn]
 `server.backupNow`, `server.listBackups` và `server.deleteBackup` yêu cầu **chủ sở hữu**
@@ -220,27 +238,33 @@ thiết bị trên chuỗi đích của nó bằng PSK ghép nối cùng vai tr�
 | ----------------------- | ----------- | --------------- | ------------------------------ | ----------------------- |
 | `/backup/workspace`     | GET         | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **quản trị viên** không gian làm việc |
 | `/backup/snapshot`      | GET         | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **chủ sở hữu** bản cài đặt |
+| `/backup/stored`        | GET         | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **quản trị viên** không gian làm việc; **chủ sở hữu** bản cài đặt khi không gian làm việc đã bị xóa |
 | `/backup/restore`       | POST        | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **chủ sở hữu** không gian làm việc |
 
-`w` là id không gian làm việc, `n` là tên thư mục ảnh chụp, `d` là id thiết bị đang gọi,
-`s` là chữ ký. `n` được phân giải dựa trên danh sách sao lưu thay vì được nối thẳng vào
-gốc thư mục sao lưu, nên tuyến không thể bị nhắm vào một thư mục mà danh sách sẽ không
-hiển thị.
+`w` là id không gian làm việc, `n` là tên thư mục ảnh chụp hoặc bản sao lưu theo lịch, `d`
+là id thiết bị đang gọi, `s` là chữ ký. Trên `/backup/snapshot`, `n` được phân giải dựa
+trên danh sách sao lưu thay vì được nối thẳng vào gốc thư mục sao lưu, nên tuyến không thể
+bị nhắm vào một thư mục mà danh sách sẽ không hiển thị. Trên `/backup/stored`, nó phải là
+tên dấu thời gian, và tệp phải là một tệp thực sự nằm trong thư mục sao lưu riêng của
+không gian làm việc đó.
 
 | Trạng thái | Nguyên nhân                                                                       |
 | ---------- | --------------------------------------------------------------------------------- |
-| `400`      | Thiếu một tham số truy vấn bắt buộc, hoặc phần thân tải lên rỗng                     |
+| `400`      | Thiếu một tham số truy vấn bắt buộc, tên bản sao lưu không hợp lệ, hoặc phần thân tải lên rỗng |
 | `403`      | Thiết bị không xác định hoặc đã bị thu hồi, chữ ký sai, hoặc bên gọi thiếu vai trò    |
-| `404`      | Máy chủ này không có cổng sao lưu, hoặc ảnh chụp/tệp không gian làm việc được nêu tên không tồn tại |
+| `404`      | Máy chủ này không có cổng sao lưu, hoặc ảnh chụp, bản sao lưu hay tệp không gian làm việc được nêu tên không tồn tại |
 | `405`      | `/backup/restore` được gọi với phương thức khác `POST`                              |
 | `413`      | Phần thân tải lên vượt 8 GiB, theo content-length được khai báo hoặc theo số byte thực sự đọc được |
 | `426`      | Bất kỳ yêu cầu trực tiếp nào tới một đường dẫn truyền tải trên trình lắng nghe HTTP công khai; hãy dùng đường hầm tài nguyên đã mã hóa của máy khách đã ghép nối |
 | `500`      | Thao tác xuất hoặc lưu trữ thất bại phía máy chủ                                     |
 
-Cả hai thao tác tải xuống đều trả về `Cache-Control: no-store` cùng `Accept-Ranges: none`.
-Mỗi yêu cầu tạo ra một bản sao **mới** và xóa nó sau khi truyền xong, nên một phản hồi
-được đệm hoặc tiếp tục sẽ nối các byte từ hai lần xuất khác nhau thành một tệp trông có
-vẻ hợp lệ mà lại không hợp lệ.
+Cả ba thao tác tải xuống đều trả về `Cache-Control: no-store` cùng `Accept-Ranges: none`.
+`/backup/workspace` và `/backup/snapshot` tạo ra một bản sao **mới** cho mỗi yêu cầu và xóa
+nó sau khi truyền xong, nên một phản hồi được đệm hoặc tiếp tục sẽ nối các byte từ hai lần
+xuất khác nhau thành một tệp trông có vẻ hợp lệ mà lại không hợp lệ.
+
+`/backup/stored` là ngoại lệ: nó truyền phát một bản sao lưu theo lịch dưới dạng
+`<workspaceId>-<name>.db` và giữ nguyên tệp tại chỗ, vì chính tệp đó là bản sao lưu.
 
 `/backup/snapshot` trả về `<name>.zip`, với các mục tương đối so với gốc ảnh chụp để khi
 giải nén tái tạo được `manifest.json` + `global.db` + `<workspaceId>/workspace.db`. Các
@@ -268,10 +292,10 @@ kiểu truyền nào mã hóa các tệp sao lưu thu được khi lưu trữ.
 | Trung chuyển truyền tải        | `<dataDir>/backups/transfer/` — một bàn làm việc, được dọn bởi chính tuyến ghi vào nó |
 | Tên tệp lưu trữ ảnh chụp       | `<snapshot directory name>.zip`                              |
 | Giới hạn tải lên               | 8 GiB cho mỗi lần tải lên đã mã hóa tới `/backup/restore`    |
-| Lưu trữ                        | Ảnh chụp bản cài đặt: xóa thủ công. Bản sao lưu không gian làm việc: quy trình hằng tuần, mặc định 30 ngày |
+| Lưu trữ                        | Ảnh chụp bản cài đặt: xóa thủ công. Bản sao lưu không gian làm việc: quy trình hằng tuần, mặc định 30 ngày, hoặc xóa thủ công. Bản sao lưu của không gian làm việc đã xóa: chỉ xóa thủ công |
 
 Các thư mục `exports/`, `transfer/` và `workspace-backups/` không phải ảnh chụp bản cài
-đặt và bị loại khỏi `server.listBackups`. Chỉ thư mục cuối cùng có lưu trữ theo lịch; việc
+đặt và bị loại khỏi `server.listBackups`. Chỉ thư mục cuối cùng có lưu trữ theo lịch, và chỉ khi không gian làm việc của nó còn tồn tại; việc
 xóa một ảnh chụp bản cài đặt đòi hỏi hành động rõ ràng của chủ sở hữu bản cài đặt.
 
 ## Xem thêm

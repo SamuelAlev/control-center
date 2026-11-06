@@ -2,10 +2,10 @@
 title: Klavye kısayolları
 description: Kapsama göre eksiksiz kısayol kayıt defteri ve her kısayolun hangi koşullarda devreye girdiği.
 slug: tr-TR/kilavuz/referans/klavye-kisayollari
-sourceHash: d4c9c36b64dbe20889448c801dd903252c0d0866
+sourceHash: 2290b0d841978bfcf4c43b50ce4510f7d54588f7
 ---
 
-Kısayollar tek bir `const` kayıt defterinden gelir: `lib/core/constants/keybindings.dart` içindeki `KeybindingRegistry`. Bu kayıt defteri **49 bağlama** barındırır. Ayarlar → Siz → Kısayollar, bu kayıt defterini **salt okunur bir referans** olarak gösterir: yeniden atama arayüzü yoktur ve kullanıcı kısayol dosyası bulunmaz.
+Kısayollar tek bir `const` kayıt defterinden gelir: `lib/core/constants/keybindings.dart` içindeki `KeybindingRegistry`. Bu kayıt defteri **49 bağlama** barındırır. **Klavye kısayolları** iletişim kutusu (`?` tuşuna basın veya Yardım menüsünden açın) genel kısayolları ve geçerli ekranın kısayollarını gösterir. **Salt okunur bir referanstır**: yeniden atama arayüzü yoktur ve kullanıcı kısayol dosyası bulunmaz.
 
 Aşağıdaki `Cmd`, birincil komut değiştiricisidir — macOS’ta ⌘, Windows ve Linux’ta Ctrl. Bir bağlama ancak komutunun geçerli ekranda kayıtlı bir işleyicisi varsa ve `when` koşulu sağlanıyorsa devreye girer; `!textInputFocus`, tuşun bunun yerine odaklanmış bir metin alanına aktarıldığı anlamına gelir.
 
@@ -41,7 +41,7 @@ Kapsam `/pull-requests`. Hepsi `route == '/pull-requests'` koşulunu ve odaklanm
 | `Enter`  | PR aç                  |
 | `F`      | Filtre menüsünü aç     |
 
-`Enter` (`pr.list-open`) kayıt defterinde tanımlıdır ve kısayollar referansında görünür, ancak **liste ekranı bunun için bir işleyici kaydetmez**, dolayısıyla şu anda devreye girmez. `F` aramayı değil, filtre menüsünü (`pr.list-open-filter`) açar.
+`Enter` (`pr.list-open`) kayıt defterinde tanımlıdır ve **Klavye kısayolları** iletişim kutusunda görünür, ancak **liste ekranı bunun için bir işleyici kaydetmez**, dolayısıyla şu anda devreye girmez. `F` aramayı değil, filtre menüsünü (`pr.list-open-filter`) açar.
 
 ## Pull request ayrıntısı (2)
 
@@ -90,7 +90,7 @@ Kapsam `/spaces`. `when` koşulları bir düzenli ifade kullanır; böylece hem 
 
 Dosyaya git, konuşmanın dosyaları üzerinde bir seçici açar. Hiçbir şey yazmadığınızda en son açtığınız dosyaları listeler; yazdığınızda konuşmanın worktree'lerindeki tüm dosyalarda arar. `Enter` seçili dosyayı yeni bir sekmede açar, `Cmd/Ctrl + Enter` ya da satırdaki bölme düğmesi onu sağdaki bir bölmede açar, son açılan bir satırdaki `×` ise onu listeden kaldırır.
 
-Enter ile gönderme, composer metin alanına aittir; bas konuş ise composer’ın mikrofon düğmesine aittir (kendi donanım klavyesi işleyicisi). Her ikisi de ayarlar referansı için kayıt defterinde listelenir.
+Enter ile gönderme, composer metin alanına aittir; bas konuş ise composer’ın mikrofon düğmesine aittir (kendi donanım klavyesi işleyicisi). Her ikisi de **Klavye kısayolları** iletişim kutusunun gösterebilmesi için kayıt defterinde listelenir.
 
 ## Çalışma alanı seçici (2)
 
@@ -127,7 +127,7 @@ Kapsam `/newsfeed`. Hepsi `route == '/newsfeed'` koşulunu ve odaklanmış bir m
 
 ## Kayıt defteri dışındaki diff görüntüleyici tuşları
 
-PR diff görüntüleyici bunları kendisi işler (`PrDiffKeyboardHandler`). Arama/görüldü/daraltma yalnızca ayarlar referansı için kayıt defteri yorumlarında listelenir — hiçbir dağıtıcı işleyici kaydedilmediğinden, dağıtıcı bunları diff görünümüne bırakır. Bunlar, kısayollar referansında kendi satırları olarak görünmez.
+PR diff görüntüleyici bunları kendisi işler (`PrDiffKeyboardHandler`). Arama/görüldü/daraltma yalnızca kayıt defteri yorumlarında belirtilir: hiçbir dağıtıcı işleyici kaydedilmediğinden, dağıtıcı bunları diff görünümüne bırakır. Bunlar, **Klavye kısayolları** iletişim kutusunda kendi satırları olarak görünmez.
 
 | Kısayol         | Eylem                                                 |
 | --------------- | ----------------------------------------------------- |

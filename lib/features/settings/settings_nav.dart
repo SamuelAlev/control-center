@@ -26,6 +26,15 @@ enum SettingScope {
   server,
 }
 
+String _environmentDetailRoute(String workspaceId) =>
+    settingsEnvironmentRoute(workspaceId, ':definitionId');
+
+String _memoryFactDetailRoute(String workspaceId) =>
+    memoryFactRoute(workspaceId, ':factId');
+
+String _memoryPolicyDetailRoute(String workspaceId) =>
+    memoryPolicyRoute(workspaceId, ':policyId');
+
 /// One settings destination.
 @immutable
 class SettingsNavItem {
@@ -36,6 +45,7 @@ class SettingsNavItem {
     required this.label,
     required this.route,
     this.matchesSubroutes = false,
+    this.detailRoutes = const [],
     this.ownerOnly = false,
   });
 
@@ -54,6 +64,10 @@ class SettingsNavItem {
   /// When true the item stays selected on `<route>/…` children (e.g. the
   /// pipeline-template editor).
   final bool matchesSubroutes;
+
+  /// Route patterns of the records this page opens. Each shares the page's
+  /// breadcrumbs and tab title.
+  final List<String Function(String workspaceId)> detailRoutes;
 
   /// When true the destination is hidden from anyone who is not the recorded
   /// SERVER OWNER (the install's operator).
@@ -115,6 +129,12 @@ const List<SettingsNavGroup> kSettingsNav = [
         route: settingsAppearanceRoute,
       ),
       SettingsNavItem(
+        id: 'you.audio',
+        icon: AppIcons.audioWaveform,
+        label: _audioSettingsLabel,
+        route: settingsAudioRoute,
+      ),
+      SettingsNavItem(
         id: 'you.notifications',
         icon: AppIcons.bell,
         label: _notificationsLabel,
@@ -125,18 +145,6 @@ const List<SettingsNavGroup> kSettingsNav = [
         icon: AppIcons.gitCommit,
         label: _attributionLabel,
         route: settingsAgentAttributionRoute,
-      ),
-      SettingsNavItem(
-        id: 'you.keybindings',
-        icon: AppIcons.keyboard,
-        label: _keybindingsLabel,
-        route: settingsKeybindingsRoute,
-      ),
-      SettingsNavItem(
-        id: 'you.audio',
-        icon: AppIcons.audioWaveform,
-        label: _audioSettingsLabel,
-        route: settingsAudioRoute,
       ),
       SettingsNavItem(
         id: 'you.devices',
@@ -193,6 +201,14 @@ const List<SettingsNavGroup> kSettingsNav = [
         route: settingsReposRoute,
       ),
       SettingsNavItem(
+        id: 'workspace.environments',
+        icon: AppIcons.boxes,
+        label: _environmentsLabel,
+        route: settingsEnvironmentsRoute,
+        matchesSubroutes: true,
+        detailRoutes: [_environmentDetailRoute],
+      ),
+      SettingsNavItem(
         id: 'workspace.agents',
         icon: AppIcons.bot,
         label: _agentsLabel,
@@ -209,6 +225,8 @@ const List<SettingsNavGroup> kSettingsNav = [
         icon: AppIcons.brain,
         label: _memoryLabel,
         route: memoryRoute,
+        matchesSubroutes: true,
+        detailRoutes: [_memoryFactDetailRoute, _memoryPolicyDetailRoute],
       ),
       SettingsNavItem(
         id: 'workspace.permissions',
@@ -312,7 +330,6 @@ String _profileLabel(AppLocalizations l) => l.settingsProfile;
 String _appearanceLabel(AppLocalizations l) => l.appearance;
 String _notificationsLabel(AppLocalizations l) => l.notifications;
 String _attributionLabel(AppLocalizations l) => l.settingsAgentAttributionTitle;
-String _keybindingsLabel(AppLocalizations l) => l.keybindings;
 String _audioSettingsLabel(AppLocalizations l) => l.settingsAudio;
 String _devicesLabel(AppLocalizations l) => l.settingsYourDevices;
 String _newsfeedLabel(AppLocalizations l) => l.newsfeedLabel;
@@ -323,6 +340,7 @@ String _meetingsLabel(AppLocalizations l) => l.navMeetings;
 String _membersLabel(AppLocalizations l) => l.membersNav;
 String _agentsLabel(AppLocalizations l) => l.agents;
 String _repositoriesLabel(AppLocalizations l) => l.repositories;
+String _environmentsLabel(AppLocalizations l) => l.environmentsTitle;
 String _skillsLabel(AppLocalizations l) => l.skills;
 String _memoryLabel(AppLocalizations l) => l.navMemory;
 String _permissionsLabel(AppLocalizations l) => l.agentPermissions;

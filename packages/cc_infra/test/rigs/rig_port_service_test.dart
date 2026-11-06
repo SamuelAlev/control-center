@@ -109,6 +109,56 @@ void main() {
     expect(port.hostPort, greaterThan(0));
   });
 
+  test('a dev domain answers only on its own workspace lane', () async {
+    final mux = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(mux.close);
+    mux.listen((socket) {
+      socket
+        ..add('HTTP/1.1 200 OK\r\ncontent-length: 5\r\n\r\nguest'.codeUnits)
+        ..close();
+      socket.listen((_) {}, onError: (_) {});
+    });
+    final guest = _FakeGuest()..listening['ccrig-a'] = [3000];
+    final service = RigPortsService(
+      runInGuest: guest.run,
+      startInGuest: guest.start,
+      pollInterval: const Duration(milliseconds: 50),
+    );
+    addTearDown(service.dispose);
+    service.attachExec(
+      rigId: 'a',
+      workspaceId: 'ws1',
+      machineName: 'ccrig-a',
+      muxHostPort: mux.port,
+      conversationId: 'conv1',
+    );
+    await _nextSnapshot(
+      service,
+      'ws1',
+      'a',
+      (s) => s.ports.any((p) => p.guestPort == 3000),
+    );
+    expect(await service.setDomain('ws1', 'a', 3000, 'myapp.test'), isTrue);
+
+    Future<String> viaLane(String workspaceId) async {
+      final lane = await service.debugWorkspaceLane(workspaceId);
+      final socket = await Socket.connect(InternetAddress.loopbackIPv4, lane);
+      socket.write('GET / HTTP/1.1\r\nHost: myapp.test\r\n\r\n');
+      await socket.flush();
+      final body = await socket
+          .cast<List<int>>()
+          .transform(const SystemEncoding().decoder)
+          .join();
+      socket.destroy();
+      return body;
+    }
+
+    expect(await viaLane('ws1'), contains('guest'));
+    final foreign = await viaLane('ws2');
+    expect(foreign, contains('502'));
+    expect(foreign, isNot(contains('guest')));
+  });
+
   test('a foreign workspace reads as absent', () async {
     final guest = _FakeGuest();
     final service = RigPortsService(

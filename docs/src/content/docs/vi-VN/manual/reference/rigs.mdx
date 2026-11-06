@@ -2,7 +2,7 @@
 title: Rigs
 description: Mọi bề mặt rig, backend, động từ hành động, trạng thái vòng đời, cổng, giá trị mặc định và hợp đồng — bản danh mục dữ kiện đầy đủ.
 slug: vi-VN/so-tay/tham-chieu/rigs
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Chỉ dữ kiện mà thôi. Để hiểu mô hình đằng sau chúng, hãy đọc [Rigs và môi
@@ -18,6 +18,8 @@ trường cách ly](/vi-VN/so-tay/khai-niem/rigs/); để mở một cỗ máy, 
 | Máy tính | Desktop X11: đầu vào qua hypervisor, ảnh chụp qua agent trong hệ thống khách | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (phương án dự phòng không tăng tốc, không bao giờ được chọn tự động) | Có |
 | Android | Android qua ADB | Trình giả lập của Google | `android-emulator` | **Không** — trình giả lập tự quản lý mạng của mình |
 | iOS | Trình mô phỏng iOS qua WebDriverAgent | CoreSimulator | `ios-simulator` | **Không** — mạng đi theo máy Mac chủ |
+| Cửa sổ ứng dụng | Các cửa sổ của ứng dụng máy tính được mở từ môi trường, thông qua hệ điều hành | Cửa sổ máy chủ | `host-window` | **Không** — ứng dụng chạy trên máy chủ với quyền của người dùng máy chủ |
+| Môi trường | Stack compose và tác vụ của [môi trường](/vi-VN/so-tay/huong-dan-thuc-hanh/moi-truong/) với vị trí `rig` | microVM | `smolvm` | Có |
 
 Terminal và bề mặt `computer_use` dùng chung giá trị bề mặt `computer`;
 terminal được phân biệt bằng dấu đánh dấu image exec của nó và không bao giờ

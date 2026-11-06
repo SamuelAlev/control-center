@@ -11,6 +11,7 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/llm_call_record_repository.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
+import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
@@ -33,6 +34,13 @@ import 'package:cc_infra/src/messaging/run_transcript_recorder.dart';
 import 'package:cc_infra/src/sandboxing/claude_mcp_discovery_cache.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
+
+/// Holds the environment service until the runtime has built it: dispatch
+/// exists long before terminals and rigs do.
+class LateEnvironmentPort {
+  /// The service, once it exists.
+  EnvironmentPort? target;
+}
 
 /// Shared dependencies for a `DispatchSession`.
 class SandboxDispatchDeps {
@@ -66,6 +74,7 @@ class SandboxDispatchDeps {
     this.kernelLauncherFactory,
     this.actionGuard,
     this.agentRunGateway,
+    this.environments,
     this.mcpRegistry,
     this.skillScanner,
     this.harnessCredentialStore,
@@ -165,12 +174,15 @@ class SandboxDispatchDeps {
   /// because the writer is host-specific (cc_server's `ServerMcpControl`),
   /// keeping this package free of `package:control_center`. When null the
   /// adapter runs without `--mcp-config` (the agent sees no `mcp__*` tools).
+  /// `runToken` is the run's gateway secret, which is what lets it use tools
+  /// that reach the host.
   final Future<String?> Function(
     String cwd, {
     String? workspaceId,
     String? agentId,
     String? conversationId,
     String? spaceId,
+    String? runToken,
   })?
   mcpConfigPathResolver;
 
@@ -302,6 +314,10 @@ class SandboxDispatchDeps {
   /// Conventional push URLs route through it; shell preflight also gates
   /// explicit URLs. Without a reachable gateway, Claude's Bash hook blocks.
   final AgentRunGateway? agentRunGateway;
+
+  /// Environment access for runs in a space that has a definition. A holder,
+  /// because dispatch is built long before the environment service.
+  final LateEnvironmentPort? environments;
 
   /// The MCP tool registry, exposing CC's orchestration tools to the built-in
   /// harness loop as first-class tools. Null disables MCP tools in the harness

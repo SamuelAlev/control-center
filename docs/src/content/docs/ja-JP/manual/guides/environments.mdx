@@ -1,0 +1,411 @@
+---
+title: 環境をセットアップする
+description: compose、独自の CLI、監視付きプロセス、デスクトップアプリを使って、スペースとプルリクエストごとに専用の実行スタックを用意します。
+slug: ja-JP/マニュアル/ハウツーガイド/環境
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+**環境**は 1 つのスペースの実行スタックです。ブランチに必要なサービスが他のすべてのスペースから隔離されて動き、サイドバーに表示され、エージェントからアクセスできます。PR にはすでに専用のスペースがあるので、プルリクエストにも環境があります。
+
+ワークスペース管理者が**定義**を一度書きます。その後、メンバーはスペースまたは PR のサイドバーの **環境** セクションで **開始** を押します。定義はワークスペースのデータベースに保存されるため、機能ブランチが Control Center の実行内容を変えることはありません。ただし、ツールはそのブランチのコードを実行します。
+
+## 定義を作成する
+
+1. **設定 → ワークスペース → 環境** を開きます。定義を変更できるのはワークスペース管理者だけです。
+2. **新しい定義** をクリックし、**空の定義** または **リポジトリから下書き** を選びます。下書きはリポジトリから compose ファイル、`Procfile`、`package.json` のスクリプトを探し、結果はあなたが確認します。
+3. フォームに入力するか、**JSON** タブを使います。このページの例はその JSON です。
+4. **テストを実行** をクリックします。使い捨ての環境を起動し、準備完了を待ってから破棄します。
+
+定義をリポジトリに置くには **リポジトリのファイルをリンク** を使います。Control Center はファイルをデフォルトブランチからのみ読み取り、管理者が承認したバージョンだけを実行します。新しいバージョンは **更新があります** と表示され、承認されるまで何も変わりません。
+
+## 最小の定義
+
+シンプルな compose リポジトリならこれだけで足ります。
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+それ以外にはすべてデフォルトがあります。compose ファイルは自動で見つかり、すべてのサービスが動き、ポートが割り当てられ、HTTP エンドポイントが検出され、環境にはブランチ名が付きます。
+
+## コンポーネントの種類
+
+環境はコンポーネントの順序付きリストです。`after` で別のものを指定しない限り、各コンポーネントは前のものの準備完了を待ち、停止は逆順で行われます。`enabledWhen` は、`opt.seed`、`!opt.seed`、`repo.web` のように、オプションやロールに応じてコンポーネントを有効にします。
+
+| 種類 | 実行するもの | 用途 |
+| --- | --- | --- |
+| `compose` | Control Center の compose ドライバー | 任意の compose ファイル。環境ごとに 1 つ |
+| `cli` | あなたのツール。Control Center は対応付けた動詞を呼び出して JSON を読みます | ライフサイクル、ドメイン、データを自分で管理するツール |
+| `process` | Control Center。監視付きのターミナルセッションで実行 | 開発サーバーとワーカー |
+| `task` | Control Center。トリガーごとに 1 回 | インストール、マイグレーション、テスト |
+| `app` | Control Center。誰かが **起動** をクリックしたとき | デスクトップアプリ |
+
+`task` コンポーネントは `when` リストを取ります。
+
+| トリガー | 実行タイミング |
+| --- | --- |
+| `provision` | ワークツリーの作成時（後述のワークツリータスクを参照） |
+| `create` | 環境ごとに 1 回、およびリセット後にもう一度 |
+| `start` | 起動のたび |
+| `change` | 同期の後、変更されたパスが `onChange` に一致したとき |
+| `manual` | 要求時：**実行**、`cc-env run <id>`、`environment_run_task` |
+| `archive` | ワークツリーが破棄される直前 |
+
+配列で指定したコマンドは argv なので、オプションの値がシェルを通ることはありません。文字列、または行の配列を持つ `script` は `bash -lc` で実行されます。`{name}`、`{branch}`、`{stateDir}`、`{repo.<role>}`、`{port.<key>}`、`{opt.<key>}`、`{url.<role>}` などのプレースホルダーは argv の中でのみ展開されます。シェルコマンドは同じ値を `$CC_ENV_PORT_WEB` のような `CC_ENV_*` 変数として読みます。
+
+各コマンドとスペースのターミナルには、`CC_ENV_NAME`、`CC_ENV_STATE_DIR`、`CC_ENV_URL`、`CC_SPACE_ID`、`CC_REPO_PATH_<ROLE>`、PR スペースでは `CC_PR_NUMBER` と `CC_PR_IS_FORK` も渡されます。compose コンポーネントがあれば `COMPOSE_PROJECT_NAME` と `COMPOSE_FILE` も渡されるので、タスク内の `docker compose exec` は正しいプロジェクトに届きます。
+
+## ロールと作業ディレクトリ
+
+定義は**ロール**をワークスペースのリポジトリに結び付けるので、1 つのスタックが複数のリポジトリにまたがることができます。
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor`: スペースにアンカーロールが 1 つ以上あれば環境を起動できます。2 つの定義が一致する場合は、起動する人が選びます。
+- `required`: このリポジトリがないとスタックは動きません。
+- `whenMissing`: スペースにロールがないときの動作です。`addToSpace` はデフォルトブランチのリポジトリを追加し、`required` ロールのデフォルトです。`useSource` は登録済みのチェックアウトを渡します。読み取り専用として扱ってください。`skip` は変数を未設定のままにし、それ以外の場合のデフォルトです。
+- 起動には、スペース内のアンカーリポジトリに対する `write` 権限と、他のすべての結び付けられたリポジトリへの読み取りアクセスが必要です。
+
+コマンドは、`repos` のうちスペースが持つ最初のロールで実行されるので、リポジトリが 1 つの定義ではこれを書く必要はありません。どのコンポーネントも `"cwd": { "role": "e2e", "path": "packages/ui" }` で上書きできます。どちらのフィールドも省略可能です。
+
+## ポートと URL
+
+Control Center は何かが起動する前に、ホスト全体で共通の範囲（デフォルトは 42000 から 49999、32 個単位のブロック）からホストポートを割り当てます。ポートは環境が存在する間ずっと変わらず、compose のポートは `127.0.0.1` にのみバインドします。
+
+- compose のポートは宣言不要です。`{port.postgres.5432}` または `CC_ENV_PORT_POSTGRES_5432` として読みます。
+- その他のポートは使う場所で `"port": "web"` または `"ports": ["web", "hmr"]` として宣言し、`{port.web}` として読みます。ポートを持つプロセスには `PORT` と `HOST=127.0.0.1` も渡されます。
+
+HTTP エンドポイントには、1 つのループバックポートで待ち受けるサーバーのルーター上の URL が付きます。
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>` はブランチのスラッグで、PR スペースでは `pr-<n>` です。`<project>` は `naming.project`、なければ定義の名前です。
+- `*.localhost` の名前はループバックを指すので hosts エントリも DNS も不要で、ホスト名によって環境間の Cookie が分離されます。
+- HTTP に応答する compose ポートは検出され、コンポーネントの `http` でその推定を上書きできます。プロセスには `"endpoint": { "role": "web", "primary": true }` が必要で、これにより `{url.web}` も使えるようになります。
+- ブラウザー (VM) では **Browser (VM) で開く** を使います。そこでは `https://web--fix-login--shop.localhost/` が同じルートに届きます。
+- ラベル全体は 63 文字以内に収まるので、長い名前はハッシュで短縮されます。
+- 2 つのエンドポイントに共通の親ドメインはありません。両方で 1 つの Cookie が必要なアプリは、1 つのエンドポイントから配信する必要があります。
+
+OAuth リダイレクトのように事前登録が必要な URL には、`"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` で固定の名前セットを使えます。
+
+`policy` は環境がいつ動くかを決めます。`autoCreate` は `off`、`prSpaces`、`allSpaces` のいずれか、`idleStopMinutes` のデフォルトは 240、`followPrHead` は head が動くと PR 環境を同期し、`maxRunning`（デフォルト 6）に達すると **開始** は最も長く使われていない環境の停止を提案します。
+
+## 例：compose アプリ
+
+1 つの compose ファイルから動く Web アプリと Postgres に、git で無視される `.env`、マイグレーション、テストタスクを加えた例です。`seedFiles` は、登録済みのチェックアウトから指定のファイルを新しいワークツリーごとにコピーします。
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+`healthchecks` を使うと、独自のヘルスチェックを持たないサービスでも次のコンポーネントを待たせられます。これがないと実行中のコンテナは準備完了とみなされ、起動中のデータベースより先にマイグレーションが走ることがあります。
+
+## 例：独自の CLI
+
+コンテナ、ドメイン、TLS を自分で管理する架空のツール `acme` の例です。Control Center は `{name}` を渡し、それ以外はすべて `status` から知ります。ツールのホスト名を推測することも、`/etc/hosts` を編集することもありません。
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create`、`status`、`destroy` は必須です。Control Center は読み取ったステータスから `create` か `start` を選びます。どの動詞も argv の代わりに `{ "shell": "…" }` にできます。
+- `statusMap` はツール自身の JSON を JSON ポインターで読みます。`*` はすべての項目に一致します。状態ルールは順序付きで、最初の一致が優先されます。条件は `path` と `equals`、または `any` か `none` と `where` です。
+- `keepsDataOnStop: false` はアイドル停止を無効にし、**停止** にデータ損失の警告を追加します。停止でデータが失われる場合に設定します。
+- `routing.mode: "tool"` はツールのホスト名をブラウザー (VM) とエージェントにつなぎます。ドメインは `.test`、`.localhost`、`.internal` のいずれかで終わる必要があり、その外の URL が報告されると破棄されます。
+
+自分のツールなら `statusMap` を省き、このページの最後にあるステータス契約を出力できます。
+
+## 例：pnpm モノレポ
+
+プロセスとタスクだけで、コンテナはありません。Web アプリは `{url.api}` で API を見つけます。
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- 各プロセスはターミナルタブで、開いて読んだり入力したりできます。タブを閉じても止まりません。
+- `ready` は `http`、`tcp`、`logMatch` を取ります。`restart` は `on-failure`（デフォルト）、`always`、`never` のいずれかです。`restartOn` は変更されたパスが一致するとプロセスを再起動します。
+- `options` は **開始** のフォームになり、`agentDefault` はエージェントが開始した実行に適用されます。
+
+## 例：デスクトップアプリ
+
+ビルド手順のあるデスクトップアプリです。Control Center は OS のウィンドウレベルで動き、アプリ側にフックや SDK を必要としないので、どの技術で作られていても同じように扱えます。
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+アプリは環境と一緒には起動しません。誰かが **起動** をクリックすると、先に `prepare` が実行されます。**再ビルドして再起動** はこの組をもう一度実行します。正常終了は閉じた状態として表示され、クラッシュは最後のログ行を表示して再起動せず、サーバーの再起動で再度開かれることはなく、アイドル停止は実行中のアプリに触れません。
+
+### デスクトップアプリの権限と制限
+
+- macOS では、システム設定で Control Center に**画面収録**と**アクセシビリティ**を一度許可します。サーバーホストには GUI セッションが必要で、ヘッドレスサーバーはアプリの起動を拒否します。
+- バイナリを直接起動します。`open -a` はアプリを LaunchServices に渡すので、Control Center が追跡するプロセスツリーから外れます。`"window": { "match": { "bundleId": "…" } }` はこの場合に対応しますが、実行中のコピーが 1 つのときにしか安全ではありません。
+- ウィンドウはディスプレイ上に残ります。macOS はすべてのディスプレイの外に置かれたウィンドウをキャプチャしないので、エージェントが使っているアプリはサーバーの画面に見えます。フォーカスは不要です。
+- `"isolate": "home"` は `HOME`、`XDG_*`、`CFFIXED_USER_HOME` を通じてアプリに専用のホームを与え、2 つのスペースのコピーを並行して動かせます。`NSUserDefaults` は隔離されないので、Cocoa の環境設定と Flutter の `shared_preferences` はコピー間で共有されたままです。
+- `isolate` は起動したプロセスにのみ適用されます。`flutter run` のようなツールチェーンのランチャーには本物のホームが必要なので、`isolate` はビルド済みバイナリと組み合わせてください。`--user-data-dir` のようなアプリ独自の設定があれば、そちらを優先します。
+- エージェントは `app_use` でウィンドウを操作します。届くのはこの環境のプロセスツリーだけです。エージェントに見えるのはウィンドウで、デスクトップではありません。エージェントによる起動はアクションポリシーを通り、デフォルトでは確認を求めます。人が操作権を持っている間、エージェントの入力は止まります。
+- `"input": "background"`（デフォルト）はイベントをプロセスに送ります。`"foreground"` はウィンドウをアクティブにしてカーソルを奪います。
+
+## ワークツリータスクがリポジトリスクリプトに代わる
+
+`provision` と `archive` のタスクは、リポジトリごとの従来のセットアップスクリプトとアーカイブスクリプトに代わるものです。**既存のスクリプトは自動的に移行されました。** スクリプトがあった各リポジトリには、そのリポジトリの名前を持つ定義ができており、`setup` と `archive` のタスクに同じスクリプトのテキストが入っています。**設定 → ワークスペース → リポジトリ** のリポジトリの行にあるアイコンから開けます。過去のスクリプト実行は読み取り専用の履歴として残ります。
+
+これらのタスクは環境ではなくワークツリーに従うので、誰も **開始** を押さないスペースでも実行されます。
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| 実行 | ロールのワークツリーが作成されたとき（どのスペースでも） | そのワークツリーが破棄される直前 |
+| 失敗時 | プロビジョニングが失敗し、ワークツリーは破棄される | 記録され、削除を妨げることはない |
+| デフォルトのタイムアウト | 5 分 | 2 分 |
+| 見えるもの | `CC_WORKSPACE_PATH`、`CC_ROOT_PATH`、`CC_SPACE_*`、`CC_REPO_NAME` | 同じ |
+
+スタックのないリポジトリには、タスクを持つ定義だけが必要です。起動するものがないので、アンカーロールは不要です。
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- まだ環境がないので、これらのタスクでは `{name}`、`{port.*}`、`{url.*}`、`{opt.*}`、`enabledWhen` を使えず、定義の `env` も渡されません。
+- 1 つのリポジトリの `provision` と `archive` タスクを持てる定義は 1 つだけです。他の定義はそれ以外の用途で結び付けられます。
+- `"when": ["provision", "change"]` はロックファイルが変わったときにも再インストールします。これはセットアップスクリプトにはなかった動作です。
+- タスクは `cwd` ロールのワークツリーに対して実行されるので、複数リポジトリの定義ではリポジトリごとに別々にセットアップできます。
+- テスト実行では `CC_SCRIPT_TEST=1` が設定されます。再試行はクリーンなワークツリーから始まるので、再実行に耐えるタスクを書いてください。
+
+## エージェント
+
+エージェントに Docker ソケットが渡されることはありません。対象の定義があるスペースでは、実行の `PATH` に `cc-env` が入ります。スペースは実行から決まるので、エージェントは自分の環境にしか作用できず、各コマンドはアクションポリシーを通ります。
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+compose コンポーネントがあると、`docker` シムが `ps`、`logs`、`exec`、`port`、`restart`、`top` の `docker compose` も許可します。動詞の前にフラグは置けず、`logs` は追跡できず、`exec` は `-T` だけを受け付けます。それ以外は終了コード 5 と「not available in Control Center agent runs」で終了します。
+
+スキルが自前のツールを呼ぶリポジトリは、そのまま使い続けられます。`cli` コンポーネントの `agentPassthrough` ブロックで、エージェントが実行できるコマンドを宣言します。
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+`maps` は適用するポリシーの操作を指定します。`positionalName` はその引数をこのスペースの環境に固定し、`nameFilter` は JSON 出力をそれに絞り込み、`pathFlags` の値はすべて実行のワークツリー内に解決される必要があります。どのルールにも一致しないコマンドは終了コード 5 で終わります。
+
+同じ操作はツールとしても使えます：`environment_status`、`environment_up`、`environment_down`、`environment_reset`、`environment_destroy`、`environment_restart`、`environment_exec`、`environment_logs`、`environment_run_task`、`environment_launch_app`、`environment_stop_app`。サンドボックス内のエージェントは自分のポートに直接届き、環境のホスト名には実行のプロキシ経由で届きます。URL を推測させず、`environment_status` からエンドポイントを読むよう伝えてください。
+
+## フォークのプルリクエスト
+
+フォーク PR のコードは信頼できず、ホスト配置ではサーバーの OS ユーザーとして実行されます。何が起きるかは `policy.forkPrs` で決まります。
+
+| 値 | 効果 | デフォルトの対象 |
+| --- | --- | --- |
+| `rig` | compose ファイルは確認なしで VM 内で実行される | `compose` と `task` コンポーネントだけの定義 |
+| `approval` | 起動のたびに管理者が必要 | 他のすべての定義 |
+| `deny` | 拒否 | なし |
+
+- `seedFiles` は通常シークレットなので、フォークにはコピーされません。これをバインドする compose ファイルは、欠けているファイルを名前で報告します。
+- `provision` と `archive` のタスクはスキップされます。ポリシーが `rig` の場合は VM 内で実行されます。
+- ホスト配置では、フォークに対して `privileged`、ホストの名前空間、Docker ソケットのバインド、`devices`、スペースのワークツリー外へのバインドが拒否されます。信頼済みのスペースでは警告だけです。
+
+## リグ配置
+
+`"placement": "rig"` は `compose` と `task` のコンポーネントを専用の microVM で実行します。`process`、`cli`、`app` のコンポーネントを含む定義は対象外です。compose ファイルは変更なしで実行され、ホストの Docker ソケットもオペレーターの認証情報もなく、ネットワークアクセスはイメージに必要なレジストリに限られます。ワークツリーはライブでマウントされます。
+
+- **arm64 ゲスト。** Apple Silicon ではゲストは arm64 なので、amd64 専用のイメージは動きません。
+- **プライベートレジストリは拒否されます。** ゲストにはレジストリの認証情報がないので、既知の公開レジストリ以外にあるイメージは VM の起動前に拒否されます。公開レジストリ上のプライベートリポジトリは、ゲストが取得するときに失敗します。
+- **16 GiB のストレージ。** スタックのすべてのイメージとボリュームが 1 つの 16 GiB ディスクを共有し、増やすことはできません。
+- **初回起動は遅い。** イメージレイヤーは VM ごとなので、初回起動ですべてを取得します。停止したリグはディスクを保持します。
+- **ベースイメージは読み取れる必要があります。** ベースイメージを変数で指定する Dockerfile は計画できません。ネットワークアクセスは起動時に固定されるためです。
+- **有効期間。** `policy.rigTtlHours` が VM を終了します。デフォルトは 24 時間です。
+
+## ツール作成者向けのステータス契約
+
+`statusMap` のない `cli` コンポーネントは、ネイティブ契約 `cc-env/1` を想定します。`status` 動詞はこのオブジェクトを stdout に出力します。
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- `state` は `ready`、`starting`、`stopped`、`failed`、`missing` のいずれかです。`missing` は `create` に、`stopped` と `failed` は `start` につながります。`missing` は終了コード 0 で報告してください。失敗した `status` は `failed` として扱われます。
+- 必須なのは `state` だけです。不明なフィールドは無視され、解析できない出力は生のテキストを詳細として低下状態で表示されます。
+- URL はループバック、`*.localhost`、または `routing.domain` の配下である必要があり、それ以外は破棄されます。
+- `needsRecreate: true` は **再作成** を表示します。これはデータを破棄します。Control Center がこの値だけで動くことはありません。
+- `list` 動詞は、名前または `name` を持つオブジェクトの JSON 配列を出力します。
+
+終了コードはすべての動詞に適用されます。
+
+| コード | 意味 |
+| --- | --- |
+| 0 | OK |
+| 3 | ホストのセットアップが必要です。**ターミナルで実行** はコマンドを入力済みで未実行の状態でスペースのターミナルを開き、その後 **再試行** でやり直します。Control Center が `sudo` を実行することはありません |
+| 4 | 認証が必要です |
+| 5 | 依存関係が利用できません |
+| その他 | 失敗 |
+
+進捗は改行区切りの JSON として stderr に出力します。
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+`step` 行はライブのステップ一覧として、`note` 行はそのまま表示されます。最後の行が `error` タイプなら構造化エラーになり、`command` がコピー用に提示されます。ない場合、Control Center は stderr の最後の 20 行を表示します。JSON でないものはすべて通常のログ出力です。
+
+## 関連項目
+
+- [スペースを使う](/ja-JP/マニュアル/ハウツーガイド/スペース/)
+- [ターミナルからポートを転送](/ja-JP/マニュアル/ハウツーガイド/vm-ポート/)
+- [エージェントにテスト用マシンを渡す](/ja-JP/マニュアル/ハウツーガイド/リグの利用/)
+- [ガードレールを設定](/ja-JP/マニュアル/ハウツーガイド/ガードレール設定/)

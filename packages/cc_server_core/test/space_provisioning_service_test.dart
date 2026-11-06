@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
+import 'package:cc_domain/core/domain/ports/space_provisioning_log_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
@@ -77,10 +78,12 @@ void main() {
   SpaceProvisioningService buildSut({
     Duration timeout = const Duration(minutes: 10),
     Future<List<String>?> Function(String, String)? spaceRepoIds,
+    SpaceProvisioningLogPort? log,
   }) {
     statusCalls = [];
     stepCalls = [];
     return SpaceProvisioningService(
+      log: log,
       provisioner: provisioner,
       writeMcpConfig: (cwd, {workspaceId, agentId, conversationId}) async {
         provisioner.writtenMcpDirs.add(cwd);
@@ -203,6 +206,55 @@ void main() {
     await service.provision(workspaceId: 'ws', spaceId: 'ch');
 
     expect(statusCalls.last, ('ch', SpaceProvisioningStatus.failed));
+  });
+
+  test('the log says why verification failed and how the run ended', () async {
+    workspaceRepo.repos = [_repo('r1'), _repo('r2')];
+    messagingRepo.participants = [_participant('a1')];
+    agentRepo.agents = {'a1': _agent('a1')};
+    isolatedRepoRepo.worktrees = [_worktree('r1')];
+    final log = _RecordingLog();
+
+    await buildSut(log: log).provision(workspaceId: 'ws', spaceId: 'ch');
+
+    expect(log.lines, [
+      ('ws', 'ch', 'Preparing workspace'),
+      ('ws', 'ch', 'Setting up Architect'),
+      ('ws', 'ch', 'Expected 2 worktree(s), found 1'),
+      ('ws', 'ch', 'Workspace preparation failed'),
+    ]);
+  });
+
+  test('the log ends with ready on success', () async {
+    workspaceRepo.repos = [_repo('r1')];
+    messagingRepo.participants = [_participant('a1')];
+    agentRepo.agents = {'a1': _agent('a1')};
+    isolatedRepoRepo.worktrees = [_worktree('r1')];
+    final log = _RecordingLog();
+
+    await buildSut(log: log).provision(workspaceId: 'ws', spaceId: 'ch');
+
+    expect(log.lines.last, ('ws', 'ch', 'Workspace ready'));
+  });
+
+  test('the log says stopped, not failed, after a cancel', () async {
+    workspaceRepo.repos = [_repo('r1')];
+    messagingRepo.participants = [_participant('a1')];
+    agentRepo.agents = {'a1': _agent('a1')};
+    provisioner.hang = true;
+    final log = _RecordingLog();
+    final service = buildSut(log: log);
+
+    final running = service.provision(workspaceId: 'ws', spaceId: 'ch');
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    await service.cancel(workspaceId: 'ws', spaceId: 'ch');
+    await running;
+
+    expect(log.lines.last, ('ws', 'ch', 'Workspace preparation stopped'));
+    expect(
+      log.lines.map((line) => line.$3),
+      isNot(contains('Workspace preparation failed')),
+    );
   });
 
   test('reports ready when all worktrees + overlays are provisioned', () async {
@@ -384,6 +436,18 @@ void main() {
   });
 }
 
+class _RecordingLog implements SpaceProvisioningLogPort {
+  final List<(String, String, String)> lines = [];
+
+  @override
+  void write(String workspaceId, String spaceId, String text) =>
+      lines.add((workspaceId, spaceId, text));
+
+  @override
+  Stream<SpaceProvisioningLogLine> follow(String workspaceId, String spaceId) =>
+      const Stream.empty();
+}
+
 class _FakeProvisioner implements RepoWorkspaceProvisionerPort {
   int calls = 0;
   final writtenMcpDirs = <String>[];
@@ -421,7 +485,7 @@ class _FakeProvisioner implements RepoWorkspaceProvisionerPort {
     String? prBranch,
     Set<String>? repoAllowlist,
     void Function(String repoName, {required bool prHead})? onRepoProvision,
-    void Function(String repoName)? onRepoSetupScript,
+    void Function(String repoName)? onRepoProvisionTasks,
     CancellationToken? cancel,
   }) async {
     calls++;

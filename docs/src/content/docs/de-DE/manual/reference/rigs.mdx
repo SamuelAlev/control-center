@@ -2,7 +2,7 @@
 title: Rigs
 description: Jede Rig-Oberfläche, jedes Backend, jedes Aktionsverb, jeder Lebenszyklus-Zustand, jeder Port, jeder Standard und jeder Vertrag — der vollständige Faktenkatalog.
 slug: de-DE/handbuch/referenz/rigs
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Nur Fakten. Das Modell dahinter steht unter [Rigs und
@@ -18,6 +18,8 @@ Anleitung](/de-DE/handbuch/anleitungen/rigs-nutzen/).
 | Computer | X11-Desktop: Eingabe über den Hypervisor, Aufnahme über den Gast-Agenten | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unbeschleunigter Fallback, wird nie automatisch gewählt) | Ja |
 | Android | Android über ADB | Emulator von Google | `android-emulator` | **Nein** — der Emulator verwaltet sein eigenes Netz |
 | iOS | iOS-Simulator über WebDriverAgent | CoreSimulator | `ios-simulator` | **Nein** — das Netz folgt dem Host-Mac |
+| App-Fenster | Die Fenster einer aus einem Environment gestarteten Desktop-App, über das Betriebssystem | Host-Fenster | `host-window` | **Nein** – die App läuft auf dem Host mit den Rechten des Serverbenutzers |
+| Environment | Der Compose-Stack und die Tasks eines [Environments](/de-DE/handbuch/anleitungen/environments/) mit `rig`-Platzierung | microVM | `smolvm` | Ja |
 
 Das Terminal und die Oberfläche `computer_use` teilen den Oberflächenwert
 `computer`; das Terminal ist an seinem Exec-Image-Marker zu erkennen und wird

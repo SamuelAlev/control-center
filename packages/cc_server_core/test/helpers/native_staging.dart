@@ -56,7 +56,7 @@ Future<void> stageServerNatives(String dataDir) async {
     // grammars. The versioned-soname tail (`(\..+)?`) stays: it costs nothing
     // and other natives may still carry one.
     r'^(lib)?(fff_c|ccpty|cc_watcher|rift_ffi|lame_ffi|aec_ffi|cc_inference'
-    r'|cc_saml|rhttp|tree-sitter.*)'
+    r'|cc_saml|cc_window|rhttp|tree-sitter.*)'
     r'\.(dylib|so|dll)(\..+)?$|\.scm$',
   );
 

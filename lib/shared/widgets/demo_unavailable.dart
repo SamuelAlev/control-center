@@ -46,6 +46,10 @@ enum DemoCapability {
   /// Pipeline execution — start, retry, kill. Template authoring is open;
   /// a bash step is refused because it is a shell on this host.
   pipelines,
+
+  /// Space environments — `environment.*` and `environments.*` run real
+  /// processes on the host.
+  environments,
 }
 
 /// The honest notice a demo shows where a capability has been removed.
@@ -91,6 +95,7 @@ class DemoUnavailable extends StatelessWidget {
       DemoCapability.audio => l10n.demoUnavailableAudio,
       DemoCapability.serverAdmin => l10n.demoUnavailableServerAdmin,
       DemoCapability.pipelines => l10n.demoUnavailablePipelines,
+      DemoCapability.environments => l10n.demoUnavailableEnvironments,
     };
 
     if (compact) {

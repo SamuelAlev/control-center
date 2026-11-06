@@ -1,8 +1,12 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/providers.dart'
+    show agentRunLogRepositoryProvider;
 import 'package:control_center/features/messaging/presentation/widgets/steering_queue_list.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/steering_queue_providers.dart';
@@ -35,7 +39,11 @@ class _SteeringPort implements MessagingPort {
   final deletes = <String>[];
   final reorders = <List<String>>[];
   final delivers = <String>[];
+  final stops = <String>[];
   bool deliverResult = true;
+
+  /// Every call in order, for what must happen before a run is stopped.
+  final calls = <String>[];
 
   @override
   Future<bool> editSteering({
@@ -67,6 +75,7 @@ class _SteeringPort implements MessagingPort {
     required String conversationId,
     required List<String> orderedIds,
   }) async {
+    calls.add('reorder');
     reorders.add(orderedIds);
   }
 
@@ -76,7 +85,43 @@ class _SteeringPort implements MessagingPort {
     required String spaceId,
     required String conversationId,
     required String messageId,
-  }) async => deliverResult;
+  }) async {
+    calls.add('deliver');
+    delivers.add(messageId);
+    return deliverResult;
+  }
+
+  @override
+  Future<void> stopRun(String workspaceId, String runLogId) async {
+    calls.add('stop');
+    stops.add(runLogId);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+/// Answers the one run-log query the force path makes.
+class _ActiveRuns implements AgentRunLogRepository {
+  _ActiveRuns(this.ids);
+
+  final List<String> ids;
+
+  @override
+  Future<List<AgentRunLog>> activeByConversation(
+    String workspaceId,
+    String conversationId,
+  ) async => [
+    for (final id in ids)
+      AgentRunLog(
+        id: id,
+        agentId: 'agent-1',
+        workspaceId: workspaceId,
+        conversationId: conversationId,
+        startedAt: DateTime.utc(2026, 8, 29),
+        status: RunStatus.running,
+      ),
+  ];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
@@ -106,6 +151,7 @@ Future<ProviderContainer> _pump(
   WidgetTester tester, {
   required List<Message> windowMessages,
   _SteeringPort? port,
+  List<String> activeRunIds = const [],
 }) async {
   final container = ProviderContainer(
     overrides: [
@@ -116,6 +162,9 @@ Future<ProviderContainer> _pump(
         (ref) => Stream.value((messages: windowMessages, hasMore: false)),
       ),
       if (port != null) messagingServiceProvider.overrideWith((ref) => port),
+      agentRunLogRepositoryProvider.overrideWithValue(
+        _ActiveRuns(activeRunIds),
+      ),
     ],
   );
   addTearDown(container.dispose);
@@ -123,9 +172,11 @@ Future<ProviderContainer> _pump(
     UncontrolledProviderScope(
       container: container,
       child: _host(
-        const SteeringQueueList(
-          spaceId: _kSpaceId,
-          conversationId: _kConversationId,
+        const CcToastScope(
+          child: SteeringQueueList(
+            spaceId: _kSpaceId,
+            conversationId: _kConversationId,
+          ),
         ),
       ),
     ),
@@ -255,7 +306,7 @@ void main() {
     expect(find.text('and the migration'), findsOneWidget);
   });
 
-  testWidgets('hides the steer button when the server said no run can inject', (
+  testWidgets('offers to stop the run when nothing can take the card', (
     tester,
   ) async {
     final container = await _pump(
@@ -265,10 +316,110 @@ void main() {
     container.read(steeringSteerableProvider(_kRef).notifier).set(false);
     await tester.pumpAndSettle();
     expect(
+      find.text('Stop and send'),
+      findsOneWidget,
+      reason: 'without a lane, stopping is the only way to get the card in',
+    );
+    expect(
       find.text('Steer'),
       findsNothing,
-      reason: 'an external-CLI transport has no mid-run input lane',
+      reason: 'the button must say it ends the run before it does',
     );
+  });
+
+  group('getting a card in', () {
+    Future<_SteeringPort> pressOn(
+      WidgetTester tester, {
+      required bool? steerable,
+      required bool deliverResult,
+      List<String> activeRunIds = const ['run-1', 'run-2'],
+    }) async {
+      final port = _SteeringPort()..deliverResult = deliverResult;
+      final container = await _pump(
+        tester,
+        windowMessages: [
+          _queued('a', 'first', order: 0),
+          _queued('b', 'second', order: 1),
+        ],
+        port: port,
+        activeRunIds: activeRunIds,
+      );
+      if (steerable != null) {
+        container
+            .read(steeringSteerableProvider(_kRef).notifier)
+            .set(steerable);
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(
+        find.text(steerable == false ? 'Stop and send' : 'Steer').last,
+      );
+      await tester.pump();
+      await tester.pump();
+      return port;
+    }
+
+    /// Lets a toast time out so no timer outlives the test.
+    Future<void> drainToast(WidgetTester tester) async {
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump(const Duration(seconds: 1));
+    }
+
+    testWidgets('a run with a lane takes it and keeps working', (tester) async {
+      final port = await pressOn(tester, steerable: false, deliverResult: true);
+      expect(port.delivers, ['b']);
+      expect(port.stops, isEmpty, reason: 'a live lane needs no interruption');
+    });
+
+    testWidgets('no lane stops every run, this card first', (tester) async {
+      final port = await pressOn(
+        tester,
+        steerable: false,
+        deliverResult: false,
+      );
+      expect(port.reorders, [
+        ['b'],
+      ]);
+      expect(port.stops, ['run-1', 'run-2']);
+      expect(port.calls, [
+        'deliver',
+        'reorder',
+        'stop',
+        'stop',
+      ], reason: 'the order must land before run end converts the queue');
+    });
+
+    testWidgets('nothing left to stop says so and stops nothing', (
+      tester,
+    ) async {
+      final port = await pressOn(
+        tester,
+        steerable: false,
+        deliverResult: false,
+        activeRunIds: const [],
+      );
+      expect(port.stops, isEmpty);
+      expect(
+        find.text(
+          'No running agent can take that right now — it stays queued.',
+        ),
+        findsOneWidget,
+      );
+      await drainToast(tester);
+    });
+
+    testWidgets('a refused Steer stops nothing, then offers to', (
+      tester,
+    ) async {
+      final port = await pressOn(tester, steerable: null, deliverResult: false);
+      expect(
+        port.stops,
+        isEmpty,
+        reason: 'the button said Steer, so it must not end a run',
+      );
+      await tester.pump();
+      expect(find.text('Stop and send'), findsNWidgets(2));
+      await drainToast(tester);
+    });
   });
 
   testWidgets('shows the steer button while steerability is unknown', (

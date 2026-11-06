@@ -131,7 +131,7 @@ class _TriggerInspectorState extends ConsumerState<_TriggerInspector> {
               ),
               CcIconButton(
                 onPressed: widget.onDelete,
-                variant: CcButtonVariant.ghost,
+                variant: CcButtonVariant.destructive,
                 icon: AppIcons.trash2,
                 tooltip: l10n.delete,
               ),

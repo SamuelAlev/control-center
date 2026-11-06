@@ -54,16 +54,23 @@ enum ActionClass {
   /// worth its own class is that read-only modes must be able to deny it
   /// wholesale (a review-mode agent has no business booting machines) and the
   /// autonomy dial must be able to demote it to `prompt` per space.
-  enclosureControl('enclosureControl', ActionDecisionDefault.allow);
+  enclosureControl('enclosureControl', ActionDecisionDefault.allow),
+
+  /// Running a command on the host, outside any sandbox, at an agent's
+  /// request: environment tasks, processes, compose stacks and pass-through
+  /// tools. Prompts by default because the code that runs is the worktree's,
+  /// which the agent can edit: allowing it would turn `processSpawn` inside a
+  /// sandbox into `processSpawn` as the operator.
+  hostExecution('hostExecution', ActionDecisionDefault.prompt);
 
   const ActionClass(this.wire, this.defaultDecisionHint);
 
   /// Stable wire/storage string.
   final String wire;
 
-  /// The conservative built-in default when no rule matches (§2). FIVE classes
+  /// The conservative built-in default when no rule matches (§2). SIX classes
   /// prompt out of the box (`fileDelete`, `gitPush`, `prCreate`, `prPublish`,
-  /// `vendorSyncWrite`); the rest allow (the sandbox floor still applies).
+  /// `vendorSyncWrite`, `hostExecution`); the rest allow (the sandbox floor still applies).
   final ActionDecisionDefault defaultDecisionHint;
 
   /// Parses an [ActionClass] from its [wire] string, or null if unknown.

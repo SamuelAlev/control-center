@@ -150,7 +150,14 @@ void main() {
     await tester.tap(field);
     await tester.enterText(field, '');
     await tester.pump(const Duration(milliseconds: 200));
-    await tester.tap(find.text(french.languageSystem).last);
+    // Scoped to the picker: the theme picker below it has a "system" choice
+    // with the same French label, under the dropdown's dismiss barrier.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(LanguagePicker),
+        matching: find.text(french.languageSystem),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 

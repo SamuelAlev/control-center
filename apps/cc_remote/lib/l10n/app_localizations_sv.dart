@@ -2642,4 +2642,7 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Körningen stoppades eftersom leverantörens inloggningsuppgifter inte längre fungerar. Anslut den igen under Inställningar → Leverantörer och försök sedan med turen igen.';
+
+  @override
+  String get permissionHostExecution => 'Kör kommandon på värden';
 }

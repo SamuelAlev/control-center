@@ -15,6 +15,7 @@ export 'package:control_center/features/settings/presentation/widgets/kit/settin
 export 'package:control_center/features/settings/presentation/widgets/kit/settings_field.dart';
 export 'package:control_center/features/settings/presentation/widgets/kit/settings_filter_bar.dart';
 export 'package:control_center/features/settings/presentation/widgets/kit/settings_group.dart';
+export 'package:control_center/features/settings/presentation/widgets/kit/settings_hover_reveal.dart';
 export 'package:control_center/features/settings/presentation/widgets/kit/settings_key_value_editor.dart';
 export 'package:control_center/features/settings/presentation/widgets/kit/settings_key_value_pair.dart';
 export 'package:control_center/features/settings/presentation/widgets/kit/settings_meta_fact.dart';

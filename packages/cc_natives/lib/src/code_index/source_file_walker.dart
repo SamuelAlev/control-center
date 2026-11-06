@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:cc_natives/src/code_index/code_languages.dart';
+import 'package:cc_natives/src/git/rig_worktree_guard.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
@@ -126,14 +127,20 @@ class SourceFileWalker {
   Future<List<String>?> _gitListedPaths(String rootPath) async {
     ProcessResult result;
     try {
-      result = await Process.run('git', const [
-        'ls-files',
-        '--cached',
-        '--others',
-        '--exclude-standard',
-        '-z',
-      ], workingDirectory: rootPath);
+      result = await Process.run(
+        'git',
+        RigWorktreeGuard.gitArgs(const [
+          'ls-files',
+          '--cached',
+          '--others',
+          '--exclude-standard',
+          '-z',
+        ], workingDirectory: rootPath),
+        workingDirectory: rootPath,
+      );
     } on ProcessException {
+      return null;
+    } on RigWorktreeTampered {
       return null;
     }
     if (result.exitCode != 0) {
@@ -428,12 +435,18 @@ class SourceFileWalker {
   ) async {
     Process process;
     try {
-      process = await Process.start('git', const [
-        'check-ignore',
-        '-z',
-        '--stdin',
-      ], workingDirectory: rootPath);
+      process = await Process.start(
+        'git',
+        RigWorktreeGuard.gitArgs(const [
+          'check-ignore',
+          '-z',
+          '--stdin',
+        ], workingDirectory: rootPath),
+        workingDirectory: rootPath,
+      );
     } on ProcessException {
+      return null;
+    } on RigWorktreeTampered {
       return null;
     }
     // Both pipes are consumed BEFORE stdin is written: git echoes matches as it

@@ -6,6 +6,7 @@ import 'package:cc_domain/features/messaging/domain/value_objects/conversation_s
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
@@ -13,6 +14,9 @@ import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/artifacts/presentation/widgets/artifact_detail_view.dart';
+import 'package:control_center/features/environments/presentation/environment_logs_pane.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_host.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_terminal_banner.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_activity_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_activity_tab.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_shell_output_pane.dart';
@@ -26,6 +30,7 @@ import 'package:control_center/features/messaging/presentation/ide/editor/editor
 import 'package:control_center/features/messaging/presentation/ide/editor/file_viewer_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/review_code_pane.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/space_provisioning_logs_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/ide_sidebar.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/agent_run_target.dart';
 import 'package:control_center/features/messaging/presentation/ide/quick_open/quick_open_dialog.dart';
@@ -59,6 +64,7 @@ import 'package:control_center/features/sandboxing/presentation/terminal_panel.d
 import 'package:control_center/features/sandboxing/presentation/terminal_session_controller.dart';
 import 'package:control_center/features/sandboxing/providers/terminal_registry_provider.dart';
 import 'package:control_center/features/sandboxing/providers/terminal_sessions_provider.dart';
+import 'package:control_center/features/shell/providers/shell_route_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_dirty_support.dart';
@@ -210,6 +216,25 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
   /// into the seed beforehand would be silently dropped.
   bool _layoutRestored = false;
 
+  /// Whether the layout on screen may be saved for the current space: it came
+  /// from the memo or from a successful server read. A seed shown while the
+  /// read is in flight, or after it failed, must never replace the person's
+  /// saved layout (and with it the tab they were on).
+  bool _canPersist = false;
+
+  /// Bumped on every space entry, so a server read that answers after the
+  /// person left (or re-entered) the space is ignored.
+  int _entry = 0;
+
+  /// Whether the person changed the layout since entering the space. A newer
+  /// server copy found by [_revalidate] then loses: the local change is newer,
+  /// and its own save follows.
+  bool _editedSinceEntry = false;
+
+  /// True while [_completeRestore] applies the URL and mirrors conversations,
+  /// so those changes do not read as the person's own edits.
+  bool _settlingRestore = false;
+
   /// Background tab reconciliation must not publish intermediate URL focus.
   bool _syncingConversationTabs = false;
 
@@ -288,6 +313,84 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
   /// switches (which swap the controller).
   late final EditorTabOpener _tabOpener = EditorTabOpener(_openTabFromScope);
 
+  /// What the environment section and ports popover can open here. Built once
+  /// so [EnvironmentHostScope] stays an identity check; the closures read the
+  /// live layout at call time.
+  late final EnvironmentHost _environmentHost = EnvironmentHost(
+    openUrl: ({required url, required label}) => _openTabFromScope(
+      EditorTab(
+        kind: MessagingTabKinds.browser,
+        label: label,
+        icon: MessagingTabKinds.iconFor(MessagingTabKinds.browser),
+        args: {'url': url},
+        dedupKey: '${MessagingTabKinds.browser}:$url',
+      ),
+    ),
+    openBrowserVm: ({required spaceId}) => _focusOrOpenRig(
+      AppLocalizations.of(context),
+      const RigTabTarget(
+        RigTabSurfaces.browser,
+        engine: RigBrowserEngine.chromium,
+      ),
+    ),
+    openLogs: ({required spaceId, required target, required label}) =>
+        _openTabFromScope(
+          EditorTab(
+            kind: MessagingTabKinds.environmentLogs,
+            label: AppLocalizations.of(context).environmentLogsTab(label),
+            icon: MessagingTabKinds.iconFor(MessagingTabKinds.environmentLogs),
+            args: {
+              'workspaceId': _workspaceId,
+              'spaceId': spaceId,
+              'target': target,
+            },
+            dedupKey: '${MessagingTabKinds.environmentLogs}:$spaceId:$target',
+          ),
+        ),
+    openProvisioningLogs: ({required spaceId}) => _openTabFromScope(
+      EditorTab(
+        kind: MessagingTabKinds.provisioningLogs,
+        label: AppLocalizations.of(context).spaceSetupLogs,
+        icon: MessagingTabKinds.iconFor(MessagingTabKinds.provisioningLogs),
+        args: {'workspaceId': _workspaceId, 'spaceId': spaceId},
+        dedupKey: '${MessagingTabKinds.provisioningLogs}:$spaceId',
+      ),
+    ),
+    openProcess: ({required spaceId, required sessionId, required label}) =>
+        _openEnvironmentTerminal(sessionId, label),
+    openSetup: ({required spaceId, required sessionId, required label}) =>
+        _openEnvironmentTerminal(sessionId, label, setup: true),
+    openViewer: ({required spaceId, required componentId, required label}) =>
+        _focusOrOpenRig(
+          AppLocalizations.of(context),
+          RigTabTarget(RigSurface.window.wire, slotId: componentId),
+        ),
+    openPrefilledTerminal: ({required spaceId, required command}) =>
+        _openTabFromScope(_newTerminalTab(initialInput: command)),
+    showsSpace: (spaceId) => mounted && widget.selectedSpaceId == spaceId,
+  );
+
+  void _openEnvironmentTerminal(
+    String sessionId,
+    String label, {
+    bool setup = false,
+  }) {
+    final tabSessionId = 'environment-$sessionId';
+    _openTabFromScope(
+      EditorTab(
+        kind: MessagingTabKinds.terminal,
+        label: label,
+        icon: MessagingTabKinds.iconFor(MessagingTabKinds.terminal),
+        args: {
+          'termSessionId': tabSessionId,
+          'attachSessionId': sessionId,
+          if (setup) kEnvironmentSetupTabArg: true,
+        },
+        dedupKey: '${MessagingTabKinds.terminal}:$tabSessionId',
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -297,6 +400,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     _workspaceId = ref.read(activeWorkspaceIdProvider);
     final warm = _peekLayout(widget.selectedSpaceId);
     _layout = warm?.layout ?? _seedLayout(widget.selectedSpaceId);
+    _canPersist = warm != null;
     _layout.addListener(_onLayoutChanged);
     _windowPool.attach(_layout);
     _wireActions(widget.actions);
@@ -310,11 +414,13 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     // held is on screen now; only the tab mirror is left to run.
     final spaceId = widget.selectedSpaceId;
     if (spaceId != null) {
+      final entry = _entry;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (warm != null) {
           _completeRestore();
+          _revalidate(spaceId, entry);
         } else {
-          _restorePersisted(spaceId);
+          _restorePersisted(spaceId, entry);
         }
       });
     }
@@ -421,11 +527,18 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     // Local tab presses leave GoRouter's key untouched. A fresh navigation
     // to that same key must still reopen/refocus its tab; ordinary provider
     // rebuilds must not reapply the stale route over the user's local focus.
+    // Nor must a navigation AWAY: the screen holds this space's key back for
+    // a frame while the route already names the next destination, and
+    // reapplying it here would refocus the entry tab just before leaving saves
+    // the layout, losing the tab the person was on.
+    final routePath = routeInformation?.uri.path;
     final explicitTabRequest =
         widget.focusedTabKey != null &&
         oldWidget.focusedTabKey == widget.focusedTabKey &&
         _tabUrl.lastKey != widget.focusedTabKey &&
-        !identical(_lastRouteInformation, routeInformation);
+        !identical(_lastRouteInformation, routeInformation) &&
+        routePath != null &&
+        spaceIdFromLocation(routePath, _workspaceId) == widget.selectedSpaceId;
     _lastRouteInformation = routeInformation;
     if (!spaceChanged &&
         (oldWidget.focusedTabKey != widget.focusedTabKey ||
@@ -554,6 +667,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
         label: l10n.ideCodeServer,
         icon: MessagingTabKinds.iconFor(MessagingTabKinds.codeServer),
         args: {'spaceId': spaceId, 'repoId': ?_defaultEditorRepoId},
+        dedupKey: MessagingTabKinds.codeServerWorktreeTabKey,
       ),
     );
   }
@@ -909,14 +1023,22 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
 
   /// Builds a fresh terminal tab. With [backend] `'microvm'` the shell opens
   /// inside the conversation's enclosed VM instead of on the host.
-  EditorTab _newTerminalTab({String? backend}) => _terminalTab(
-    'ide-terminal-${DateTime.now().microsecondsSinceEpoch}',
-    backend: backend,
-  );
+  ///
+  /// [initialInput] is typed at the first prompt and left there, never run.
+  EditorTab _newTerminalTab({String? backend, String? initialInput}) =>
+      _terminalTab(
+        'ide-terminal-${DateTime.now().microsecondsSinceEpoch}',
+        backend: backend,
+        initialInput: initialInput,
+      );
 
   /// The terminal tab showing session [sessionId]. Keyed by the session so
   /// `?tab=` names this shell rather than whichever terminal comes first.
-  EditorTab _terminalTab(String sessionId, {String? backend}) => EditorTab(
+  EditorTab _terminalTab(
+    String sessionId, {
+    String? backend,
+    String? initialInput,
+  }) => EditorTab(
     kind: MessagingTabKinds.terminal,
     label: 'Terminal',
     icon: MessagingTabKinds.iconFor(MessagingTabKinds.terminal),
@@ -924,7 +1046,11 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     // after a space switch (the arg round-trips through the persisted
     // layout snapshot). The backend rides in args so a restored layout
     // reopens the shell where it was, not silently on the host.
-    args: {'termSessionId': sessionId, 'backend': ?backend},
+    args: {
+      'termSessionId': sessionId,
+      'backend': ?backend,
+      'initialInput': ?initialInput,
+    },
     dedupKey: '${MessagingTabKinds.terminal}:$sessionId',
   );
 
@@ -994,6 +1120,9 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     // twice, and the chat drew a spinner in between.
     final warm = _peekLayout(to);
     setState(() => _setLayout(warm?.layout ?? _seedLayout(to)));
+    final entry = ++_entry;
+    _canPersist = warm != null;
+    _editedSinceEntry = false;
     // This runs from didUpdateWidget (mid-build) and Riverpod 3 forbids
     // modifying a provider during a build pass ("modified a provider while the
     // widget tree was building"). The outgoing conversation's terminals mirror
@@ -1015,9 +1144,10 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     if (to != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (warm == null) {
-          _restorePersisted(to);
-        } else if (mounted && widget.selectedSpaceId == to) {
+          _restorePersisted(to, entry);
+        } else if (mounted && _entry == entry) {
           _completeRestore();
+          _revalidate(to, entry);
         }
       });
     } else {
@@ -1028,20 +1158,25 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     }
   }
 
-  Future<void> _restorePersisted(String spaceId) async {
+  Future<void> _restorePersisted(String spaceId, int entry) async {
     final persistence = _persistence;
     final workspaceId = _workspaceId;
     if (persistence == null || workspaceId == null) {
       return;
     }
-    final restored = await persistence.restore(
+    final fetched = await persistence.fetch(
       workspaceId: workspaceId,
       cacheKey: spaceId,
     );
+    final restored = fetched.layout;
     // Bail if the conversation changed (or we unmounted) while reading.
-    if (!mounted || widget.selectedSpaceId != spaceId) {
+    if (!mounted || _entry != entry || widget.selectedSpaceId != spaceId) {
+      restored?.dispose();
       return;
     }
+    // A failed read says nothing about the saved layout: keep the seed on
+    // screen, but never save it over the layout the server still holds.
+    _canPersist = !fetched.failed;
     // A missing/unrestorable payload keeps the seeded layout; either way the
     // URL's `?tab=` gets the final say on which tab is focused.
     if (restored != null) {
@@ -1060,11 +1195,53 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
   /// the server: the URL's `?tab=` gets the final say, then the space's
   /// conversations are mirrored into chat tabs.
   void _completeRestore() {
-    _tabUrl.apply(_layout, widget.focusedTabKey, force: true);
-    _layoutRestored = true;
-    // Conversations may already be loaded (provider cache) — mirror them into
-    // chat tabs now; otherwise the build watch runs the sync when they arrive.
-    _syncConversationTabs();
+    _settlingRestore = true;
+    try {
+      _tabUrl.apply(_layout, widget.focusedTabKey, force: true);
+      _layoutRestored = true;
+      // Conversations may already be loaded (provider cache) — mirror them
+      // into chat tabs now; otherwise the build watch runs the sync when they
+      // arrive.
+      _syncConversationTabs();
+    } finally {
+      _settlingRestore = false;
+    }
+  }
+
+  /// Re-reads a layout this client restored from its memo.
+  ///
+  /// The memo is only as fresh as this client's last visit, and the same
+  /// person may have moved to another tab on another device since. A newer
+  /// server copy replaces the one on screen, unless they already changed
+  /// something here.
+  Future<void> _revalidate(String spaceId, int entry) async {
+    final persistence = _persistence;
+    final workspaceId = _workspaceId;
+    if (persistence == null || workspaceId == null) {
+      return;
+    }
+    final fetched = await persistence.fetch(
+      workspaceId: workspaceId,
+      cacheKey: spaceId,
+    );
+    final fresh = fetched.layout;
+    if (!mounted ||
+        _entry != entry ||
+        widget.selectedSpaceId != spaceId ||
+        !fetched.changed ||
+        fresh == null ||
+        _editedSinceEntry) {
+      fresh?.dispose();
+      return;
+    }
+    _bodyHost.adoptBodies(
+      outgoing: _layout.allTabs(),
+      incoming: fresh.allTabs(),
+    );
+    setState(() => _setLayout(fresh));
+    // The adopted tree replaced the mirrored chat tabs; mirror again.
+    _conversationTabsSyncedFor = null;
+    _completeRestore();
   }
 
   /// Mirrors the space's ACTIVE conversations into chat tabs, once per space
@@ -1153,6 +1330,9 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     // rig tab is NOT one of those — closing it puts away the viewer, not the
     // machine (see [_reconcileBodyHost]).
     _reconcileBodyHost(killOrphanedTerminals: true);
+    if (!_syncingConversationTabs && !_settlingRestore) {
+      _editedSinceEntry = true;
+    }
     // EditorWorkspace already listens to the layout and rebuilds only the
     // workbench. Rebuilding this host too used to rebuild the sidebar and every
     // visited body a second time for each tab press.
@@ -1335,7 +1515,10 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     final spaceId = widget.selectedSpaceId;
     final workspaceId = _workspaceId;
     final persistence = _persistence;
-    if (spaceId == null || workspaceId == null || persistence == null) {
+    if (!_canPersist ||
+        spaceId == null ||
+        workspaceId == null ||
+        persistence == null) {
       return;
     }
     persistence.schedule(
@@ -1348,7 +1531,10 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
   void _persistNow(String? spaceId) {
     final workspaceId = _workspaceId;
     final persistence = _persistence;
-    if (spaceId == null || workspaceId == null || persistence == null) {
+    if (!_canPersist ||
+        spaceId == null ||
+        workspaceId == null ||
+        persistence == null) {
       return;
     }
     persistence.flushNow(
@@ -1438,6 +1624,10 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
         );
       case MessagingTabKinds.browser:
         return BrowserPane(initialUrl: tab.args['url'] as String?);
+      case MessagingTabKinds.environmentLogs:
+        return environmentLogsTabBody(tab.args, workspaceId);
+      case MessagingTabKinds.provisioningLogs:
+        return spaceProvisioningLogsTabBody(tab.args, workspaceId);
       case MessagingTabKinds.rig:
         return RigTabPane(
           surface: tab.args['surface'] as String? ?? RigTabSurfaces.computer,
@@ -1578,9 +1768,26 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     final t = context.designSystem ?? DesignSystemTokens.light();
     final claimed = _terminalSessions[tab];
     if (claimed != null) {
-      return TerminalSessionView(
+      final view = TerminalSessionView(
         controller: claimed,
         backgroundColor: t.bgPrimary,
+      );
+      // A shell older than the space's environment lacks its variables.
+      return Column(
+        children: [
+          if (tab.args[kEnvironmentSetupTabArg] == true)
+            EnvironmentSetupBanner(
+              workspaceId: claimed.session.workspaceId,
+              spaceId: claimed.session.spaceId,
+            ),
+          EnvironmentTerminalBanner(
+            workspaceId: claimed.session.workspaceId,
+            spaceId: claimed.session.spaceId,
+            startedAt: claimed.startedAt,
+            onOpenFresh: () => _openTabFromScope(_newTerminalTab()),
+          ),
+          Expanded(child: view),
+        ],
       );
     }
     // A RESTORED enclosed terminal boots a VM the moment it attaches, so it
@@ -1615,9 +1822,14 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
           spaceId: widget.selectedSpaceId ?? '',
           workspaceId: ref.read(activeWorkspaceIdProvider) ?? '',
           backend: tab.args['backend'] as String?,
+          attachSessionId: tab.args['attachSessionId'] as String?,
         );
         final registry = ref.read(terminalRegistryProvider.notifier);
         final controller = registry.obtain(session);
+        final initialInput = tab.args['initialInput'] as String?;
+        if (initialInput != null) {
+          controller.typeOnceReady(initialInput);
+        }
         // The tab may have been closed while the claim was deferred.
         if (_layout.leafIdContaining(tab) == null) {
           registry.kill(session.sessionId);
@@ -1692,6 +1904,11 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     final kept = sessionId == null
         ? null
         : ref.read(terminalRegistryProvider).controllers[sessionId]?.title;
+    if ((kept == null || kept.isEmpty) &&
+        tab.args['attachSessionId'] != null) {
+      // An environment process keeps its name until it titles itself.
+      return tab.label;
+    }
     // A constant default (NOT tab.label): a persisted snapshot from before
     // the label fix would otherwise leak a stale "New terminal" forever.
     return (kept == null || kept.isEmpty) ? l10n.terminal : kept;
@@ -2018,7 +2235,10 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
       ],
     );
 
-    return EditorTabOpenerScope(opener: _tabOpener, child: body);
+    return EnvironmentHostScope(
+      host: _environmentHost,
+      child: EditorTabOpenerScope(opener: _tabOpener, child: body),
+    );
   }
 
   /// The messaging chrome injected into the shared editor: kind icons, the
@@ -2122,7 +2342,10 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     AppLocalizations l10n,
   ) async {
     final controller = _terminalSessions[tab];
-    if (controller == null || !controller.isRunningCommand) {
+    if (controller == null ||
+        !controller.isRunningCommand ||
+        tab.args['attachSessionId'] != null) {
+      // An environment process outlives its tab, so closing costs nothing.
       return true;
     }
     final choice = await confirmCloseLiveTab(

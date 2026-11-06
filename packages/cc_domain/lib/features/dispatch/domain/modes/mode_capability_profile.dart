@@ -245,6 +245,8 @@ const Set<ActionClass> _readOnlyDeniedClasses = {
   // disposable. A review/plan-mode agent that needs to see a page asks for a
   // mode that can.
   ActionClass.enclosureControl,
+  // Running the worktree's code on the host changes the stack under review.
+  ActionClass.hostExecution,
 };
 
 /// The profile for [mode]. Total — every mode has one.

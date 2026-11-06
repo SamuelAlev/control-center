@@ -14,6 +14,7 @@ import 'package:cc_persistence/database/daos/code_graph_dao.dart';
 import 'package:cc_persistence/database/daos/conversation_dao.dart';
 import 'package:cc_persistence/database/daos/conversation_goal_dao.dart';
 import 'package:cc_persistence/database/daos/cron_execution_dao.dart';
+import 'package:cc_persistence/database/daos/environment_dao.dart';
 import 'package:cc_persistence/database/daos/episodic_edge_dao.dart';
 import 'package:cc_persistence/database/daos/evals_dao.dart';
 import 'package:cc_persistence/database/daos/goal_dao.dart';
@@ -38,7 +39,6 @@ import 'package:cc_persistence/database/daos/project_dao.dart';
 import 'package:cc_persistence/database/daos/provider_policy_dao.dart';
 import 'package:cc_persistence/database/daos/pull_request_dao.dart';
 import 'package:cc_persistence/database/daos/repo_dao.dart';
-import 'package:cc_persistence/database/daos/repo_script_run_dao.dart';
 import 'package:cc_persistence/database/daos/review_dao.dart';
 import 'package:cc_persistence/database/daos/review_space_dao.dart';
 import 'package:cc_persistence/database/daos/review_studio_dao.dart';
@@ -69,6 +69,7 @@ import 'package:cc_persistence/database/daos/workspace_role_dao.dart';
 import 'package:cc_persistence/database/daos/workspace_setting_dao.dart';
 import 'package:cc_persistence/database/daos/write_ledger_dao.dart';
 import 'package:cc_persistence/database/migration_steps.dart';
+import 'package:cc_persistence/database/repo_scripts_migration.dart';
 import 'package:cc_persistence/database/tables/action_policies_table.dart';
 import 'package:cc_persistence/database/tables/activity_log_table.dart';
 import 'package:cc_persistence/database/tables/agent_goal_runs_table.dart';
@@ -95,6 +96,8 @@ import 'package:cc_persistence/database/tables/conversation_goals_table.dart';
 import 'package:cc_persistence/database/tables/conversation_messages.dart';
 import 'package:cc_persistence/database/tables/conversations.dart';
 import 'package:cc_persistence/database/tables/cron_executions_table.dart';
+import 'package:cc_persistence/database/tables/environment_definitions.dart';
+import 'package:cc_persistence/database/tables/environment_runs.dart';
 import 'package:cc_persistence/database/tables/episodic_edges.dart';
 import 'package:cc_persistence/database/tables/evals_tables.dart';
 import 'package:cc_persistence/database/tables/goals_table.dart';
@@ -126,7 +129,6 @@ import 'package:cc_persistence/database/tables/plan_studio_tables.dart';
 import 'package:cc_persistence/database/tables/projects_table.dart';
 import 'package:cc_persistence/database/tables/provider_policies.dart';
 import 'package:cc_persistence/database/tables/pull_requests.dart';
-import 'package:cc_persistence/database/tables/repo_script_runs.dart';
 import 'package:cc_persistence/database/tables/repos.dart';
 import 'package:cc_persistence/database/tables/review_drafts.dart';
 import 'package:cc_persistence/database/tables/review_spaces.dart';
@@ -139,6 +141,7 @@ import 'package:cc_persistence/database/tables/sandbox_exec_grants_table.dart';
 import 'package:cc_persistence/database/tables/skill_scan_results_table.dart';
 import 'package:cc_persistence/database/tables/skill_sources_table.dart';
 import 'package:cc_persistence/database/tables/space_autonomy_table.dart';
+import 'package:cc_persistence/database/tables/space_environments.dart';
 import 'package:cc_persistence/database/tables/space_notes_table.dart';
 import 'package:cc_persistence/database/tables/space_participants.dart';
 import 'package:cc_persistence/database/tables/space_repos.dart';
@@ -292,13 +295,14 @@ part 'workspace_database.g.dart';
     RigSessionsTable,
     RigActionLogTable,
     SkillSourcesTable,
-    RepoScriptRunsTable,
     RunCallUsagesTable,
+    EnvironmentDefinitionsTable,
+    SpaceEnvironmentsTable,
+    EnvironmentRunsTable,
   ],
   daos: [
     WorkspaceSettingDao,
     RepoDao,
-    RepoScriptRunDao,
     SpaceRepoDao,
     AgentDao,
     ActivityLogDao,
@@ -366,6 +370,7 @@ part 'workspace_database.g.dart';
     SandboxExecGrantDao,
     GuardDecisionDao,
     WorkspaceRoleDao,
+    EnvironmentDao,
   ],
 )
 class WorkspaceDatabase extends _$WorkspaceDatabase {
@@ -431,7 +436,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// The current workspace schema version, as a const so non-database code
   /// (the server's /healthz build/compat block) can report it without
   /// instantiating a database. Keep in lockstep with [schemaVersion].
-  static const int currentSchemaVersion = 20;
+  static const int currentSchemaVersion = 22;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -476,17 +481,10 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         conversationsTable.leafMessageId,
       );
     }),
-    // v3 → v4: per-repo lifecycle scripts. Two nullable columns on `repos`
-    // (`setup_script`, `archive_script`) and the `repo_script_runs` audit
-    // table. Purely additive; a fresh database already builds all of it in
-    // `onCreate`, this step carries existing workspace files forward.
-    MigrationStep(3, 4, (m) async {
-      await _addColumnIfMissing(m, reposTable, reposTable.setupScript);
-      await _addColumnIfMissing(m, reposTable, reposTable.archiveScript);
-      await m.createTable(repoScriptRunsTable);
-      await _createIndexIfMissing(m, idxRepoScriptRunsRepo);
-      await _createIndexIfMissing(m, idxRepoScriptRunsSpace);
-    }),
+    // v3 → v4: per-repo lifecycle scripts, since moved into environment
+    // definitions (v21) and dropped (v22). A file replaying this has none to
+    // move, so the step no longer builds anything.
+    MigrationStep(3, 4, (m) async {}),
     // v4 → v5: sandbox exec grants. Records whether the operator allowed
     // running binaries from inside a worktree, which the macOS writable-dir
     // exec block otherwise denies wholesale. Purely additive; a fresh database
@@ -770,7 +768,70 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         [workspaceId],
       );
     }),
+    // v20 → v21: space environments, and the one-off move of per-repo lifecycle
+    // scripts into generated definitions.
+    MigrationStep(20, 21, (m) async {
+      await _createTableIfMissing(m, environmentDefinitionsTable);
+      await _createTableIfMissing(m, spaceEnvironmentsTable);
+      await _createTableIfMissing(m, environmentRunsTable);
+      await _createIndexIfMissing(m, idxEnvironmentRunsSpace);
+      await _createIndexIfMissing(m, idxEnvironmentRunsDefinition);
+      await _migrateRepoScripts();
+    }),
+    // v21 → v22: what v21 moved goes. A definition is now the only place a
+    // worktree task lives, and environment runs the only history, so nothing
+    // is left to drift from them. Its own step so a file already at v21 is
+    // cleaned too.
+    MigrationStep(21, 22, (m) async {
+      await customStatement('DROP TABLE IF EXISTS repo_script_runs');
+      for (final column in const ['setup_script', 'archive_script']) {
+        if (await _reposHasColumn(column)) {
+          await customStatement('ALTER TABLE repos DROP COLUMN $column');
+        }
+      }
+    }),
   ];
+
+  Future<bool> _reposHasColumn(String name) async {
+    final columns = await customSelect('PRAGMA table_info(repos)').get();
+    return columns.any((row) => row.read<String>('name') == name);
+  }
+
+  /// Writes a definition for every repo with a lifecycle script.
+  ///
+  /// Raw SQL on both sides because this replays against old files: a typed read
+  /// would name every column `repos` has in the CURRENT schema. Re-entering is
+  /// safe, since the id comes from the repo and an existing row is left alone,
+  /// edits included.
+  Future<void> _migrateRepoScripts() async {
+    // A file from before v4 never had any.
+    if (!await _reposHasColumn('setup_script')) {
+      return;
+    }
+    final repos = await customSelect(
+      'SELECT id, name, setup_script, archive_script FROM repos '
+      'WHERE setup_script IS NOT NULL OR archive_script IS NOT NULL',
+    ).get();
+    // Drift stores a DateTime as unix seconds.
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    for (final repo in repos) {
+      final definition = repoScriptsDefinition(
+        repoId: repo.read<String>('id'),
+        repoName: repo.read<String>('name'),
+        setup: repo.readNullable<String>('setup_script'),
+        archive: repo.readNullable<String>('archive_script'),
+      );
+      if (definition == null) {
+        continue;
+      }
+      await customStatement(
+        'INSERT OR IGNORE INTO environment_definitions '
+        '(id, name, definition_json, created_at, updated_at) '
+        'VALUES (?, ?, ?, ?, ?)',
+        [definition.id, definition.name, definition.json, now, now],
+      );
+    }
+  }
 
   Future<void> _createTableIfMissing(
     Migrator m,

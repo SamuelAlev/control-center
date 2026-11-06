@@ -1,0 +1,411 @@
+---
+title: Configurer des environnements
+description: Donnez à chaque espace et à chaque pull request sa propre pile en fonctionnement, avec compose, une CLI personnalisée, des processus supervisés ou une application de bureau.
+slug: fr-FR/manuel/guides/environnements
+sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+---
+
+Un **environnement** est la pile en fonctionnement d’un espace : les services dont une branche a besoin, isolés de tous les autres espaces, visibles dans la barre latérale et accessibles aux agents. Les pull requests en ont un aussi, car une PR possède déjà son propre espace.
+
+Un administrateur de l’espace de travail rédige une **définition** une seule fois. Les membres cliquent ensuite sur **Démarrer** dans la section **Environnement** de la barre latérale d’un espace ou d’une PR. Les définitions vivent dans la base de données de l’espace de travail : une branche de fonctionnalité ne change donc jamais ce que Control Center exécute, même si les outils exécutent bien le code de cette branche.
+
+## Créer une définition
+
+1. Ouvrez **Paramètres → Espace de travail → Environnements**. Seuls les administrateurs de l’espace de travail peuvent modifier les définitions.
+2. Cliquez sur **Nouvelle définition**, puis sur **Définition vierge** ou **Ébaucher depuis le dépôt**. Un brouillon cherche dans le dépôt des fichiers compose, un `Procfile` et des scripts `package.json`, puis vous vérifiez le résultat.
+3. Remplissez le formulaire ou utilisez l’onglet **JSON**. Les exemples de cette page montrent ce JSON.
+4. Cliquez sur **Lancer le test**. Un environnement jetable démarre, Control Center attend qu’il soit prêt, puis le détruit.
+
+Pour conserver une définition dans un dépôt, utilisez **Lier un fichier du dépôt**. Control Center lit le fichier uniquement sur la branche par défaut et n’exécute que la version approuvée par un administrateur. Une version plus récente affiche **Mise à jour disponible** et ne change rien avant d’être approuvée.
+
+## La plus petite définition
+
+Un dépôt compose simple n’a besoin que de ceci :
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [ { "kind": "compose", "id": "stack" } ]
+}
+```
+
+Tout le reste a une valeur par défaut : le fichier compose est détecté, tous les services démarrent, les ports sont attribués, les points de terminaison HTTP sont détectés et l’environnement porte le nom de la branche.
+
+## Types de composants
+
+Un environnement est une liste ordonnée de composants. Chacun attend que le précédent soit prêt, sauf si `after` en désigne d’autres, et l’arrêt se fait dans l’ordre inverse. `enabledWhen` conditionne un composant à une option ou à un rôle, par exemple `opt.seed`, `!opt.seed` ou `repo.web`.
+
+| Type | Qui l’exécute | Usage |
+| --- | --- | --- |
+| `compose` | Le pilote compose de Control Center | Tout fichier compose, un par environnement |
+| `cli` | Votre outil. Control Center appelle les verbes associés et lit du JSON | Un outil qui gère son cycle de vie, ses domaines et ses données |
+| `process` | Control Center, dans une session de terminal supervisée | Serveurs de développement et workers |
+| `task` | Control Center, une fois par déclencheur | Installations, migrations, tests |
+| `app` | Control Center, quand quelqu’un clique sur **Lancer** | Une application de bureau |
+
+Les composants `task` prennent une liste `when` :
+
+| Déclencheur | S’exécute |
+| --- | --- |
+| `provision` | À la création de l’arbre de travail (voir les tâches d’arbre de travail plus bas) |
+| `create` | Une fois par environnement, puis de nouveau après une réinitialisation |
+| `start` | À chaque démarrage |
+| `change` | Après une synchronisation, si un chemin modifié correspond à `onChange` |
+| `manual` | À la demande : **Exécuter**, `cc-env run <id>` ou `environment_run_task` |
+| `archive` | Juste avant la destruction de l’arbre de travail |
+
+Une commande donnée sous forme de tableau est un argv : les valeurs d’option ne passent donc jamais par un shell. Une chaîne, ou `script` avec un tableau de lignes, s’exécute sous `bash -lc`. Les paramètres fictifs comme `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` et `{url.<role>}` ne sont développés que dans l’argv. Les commandes shell lisent les mêmes valeurs dans des variables `CC_ENV_*`, comme `$CC_ENV_PORT_WEB`.
+
+Chaque commande et chaque terminal d’espace reçoivent aussi `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` et, dans les espaces de PR, `CC_PR_NUMBER` et `CC_PR_IS_FORK`. Avec un composant compose, ils reçoivent également `COMPOSE_PROJECT_NAME` et `COMPOSE_FILE`, si bien que `docker compose exec` dans une tâche atteint le bon projet.
+
+## Rôles et répertoire de travail
+
+Une définition lie des **rôles** aux dépôts de l’espace de travail, ce qui permet à une pile de couvrir plusieurs dépôts :
+
+```jsonc
+"repos": {
+  "api": { "repoId": "<api>", "anchor": true, "required": true },
+  "web": { "repoId": "<web>", "anchor": true },
+  "e2e": { "repoId": "<e2e>", "whenMissing": "useSource" }
+}
+```
+
+- `anchor` : un espace peut démarrer l’environnement s’il contient au moins un rôle ancre. Si deux définitions correspondent, la personne qui démarre choisit.
+- `required` : la pile ne peut pas fonctionner sans ce dépôt.
+- `whenMissing` : ce qui se passe quand l’espace n’a pas le rôle. `addToSpace` ajoute le dépôt sur sa branche par défaut et s’applique par défaut aux rôles `required`. `useSource` transmet votre copie enregistrée, à traiter en lecture seule. `skip` laisse la variable non définie et s’applique par défaut dans les autres cas.
+- Démarrer exige un droit `write` sur un dépôt ancre de l’espace et un accès en lecture à tous les autres dépôts liés.
+
+Une commande s’exécute dans le premier rôle de `repos` que possède l’espace : une définition à un seul dépôt n’a donc pas à le mentionner. Tout composant peut le remplacer avec `"cwd": { "role": "e2e", "path": "packages/ui" }`. Les deux champs sont facultatifs.
+
+## Ports et URL
+
+Control Center attribue les ports de l’hôte avant tout démarrage, depuis une plage commune à tout l’hôte (42000 à 49999 par défaut, par blocs de 32). Un port reste le même pendant toute la vie de l’environnement, et les ports compose se lient uniquement à `127.0.0.1`.
+
+- Les ports compose n’ont pas besoin d’être déclarés. Lisez-les avec `{port.postgres.5432}` ou `CC_ENV_PORT_POSTGRES_5432`.
+- Les autres ports se déclarent là où ils servent, avec `"port": "web"` ou `"ports": ["web", "hmr"]`, et se lisent avec `{port.web}`. Un processus doté d’un port reçoit aussi `PORT` et `HOST=127.0.0.1`.
+
+Les points de terminaison HTTP reçoivent une URL sur le routeur du serveur, qui écoute sur un seul port de bouclage :
+
+```text
+http://<endpoint>--<name>--<project>.localhost:<router port>
+http://web--fix-login--shop.localhost:7355
+```
+
+- `<name>` est la branche sous forme de slug, ou `pr-<n>` dans un espace de PR. `<project>` est `naming.project`, sinon le nom de la définition.
+- Les noms `*.localhost` pointent vers le bouclage : ils ne demandent ni entrée hosts ni DNS, et le nom d’hôte sépare les cookies entre environnements.
+- Les ports compose qui répondent en HTTP sont détectés, et `http` sur le composant remplace cette détection. Un processus a besoin de `"endpoint": { "role": "web", "primary": true }`, qui rend aussi `{url.web}` disponible.
+- Dans le navigateur (VM), utilisez **Ouvrir dans Browser (VM)**. `https://web--fix-login--shop.localhost/` y atteint la même route.
+- Le libellé complet reste sous 63 caractères : les noms longs sont raccourcis avec un hachage.
+- Deux points de terminaison n’ont pas de domaine parent commun. Une application qui a besoin d’un même cookie sur les deux doit les servir depuis un seul point de terminaison.
+
+Pour les URL à enregistrer à l’avance, comme les redirections OAuth, `"naming": { "pool": { "names": "cc{n}", "size": 8 }, "project": "shop" }` fournit un ensemble fixe de noms.
+
+`policy` décide quand les environnements tournent. `autoCreate` vaut `off`, `prSpaces` ou `allSpaces`, `idleStopMinutes` vaut 240 par défaut, `followPrHead` synchronise un environnement de PR quand sa tête bouge, et `maxRunning` (6 par défaut) fait proposer par **Démarrer** l’arrêt de l’environnement utilisé le moins récemment.
+
+## Exemple : application compose
+
+Une application web et Postgres dans un même fichier compose, avec un `.env` ignoré par git, des migrations et une tâche de test. `seedFiles` copie des fichiers nommés depuis votre copie enregistrée dans chaque nouvel arbre de travail.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Shop",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "shop" },
+  "seedFiles": [".env"],
+  "components": [
+    { "kind": "compose", "id": "stack",
+      "services": ["postgres", "web"],
+      "healthchecks": { "postgres": ["pg_isready", "-U", "postgres"] } },
+    { "kind": "task", "id": "migrate", "when": ["create", "change"],
+      "onChange": ["db/migrations/**"],
+      "command": "docker compose exec -T web bin/migrate" },
+    { "kind": "task", "id": "test", "when": ["manual"],
+      "command": "docker compose exec -T web bin/test" }
+  ]
+}
+```
+
+`healthchecks` permet à un service sans contrôle de santé propre de bloquer le composant suivant. Sans cela, un conteneur en marche compte comme prêt, et les migrations peuvent devancer une base de données encore en démarrage.
+
+## Exemple : CLI personnalisée
+
+Un outil fictif `acme` qui gère ses conteneurs, ses domaines et son TLS. Control Center fournit `{name}` et apprend tout le reste de `status`. Il ne déduit jamais les noms d’hôte d’un outil et ne modifie jamais `/etc/hosts`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Acme",
+  "repos": {
+    "server": { "repoId": "<server>", "anchor": true, "required": true },
+    "web": { "repoId": "<web>", "anchor": true }
+  },
+  "routing": { "mode": "tool", "domain": "acme.test", "upstream": "127.0.0.1:443",
+               "tls": true, "caFile": "~/.acme/tls/ca.crt" },
+  "components": [
+    { "kind": "cli", "id": "acme",
+      "verbs": {
+        "create":  ["acme", "env", "create", "{name}", "--json",
+                    { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
+        "start":   ["acme", "env", "start", "{name}"],
+        "stop":    ["acme", "env", "stop", "{name}"],
+        "destroy": ["acme", "env", "destroy", "{name}", "--yes"],
+        "reset":   ["acme", "env", "reset-db", "{name}"],
+        "status":  ["acme", "env", "status", "{name}", "--json"],
+        "list":    ["acme", "env", "ls", "--json"],
+        "logs":    ["acme", "env", "logs", "{name}",
+                    { "if": "service", "args": ["{service}"] },
+                    "--tail", "{tail}",
+                    { "if": "follow", "args": ["--follow"] }],
+        "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
+      },
+      "keepsDataOnStop": false,
+      "statusMap": {
+        "state": [
+          { "when": { "path": "/status/ready", "equals": true }, "state": "ready" },
+          { "when": { "none": "/status/containers", "where": { "state": "running" } },
+            "state": "stopped" },
+          { "when": { "path": "/status/phase", "equals": "failed" }, "state": "failed" },
+          { "state": "starting" }
+        ],
+        "detail": "phase: {/status/phase}",
+        "warnings": [
+          { "when": { "path": "/status/dnsWorking", "equals": false },
+            "message": "Not resolvable on this host" }
+        ],
+        "endpoints": [
+          { "role": "app", "label": "App", "url": "/urls/app", "primary": true },
+          { "role": "db", "hostPort": "/ports/db" }
+        ],
+        "services": "/status/containers/*/service",
+        "list": "/*/slug",
+        "missingErrorCodes": ["env.not-found"]
+      } }
+  ]
+}
+```
+
+- `create`, `status` et `destroy` sont obligatoires. Control Center choisit `create` ou `start` d’après le statut qu’il lit. Tout verbe peut être `{ "shell": "…" }` au lieu d’un argv.
+- `statusMap` lit le JSON de l’outil avec des pointeurs JSON, où `*` correspond à chaque élément. Les règles d’état sont ordonnées et la première correspondance l’emporte. Une condition est `path` avec `equals`, ou `any` ou `none` avec `where`.
+- `keepsDataOnStop: false` désactive l’arrêt sur inactivité et ajoute un avertissement de perte de données à **Arrêter**. Utilisez-le quand l’arrêt perd des données.
+- `routing.mode: "tool"` relie les noms d’hôte de l’outil au navigateur (VM) et aux agents. Le domaine doit se terminer par `.test`, `.localhost` ou `.internal`, et une URL signalée hors de ce domaine est ignorée.
+
+Un outil dont vous êtes l’auteur peut se passer de `statusMap` et imprimer le contrat de statut décrit à la fin de cette page.
+
+## Exemple : monorepo pnpm
+
+Uniquement des processus et des tâches, sans conteneurs. L’application web trouve l’API grâce à `{url.api}`.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Monorepo",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "naming": { "project": "mono" },
+  "options": [ { "key": "seed", "type": "bool", "default": true, "agentDefault": false } ],
+  "components": [
+    { "kind": "task", "id": "install", "when": ["provision", "change"],
+      "onChange": ["pnpm-lock.yaml"],
+      "command": ["pnpm", "install", "--frozen-lockfile"] },
+    { "kind": "process", "id": "api", "label": "API", "port": "api",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "dev"],
+      "endpoint": { "role": "api" },
+      "ready": { "http": "http://127.0.0.1:{port.api}/health", "timeout": 120 },
+      "restartOn": ["pnpm-lock.yaml"] },
+    { "kind": "task", "id": "seed", "when": ["create"], "enabledWhen": "opt.seed",
+      "cwd": { "path": "apps/api" },
+      "command": ["pnpm", "db:seed"] },
+    { "kind": "process", "id": "web", "label": "Dev server", "port": "web",
+      "cwd": { "path": "apps/web" },
+      "env": { "API_URL": "{url.api}" },
+      "command": ["pnpm", "dev", "--port", "{port.web}", "--host", "127.0.0.1"],
+      "endpoint": { "role": "web", "primary": true },
+      "ready": { "http": "http://127.0.0.1:{port.web}/" } },
+    { "kind": "task", "id": "lint", "when": ["manual"], "command": ["pnpm", "lint"] }
+  ]
+}
+```
+
+- Chaque processus est un onglet de terminal que vous pouvez ouvrir, lire et dans lequel vous pouvez écrire. Fermer l’onglet ne l’arrête pas.
+- `ready` accepte `http`, `tcp` ou `logMatch`. `restart` vaut `on-failure` (par défaut), `always` ou `never`. `restartOn` redémarre le processus quand un chemin modifié correspond.
+- `options` devient un formulaire sur **Démarrer**, et `agentDefault` s’applique aux exécutions lancées par un agent.
+
+## Exemple : application de bureau
+
+Une application de bureau avec une étape de build. Une application fonctionne de la même façon quelle que soit sa technologie, car Control Center travaille au niveau des fenêtres du système et n’a besoin d’aucun hook ni SDK dans l’application.
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Studio",
+  "repos": { "app": { "repoId": "<id>", "anchor": true, "required": true } },
+  "components": [
+    { "kind": "task", "id": "build", "when": ["manual"], "command": ["pnpm", "build"] },
+    { "kind": "app", "id": "desktop", "label": "Studio", "prepare": "build",
+      "command": ["dist/mac-arm64/Studio.app/Contents/MacOS/Studio"],
+      "isolate": "home" }
+  ]
+}
+```
+
+Une application ne démarre pas avec l’environnement. Quelqu’un clique sur **Lancer**, et `prepare` s’exécute d’abord. **Recompiler et relancer** relance cette paire. Une sortie propre s’affiche comme fermée, un plantage montre les dernières lignes de journal sans redémarrer, un redémarrage du serveur ne la relance jamais, et l’arrêt sur inactivité laisse tranquille une application en marche.
+
+### Autorisations et limites des applications de bureau
+
+- Sur macOS, accordez une fois à Control Center **Enregistrement de l’écran** et **Accessibilité** dans Réglages Système. L’hôte du serveur a besoin d’une session graphique : un serveur sans interface refuse de lancer une application.
+- Lancez directement le binaire. `open -a` confie l’application à LaunchServices et elle quitte l’arbre de processus suivi par Control Center. `"window": { "match": { "bundleId": "…" } }` couvre ce cas, mais n’est sûr qu’avec une seule copie en marche.
+- Les fenêtres restent sur un écran. macOS ne capture pas une fenêtre placée hors de tout écran : une application utilisée par un agent est donc visible sur l’écran du serveur. Elle n’a pas besoin du focus.
+- `"isolate": "home"` donne à l’application un répertoire personnel privé via `HOME`, `XDG_*` et `CFFIXED_USER_HOME`, pour que des copies de deux espaces tournent côte à côte. `NSUserDefaults` n’est pas isolé : les préférences Cocoa et `shared_preferences` de Flutter restent partagées entre les copies.
+- `isolate` ne s’applique qu’au processus lancé. Un lanceur de chaîne d’outils comme `flutter run` a besoin du vrai répertoire personnel : associez donc `isolate` à un binaire compilé. Si l’application a son propre réglage, comme `--user-data-dir`, préférez-le.
+- Les agents pilotent la fenêtre avec `app_use`, qui ne peut atteindre que l’arbre de processus de cet environnement. Un agent voit la fenêtre, pas le bureau. Les lancements par un agent passent par la politique d’actions et demandent confirmation par défaut, et la saisie de l’agent s’arrête quand une personne a le contrôle.
+- `"input": "background"` (par défaut) envoie les événements au processus. `"foreground"` active la fenêtre et prend le contrôle du curseur.
+
+## Les tâches d’arbre de travail remplacent les scripts de dépôt
+
+Les tâches `provision` et `archive` remplacent les anciens scripts d’installation et d’archivage par dépôt. **Les scripts existants ont été migrés automatiquement :** chaque dépôt qui en avait possède maintenant une définition à son nom, avec des tâches `setup` et `archive` contenant le même texte de script. L’icône sur la ligne d’un dépôt dans **Paramètres → Espace de travail → Dépôts** l’ouvre. Les exécutions passées restent en historique en lecture seule.
+
+Ces tâches suivent l’arbre de travail, pas l’environnement : elles s’exécutent donc dans les espaces où personne ne clique sur **Démarrer** :
+
+| | `provision` | `archive` |
+| --- | --- | --- |
+| S’exécute | À la création de l’arbre de travail du rôle, dans n’importe quel espace | Juste avant la destruction de cet arbre de travail |
+| En cas d’échec | Le provisionnement échoue et l’arbre de travail est détruit | Enregistré, ne bloque jamais la suppression |
+| Délai par défaut | 5 minutes | 2 minutes |
+| Voit | `CC_WORKSPACE_PATH`, `CC_ROOT_PATH`, `CC_SPACE_*`, `CC_REPO_NAME` | La même chose |
+
+Un dépôt sans pile a seulement besoin d’une définition contenant ses tâches. Comme il n’y a rien à démarrer, aucun rôle ancre n’est nécessaire :
+
+```jsonc
+{
+  "contract": 1,
+  "name": "Web",
+  "repos": { "app": { "repoId": "<id>" } },
+  "components": [
+    { "kind": "task", "id": "setup", "when": ["provision"],
+      "script": ["pnpm install", "cp \"$CC_ROOT_PATH/.env\" .env"] }
+  ]
+}
+```
+
+- Il n’y a pas encore d’environnement : ces tâches ne peuvent donc pas utiliser `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` ni `enabledWhen`, et elles ne reçoivent pas le `env` de la définition.
+- Une seule définition peut contenir des tâches `provision` et `archive` pour un dépôt. Les autres peuvent le lier pour tout le reste.
+- `"when": ["provision", "change"]` réinstalle aussi quand un fichier de verrouillage change, ce que les scripts d’installation ne faisaient pas.
+- Une tâche s’exécute pour l’arbre de travail de son rôle `cwd` : une définition multi-dépôts peut donc configurer chaque dépôt séparément.
+- Une exécution de test définit `CC_SCRIPT_TEST=1`. Une nouvelle tentative repart d’un arbre de travail propre : écrivez des tâches qui supportent une réexécution.
+
+## Agents
+
+Les agents n’obtiennent jamais le socket Docker. Dans un espace doté d’une définition éligible, une exécution reçoit `cc-env` dans son `PATH`. L’espace vient de l’exécution : un agent ne peut donc agir que sur son propre environnement, et chaque commande passe par la politique d’actions.
+
+```bash
+cc-env status
+cc-env up
+cc-env down
+cc-env reset
+cc-env destroy
+cc-env restart <process>
+cc-env logs <name>
+cc-env exec <service> -- <cmd>
+cc-env run <task> -- <args>
+```
+
+Avec un composant compose, un shim `docker` autorise aussi `docker compose` avec `ps`, `logs`, `exec`, `port`, `restart` et `top`. Aucune option ne peut précéder le verbe, `logs` ne peut pas suivre le flux, et `exec` n’accepte que `-T`. Tout le reste se termine avec le code 5 et « not available in Control Center agent runs ».
+
+Un dépôt dont les skills appellent son propre outil peut continuer ainsi. Un bloc `agentPassthrough` sur un composant `cli` déclare les commandes que les agents peuvent exécuter :
+
+```jsonc
+"agentPassthrough": {
+  "binary": "acme",
+  "allow": [
+    { "argv": ["env", "ls"], "maps": "status", "nameFilter": true },
+    { "argv": ["env", "status|url"], "maps": "status", "positionalName": 2 },
+    { "argv": ["env", "create"], "maps": "up", "positionalName": 2,
+      "pathFlags": ["--web-dir"], "denyFlags": ["--force"] },
+    { "argv": ["env", "logs"], "maps": "logs", "positionalName": 2,
+      "denyFlags": ["--follow"] }
+  ]
+}
+```
+
+`maps` nomme l’opération dont la politique s’applique. `positionalName` force cet argument sur l’environnement de cet espace, `nameFilter` y filtre la sortie JSON, et chaque valeur de `pathFlags` doit se résoudre dans les arbres de travail de l’exécution. Une commande qui ne correspond à aucune règle se termine avec le code 5.
+
+Les mêmes opérations existent sous forme d’outils : `environment_status`, `environment_up`, `environment_down`, `environment_reset`, `environment_destroy`, `environment_restart`, `environment_exec`, `environment_logs`, `environment_run_task`, `environment_launch_app` et `environment_stop_app`. Les agents en bac à sable atteignent directement leurs ports et les noms d’hôte de leur environnement via le proxy de l’exécution : demandez-leur donc de lire les points de terminaison dans `environment_status` plutôt que de deviner une URL.
+
+## Pull requests de fork
+
+Le code d’une PR de fork n’est pas fiable, et en placement sur l’hôte il s’exécute sous l’utilisateur système du serveur. `policy.forkPrs` décide de la suite :
+
+| Valeur | Effet | Par défaut pour |
+| --- | --- | --- |
+| `rig` | Le fichier compose s’exécute dans une VM, sans invite | Les définitions n’ayant que des composants `compose` et `task` |
+| `approval` | Chaque démarrage exige un administrateur | Toutes les autres définitions |
+| `deny` | Refusé | Aucune |
+
+- Les `seedFiles` ne sont jamais copiés pour un fork, car ce sont généralement des secrets. Un fichier compose qui en monte un signale le fichier manquant par son nom.
+- Les tâches `provision` et `archive` sont ignorées, sauf si la politique est `rig` : elles s’exécutent alors dans la VM.
+- En placement sur l’hôte, `privileged`, les espaces de noms de l’hôte, un montage du socket Docker, `devices` et les montages hors des arbres de travail de l’espace sont refusés sur un fork. Dans les espaces de confiance, ils ne déclenchent qu’un avertissement.
+
+## Placement en rig
+
+`"placement": "rig"` exécute les composants `compose` et `task` dans une microVM dédiée. Les définitions avec des composants `process`, `cli` ou `app` ne sont pas éligibles. Le fichier compose s’exécute sans modification, sans socket Docker de l’hôte ni identifiants de l’opérateur, et l’accès réseau se limite aux registres dont ses images ont besoin. L’arbre de travail est monté en direct.
+
+- **Invités arm64.** Les invités sont en arm64 sur Apple Silicon : les images uniquement amd64 ne fonctionnent pas.
+- **Les registres privés sont refusés.** Les invités n’ont aucun identifiant de registre : une image sur un registre hors des registres publics connus est refusée avant le démarrage de la VM. Un dépôt privé sur un registre public échoue quand l’invité le récupère.
+- **16 Gio de stockage.** Toutes les images et tous les volumes de la pile partagent un disque de 16 Gio, qui ne peut pas être agrandi.
+- **Le premier démarrage est lent.** Les couches d’image sont propres à chaque VM : le premier démarrage récupère tout. Un rig arrêté conserve son disque.
+- **Les images de base doivent être lisibles.** Un Dockerfile qui nomme son image de base via une variable ne peut pas être planifié, car l’accès réseau est fixé au démarrage.
+- **Durée de vie.** `policy.rigTtlHours` met fin à la VM, après 24 heures par défaut.
+
+## Contrat de statut pour les auteurs d’outils
+
+Un composant `cli` sans `statusMap` attend le contrat natif, `cc-env/1`. Le verbe `status` imprime cet objet sur stdout :
+
+```json
+{
+  "state": "ready",
+  "detail": "migrations applied, HTTP 200",
+  "endpoints": [
+    { "role": "app", "label": "App", "url": "https://fix-login.acme.test", "primary": true },
+    { "role": "postgres", "label": "Postgres", "hostPort": 49213 }
+  ],
+  "services": ["server", "postgres"],
+  "needsRecreate": false,
+  "error": { "code": "post-start-failed", "message": "…", "hint": "…", "command": "…" }
+}
+```
+
+- `state` vaut `ready`, `starting`, `stopped`, `failed` ou `missing`. `missing` mène à `create`, `stopped` et `failed` mènent à `start`. Signalez `missing` avec le code de sortie 0 : un `status` en échec compte comme `failed`.
+- Seul `state` est nécessaire. Les champs inconnus sont ignorés, et une sortie illisible s’affiche comme dégradée, avec le texte brut en détail.
+- Une URL doit être en bouclage, en `*.localhost` ou sous `routing.domain`, sinon elle est ignorée.
+- `needsRecreate: true` affiche **Recréer**, qui supprime les données. Control Center n’agit jamais de lui-même sur cette valeur.
+- Le verbe `list` imprime un tableau JSON de noms, ou d’objets avec un `name`.
+
+Les codes de sortie valent pour tous les verbes :
+
+| Code | Signification |
+| --- | --- |
+| 0 | OK |
+| 3 | Configuration de l’hôte requise. **Exécuter dans le terminal** ouvre un terminal d’espace avec la commande saisie mais non exécutée, puis **Réessayer** relance l’opération. Control Center n’exécute jamais `sudo` |
+| 4 | Authentification requise |
+| 5 | Dépendance indisponible |
+| Autre | Échec |
+
+La progression va sur stderr, en JSON délimité par des sauts de ligne :
+
+```json
+{"type":"step","label":"Pull images","state":"running"}
+{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
+```
+
+Les lignes `step` s’affichent sous forme de liste d’étapes en direct et les lignes `note` telles quelles. Une dernière ligne de type `error` devient une erreur structurée, avec `command` proposée à la copie. Sinon, Control Center affiche les 20 dernières lignes de stderr. Tout ce qui n’est pas du JSON est du journal ordinaire.
+
+## Voir aussi
+
+- [Utiliser les espaces](/fr-FR/manuel/guides/espaces/)
+- [Transférer des ports depuis un terminal](/fr-FR/manuel/guides/ports-vm/)
+- [Donner une machine de test à un agent](/fr-FR/manuel/guides/utiliser-rigs/)
+- [Configurer les garde-fous](/fr-FR/manuel/guides/configurer-garde-fous/)

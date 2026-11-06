@@ -69,13 +69,9 @@ class _TeamsManagementViewState extends ConsumerState<TeamsManagementView> {
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       child: SectionCard(
         label: l10n.teamsTitle,
-        padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-        headerPadding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          0,
-          AppSpacing.lg,
-          AppSpacing.md,
-        ),
+        padding: const EdgeInsets.only(top: AppSpacing.md),
+        headerPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        headerAlignment: CrossAxisAlignment.center,
         expands: true,
         trailing: CcButton(
           onPressed: _createTeam,

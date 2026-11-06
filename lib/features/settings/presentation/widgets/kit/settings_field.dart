@@ -53,7 +53,11 @@ class SettingsField extends StatelessWidget {
     this.controlWidth,
     this.labelWidth = kSettingsFieldLabelWidth,
     this.centerControl = false,
-  });
+    this.trailingControl = false,
+  }) : assert(
+         !trailingControl || controlWidth != null,
+         'A trailing control needs a controlWidth to cap it.',
+       );
 
   /// The field label. Sentence case, and it names the value, not the action.
   final String label;
@@ -100,6 +104,16 @@ class SettingsField extends StatelessWidget {
   /// misalignment rather than a hierarchy. Opt in there.
   final bool centerControl;
 
+  /// Pins the control to the row's end, centred against the label, in
+  /// [SettingsFieldLayout.inline], the way `SettingsToggle` places its switch.
+  ///
+  /// For a short control on a row of its own: a button, a select. The label
+  /// takes the remaining width and [labelWidth] is ignored, and [controlWidth]
+  /// becomes a ceiling, so a button hugs its label against the edge rather than
+  /// sitting at the start of a wider box. Leave it off inside a form, where a
+  /// capped field should keep the left edge of the full-width fields around it.
+  final bool trailingControl;
+
   @override
   Widget build(BuildContext context) {
     switch (layout) {
@@ -136,28 +150,35 @@ class SettingsField extends StatelessWidget {
   }
 
   Widget _inline(BuildContext context) {
+    final centered = centerControl || trailingControl;
+    final labelBlock = Padding(
+      // Nudges the label onto the optical centre line of a 40px control
+      // sitting beside it. Centring already puts it there, so the nudge
+      // would push it back off by the same amount it corrects for.
+      padding: EdgeInsets.only(top: centered ? 0 : AppSpacing.sm),
+      child: _LabelBlock(
+        label: label,
+        description: description,
+        optional: optional,
+        badge: badge,
+      ),
+    );
     final row = Row(
-      crossAxisAlignment: centerControl
+      crossAxisAlignment: centered
           ? CrossAxisAlignment.center
           : CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: labelWidth,
-          child: Padding(
-            // Nudges the label onto the optical centre line of a 40px control
-            // sitting beside it. Centring already puts it there, so the nudge
-            // would push it back off by the same amount it corrects for.
-            padding: EdgeInsets.only(top: centerControl ? 0 : AppSpacing.sm),
-            child: _LabelBlock(
-              label: label,
-              description: description,
-              optional: optional,
-              badge: badge,
-            ),
-          ),
-        ),
+        if (trailingControl)
+          Expanded(child: labelBlock)
+        else
+          SizedBox(width: labelWidth, child: labelBlock),
         const SizedBox(width: AppSpacing.lg),
-        if (controlWidth == null)
+        if (trailingControl)
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: controlWidth!),
+            child: child,
+          )
+        else if (controlWidth == null)
           Expanded(child: child)
         else ...[
           SizedBox(width: controlWidth, child: child),
@@ -170,23 +191,30 @@ class SettingsField extends StatelessWidget {
     if (note.isEmpty) {
       return row;
     }
+    final noteBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: note,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         row,
-        // Indented to the control column: the note belongs to the control, not
-        // to the label.
-        Padding(
-          padding: EdgeInsetsDirectional.only(
-            start: labelWidth + AppSpacing.lg,
+        // Lined up with the control: the note belongs to the control, not to
+        // the label.
+        if (trailingControl)
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: SizedBox(width: controlWidth, child: noteBlock),
+          )
+        else
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: labelWidth + AppSpacing.lg,
+            ),
+            child: noteBlock,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: note,
-          ),
-        ),
       ],
     );
   }

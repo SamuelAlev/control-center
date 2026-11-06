@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
+import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/cron_execution_ledger.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_cron_scheduler.dart';
@@ -17,6 +18,7 @@ import 'package:uuid/uuid.dart';
 /// check — so a missed/duplicated tick, or a restart mid-slot, never
 /// double-starts a run. Missed slots collapse into a single fire
 /// (CatchUpLatestOnly) because the scheduler advances `nextRunAt` past `now`.
+/// A slot whose run fails to start is released and retried on the next tick.
 class PipelineSchedulerService {
   /// Creates a [PipelineSchedulerService].
   PipelineSchedulerService({
@@ -105,17 +107,31 @@ class PipelineSchedulerService {
       plannedAt: plannedAt,
     );
     if (claimed) {
-      await _engine.start(
-        trigger.templateId,
-        workspaceId: trigger.workspaceId,
-        triggerEventType: PipelineTrigger.scheduleEventType,
-        triggerPayload: {
-          'workspace_id': trigger.workspaceId,
-          'trigger_id': trigger.id,
-          'planned_at': plannedAt.toIso8601String(),
-        },
-        dedupKey: '${trigger.id}:${plannedAt.toIso8601String()}',
-      );
+      try {
+        await _engine.start(
+          trigger.templateId,
+          workspaceId: trigger.workspaceId,
+          triggerEventType: PipelineTrigger.scheduleEventType,
+          triggerPayload: {
+            'workspace_id': trigger.workspaceId,
+            'trigger_id': trigger.id,
+            'planned_at': plannedAt.toIso8601String(),
+          },
+          dedupKey: '${trigger.id}:${plannedAt.toIso8601String()}',
+        );
+      } on PipelineTemplateNotFoundError {
+        // Retrying can't help: template deletion leaves its triggers behind.
+        rethrow;
+      } on Object {
+        // No run exists for this slot. Keeping the claim would make the next
+        // tick treat it as already fired and advance past it, losing the run.
+        await _ledger.releaseSlot(
+          workspaceId: trigger.workspaceId,
+          triggerId: trigger.id,
+          plannedAt: plannedAt,
+        );
+        rethrow;
+      }
       CcDomainLog.info(
         'PipelineScheduler: fired ${trigger.templateId} for slot '
         '${plannedAt.toIso8601String()} (workspace ${trigger.workspaceId}).',

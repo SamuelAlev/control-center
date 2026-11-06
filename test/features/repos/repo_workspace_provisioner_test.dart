@@ -39,6 +39,7 @@ class _FakeIsolation implements RepoIsolationPort {
     String baseRef = '',
     String? headRef,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   }) async {
     provisions.add(
       _ProvisionCall(
@@ -344,7 +345,7 @@ void main() {
       // The space repo editor: a space already checked out `r-1` and the save
       // adds `r-2`, which `messaging.setSpaceRepos` answers by re-provisioning.
       // That run must materialize ONLY `r-2` — a second CoW copy of `r-1`
-      // would re-pay its clone, re-run its setup script and throw away
+      // would re-pay its clone, re-run its provision tasks and throw away
       // whatever uncommitted work is sitting in the worktree the operator has
       // been using.
       final isolation = _FakeIsolation();
@@ -1972,6 +1973,7 @@ class _ThrowingIsolation implements RepoIsolationPort {
     String? authUrl,
     String? headRef,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   }) async {
     provisions.add(
       _ProvisionCall(

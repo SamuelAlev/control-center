@@ -66,7 +66,7 @@ void main() {
     });
 
     test('never descends a symlinked directory', () async {
-      final repos = Directory(p.join(agentConfig.path, 'repos', 'web-app'))
+      final repos = Directory(p.join(agentConfig.path, 'repos', 'shop-ui'))
         ..createSync(recursive: true);
       File(p.join(repos.path, 'AGENTS.md')).writeAsStringSync('Repo rules.');
       Link(

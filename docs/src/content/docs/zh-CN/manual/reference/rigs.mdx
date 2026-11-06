@@ -2,7 +2,7 @@
 title: 机台
 description: 每一种机台、后端、动作动词、生命周期状态、端口、默认值与契约——完整的事实目录。
 slug: zh-CN/手册/参考/机台
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 只讲事实。要了解它们背后的模型，请阅读[机台与隔离舱](/zh-CN/手册/概念/机台/)；要打开一台机器，请遵循[本指南](/zh-CN/手册/操作指南/使用机台/)。
@@ -16,6 +16,8 @@ sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
 | 电脑 | X11 桌面：输入经由虚拟机管理程序，采集经由客户机代理 | QEMU | `qemu-hvf`（macOS）、`qemu-kvm`（Linux）、`qemu-tcg`（无加速的回退项，绝不会被自动选中） | 是 |
 | Android | 经由 ADB 连接的 Android | Google 的模拟器 | `android-emulator` | **否**——该模拟器自行管理其网络 |
 | iOS | 经由 WebDriverAgent 连接的 iOS 模拟器 | CoreSimulator | `ios-simulator` | **否**——其网络跟随宿主机 Mac |
+| 应用窗口 | 从环境启动的桌面应用的窗口，通过操作系统访问 | 主机窗口 | `host-window` | **否**——应用在主机上以服务器用户的权限运行 |
+| 环境 | `rig` 放置下[环境](/zh-CN/手册/操作指南/环境/)的 compose 技术栈和任务 | microVM | `smolvm` | 是 |
 
 终端与 `computer_use` 共用 `computer` 这个机台值；终端靠它的 exec 镜像标记加以区分，绝不会被当作可操控的桌面复用（反之亦然）。一个对话会复用一个终端机器。
 

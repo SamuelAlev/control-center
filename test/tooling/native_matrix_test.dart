@@ -72,6 +72,8 @@ void main() {
       'cc_inference': ['inferenceLibraryBaseName'],
       // Named through a base-name constant (SAML SSO crypto seam).
       'cc_saml': ['samlLibraryBaseName'],
+      // Named through a base-name constant (desktop app windows).
+      'cc_window': ['windowLibraryBaseName'],
     };
     for (final row in rows.where((r) => r.roles.contains('server'))) {
       // Grammar rows are generated from kLanguageByExtension in a loop, so
@@ -139,18 +141,22 @@ void main() {
     );
   });
 
-  test('rift is the only platform exemption and it is server-only', () {
+  test('only rift and cc_window are exempt, and both are server-only', () {
     // Windows has no MSVC copy-on-write backend, so `git worktree` is the
-    // BACKEND there rather than a degradation. Any OTHER exemption would be a
-    // degraded mode, which this pipeline does not have.
+    // BACKEND there rather than a degradation. cc_window's exemption is
+    // TEMPORARY: its Windows source has never been compiled, and it ends when
+    // windows_natives.sh builds it. Any OTHER exemption would be a degraded
+    // mode, which this pipeline does not have.
     final exempt = rows.where((r) => r.platforms != 'all').toList();
-    expect(exempt.map((r) => r.base), ['rift_ffi']);
-    expect(exempt.single.roles, {'server'});
+    expect(exempt.map((r) => r.base), ['rift_ffi', 'cc_window']);
+    for (final row in exempt) {
+      expect(row.roles, {'server'});
+    }
     expect(
-      runtime,
-      contains('requiredOnWindows: false'),
+      RegExp('requiredOnWindows: false').allMatches(runtime).length,
+      exempt.length,
       reason:
-          'the matrix exempts rift on Windows but the runtime table does not',
+          'the matrix exempts these on Windows but the runtime table does not',
     );
   });
 

@@ -1,5 +1,13 @@
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
 
+/// Thrown when a run targets a template that no longer exists. Callers that
+/// retry failed starts use this to tell a permanent failure from a transient
+/// one.
+class PipelineTemplateNotFoundError extends StateError {
+  /// Creates a [PipelineTemplateNotFoundError].
+  PipelineTemplateNotFoundError(super.message);
+}
+
 /// Repository interface for persisting pipeline templates.
 ///
 /// Templates carry the graph shape (nodes + edges + per-node config). All

@@ -70,6 +70,7 @@ class _FakeIsolation implements RepoIsolationPort {
     String? headRef,
     bool pristine = false,
     CancellationToken? cancel,
+    void Function(String line)? onOutput,
   }) async {
     provisions.add((
       sourcePath: sourcePath,

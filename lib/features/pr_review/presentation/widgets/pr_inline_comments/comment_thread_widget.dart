@@ -15,6 +15,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_commen
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_blocks.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_renderer.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/reaction_bar.dart';
+import 'package:control_center/features/pr_review/providers/pr_comment_draft_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/reaction_providers.dart';
@@ -107,10 +108,21 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
     ),
   );
 
+  TextDraftKey _editKey(PrInlineEntry entry) => (
+    workspaceId: widget.controller.pr.workspaceId,
+    surface: 'pr-thread-edit',
+    destination: (
+      widget.controller.pr.repoFullName,
+      widget.controller.pr.number,
+      widget.thread.id,
+      entry.id,
+    ),
+  );
+
   @override
   void initState() {
     super.initState();
-    _replyCtrl = ref.read(textDraftControllerProvider(_replyKey));
+    _replyCtrl = ref.read(prCommentDraftControllerProvider(_replyKey));
     _replying = _replyCtrl.text.isNotEmpty;
   }
 
@@ -119,7 +131,7 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller.pr != widget.controller.pr ||
         oldWidget.thread.id != widget.thread.id) {
-      _replyCtrl = ref.read(textDraftControllerProvider(_replyKey));
+      _replyCtrl = ref.read(prCommentDraftControllerProvider(_replyKey));
       _replying = _replyCtrl.text.isNotEmpty;
       _sending = false;
     }
@@ -318,6 +330,21 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
                 ],
                 onDeleteLocal: visible[i].serverCommentId == null
                     ? () => widget.controller.dismissThread(thread.id)
+                    : null,
+                editDraft: thread.isUnsent
+                    ? ref.read(
+                        prCommentDraftControllerProvider(_editKey(visible[i])),
+                      )
+                    : null,
+                onSaveDraft: thread.isUnsent
+                    ? (body) async {
+                        widget.controller.updateEntry(
+                          threadId: thread.id,
+                          entryId: visible[i].id,
+                          newBody: body.trim(),
+                        );
+                        return null;
+                      }
                     : null,
                 isEditing: _editingEntryId == visible[i].id,
                 onToggleReaction: visible[i].serverCommentId == null
@@ -650,6 +677,8 @@ class _InlineEntryTile extends StatelessWidget {
     this.onResolve,
     this.thread = const [],
     this.onDeleteLocal,
+    this.editDraft,
+    this.onSaveDraft,
     this.isEditing = false,
     this.onToggleReaction,
     this.onEditStart,
@@ -671,6 +700,13 @@ class _InlineEntryTile extends StatelessWidget {
   final VoidCallback? onResolve;
   final List<CommentExcerpt> thread;
   final VoidCallback? onDeleteLocal;
+
+  /// Holds an in-progress edit of an unsent comment across a scroll.
+  final TextEditingController? editDraft;
+
+  /// Rewrites an unsent comment. Null hides Edit: a posted comment here has
+  /// no write path, and one in flight already carries its old body.
+  final Future<String?> Function(String body)? onSaveDraft;
   final bool isEditing;
 
   /// Reaction toggle for a synced review comment; null while the entry is a
@@ -687,103 +723,132 @@ class _InlineEntryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final published = entry.serverCommentId != null;
-    return PrCommentActions(
-      prRef: prRef,
-      body: entry.body,
-      authorLogin: entry.author,
-      commentId: entry.serverCommentId,
-      reviewComment: true,
-      published: published,
-      path: filePath,
-      startLine: originalStartLine,
-      endLine: lineEnd,
-      thread: thread,
-      canResolve: canResolve,
-      resolved: resolved,
-      resolveBusy: resolveBusy,
-      onResolve: onResolve,
-      onDeleteLocal: onDeleteLocal,
-      onToggleReaction: onToggleReaction,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GitHubUserAvatar(
-            login: entry.author,
-            avatarUrl: entry.authorAvatarUrl,
-            size: 24,
-            showHoverCard: false,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      entry.author,
-                      style: CcTypography.caption.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: tokens.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    AppTimestamp(
-                      dateTime: entry.createdAt,
-                      child: Text(
-                        formatRelativeTime(context, entry.createdAt),
-                        style: CcTypography.caption.copyWith(
-                          color: tokens.textTertiary,
-                        ),
-                      ),
-                    ),
-                    if (_isSuggestionEntry && onEditStart != null) ...[
-                      const SizedBox(width: 4),
-                      CcIconButton(
-                        onPressed: () {
-                          if (isEditing) {
-                            onEditCancel?.call();
-                          } else {
-                            onEditStart?.call();
-                          }
-                        },
-                        icon: isEditing ? AppIcons.x : AppIcons.pencil,
-                        tooltip: isEditing
-                            ? AppLocalizations.of(context).cancelEdit
-                            : AppLocalizations.of(context).editSuggestion,
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                if (isEditing && onEditSubmit != null)
-                  _SuggestionEditor(
-                    initialBody: entry.body,
-                    filePath: filePath,
-                    onSubmit: onEditSubmit!,
-                    onCancel: onEditCancel ?? () {},
-                  )
-                else
-                  SuggestionAwareMarkdown(
-                    prRef: prRef,
-                    body: entry.body,
-                    originalCode: originalCode,
-                    filePath: filePath,
-                    originalStartLine: originalStartLine,
-                  ),
-                if (onToggleReaction != null && entry.reactions.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  ReactionBar(
-                    reactions: entry.reactions,
-                    showAdder: false,
-                    onToggle: onToggleReaction!,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
+    final repoParts = prRef.repoFullName.split('/');
+    return EditableCommentSlot(
+      key: ValueKey(entry.id),
+      initialBody: entry.body,
+      owner: repoParts.first,
+      repo: repoParts.length > 1 ? repoParts[1] : '',
+      controller: editDraft,
+      onSave: onSaveDraft ?? (_) async => null,
+      builder: (context, editor, startEdit) => PrCommentActions(
+        prRef: prRef,
+        body: entry.body,
+        authorLogin: entry.author,
+        commentId: entry.serverCommentId,
+        reviewComment: true,
+        published: published,
+        path: filePath,
+        startLine: originalStartLine,
+        endLine: lineEnd,
+        thread: thread,
+        canResolve: canResolve,
+        resolved: resolved,
+        resolveBusy: resolveBusy,
+        onResolve: onResolve,
+        // Always the whole text, prose included. The pencil stays the way to
+        // change only a suggestion's code, so one editor replaces the other.
+        onEdit: onSaveDraft == null
+            ? null
+            : () {
+                onEditCancel?.call();
+                startEdit();
+              },
+        onDeleteLocal: onDeleteLocal,
+        onToggleReaction: onToggleReaction,
+        child: _entryContent(context, tokens, editor),
       ),
+    );
+  }
+
+  Widget _entryContent(
+    BuildContext context,
+    DesignSystemTokens tokens,
+    Widget? editor,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GitHubUserAvatar(
+          login: entry.author,
+          avatarUrl: entry.authorAvatarUrl,
+          size: 24,
+          showHoverCard: false,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    entry.author,
+                    style: CcTypography.caption.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  AppTimestamp(
+                    dateTime: entry.createdAt,
+                    child: Text(
+                      formatRelativeTime(context, entry.createdAt),
+                      style: CcTypography.caption.copyWith(
+                        color: tokens.textTertiary,
+                      ),
+                    ),
+                  ),
+                  if (_isSuggestionEntry &&
+                      onEditStart != null &&
+                      editor == null) ...[
+                    const SizedBox(width: 4),
+                    CcIconButton(
+                      onPressed: () {
+                        if (isEditing) {
+                          onEditCancel?.call();
+                        } else {
+                          onEditStart?.call();
+                        }
+                      },
+                      icon: isEditing ? AppIcons.x : AppIcons.pencil,
+                      tooltip: isEditing
+                          ? AppLocalizations.of(context).cancelEdit
+                          : AppLocalizations.of(context).editSuggestion,
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 4),
+              if (editor != null)
+                SelectionContainer.disabled(child: editor)
+              else if (isEditing && onEditSubmit != null)
+                _SuggestionEditor(
+                  initialBody: entry.body,
+                  filePath: filePath,
+                  onSubmit: onEditSubmit!,
+                  onCancel: onEditCancel ?? () {},
+                )
+              else
+                SuggestionAwareMarkdown(
+                  prRef: prRef,
+                  body: entry.body,
+                  originalCode: originalCode,
+                  filePath: filePath,
+                  originalStartLine: originalStartLine,
+                ),
+              if (onToggleReaction != null && entry.reactions.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                ReactionBar(
+                  reactions: entry.reactions,
+                  showAdder: false,
+                  onToggle: onToggleReaction!,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

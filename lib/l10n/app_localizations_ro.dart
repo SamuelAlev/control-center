@@ -92,10 +92,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get keybindingPushToTalk => 'Apasă pentru a vorbi';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'Ține apăsat sau comută dictarea vocală în compozitorul de mesaje';
-
-  @override
   String get agentPermissions => 'Permisiuni agent';
 
   @override
@@ -196,6 +192,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'Simulator iOS';
+
+  @override
+  String get rigSurfaceAppWindow => 'Fereastra aplicației';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -472,6 +471,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'Vizualizarea live are nevoie de ffmpeg pe această gazdă. Instalează ffmpeg și redeschide fila.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'Vizualizarea live necesită Înregistrarea ecranului. Acord-o pentru Control Center în Configurări sistem și redeschide fila.';
 
   @override
   String get rigStreamEnded => 'Vizualizarea live s-a încheiat.';
@@ -1586,10 +1589,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'Deschide meniul de filtre';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'Deschide meniul de filtre pentru pull request-uri';
 
   @override
   String countSelected(int count) {
@@ -2875,19 +2874,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get cancelEdit => 'Anulează editarea';
 
   @override
-  String get categoryCreation => 'Creare';
-
-  @override
-  String get categoryEditing => 'Editare';
-
-  @override
   String get categoryNavigation => 'Navigare';
-
-  @override
-  String get categorySystem => 'Sistem';
-
-  @override
-  String get categoryView => 'Vizualizare categorie';
 
   @override
   String get change => 'Schimbă';
@@ -3711,31 +3698,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get keepSandboxing => 'Păstrează sandboxing-ul';
 
   @override
-  String get keybindingAddARepositoryDescription => 'Adaugă un depozit';
-
-  @override
   String get keybindingAddRepository => 'Adaugă depozit';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'Marchează sau demarchează articolul selectat';
 
   @override
   String get keybindingCommandPalette => 'Paletă de comenzi';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'Creează un agent nou';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription =>
-      'Creează un spațiu de lucru nou';
-
-  @override
   String get keybindingFocusSearch => 'Focalizează căutarea';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'Focalizează câmpul de căutare al pull request-urilor';
 
   @override
   String get keybindingNewAgent => 'Agent nou';
@@ -3756,35 +3725,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get keybindingOpenArticle => 'Deschide articolul';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'Deschide sau închide popup-ul de comutare a spațiilor de lucru din bara laterală';
-
-  @override
   String get keybindingOpenPr => 'Deschide PR';
 
   @override
   String get keybindingOpenSettings => 'Deschide setările';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'Deschide setările aplicației';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription =>
-      'Deschide paleta de comenzi';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'Deschide articolul selectat';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'Deschide pull request-ul selectat';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'Deschide spațiul de lucru selectat';
 
   @override
   String get keybindingOpenWorkspace => 'Deschide spațiul de lucru';
@@ -3802,86 +3746,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get keybindingRefresh => 'Reîmprospătează';
 
   @override
-  String get keybindingRefreshAllFeedsDescription =>
-      'Reîmprospătează toate fluxurile';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'Reîmprospătează lista de pull request-uri';
-
-  @override
-  String get keybindingRescanForAdaptersDescription => 'Rescanează adaptorii';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription =>
-      'Selectează articolul următor';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription =>
-      'Selectează spațiul următor';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'Selectează articolul anterior';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription =>
-      'Selectează spațiul anterior';
-
-  @override
   String get keybindingSendMessage => 'Trimite mesajul';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription =>
-      'Trimite mesajul curent';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'Comută între modul luminos și cel întunecat';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'Comută la al optulea spațiu de lucru';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'Comută la al cincilea spațiu de lucru';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'Comută la primul spațiu de lucru';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'Comută la al patrulea spațiu de lucru';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'Comută la spațiul de lucru următor';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'Comută la al nouălea spațiu de lucru';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'Comută la spațiul de lucru anterior';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'Comută la al doilea spațiu de lucru';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'Comută la al șaptelea spațiu de lucru';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'Comută la al șaselea spațiu de lucru';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'Comută la al treilea spațiu de lucru';
 
   @override
   String get keybindingToggleBookmark => 'Comută marcajul';
@@ -3919,13 +3784,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'Spațiu de lucru 9';
-
-  @override
-  String get keybindings => 'Scurtături';
-
-  @override
-  String get keybindingsDescription =>
-      'Toate scurtăturile de tastatură. Scurtăturile sunt fixe și nu pot fi reatribuite.';
 
   @override
   String get killRunning => 'Oprește forțat ce rulează';
@@ -4203,11 +4061,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get noSavedArticlesBody =>
       'Articolele pe care le salvezi vor apărea aici.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'Nicio scurtătură nu se potrivește cu \"$query\"';
-  }
 
   @override
   String get noSystemFonts => 'Niciun font de sistem detectat.';
@@ -4950,12 +4803,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'Caută…';
-
-  @override
-  String get searchShortcuts => 'Caută scurtături…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'Indisponibil în browser';
 
   @override
   String get searching => 'Se caută…';
@@ -6759,6 +6606,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'Spațiu șters';
 
   @override
+  String get triggerEventSpaceArchived => 'Spațiu arhivat';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged =>
+      'Pregătirea spațiului s-a schimbat';
+
+  @override
+  String get triggerEventPrHeadChanged => 'Head-ul PR s-a schimbat';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged =>
+      'Starea mediului s-a schimbat';
+
+  @override
+  String get triggerEventEnvironmentReady => 'Mediu pregătit';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'Mediu distrus';
+
+  @override
+  String get triggerEventEnvironmentProcessExited =>
+      'Procesul mediului s-a încheiat';
+
+  @override
   String get triggerExternalPrHelp =>
       'Un pull request deschis pe gazda de cod, nu din Control Center.';
 
@@ -6822,6 +6693,34 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'Un spațiu de conversație este șters.';
+
+  @override
+  String get triggerSpaceArchivedHelp =>
+      'Un spațiu de conversație este arhivat.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'Pregătirea worktree-urilor unui spațiu începe, se încheie sau eșuează.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'Commituri noi sunt împinse într-un pull request deschis.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'Un mediu de spațiu trece într-o stare nouă.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'Un mediu de spațiu a pornit și poate fi folosit.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp =>
+      'Un mediu de spațiu este demontat.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'Un proces rulat de un mediu se încheie.';
 
   @override
   String get navTickets => 'Tichete';
@@ -9054,19 +8953,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'Utilizare și cost';
-
-  @override
-  String get usageAndCostDescription =>
-      'Cheltuieli pe agenții tăi din ultimele 7 zile, din costurile observate ale rulărilor.';
-
-  @override
-  String get noUsageYet => 'Nicio utilizare înregistrată încă.';
-
-  @override
-  String get spentThisWeek => 'cheltuit săptămâna aceasta';
-
-  @override
   String get subscriptionUsage => 'Utilizare abonament';
 
   @override
@@ -9281,9 +9167,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get keybindingNewSpace => 'Spațiu nou';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'Creează un spațiu nou';
-
-  @override
   String get jumpToLatest => 'Sari la cele mai recente';
 
   @override
@@ -9459,71 +9342,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get preparingWorkspace => 'Se pregătește spațiul de lucru…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'Se rulează scriptul de setup pentru $repo…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'Scripturi';
-
-  @override
-  String get repoScriptsTooltip => 'Configurează scripturile de ciclu de viață';
-
-  @override
-  String get repoScriptsSetupLabel => 'Script de setup';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'Rulează în worktree-ul spațiului imediat după creare — instalează dependențe, generează fișiere. Un eșec marchează spațiul ca eșuat; reîncercarea îl rulează din nou.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'Script de arhivare';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'Rulează chiar înainte de ștergerea worktree-ului unui spațiu — curăță resursele din afara worktree-ului. Un eșec nu blochează niciodată ștergerea.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'Rulează prin bash din worktree, cu CC_WORKSPACE_PATH (worktree-ul), CC_ROOT_PATH (rădăcina depozitului), CC_SPACE_ID, CC_SPACE_NAME și CC_REPO_NAME setate.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'de ex. pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'de ex. docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => 'Rulări recente';
-
-  @override
-  String get repoScriptsNoRuns => 'Nicio rulare încă';
-
-  @override
-  String get repoScriptsSaved => 'Scripturi salvate';
-
-  @override
-  String get repoScriptsRunKindSetup => 'Setup';
-
-  @override
-  String get repoScriptsRunKindArchive => 'Arhivare';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'În rulare';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'Reușit';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'Eșuat';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'Expirat';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'Cod de ieșire $code';
+  String provisioningRunningTasks(String repo) {
+    return 'Se rulează sarcinile worktree pentru $repo…';
   }
 
   @override
@@ -10331,10 +10151,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get keybindingCheatSheet => 'Scurtături de tastatură';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'Afișează foaia de scurtături pentru ecranul curent';
-
-  @override
   String get runPlaybookLabel => 'Rulează playbook';
 
   @override
@@ -10345,14 +10161,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'Refă';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'Anulează ultima acțiune reversibilă';
-
-  @override
-  String get keybindingRedoLastActionDescription =>
-      'Refă ultima acțiune anulată';
 
   @override
   String get undone => 'Anulat';
@@ -14258,6 +14066,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get newSkill => 'Abilitate nouă';
 
   @override
+  String get newItemAction => 'Nou';
+
+  @override
   String get zoomIn => 'Mărește';
 
   @override
@@ -14476,6 +14287,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get steerNow => 'Direcționează';
 
   @override
+  String get steerForce => 'Oprește și trimite';
+
+  @override
   String get steeringQueueLabel => 'Mesaje de direcționare în coadă';
 
   @override
@@ -14523,16 +14337,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'Vei fi întrebat din nou data viitoare când un agent trebuie să ruleze un program din această copie.';
-
-  @override
-  String get repoScriptsTest => 'Test';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'Rulează acest draft într-o clonă de unică folosință a depozitului';
-
-  @override
-  String get repoScriptsRunKindTest => 'Test';
 
   @override
   String get demoBadgeLabel => 'Demo';
@@ -14750,6 +14554,51 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'Cale pe server';
+
+  @override
+  String get backupScheduledLabel => 'Copii de rezervă programate';
+
+  @override
+  String get backupScheduledExplainer =>
+      'Copii salvate de pipeline-ul de backup al fiecărui spațiu de lucru. Setează programul și perioada de păstrare în șablonul pipeline-ului.';
+
+  @override
+  String get backupScheduledNone => 'Nu există încă copii de rezervă';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de copii de rezervă',
+      few: '$count copii de rezervă',
+      one: '1 copie de rezervă',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'Ultima copie: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'Ai nevoie de rolul de administrator în acest spațiu de lucru pentru a-i vedea copiile.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'Ștergi această copie de rezervă?';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'Ștergi de pe server copia din $date a $name? Acțiunea nu poate fi anulată.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'Copia de rezervă a fost ștearsă.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'Spațiu de lucru șters';
 
   @override
   String get backupRestoreAction => 'Restaurează';
@@ -15377,14 +15226,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get ideQuickOpen => 'Accesează fișierul';
 
   @override
-  String get ideQuickOpenDescription =>
-      'Caută fișierele conversației după nume și deschide unul într-o filă';
-
-  @override
-  String get prQuickOpenDescription =>
-      'Caută fișierele pull request-ului după nume și deschide unul într-o filă';
-
-  @override
   String get ideQuickOpenHint => 'Caută fișiere după nume';
 
   @override
@@ -15719,6 +15560,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'Încărcare forțată';
+
+  @override
+  String get skillEvalHashLabel => 'Hash-ul pachetului';
+
+  @override
+  String get skillEvalProgressLabel => 'Progres';
+
+  @override
+  String get skillEvalUpdatesToggle => 'Evaluări la actualizare';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -16113,4 +15963,713 @@ class AppLocalizationsRo extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return 'Au mai rămas $minutes min';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'Mediile rulează procese reale pe gazdă, așa că demo-ul nu are niciunul.';
+
+  @override
+  String get environmentChecksFailing => 'Unele verificări eșuează pe server';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'Puncte finale: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'Servicii: $names';
+  }
+
+  @override
+  String get environmentCopied => 'Copiat';
+
+  @override
+  String get environmentCopyCommand => 'Copiază comanda';
+
+  @override
+  String get environmentCopyUrl => 'Copiază URL-ul';
+
+  @override
+  String get environmentDefinition => 'Definiție';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de definiții',
+      few: '$count definiții',
+      one: '1 definiție',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'Distruge';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name și datele sale sunt eliminate. Pornirea creează unul nou.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'Distrugi acest mediu?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'Rulează într-un serviciu';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'Cod de ieșire $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded =>
+      'Acest lucru trebuie configurat pe server';
+
+  @override
+  String get environmentKindApp => 'Aplicație';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'Proces';
+
+  @override
+  String get environmentKindTask => 'Sarcină';
+
+  @override
+  String get environmentLaunch => 'Lansează';
+
+  @override
+  String get environmentLogsGone => 'Aceste jurnale nu mai sunt disponibile.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'Jurnale: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'Se așteaptă ieșirea';
+
+  @override
+  String get environmentMoreActions => 'Mai multe acțiuni pentru mediu';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'O modificare impune recrearea acestui mediu.';
+
+  @override
+  String get environmentNoStack =>
+      'Rulează doar sarcini de worktree, deci nu este nimic de pornit.';
+
+  @override
+  String get environmentOnTheServer => 'Pe server';
+
+  @override
+  String get environmentOpenInBrowserVm => 'Deschide în Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'Deschide vizualizatorul';
+
+  @override
+  String get environmentPlacementRig => 'Într-o VM';
+
+  @override
+  String get environmentPreviewTab => 'Mediu';
+
+  @override
+  String get environmentRebuildRelaunch => 'Recompilează și relansează';
+
+  @override
+  String get environmentRecreate => 'Recreează';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name este distrus și repornit cu aceleași opțiuni. Datele sale se pierd.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'Recreezi acest mediu?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name revine la starea de bază. Datele create între timp se pierd.';
+  }
+
+  @override
+  String get environmentResetData => 'Resetează datele';
+
+  @override
+  String get environmentResetTitle => 'Resetezi datele?';
+
+  @override
+  String get environmentRestart => 'Repornește';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de reporniri',
+      few: '$count reporniri',
+      one: '1 repornire',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'Rulează';
+
+  @override
+  String get environmentRunInTerminal => 'Rulează în terminal';
+
+  @override
+  String get environmentSectionTitle => 'Mediu';
+
+  @override
+  String get environmentService => 'Serviciu';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'Acțiuni pentru $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'Pornește mediul';
+
+  @override
+  String get environmentStateCrashed => 'Blocat';
+
+  @override
+  String get environmentStatusDegraded => 'Degradat';
+
+  @override
+  String get environmentStatusDestroying => 'Se distruge';
+
+  @override
+  String get environmentStatusGone => 'Dispărut';
+
+  @override
+  String get environmentStatusStopping => 'Se oprește';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'Oprirea $name îi pierde datele, iar Pornirea nu le aduce înapoi.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'Oprește și pierde datele';
+
+  @override
+  String get environmentStopTitle => 'Oprești acest mediu?';
+
+  @override
+  String get environmentTaskNeverRun => 'Încă nerulată';
+
+  @override
+  String get environmentsAddCheck => 'Adaugă verificare';
+
+  @override
+  String get environmentsAddOption => 'Adaugă opțiune';
+
+  @override
+  String get environmentsAddRole => 'Adaugă rol';
+
+  @override
+  String get environmentsAdminOnly =>
+      'Doar administratorii spațiului de lucru pot modifica definițiile.';
+
+  @override
+  String get environmentsAfter => 'Așteaptă aceste componente';
+
+  @override
+  String get environmentsAnchor => 'Ancoră';
+
+  @override
+  String get environmentsAutoCreate => 'Pornește automat';
+
+  @override
+  String get environmentsAutoCreateAll => 'În fiecare spațiu eligibil';
+
+  @override
+  String get environmentsAutoCreateOff => 'Niciodată';
+
+  @override
+  String get environmentsAutoCreatePrs => 'În spațiile de pull request';
+
+  @override
+  String get environmentsBlank => 'Definiție goală';
+
+  @override
+  String get environmentsCheckFix => 'Comandă de remediere';
+
+  @override
+  String get environmentsCheckHint => 'Indiciu';
+
+  @override
+  String get environmentsCommandHelp =>
+      'Argumentele sunt separate prin spații. Pune între ghilimele argumentul care conține un spațiu.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de componente',
+      few: '$count componente',
+      one: '1 componentă',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'Construiește imaginile la pornire';
+
+  @override
+  String get environmentsComposeFile => 'Fișier compose';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'Nu s-a putut citi un fișier compose. Numele serviciilor pot fi totuși trecute în vizualizarea JSON.';
+
+  @override
+  String get environmentsComposeServices => 'Servicii';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'Lasă toate serviciile nebifate pentru a le rula pe toate.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'Această comandă are argumente condiționale. Editeaz-o în vizualizarea JSON.';
+
+  @override
+  String get environmentsCwdPath => 'Cale de lucru';
+
+  @override
+  String get environmentsCwdRole => 'Rol de lucru';
+
+  @override
+  String get environmentsDeleteBody =>
+      'Spațiile nu îl mai pot porni. Mediile în execuție continuă până sunt oprite.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return 'Ștergi $name?';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'Ce poate porni fiecare spațiu și ce sarcini rulează worktree-urile sale.';
+
+  @override
+  String get environmentsDraftFromRepo => 'Schiță din repo';
+
+  @override
+  String get environmentsEmpty => 'Încă nu există definiții';
+
+  @override
+  String get environmentsEnabledWhen => 'Activat când';
+
+  @override
+  String get environmentsEndpointRole => 'Rolul punctului final';
+
+  @override
+  String get environmentsFollowPrHead => 'Urmărește head-ul pull request-ului';
+
+  @override
+  String get environmentsForkApproval =>
+      'Fiecare pornire necesită un administrator';
+
+  @override
+  String get environmentsForkDeny => 'Refuzat';
+
+  @override
+  String get environmentsForkPrs => 'Pull request-uri din fork-uri';
+
+  @override
+  String get environmentsForkRig => 'Rulează într-o VM';
+
+  @override
+  String get environmentsIdleStop => 'Oprește după minute de inactivitate';
+
+  @override
+  String get environmentsIsolateHome => 'Dă aplicației un home privat';
+
+  @override
+  String get environmentsIssues => 'Corectează acestea înainte de salvare';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'JSON nevalid: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'Își păstrează datele la oprire';
+
+  @override
+  String get environmentsLinkConfirm => 'Leagă și aprobă';
+
+  @override
+  String get environmentsLinkFile => 'Leagă un fișier din repo';
+
+  @override
+  String get environmentsLinkHelp =>
+      'Citit doar din ramura implicită și rulat doar după aprobare.';
+
+  @override
+  String get environmentsLinkPath => 'Cale';
+
+  @override
+  String get environmentsMaxRunning => 'Rulează simultan';
+
+  @override
+  String get environmentsNamingProject => 'Proiect';
+
+  @override
+  String get environmentsNamingTemplate => 'Șablon de nume';
+
+  @override
+  String get environmentsNew => 'Definiție nouă';
+
+  @override
+  String get environmentsNewDefinitionName => 'Mediu nou';
+
+  @override
+  String get environmentsNoChecks => 'Această definiție nu are verificări.';
+
+  @override
+  String get environmentsNoRuns => 'Încă nu există rulări de test';
+
+  @override
+  String get environmentsOnChange => 'Căi de urmărit';
+
+  @override
+  String get environmentsOptionBool => 'Da sau nu';
+
+  @override
+  String get environmentsOptionEnum => 'Unul dintre';
+
+  @override
+  String get environmentsOptionMulti => 'Mai multe dintre';
+
+  @override
+  String get environmentsOptionValues => 'Valori';
+
+  @override
+  String get environmentsPlacement => 'Amplasare';
+
+  @override
+  String get environmentsPlacementHost => 'Pe gazdă';
+
+  @override
+  String get environmentsPlacementRig => 'Într-o VM';
+
+  @override
+  String get environmentsPrepareTask => 'Sarcină de pregătire';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'Punct final principal';
+
+  @override
+  String get environmentsReadyHttp => 'Gata când răspunde acest URL';
+
+  @override
+  String get environmentsRestartAlways => 'Întotdeauna';
+
+  @override
+  String get environmentsRestartNever => 'Niciodată';
+
+  @override
+  String get environmentsRestartOn => 'Repornește când se schimbă aceste căi';
+
+  @override
+  String get environmentsRestartOnFailure => 'La eșec';
+
+  @override
+  String get environmentsRestartPolicy => 'Repornește';
+
+  @override
+  String get environmentsRigTtl => 'Durata de viață a VM în ore';
+
+  @override
+  String get environmentsRunChecks => 'Rulează din nou';
+
+  @override
+  String get environmentsRunTest => 'Rulează testul';
+
+  @override
+  String get environmentsSaved => 'Definiție salvată';
+
+  @override
+  String get environmentsSectionComponents => 'Componente';
+
+  @override
+  String get environmentsSectionOptions => 'Opțiuni de pornire';
+
+  @override
+  String get environmentsSectionSeedFiles => 'Fișiere inițiale';
+
+  @override
+  String get environmentsSectionVariables => 'Variabile';
+
+  @override
+  String get environmentsSeedHelp =>
+      'O cale pe linie, copiată din checkout-ul înregistrat. Pull request-urile din fork-uri nu le primesc niciodată.';
+
+  @override
+  String get environmentsShellHelp =>
+      'Substituenții nu sunt extinși aici. Citește în schimb variabilele CC_ENV_*.';
+
+  @override
+  String get environmentsSourceApprove => 'Aprobă această versiune';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path corespunde versiunii aprobate.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'Versiunea aprobată rulează în continuare până o aprobi pe aceasta.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'Sursă';
+
+  @override
+  String get environmentsTestHelp =>
+      'Rulează un mediu de unică folosință cap-coadă: verifică, pornește, așteaptă să fie gata, distruge.';
+
+  @override
+  String get environmentsTestSaveFirst => 'Salvează mai întâi definiția.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'Timp limită în secunde';
+
+  @override
+  String get environmentsTitle => 'Medii';
+
+  @override
+  String get environmentsTriggerArchive => 'Înainte de ștergerea worktree-ului';
+
+  @override
+  String get environmentsTriggerChange => 'Când se schimbă căile urmărite';
+
+  @override
+  String get environmentsTriggerCreate => 'O dată pe mediu';
+
+  @override
+  String get environmentsTriggerManual => 'La cerere';
+
+  @override
+  String get environmentsTriggerProvision => 'La crearea worktree-ului';
+
+  @override
+  String get environmentsTriggerStart => 'La fiecare pornire';
+
+  @override
+  String get environmentsTriggers => 'Rulează';
+
+  @override
+  String get environmentsUnreadable =>
+      'Acest client nu poate citi această definiție.';
+
+  @override
+  String get environmentsUpdateAvailable => 'Actualizare disponibilă';
+
+  @override
+  String get environmentsUseShell => 'Folosește o comandă shell';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'Instrumentul rulează atunci pe propriul tău checkout. Tratează-l ca doar în citire.';
+
+  @override
+  String get environmentsWhenMissing => 'Când unui spațiu îi lipsește';
+
+  @override
+  String get environmentsWhenMissingAdd => 'Adaugă-l în spațiu';
+
+  @override
+  String get environmentsWhenMissingSkip => 'Omite-l';
+
+  @override
+  String get environmentsWhenMissingSource =>
+      'Folosește checkout-ul înregistrat';
+
+  @override
+  String get environmentsUnsupported => 'Acest server nu acceptă medii.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'Fără vizualizator: serverul nu poate captura această fereastră. Permite înregistrarea ecranului pentru Control Center pe server.';
+
+  @override
+  String get environmentHealthHealthy => 'Sănătos';
+
+  @override
+  String get environmentHealthUnhealthy => 'Nesănătos';
+
+  @override
+  String get environmentTerminalStale =>
+      'Acest terminal a fost deschis înainte de pornirea mediului, deci nu are variabilele lui.';
+
+  @override
+  String get environmentTerminalFresh => 'Deschide un terminal nou';
+
+  @override
+  String get environmentsShellStays =>
+      'Un script pe mai multe linii rămâne o comandă shell: liniile sunt structura lui.';
+
+  @override
+  String get environmentsOverrides => 'Suprascrieri ale spațiului de lucru';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'Setările proprii ale fișierului sunt doar în citire aici. Leagă rolurile lui de repo-urile acestui spațiu de lucru sau suprascrie orice câmp ca JSON.';
+
+  @override
+  String get environmentsReposHelp =>
+      'Depozitele folosite de acest mediu, fiecare legat de un rol.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'Ce rulează mediul, în ordinea pornirii.';
+
+  @override
+  String get environmentsOptionsHelp => 'Opțiuni oferite la pornirea mediului.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'Setate pentru sarcini, procese, aplicații și terminalele spațiului.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'De ce are nevoie gazda pentru a rula acest mediu.';
+
+  @override
+  String get environmentsIdleStopHelp => '0 nu îl oprește niciodată.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'Un spațiu care conține acest depozit poate porni mediul.';
+
+  @override
+  String get environmentsRequiredHelp => 'Mediul nu poate rula fără el.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'Sincronizează și reîmprospătează când head-ul pull request-ului se mută.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'Necesită corectare';
+
+  @override
+  String get environmentsCheckFile => 'Fișier';
+
+  @override
+  String get environmentsDiscardBody =>
+      'Modificările tale la această definiție se vor pierde.';
+
+  @override
+  String get environmentsWorktreeRuns => 'Rulări ale sarcinilor de worktree';
+
+  @override
+  String get environmentsNoWorktreeRuns =>
+      'Încă nu a rulat nicio sarcină de worktree.';
+
+  @override
+  String get environmentsLinkRoles => 'Roluri în acest fișier';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'Fișierul nu a putut fi citit din repo. Rolurile pot fi legate după conectare.';
+
+  @override
+  String get guardrailClassHostExecution => 'Rulează comenzi pe gazdă';
+
+  @override
+  String get environmentUrls => 'URL-uri';
+
+  @override
+  String get environmentScripts => 'Scripturi';
+
+  @override
+  String get environmentNoneForSpace => 'Niciun mediu pentru acest spațiu';
+
+  @override
+  String get environmentNoneForPr => 'Niciun mediu pentru acest pull request';
+
+  @override
+  String get environmentSetupBody =>
+      'Un mediu rulează serviciile, scripturile și URL-urile unui depozit pentru un spațiu. Configurați-l o dată și orice spațiu al depozitului îl poate porni.';
+
+  @override
+  String get environmentSetUp => 'Configurează mediul';
+
+  @override
+  String get environmentEditDefinition => 'Editează definiția';
+
+  @override
+  String get environmentOpenPanel => 'Deschide mediul';
+
+  @override
+  String get environmentNeedsSetup => 'Necesită configurare';
+
+  @override
+  String get environmentContinueInTerminal => 'Continuă în terminal';
+
+  @override
+  String get environmentSetupHint =>
+      'Instrumentul are nevoie de tine într-un terminal pentru o parolă sau o întrebare. Pornirea continuă după aceea.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'Acest terminal s-a deschis deoarece pornirea are nevoie de tine';
+
+  @override
+  String get environmentSetupTab => 'Configurare mediu';
+
+  @override
+  String get environmentsNothingRunning =>
+      'Nimic nu rulează din această definiție.';
+
+  @override
+  String get searchPoliciesHint => 'Caută politici...';
+
+  @override
+  String get noPoliciesMatch => 'Nicio politică nu corespunde căutării';
+
+  @override
+  String get memoryPolicyActive => 'Activă';
+
+  @override
+  String get memoryFactType => 'Tip';
+
+  @override
+  String get memoryTimesRecalled => 'Număr de reamintiri';
+
+  @override
+  String get memorySourceFacts => 'Fapte sursă';
+
+  @override
+  String get spaceSetupLogs => 'Jurnale de configurare';
 }

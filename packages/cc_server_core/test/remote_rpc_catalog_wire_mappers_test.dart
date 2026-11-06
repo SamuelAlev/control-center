@@ -266,7 +266,7 @@ void main() {
     test('commitStatusToWire maps every field and encodes the state name', () {
       final wire = commitStatusToWire(
         CommitStatus(
-          context: 'netlify/test-web-app/deploy-preview',
+          context: 'netlify/test-shop-ui/deploy-preview',
           state: CommitStatusState.success,
           targetUrl:
               'https://deploy-preview-2803.usectrl.dev',
@@ -274,7 +274,7 @@ void main() {
           updatedAt: DateTime.utc(2026, 7, 20, 12, 30),
         ),
       );
-      expect(wire['context'], 'netlify/test-web-app/deploy-preview');
+      expect(wire['context'], 'netlify/test-shop-ui/deploy-preview');
       expect(wire['state'], 'success');
       expect(
         wire['target_url'],

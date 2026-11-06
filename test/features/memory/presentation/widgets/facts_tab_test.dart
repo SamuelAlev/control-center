@@ -2,9 +2,12 @@ import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_fact_repository.dart';
+import 'package:cc_domain/features/memory/domain/value_objects/memory_type.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/memory/presentation/widgets/confidence_meter.dart';
 import 'package:control_center/features/memory/presentation/widgets/facts_tab.dart';
+import 'package:control_center/features/memory/presentation/widgets/memory_fact_row.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -76,6 +79,8 @@ MemoryFact _fact({
   required String topic,
   required String content,
   double confidence = 1.0,
+  MemoryType memoryType = MemoryType.fact,
+  String? supersededBy,
 }) {
   final now = DateTime(2026, 1, 1);
   return MemoryFact(
@@ -85,6 +90,8 @@ MemoryFact _fact({
     topic: topic,
     content: content,
     confidence: confidence,
+    memoryType: memoryType,
+    supersededBy: supersededBy,
     createdAt: now,
     updatedAt: now,
   );
@@ -155,5 +162,71 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No facts match your search'), findsOneWidget);
+  });
+
+  testWidgets('shows a record without its markdown syntax', (tester) async {
+    await _pump(tester, [
+      _fact(topic: 'layout', content: '**Use** the `Flyout` body gap.'),
+    ]);
+
+    expect(find.text('Use the Flyout body gap.'), findsOneWidget);
+  });
+
+  testWidgets('a type facet narrows the list and counts what it holds', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _fact(topic: 'a', content: 'An instruction', memoryType: MemoryType.instruction),
+      _fact(topic: 'b', content: 'A plain fact'),
+    ]);
+
+    await tester.tap(find.text('Instruction  1'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('An instruction'), findsOneWidget);
+    expect(find.text('A plain fact'), findsNothing);
+    expect(find.text('1 of 2'), findsOneWidget);
+  });
+
+  testWidgets('superseded facts stay out until their facet is picked', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _fact(topic: 'old', content: 'Old claim', supersededBy: 'id-new'),
+      _fact(topic: 'new', content: 'New claim'),
+    ]);
+
+    expect(find.text('Old claim'), findsNothing);
+
+    await tester.tap(find.text('Superseded  1'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Old claim'), findsOneWidget);
+    expect(find.text('New claim'), findsNothing);
+  });
+
+  testWidgets('confidence sits with the glyph, not at the end of the row', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _fact(topic: 'caching', content: 'Redis is the cache', confidence: 0.9),
+    ]);
+
+    final marker = tester.getCenter(find.byType(MemoryConfidenceMarker));
+    final title = tester.getTopLeft(find.text('caching'));
+    expect(marker.dx, lessThan(title.dx));
+    expect(
+      tester.getTopLeft(find.text('90%')).dx,
+      moreOrLessEquals(title.dx, epsilon: 1),
+    );
+  });
+
+  testWidgets('the list builds only what is on screen', (tester) async {
+    await _pump(tester, [
+      for (var i = 0; i < 300; i++)
+        _fact(topic: 'topic-$i', content: 'Content $i'),
+    ]);
+
+    expect(find.byType(MemoryFactRow).evaluate().length, lessThan(40));
   });
 }

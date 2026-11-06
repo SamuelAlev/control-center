@@ -2636,4 +2636,7 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'Запуск зупинено, бо облікові дані провайдера більше не працюють. Перепідключіть його в Налаштування → Провайдери, а потім повторіть хід.';
+
+  @override
+  String get permissionHostExecution => 'Виконання команд на хості';
 }

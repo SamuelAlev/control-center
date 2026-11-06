@@ -18,6 +18,9 @@ enum IdeSidebarView {
   /// The conversation worktree's working-tree diff.
   sourceControl,
 
+  /// The space's environment: status, URLs, components, scripts and runs.
+  environment,
+
   /// The shared per-space handoff doc.
   notes,
 
@@ -45,11 +48,26 @@ class IdeSidebarPinsNotifier extends Notifier<Set<IdeSidebarView>> {
       return defaultPinned;
     }
     final viewByName = IdeSidebarView.values.asNameMap();
+    // A view added after the list was saved was never offered for unpinning,
+    // so it starts pinned like every view does on a fresh install.
+    final known =
+        _prefs.getStringList(ideSidebarKnownViewsKey) ?? _viewsBeforeKnownList;
     return {
       for (final name in names)
         if (viewByName[name] != null) viewByName[name]!,
+      for (final view in IdeSidebarView.values)
+        if (!known.contains(view.name)) view,
     };
   }
+
+  /// The views that existed before the strip recorded which ones it knew.
+  static const List<String> _viewsBeforeKnownList = [
+    'general',
+    'explorer',
+    'sourceControl',
+    'notes',
+    'artifacts',
+  ];
 
   /// Pins [view] to the strip when it is unpinned and removes its cell when it
   /// is already pinned. Unpinning every view is allowed — the strip then shows
@@ -61,10 +79,14 @@ class IdeSidebarPinsNotifier extends Notifier<Set<IdeSidebarView>> {
     }
     // Persist in canonical order so the stored list reads the way the strip
     // renders and a future reorder feature has an ordered list to build on.
-    _prefs.setStringList(ideSidebarPinnedViewsKey, [
-      for (final v in IdeSidebarView.values)
-        if (next.contains(v)) v.name,
-    ]);
+    _prefs
+      ..setStringList(ideSidebarPinnedViewsKey, [
+        for (final v in IdeSidebarView.values)
+          if (next.contains(v)) v.name,
+      ])
+      ..setStringList(ideSidebarKnownViewsKey, [
+        for (final v in IdeSidebarView.values) v.name,
+      ]);
     state = next;
   }
 }

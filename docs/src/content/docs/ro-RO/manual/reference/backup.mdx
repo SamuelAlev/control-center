@@ -2,7 +2,7 @@
 title: Backup, export și import
 description: Structura snapshot-urilor, manifestul, fiecare operațiune de backup și rută de transfer și exact ce fișiere conține și ce fișiere nu conține un backup.
 slug: ro-RO/manual/referinta/backup
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Tot ce poate Control Center să copieze, să predea sau să adopte, și forma exactă a fiecărui
@@ -53,7 +53,12 @@ Pasul de retenție al pipeline-ului săptămânal elimină doar backup-urile pro
 spațiu de lucru mai vechi decât vârsta configurată (30 de zile implicit);
 snapshot-urile de instalare create manual nu sunt niciodată rotite de acel pas.
 `server.listBackups` listează doar snapshot-uri de instalare, inclusiv pe cele
-incomplete.
+incomplete; `workspace.listBackups` listează backup-urile programate ale unui spațiu de
+lucru.
+
+Ștergerea unui spațiu de lucru lasă acest director pe loc. Programul spațiului de lucru se
+oprește odată cu el, așa că nimic nu mai rotește acele backup-uri, iar ele rămân până când
+proprietarul instalării le elimină. `server.listOrphanedBackups` le raportează.
 
 
 ### `manifest.json`
@@ -134,6 +139,10 @@ cum este serverul demo.
 | `server.backupNow`   | modificare  | Instalare      | **proprietar** al instalării | niciunul | `{ok, path}`             |
 | `server.listBackups` | citire      | Instalare      | **proprietar** al instalării | niciunul | `{backups: [...]}`       |
 | `server.deleteBackup` | modificare | Instalare      | **proprietar** al instalării | `name`  | `{ok}`                        |
+| `server.listOrphanedBackups` | citire | Instalare | **proprietar** al instalării | niciunul | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | modificare | Instalare | **proprietar** al instalării | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | citire | Spațiu de lucru | `admin` | niciunul | `{backups: [...]}` |
+| `workspace.deleteBackup` | modificare | Spațiu de lucru | `owner` | `name` | `{ok}` |
 | `workspace.export`   | citire      | Spațiu de lucru | `admin`              | niciunul      | `{ok, path}`                  |
 | `workspace.import`   | modificare  | Spațiu de lucru | `owner`              | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | modificare  | Instalare*     | `owner`              | `id`          | rând de registru marcat ca șters |
@@ -143,6 +152,15 @@ registrul global; handler-ul lui verifică apartenența apelantului la spațiul 
 numit și cere `owner`.
 
 `path` din fiecare răspuns este o cale pe **hostul serverului**.
+
+`server.listOrphanedBackups` returnează o intrare pentru fiecare spațiu de lucru care nu
+mai este activ: `workspace_id`, `workspace_name` când registrul îl mai cunoaște și
+`backups`. Un spațiu de lucru șters nu mai poate trece de o verificare a rolului în
+spațiul de lucru, așa că backup-urile lui aparțin proprietarului instalării.
+`server.deleteOrphanedBackup` refuză un spațiu de lucru activ, ale cărui backup-uri rămân
+în spatele `workspace.deleteBackup` și al rolurilor proprii acelui spațiu de lucru. Ambele
+operațiuni de ștergere acceptă doar numele unui director cu marcă de timp din listă, nu o
+cale.
 
 :::note[Un snapshot al întregii instalări este restricționat la proprietar pe ambele canale]
 `server.backupNow`, `server.listBackups` și `server.deleteBackup` cer **proprietarul**
@@ -227,27 +245,33 @@ PSK-ul de asociere și rolul de mai jos.
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** al spațiului de lucru |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **proprietar** al instalării |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **admin** al spațiului de lucru; **proprietar** al instalării după ce spațiul de lucru este șters |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **proprietar** al spațiului de lucru |
 
-`w` este un id de spațiu de lucru, `n` un nume de director de snapshot, `d` id-ul
-dispozitivului apelant, `s` semnătura. `n` este rezolvat față de listarea backup-urilor,
-nu concatenat la rădăcina backup-urilor, așa că ruta nu poate fi îndreptată spre un
-director pe care listarea nu l-ar fi arătat.
+`w` este un id de spațiu de lucru, `n` un nume de director de snapshot sau de backup
+programat, `d` id-ul dispozitivului apelant, `s` semnătura. Pe `/backup/snapshot`, `n` este
+rezolvat față de listarea backup-urilor, nu concatenat la rădăcina backup-urilor, așa că
+ruta nu poate fi îndreptată spre un director pe care listarea nu l-ar fi arătat. Pe
+`/backup/stored` trebuie să fie un nume de marcă de timp, iar fișierul trebuie să fie un
+fișier real din directorul de backup propriu al acelui spațiu de lucru.
 
 | Status | Cauză                                                                              |
 | ------ | ---------------------------------------------------------------------------------- |
-| `400`  | Lipsește un parametru de interogare obligatoriu sau corpul unui upload este gol      |
+| `400`  | Lipsește un parametru de interogare obligatoriu, numele unui backup este invalid sau corpul unui upload este gol |
 | `403`  | Dispozitiv necunoscut sau revocat, semnătură greșită sau apelantul nu are rolul      |
-| `404`  | Nu există un port de backup pe acest host sau fișierul de snapshot/spațiu de lucru numit nu există |
+| `404`  | Nu există un port de backup pe acest host sau fișierul de snapshot, de backup sau de spațiu de lucru numit nu există |
 | `405`  | `/backup/restore` apelat cu orice altceva decât `POST`                               |
 | `413`  | Corpul upload-ului depășește 8 GiB, după content-length declarat sau după octeții citiți efectiv |
 | `426`  | Orice cerere directă către o rută de transfer pe listenerul HTTP public; folosește tunelul de resurse criptat al unui client asociat |
 | `500`  | Exportul sau arhivarea a eșuat pe partea de server                                   |
 
-Ambele descărcări răspund cu `Cache-Control: no-store` și `Accept-Ranges: none`. Fiecare
-cerere creează o copie **proaspătă** și o șterge după ce a fost transmisă în flux, așa că
-un răspuns din cache sau reluat ar îmbina octeți din două exporturi diferite într-un
-singur fișier care pare valid și nu este.
+Toate cele trei descărcări răspund cu `Cache-Control: no-store` și `Accept-Ranges: none`.
+`/backup/workspace` și `/backup/snapshot` creează o copie **proaspătă** la fiecare cerere și
+o șterg după ce a fost transmisă în flux, așa că un răspuns din cache sau reluat ar îmbina
+octeți din două exporturi diferite într-un singur fișier care pare valid și nu este.
+
+`/backup/stored` este excepția: transmite în flux un backup programat ca
+`<workspaceId>-<name>.db` și lasă fișierul pe loc, pentru că acel fișier este backup-ul.
 
 `/backup/snapshot` returnează `<name>.zip`, cu intrări relative la rădăcina snapshot-ului,
 astfel încât dezarhivarea reproduce `manifest.json` + `global.db` +
@@ -277,11 +301,11 @@ criptează în repaus fișierele de backup rezultate.
 | Pregătire pentru transfer      | `<dataDir>/backups/transfer/` — un atelier, curățat de ruta care îl scrie |
 | Numele arhivei de snapshot     | `<snapshot directory name>.zip`                              |
 | Plafon de upload               | 8 GiB per upload criptat către `/backup/restore`             |
-| Retenție                       | Snapshot-uri de instalare: ștergere manuală. Backup-uri de spațiu de lucru: pipeline săptămânal, 30 de zile implicit |
+| Retenție                       | Snapshot-uri de instalare: ștergere manuală. Backup-uri de spațiu de lucru: pipeline săptămânal, 30 de zile implicit, sau ștergere manuală. Backup-urile unui spațiu de lucru șters: doar ștergere manuală |
 
 Directoarele `exports/`, `transfer/` și `workspace-backups/` nu sunt snapshot-uri de
 instalare și sunt excluse din `server.listBackups`. Doar ultimul director are retenție
-programată; ștergerea unui snapshot de instalare necesită acțiunea explicită a
+programată și doar cât timp există spațiul lui de lucru; ștergerea unui snapshot de instalare necesită acțiunea explicită a
 proprietarului instalării.
 
 ## Vezi și

@@ -7,6 +7,7 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/github_markdown_preprocessor.dart';
+import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_editor.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -63,7 +64,8 @@ class PrBodyEditor extends ConsumerStatefulWidget {
 }
 
 class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _controller =
+      ComposerTextController.markdownOnly();
   final FocusNode _focusNode = FocusNode();
   final FocusNode _editButtonFocus = FocusNode(debugLabel: 'edit-pr-body');
   bool _editing = false;

@@ -2,7 +2,7 @@
 title: Yedekleme ve geri yükleme
 description: Kurulumun anlık görüntüsünü alın, bir çalışma alanını makineler arasında taşıyın, tek bir çalışma alanını ya da tümünü geri yükleyin ve kopyaları başka bir yerde saklayın.
 slug: tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme
-sourceHash: f809d2c7e1ea7254ca46dcd03950b0d7574d3bed
+sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
 ---
 
 Bu kılavuz, yedeklerle gerçekte yapılan beş şeyi ele alır: yedek almak, yedeği toplamak,
@@ -16,7 +16,7 @@ Buradaki her şey **Ayarlar → Sunucu → Yedekleme ve geri yükleme** altında
 
 - **Tam bir istemci** — masaüstü ya da web uygulaması. Eşleştirilmiş bir telefon bunların hiçbirini tetikleyemez; bu tasarım gereğidir.
 - **Kurulum anlık görüntüsü** almak, listelemek, indirmek veya silmek için: kurulumun **sahibi**.
-- Çalışma alanı başına işlemler için: dışa aktarmak üzere o çalışma alanının **yöneticisi**, içe aktarmak veya silmek üzere **sahibi**.
+- Çalışma alanı başına işlemler için: dışa aktarmak ya da zamanlanmış yedeklerini listelemek ve indirmek üzere o çalışma alanının **yöneticisi**, içe aktarmak, silmek ya da yedeklerinden birini silmek üzere **sahibi**.
 - İndirmeler ve yüklemeler için: eşleştirilmiş tam bir istemci; ister doğrudan ister aracılı aktarıcı üzerinden bir bağlantıda. İki yol da dosya baytlarını aynı kimliği doğrulanmış ve uçtan uca şifrelenmiş kaynak tünelinden geçirir; aktarıcı bunları okuyamaz.
 
 ::::caution[Kurulum anlık görüntüleri elle alınır]
@@ -86,12 +86,34 @@ yeniden oynatmak yerine bir kez yetişir.
 `backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` altında bulunur.
 Saklama düğümü yalnızca bu çalışma alanının eski yedeklerini siler; kurulum anlık
 görüntülerini veya başka çalışma alanlarının yedeklerini asla silmez. Bu dosyalar
-yalnızca veritabanıdır. Makine dışında saklamak için bunları ayrıca kopyalayın.
+yalnızca veritabanıdır. Makine dışında saklamak için bunları indirin ya da ayrıca kopyalayın.
 
-Bu yedekler **Kurulum anlık görüntüleri** listesinden ayrıdır. Birini geri yüklemek için
-**Çalışma alanı verisi → İçe aktar** yolunu, yedeğin sunucudaki `workspace.db` yoluyla
-kullanın. İçe aktarma, o çalışma alanının mevcut veritabanını değiştirir; geri yüklemeyi
-geri almanız gerekebilecekse önce onu dışa aktarın.
+## Zamanlanmış bir yedeği bulma ve geri yükleme
+
+**Zamanlanmış yedekler**, **Kurulum anlık görüntüleri** ile **Çalışma alanı verisi**
+arasında yer alır ve her çalışma alanı için bir satır gösterir: son yedeğin ne zaman
+çalıştığı, kaç yedek tutulduğu ve bunların kapladığı alan. Pipeline'ı henüz bir şey
+üretmemiş bir çalışma alanında **Henüz yedek yok** yazar. Yöneticisi olmadığınız bir
+çalışma alanı, yedeklerini listelemek yerine satırında bunu belirtir.
+
+Her yedeği görmek için bir satırı genişletin; en yenisi en üsttedir:
+
+- **Geri yükle**, çalışma alanının mevcut veritabanını bu yedekle değiştirir. Bunu geri almanız gerekebilecekse önce çalışma alanını dışa aktarın. Çalışma alanının **sahibi** olmanız gerekir.
+- **İndir**, dosyayı kullandığınız makineye kaydeder. Yedek sunucuda kalır.
+- **Yolu kopyala**, sunucudaki konumunu kopyalar.
+- **Sil**, çalışma alanının adını yazdığınızda bu yedeği kalıcı olarak kaldırır. Çalışma alanının **sahibi** olmanız gerekir.
+
+### Silinmiş bir çalışma alanının yedekleri
+
+Bir çalışma alanını silmek zamanlanmış yedeklerini sunucuda bırakır ve programı onunla
+birlikte durduğu için saklama da durur: yedekler biri kaldırana kadar kalır. Kurulumun
+**sahibi** bunları aynı listede **Çalışma alanı silindi** işaretiyle görür ve orada
+indirebilir ya da silebilir. Bu satırları başka kimse görmez.
+
+Bu satırlarda **Geri yükle** yoktur, çünkü geri yüklenecek bir çalışma alanı yoktur.
+Birini geri getirmek için indirin, bir çalışma alanı oluşturun ve dosyayı
+[Bir çalışma alanını başka bir kuruluma taşıma](#bir-çalışma-alanını-başka-bir-kuruluma-taşıma)
+bölümünde anlatıldığı gibi yükleyin.
 
 ## Kurulum anlık görüntüsünü silme
 
@@ -107,14 +129,16 @@ değilse **İndir** düğmelerini kullanın:
 
 - **Çalışma alanı verisi** altında her **çalışma alanının** yanındaki **İndir**, tek bir `.db` dosyası içindir.
 - **Kurulum anlık görüntüleri** altında her **anlık görüntünün** yanındaki **İndir**, anlık görüntünün tamamını bir `.zip` olarak verir.
+- **Zamanlanmış yedekler** altında her yedeğin yanındaki **İndir**, o yedeğin `.db` dosyasını verir.
 
 Masaüstünde dosyanın nereye ineceğini siz seçersiniz ve bildirim adını söyler; web'de
-dosya tarayıcının indirmelerine gider. Her iki durumda da ilerleme bayt cinsinden
-bildirilir, çünkü bunlar gigabaytlara varan iki yüktür.
+dosya tarayıcının indirmelerine gider. Her iki durumda da üçü de ilerlemeyi bayt
+cinsinden bildirir, çünkü bu yükler gigabaytlara varır.
 
-İkisi de düğmeye bastığınız anda yeni bir kopya oluşturur, onu akış halinde gönderir ve
-ardından sunucudaki kopyayı siler — indirme, “dışa aktarma düğmesinin daha önce
-oluşturduğu dosyayı getirmek” değildir.
+Çalışma alanı ve anlık görüntü indirmeleri düğmeye bastığınız anda yeni bir kopya
+oluşturur, onu akış halinde gönderir ve ardından sunucudaki kopyayı siler — indirme,
+“dışa aktarma düğmesinin daha önce oluşturduğu dosyayı getirmek” değildir. Zamanlanmış
+yedek bunun istisnasıdır: saklanan dosyayı alırsınız ve dosya sunucuda kalır.
 
 Bir anlık görüntü arşivini açmak, anlık görüntü düzenini tam olarak yeniden oluşturur;
 onu geri yüklemeyi düz bir geri kopyalama yapan da budur.

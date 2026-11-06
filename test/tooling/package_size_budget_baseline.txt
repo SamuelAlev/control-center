@@ -36,7 +36,9 @@ packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seed
 packages/cc_domain/lib/src/dtos/dtos.dart  4024
 packages/cc_harness/lib/src/loop/agent_loop_runner.dart  2195
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1868
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2630
+# Raised 2026-11-06 by 2: the space environment seam (an import and the
+# sandbox scope argument); its helpers live in dispatch_session_gateway.dart.
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2633
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1764
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1585
 packages/cc_infra/lib/src/network/github_graphql_client.dart  2372
@@ -44,14 +46,19 @@ packages/cc_infra/lib/src/network/github_pr_client.dart  2281
 packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1809
 packages/cc_infra/lib/src/rigs/cdp_client.dart  2509
 packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1803
-packages/cc_infra/lib/src/rigs/rig_service.dart  2976
-packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2088
+packages/cc_infra/lib/src/rigs/rig_service.dart  2918
+packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2043
 packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1722
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2835
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3356
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8198
+# Raised 2026-11-06 by 22: the call that wires space environments
+# (the wiring itself lives in environments/server_environment_adapters.dart)
+# and the native window library's candidates.
+# Lowered 2026-11-06: messaging.retry/cancelSpaceProvisioning moved to
+# catalog/space_provisioning_ops.dart, the row writers to space_provisioning_row_writers.dart.
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8219
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
 packages/cc_server_core/lib/src/local_rpc_server.dart  2560
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1715
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  15963
-packages/cc_server_core/lib/src/repo_ide_data_service.dart  2644
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  15853
+packages/cc_server_core/lib/src/repo_ide_data_service.dart  2633

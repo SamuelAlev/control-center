@@ -61,13 +61,8 @@ class _CapabilitiesSectionState extends ConsumerState<CapabilitiesSection> {
 
     return SectionCard(
       label: l10n.rigsCapabilitiesTitle,
-      padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-      headerPadding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        0,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      headerPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: capabilities.when(
         loading: () => const Padding(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),

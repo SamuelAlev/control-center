@@ -10,6 +10,40 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
+/// A bare host with an optional port and path. `localhost:3000` parses as a URI
+/// whose SCHEME is `localhost`, so a scheme check alone can't tell it from
+/// `about:blank`.
+final _hostWithPort = RegExp(
+  r'^(?<host>[a-z0-9.-]+|\[[0-9a-f:]+\]):\d+(?:[/?#].*)?$',
+  caseSensitive: false,
+);
+
+/// A loopback name: nothing dials these over TLS by default.
+final _loopbackHost = RegExp(
+  r'^(?:localhost|127\.0\.0\.1|\[::1\]|[a-z0-9.-]+\.localhost)(?::\d+)?(?:[/?#].*)?$',
+  caseSensitive: false,
+);
+
+/// Turns raw address-bar input into a loadable URL, or null when blank.
+///
+/// Loopback names (`localhost:5173`, `web--fix.localhost:4100`) get `http://`;
+/// everything else without a scheme gets `https://`.
+String? normalizeBrowserPaneAddress(String value) {
+  final raw = value.trim();
+  if (raw.isEmpty) {
+    return null;
+  }
+  if (_loopbackHost.hasMatch(raw)) {
+    return 'http://$raw';
+  }
+  if (_hostWithPort.hasMatch(raw)) {
+    return 'https://$raw';
+  }
+  final uri = Uri.tryParse(raw);
+  final hasScheme = uri != null && uri.hasScheme;
+  return hasScheme ? raw : 'https://$raw';
+}
+
 /// In-app browser editor tab: a navigable webview with a full toolbar
 /// (back / forward / reload / address bar / open-external).
 ///
@@ -105,21 +139,9 @@ class _BrowserPaneState extends State<BrowserPane> {
     });
   }
 
-  /// Normalises raw address-bar input into a loadable `http(s)` URL, or null
-  /// when blank.
-  String? _normalizeAddress(String value) {
-    final raw = value.trim();
-    if (raw.isEmpty) {
-      return null;
-    }
-    final uri = Uri.tryParse(raw);
-    final hasScheme = uri != null && uri.hasScheme;
-    return hasScheme ? raw : 'https://$raw';
-  }
-
   /// Navigates to the address-bar value on whichever backend is active.
   void _submitAddress(String value) {
-    final url = _normalizeAddress(value);
+    final url = normalizeBrowserPaneAddress(value);
     if (url == null) {
       return;
     }

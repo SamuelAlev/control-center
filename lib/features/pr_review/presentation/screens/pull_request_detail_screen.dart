@@ -1,15 +1,19 @@
 import 'dart:async';
 
-import 'package:cc_domain/features/pr_review/domain/entities/deployment_preview.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/environments/presentation/environment_logs_pane.dart';
+import 'package:control_center/features/environments/presentation/pr_environment_panel.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_host.dart';
+import 'package:control_center/features/environments/providers/environment_pr_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/browser_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_window_pool.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/space_provisioning_logs_pane.dart';
 import 'package:control_center/features/messaging/providers/code_server_session_provider.dart';
 import 'package:control_center/features/messaging/providers/recent_files_provider.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_checks_ui_notifier.dart';
@@ -20,9 +24,11 @@ import 'package:control_center/features/pr_review/presentation/screens/pull_requ
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_code_server_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_detail_states.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_diff_tab.dart';
+import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_environment_host.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_file_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_layout_codec.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_overview_tab.dart';
+import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_preview_tabs.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_quick_open.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_rig_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_source_control_tab.dart';
@@ -294,10 +300,15 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   /// dirty dot and gates the Save/Don't-save close prompt for code-server tabs.
   final _dirty = EditorDirtyTracker();
 
-  /// Dedup keys of deploy-preview tabs already injected this session. Lets a
-  /// re-detection refresh an *open* preview tab in place while never re-adding
-  /// one the user deliberately closed.
-  final Set<String> _injectedPreviewKeys = {};
+  /// Deploy and environment preview tabs, never re-added once closed.
+  final _previews = PrPreviewTabs();
+
+  /// Built once so [EnvironmentHostScope] stays an identity check.
+  late final EnvironmentHost _environmentHost = prEnvironmentHost(
+    workspaceId: widget.prRef.workspaceId,
+    layout: () => _layout,
+    state: this,
+  );
 
   /// Live shell titles per terminal tab (OSC 0/2 from the PTY, or the
   /// server-polled foreground process), keyed by tab identity — the tab
@@ -693,6 +704,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       (PrTabKinds.reviewArtifact, l10n.prReviewArtifactTab),
       (PrTabKinds.sourceControl, l10n.sourceControl),
       (PrTabKinds.chat, l10n.chat),
+      (PrTabKinds.environment, l10n.environmentSectionTitle),
     ].where((e) => !open.contains(e.$1)).toList();
     if (closed.isEmpty) {
       return const [];
@@ -702,46 +714,6 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       CcMenuItem.section(l10n.ideMenuSectionReopen),
       for (final (kind, label) in closed) _reopenTabItem(leafId, kind, label),
     ];
-  }
-
-  /// Stable dedup key for a preview's tab — one per site (or per URL when the
-  /// site can't be derived).
-  static String _previewDedupKey(DeploymentPreview p) =>
-      'pr.preview:${p.siteName.isNotEmpty ? p.siteName : p.url}';
-
-  /// Reconciles the auto-detected deploy-preview tabs against [previews]. Adds a
-  /// tab (just after Diff, without stealing focus) the first time a preview is
-  /// seen; refreshes an already-open one in place if its URL changed; never
-  /// re-adds one the user has closed.
-  void _reconcilePreviewTabs(List<DeploymentPreview> previews) {
-    if (!mounted || previews.isEmpty) {
-      return;
-    }
-    final l10n = AppLocalizations.of(context);
-    final openKeys = {
-      for (final t in _layout.allTabs())
-        if (t.kind == PrTabKinds.preview) t.dedupKey,
-    };
-    for (final p in previews) {
-      final key = _previewDedupKey(p);
-      final firstTime = _injectedPreviewKeys.add(key);
-      // Add on first sighting; otherwise only touch it while it is still open.
-      if (!firstTime && !openKeys.contains(key)) {
-        continue;
-      }
-      _layout.ensureBackgroundTab(
-        EditorTab(
-          kind: PrTabKinds.preview,
-          label: p.siteName.isNotEmpty
-              ? l10n.previewDeploymentTab(p.siteName)
-              : l10n.previewDeployment,
-          icon: PrTabKinds.iconFor(PrTabKinds.preview),
-          args: {'url': p.url, if (p.siteName.isNotEmpty) 'site': p.siteName},
-          dedupKey: key,
-        ),
-        afterKind: PrTabKinds.diff,
-      );
-    }
   }
 
   /// The Overview sidebar asked to open a changed file: focus the Diff tab and
@@ -1088,6 +1060,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           onOpenFileInDiff: _openFileInDiff,
           onOpenCommit: _openCommitInDiff,
           onOpenReview: () => _focusKind(PrTabKinds.reviewArtifact),
+          onOpenEnvironment: () => _focusKind(PrTabKinds.environment),
         );
       case PrTabKinds.diff:
         return PrDiffTab(
@@ -1133,9 +1106,9 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
             onStart: () => setState(() => _startedDeferred.add(tab)),
           );
         }
-        return PrTerminalTab(
+        return PrTerminalTab.fromArgs(
           pr: widget.pr,
-          backend: tab.args['backend'] as String?,
+          args: tab.args,
           onTitleChange: (title) => _setTerminalTitle(tab, title),
         );
       case PrTabKinds.file:
@@ -1160,6 +1133,15 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       case PrTabKinds.browser:
       case PrTabKinds.preview:
         return BrowserPane(initialUrl: tab.args['url'] as String?);
+      case PrTabKinds.environmentLogs:
+        return environmentLogsTabBody(tab.args, widget.prRef.workspaceId);
+      case PrTabKinds.provisioningLogs:
+        return spaceProvisioningLogsTabBody(tab.args, widget.prRef.workspaceId);
+      case PrTabKinds.environment:
+        return PrEnvironmentPanel(
+          workspaceId: widget.prRef.workspaceId,
+          pr: widget.pr,
+        );
       case PrTabKinds.rig:
         // Scoped to the PR's own space, the same one the terminal tab uses,
         // so the machine sits on the prepared PR worktree and the agents in
@@ -1269,7 +1251,21 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     // preview set changes (a status/comment arrives, a redeploy lands); the
     // callback runs post-build, so mutating the layout here is safe.
     ref.listen(prPreviewDeploymentsProvider(widget.prRef), (_, next) {
-      _reconcilePreviewTabs(next);
+      _previews.reconcile(_layout, AppLocalizations.of(context), next);
+    });
+
+    // The environment's primary endpoint rides the same reconcile, so a tab
+    // the reviewer closed stays closed and a moved URL refreshes in place.
+    ref.listen(prEnvironmentPreviewProvider(PrSpaceKey.of(widget.pr)), (
+      _,
+      next,
+    ) {
+      if (next != null) {
+        final l10n = AppLocalizations.of(context);
+        _previews.reconcile(_layout, l10n, [
+          next,
+        ], label: l10n.environmentPreviewTab);
+      }
     });
 
     ref.listen(prDetailProvider(widget.prRef), (prev, next) {
@@ -1341,7 +1337,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       }
     }
 
-    return ScopedShortcuts(
+    final page = ScopedShortcuts(
       scope: '/pull-requests/',
       bindings: {
         'pr.detail-refresh': () => unawaited(
@@ -1404,9 +1400,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
                     labelFor: (tab) => switch (tab.kind) {
                       PrTabKinds.terminal => _terminalTitles[tab] ?? tab.label,
                       PrTabKinds.rig => tab.label,
-                      PrTabKinds.file ||
-                      PrTabKinds.codeServer ||
-                      PrTabKinds.preview => tab.label,
+                      _ when PrTabKinds.hasOwnLabel(tab.kind) => tab.label,
                       _ => _label(tab.kind, l10n),
                     },
                     // Three groups, in a fixed authored order: the tools that run
@@ -1545,5 +1539,6 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
         ],
       ),
     );
+    return EnvironmentHostScope(host: _environmentHost, child: page);
   }
 }

@@ -29,6 +29,7 @@ class AgentRosterList extends ConsumerWidget {
     required this.selectedId,
     required this.filterController,
     required this.onSelect,
+    this.filterAction,
   });
 
   /// Every agent in scope (the list filters/sorts this set itself).
@@ -45,6 +46,10 @@ class AgentRosterList extends ConsumerWidget {
 
   /// Invoked with an agent id when a row is tapped.
   final ValueChanged<String> onSelect;
+
+  /// Optional control beside the filter field, typically the action that adds
+  /// a row to this list.
+  final Widget? filterAction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,11 +95,25 @@ class AgentRosterList extends ConsumerWidget {
             AppSpacing.md,
             AppSpacing.sm,
           ),
-          child: CcTextField(
-            controller: filterController,
-            hintText: l10n.filterAgents,
-            size: CcTextFieldSize.sm,
-            prefix: Icon(AppIcons.search, size: 15, color: tokens.fgQuaternary),
+          child: Row(
+            children: [
+              Expanded(
+                child: CcTextField(
+                  controller: filterController,
+                  hintText: l10n.filterAgents,
+                  size: CcTextFieldSize.sm,
+                  prefix: Icon(
+                    AppIcons.search,
+                    size: 15,
+                    color: tokens.fgQuaternary,
+                  ),
+                ),
+              ),
+              if (filterAction != null) ...[
+                const SizedBox(width: AppSpacing.sm),
+                filterAction!,
+              ],
+            ],
           ),
         ),
         Expanded(

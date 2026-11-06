@@ -89,10 +89,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get keybindingPushToTalk => 'فشار دهید تا صحبت کنید';
 
   @override
-  String get keybindingPushToTalkDescription =>
-      'دیکته صوتی را در ویرایشگر پیام نگه دارید یا تغییر وضعیت دهید';
-
-  @override
   String get agentPermissions => 'مجوزهای عامل';
 
   @override
@@ -188,6 +184,9 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'شبیه‌ساز iOS';
+
+  @override
+  String get rigSurfaceAppWindow => 'پنجره برنامه';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -460,6 +459,10 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get rigStreamNeedsFfmpeg =>
       'نمایش زنده به ⁨ffmpeg⁩ روی این میزبان نیاز دارد. ⁨ffmpeg⁩ را نصب کنید و زبانه را دوباره باز کنید.';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      'نمای زنده به ضبط صفحه نیاز دارد. آن را در تنظیمات سیستم به Control Center بدهید و زبانه را دوباره باز کنید.';
 
   @override
   String get rigStreamEnded => 'نمایش زنده پایان یافت.';
@@ -1560,10 +1563,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => 'باز کردن منوی فیلتر';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      'باز کردن منوی فیلتر pull request';
 
   @override
   String countSelected(int count) {
@@ -2833,19 +2832,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get cancelEdit => 'لغو ویرایش';
 
   @override
-  String get categoryCreation => 'ایجاد';
-
-  @override
-  String get categoryEditing => 'ویرایش';
-
-  @override
   String get categoryNavigation => 'ناوبری';
-
-  @override
-  String get categorySystem => 'سیستم';
-
-  @override
-  String get categoryView => 'نمای دسته';
 
   @override
   String get change => 'تغییر';
@@ -3665,30 +3652,13 @@ class AppLocalizationsFa extends AppLocalizations {
   String get keepSandboxing => 'نگه داشتن سندباکس';
 
   @override
-  String get keybindingAddARepositoryDescription => 'افزودن یک مخزن';
-
-  @override
   String get keybindingAddRepository => 'افزودن مخزن';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      'نشانک‌گذاری یا برداشتن نشانک مقالهٔ انتخاب‌شده';
 
   @override
   String get keybindingCommandPalette => 'پالت فرمان';
 
   @override
-  String get keybindingCreateANewAgentDescription => 'ایجاد عامل جدید';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription => 'ایجاد فضای کاری جدید';
-
-  @override
   String get keybindingFocusSearch => 'تمرکز روی جستجو';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      'تمرکز روی فیلد جستجوی pull request';
 
   @override
   String get keybindingNewAgent => 'عامل جدید';
@@ -3709,35 +3679,10 @@ class AppLocalizationsFa extends AppLocalizations {
   String get keybindingOpenArticle => 'باز کردن مقاله';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      'باز یا بستن پنجرهٔ تعویض فضای کاری در نوار کناری';
-
-  @override
   String get keybindingOpenPr => 'باز کردن PR';
 
   @override
   String get keybindingOpenSettings => 'باز کردن تنظیمات';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription =>
-      'باز کردن تنظیمات برنامه';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription =>
-      'باز کردن پالت فرمان';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription =>
-      'باز کردن مقالهٔ انتخاب‌شده';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      'باز کردن pull request انتخاب‌شده';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription =>
-      'باز کردن فضای کاری انتخاب‌شده';
 
   @override
   String get keybindingOpenWorkspace => 'باز کردن فضای کاری';
@@ -3755,81 +3700,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get keybindingRefresh => 'تازه‌سازی';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => 'تازه‌سازی همهٔ خوراک‌ها';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      'تازه‌سازی فهرست pull request';
-
-  @override
-  String get keybindingRescanForAdaptersDescription => 'اسکن دوبارهٔ آداپتورها';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription => 'انتخاب مقالهٔ بعدی';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription => 'انتخاب فضای بعدی';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription =>
-      'انتخاب مقالهٔ قبلی';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription => 'انتخاب فضای قبلی';
-
-  @override
   String get keybindingSendMessage => 'ارسال پیام';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription => 'ارسال پیام فعلی';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      'تغییر بین حالت روشن و تاریک';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription =>
-      'رفتن به هشتمین فضای کاری';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription =>
-      'رفتن به پنجمین فضای کاری';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription =>
-      'رفتن به اولین فضای کاری';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription =>
-      'رفتن به چهارمین فضای کاری';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription =>
-      'رفتن به فضای کاری بعدی';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription =>
-      'رفتن به نهمین فضای کاری';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription =>
-      'رفتن به فضای کاری قبلی';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription =>
-      'رفتن به دومین فضای کاری';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription =>
-      'رفتن به هفتمین فضای کاری';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription =>
-      'رفتن به ششمین فضای کاری';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription =>
-      'رفتن به سومین فضای کاری';
 
   @override
   String get keybindingToggleBookmark => 'تغییر وضعیت نشانک';
@@ -3867,13 +3738,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => 'فضای کاری 9';
-
-  @override
-  String get keybindings => 'میانبرهای صفحه‌کلید';
-
-  @override
-  String get keybindingsDescription =>
-      'همهٔ میانبرهای صفحه‌کلید. میانبرها ثابت‌اند و قابل تخصیص مجدد نیستند.';
 
   @override
   String get killRunning => 'کشتن در حال اجرا';
@@ -4140,11 +4004,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get noSavedArticlesBody =>
       'مقاله‌هایی که ذخیره می‌کنید اینجا ظاهر می‌شوند.';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return 'هیچ میانبری با «⁨$query⁩» جور نیست';
-  }
 
   @override
   String get noSystemFonts => 'فونت سیستمی تشخیص داده نشد.';
@@ -4879,12 +4738,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get searchPlaceholder => 'جستجو…';
-
-  @override
-  String get searchShortcuts => 'جستجوی میانبرها…';
-
-  @override
-  String get shortcutUnavailableInBrowser => 'در مرورگر در دسترس نیست';
 
   @override
   String get searching => 'در حال جستجو…';
@@ -6667,6 +6520,27 @@ class AppLocalizationsFa extends AppLocalizations {
   String get triggerEventSpaceDeleted => 'فضا حذف شد';
 
   @override
+  String get triggerEventSpaceArchived => 'فضا بایگانی شد';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged => 'آماده‌سازی فضا تغییر کرد';
+
+  @override
+  String get triggerEventPrHeadChanged => 'head مربوط به PR تغییر کرد';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => 'وضعیت محیط تغییر کرد';
+
+  @override
+  String get triggerEventEnvironmentReady => 'محیط آماده است';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => 'محیط حذف شد';
+
+  @override
+  String get triggerEventEnvironmentProcessExited => 'فرایند محیط پایان یافت';
+
+  @override
   String get triggerExternalPrHelp =>
       'یک pull request که روی میزبان کد باز شده، نه از Control Center.';
 
@@ -6727,6 +6601,32 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => 'یک فضای گفتگو حذف می‌شود.';
+
+  @override
+  String get triggerSpaceArchivedHelp => 'یک فضای گفتگو بایگانی می‌شود.';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp =>
+      'آماده‌سازی worktreeهای یک فضا شروع می‌شود، پایان می‌یابد یا شکست می‌خورد.';
+
+  @override
+  String get triggerPrHeadChangedHelp =>
+      'کامیت‌های جدید به یک pull request باز ارسال می‌شوند.';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp =>
+      'محیط یک فضا به وضعیت جدیدی می‌رود.';
+
+  @override
+  String get triggerEnvironmentReadyHelp =>
+      'محیط یک فضا راه‌اندازی شده و قابل استفاده است.';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp => 'محیط یک فضا برچیده می‌شود.';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp =>
+      'فرایندی که محیط اجرا کرده پایان می‌یابد.';
 
   @override
   String get navTickets => 'تیکت‌ها';
@@ -8927,19 +8827,6 @@ class AppLocalizationsFa extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => 'مصرف و هزینه';
-
-  @override
-  String get usageAndCostDescription =>
-      'هزینهٔ عامل‌ها در 7 روز گذشته، از هزینه‌های مشاهده‌شدهٔ اجرا.';
-
-  @override
-  String get noUsageYet => 'هنوز مصرفی ثبت نشده.';
-
-  @override
-  String get spentThisWeek => 'هزینه‌شده این هفته';
-
-  @override
   String get subscriptionUsage => 'مصرف اشتراک';
 
   @override
@@ -9152,9 +9039,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get keybindingNewSpace => 'فضای جدید';
 
   @override
-  String get keybindingCreateANewSpaceDescription => 'ایجاد فضای جدید';
-
-  @override
   String get jumpToLatest => 'پرش به آخرین';
 
   @override
@@ -9324,71 +9208,8 @@ class AppLocalizationsFa extends AppLocalizations {
   String get preparingWorkspace => 'آماده‌سازی فضای کاری…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return 'در حال اجرای اسکریپت راه‌اندازی ⁨$repo⁩…';
-  }
-
-  @override
-  String get repoScriptsTitle => 'اسکریپت‌ها';
-
-  @override
-  String get repoScriptsTooltip => 'پیکربندی اسکریپت‌های چرخهٔ حیات';
-
-  @override
-  String get repoScriptsSetupLabel => 'اسکریپت راه‌اندازی';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      'درست پس از ایجاد worktree فضا در آن اجرا می‌شود — نصب وابستگی‌ها، تولید فایل. شکست فضا را ناموفق علامت می‌زند؛ تلاش مجدد دوباره اجرا می‌کند.';
-
-  @override
-  String get repoScriptsArchiveLabel => 'اسکریپت بایگانی';
-
-  @override
-  String get repoScriptsArchiveHelp =>
-      'درست پیش از حذف worktree فضا اجرا می‌شود — پاک‌سازی منابع بیرون از worktree. شکست هرگز حذف را مسدود نمی‌کند.';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      'از worktree با bash اجرا می‌شود، با ⁨CC_WORKSPACE_PATH⁩ (worktree)، ⁨CC_ROOT_PATH⁩ (ریشهٔ مخزن)، ⁨CC_SPACE_ID⁩، ⁨CC_SPACE_NAME⁩ و ⁨CC_REPO_NAME⁩.';
-
-  @override
-  String get repoScriptsSetupPlaceholder => 'مثلاً ⁨pnpm install⁩';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      'مثلاً ⁨docker compose -p \$CC_SPACE_ID down⁩';
-
-  @override
-  String get repoScriptsRecentRuns => 'اجراهای اخیر';
-
-  @override
-  String get repoScriptsNoRuns => 'هنوز اجرایی نیست';
-
-  @override
-  String get repoScriptsSaved => 'اسکریپت‌ها ذخیره شد';
-
-  @override
-  String get repoScriptsRunKindSetup => 'راه‌اندازی';
-
-  @override
-  String get repoScriptsRunKindArchive => 'بایگانی';
-
-  @override
-  String get repoScriptsRunStatusRunning => 'در حال اجرا';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => 'موفق';
-
-  @override
-  String get repoScriptsRunStatusFailed => 'ناموفق';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => 'زمان‌پر';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return 'کد خروج $code';
+  String provisioningRunningTasks(String repo) {
+    return 'در حال اجرای کارهای worktree برای ⁨$repo⁩…';
   }
 
   @override
@@ -10191,10 +10012,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get keybindingCheatSheet => 'میانبرهای صفحه‌کلید';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription =>
-      'نمایش برگهٔ میانبرهای صفحه‌کلید برای صفحهٔ فعلی';
-
-  @override
   String get runPlaybookLabel => 'اجرای کتابچه';
 
   @override
@@ -10205,13 +10022,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get keybindingRedo => 'ازنو';
-
-  @override
-  String get keybindingUndoLastActionDescription =>
-      'واگرد آخرین کنش برگشت‌پذیر';
-
-  @override
-  String get keybindingRedoLastActionDescription => 'ازنو آخرین کنش واگردشده';
 
   @override
   String get undone => 'واگرد شد';
@@ -14054,6 +13864,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get newSkill => 'مهارت جدید';
 
   @override
+  String get newItemAction => 'جدید';
+
+  @override
   String get zoomIn => 'بزرگ‌نمایی';
 
   @override
@@ -14269,6 +14082,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get steerNow => 'هدایت';
 
   @override
+  String get steerForce => 'توقف و ارسال';
+
+  @override
   String get steeringQueueLabel => 'پیام‌های هدایت در صف';
 
   @override
@@ -14316,16 +14132,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get sandboxExecGrantRevokeConfirmBody =>
       'دفعهٔ بعد که عاملی بخواهد برنامه‌ای از این رونوشت اجرا کند دوباره پرسیده می‌شود.';
-
-  @override
-  String get repoScriptsTest => 'آزمایش';
-
-  @override
-  String get repoScriptsTestTooltip =>
-      'اجرای این پیش‌نویس در کلون دورریختنی مخزن';
-
-  @override
-  String get repoScriptsRunKindTest => 'آزمایش';
 
   @override
   String get demoBadgeLabel => 'دمو';
@@ -14541,6 +14347,50 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => 'مسیر روی سرور';
+
+  @override
+  String get backupScheduledLabel => 'پشتیبان‌های زمان‌بندی‌شده';
+
+  @override
+  String get backupScheduledExplainer =>
+      'نسخه‌هایی که پایپ‌لاین پشتیبان‌گیری هر فضای کاری ذخیره می‌کند. زمان‌بندی و مدت نگهداری را در قالب پایپ‌لاین تنظیم کنید.';
+
+  @override
+  String get backupScheduledNone => 'هنوز پشتیبانی وجود ندارد';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count پشتیبان',
+      one: '1 پشتیبان',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return 'آخرین پشتیبان: $time';
+  }
+
+  @override
+  String get backupListForbidden =>
+      'برای دیدن پشتیبان‌های این فضای کاری به نقش مدیر نیاز دارید.';
+
+  @override
+  String get backupScheduledDeleteTitle => 'این پشتیبان حذف شود؟';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return 'پشتیبان $date از $name از سرور حذف شود؟ این کار برگشت‌پذیر نیست.';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => 'پشتیبان حذف شد.';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => 'فضای کاری حذف شده است';
 
   @override
   String get backupRestoreAction => 'بازیابی';
@@ -15155,14 +15005,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get ideQuickOpen => 'رفتن به فایل';
 
   @override
-  String get ideQuickOpenDescription =>
-      'فایل‌های گفتگو را با نام جست‌وجو کنید و یکی را در یک زبانه باز کنید';
-
-  @override
-  String get prQuickOpenDescription =>
-      'فایل‌های pull request را با نام جست‌وجو کنید و یکی را در یک زبانه باز کنید';
-
-  @override
   String get ideQuickOpenHint => 'جست‌وجوی فایل‌ها با نام';
 
   @override
@@ -15491,6 +15333,15 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => 'بارگذاری اجباری';
+
+  @override
+  String get skillEvalHashLabel => 'هش بسته';
+
+  @override
+  String get skillEvalProgressLabel => 'پیشرفت';
+
+  @override
+  String get skillEvalUpdatesToggle => 'ارزیابی به‌روزرسانی‌ها';
 
   @override
   String get skillEvalHashUnavailable =>
@@ -15880,4 +15731,708 @@ class AppLocalizationsFa extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return '$minutes دقیقه مانده';
   }
+
+  @override
+  String get demoUnavailableEnvironments =>
+      'محیط‌ها فرایندهای واقعی را روی میزبان اجرا می‌کنند، بنابراین نسخهٔ نمایشی هیچ محیطی ندارد.';
+
+  @override
+  String get environmentChecksFailing => 'برخی بررسی‌ها روی سرور ناموفق هستند';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return 'نقاط پایانی: $names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return 'سرویس‌ها: $names';
+  }
+
+  @override
+  String get environmentCopied => 'کپی شد';
+
+  @override
+  String get environmentCopyCommand => 'کپی فرمان';
+
+  @override
+  String get environmentCopyUrl => 'کپی نشانی URL';
+
+  @override
+  String get environmentDefinition => 'تعریف';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تعریف',
+      one: '۱ تعریف',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => 'نابود کردن';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name و داده‌هایش حذف می‌شوند. شروع یک محیط جدید می‌سازد.';
+  }
+
+  @override
+  String get environmentDestroyTitle => 'این محیط نابود شود؟';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => 'اجرا در یک سرویس';
+
+  @override
+  String environmentExitCode(int code) {
+    return 'کد خروج $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => 'این باید روی سرور تنظیم شود';
+
+  @override
+  String get environmentKindApp => 'برنامه';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => 'فرایند';
+
+  @override
+  String get environmentKindTask => 'وظیفه';
+
+  @override
+  String get environmentLaunch => 'راه‌اندازی برنامه';
+
+  @override
+  String get environmentLogsGone => 'این گزارش‌ها دیگر در دسترس نیستند.';
+
+  @override
+  String environmentLogsTab(String name) {
+    return 'گزارش‌ها: $name';
+  }
+
+  @override
+  String get environmentLogsWaiting => 'در انتظار خروجی';
+
+  @override
+  String get environmentMoreActions => 'کنش‌های بیشتر محیط';
+
+  @override
+  String get environmentNeedsRecreate =>
+      'یک تغییر نیاز دارد این محیط دوباره ساخته شود.';
+
+  @override
+  String get environmentNoStack =>
+      'فقط وظایف worktree را اجرا می‌کند، پس چیزی برای شروع نیست.';
+
+  @override
+  String get environmentOnTheServer => 'روی سرور';
+
+  @override
+  String get environmentOpenInBrowserVm => 'باز کردن در Browser (VM)';
+
+  @override
+  String get environmentOpenViewer => 'باز کردن نمایشگر';
+
+  @override
+  String get environmentPlacementRig => 'در ماشین مجازی';
+
+  @override
+  String get environmentPreviewTab => 'محیط';
+
+  @override
+  String get environmentRebuildRelaunch => 'ساخت و راه‌اندازی دوباره';
+
+  @override
+  String get environmentRecreate => 'ساخت دوباره';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name نابود می‌شود و با همان گزینه‌ها دوباره شروع می‌شود. داده‌هایش از بین می‌رود.';
+  }
+
+  @override
+  String get environmentRecreateTitle => 'این محیط دوباره ساخته شود؟';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name به حالت پایه بازمی‌گردد. داده‌های ساخته‌شده پس از آن از بین می‌رود.';
+  }
+
+  @override
+  String get environmentResetData => 'بازنشانی داده‌ها';
+
+  @override
+  String get environmentResetTitle => 'داده‌ها بازنشانی شوند؟';
+
+  @override
+  String get environmentRestart => 'راه‌اندازی مجدد';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count راه‌اندازی مجدد',
+      one: '۱ راه‌اندازی مجدد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => 'اجرا';
+
+  @override
+  String get environmentRunInTerminal => 'اجرا در ترمینال';
+
+  @override
+  String get environmentSectionTitle => 'محیط';
+
+  @override
+  String get environmentService => 'سرویس';
+
+  @override
+  String environmentServiceActions(String name) {
+    return 'کنش‌های $name';
+  }
+
+  @override
+  String get environmentStartTitle => 'شروع محیط';
+
+  @override
+  String get environmentStateCrashed => 'از کار افتاد';
+
+  @override
+  String get environmentStatusDegraded => 'تضعیف‌شده';
+
+  @override
+  String get environmentStatusDestroying => 'در حال نابودی';
+
+  @override
+  String get environmentStatusGone => 'از بین رفته';
+
+  @override
+  String get environmentStatusStopping => 'در حال توقف';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return 'توقف $name داده‌هایش را از بین می‌برد و شروع آن‌ها را برنمی‌گرداند.';
+  }
+
+  @override
+  String get environmentStopLoseData => 'توقف و از دست دادن داده‌ها';
+
+  @override
+  String get environmentStopTitle => 'این محیط متوقف شود؟';
+
+  @override
+  String get environmentTaskNeverRun => 'هنوز اجرا نشده';
+
+  @override
+  String get environmentsAddCheck => 'افزودن بررسی';
+
+  @override
+  String get environmentsAddOption => 'افزودن گزینه';
+
+  @override
+  String get environmentsAddRole => 'افزودن نقش';
+
+  @override
+  String get environmentsAdminOnly =>
+      'فقط مدیران فضای کاری می‌توانند تعریف‌ها را تغییر دهند.';
+
+  @override
+  String get environmentsAfter => 'منتظر این اجزا بمان';
+
+  @override
+  String get environmentsAnchor => 'لنگر';
+
+  @override
+  String get environmentsAutoCreate => 'شروع خودکار';
+
+  @override
+  String get environmentsAutoCreateAll => 'در هر فضای واجد شرایط';
+
+  @override
+  String get environmentsAutoCreateOff => 'هرگز';
+
+  @override
+  String get environmentsAutoCreatePrs => 'در فضاهای پول‌ریکوئست';
+
+  @override
+  String get environmentsBlank => 'تعریف خالی';
+
+  @override
+  String get environmentsCheckFix => 'فرمان رفع';
+
+  @override
+  String get environmentsCheckHint => 'راهنما';
+
+  @override
+  String get environmentsCommandHelp =>
+      'آرگومان‌ها با فاصله جدا می‌شوند. آرگومان دارای فاصله را در گیومه بگذارید.';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count جزء',
+      one: '۱ جزء',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => 'ساخت ایمیج‌ها هنگام شروع';
+
+  @override
+  String get environmentsComposeFile => 'فایل compose';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile =>
+      'فایل compose خوانده نشد. نام سرویس‌ها را همچنان می‌توان در نمای JSON وارد کرد.';
+
+  @override
+  String get environmentsComposeServices => 'سرویس‌ها';
+
+  @override
+  String get environmentsComposeServicesHint =>
+      'برای اجرای همهٔ سرویس‌ها، هیچ‌کدام را انتخاب نکنید.';
+
+  @override
+  String get environmentsConditionalArgs =>
+      'این فرمان آرگومان‌های شرطی دارد. آن را در نمای JSON ویرایش کنید.';
+
+  @override
+  String get environmentsCwdPath => 'مسیر کاری';
+
+  @override
+  String get environmentsCwdRole => 'نقش کاری';
+
+  @override
+  String get environmentsDeleteBody =>
+      'فضاها دیگر نمی‌توانند آن را شروع کنند. محیط‌های در حال اجرا تا زمان توقف ادامه می‌دهند.';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return '$name حذف شود؟';
+  }
+
+  @override
+  String get environmentsDescription =>
+      'هر فضا چه چیزی را می‌تواند شروع کند و worktreeهای آن چه وظایفی را اجرا می‌کنند.';
+
+  @override
+  String get environmentsDraftFromRepo => 'پیش‌نویس از مخزن';
+
+  @override
+  String get environmentsEmpty => 'هنوز تعریفی وجود ندارد';
+
+  @override
+  String get environmentsEnabledWhen => 'فعال وقتی که';
+
+  @override
+  String get environmentsEndpointRole => 'نقش نقطهٔ پایانی';
+
+  @override
+  String get environmentsFollowPrHead => 'دنبال کردن head پول‌ریکوئست';
+
+  @override
+  String get environmentsForkApproval => 'هر شروع به یک مدیر نیاز دارد';
+
+  @override
+  String get environmentsForkDeny => 'رد شده';
+
+  @override
+  String get environmentsForkPrs => 'پول‌ریکوئست‌های فورک';
+
+  @override
+  String get environmentsForkRig => 'اجرا در ماشین مجازی';
+
+  @override
+  String get environmentsIdleStop => 'توقف پس از دقیقه‌های بیکاری';
+
+  @override
+  String get environmentsIsolateHome => 'دادن پوشهٔ خانگی خصوصی به برنامه';
+
+  @override
+  String get environmentsIssues => 'پیش از ذخیره این‌ها را رفع کنید';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'JSON نامعتبر: $error';
+  }
+
+  @override
+  String get environmentsKeepsData => 'هنگام توقف داده‌هایش را نگه می‌دارد';
+
+  @override
+  String get environmentsLinkConfirm => 'پیوند و تأیید';
+
+  @override
+  String get environmentsLinkFile => 'پیوند فایل مخزن';
+
+  @override
+  String get environmentsLinkHelp =>
+      'فقط از شاخهٔ پیش‌فرض خوانده می‌شود و فقط پس از تأیید اجرا می‌شود.';
+
+  @override
+  String get environmentsLinkPath => 'مسیر';
+
+  @override
+  String get environmentsMaxRunning => 'اجرای هم‌زمان';
+
+  @override
+  String get environmentsNamingProject => 'پروژه';
+
+  @override
+  String get environmentsNamingTemplate => 'الگوی نام';
+
+  @override
+  String get environmentsNew => 'تعریف جدید';
+
+  @override
+  String get environmentsNewDefinitionName => 'محیط جدید';
+
+  @override
+  String get environmentsNoChecks => 'این تعریف بررسی ندارد.';
+
+  @override
+  String get environmentsNoRuns => 'هنوز اجرای آزمایشی وجود ندارد';
+
+  @override
+  String get environmentsOnChange => 'مسیرهای تحت نظر';
+
+  @override
+  String get environmentsOptionBool => 'بله یا خیر';
+
+  @override
+  String get environmentsOptionEnum => 'یکی از';
+
+  @override
+  String get environmentsOptionMulti => 'چندتا از';
+
+  @override
+  String get environmentsOptionValues => 'مقادیر';
+
+  @override
+  String get environmentsPlacement => 'جایگذاری';
+
+  @override
+  String get environmentsPlacementHost => 'روی میزبان';
+
+  @override
+  String get environmentsPlacementRig => 'در ماشین مجازی';
+
+  @override
+  String get environmentsPrepareTask => 'وظیفهٔ آماده‌سازی';
+
+  @override
+  String get environmentsPrimaryEndpoint => 'نقطهٔ پایانی اصلی';
+
+  @override
+  String get environmentsReadyHttp => 'آماده وقتی این URL پاسخ دهد';
+
+  @override
+  String get environmentsRestartAlways => 'همیشه';
+
+  @override
+  String get environmentsRestartNever => 'هرگز';
+
+  @override
+  String get environmentsRestartOn => 'راه‌اندازی مجدد با تغییر این مسیرها';
+
+  @override
+  String get environmentsRestartOnFailure => 'هنگام خرابی';
+
+  @override
+  String get environmentsRestartPolicy => 'راه‌اندازی مجدد';
+
+  @override
+  String get environmentsRigTtl => 'طول عمر ماشین مجازی به ساعت';
+
+  @override
+  String get environmentsRunChecks => 'اجرای دوباره';
+
+  @override
+  String get environmentsRunTest => 'اجرای آزمایش';
+
+  @override
+  String get environmentsSaved => 'تعریف ذخیره شد';
+
+  @override
+  String get environmentsSectionComponents => 'اجزا';
+
+  @override
+  String get environmentsSectionOptions => 'گزینه‌های شروع';
+
+  @override
+  String get environmentsSectionSeedFiles => 'فایل‌های اولیه';
+
+  @override
+  String get environmentsSectionVariables => 'متغیرها';
+
+  @override
+  String get environmentsSeedHelp =>
+      'هر خط یک مسیر، از checkout ثبت‌شده کپی می‌شود. پول‌ریکوئست‌های فورک هرگز این‌ها را دریافت نمی‌کنند.';
+
+  @override
+  String get environmentsShellHelp =>
+      'جای‌نگهدارها اینجا گسترش نمی‌یابند. به جای آن متغیرهای CC_ENV_* را بخوانید.';
+
+  @override
+  String get environmentsSourceApprove => 'تأیید این نسخه';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path با نسخهٔ تأییدشده مطابقت دارد.';
+  }
+
+  @override
+  String get environmentsSourceNotice =>
+      'نسخهٔ تأییدشده تا زمانی که این را تأیید کنید اجرا می‌شود.';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => 'منبع';
+
+  @override
+  String get environmentsTestHelp =>
+      'یک محیط یک‌بارمصرف را از ابتدا تا انتها اجرا می‌کند: بررسی، شروع، انتظار برای آماده‌شدن، نابودی.';
+
+  @override
+  String get environmentsTestSaveFirst => 'ابتدا تعریف را ذخیره کنید.';
+
+  @override
+  String get environmentsTimeoutSeconds => 'مهلت به ثانیه';
+
+  @override
+  String get environmentsTitle => 'محیط‌ها';
+
+  @override
+  String get environmentsTriggerArchive => 'پیش از حذف worktree';
+
+  @override
+  String get environmentsTriggerChange => 'وقتی مسیرهای تحت نظر تغییر کنند';
+
+  @override
+  String get environmentsTriggerCreate => 'یک بار برای هر محیط';
+
+  @override
+  String get environmentsTriggerManual => 'بر اساس درخواست';
+
+  @override
+  String get environmentsTriggerProvision => 'هنگام ساخت worktree';
+
+  @override
+  String get environmentsTriggerStart => 'در هر شروع';
+
+  @override
+  String get environmentsTriggers => 'زمان اجرا';
+
+  @override
+  String get environmentsUnreadable =>
+      'این کلاینت نمی‌تواند این تعریف را بخواند.';
+
+  @override
+  String get environmentsUpdateAvailable => 'به‌روزرسانی موجود است';
+
+  @override
+  String get environmentsUseShell => 'استفاده از فرمان شل';
+
+  @override
+  String get environmentsUseSourceWarning =>
+      'ابزار در این حالت روی checkout خودتان اجرا می‌شود. آن را فقط‌خواندنی در نظر بگیرید.';
+
+  @override
+  String get environmentsWhenMissing => 'وقتی فضایی آن را ندارد';
+
+  @override
+  String get environmentsWhenMissingAdd => 'افزودن به فضا';
+
+  @override
+  String get environmentsWhenMissingSkip => 'رد کردن';
+
+  @override
+  String get environmentsWhenMissingSource => 'استفاده از checkout ثبت‌شده';
+
+  @override
+  String get environmentsUnsupported => 'این سرور از محیط‌ها پشتیبانی نمی‌کند.';
+
+  @override
+  String get environmentViewerUnavailable =>
+      'نمایشگری نیست: سرور نمی‌تواند این پنجره را ضبط کند. ضبط صفحه را برای Control Center روی سرور مجاز کنید.';
+
+  @override
+  String get environmentHealthHealthy => 'سالم';
+
+  @override
+  String get environmentHealthUnhealthy => 'ناسالم';
+
+  @override
+  String get environmentTerminalStale =>
+      'این ترمینال پیش از شروع محیط باز شده و متغیرهای آن را ندارد.';
+
+  @override
+  String get environmentTerminalFresh => 'باز کردن ترمینال تازه';
+
+  @override
+  String get environmentsShellStays =>
+      'اسکریپت چندخطی همچنان فرمان شل می‌ماند: خط‌ها ساختار آن هستند.';
+
+  @override
+  String get environmentsOverrides => 'بازنویسی‌های فضای کاری';
+
+  @override
+  String get environmentsOverridesHelp =>
+      'تنظیمات خود فایل اینجا فقط‌خواندنی است. نقش‌هایش را به مخزن‌های این فضای کاری متصل کنید یا هر فیلدی را با JSON بازنویسی کنید.';
+
+  @override
+  String get environmentsReposHelp =>
+      'مخزن‌هایی که این محیط استفاده می‌کند، هرکدام متصل به یک نقش.';
+
+  @override
+  String get environmentsComponentsHelp =>
+      'آنچه محیط اجرا می‌کند، به ترتیب شروع.';
+
+  @override
+  String get environmentsOptionsHelp =>
+      'گزینه‌هایی که هنگام شروع محیط ارائه می‌شوند.';
+
+  @override
+  String get environmentsVariablesHelp =>
+      'روی وظایف، پردازش‌ها، برنامه‌ها و ترمینال‌های فضا تنظیم می‌شوند.';
+
+  @override
+  String get environmentsChecksHelp =>
+      'آنچه میزبان برای اجرای این محیط نیاز دارد.';
+
+  @override
+  String get environmentsIdleStopHelp => 'مقدار 0 هرگز آن را متوقف نمی‌کند.';
+
+  @override
+  String get environmentsAnchorHelp =>
+      'فضایی که این مخزن را دارد می‌تواند محیط را شروع کند.';
+
+  @override
+  String get environmentsRequiredHelp => 'محیط بدون آن اجرا نمی‌شود.';
+
+  @override
+  String get environmentsFollowPrHeadHelp =>
+      'همگام‌سازی و تازه‌سازی هنگام جابه‌جایی head پول‌ریکوئست.';
+
+  @override
+  String get environmentsRecordNeedsFix => 'نیاز به اصلاح دارد';
+
+  @override
+  String get environmentsCheckFile => 'فایل';
+
+  @override
+  String get environmentsDiscardBody =>
+      'ویرایش‌های شما در این تعریف از بین می‌رود.';
+
+  @override
+  String get environmentsWorktreeRuns => 'اجراهای وظایف worktree';
+
+  @override
+  String get environmentsNoWorktreeRuns =>
+      'هنوز هیچ وظیفهٔ worktree اجرا نشده است.';
+
+  @override
+  String get environmentsLinkRoles => 'نقش‌های این فایل';
+
+  @override
+  String get environmentsLinkNoFile =>
+      'خواندن فایل از مخزن ممکن نشد. نقش‌ها را پس از پیوند می‌توان متصل کرد.';
+
+  @override
+  String get guardrailClassHostExecution => 'اجرای فرمان روی میزبان';
+
+  @override
+  String get environmentUrls => 'نشانی‌های URL';
+
+  @override
+  String get environmentScripts => 'اسکریپت‌ها';
+
+  @override
+  String get environmentNoneForSpace => 'این فضا محیطی ندارد';
+
+  @override
+  String get environmentNoneForPr => 'این درخواست ادغام محیطی ندارد';
+
+  @override
+  String get environmentSetupBody =>
+      'محیط، سرویس‌ها، اسکریپت‌ها و نشانی‌های یک مخزن را برای یک فضا اجرا می‌کند. یک بار آن را راه‌اندازی کنید تا هر فضای آن مخزن بتواند آن را اجرا کند.';
+
+  @override
+  String get environmentSetUp => 'راه‌اندازی محیط';
+
+  @override
+  String get environmentEditDefinition => 'ویرایش تعریف';
+
+  @override
+  String get environmentOpenPanel => 'باز کردن محیط';
+
+  @override
+  String get environmentNeedsSetup => 'نیاز به راه‌اندازی';
+
+  @override
+  String get environmentContinueInTerminal => 'ادامه در ترمینال';
+
+  @override
+  String get environmentSetupHint =>
+      'ابزار برای گذرواژه یا یک پرسش به شما در ترمینال نیاز دارد. پس از پایان، راه‌اندازی ادامه می‌یابد.';
+
+  @override
+  String get environmentSetupTabReason =>
+      'این ترمینال باز شد چون راه‌اندازی به شما نیاز دارد';
+
+  @override
+  String get environmentSetupTab => 'راه‌اندازی محیط';
+
+  @override
+  String get environmentsNothingRunning =>
+      'هیچ چیزی از این تعریف در حال اجرا نیست.';
+
+  @override
+  String get searchPoliciesHint => 'جستجوی سیاست‌ها...';
+
+  @override
+  String get noPoliciesMatch => 'هیچ سیاستی با جستجوی شما مطابقت ندارد';
+
+  @override
+  String get memoryPolicyActive => 'فعال';
+
+  @override
+  String get memoryFactType => 'نوع';
+
+  @override
+  String get memoryTimesRecalled => 'دفعات بازیابی';
+
+  @override
+  String get memorySourceFacts => 'واقعیت‌های منبع';
+
+  @override
+  String get spaceSetupLogs => 'گزارش‌های راه‌اندازی';
 }

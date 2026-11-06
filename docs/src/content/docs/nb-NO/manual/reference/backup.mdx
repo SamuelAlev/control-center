@@ -2,7 +2,7 @@
 title: Sikkerhetskopi, eksport og import
 description: Oppsettet av øyeblikksbilder, manifestet, hver sikkerhetskopioperasjon og overføringsrute, og nøyaktig hvilke filer en sikkerhetskopi inneholder og ikke inneholder.
 slug: nb-NO/handbok/referanse/sikkerhetskopi
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Alt Control Center kan kopiere, overlevere eller ta i bruk, og den nøyaktige formen til
@@ -51,7 +51,12 @@ installasjonsøyeblikksbilder. Oppbevaringstrinnet i den ukentlige pipelinen fje
 bare sikkerhetskopier av sitt eget arbeidsområde som er eldre enn den konfigurerte
 alderen (30 dager som standard); manuelt opprettede installasjonsøyeblikksbilder
 roteres aldri av det trinnet. `server.listBackups` lister bare
-installasjonsøyeblikksbilder, inkludert ufullstendige.
+installasjonsøyeblikksbilder, inkludert ufullstendige; `workspace.listBackups` lister de
+planlagte sikkerhetskopiene til ett arbeidsområde.
+
+Når et arbeidsområde slettes, blir denne mappen stående. Arbeidsområdets plan stopper
+sammen med det, så ingenting roterer disse sikkerhetskopiene lenger, og de blir liggende
+til installasjonseieren fjerner dem. `server.listOrphanedBackups` rapporterer dem.
 
 
 ### `manifest.json`
@@ -132,6 +137,10 @@ for eksempel demoserveren.
 | `server.backupNow`   | mutate | Installasjon | installasjons**eier** | ingen  | `{ok, path}`                  |
 | `server.listBackups` | read   | Installasjon | installasjons**eier** | ingen  | `{backups: [...]}`            |
 | `server.deleteBackup` | mutate | Installasjon | installasjons**eier** | `name` | `{ok}`         |
+| `server.listOrphanedBackups` | read | Installasjon | installasjons**eier** | ingen | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | mutate | Installasjon | installasjons**eier** | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | read | Arbeidsområde | `admin` | ingen | `{backups: [...]}` |
+| `workspace.deleteBackup` | mutate | Arbeidsområde | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Arbeidsområde | `admin`   | ingen         | `{ok, path}`                  |
 | `workspace.import`   | mutate | Arbeidsområde | `owner`   | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | Installasjon* | `owner`  | `id`          | registerrad merket som slettet |
@@ -141,6 +150,14 @@ registeret; behandleren sjekker at den som kaller, er medlem av det navngitte
 arbeidsområdet, og krever `owner`.
 
 `path` i hvert svar er en sti på **serververten**.
+
+`server.listOrphanedBackups` returnerer én oppføring per arbeidsområde som ikke lenger er
+aktivt: `workspace_id`, `workspace_name` når registeret fortsatt kjenner det, og `backups`.
+Et slettet arbeidsområde kan ikke lenger bestå en rollesjekk for arbeidsområdet, så
+sikkerhetskopiene tilhører installasjonseieren. `server.deleteOrphanedBackup` avviser et
+aktivt arbeidsområde, der sikkerhetskopiene forblir bak `workspace.deleteBackup` og
+arbeidsområdets egne roller. Begge sletteoperasjonene godtar bare et listet mappenavn med
+tidsstempel, ikke en sti.
 
 :::note[Et øyeblikksbilde av hele installasjonen krever eier på begge baner]
 `server.backupNow`, `server.listBackups` og `server.deleteBackup` krever
@@ -223,27 +240,33 @@ enhetens signatur over målstrengen med dens parings-PSK og rollen nedenfor.
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Arbeidsområde**admin** |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Installasjons**eier**  |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Arbeidsområde**admin**; installasjons**eier** når arbeidsområdet er slettet |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Arbeidsområde**eier**  |
 
-`w` er en arbeidsområde-id, `n` et mappenavn for et øyeblikksbilde, `d` id-en til
-enheten som kaller, og `s` signaturen. `n` løses mot sikkerhetskopilisten i stedet for å
-settes sammen med sikkerhetskopiroten, så ruten kan ikke rettes mot en mappe listen ikke
-ville ha vist.
+`w` er en arbeidsområde-id, `n` et mappenavn for et øyeblikksbilde eller en planlagt
+sikkerhetskopi, `d` id-en til enheten som kaller, og `s` signaturen. På `/backup/snapshot`
+løses `n` mot sikkerhetskopilisten i stedet for å settes sammen med sikkerhetskopiroten, så
+ruten kan ikke rettes mot en mappe listen ikke ville ha vist. På `/backup/stored` må det
+være et tidsstempelnavn, og filen må være en faktisk fil inne i det arbeidsområdets egen
+sikkerhetskopimappe.
 
 | Status | Årsak                                                                               |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | En påkrevd spørringsparameter mangler, eller en opplastingskropp er tom              |
+| `400`  | En påkrevd spørringsparameter mangler, et sikkerhetskopinavn er ugyldig, eller en opplastingskropp er tom |
 | `403`  | Ukjent eller tilbakekalt enhet, dårlig signatur, eller den som kaller, mangler rollen |
-| `404`  | Ingen sikkerhetskopiport på denne verten, eller det navngitte øyeblikksbildet/arbeidsområdefilen finnes ikke |
+| `404`  | Ingen sikkerhetskopiport på denne verten, eller den navngitte filen for øyeblikksbildet, sikkerhetskopien eller arbeidsområdet finnes ikke |
 | `405`  | `/backup/restore` kalt med noe annet enn `POST`                                      |
 | `413`  | Opplastingskroppen overskrider 8 GiB, enten etter oppgitt content-length eller etter byter som faktisk er lest |
 | `426`  | Enhver direkte forespørsel til en overføringssti på den offentlige HTTP-lytteren; bruk en paret klients krypterte ressurskanal |
 | `500`  | Eksporten eller arkiveringen mislyktes på serversiden                                |
 
-Begge nedlastingene svarer `Cache-Control: no-store` med `Accept-Ranges: none`. Hver
-forespørsel lager en **fersk** kopi og sletter den så snart den er strømmet ut, så et
-bufret eller gjenopptatt svar ville skjøte sammen byter fra to ulike eksporter til én
-fil som ser gyldig ut, men ikke er det.
+Alle tre nedlastingene svarer `Cache-Control: no-store` med `Accept-Ranges: none`.
+`/backup/workspace` og `/backup/snapshot` lager en **fersk** kopi per forespørsel og sletter
+den så snart den er strømmet ut, så et bufret eller gjenopptatt svar ville skjøte sammen
+byter fra to ulike eksporter til én fil som ser gyldig ut, men ikke er det.
+
+`/backup/stored` er unntaket: den strømmer en planlagt sikkerhetskopi som
+`<workspaceId>-<name>.db` og lar filen ligge, fordi den filen er sikkerhetskopien.
 
 `/backup/snapshot` returnerer `<name>.zip`, med oppføringer relative til
 øyeblikksbildets rot, slik at utpakking gjenskaper `manifest.json` + `global.db` +
@@ -273,12 +296,12 @@ sikkerhetskopifilene i ro.
 | Overføringsmellomlager         | `<dataDir>/backups/transfer/` — en arbeidsbenk, feid av ruten som skriver den |
 | Navn på øyeblikksbildearkiv     | `<snapshot directory name>.zip`                              |
 | Opplastingsgrense              | 8 GiB per kryptert `/backup/restore`-opplasting              |
-| Oppbevaring                    | Installasjonsøyeblikksbilder: manuell sletting. Arbeidsområdesikkerhetskopier: ukentlig pipeline, 30 dager som standard |
+| Oppbevaring                    | Installasjonsøyeblikksbilder: manuell sletting. Arbeidsområdesikkerhetskopier: ukentlig pipeline, 30 dager som standard, eller manuell sletting. Sikkerhetskopier av et slettet arbeidsområde: bare manuell sletting |
 
 Mappene `exports/`, `transfer/` og `workspace-backups/` er ikke
 installasjonsøyeblikksbilder og holdes utenfor `server.listBackups`. Bare den siste
-mappen har planlagt oppbevaring; å slette et installasjonsøyeblikksbilde krever en
-uttrykkelig handling fra installasjonseieren.
+mappen har planlagt oppbevaring, og bare så lenge arbeidsområdet finnes; å slette et
+installasjonsøyeblikksbilde krever en uttrykkelig handling fra installasjonseieren.
 
 ## Se også
 

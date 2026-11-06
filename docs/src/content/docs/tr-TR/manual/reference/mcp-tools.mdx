@@ -2,7 +2,7 @@
 title: MCP araçları
 description: cc_server'ın kaydettiği MCP araçlarının ailelere göre eksiksiz kataloğu.
 slug: tr-TR/kilavuz/referans/mcp-araclari
-sourceHash: da7baaf8fafa6b7a37f73d8add2772d96523b814
+sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
 ---
 
 `cc_server` tek bir MCP (JSON-RPC 2.0) araç kayıt defteri barındırır; bu kayıt defteri ana sunucu portunda (varsayılan `9030`) `POST /mcp` ve `GET /sse` üzerinden sunulur ve protokol sürümü `2024-11-05`'tir. Her istemci aynı kayıt defterine ulaşır: masaüstü, web derlemesi, harici MCP istemcileri ve yerleşik ajan çalışma zamanı. Harici MCP sunucuları, dinamik bir katman olarak aynı kayıt defterine köprülenebilir.
@@ -259,6 +259,8 @@ alanı durumunu okur. Yüzey başına fiil dağarcığının tamamı
 | `ios_use`      | iOS Simulator'ı WebDriverAgent/CoreSimulator üzerinden yönetir: inceleme/girdi, ekran görüntüleri, uygulama kurma/başlatma/durdurma/kaldırma, derin bağlantılar ve argv biçimli simülatör süreçleri |
 | `rig_list`     | Bir çalışma alanının rig'lerini yüzey, durum, ekran boyutu ve denetleyiciyle listeler                                 |
 | `rig_close`    | Bir rig'i yok eder ve sahip olduğu makine durumunu atar                                                              |
+
+`app_use` beşinci use aracıdır: bir alanda başlatılan masaüstü uygulamasının pencerelerini VM yerine doğrudan ana makinede yönetir ve ayrıca `fileWriteOutsideWorktree` ile `fileDelete` bildirir. Bu araç ve `environment_*` araçları [Ortamları kurma](/tr-TR/kilavuz/nasil-yapilir/ortamlar/) sayfasında anlatılır.
 
 ## MCP üzerinden sunulmayanlar
 

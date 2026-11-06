@@ -48,6 +48,8 @@ void main() {
     'prefs', 'presence', 'process', 'project',
     'providerApps', 'provider_policy', 'providers', 'push', 'reactions',
     'repos', 'review_hub', 'review_space', 'review_studio',
+    // Space environments and their definitions.
+    'environment', 'environments',
     'rig', 'sandbox', 'server', 'server_settings',
     'serviceStatus', 'skills', 'soundscape', 'space_read',
     'sso', 'stack', 'steering', 'subscriptions',

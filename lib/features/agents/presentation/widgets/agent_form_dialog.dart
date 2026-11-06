@@ -17,6 +17,7 @@ import 'package:control_center/features/settings/providers/settings_providers.da
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,9 +78,9 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
     super.initState();
     _nameCtl = TextEditingController();
     _titleCtl = TextEditingController();
-    _systemPromptCtl = TextEditingController();
+    _systemPromptCtl = ComposerTextController.markdownOnly();
     _reportsToController = TextEditingController();
-    _personaCtl = TextEditingController();
+    _personaCtl = ComposerTextController.markdownOnly();
     _contextSizeCtl = TextEditingController();
     _silenceTimeoutCtl = TextEditingController();
     _loadFrom(widget.agent);
@@ -334,8 +335,9 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
             },
           ),
         ),
-        // Prose gets the full width: an inline control column turns a six-line
-        // prompt into a letterbox.
+        // Prose gets the full width and its full height: an inline control
+        // column or a line cap turns a long prompt into a letterbox, scrolling
+        // inside a form that already scrolls.
         SettingsField(
           label: l10n.systemPromptLabel,
           layout: SettingsFieldLayout.stacked,
@@ -346,7 +348,6 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
             child: CcTextArea(
               controller: _systemPromptCtl,
               hintText: l10n.customSystemPrompt,
-              maxLines: 6,
             ),
           ),
         ),
@@ -357,7 +358,6 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
           child: CcTextArea(
             controller: _personaCtl,
             hintText: l10n.optionalPersonaDescription,
-            maxLines: 3,
           ),
         ),
       ],

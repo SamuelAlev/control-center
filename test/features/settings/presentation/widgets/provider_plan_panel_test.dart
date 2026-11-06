@@ -200,4 +200,68 @@ void main() {
       expect(harnessPlanUsageIds.containsKey('zai'), isFalse);
     });
   });
+
+  group('watchShowsPlanPanel', () {
+    Future<bool> shows(
+      WidgetTester tester,
+      String providerId,
+      List<SubscriptionUsage> usage,
+    ) async {
+      late bool result;
+      await tester.pumpWidget(
+        ProviderScope(
+          // A fresh scope per call: re-pumping one keeps its first notifier.
+          key: UniqueKey(),
+          overrides: [
+            subscriptionUsageProvider.overrideWith(() => _StubUsage(usage)),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              result = watchShowsPlanPanel(ref, providerId);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return result;
+    }
+
+    testWidgets('a dedicated plan always gets the panel', (tester) async {
+      expect(await shows(tester, 'kimi-code', const []), isTrue);
+      expect(await shows(tester, 'openai', const []), isFalse);
+    });
+
+    testWidgets('a Mistral key gets the panel only once it reads a plan', (
+      tester,
+    ) async {
+      expect(await shows(tester, 'mistral', const []), isFalse);
+      expect(
+        await shows(tester, 'mistral', [
+          SubscriptionUsage(
+            providerId: 'mistral',
+            displayName: 'Mistral',
+            status: SubscriptionStatus.unconfigured,
+            fetchedAt: DateTime.utc(2030),
+          ),
+        ]),
+        isFalse,
+      );
+      expect(
+        await shows(tester, 'mistral', [
+          _plan(
+            'mistral',
+            windows: const [
+              SubscriptionWindow(
+                id: 'month',
+                label: 'Monthly',
+                usedFraction: 0.2,
+              ),
+            ],
+          ),
+        ]),
+        isTrue,
+      );
+    });
+  });
 }

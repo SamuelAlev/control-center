@@ -325,6 +325,178 @@ void main() {
     });
   });
 
+  group('listWorkspaceBackups', () {
+    test('reports nothing before a backup has been taken', () async {
+      await seedWorkspace('ws-a', agentName: 'A');
+      expect(await service().listWorkspaceBackups('ws-a'), isEmpty);
+    });
+
+    test('lists only this workspace, newest first, restorable', () async {
+      await seedWorkspace('ws-a', agentName: 'A');
+      await seedWorkspace('ws-b', agentName: 'B');
+      final backups = service();
+      final older = await backups.backupWorkspace('ws-a');
+      now = now.add(const Duration(days: 7));
+      final newer = await backups.backupWorkspace('ws-a');
+      await backups.backupWorkspace('ws-b');
+
+      final listed = await backups.listWorkspaceBackups('ws-a');
+
+      expect(listed.map((b) => b.workspaces.single.path), [newer, older]);
+      expect(listed.first.createdAt, now);
+      expect(listed.first.complete, isTrue);
+      expect(listed.first.bytes, File(newer).lengthSync());
+      expect(listed.first.workspaces.single.workspaceId, 'ws-a');
+    });
+
+    test('never reports them as install snapshots', () async {
+      await seedWorkspace('ws-a', agentName: 'A');
+      final backups = service();
+      await backups.backupWorkspace('ws-a');
+      expect(await backups.listBackups(), isEmpty);
+    });
+
+    test('a backup with no usable file is incomplete, not hidden', () async {
+      await seedWorkspace('ws-a', agentName: 'A');
+      final backups = service();
+      File(await backups.backupWorkspace('ws-a')).writeAsBytesSync(const []);
+      now = now.add(const Duration(days: 7));
+      File(await backups.backupWorkspace('ws-a')).deleteSync();
+
+      final listed = await backups.listWorkspaceBackups('ws-a');
+
+      expect(listed, hasLength(2));
+      for (final backup in listed) {
+        expect(backup.complete, isFalse);
+        expect(backup.workspaces, isEmpty);
+      }
+    });
+
+    test('a linked database file is not offered for restore', () async {
+      await seedWorkspace('ws-a', agentName: 'A');
+      final backups = service();
+      final path = await backups.backupWorkspace('ws-a');
+      final elsewhere = '${tmp.path}/elsewhere.db';
+      File(path).renameSync(elsewhere);
+      Link(path).createSync(elsewhere);
+
+      final listed = await backups.listWorkspaceBackups('ws-a');
+
+      expect(listed.single.complete, isFalse);
+      expect(listed.single.workspaces, isEmpty);
+    });
+
+    test('rejects an id that is not a safe path segment', () {
+      expect(
+        () => service().listWorkspaceBackups('../ws-a'),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('scheduled backup lifecycle', () {
+    String nameOf(String dbPath) => dbPath.split('/').reversed.elementAt(1);
+
+    test('resolves a backup by name, never by path', () async {
+      await seedWorkspace('ws-a', agentName: 'A');
+      final backups = service();
+      final path = await backups.backupWorkspace('ws-a');
+
+      expect(await backups.workspaceBackupFile('ws-a', nameOf(path)), path);
+      expect(
+        await backups.workspaceBackupFile('ws-a', '2020-01-01T00-00-00-000Z'),
+        isNull,
+      );
+      for (final name in ['..', '../ws-b', '/etc/passwd', path]) {
+        expect(
+          () => backups.workspaceBackupFile('ws-a', name),
+          throwsArgumentError,
+          reason: name,
+        );
+      }
+    });
+
+    test(
+      'a backup of another workspace cannot be named from this one',
+      () async {
+        await seedWorkspace('ws-a', agentName: 'A');
+        await seedWorkspace('ws-b', agentName: 'B');
+        final backups = service();
+        final path = await backups.backupWorkspace('ws-b');
+
+        expect(await backups.workspaceBackupFile('ws-a', nameOf(path)), isNull);
+        await expectLater(
+          backups.deleteWorkspaceBackup('ws-a', nameOf(path)),
+          throwsStateError,
+        );
+        expect(File(path).existsSync(), isTrue);
+      },
+    );
+
+    test('a linked file is not handed out', () async {
+      await seedWorkspace('ws-a', agentName: 'A');
+      final backups = service();
+      final path = await backups.backupWorkspace('ws-a');
+      final elsewhere = '${tmp.path}/elsewhere.db';
+      File(path).renameSync(elsewhere);
+      Link(path).createSync(elsewhere);
+
+      expect(await backups.workspaceBackupFile('ws-a', nameOf(path)), isNull);
+    });
+
+    test('deletes one backup and keeps the rest', () async {
+      await seedWorkspace('ws-a', agentName: 'A');
+      final backups = service();
+      final older = await backups.backupWorkspace('ws-a');
+      now = now.add(const Duration(days: 7));
+      final newer = await backups.backupWorkspace('ws-a');
+
+      await backups.deleteWorkspaceBackup('ws-a', nameOf(older));
+
+      final listed = await backups.listWorkspaceBackups('ws-a');
+      expect(listed.single.workspaces.single.path, newer);
+    });
+
+    test('reports only workspaces that are no longer live', () async {
+      await seedWorkspace('ws-a', agentName: 'A');
+      await seedWorkspace('ws-b', agentName: 'B');
+      final backups = service();
+      await backups.backupWorkspace('ws-a');
+      await backups.backupWorkspace('ws-b');
+      expect(await backups.listOrphanedWorkspaceBackups(), isEmpty);
+
+      await global.workspaceRegistryDao.deleteWorkspace('ws-b');
+
+      final orphans = await backups.listOrphanedWorkspaceBackups();
+      expect(orphans.single.workspaceId, 'ws-b');
+      expect(orphans.single.workspaceName, 'WS ws-b');
+      expect(orphans.single.backups, hasLength(1));
+    });
+
+    test('a workspace with no backups left is not reported', () async {
+      await seedWorkspace('ws-a', agentName: 'A');
+      final backups = service();
+      final path = await backups.backupWorkspace('ws-a');
+      await global.workspaceRegistryDao.deleteWorkspace('ws-a');
+
+      await backups.deleteOrphanedWorkspaceBackup('ws-a', nameOf(path));
+
+      expect(await backups.listOrphanedWorkspaceBackups(), isEmpty);
+    });
+
+    test('the orphan lane cannot reach a live workspace', () async {
+      await seedWorkspace('ws-a', agentName: 'A');
+      final backups = service();
+      final path = await backups.backupWorkspace('ws-a');
+
+      await expectLater(
+        backups.deleteOrphanedWorkspaceBackup('ws-a', nameOf(path)),
+        throwsStateError,
+      );
+      expect(File(path).existsSync(), isTrue);
+    });
+  });
+
   group('snapshot lifecycle', () {
     test('deletes a selected incomplete install snapshot by name', () async {
       await seedWorkspace('ws1', agentName: 'Ada');

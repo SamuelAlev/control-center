@@ -178,6 +178,7 @@ class ActionApprovalCopy {
             'change workspace settings or structure',
           ActionClass.enclosureControl => 'control an enclosed environment',
           ActionClass.processSpawn => 'run a process',
+          ActionClass.hostExecution => 'run a command on the host',
         },
     ];
     // A process is a means, not the requested outcome, unless it is the only

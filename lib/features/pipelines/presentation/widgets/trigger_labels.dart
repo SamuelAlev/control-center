@@ -29,6 +29,13 @@ String triggerEventLabel(AppLocalizations l10n, String eventType) {
     'MeetingRecordingStopped' => l10n.triggerEventMeetingRecordingStopped,
     'SkillUpdated' => l10n.triggerEventSkillUpdated,
     'SpaceDeleted' => l10n.triggerEventSpaceDeleted,
+    'SpaceArchived' => l10n.triggerEventSpaceArchived,
+    'SpaceProvisioningChanged' => l10n.triggerEventSpaceProvisioningChanged,
+    'PrHeadChanged' => l10n.triggerEventPrHeadChanged,
+    'EnvironmentStatusChanged' => l10n.triggerEventEnvironmentStatusChanged,
+    'EnvironmentReady' => l10n.triggerEventEnvironmentReady,
+    'EnvironmentDestroyed' => l10n.triggerEventEnvironmentDestroyed,
+    'EnvironmentProcessExited' => l10n.triggerEventEnvironmentProcessExited,
     _ => eventType,
   };
 }
@@ -59,6 +66,13 @@ String triggerEventHelp(AppLocalizations l10n, String eventType) {
     'MeetingRecordingStopped' => l10n.triggerMeetingRecordingStoppedHelp,
     'SkillUpdated' => l10n.triggerSkillUpdatedHelp,
     'SpaceDeleted' => l10n.triggerSpaceDeletedHelp,
+    'SpaceArchived' => l10n.triggerSpaceArchivedHelp,
+    'SpaceProvisioningChanged' => l10n.triggerSpaceProvisioningChangedHelp,
+    'PrHeadChanged' => l10n.triggerPrHeadChangedHelp,
+    'EnvironmentStatusChanged' => l10n.triggerEnvironmentStatusChangedHelp,
+    'EnvironmentReady' => l10n.triggerEnvironmentReadyHelp,
+    'EnvironmentDestroyed' => l10n.triggerEnvironmentDestroyedHelp,
+    'EnvironmentProcessExited' => l10n.triggerEnvironmentProcessExitedHelp,
     _ => eventType,
   };
 }

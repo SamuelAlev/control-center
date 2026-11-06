@@ -255,6 +255,8 @@ declares none — it only reads workspace state. The full verb vocabulary per su
 | `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
 | `rig_close`    | Destroy a rig and discard its owned machine state |
 
+`app_use` is a fifth use tool: it drives the windows of a desktop app launched in a space, directly on the host rather than in a VM, and also declares `fileWriteOutsideWorktree` and `fileDelete`. It and the `environment_*` tools are described in [Set up environments](/manual/guides/environments/).
+
 ## Not exposed over MCP
 
 Calendar and meetings have no MCP tools. Agents cannot read your calendar, meetings, transcripts, action items, or decisions. The summary that produces action items and decisions runs as the built-in [`meeting_summary` pipeline](/manual/concepts/meetings/), not as a tool an agent can call.

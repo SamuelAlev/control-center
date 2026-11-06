@@ -1,22 +1,25 @@
 import 'package:cc_domain/core/domain/entities/memory_policy.dart';
 import 'package:cc_domain/features/memory/domain/value_objects/memory_domain_scope.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/di/providers.dart';
-import 'package:control_center/features/memory/presentation/widgets/memory_chip.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_error_view.dart';
+import 'package:control_center/features/memory/presentation/widgets/memory_list_panel.dart';
+import 'package:control_center/features/memory/presentation/widgets/memory_policy_row.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_scope_widgets.dart';
-import 'package:control_center/features/memory/presentation/widgets/policy_edit_dialog.dart';
 import 'package:control_center/features/memory/providers/memory_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/empty_state.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-part 'policy_card.dart';
+
+const _kFacetAll = 'all';
+const _kFacetActive = 'active';
+const _kFacetInactive = 'inactive';
 
 /// Workspace policies grouped by domain, with inactive policies demoted to a
-/// trailing section.
-class PoliciesTab extends ConsumerWidget {
+/// trailing group.
+class PoliciesTab extends ConsumerStatefulWidget {
   /// Creates a [PoliciesTab].
   const PoliciesTab({super.key, required this.workspaceId});
 
@@ -24,129 +27,141 @@ class PoliciesTab extends ConsumerWidget {
   final String workspaceId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final policiesAsync = ref.watch(memoryPoliciesProvider(workspaceId));
+  ConsumerState<PoliciesTab> createState() => _PoliciesTabState();
+}
 
+class _PoliciesTabState extends ConsumerState<PoliciesTab> {
+  String _query = '';
+  String _facet = _kFacetAll;
+  String? _scope = kAllMemoryScopes;
+
+  bool _matches(MemoryPolicy policy, String query) {
+    if (!matchesMemoryScope(policy.domain, _scope)) {
+      return false;
+    }
+    return query.isEmpty ||
+        policy.rule.toLowerCase().contains(query) ||
+        policy.domain.toLowerCase().contains(query);
+  }
+
+  /// The rows in reading order: a rail, then its policies. Flat, so the list
+  /// can build them lazily.
+  List<Widget> _rows(AppLocalizations l10n, List<MemoryPolicy> shown) {
+    final byDomain = <String, List<MemoryPolicy>>{};
+    for (final policy in shown.where((policy) => policy.active)) {
+      byDomain.putIfAbsent(policy.domain, () => []).add(policy);
+    }
+    final inactive = shown.where((policy) => !policy.active).toList();
+    return [
+      for (final MapEntry(key: domain, value: policies)
+          in byDomain.entries) ...[
+        MemoryGroupRail(
+          // The bare name, with the repo beside it as a chip: the `repo:`
+          // prefix is how the scope is stored, not something to read.
+          label: MemoryDomainScope.parse(domain).name,
+          count: policies.length,
+          domainSlug: domain,
+        ),
+        for (final policy in policies) MemoryPolicyRow(policy: policy),
+      ],
+      if (inactive.isNotEmpty) ...[
+        MemoryGroupRail(label: l10n.inactive, count: inactive.length),
+        for (final policy in inactive) MemoryPolicyRow(policy: policy),
+      ],
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final policiesAsync = ref.watch(memoryPoliciesProvider(widget.workspaceId));
     return policiesAsync.when(
-      data: (policies) {
-        if (policies.isEmpty) {
-          return EmptyState(
-            icon: AppIcons.scale,
-            message: l10n.noPolicies,
-            description: l10n.policiesHint,
-          );
-        }
-
-        final active = policies.where((p) => p.active).toList();
-        final inactive = policies.where((p) => !p.active).toList();
-
-        final activeDomainOrder = <String>[];
-        final grouped = <String, List<MemoryPolicy>>{};
-        for (final p in active) {
-          grouped.putIfAbsent(p.domain, () => []).add(p);
-          if (!activeDomainOrder.contains(p.domain)) {
-            activeDomainOrder.add(p.domain);
-          }
-        }
-
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xl,
-            0,
-            AppSpacing.xl,
-            AppSpacing.lg,
-          ),
-          children: [
-            for (final domainSlug in activeDomainOrder)
-              if (grouped[domainSlug]?.isNotEmpty ?? false) ...[
-                _DomainHeader(domain: domainSlug),
-                const SizedBox(height: AppSpacing.sm),
-                for (final policy in grouped[domainSlug]!) ...[
-                  _PolicyCard(
-                    policy: policy,
-                    workspaceId: workspaceId,
-                    ref: ref,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                ],
-                const SizedBox(height: AppSpacing.lg),
-              ],
-            if (inactive.isNotEmpty) ...[
-              _SectionHeader(label: l10n.inactive),
-              const SizedBox(height: AppSpacing.sm),
-              for (final policy in inactive) ...[
-                _PolicyCard(
-                  policy: policy,
-                  workspaceId: workspaceId,
-                  ref: ref,
-                  inactive: true,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-              ],
-            ],
-          ],
-        );
-      },
+      data: (policies) => _buildList(context, policies),
       loading: () => const Center(child: CcSpinner()),
       error: (e, _) => MemoryErrorView(
         error: e,
-        onRetry: () => ref.invalidate(memoryPoliciesProvider(workspaceId)),
+        onRetry: () =>
+            ref.invalidate(memoryPoliciesProvider(widget.workspaceId)),
       ),
     );
   }
-}
 
-class _DomainHeader extends StatelessWidget {
-  const _DomainHeader({required this.domain});
+  Widget _buildList(BuildContext context, List<MemoryPolicy> policies) {
+    final l10n = AppLocalizations.of(context);
+    if (policies.isEmpty) {
+      return EmptyState(
+        icon: AppIcons.scale,
+        message: l10n.noPolicies,
+        description: l10n.policiesHint,
+      );
+    }
 
-  final String domain;
+    final query = _query.trim().toLowerCase();
+    final matching = policies
+        .where((policy) => _matches(policy, query))
+        .toList();
+    final active = matching.where((policy) => policy.active).length;
+    final shown = matching
+        .where(
+          (policy) => switch (_facet) {
+            _kFacetActive => policy.active,
+            _kFacetInactive => !policy.active,
+            _ => true,
+          },
+        )
+        .toList();
+    final rows = _rows(l10n, shown);
 
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    // The heading shows the BARE name with the repo beside it as a chip, so
-    // grouping reads as "architecture, for this repo" rather than exposing the
-    // `repo:` prefix — an implementation detail of how the scope is stored.
-    final scope = MemoryDomainScope.parse(domain);
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Icon(AppIcons.tag, size: 15, color: tokens.fgBrandPrimary),
-        const SizedBox(width: AppSpacing.sm),
-        Flexible(
-          child: Text(
-            scope.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: CcTypography.body.copyWith(
-              color: tokens.textPrimary,
-              fontWeight: FontWeight.w700,
+        MemoryListToolbar(
+          query: _query,
+          onQueryChanged: (query) => setState(() => _query = query),
+          searchHint: l10n.searchPoliciesHint,
+          facets: [
+            SettingsFacet(
+              value: _kFacetAll,
+              label: l10n.all,
+              count: matching.length,
             ),
-          ),
+            SettingsFacet(
+              value: _kFacetActive,
+              label: l10n.memoryPolicyActive,
+              count: active,
+            ),
+            SettingsFacet(
+              value: _kFacetInactive,
+              label: l10n.inactive,
+              count: matching.length - active,
+            ),
+          ],
+          facet: _facet,
+          onFacetChanged: (facet) => setState(() => _facet = facet),
+          shown: shown.length,
+          total: policies.length,
+          controls: [
+            MemoryScopeFilter(
+              domainSlugs: policies.map((policy) => policy.domain),
+              value: _scope,
+              onChanged: (scope) => setState(() => _scope = scope),
+            ),
+          ],
         ),
-        if (scope.isRepoScoped) ...[
-          const SizedBox(width: AppSpacing.sm),
-          MemoryScopeChip(domainSlug: domain),
-        ],
+        Expanded(
+          child: rows.isEmpty
+              ? EmptyState(
+                  icon: AppIcons.searchX,
+                  message: l10n.noPoliciesMatch,
+                  query: _query.isEmpty ? null : _query,
+                )
+              : ListView.builder(
+                  padding: kMemoryListPadding,
+                  itemCount: rows.length,
+                  itemBuilder: (context, index) =>
+                      MemoryListItem(first: index == 0, child: rows[index]),
+                ),
+        ),
       ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return Text(
-      label,
-      style: CcTypography.body.copyWith(
-        color: tokens.textTertiary,
-        fontWeight: FontWeight.w600,
-      ),
     );
   }
 }

@@ -85,9 +85,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keybindingPushToTalk => '按住说话';
 
   @override
-  String get keybindingPushToTalkDescription => '在消息输入框中按住或切换语音听写';
-
-  @override
   String get agentPermissions => '智能体权限';
 
   @override
@@ -181,6 +178,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get rigSurfaceIosSimulator => 'iOS 模拟器';
+
+  @override
+  String get rigSurfaceAppWindow => '应用窗口';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -445,6 +445,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get rigStreamNeedsFfmpeg => '实时画面需要此主机上安装 ffmpeg。请安装 ffmpeg 后重新打开标签页。';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      '实时视图需要屏幕录制权限。请在系统设置中授权 Control Center，然后重新打开标签页。';
 
   @override
   String get rigStreamEnded => '实时画面已结束。';
@@ -1512,10 +1516,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get keybindingOpenFilterMenu => '打开筛选菜单';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      '打开 pull request 筛选菜单';
 
   @override
   String countSelected(int count) {
@@ -2758,19 +2758,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cancelEdit => '取消编辑';
 
   @override
-  String get categoryCreation => '创建';
-
-  @override
-  String get categoryEditing => '编辑';
-
-  @override
   String get categoryNavigation => '导航';
-
-  @override
-  String get categorySystem => '系统';
-
-  @override
-  String get categoryView => '分类视图';
 
   @override
   String get change => '更改';
@@ -3571,30 +3559,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keepSandboxing => '保留沙盒';
 
   @override
-  String get keybindingAddARepositoryDescription => '添加仓库';
-
-  @override
   String get keybindingAddRepository => '添加仓库';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      '收藏或取消收藏所选文章';
 
   @override
   String get keybindingCommandPalette => '命令面板';
 
   @override
-  String get keybindingCreateANewAgentDescription => '创建新智能体';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription => '创建新工作区';
-
-  @override
   String get keybindingFocusSearch => '聚焦搜索';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      '聚焦 pull request 搜索框';
 
   @override
   String get keybindingNewAgent => '新建智能体';
@@ -3615,31 +3586,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keybindingOpenArticle => '打开文章';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      '打开或关闭侧栏中的工作区切换弹窗';
-
-  @override
   String get keybindingOpenPr => '打开 PR';
 
   @override
   String get keybindingOpenSettings => '打开设置';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription => '打开应用设置';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription => '打开命令面板';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription => '打开所选文章';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      '打开所选 pull request';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription => '打开所选工作区';
 
   @override
   String get keybindingOpenWorkspace => '打开工作区';
@@ -3657,69 +3607,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keybindingRefresh => '刷新';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => '刷新所有订阅源';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      '刷新 pull request 列表';
-
-  @override
-  String get keybindingRescanForAdaptersDescription => '重新扫描适配器';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription => '选择下一篇文章';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription => '选择下一个空间';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription => '选择上一篇文章';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription => '选择上一个空间';
-
-  @override
   String get keybindingSendMessage => '发送消息';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription => '发送当前消息';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      '在浅色与深色模式之间切换';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription => '切换到第八个工作区';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription => '切换到第五个工作区';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription => '切换到第一个工作区';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription => '切换到第四个工作区';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription => '切换到下一个工作区';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription => '切换到第九个工作区';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription => '切换到上一个工作区';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription => '切换到第二个工作区';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription => '切换到第七个工作区';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription => '切换到第六个工作区';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription => '切换到第三个工作区';
 
   @override
   String get keybindingToggleBookmark => '切换书签';
@@ -3756,12 +3644,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get keybindingWorkspace9 => '工作区 9';
-
-  @override
-  String get keybindings => '快捷键';
-
-  @override
-  String get keybindingsDescription => '所有键盘快捷键。快捷键是固定的，无法重新分配。';
 
   @override
   String get killRunning => '终止运行';
@@ -4019,11 +3901,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noSavedArticlesBody => '你收藏的文章会出现在这里。';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return '没有匹配“$query”的快捷键';
-  }
 
   @override
   String get noSystemFonts => '未检测到系统字体。';
@@ -4740,12 +4617,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get searchPlaceholder => '搜索…';
-
-  @override
-  String get searchShortcuts => '搜索快捷键…';
-
-  @override
-  String get shortcutUnavailableInBrowser => '在浏览器中不可用';
 
   @override
   String get searching => '正在搜索…';
@@ -6477,6 +6348,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get triggerEventSpaceDeleted => '空间已删除';
 
   @override
+  String get triggerEventSpaceArchived => '空间已归档';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged => '空间预配已更改';
+
+  @override
+  String get triggerEventPrHeadChanged => 'PR head 已更改';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => '环境状态已更改';
+
+  @override
+  String get triggerEventEnvironmentReady => '环境已就绪';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => '环境已销毁';
+
+  @override
+  String get triggerEventEnvironmentProcessExited => '环境进程已退出';
+
+  @override
   String get triggerExternalPrHelp => '在代码托管平台上打开的拉取请求，不是从 Control Center 打开的。';
 
   @override
@@ -6526,6 +6418,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get triggerSpaceDeletedHelp => '对话空间被删除。';
+
+  @override
+  String get triggerSpaceArchivedHelp => '对话空间被归档。';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp => '空间工作树的预配开始、完成或失败。';
+
+  @override
+  String get triggerPrHeadChangedHelp => '新提交被推送到打开的拉取请求。';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp => '空间环境进入新状态。';
+
+  @override
+  String get triggerEnvironmentReadyHelp => '空间环境已启动，可以使用。';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp => '空间环境被拆除。';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp => '环境运行的进程退出。';
 
   @override
   String get navTickets => '工单';
@@ -8681,18 +8594,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get usageAndCost => '用量与费用';
-
-  @override
-  String get usageAndCostDescription => '过去 7 天各智能体的支出，基于观察到的运行费用。';
-
-  @override
-  String get noUsageYet => '尚无用量记录。';
-
-  @override
-  String get spentThisWeek => '本周已花费';
-
-  @override
   String get subscriptionUsage => '订阅用量';
 
   @override
@@ -8895,9 +8796,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keybindingNewSpace => '新建空间';
 
   @override
-  String get keybindingCreateANewSpaceDescription => '创建新空间';
-
-  @override
   String get jumpToLatest => '跳到最新';
 
   @override
@@ -9064,70 +8962,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preparingWorkspace => '正在准备工作区…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return '正在运行 $repo 的设置脚本…';
-  }
-
-  @override
-  String get repoScriptsTitle => '脚本';
-
-  @override
-  String get repoScriptsTooltip => '配置生命周期脚本';
-
-  @override
-  String get repoScriptsSetupLabel => '设置脚本';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      '在空间的工作树创建后立即运行 — 安装依赖、生成文件。失败会将空间标记为失败；重试会再次运行。';
-
-  @override
-  String get repoScriptsArchiveLabel => '归档脚本';
-
-  @override
-  String get repoScriptsArchiveHelp => '在删除空间的工作树前运行 — 清理工作树外的资源。失败不会阻止删除。';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      '从工作树通过 bash 运行，并设置 CC_WORKSPACE_PATH（工作树）、CC_ROOT_PATH（仓库根目录）、CC_SPACE_ID、CC_SPACE_NAME 和 CC_REPO_NAME。';
-
-  @override
-  String get repoScriptsSetupPlaceholder => '例如 pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      '例如 docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => '最近运行';
-
-  @override
-  String get repoScriptsNoRuns => '暂无运行记录';
-
-  @override
-  String get repoScriptsSaved => '脚本已保存';
-
-  @override
-  String get repoScriptsRunKindSetup => '设置';
-
-  @override
-  String get repoScriptsRunKindArchive => '归档';
-
-  @override
-  String get repoScriptsRunStatusRunning => '运行中';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => '已成功';
-
-  @override
-  String get repoScriptsRunStatusFailed => '失败';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => '已超时';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return '退出码 $code';
+  String provisioningRunningTasks(String repo) {
+    return '正在运行 $repo 的工作树任务…';
   }
 
   @override
@@ -9916,9 +9752,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keybindingCheatSheet => '键盘快捷键';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription => '显示当前屏幕的键盘快捷键速查表';
-
-  @override
   String get runPlaybookLabel => '运行剧本';
 
   @override
@@ -9929,12 +9762,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get keybindingRedo => '重做';
-
-  @override
-  String get keybindingUndoLastActionDescription => '撤销上一个可撤销的操作';
-
-  @override
-  String get keybindingRedoLastActionDescription => '重做上一个被撤销的操作';
 
   @override
   String get undone => '已撤销';
@@ -13647,6 +13474,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get newSkill => '新建技能';
 
   @override
+  String get newItemAction => '新建';
+
+  @override
   String get zoomIn => '放大';
 
   @override
@@ -13855,6 +13685,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steerNow => '引导';
 
   @override
+  String get steerForce => '停止并发送';
+
+  @override
   String get steeringQueueLabel => '已排队的引导消息';
 
   @override
@@ -13899,15 +13732,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sandboxExecGrantRevokeConfirmBody => '下次智能体需要从此副本运行程序时会再次询问你。';
-
-  @override
-  String get repoScriptsTest => '测试';
-
-  @override
-  String get repoScriptsTestTooltip => '在仓库的一次性克隆中运行此草稿';
-
-  @override
-  String get repoScriptsRunKindTest => '测试';
 
   @override
   String get demoBadgeLabel => '演示';
@@ -14110,6 +13934,47 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupServerPathLabel => '服务器上的路径';
+
+  @override
+  String get backupScheduledLabel => '定时备份';
+
+  @override
+  String get backupScheduledExplainer => '每个工作区的备份流水线保存的副本。在流水线模板中设置计划和保留期。';
+
+  @override
+  String get backupScheduledNone => '暂无备份';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个备份',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return '上次备份：$time';
+  }
+
+  @override
+  String get backupListForbidden => '你需要此工作区的管理员角色才能查看其备份。';
+
+  @override
+  String get backupScheduledDeleteTitle => '删除此备份？';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return '要从服务器删除 $name 在 $date 的备份吗？此操作无法撤销。';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => '备份已删除。';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => '工作区已删除';
 
   @override
   String get backupRestoreAction => '恢复';
@@ -14700,12 +14565,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ideQuickOpen => '转到文件';
 
   @override
-  String get ideQuickOpenDescription => '按名称搜索对话中的文件并在标签页中打开';
-
-  @override
-  String get prQuickOpenDescription => '按名称搜索 pull request 中的文件并在标签页中打开';
-
-  @override
   String get ideQuickOpenHint => '按名称搜索文件';
 
   @override
@@ -15025,6 +14884,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get skillEvalForcedEvent => '强制加载';
+
+  @override
+  String get skillEvalHashLabel => '包哈希';
+
+  @override
+  String get skillEvalProgressLabel => '进度';
+
+  @override
+  String get skillEvalUpdatesToggle => '更新评估';
 
   @override
   String get skillEvalHashUnavailable => '此服务器无法获取包哈希。评估已禁用。';
@@ -15397,6 +15265,676 @@ class AppLocalizationsZh extends AppLocalizations {
   String focusModeRemaining(int minutes) {
     return '还剩 $minutes 分钟';
   }
+
+  @override
+  String get demoUnavailableEnvironments => '环境会在主机上运行真实进程,所以演示版没有环境。';
+
+  @override
+  String get environmentChecksFailing => '部分检查在服务器上失败';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return '端点:$names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return '服务:$names';
+  }
+
+  @override
+  String get environmentCopied => '已复制';
+
+  @override
+  String get environmentCopyCommand => '复制命令';
+
+  @override
+  String get environmentCopyUrl => '复制 URL';
+
+  @override
+  String get environmentDefinition => '定义';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个定义',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => '销毁';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name 及其数据将被移除。启动会创建新的环境。';
+  }
+
+  @override
+  String get environmentDestroyTitle => '要销毁此环境吗?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => '在服务中运行';
+
+  @override
+  String environmentExitCode(int code) {
+    return '退出代码 $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => '需要在服务器上设置';
+
+  @override
+  String get environmentKindApp => '应用';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => '进程';
+
+  @override
+  String get environmentKindTask => '任务';
+
+  @override
+  String get environmentLaunch => '启动应用';
+
+  @override
+  String get environmentLogsGone => '这些日志已不可用。';
+
+  @override
+  String environmentLogsTab(String name) {
+    return '日志:$name';
+  }
+
+  @override
+  String get environmentLogsWaiting => '正在等待输出';
+
+  @override
+  String get environmentMoreActions => '更多环境操作';
+
+  @override
+  String get environmentNeedsRecreate => '有变更需要重新创建此环境。';
+
+  @override
+  String get environmentNoStack => '只运行工作树任务,因此没有可启动的内容。';
+
+  @override
+  String get environmentOnTheServer => '在服务器上';
+
+  @override
+  String get environmentOpenInBrowserVm => '在 Browser (VM) 中打开';
+
+  @override
+  String get environmentOpenViewer => '打开查看器';
+
+  @override
+  String get environmentPlacementRig => '在虚拟机中';
+
+  @override
+  String get environmentPreviewTab => '环境';
+
+  @override
+  String get environmentRebuildRelaunch => '重新构建并启动';
+
+  @override
+  String get environmentRecreate => '重新创建';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name 将被销毁,并以相同选项重新启动。其数据会丢失。';
+  }
+
+  @override
+  String get environmentRecreateTitle => '要重新创建此环境吗?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name 将恢复到基线。此后创建的数据会丢失。';
+  }
+
+  @override
+  String get environmentResetData => '重置数据';
+
+  @override
+  String get environmentResetTitle => '要重置数据吗?';
+
+  @override
+  String get environmentRestart => '重启';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '重启 $count 次',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => '运行';
+
+  @override
+  String get environmentRunInTerminal => '在终端中运行';
+
+  @override
+  String get environmentSectionTitle => '环境';
+
+  @override
+  String get environmentService => '服务';
+
+  @override
+  String environmentServiceActions(String name) {
+    return '$name 的操作';
+  }
+
+  @override
+  String get environmentStartTitle => '启动环境';
+
+  @override
+  String get environmentStateCrashed => '已崩溃';
+
+  @override
+  String get environmentStatusDegraded => '已降级';
+
+  @override
+  String get environmentStatusDestroying => '正在销毁';
+
+  @override
+  String get environmentStatusGone => '已消失';
+
+  @override
+  String get environmentStatusStopping => '正在停止';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return '停止 $name 会丢失其数据,再次启动也无法恢复。';
+  }
+
+  @override
+  String get environmentStopLoseData => '停止并丢失数据';
+
+  @override
+  String get environmentStopTitle => '要停止此环境吗?';
+
+  @override
+  String get environmentTaskNeverRun => '尚未运行';
+
+  @override
+  String get environmentsAddCheck => '添加检查';
+
+  @override
+  String get environmentsAddOption => '添加选项';
+
+  @override
+  String get environmentsAddRole => '添加角色';
+
+  @override
+  String get environmentsAdminOnly => '只有工作区管理员可以更改定义。';
+
+  @override
+  String get environmentsAfter => '等待这些组件';
+
+  @override
+  String get environmentsAnchor => '锚点';
+
+  @override
+  String get environmentsAutoCreate => '自动启动';
+
+  @override
+  String get environmentsAutoCreateAll => '在每个符合条件的空间中';
+
+  @override
+  String get environmentsAutoCreateOff => '从不';
+
+  @override
+  String get environmentsAutoCreatePrs => '在拉取请求空间中';
+
+  @override
+  String get environmentsBlank => '空白定义';
+
+  @override
+  String get environmentsCheckFix => '修复命令';
+
+  @override
+  String get environmentsCheckHint => '提示';
+
+  @override
+  String get environmentsCommandHelp => '参数以空格分隔。包含空格的参数请加引号。';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个组件',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => '启动时构建镜像';
+
+  @override
+  String get environmentsComposeFile => 'Compose 文件';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile => '无法读取 compose 文件。仍可在 JSON 视图中填写服务名称。';
+
+  @override
+  String get environmentsComposeServices => '服务';
+
+  @override
+  String get environmentsComposeServicesHint => '不勾选任何服务即运行全部服务。';
+
+  @override
+  String get environmentsConditionalArgs => '此命令包含条件参数。请在 JSON 视图中编辑。';
+
+  @override
+  String get environmentsCwdPath => '工作路径';
+
+  @override
+  String get environmentsCwdRole => '工作角色';
+
+  @override
+  String get environmentsDeleteBody => '空间将无法再启动它。运行中的环境会继续运行,直到被停止。';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return '要删除 $name 吗?';
+  }
+
+  @override
+  String get environmentsDescription => '每个空间可以启动什么,以及其工作树运行哪些任务。';
+
+  @override
+  String get environmentsDraftFromRepo => '从仓库生成草稿';
+
+  @override
+  String get environmentsEmpty => '还没有定义';
+
+  @override
+  String get environmentsEnabledWhen => '启用条件';
+
+  @override
+  String get environmentsEndpointRole => '端点角色';
+
+  @override
+  String get environmentsFollowPrHead => '跟随拉取请求的 head';
+
+  @override
+  String get environmentsForkApproval => '每次启动都需要管理员';
+
+  @override
+  String get environmentsForkDeny => '已拒绝';
+
+  @override
+  String get environmentsForkPrs => '来自 fork 的拉取请求';
+
+  @override
+  String get environmentsForkRig => '在虚拟机中运行';
+
+  @override
+  String get environmentsIdleStop => '空闲多少分钟后停止';
+
+  @override
+  String get environmentsIsolateHome => '为应用提供私有主目录';
+
+  @override
+  String get environmentsIssues => '保存前请修复这些问题';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'JSON 无效:$error';
+  }
+
+  @override
+  String get environmentsKeepsData => '停止时保留数据';
+
+  @override
+  String get environmentsLinkConfirm => '关联并批准';
+
+  @override
+  String get environmentsLinkFile => '关联仓库文件';
+
+  @override
+  String get environmentsLinkHelp => '仅从默认分支读取,且仅在批准后运行。';
+
+  @override
+  String get environmentsLinkPath => '路径';
+
+  @override
+  String get environmentsMaxRunning => '同时运行数';
+
+  @override
+  String get environmentsNamingProject => '项目';
+
+  @override
+  String get environmentsNamingTemplate => '名称模板';
+
+  @override
+  String get environmentsNew => '新建定义';
+
+  @override
+  String get environmentsNewDefinitionName => '新环境';
+
+  @override
+  String get environmentsNoChecks => '此定义没有检查。';
+
+  @override
+  String get environmentsNoRuns => '还没有测试运行';
+
+  @override
+  String get environmentsOnChange => '要监视的路径';
+
+  @override
+  String get environmentsOptionBool => '是或否';
+
+  @override
+  String get environmentsOptionEnum => '单选';
+
+  @override
+  String get environmentsOptionMulti => '多选';
+
+  @override
+  String get environmentsOptionValues => '值';
+
+  @override
+  String get environmentsPlacement => '放置位置';
+
+  @override
+  String get environmentsPlacementHost => '在主机上';
+
+  @override
+  String get environmentsPlacementRig => '在虚拟机中';
+
+  @override
+  String get environmentsPrepareTask => '准备任务';
+
+  @override
+  String get environmentsPrimaryEndpoint => '主端点';
+
+  @override
+  String get environmentsReadyHttp => '此 URL 响应时即就绪';
+
+  @override
+  String get environmentsRestartAlways => '始终';
+
+  @override
+  String get environmentsRestartNever => '从不';
+
+  @override
+  String get environmentsRestartOn => '这些路径变更时重启';
+
+  @override
+  String get environmentsRestartOnFailure => '失败时';
+
+  @override
+  String get environmentsRestartPolicy => '重启';
+
+  @override
+  String get environmentsRigTtl => '虚拟机存活时长(小时)';
+
+  @override
+  String get environmentsRunChecks => '再次运行';
+
+  @override
+  String get environmentsRunTest => '运行测试';
+
+  @override
+  String get environmentsSaved => '定义已保存';
+
+  @override
+  String get environmentsSectionComponents => '组件';
+
+  @override
+  String get environmentsSectionOptions => '启动选项';
+
+  @override
+  String get environmentsSectionSeedFiles => '种子文件';
+
+  @override
+  String get environmentsSectionVariables => '变量';
+
+  @override
+  String get environmentsSeedHelp =>
+      '每行一个路径,从已注册的检出复制。来自 fork 的拉取请求永远不会收到这些文件。';
+
+  @override
+  String get environmentsShellHelp => '此处不会展开占位符。请改为读取 CC_ENV_* 变量。';
+
+  @override
+  String get environmentsSourceApprove => '批准此版本';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path 与已批准的版本一致。';
+  }
+
+  @override
+  String get environmentsSourceNotice => '在你批准此版本之前,已批准的版本会继续运行。';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => '来源';
+
+  @override
+  String get environmentsTestHelp => '端到端运行一次性环境:检查、启动、等待就绪、销毁。';
+
+  @override
+  String get environmentsTestSaveFirst => '请先保存定义。';
+
+  @override
+  String get environmentsTimeoutSeconds => '超时(秒)';
+
+  @override
+  String get environmentsTitle => '环境';
+
+  @override
+  String get environmentsTriggerArchive => '工作树删除前';
+
+  @override
+  String get environmentsTriggerChange => '监视的路径变更时';
+
+  @override
+  String get environmentsTriggerCreate => '每个环境一次';
+
+  @override
+  String get environmentsTriggerManual => '按需';
+
+  @override
+  String get environmentsTriggerProvision => '工作树创建时';
+
+  @override
+  String get environmentsTriggerStart => '每次启动时';
+
+  @override
+  String get environmentsTriggers => '运行时机';
+
+  @override
+  String get environmentsUnreadable => '此客户端无法读取此定义。';
+
+  @override
+  String get environmentsUpdateAvailable => '有可用更新';
+
+  @override
+  String get environmentsUseShell => '使用 shell 命令';
+
+  @override
+  String get environmentsUseSourceWarning => '工具将在你自己的检出上运行。请将其视为只读。';
+
+  @override
+  String get environmentsWhenMissing => '空间缺少它时';
+
+  @override
+  String get environmentsWhenMissingAdd => '添加到空间';
+
+  @override
+  String get environmentsWhenMissingSkip => '跳过';
+
+  @override
+  String get environmentsWhenMissingSource => '使用已注册的检出';
+
+  @override
+  String get environmentsUnsupported => '此服务器不支持环境。';
+
+  @override
+  String get environmentViewerUnavailable =>
+      '没有查看器:服务器无法捕获此窗口。请在服务器上允许 Control Center 录制屏幕。';
+
+  @override
+  String get environmentHealthHealthy => '健康';
+
+  @override
+  String get environmentHealthUnhealthy => '不健康';
+
+  @override
+  String get environmentTerminalStale => '此终端在环境启动前打开,因此缺少环境变量。';
+
+  @override
+  String get environmentTerminalFresh => '打开新终端';
+
+  @override
+  String get environmentsShellStays => '多行脚本仍为 shell 命令:行就是它的结构。';
+
+  @override
+  String get environmentsOverrides => '工作区覆盖';
+
+  @override
+  String get environmentsOverridesHelp =>
+      '文件本身的设置在这里是只读的。将其角色绑定到此工作区的仓库,或以 JSON 覆盖任意字段。';
+
+  @override
+  String get environmentsReposHelp => '此环境使用的仓库,每个都绑定到一个角色。';
+
+  @override
+  String get environmentsComponentsHelp => '环境运行的内容,按启动顺序排列。';
+
+  @override
+  String get environmentsOptionsHelp => '启动环境时提供的选项。';
+
+  @override
+  String get environmentsVariablesHelp => '设置在任务、进程、应用和空间终端上。';
+
+  @override
+  String get environmentsChecksHelp => '主机运行此环境所需的条件。';
+
+  @override
+  String get environmentsIdleStopHelp => '设为 0 时永不停止。';
+
+  @override
+  String get environmentsAnchorHelp => '持有此仓库的空间可以启动该环境。';
+
+  @override
+  String get environmentsRequiredHelp => '缺少它环境无法运行。';
+
+  @override
+  String get environmentsFollowPrHeadHelp => '拉取请求的 head 移动时同步并刷新。';
+
+  @override
+  String get environmentsRecordNeedsFix => '需要修复';
+
+  @override
+  String get environmentsCheckFile => '文件';
+
+  @override
+  String get environmentsDiscardBody => '你对此定义的修改将会丢失。';
+
+  @override
+  String get environmentsWorktreeRuns => '工作树任务运行';
+
+  @override
+  String get environmentsNoWorktreeRuns => '还没有运行过工作树任务。';
+
+  @override
+  String get environmentsLinkRoles => '此文件中的角色';
+
+  @override
+  String get environmentsLinkNoFile => '无法从仓库读取该文件。关联后可再绑定角色。';
+
+  @override
+  String get guardrailClassHostExecution => '在主机上运行命令';
+
+  @override
+  String get environmentUrls => 'URL';
+
+  @override
+  String get environmentScripts => '脚本';
+
+  @override
+  String get environmentNoneForSpace => '此空间没有环境';
+
+  @override
+  String get environmentNoneForPr => '此拉取请求没有环境';
+
+  @override
+  String get environmentSetupBody =>
+      '环境为一个空间运行仓库的服务、脚本和 URL。只需设置一次，该仓库的每个空间都能启动它。';
+
+  @override
+  String get environmentSetUp => '设置环境';
+
+  @override
+  String get environmentEditDefinition => '编辑定义';
+
+  @override
+  String get environmentOpenPanel => '打开环境';
+
+  @override
+  String get environmentNeedsSetup => '需要设置';
+
+  @override
+  String get environmentContinueInTerminal => '在终端中继续';
+
+  @override
+  String get environmentSetupHint => '工具需要你在终端中输入密码或回答提示。完成后启动会继续。';
+
+  @override
+  String get environmentSetupTabReason => '启动需要你操作，因此打开了此终端';
+
+  @override
+  String get environmentSetupTab => '环境设置';
+
+  @override
+  String get environmentsNothingRunning => '此定义没有正在运行的内容。';
+
+  @override
+  String get searchPoliciesHint => '搜索策略...';
+
+  @override
+  String get noPoliciesMatch => '没有与搜索匹配的策略';
+
+  @override
+  String get memoryPolicyActive => '已启用';
+
+  @override
+  String get memoryFactType => '类型';
+
+  @override
+  String get memoryTimesRecalled => '调用次数';
+
+  @override
+  String get memorySourceFacts => '来源事实';
+
+  @override
+  String get spaceSetupLogs => '设置日志';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -15478,9 +16016,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get keybindingPushToTalk => '按住說話';
-
-  @override
-  String get keybindingPushToTalkDescription => '在訊息輸入區按住或切換語音聽寫';
 
   @override
   String get agentPermissions => '代理權限';
@@ -15576,6 +16111,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get rigSurfaceIosSimulator => 'iOS 模擬器';
+
+  @override
+  String get rigSurfaceAppWindow => '應用程式視窗';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -15837,6 +16375,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get rigStreamNeedsFfmpeg => '即時畫面需要此主機已安裝 ffmpeg。請安裝 ffmpeg 後重新開啟分頁。';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      '即時檢視需要螢幕錄製權限。請在系統設定中授權 Control Center，然後重新開啟分頁。';
 
   @override
   String get rigStreamEnded => '即時畫面已結束。';
@@ -16906,10 +17448,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get keybindingOpenFilterMenu => '開啟篩選選單';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      '開啟 pull request 篩選選單';
 
   @override
   String countSelected(int count) {
@@ -18152,19 +18690,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cancelEdit => '取消編輯';
 
   @override
-  String get categoryCreation => '建立';
-
-  @override
-  String get categoryEditing => '編輯';
-
-  @override
   String get categoryNavigation => '導覽';
-
-  @override
-  String get categorySystem => '系統';
-
-  @override
-  String get categoryView => '分類檢視';
 
   @override
   String get change => '變更';
@@ -18965,30 +19491,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get keepSandboxing => '維持沙箱';
 
   @override
-  String get keybindingAddARepositoryDescription => '新增儲存庫';
-
-  @override
   String get keybindingAddRepository => '新增儲存庫';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      '為所選文章加上或取消書籤';
 
   @override
   String get keybindingCommandPalette => '命令面板';
 
   @override
-  String get keybindingCreateANewAgentDescription => '建立新代理';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription => '建立新工作區';
-
-  @override
   String get keybindingFocusSearch => '聚焦搜尋';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      '聚焦 pull request 搜尋欄';
 
   @override
   String get keybindingNewAgent => '新增代理';
@@ -19009,31 +19518,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get keybindingOpenArticle => '開啟文章';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      '開啟或關閉側邊欄的工作區切換彈出視窗';
-
-  @override
   String get keybindingOpenPr => '開啟 PR';
 
   @override
   String get keybindingOpenSettings => '開啟設定';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription => '開啟應用程式設定';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription => '開啟命令面板';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription => '開啟所選文章';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      '開啟所選 pull request';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription => '開啟所選工作區';
 
   @override
   String get keybindingOpenWorkspace => '開啟工作區';
@@ -19051,69 +19539,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get keybindingRefresh => '重新整理';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => '重新整理所有動態';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      '重新整理 pull request 清單';
-
-  @override
-  String get keybindingRescanForAdaptersDescription => '重新掃描配接器';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription => '選取下一篇文章';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription => '選取下一個空間';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription => '選取上一篇文章';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription => '選取上一個空間';
-
-  @override
   String get keybindingSendMessage => '傳送訊息';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription => '傳送目前訊息';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      '在淺色與深色模式間切換';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription => '切換至第八個工作區';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription => '切換至第五個工作區';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription => '切換至第一個工作區';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription => '切換至第四個工作區';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription => '切換至下一個工作區';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription => '切換至第九個工作區';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription => '切換至上一個工作區';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription => '切換到第二個工作區';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription => '切換到第七個工作區';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription => '切換到第六個工作區';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription => '切換到第三個工作區';
 
   @override
   String get keybindingToggleBookmark => '切換書籤';
@@ -19150,12 +19576,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get keybindingWorkspace9 => '工作區 9';
-
-  @override
-  String get keybindings => '快捷鍵';
-
-  @override
-  String get keybindingsDescription => '所有鍵盤快捷鍵。快捷鍵為固定，無法重新指定。';
 
   @override
   String get killRunning => '終止執行中';
@@ -19413,11 +19833,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get noSavedArticlesBody => '你儲存的文章會顯示在這裡。';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return '沒有快捷鍵符合「$query」';
-  }
 
   @override
   String get noSystemFonts => '未偵測到系統字型。';
@@ -20133,12 +20548,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get searchPlaceholder => '搜尋…';
-
-  @override
-  String get searchShortcuts => '搜尋捷徑…';
-
-  @override
-  String get shortcutUnavailableInBrowser => '在瀏覽器中無法使用';
 
   @override
   String get searching => '搜尋中…';
@@ -21869,6 +22278,27 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get triggerEventSpaceDeleted => '空間已刪除';
 
   @override
+  String get triggerEventSpaceArchived => '空間已封存';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged => '空間佈建已變更';
+
+  @override
+  String get triggerEventPrHeadChanged => 'PR head 已變更';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => '環境狀態已變更';
+
+  @override
+  String get triggerEventEnvironmentReady => '環境已就緒';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => '環境已銷毀';
+
+  @override
+  String get triggerEventEnvironmentProcessExited => '環境程序已結束';
+
+  @override
   String get triggerExternalPrHelp =>
       '在程式碼託管平台上開啟的拉取請求，不是從 Control Center 開啟的。';
 
@@ -21919,6 +22349,27 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get triggerSpaceDeletedHelp => '對話空間被刪除。';
+
+  @override
+  String get triggerSpaceArchivedHelp => '對話空間被封存。';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp => '空間工作樹的佈建開始、完成或失敗。';
+
+  @override
+  String get triggerPrHeadChangedHelp => '新提交被推送到開啟的拉取請求。';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp => '空間環境進入新狀態。';
+
+  @override
+  String get triggerEnvironmentReadyHelp => '空間環境已啟動，可以使用。';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp => '空間環境被拆除。';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp => '環境執行的程序結束。';
 
   @override
   String get navTickets => '工單';
@@ -24074,18 +24525,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get usageAndCost => '用量與費用';
-
-  @override
-  String get usageAndCostDescription => '根據實際觀察到的執行成本，統計你的代理過去 7 天的花費。';
-
-  @override
-  String get noUsageYet => '尚無使用記錄。';
-
-  @override
-  String get spentThisWeek => '本週花費';
-
-  @override
   String get subscriptionUsage => '訂閱用量';
 
   @override
@@ -24289,9 +24728,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get keybindingNewSpace => '新增空間';
 
   @override
-  String get keybindingCreateANewSpaceDescription => '建立新的空間';
-
-  @override
   String get jumpToLatest => '跳到最新';
 
   @override
@@ -24458,70 +24894,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get preparingWorkspace => '正在準備工作區…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return '正在為 $repo 執行設定指令碼…';
-  }
-
-  @override
-  String get repoScriptsTitle => '指令碼';
-
-  @override
-  String get repoScriptsTooltip => '設定生命週期指令碼';
-
-  @override
-  String get repoScriptsSetupLabel => '設定指令碼';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      '在空間的工作樹建立後立即於其中執行—安裝相依套件、產生檔案。失敗會將空間標記為失敗；重試會再次執行。';
-
-  @override
-  String get repoScriptsArchiveLabel => '封存指令碼';
-
-  @override
-  String get repoScriptsArchiveHelp => '在空間的工作樹刪除前執行—清理工作樹以外的資源。失敗不會阻擋刪除。';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      '從工作樹透過 bash 執行，並設定 CC_WORKSPACE_PATH（工作樹）、CC_ROOT_PATH（儲存庫根目錄）、CC_SPACE_ID、CC_SPACE_NAME 與 CC_REPO_NAME。';
-
-  @override
-  String get repoScriptsSetupPlaceholder => '例如 pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      '例如 docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => '最近的執行';
-
-  @override
-  String get repoScriptsNoRuns => '尚無執行記錄';
-
-  @override
-  String get repoScriptsSaved => '指令碼已儲存';
-
-  @override
-  String get repoScriptsRunKindSetup => '設定';
-
-  @override
-  String get repoScriptsRunKindArchive => '封存';
-
-  @override
-  String get repoScriptsRunStatusRunning => '執行中';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => '已成功';
-
-  @override
-  String get repoScriptsRunStatusFailed => '失敗';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => '逾時';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return '結束代碼 $code';
+  String provisioningRunningTasks(String repo) {
+    return '正在為 $repo 執行工作樹任務…';
   }
 
   @override
@@ -25311,9 +25685,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get keybindingCheatSheet => '鍵盤快速鍵';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription => '顯示目前畫面的鍵盤快速鍵小抄';
-
-  @override
   String get runPlaybookLabel => '執行 playbook';
 
   @override
@@ -25324,12 +25695,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get keybindingRedo => '重做';
-
-  @override
-  String get keybindingUndoLastActionDescription => '復原上一個可復原的動作';
-
-  @override
-  String get keybindingRedoLastActionDescription => '重做上一個已復原的動作';
 
   @override
   String get undone => '已復原';
@@ -29044,6 +29409,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get newSkill => '新增技能';
 
   @override
+  String get newItemAction => '新增';
+
+  @override
   String get zoomIn => '放大';
 
   @override
@@ -29252,6 +29620,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get steerNow => '引導';
 
   @override
+  String get steerForce => '停止並傳送';
+
+  @override
   String get steeringQueueLabel => '排隊中的引導訊息';
 
   @override
@@ -29296,15 +29667,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get sandboxExecGrantRevokeConfirmBody => '下次有代理需要從此複本執行程式時，系統會再次詢問你。';
-
-  @override
-  String get repoScriptsTest => '測試';
-
-  @override
-  String get repoScriptsTestTooltip => '在儲存庫的一次性複本中執行此草稿';
-
-  @override
-  String get repoScriptsRunKindTest => '測試';
 
   @override
   String get demoBadgeLabel => '示範';
@@ -29508,6 +29870,47 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get backupServerPathLabel => '伺服器上的路徑';
+
+  @override
+  String get backupScheduledLabel => '排程備份';
+
+  @override
+  String get backupScheduledExplainer => '每個工作區的備份管線所儲存的副本。請在管線範本中設定排程與保留期限。';
+
+  @override
+  String get backupScheduledNone => '尚無備份';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個備份',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return '上次備份：$time';
+  }
+
+  @override
+  String get backupListForbidden => '你需要此工作區的管理員角色才能檢視其備份。';
+
+  @override
+  String get backupScheduledDeleteTitle => '刪除此備份？';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return '要從伺服器刪除 $name 在 $date 的備份嗎？此動作無法復原。';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => '備份已刪除。';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => '工作區已刪除';
 
   @override
   String get backupRestoreAction => '還原';
@@ -30097,12 +30500,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get ideQuickOpen => '前往檔案';
 
   @override
-  String get ideQuickOpenDescription => '依名稱搜尋對話中的檔案並在分頁中開啟';
-
-  @override
-  String get prQuickOpenDescription => '依名稱搜尋 pull request 中的檔案並在分頁中開啟';
-
-  @override
   String get ideQuickOpenHint => '依名稱搜尋檔案';
 
   @override
@@ -30422,6 +30819,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get skillEvalForcedEvent => '強制載入';
+
+  @override
+  String get skillEvalHashLabel => '套件雜湊值';
+
+  @override
+  String get skillEvalProgressLabel => '進度';
+
+  @override
+  String get skillEvalUpdatesToggle => '更新評估';
 
   @override
   String get skillEvalHashUnavailable => '此伺服器無法取得套件雜湊值。評估功能已停用。';
@@ -30794,6 +31200,676 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String focusModeRemaining(int minutes) {
     return '還剩 $minutes 分鐘';
   }
+
+  @override
+  String get demoUnavailableEnvironments => '環境會在主機上執行真實處理程序,所以示範版沒有環境。';
+
+  @override
+  String get environmentChecksFailing => '部分檢查在伺服器上失敗';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return '端點:$names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return '服務:$names';
+  }
+
+  @override
+  String get environmentCopied => '已複製';
+
+  @override
+  String get environmentCopyCommand => '複製指令';
+
+  @override
+  String get environmentCopyUrl => '複製 URL';
+
+  @override
+  String get environmentDefinition => '定義';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個定義',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => '銷毀';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name 及其資料將被移除。啟動會建立新的環境。';
+  }
+
+  @override
+  String get environmentDestroyTitle => '要銷毀此環境嗎?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => '在服務中執行';
+
+  @override
+  String environmentExitCode(int code) {
+    return '結束代碼 $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => '需要在伺服器上設定';
+
+  @override
+  String get environmentKindApp => '應用程式';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => '處理程序';
+
+  @override
+  String get environmentKindTask => '工作';
+
+  @override
+  String get environmentLaunch => '啟動應用程式';
+
+  @override
+  String get environmentLogsGone => '這些記錄已無法使用。';
+
+  @override
+  String environmentLogsTab(String name) {
+    return '記錄:$name';
+  }
+
+  @override
+  String get environmentLogsWaiting => '正在等待輸出';
+
+  @override
+  String get environmentMoreActions => '更多環境動作';
+
+  @override
+  String get environmentNeedsRecreate => '有變更需要重新建立此環境。';
+
+  @override
+  String get environmentNoStack => '只執行工作樹工作,因此沒有可啟動的內容。';
+
+  @override
+  String get environmentOnTheServer => '在伺服器上';
+
+  @override
+  String get environmentOpenInBrowserVm => '在 Browser (VM) 中開啟';
+
+  @override
+  String get environmentOpenViewer => '開啟檢視器';
+
+  @override
+  String get environmentPlacementRig => '在虛擬機器中';
+
+  @override
+  String get environmentPreviewTab => '環境';
+
+  @override
+  String get environmentRebuildRelaunch => '重新建置並啟動';
+
+  @override
+  String get environmentRecreate => '重新建立';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name 將被銷毀,並以相同選項重新啟動。其資料會遺失。';
+  }
+
+  @override
+  String get environmentRecreateTitle => '要重新建立此環境嗎?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name 將回到基準狀態。此後建立的資料會遺失。';
+  }
+
+  @override
+  String get environmentResetData => '重設資料';
+
+  @override
+  String get environmentResetTitle => '要重設資料嗎?';
+
+  @override
+  String get environmentRestart => '重新啟動';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '重新啟動 $count 次',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => '執行';
+
+  @override
+  String get environmentRunInTerminal => '在終端機中執行';
+
+  @override
+  String get environmentSectionTitle => '環境';
+
+  @override
+  String get environmentService => '服務';
+
+  @override
+  String environmentServiceActions(String name) {
+    return '$name 的動作';
+  }
+
+  @override
+  String get environmentStartTitle => '啟動環境';
+
+  @override
+  String get environmentStateCrashed => '已當機';
+
+  @override
+  String get environmentStatusDegraded => '已降級';
+
+  @override
+  String get environmentStatusDestroying => '正在銷毀';
+
+  @override
+  String get environmentStatusGone => '已消失';
+
+  @override
+  String get environmentStatusStopping => '正在停止';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return '停止 $name 會遺失其資料,再次啟動也無法復原。';
+  }
+
+  @override
+  String get environmentStopLoseData => '停止並遺失資料';
+
+  @override
+  String get environmentStopTitle => '要停止此環境嗎?';
+
+  @override
+  String get environmentTaskNeverRun => '尚未執行';
+
+  @override
+  String get environmentsAddCheck => '新增檢查';
+
+  @override
+  String get environmentsAddOption => '新增選項';
+
+  @override
+  String get environmentsAddRole => '新增角色';
+
+  @override
+  String get environmentsAdminOnly => '只有工作區管理員可以變更定義。';
+
+  @override
+  String get environmentsAfter => '等待這些元件';
+
+  @override
+  String get environmentsAnchor => '錨點';
+
+  @override
+  String get environmentsAutoCreate => '自動啟動';
+
+  @override
+  String get environmentsAutoCreateAll => '在每個符合資格的空間中';
+
+  @override
+  String get environmentsAutoCreateOff => '永不';
+
+  @override
+  String get environmentsAutoCreatePrs => '在提取要求空間中';
+
+  @override
+  String get environmentsBlank => '空白定義';
+
+  @override
+  String get environmentsCheckFix => '修復指令';
+
+  @override
+  String get environmentsCheckHint => '提示';
+
+  @override
+  String get environmentsCommandHelp => '引數以空格分隔。包含空格的引數請加上引號。';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個元件',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => '啟動時建置映像';
+
+  @override
+  String get environmentsComposeFile => 'Compose 檔案';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile => '無法讀取 compose 檔案。仍可在 JSON 檢視中填寫服務名稱。';
+
+  @override
+  String get environmentsComposeServices => '服務';
+
+  @override
+  String get environmentsComposeServicesHint => '不勾選任何服務即執行全部服務。';
+
+  @override
+  String get environmentsConditionalArgs => '此指令包含條件引數。請在 JSON 檢視中編輯。';
+
+  @override
+  String get environmentsCwdPath => '工作路徑';
+
+  @override
+  String get environmentsCwdRole => '工作角色';
+
+  @override
+  String get environmentsDeleteBody => '空間將無法再啟動它。執行中的環境會繼續執行,直到被停止。';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return '要刪除 $name 嗎?';
+  }
+
+  @override
+  String get environmentsDescription => '每個空間可以啟動什麼,以及其工作樹執行哪些工作。';
+
+  @override
+  String get environmentsDraftFromRepo => '從存放庫產生草稿';
+
+  @override
+  String get environmentsEmpty => '還沒有定義';
+
+  @override
+  String get environmentsEnabledWhen => '啟用條件';
+
+  @override
+  String get environmentsEndpointRole => '端點角色';
+
+  @override
+  String get environmentsFollowPrHead => '跟隨提取要求的 head';
+
+  @override
+  String get environmentsForkApproval => '每次啟動都需要管理員';
+
+  @override
+  String get environmentsForkDeny => '已拒絕';
+
+  @override
+  String get environmentsForkPrs => '來自 fork 的提取要求';
+
+  @override
+  String get environmentsForkRig => '在虛擬機器中執行';
+
+  @override
+  String get environmentsIdleStop => '閒置幾分鐘後停止';
+
+  @override
+  String get environmentsIsolateHome => '為應用程式提供私有主目錄';
+
+  @override
+  String get environmentsIssues => '儲存前請修正這些問題';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'JSON 無效:$error';
+  }
+
+  @override
+  String get environmentsKeepsData => '停止時保留資料';
+
+  @override
+  String get environmentsLinkConfirm => '連結並核准';
+
+  @override
+  String get environmentsLinkFile => '連結存放庫檔案';
+
+  @override
+  String get environmentsLinkHelp => '僅從預設分支讀取,且僅在核准後執行。';
+
+  @override
+  String get environmentsLinkPath => '路徑';
+
+  @override
+  String get environmentsMaxRunning => '同時執行數';
+
+  @override
+  String get environmentsNamingProject => '專案';
+
+  @override
+  String get environmentsNamingTemplate => '名稱範本';
+
+  @override
+  String get environmentsNew => '新增定義';
+
+  @override
+  String get environmentsNewDefinitionName => '新環境';
+
+  @override
+  String get environmentsNoChecks => '此定義沒有檢查。';
+
+  @override
+  String get environmentsNoRuns => '還沒有測試執行';
+
+  @override
+  String get environmentsOnChange => '要監看的路徑';
+
+  @override
+  String get environmentsOptionBool => '是或否';
+
+  @override
+  String get environmentsOptionEnum => '單選';
+
+  @override
+  String get environmentsOptionMulti => '多選';
+
+  @override
+  String get environmentsOptionValues => '值';
+
+  @override
+  String get environmentsPlacement => '放置位置';
+
+  @override
+  String get environmentsPlacementHost => '在主機上';
+
+  @override
+  String get environmentsPlacementRig => '在虛擬機器中';
+
+  @override
+  String get environmentsPrepareTask => '準備工作';
+
+  @override
+  String get environmentsPrimaryEndpoint => '主要端點';
+
+  @override
+  String get environmentsReadyHttp => '此 URL 回應時即就緒';
+
+  @override
+  String get environmentsRestartAlways => '一律';
+
+  @override
+  String get environmentsRestartNever => '永不';
+
+  @override
+  String get environmentsRestartOn => '這些路徑變更時重新啟動';
+
+  @override
+  String get environmentsRestartOnFailure => '失敗時';
+
+  @override
+  String get environmentsRestartPolicy => '重新啟動';
+
+  @override
+  String get environmentsRigTtl => '虛擬機器存活時間(小時)';
+
+  @override
+  String get environmentsRunChecks => '再次執行';
+
+  @override
+  String get environmentsRunTest => '執行測試';
+
+  @override
+  String get environmentsSaved => '定義已儲存';
+
+  @override
+  String get environmentsSectionComponents => '元件';
+
+  @override
+  String get environmentsSectionOptions => '啟動選項';
+
+  @override
+  String get environmentsSectionSeedFiles => '種子檔案';
+
+  @override
+  String get environmentsSectionVariables => '變數';
+
+  @override
+  String get environmentsSeedHelp =>
+      '每行一個路徑,從已註冊的簽出複製。來自 fork 的提取要求永遠不會收到這些檔案。';
+
+  @override
+  String get environmentsShellHelp => '此處不會展開預留位置。請改為讀取 CC_ENV_* 變數。';
+
+  @override
+  String get environmentsSourceApprove => '核准此版本';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path 與已核准的版本一致。';
+  }
+
+  @override
+  String get environmentsSourceNotice => '在你核准此版本之前,已核准的版本會繼續執行。';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => '來源';
+
+  @override
+  String get environmentsTestHelp => '端對端執行一次性環境:檢查、啟動、等待就緒、銷毀。';
+
+  @override
+  String get environmentsTestSaveFirst => '請先儲存定義。';
+
+  @override
+  String get environmentsTimeoutSeconds => '逾時(秒)';
+
+  @override
+  String get environmentsTitle => '環境';
+
+  @override
+  String get environmentsTriggerArchive => '工作樹刪除前';
+
+  @override
+  String get environmentsTriggerChange => '監看的路徑變更時';
+
+  @override
+  String get environmentsTriggerCreate => '每個環境一次';
+
+  @override
+  String get environmentsTriggerManual => '按需要';
+
+  @override
+  String get environmentsTriggerProvision => '工作樹建立時';
+
+  @override
+  String get environmentsTriggerStart => '每次啟動時';
+
+  @override
+  String get environmentsTriggers => '執行時機';
+
+  @override
+  String get environmentsUnreadable => '此用戶端無法讀取此定義。';
+
+  @override
+  String get environmentsUpdateAvailable => '有可用更新';
+
+  @override
+  String get environmentsUseShell => '使用 shell 指令';
+
+  @override
+  String get environmentsUseSourceWarning => '工具將在你自己的簽出上執行。請將其視為唯讀。';
+
+  @override
+  String get environmentsWhenMissing => '空間缺少它時';
+
+  @override
+  String get environmentsWhenMissingAdd => '新增至空間';
+
+  @override
+  String get environmentsWhenMissingSkip => '略過';
+
+  @override
+  String get environmentsWhenMissingSource => '使用已註冊的簽出';
+
+  @override
+  String get environmentsUnsupported => '此伺服器不支援環境。';
+
+  @override
+  String get environmentViewerUnavailable =>
+      '沒有檢視器:伺服器無法擷取此視窗。請在伺服器上允許 Control Center 錄製螢幕。';
+
+  @override
+  String get environmentHealthHealthy => '健康';
+
+  @override
+  String get environmentHealthUnhealthy => '不健康';
+
+  @override
+  String get environmentTerminalStale => '此終端機在環境啟動前開啟,因此缺少環境變數。';
+
+  @override
+  String get environmentTerminalFresh => '開啟新終端機';
+
+  @override
+  String get environmentsShellStays => '多行指令碼仍為 shell 指令:行就是它的結構。';
+
+  @override
+  String get environmentsOverrides => '工作區覆寫';
+
+  @override
+  String get environmentsOverridesHelp =>
+      '檔案本身的設定在這裡是唯讀的。將其角色繫結到此工作區的存放庫,或以 JSON 覆寫任何欄位。';
+
+  @override
+  String get environmentsReposHelp => '此環境使用的存放庫,每個都繫結到一個角色。';
+
+  @override
+  String get environmentsComponentsHelp => '環境執行的內容,依啟動順序排列。';
+
+  @override
+  String get environmentsOptionsHelp => '啟動環境時提供的選項。';
+
+  @override
+  String get environmentsVariablesHelp => '設定在工作、處理程序、應用程式和空間終端機上。';
+
+  @override
+  String get environmentsChecksHelp => '主機執行此環境所需的條件。';
+
+  @override
+  String get environmentsIdleStopHelp => '設為 0 時永不停止。';
+
+  @override
+  String get environmentsAnchorHelp => '持有此存放庫的空間可以啟動該環境。';
+
+  @override
+  String get environmentsRequiredHelp => '缺少它環境就無法執行。';
+
+  @override
+  String get environmentsFollowPrHeadHelp => '提取要求的 head 移動時同步並重新整理。';
+
+  @override
+  String get environmentsRecordNeedsFix => '需要修正';
+
+  @override
+  String get environmentsCheckFile => '檔案';
+
+  @override
+  String get environmentsDiscardBody => '你對此定義的編輯將會遺失。';
+
+  @override
+  String get environmentsWorktreeRuns => '工作樹工作執行';
+
+  @override
+  String get environmentsNoWorktreeRuns => '還沒有執行過工作樹工作。';
+
+  @override
+  String get environmentsLinkRoles => '此檔案中的角色';
+
+  @override
+  String get environmentsLinkNoFile => '無法從存放庫讀取該檔案。連結後可再繫結角色。';
+
+  @override
+  String get guardrailClassHostExecution => '在主機上執行指令';
+
+  @override
+  String get environmentUrls => 'URL';
+
+  @override
+  String get environmentScripts => '指令碼';
+
+  @override
+  String get environmentNoneForSpace => '此空間沒有環境';
+
+  @override
+  String get environmentNoneForPr => '此拉取請求沒有環境';
+
+  @override
+  String get environmentSetupBody =>
+      '環境會為一個空間執行儲存庫的服務、指令碼和 URL。只需設定一次，該儲存庫的每個空間都能啟動它。';
+
+  @override
+  String get environmentSetUp => '設定環境';
+
+  @override
+  String get environmentEditDefinition => '編輯定義';
+
+  @override
+  String get environmentOpenPanel => '開啟環境';
+
+  @override
+  String get environmentNeedsSetup => '需要設定';
+
+  @override
+  String get environmentContinueInTerminal => '在終端機中繼續';
+
+  @override
+  String get environmentSetupHint => '工具需要你在終端機中輸入密碼或回答提示。完成後啟動會繼續。';
+
+  @override
+  String get environmentSetupTabReason => '啟動需要你操作，因此開啟了此終端機';
+
+  @override
+  String get environmentSetupTab => '環境設定';
+
+  @override
+  String get environmentsNothingRunning => '此定義沒有正在執行的內容。';
+
+  @override
+  String get searchPoliciesHint => '搜尋政策...';
+
+  @override
+  String get noPoliciesMatch => '沒有符合搜尋條件的政策';
+
+  @override
+  String get memoryPolicyActive => '已啟用';
+
+  @override
+  String get memoryFactType => '類型';
+
+  @override
+  String get memoryTimesRecalled => '調用次數';
+
+  @override
+  String get memorySourceFacts => '來源事實';
+
+  @override
+  String get spaceSetupLogs => '設定記錄';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -30875,9 +31951,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get keybindingPushToTalk => '按住說話';
-
-  @override
-  String get keybindingPushToTalkDescription => '在訊息輸入區按住或切換語音聽寫';
 
   @override
   String get agentPermissions => '代理權限';
@@ -30973,6 +32046,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get rigSurfaceIosSimulator => 'iOS 模擬器';
+
+  @override
+  String get rigSurfaceAppWindow => '應用程式視窗';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -31234,6 +32310,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get rigStreamNeedsFfmpeg => '即時畫面需要此主機已安裝 ffmpeg。請安裝 ffmpeg 後重新開啟分頁。';
+
+  @override
+  String get rigStreamNeedsScreenCapture =>
+      '即時檢視需要螢幕錄製權限。請在系統設定中授權 Control Center，然後重新開啟分頁。';
 
   @override
   String get rigStreamEnded => '即時畫面已結束。';
@@ -32303,10 +33383,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get keybindingOpenFilterMenu => '開啟篩選選單';
-
-  @override
-  String get keybindingOpenThePullRequestFilterMenuDescription =>
-      '開啟 pull request 篩選選單';
 
   @override
   String countSelected(int count) {
@@ -33549,19 +34625,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cancelEdit => '取消編輯';
 
   @override
-  String get categoryCreation => '建立';
-
-  @override
-  String get categoryEditing => '編輯';
-
-  @override
   String get categoryNavigation => '導覽';
-
-  @override
-  String get categorySystem => '系統';
-
-  @override
-  String get categoryView => '分類檢視';
 
   @override
   String get change => '變更';
@@ -34362,30 +35426,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get keepSandboxing => '維持沙箱';
 
   @override
-  String get keybindingAddARepositoryDescription => '新增儲存庫';
-
-  @override
   String get keybindingAddRepository => '新增儲存庫';
-
-  @override
-  String get keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription =>
-      '為所選文章加上或取消書籤';
 
   @override
   String get keybindingCommandPalette => '命令面板';
 
   @override
-  String get keybindingCreateANewAgentDescription => '建立新代理';
-
-  @override
-  String get keybindingCreateANewWorkspaceDescription => '建立新工作區';
-
-  @override
   String get keybindingFocusSearch => '聚焦搜尋';
-
-  @override
-  String get keybindingFocusThePullRequestSearchFieldDescription =>
-      '聚焦 pull request 搜尋欄';
 
   @override
   String get keybindingNewAgent => '新增代理';
@@ -34406,31 +35453,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get keybindingOpenArticle => '開啟文章';
 
   @override
-  String
-  get keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription =>
-      '開啟或關閉側邊欄的工作區切換彈出視窗';
-
-  @override
   String get keybindingOpenPr => '開啟 PR';
 
   @override
   String get keybindingOpenSettings => '開啟設定';
-
-  @override
-  String get keybindingOpenTheApplicationSettingsDescription => '開啟應用程式設定';
-
-  @override
-  String get keybindingOpenTheCommandPaletteDescription => '開啟命令面板';
-
-  @override
-  String get keybindingOpenTheSelectedArticleDescription => '開啟所選文章';
-
-  @override
-  String get keybindingOpenTheSelectedPullRequestDescription =>
-      '開啟所選 pull request';
-
-  @override
-  String get keybindingOpenTheSelectedWorkspaceDescription => '開啟所選工作區';
 
   @override
   String get keybindingOpenWorkspace => '開啟工作區';
@@ -34448,69 +35474,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get keybindingRefresh => '重新整理';
 
   @override
-  String get keybindingRefreshAllFeedsDescription => '重新整理所有動態';
-
-  @override
-  String get keybindingRefreshThePullRequestListDescription =>
-      '重新整理 pull request 清單';
-
-  @override
-  String get keybindingRescanForAdaptersDescription => '重新掃描配接器';
-
-  @override
-  String get keybindingSelectTheNextArticleDescription => '選取下一篇文章';
-
-  @override
-  String get keybindingSelectTheNextSpaceDescription => '選取下一個空間';
-
-  @override
-  String get keybindingSelectThePreviousArticleDescription => '選取上一篇文章';
-
-  @override
-  String get keybindingSelectThePreviousSpaceDescription => '選取上一個空間';
-
-  @override
   String get keybindingSendMessage => '傳送訊息';
-
-  @override
-  String get keybindingSendTheCurrentMessageDescription => '傳送目前訊息';
-
-  @override
-  String get keybindingSwitchBetweenLightAndDarkModeDescription =>
-      '在淺色與深色模式間切換';
-
-  @override
-  String get keybindingSwitchToTheEighthWorkspaceDescription => '切換至第八個工作區';
-
-  @override
-  String get keybindingSwitchToTheFifthWorkspaceDescription => '切換至第五個工作區';
-
-  @override
-  String get keybindingSwitchToTheFirstWorkspaceDescription => '切換至第一個工作區';
-
-  @override
-  String get keybindingSwitchToTheFourthWorkspaceDescription => '切換至第四個工作區';
-
-  @override
-  String get keybindingSwitchToTheNextWorkspaceDescription => '切換至下一個工作區';
-
-  @override
-  String get keybindingSwitchToTheNinthWorkspaceDescription => '切換至第九個工作區';
-
-  @override
-  String get keybindingSwitchToThePreviousWorkspaceDescription => '切換至上一個工作區';
-
-  @override
-  String get keybindingSwitchToTheSecondWorkspaceDescription => '切換到第二個工作區';
-
-  @override
-  String get keybindingSwitchToTheSeventhWorkspaceDescription => '切換到第七個工作區';
-
-  @override
-  String get keybindingSwitchToTheSixthWorkspaceDescription => '切換到第六個工作區';
-
-  @override
-  String get keybindingSwitchToTheThirdWorkspaceDescription => '切換到第三個工作區';
 
   @override
   String get keybindingToggleBookmark => '切換書籤';
@@ -34547,12 +35511,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get keybindingWorkspace9 => '工作區 9';
-
-  @override
-  String get keybindings => '快捷鍵';
-
-  @override
-  String get keybindingsDescription => '所有鍵盤快捷鍵。快捷鍵為固定，無法重新指定。';
 
   @override
   String get killRunning => '終止執行中';
@@ -34810,11 +35768,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get noSavedArticlesBody => '你儲存的文章會顯示在這裡。';
-
-  @override
-  String noShortcutsMatch(String query) {
-    return '沒有快捷鍵符合「$query」';
-  }
 
   @override
   String get noSystemFonts => '未偵測到系統字型。';
@@ -35530,12 +36483,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get searchPlaceholder => '搜尋…';
-
-  @override
-  String get searchShortcuts => '搜尋捷徑…';
-
-  @override
-  String get shortcutUnavailableInBrowser => '在瀏覽器中無法使用';
 
   @override
   String get searching => '搜尋中…';
@@ -37266,6 +38213,27 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get triggerEventSpaceDeleted => '空間已刪除';
 
   @override
+  String get triggerEventSpaceArchived => '空間已封存';
+
+  @override
+  String get triggerEventSpaceProvisioningChanged => '空間佈建已變更';
+
+  @override
+  String get triggerEventPrHeadChanged => 'PR head 已變更';
+
+  @override
+  String get triggerEventEnvironmentStatusChanged => '環境狀態已變更';
+
+  @override
+  String get triggerEventEnvironmentReady => '環境已就緒';
+
+  @override
+  String get triggerEventEnvironmentDestroyed => '環境已銷毀';
+
+  @override
+  String get triggerEventEnvironmentProcessExited => '環境程序已結束';
+
+  @override
   String get triggerExternalPrHelp =>
       '在程式碼託管平台上開啟的拉取請求，不是從 Control Center 開啟的。';
 
@@ -37316,6 +38284,27 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get triggerSpaceDeletedHelp => '對話空間被刪除。';
+
+  @override
+  String get triggerSpaceArchivedHelp => '對話空間被封存。';
+
+  @override
+  String get triggerSpaceProvisioningChangedHelp => '空間工作樹的佈建開始、完成或失敗。';
+
+  @override
+  String get triggerPrHeadChangedHelp => '新提交被推送到開啟的拉取請求。';
+
+  @override
+  String get triggerEnvironmentStatusChangedHelp => '空間環境進入新狀態。';
+
+  @override
+  String get triggerEnvironmentReadyHelp => '空間環境已啟動，可以使用。';
+
+  @override
+  String get triggerEnvironmentDestroyedHelp => '空間環境被拆除。';
+
+  @override
+  String get triggerEnvironmentProcessExitedHelp => '環境執行的程序結束。';
 
   @override
   String get navTickets => '工單';
@@ -39471,18 +40460,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get usageAndCost => '用量與費用';
-
-  @override
-  String get usageAndCostDescription => '根據實際觀察到的執行成本，統計你的代理過去 7 天的花費。';
-
-  @override
-  String get noUsageYet => '尚無使用記錄。';
-
-  @override
-  String get spentThisWeek => '本週花費';
-
-  @override
   String get subscriptionUsage => '訂閱用量';
 
   @override
@@ -39686,9 +40663,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get keybindingNewSpace => '新增空間';
 
   @override
-  String get keybindingCreateANewSpaceDescription => '建立新的空間';
-
-  @override
   String get jumpToLatest => '跳到最新';
 
   @override
@@ -39855,70 +40829,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get preparingWorkspace => '正在準備工作區…';
 
   @override
-  String provisioningRunningSetupScript(String repo) {
-    return '正在為 $repo 執行設定指令碼…';
-  }
-
-  @override
-  String get repoScriptsTitle => '指令碼';
-
-  @override
-  String get repoScriptsTooltip => '設定生命週期指令碼';
-
-  @override
-  String get repoScriptsSetupLabel => '設定指令碼';
-
-  @override
-  String get repoScriptsSetupHelp =>
-      '在空間的工作樹建立後立即於其中執行—安裝相依套件、產生檔案。失敗會將空間標記為失敗；重試會再次執行。';
-
-  @override
-  String get repoScriptsArchiveLabel => '封存指令碼';
-
-  @override
-  String get repoScriptsArchiveHelp => '在空間的工作樹刪除前執行—清理工作樹以外的資源。失敗不會阻擋刪除。';
-
-  @override
-  String get repoScriptsEnvHelp =>
-      '從工作樹透過 bash 執行，並設定 CC_WORKSPACE_PATH（工作樹）、CC_ROOT_PATH（儲存庫根目錄）、CC_SPACE_ID、CC_SPACE_NAME 與 CC_REPO_NAME。';
-
-  @override
-  String get repoScriptsSetupPlaceholder => '例如 pnpm install';
-
-  @override
-  String get repoScriptsArchivePlaceholder =>
-      '例如 docker compose -p \$CC_SPACE_ID down';
-
-  @override
-  String get repoScriptsRecentRuns => '最近的執行';
-
-  @override
-  String get repoScriptsNoRuns => '尚無執行記錄';
-
-  @override
-  String get repoScriptsSaved => '指令碼已儲存';
-
-  @override
-  String get repoScriptsRunKindSetup => '設定';
-
-  @override
-  String get repoScriptsRunKindArchive => '封存';
-
-  @override
-  String get repoScriptsRunStatusRunning => '執行中';
-
-  @override
-  String get repoScriptsRunStatusSucceeded => '已成功';
-
-  @override
-  String get repoScriptsRunStatusFailed => '失敗';
-
-  @override
-  String get repoScriptsRunStatusTimedOut => '逾時';
-
-  @override
-  String repoScriptsExitCode(int code) {
-    return '結束代碼 $code';
+  String provisioningRunningTasks(String repo) {
+    return '正在為 $repo 執行工作樹任務…';
   }
 
   @override
@@ -40708,9 +41620,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get keybindingCheatSheet => '鍵盤快速鍵';
 
   @override
-  String get keybindingShowKeyboardShortcutsDescription => '顯示目前畫面的鍵盤快速鍵小抄';
-
-  @override
   String get runPlaybookLabel => '執行 playbook';
 
   @override
@@ -40721,12 +41630,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get keybindingRedo => '重做';
-
-  @override
-  String get keybindingUndoLastActionDescription => '復原上一個可復原的動作';
-
-  @override
-  String get keybindingRedoLastActionDescription => '重做上一個已復原的動作';
 
   @override
   String get undone => '已復原';
@@ -44441,6 +45344,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get newSkill => '新增技能';
 
   @override
+  String get newItemAction => '新增';
+
+  @override
   String get zoomIn => '放大';
 
   @override
@@ -44649,6 +45555,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get steerNow => '引導';
 
   @override
+  String get steerForce => '停止並傳送';
+
+  @override
   String get steeringQueueLabel => '排隊中的引導訊息';
 
   @override
@@ -44693,15 +45602,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get sandboxExecGrantRevokeConfirmBody => '下次有代理需要從此複本執行程式時，系統會再次詢問你。';
-
-  @override
-  String get repoScriptsTest => '測試';
-
-  @override
-  String get repoScriptsTestTooltip => '在儲存庫的一次性複本中執行此草稿';
-
-  @override
-  String get repoScriptsRunKindTest => '測試';
 
   @override
   String get demoBadgeLabel => '示範';
@@ -44905,6 +45805,47 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get backupServerPathLabel => '伺服器上的路徑';
+
+  @override
+  String get backupScheduledLabel => '排程備份';
+
+  @override
+  String get backupScheduledExplainer => '每個工作區的備份管線所儲存的副本。請在管線範本中設定排程與保留期限。';
+
+  @override
+  String get backupScheduledNone => '尚無備份';
+
+  @override
+  String backupScheduledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個備份',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupScheduledLast(String time) {
+    return '上次備份：$time';
+  }
+
+  @override
+  String get backupListForbidden => '你需要此工作區的管理員角色才能檢視其備份。';
+
+  @override
+  String get backupScheduledDeleteTitle => '刪除此備份？';
+
+  @override
+  String backupScheduledDeleteBody(String date, String name) {
+    return '要從伺服器刪除 $name 在 $date 的備份嗎？此動作無法復原。';
+  }
+
+  @override
+  String get backupScheduledDeleteDone => '備份已刪除。';
+
+  @override
+  String get backupScheduledWorkspaceDeleted => '工作區已刪除';
 
   @override
   String get backupRestoreAction => '還原';
@@ -45495,12 +46436,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get ideQuickOpen => '前往檔案';
 
   @override
-  String get ideQuickOpenDescription => '依名稱搜尋對話中的檔案並在分頁中開啟';
-
-  @override
-  String get prQuickOpenDescription => '依名稱搜尋 pull request 中的檔案並在分頁中開啟';
-
-  @override
   String get ideQuickOpenHint => '依名稱搜尋檔案';
 
   @override
@@ -45820,6 +46755,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get skillEvalForcedEvent => '強制載入';
+
+  @override
+  String get skillEvalHashLabel => '套件雜湊值';
+
+  @override
+  String get skillEvalProgressLabel => '進度';
+
+  @override
+  String get skillEvalUpdatesToggle => '更新評估';
 
   @override
   String get skillEvalHashUnavailable => '此伺服器無法取得套件雜湊值。評估功能已停用。';
@@ -46192,4 +47136,674 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String focusModeRemaining(int minutes) {
     return '還剩 $minutes 分鐘';
   }
+
+  @override
+  String get demoUnavailableEnvironments => '環境會在主機上執行真實處理程序,所以示範版沒有環境。';
+
+  @override
+  String get environmentChecksFailing => '部分檢查在伺服器上失敗';
+
+  @override
+  String environmentCliEndpoints(String names) {
+    return '端點:$names';
+  }
+
+  @override
+  String environmentCliServices(String names) {
+    return '服務:$names';
+  }
+
+  @override
+  String get environmentCopied => '已複製';
+
+  @override
+  String get environmentCopyCommand => '複製指令';
+
+  @override
+  String get environmentCopyUrl => '複製 URL';
+
+  @override
+  String get environmentDefinition => '定義';
+
+  @override
+  String environmentDefinitionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個定義',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentDestroy => '銷毀';
+
+  @override
+  String environmentDestroyBody(String name) {
+    return '$name 及其資料將被移除。啟動會建立新的環境。';
+  }
+
+  @override
+  String get environmentDestroyTitle => '要銷毀此環境嗎?';
+
+  @override
+  String get environmentExec => 'Exec';
+
+  @override
+  String get environmentExecTitle => '在服務中執行';
+
+  @override
+  String environmentExitCode(int code) {
+    return '結束代碼 $code';
+  }
+
+  @override
+  String get environmentHostSetupNeeded => '需要在伺服器上設定';
+
+  @override
+  String get environmentKindApp => '應用程式';
+
+  @override
+  String get environmentKindCli => 'CLI';
+
+  @override
+  String get environmentKindCompose => 'Compose';
+
+  @override
+  String get environmentKindProcess => '處理程序';
+
+  @override
+  String get environmentKindTask => '工作';
+
+  @override
+  String get environmentLaunch => '啟動應用程式';
+
+  @override
+  String get environmentLogsGone => '這些記錄已無法使用。';
+
+  @override
+  String environmentLogsTab(String name) {
+    return '記錄:$name';
+  }
+
+  @override
+  String get environmentLogsWaiting => '正在等待輸出';
+
+  @override
+  String get environmentMoreActions => '更多環境動作';
+
+  @override
+  String get environmentNeedsRecreate => '有變更需要重新建立此環境。';
+
+  @override
+  String get environmentNoStack => '只執行工作樹工作,因此沒有可啟動的內容。';
+
+  @override
+  String get environmentOnTheServer => '在伺服器上';
+
+  @override
+  String get environmentOpenInBrowserVm => '在 Browser (VM) 中開啟';
+
+  @override
+  String get environmentOpenViewer => '開啟檢視器';
+
+  @override
+  String get environmentPlacementRig => '在虛擬機器中';
+
+  @override
+  String get environmentPreviewTab => '環境';
+
+  @override
+  String get environmentRebuildRelaunch => '重新建置並啟動';
+
+  @override
+  String get environmentRecreate => '重新建立';
+
+  @override
+  String environmentRecreateBody(String name) {
+    return '$name 將被銷毀,並以相同選項重新啟動。其資料會遺失。';
+  }
+
+  @override
+  String get environmentRecreateTitle => '要重新建立此環境嗎?';
+
+  @override
+  String environmentResetBody(String name) {
+    return '$name 將回到基準狀態。此後建立的資料會遺失。';
+  }
+
+  @override
+  String get environmentResetData => '重設資料';
+
+  @override
+  String get environmentResetTitle => '要重設資料嗎?';
+
+  @override
+  String get environmentRestart => '重新啟動';
+
+  @override
+  String environmentRestarts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '重新啟動 $count 次',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentRun => '執行';
+
+  @override
+  String get environmentRunInTerminal => '在終端機中執行';
+
+  @override
+  String get environmentSectionTitle => '環境';
+
+  @override
+  String get environmentService => '服務';
+
+  @override
+  String environmentServiceActions(String name) {
+    return '$name 的動作';
+  }
+
+  @override
+  String get environmentStartTitle => '啟動環境';
+
+  @override
+  String get environmentStateCrashed => '已當機';
+
+  @override
+  String get environmentStatusDegraded => '已降級';
+
+  @override
+  String get environmentStatusDestroying => '正在銷毀';
+
+  @override
+  String get environmentStatusGone => '已消失';
+
+  @override
+  String get environmentStatusStopping => '正在停止';
+
+  @override
+  String environmentStopDataLoss(String name) {
+    return '停止 $name 會遺失其資料,再次啟動也無法復原。';
+  }
+
+  @override
+  String get environmentStopLoseData => '停止並遺失資料';
+
+  @override
+  String get environmentStopTitle => '要停止此環境嗎?';
+
+  @override
+  String get environmentTaskNeverRun => '尚未執行';
+
+  @override
+  String get environmentsAddCheck => '新增檢查';
+
+  @override
+  String get environmentsAddOption => '新增選項';
+
+  @override
+  String get environmentsAddRole => '新增角色';
+
+  @override
+  String get environmentsAdminOnly => '只有工作區管理員可以變更定義。';
+
+  @override
+  String get environmentsAfter => '等待這些元件';
+
+  @override
+  String get environmentsAnchor => '錨點';
+
+  @override
+  String get environmentsAutoCreate => '自動啟動';
+
+  @override
+  String get environmentsAutoCreateAll => '在每個符合資格的空間中';
+
+  @override
+  String get environmentsAutoCreateOff => '永不';
+
+  @override
+  String get environmentsAutoCreatePrs => '在提取要求空間中';
+
+  @override
+  String get environmentsBlank => '空白定義';
+
+  @override
+  String get environmentsCheckFix => '修復指令';
+
+  @override
+  String get environmentsCheckHint => '提示';
+
+  @override
+  String get environmentsCommandHelp => '引數以空格分隔。包含空格的引數請加上引號。';
+
+  @override
+  String environmentsComponentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個元件',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get environmentsComponentId => 'ID';
+
+  @override
+  String get environmentsComposeBuild => '啟動時建置映像';
+
+  @override
+  String get environmentsComposeFile => 'Compose 檔案';
+
+  @override
+  String get environmentsComposeHttp => 'HTTP';
+
+  @override
+  String get environmentsComposeNoFile => '無法讀取 compose 檔案。仍可在 JSON 檢視中填寫服務名稱。';
+
+  @override
+  String get environmentsComposeServices => '服務';
+
+  @override
+  String get environmentsComposeServicesHint => '不勾選任何服務即執行全部服務。';
+
+  @override
+  String get environmentsConditionalArgs => '此指令包含條件引數。請在 JSON 檢視中編輯。';
+
+  @override
+  String get environmentsCwdPath => '工作路徑';
+
+  @override
+  String get environmentsCwdRole => '工作角色';
+
+  @override
+  String get environmentsDeleteBody => '空間將無法再啟動它。執行中的環境會繼續執行,直到被停止。';
+
+  @override
+  String environmentsDeleteTitle(String name) {
+    return '要刪除 $name 嗎?';
+  }
+
+  @override
+  String get environmentsDescription => '每個空間可以啟動什麼,以及其工作樹執行哪些工作。';
+
+  @override
+  String get environmentsDraftFromRepo => '從存放庫產生草稿';
+
+  @override
+  String get environmentsEmpty => '還沒有定義';
+
+  @override
+  String get environmentsEnabledWhen => '啟用條件';
+
+  @override
+  String get environmentsEndpointRole => '端點角色';
+
+  @override
+  String get environmentsFollowPrHead => '跟隨提取要求的 head';
+
+  @override
+  String get environmentsForkApproval => '每次啟動都需要管理員';
+
+  @override
+  String get environmentsForkDeny => '已拒絕';
+
+  @override
+  String get environmentsForkPrs => '來自 fork 的提取要求';
+
+  @override
+  String get environmentsForkRig => '在虛擬機器中執行';
+
+  @override
+  String get environmentsIdleStop => '閒置幾分鐘後停止';
+
+  @override
+  String get environmentsIsolateHome => '為應用程式提供私有主目錄';
+
+  @override
+  String get environmentsIssues => '儲存前請修正這些問題';
+
+  @override
+  String environmentsJsonInvalid(String error) {
+    return 'JSON 無效:$error';
+  }
+
+  @override
+  String get environmentsKeepsData => '停止時保留資料';
+
+  @override
+  String get environmentsLinkConfirm => '連結並核准';
+
+  @override
+  String get environmentsLinkFile => '連結存放庫檔案';
+
+  @override
+  String get environmentsLinkHelp => '僅從預設分支讀取,且僅在核准後執行。';
+
+  @override
+  String get environmentsLinkPath => '路徑';
+
+  @override
+  String get environmentsMaxRunning => '同時執行數';
+
+  @override
+  String get environmentsNamingProject => '專案';
+
+  @override
+  String get environmentsNamingTemplate => '名稱範本';
+
+  @override
+  String get environmentsNew => '新增定義';
+
+  @override
+  String get environmentsNewDefinitionName => '新環境';
+
+  @override
+  String get environmentsNoChecks => '此定義沒有檢查。';
+
+  @override
+  String get environmentsNoRuns => '還沒有測試執行';
+
+  @override
+  String get environmentsOnChange => '要監看的路徑';
+
+  @override
+  String get environmentsOptionBool => '是或否';
+
+  @override
+  String get environmentsOptionEnum => '單選';
+
+  @override
+  String get environmentsOptionMulti => '多選';
+
+  @override
+  String get environmentsOptionValues => '值';
+
+  @override
+  String get environmentsPlacement => '放置位置';
+
+  @override
+  String get environmentsPlacementHost => '在主機上';
+
+  @override
+  String get environmentsPlacementRig => '在虛擬機器中';
+
+  @override
+  String get environmentsPrepareTask => '準備工作';
+
+  @override
+  String get environmentsPrimaryEndpoint => '主要端點';
+
+  @override
+  String get environmentsReadyHttp => '此 URL 回應時即就緒';
+
+  @override
+  String get environmentsRestartAlways => '一律';
+
+  @override
+  String get environmentsRestartNever => '永不';
+
+  @override
+  String get environmentsRestartOn => '這些路徑變更時重新啟動';
+
+  @override
+  String get environmentsRestartOnFailure => '失敗時';
+
+  @override
+  String get environmentsRestartPolicy => '重新啟動';
+
+  @override
+  String get environmentsRigTtl => '虛擬機器存活時間(小時)';
+
+  @override
+  String get environmentsRunChecks => '再次執行';
+
+  @override
+  String get environmentsRunTest => '執行測試';
+
+  @override
+  String get environmentsSaved => '定義已儲存';
+
+  @override
+  String get environmentsSectionComponents => '元件';
+
+  @override
+  String get environmentsSectionOptions => '啟動選項';
+
+  @override
+  String get environmentsSectionSeedFiles => '種子檔案';
+
+  @override
+  String get environmentsSectionVariables => '變數';
+
+  @override
+  String get environmentsSeedHelp =>
+      '每行一個路徑,從已註冊的簽出複製。來自 fork 的提取要求永遠不會收到這些檔案。';
+
+  @override
+  String get environmentsShellHelp => '此處不會展開預留位置。請改為讀取 CC_ENV_* 變數。';
+
+  @override
+  String get environmentsSourceApprove => '核准此版本';
+
+  @override
+  String environmentsSourceCurrent(String path) {
+    return '$path 與已核准的版本一致。';
+  }
+
+  @override
+  String get environmentsSourceNotice => '在你核准此版本之前,已核准的版本會繼續執行。';
+
+  @override
+  String get environmentsTabJson => 'JSON';
+
+  @override
+  String get environmentsTabSource => '來源';
+
+  @override
+  String get environmentsTestHelp => '端對端執行一次性環境:檢查、啟動、等待就緒、銷毀。';
+
+  @override
+  String get environmentsTestSaveFirst => '請先儲存定義。';
+
+  @override
+  String get environmentsTimeoutSeconds => '逾時(秒)';
+
+  @override
+  String get environmentsTitle => '環境';
+
+  @override
+  String get environmentsTriggerArchive => '工作樹刪除前';
+
+  @override
+  String get environmentsTriggerChange => '監看的路徑變更時';
+
+  @override
+  String get environmentsTriggerCreate => '每個環境一次';
+
+  @override
+  String get environmentsTriggerManual => '視需要';
+
+  @override
+  String get environmentsTriggerProvision => '工作樹建立時';
+
+  @override
+  String get environmentsTriggerStart => '每次啟動時';
+
+  @override
+  String get environmentsTriggers => '執行時機';
+
+  @override
+  String get environmentsUnreadable => '此用戶端無法讀取此定義。';
+
+  @override
+  String get environmentsUpdateAvailable => '有可用更新';
+
+  @override
+  String get environmentsUseShell => '使用 shell 指令';
+
+  @override
+  String get environmentsUseSourceWarning => '工具將在你自己的簽出上執行。請將其視為唯讀。';
+
+  @override
+  String get environmentsWhenMissing => '空間缺少它時';
+
+  @override
+  String get environmentsWhenMissingAdd => '新增至空間';
+
+  @override
+  String get environmentsWhenMissingSkip => '略過';
+
+  @override
+  String get environmentsWhenMissingSource => '使用已註冊的簽出';
+
+  @override
+  String get environmentsUnsupported => '此伺服器不支援環境。';
+
+  @override
+  String get environmentViewerUnavailable =>
+      '沒有檢視器:伺服器無法擷取此視窗。請在伺服器上允許 Control Center 錄製螢幕。';
+
+  @override
+  String get environmentHealthHealthy => '健康';
+
+  @override
+  String get environmentHealthUnhealthy => '不健康';
+
+  @override
+  String get environmentTerminalStale => '此終端機在環境啟動前開啟,因此缺少環境變數。';
+
+  @override
+  String get environmentTerminalFresh => '開啟新終端機';
+
+  @override
+  String get environmentsShellStays => '多行指令碼仍為 shell 指令:行就是它的結構。';
+
+  @override
+  String get environmentsOverrides => '工作區覆寫';
+
+  @override
+  String get environmentsOverridesHelp =>
+      '檔案本身的設定在這裡是唯讀的。將其角色繫結到此工作區的存放庫,或以 JSON 覆寫任何欄位。';
+
+  @override
+  String get environmentsReposHelp => '此環境使用的存放庫,每個都繫結到一個角色。';
+
+  @override
+  String get environmentsComponentsHelp => '環境執行的內容,依啟動順序排列。';
+
+  @override
+  String get environmentsOptionsHelp => '啟動環境時提供的選項。';
+
+  @override
+  String get environmentsVariablesHelp => '設定在工作、處理程序、應用程式和空間終端機上。';
+
+  @override
+  String get environmentsChecksHelp => '主機執行此環境所需的條件。';
+
+  @override
+  String get environmentsIdleStopHelp => '設為 0 時永不停止。';
+
+  @override
+  String get environmentsAnchorHelp => '持有此存放庫的空間可以啟動該環境。';
+
+  @override
+  String get environmentsRequiredHelp => '缺少它環境就無法執行。';
+
+  @override
+  String get environmentsFollowPrHeadHelp => '提取要求的 head 移動時同步並重新整理。';
+
+  @override
+  String get environmentsRecordNeedsFix => '需要修正';
+
+  @override
+  String get environmentsCheckFile => '檔案';
+
+  @override
+  String get environmentsDiscardBody => '你對此定義的編輯將會遺失。';
+
+  @override
+  String get environmentsWorktreeRuns => '工作樹工作執行';
+
+  @override
+  String get environmentsNoWorktreeRuns => '還沒有執行過工作樹工作。';
+
+  @override
+  String get environmentsLinkRoles => '此檔案中的角色';
+
+  @override
+  String get environmentsLinkNoFile => '無法從存放庫讀取該檔案。連結後可再繫結角色。';
+
+  @override
+  String get guardrailClassHostExecution => '在主機上執行指令';
+
+  @override
+  String get environmentUrls => 'URL';
+
+  @override
+  String get environmentScripts => '指令碼';
+
+  @override
+  String get environmentNoneForSpace => '此空間沒有環境';
+
+  @override
+  String get environmentNoneForPr => '此拉取請求沒有環境';
+
+  @override
+  String get environmentSetupBody =>
+      '環境會為一個空間執行儲存庫的服務、指令碼和 URL。只需設定一次，該儲存庫的每個空間都能啟動它。';
+
+  @override
+  String get environmentSetUp => '設定環境';
+
+  @override
+  String get environmentEditDefinition => '編輯定義';
+
+  @override
+  String get environmentOpenPanel => '開啟環境';
+
+  @override
+  String get environmentNeedsSetup => '需要設定';
+
+  @override
+  String get environmentContinueInTerminal => '在終端機中繼續';
+
+  @override
+  String get environmentSetupHint => '工具需要你在終端機中輸入密碼或回答提示。完成後啟動會繼續。';
+
+  @override
+  String get environmentSetupTabReason => '啟動需要你操作，因此開啟了此終端機';
+
+  @override
+  String get environmentSetupTab => '環境設定';
+
+  @override
+  String get environmentsNothingRunning => '此定義沒有正在執行的內容。';
+
+  @override
+  String get searchPoliciesHint => '搜尋政策...';
+
+  @override
+  String get noPoliciesMatch => '沒有符合搜尋條件的政策';
+
+  @override
+  String get memoryPolicyActive => '已啟用';
+
+  @override
+  String get memoryFactType => '類型';
+
+  @override
+  String get memoryTimesRecalled => '調用次數';
+
+  @override
+  String get memorySourceFacts => '來源事實';
+
+  @override
+  String get spaceSetupLogs => '設定記錄';
 }

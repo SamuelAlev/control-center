@@ -8,9 +8,11 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/pipelines/presentation/screens/pipeline_templates_settings_screen.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -37,6 +39,7 @@ class _NullWorkspaceIdNotifier extends ActiveWorkspaceIdNotifier {
 
 class _FakeTemplateRepo implements PipelineTemplateRepository {
   final List<PipelineDefinition> upserted = [];
+  PipelineDefinition? stored;
 
   @override
   Future<void> upsert(PipelineDefinition definition) async {
@@ -47,7 +50,7 @@ class _FakeTemplateRepo implements PipelineTemplateRepository {
   Future<PipelineDefinition?> getById(
     String workspaceId,
     String templateId,
-  ) async => null;
+  ) async => stored;
 
   @override
   Future<List<PipelineDefinition>> forWorkspace(String workspaceId) async =>
@@ -350,6 +353,113 @@ void main() {
 
       expect(repo.upserted, hasLength(1));
       expect(find.text('editor:pipeline_1'), findsOneWidget);
+    });
+
+    Future<GoRouter> pumpRouted(
+      WidgetTester tester, {
+      required PipelineDefinition template,
+      required PipelineTemplateRepository repo,
+    }) async {
+      final router = GoRouter(
+        initialLocation: '/workspaces/$_workspaceId/settings/pipelines',
+        routes: [
+          GoRoute(
+            path: '/workspaces/:workspaceId/settings/pipelines',
+            builder: (_, _) => const PipelineTemplatesSettingsScreen(),
+          ),
+          GoRoute(
+            path: '/workspaces/:workspaceId/settings/pipelines/:templateId',
+            builder: (_, state) =>
+                Text('editor:${state.pathParameters['templateId']}'),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            activeWorkspaceIdProvider.overrideWith(
+              () => _FixedWorkspaceIdNotifier(_workspaceId),
+            ),
+            pipelineTemplatesProvider(
+              _workspaceId,
+            ).overrideWith((ref) => Stream.value([template])),
+            pipelineTriggersForWorkspaceProvider(
+              _workspaceId,
+            ).overrideWith((ref) => const Stream.empty()),
+            pipelineTemplateRepositoryProvider.overrideWithValue(repo),
+            isDemoServerProvider.overrideWith((ref) => false),
+          ],
+          child: _routedShell(router),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return router;
+    }
+
+    testWidgets('clicking a row opens the editor', (tester) async {
+      await pumpRouted(
+        tester,
+        template: _template(),
+        repo: _FakeTemplateRepo(),
+      );
+
+      expect(find.byTooltip('Edit'), findsNothing);
+      await tester.tap(find.text('Hello Pipeline'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('editor:hello'), findsOneWidget);
+    });
+
+    testWidgets('the switch toggles the template without opening it', (
+      tester,
+    ) async {
+      final template = _template();
+      final repo = _FakeTemplateRepo()..stored = template;
+      await pumpRouted(tester, template: template, repo: repo);
+
+      await tester.tap(find.byType(CcSwitch));
+      await tester.pumpAndSettle();
+
+      expect(repo.upserted.single.isEnabled, isFalse);
+      expect(find.text('editor:hello'), findsNothing);
+    });
+
+    testWidgets('with a mouse, delete waits for hover but the switch stays', (
+      tester,
+    ) async {
+      addTearDown(SettingsHoverReveal.debugForgetMouse);
+      await pumpRouted(
+        tester,
+        template: _template(),
+        repo: _FakeTemplateRepo(),
+      );
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await tester.pumpAndSettle();
+      double deleteOpacity() => tester
+          .widget<AnimatedOpacity>(
+            find
+                .descendant(
+                  of: find.byType(SettingsHoverReveal),
+                  matching: find.byType(AnimatedOpacity),
+                )
+                .first,
+          )
+          .opacity;
+
+      expect(deleteOpacity(), 0);
+      expect(
+        find.descendant(
+          of: find.byType(SettingsHoverReveal),
+          matching: find.byType(CcSwitch),
+        ),
+        findsNothing,
+      );
+      await mouse.moveTo(tester.getCenter(find.text('Hello Pipeline')));
+      await tester.pumpAndSettle();
+      expect(deleteOpacity(), 1);
     });
 
     testWidgets('renders empty state when no templates exist', (tester) async {

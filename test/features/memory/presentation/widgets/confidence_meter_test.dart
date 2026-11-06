@@ -1,10 +1,50 @@
 import 'package:control_center/features/memory/presentation/widgets/confidence_meter.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/test_wrap.dart';
 
 void main() {
+  group('MemoryConfidenceMarker', () {
+    testWidgets('its bar fills in step with the value', (tester) async {
+      await tester.pumpWidget(
+        testWrap(
+          const Center(
+            child: MemoryConfidenceMarker(
+              icon: AppIcons.lightbulb,
+              confidence: 0.5,
+            ),
+          ),
+        ),
+      );
+
+      final fill = tester.getSize(
+        find.descendant(
+          of: find.byType(FractionallySizedBox),
+          matching: find.byType(ColoredBox),
+        ),
+      );
+      expect(fill, const Size(14, 3));
+    });
+  });
+
   group('ConfidenceMeter', () {
+    testWidgets('the fill has height and tracks the value', (tester) async {
+      await tester.pumpWidget(
+        testWrap(const Center(child: ConfidenceMeter(confidence: 0.5))),
+      );
+
+      final fill = tester.getSize(
+        find.descendant(
+          of: find.byType(FractionallySizedBox),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      expect(fill.height, greaterThan(0));
+      expect(fill.width, 20);
+    });
+
     testWidgets('renders high confidence', (tester) async {
       await tester.pumpWidget(
         testWrap(const ConfidenceMeter(confidence: 0.95)),

@@ -70,6 +70,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
       String? agentId,
       String? conversationId,
       String? spaceId,
+      String? runToken,
     })?
     mcpConfigPathResolver,
     Future<List<String>> Function(String workspaceId)? protectedPathsResolver,
@@ -98,6 +99,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     this.autonomyResolver,
     ActionGuardService? actionGuard,
     AgentRunGateway? agentRunGateway,
+    LateEnvironmentPort? environments,
     McpToolRegistry? mcpRegistry,
     SkillScanPort? skillScanner,
     ProviderCredentialStore? harnessCredentialStore,
@@ -149,6 +151,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          kernelLauncherFactory: kernelLauncherFactory,
          actionGuard: actionGuard,
          agentRunGateway: agentRunGateway,
+         environments: environments,
          autonomyResolver: autonomyResolver,
          mcpRegistry: mcpRegistry,
          skillScanner: skillScanner,

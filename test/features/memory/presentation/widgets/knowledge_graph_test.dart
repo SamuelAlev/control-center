@@ -5,6 +5,7 @@ import 'package:cc_domain/core/domain/entities/memory_policy.dart';
 import 'package:cc_domain/features/memory/domain/entities/memory_domain.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/memory/presentation/widgets/knowledge_graph.dart';
+import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_inspector.dart';
 import 'package:control_center/features/memory/providers/memory_providers.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -390,5 +391,100 @@ void main() {
     await tester.pumpAndSettle();
     expect(_translationOf(tester).dx, closeTo(fitted.dx, 0.5));
     expect(_translationOf(tester).dy, closeTo(fitted.dy, 0.5));
+  });
+
+  group('inspector', () {
+    Finder inspector() => find.byType(KnowledgeGraphInspector);
+
+    Future<void> tapPolicy(WidgetTester tester) async {
+      await tester.tap(find.byKey(const ValueKey('policy:p1')));
+      await tester.pumpAndSettle();
+    }
+
+    /// Taps a topic's heading: the lower half of the card is its facts toggle.
+    Future<void> tapTopic(
+      WidgetTester tester,
+      String domain,
+      String topic,
+    ) async {
+      final node = find.byKey(ValueKey('topic:$domain/$topic'));
+      await tester.tapAt(tester.getTopLeft(node) + const Offset(30, 6));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('selecting a node docks it beside a live canvas', (
+      tester,
+    ) async {
+      await _pumpGraph(tester);
+      expect(inspector(), findsNothing);
+
+      await tapPolicy(tester);
+
+      expect(inspector(), findsOneWidget);
+      expect(tester.getSize(inspector()).width, kKnowledgeGraphInspectorWidth);
+      final canvas = tester.getRect(find.byType(InteractiveViewer));
+      expect(canvas.right, lessThanOrEqualTo(tester.getRect(inspector()).left));
+    });
+
+    testWidgets('picking another node swaps the content in place', (
+      tester,
+    ) async {
+      await _pumpGraph(tester);
+      await tapPolicy(tester);
+      expect(find.text('Policy'), findsWidgets);
+
+      await tapTopic(tester, 'prefs', 'editor');
+
+      expect(inspector(), findsOneWidget);
+      expect(find.text('Show facts'), findsWidgets);
+    });
+
+    testWidgets('closing gives the width back', (tester) async {
+      await _pumpGraph(tester);
+      final before = tester.getRect(find.byType(InteractiveViewer));
+      await tapPolicy(tester);
+
+      await tester.tap(_control('Close (Esc)'));
+      await tester.pumpAndSettle();
+
+      expect(inspector(), findsNothing);
+      expect(tester.getRect(find.byType(InteractiveViewer)), before);
+    });
+
+    testWidgets('opening a node keeps the view it was on', (tester) async {
+      await _pumpGraph(tester);
+      final before = _translationOf(tester);
+
+      await tapPolicy(tester);
+
+      expect(_translationOf(tester), before);
+    });
+
+    testWidgets('covers the canvas where there is no room beside it', (
+      tester,
+    ) async {
+      await _pumpGraph(tester, view: const Size(420, 800));
+
+      await tapPolicy(tester);
+
+      expect(tester.getSize(inspector()).width, 420);
+    });
+
+    testWidgets('a node that disappears closes it', (tester) async {
+      final facts = StreamController<List<MemoryFact>>();
+      addTearDown(facts.close);
+      final pumping = _pumpGraph(tester, facts: facts.stream);
+      facts.add(_facts);
+      await pumping;
+      await tester.pumpAndSettle();
+
+      await tapTopic(tester, 'codebase', 'db');
+      expect(inspector(), findsOneWidget);
+
+      facts.add(_facts.where((fact) => fact.id != 'f4').toList());
+      await tester.pumpAndSettle();
+
+      expect(inspector(), findsNothing);
+    });
   });
 }

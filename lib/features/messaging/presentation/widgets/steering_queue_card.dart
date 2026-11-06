@@ -27,8 +27,9 @@ class SteeringQueueCard extends StatefulWidget {
   /// The queued conversation row this card shows.
   final Message card;
 
-  /// Whether a run can still take this card, which is what the "Steer" button
-  /// acts on. False hides it.
+  /// Whether a run can still take this card without being interrupted. Picks
+  /// what the button promises: "Steer", or "Stop and send" when getting the
+  /// card in now means ending the run.
   final bool steerable;
 
   /// The grip the list supplies, already wired to its reorder index.
@@ -40,7 +41,8 @@ class SteeringQueueCard extends StatefulWidget {
   /// Drops the card from the queue.
   final VoidCallback onDelete;
 
-  /// Jumps the card to the front so the next turn boundary injects it first.
+  /// Gets the card in: ahead of the rest of a live lane, or, when [steerable]
+  /// is false, by stopping the run.
   final VoidCallback onDeliver;
 
   @override
@@ -127,13 +129,13 @@ class _SteeringQueueCardState extends State<SteeringQueueCard> {
                   ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          if (widget.steerable && !_editing)
+          if (!_editing)
             CcButton(
               icon: AppIcons.arrowUp,
               variant: CcButtonVariant.secondary,
               size: CcButtonSize.sm,
               onPressed: widget.onDeliver,
-              child: Text(l10n.steerNow),
+              child: Text(widget.steerable ? l10n.steerNow : l10n.steerForce),
             ),
           if (_editing)
             CcIconButton(
@@ -150,6 +152,7 @@ class _SteeringQueueCardState extends State<SteeringQueueCard> {
               onPressed: () => setState(() => _editing = true),
             ),
           CcIconButton(
+            variant: CcButtonVariant.destructive,
             icon: AppIcons.trash2,
             size: CcButtonSize.sm,
             tooltip: l10n.deleteSteeringCard,

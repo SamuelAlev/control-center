@@ -225,7 +225,8 @@ List<String> buildQemuArgv(QemuLaunchPlan plan) {
     EnclosureBackend.qemuTcg => 'tcg',
     EnclosureBackend.smolvm ||
     EnclosureBackend.androidEmulator ||
-    EnclosureBackend.iosSimulator => throw ArgumentError.value(
+    EnclosureBackend.iosSimulator ||
+    EnclosureBackend.hostWindow => throw ArgumentError.value(
       plan.backend.wire,
       'plan.backend',
       'QEMU argv requires a QEMU backend.',
@@ -366,7 +367,7 @@ List<String> buildQemuOverlayArgs({
 /// through the hypervisor. Everything else needs a GPU, an absolute-positioning
 /// tablet and a keyboard.
 bool _surfaceNeedsDisplay(RigSurface surface) => switch (surface) {
-  RigSurface.browser => false,
+  RigSurface.browser || RigSurface.window || RigSurface.environment => false,
   RigSurface.computer || RigSurface.mobile || RigSurface.ios => true,
 };
 

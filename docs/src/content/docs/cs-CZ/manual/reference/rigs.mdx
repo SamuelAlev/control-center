@@ -2,7 +2,7 @@
 title: Stanice
 description: Každá plocha stanice, backend, sloveso akce, stav životního cyklu, port, výchozí hodnota a kontrakt — úplný faktický katalog.
 slug: cs-CZ/prirucka/referencni-prirucka/stanice
-sourceHash: 1c0112917a47e2830fa9e0e436d1dac4d29c757a
+sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
 ---
 
 Jen fakta. Model za nimi je ve [Stanicích a izolovaných
@@ -18,6 +18,8 @@ prostředích](/cs-CZ/prirucka/koncepty/stanice/); stroj otevřeš podle
 | Počítač | Plocha X11: vstup přes hypervisor, záznam přes agenta hosta | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (nezrychlený záložní režim, nikdy se nevybere sám) | Ano |
 | Android | Android přes ADB | Emulátor Googlu | `android-emulator` | **Ne** — síť si řídí emulátor |
 | iOS | Simulátor iOS přes WebDriverAgent | CoreSimulator | `ios-simulator` | **Ne** — síť sleduje hostitelský Mac |
+| Okno aplikace | Okna desktopové aplikace spuštěné z prostředí, prostřednictvím operačního systému | Okno hostitele | `host-window` | **Ne** — aplikace běží na hostiteli s přístupem uživatele serveru |
+| Prostředí | Stack compose a úlohy [prostředí](/cs-CZ/prirucka/navody/prostredi/) s umístěním `rig` | microVM | `smolvm` | Ano |
 
 Terminál a plocha `computer_use` sdílejí hodnotu plochy `computer`; terminál
 se pozná podle značky exec obrazu a nikdy se znovu nepoužije jako plocha,

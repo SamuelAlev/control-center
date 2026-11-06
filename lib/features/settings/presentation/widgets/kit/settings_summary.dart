@@ -136,11 +136,13 @@ class _Fact extends StatelessWidget {
               CcStatusDot(tone: fact.tone!, size: 7),
               const SizedBox(width: AppSpacing.xs),
             ],
-            Text(
-              fact.value,
-              style: fact.mono
-                  ? CcFonts.code(textStyle: valueStyle)
-                  : valueStyle,
+            Flexible(
+              child: Text(
+                fact.value,
+                style: fact.mono
+                    ? CcFonts.code(textStyle: valueStyle)
+                    : valueStyle,
+              ),
             ),
           ],
         ),

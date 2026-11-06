@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/entities/git_repo_info.dart';
 import 'package:cc_domain/core/domain/ports/git_repo_inspector_port.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_natives/cc_natives.dart' show RigWorktreeGuard;
 
 /// Git repo inspector.
 class GitRepoInspector implements GitRepoInspectorPort {
@@ -58,7 +59,11 @@ class GitRepoInspector implements GitRepoInspectorPort {
 
   Future<ProcessResult> _run(String cwd, List<String> args) async {
     try {
-      return await Process.run('git', args, workingDirectory: cwd);
+      return await Process.run(
+        'git',
+        RigWorktreeGuard.gitArgs(args, workingDirectory: cwd),
+        workingDirectory: cwd,
+      );
     } on ProcessException catch (e) {
       return ProcessResult(0, 1, '', e.message);
     }

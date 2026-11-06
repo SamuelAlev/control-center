@@ -2,7 +2,7 @@
 title: 백업, 내보내기, 가져오기
 description: 스냅샷 레이아웃, 매니페스트, 모든 백업 연산과 전송 라우트, 그리고 백업에 포함되는 파일과 포함되지 않는 파일을 정확히 설명합니다.
 slug: ko-KR/매뉴얼/레퍼런스/백업
-sourceHash: c551f9ca76b581889419d7961724b47a6f2f84fd
+sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
 ---
 
 Control Center가 복사하고, 넘겨주고, 받아들일 수 있는 모든 것과 각 산출물의 정확한
@@ -50,7 +50,12 @@ Control Center가 복사하고, 넘겨주고, 받아들일 수 있는 모든 것
 주간 파이프라인의 보존 단계는 구성된 기간(기본값 30일)보다 오래된 자기
 워크스페이스의 백업만 제거합니다. 수동으로 만든 설치 스냅샷은 그 단계에서 순환
 삭제되는 일이 없습니다. `server.listBackups`는 불완전한 것까지 포함해 설치
-스냅샷만 나열합니다.
+스냅샷만 나열하고, `workspace.listBackups`는 워크스페이스 하나의 예약 백업을
+나열합니다.
+
+워크스페이스를 삭제해도 이 디렉터리는 그대로 남습니다. 워크스페이스의 일정이 함께
+멈추므로 그 백업은 더 이상 순환 삭제되지 않고, 설치 소유자가 제거할 때까지 남습니다.
+`server.listOrphanedBackups`가 이를 보고합니다.
 
 
 ### `manifest.json`
@@ -131,6 +136,10 @@ copy-on-write 워크트리를 담고, `pr_clones/`는 캐시이며, `models/`는
 | `server.backupNow`   | 변경   | 설치      | 설치 **소유자** | 없음          | `{ok, path}`                  |
 | `server.listBackups` | 읽기   | 설치      | 설치 **소유자** | 없음          | `{backups: [...]}`            |
 | `server.deleteBackup` | 변경 | 설치      | 설치 **소유자** | `name`        | `{ok}`                        |
+| `server.listOrphanedBackups` | 읽기 | 설치 | 설치 **소유자** | 없음 | `{workspaces: [...]}` |
+| `server.deleteOrphanedBackup` | 변경 | 설치 | 설치 **소유자** | `workspace_id`, `name` | `{ok}` |
+| `workspace.listBackups` | 읽기 | 워크스페이스 | `admin` | 없음 | `{backups: [...]}` |
+| `workspace.deleteBackup` | 변경 | 워크스페이스 | `owner` | `name` | `{ok}` |
 | `workspace.export`   | 읽기   | 워크스페이스 | `admin`      | 없음          | `{ok, path}`                  |
 | `workspace.import`   | 변경   | 워크스페이스 | `owner`      | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | 변경   | 설치*      | `owner`      | `id`          | 레지스트리 행이 삭제됨으로 표시됨 |
@@ -140,6 +149,14 @@ copy-on-write 워크트리를 담고, `pr_clones/`는 캐시이며, `models/`는
 요구합니다.
 
 모든 응답의 `path`는 **서버 호스트**의 경로입니다.
+
+`server.listOrphanedBackups`는 더 이상 살아 있지 않은 워크스페이스마다 항목 하나를
+반환합니다. 항목에는 `workspace_id`, 레지스트리가 아직 알고 있다면 `workspace_name`,
+그리고 `backups`가 들어 있습니다. 삭제된 워크스페이스는 더 이상 워크스페이스 역할 검사를
+통과할 수 없으므로, 그 백업은 설치 소유자의 것이 됩니다. `server.deleteOrphanedBackup`은
+살아 있는 워크스페이스를 거부하며, 그 백업은 `workspace.deleteBackup`과 해당 워크스페이스
+자체의 역할 뒤에 머뭅니다. 두 삭제 연산 모두 목록에 있는 타임스탬프 디렉터리 이름만 받으며
+경로는 받지 않습니다.
 
 :::note[설치 전체 스냅샷은 두 레인 모두 소유자 전용입니다]
 `server.backupNow`, `server.listBackups`, `server.deleteBackup`은 설치
@@ -222,26 +239,32 @@ HTTP 파일 전송 엔드포인트가 아닙니다. 공개 리스너에서 이 �
 | ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | 워크스페이스 **관리자**   |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | 설치 **소유자**     |
+| `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | 워크스페이스 **관리자**. 워크스페이스 삭제 후에는 설치 **소유자** |
 | `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | 워크스페이스 **소유자**   |
 
-`w`는 워크스페이스 id, `n`은 스냅샷 디렉터리 이름, `d`는 호출 기기 id, `s`는
-서명입니다. `n`은 백업 루트에 이어 붙이는 것이 아니라 백업 목록을 기준으로
-해석되므로, 이 라우트를 목록에 없던 디렉터리로 겨냥할 수 없습니다.
+`w`는 워크스페이스 id, `n`은 스냅샷 또는 예약 백업 디렉터리 이름, `d`는 호출 기기 id,
+`s`는 서명입니다. `/backup/snapshot`에서 `n`은 백업 루트에 이어 붙이는 것이 아니라 백업
+목록을 기준으로 해석되므로, 이 라우트를 목록에 없던 디렉터리로 겨냥할 수 없습니다.
+`/backup/stored`에서 `n`은 타임스탬프 이름이어야 하고, 파일은 해당 워크스페이스 자체의
+백업 디렉터리 안에 있는 실제 파일이어야 합니다.
 
 | 상태 | 원인                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | 필수 쿼리 매개변수가 없거나 업로드 본문이 비어 있음                   |
+| `400`  | 필수 쿼리 매개변수가 없거나, 백업 이름이 잘못되었거나, 업로드 본문이 비어 있음 |
 | `403`  | 알 수 없거나 해지된 기기, 잘못된 서명, 또는 호출자에게 역할이 없음              |
-| `404`  | 이 호스트에 백업 포트가 없거나, 지정한 스냅샷/워크스페이스 파일이 없음    |
+| `404`  | 이 호스트에 백업 포트가 없거나, 지정한 스냅샷, 백업 또는 워크스페이스 파일이 없음 |
 | `405`  | `/backup/restore`가 `POST`가 아닌 다른 메서드로 호출됨                                   |
 | `413`  | 선언된 content-length 기준이든 실제로 읽은 바이트 기준이든 업로드 본문이 8 GiB를 초과함     |
 | `426`  | 공개 HTTP 리스너의 전송 경로에 대한 직접 요청. 페어링된 클라이언트의 암호화된 리소스 터널을 사용하세요 |
 | `500`  | 서버 측에서 내보내기나 아카이브가 실패함                                            |
 
-두 다운로드 모두 `Cache-Control: no-store`와 `Accept-Ranges: none`으로
-응답합니다. 요청마다 **새** 사본을 만들어 내고 스트리밍이 끝나면 삭제하므로,
-캐시되거나 재개된 응답은 서로 다른 두 내보내기의 바이트를 이어 붙여, 멀쩡해
-보이지만 그렇지 않은 파일 하나를 만들게 됩니다.
+세 다운로드 모두 `Cache-Control: no-store`와 `Accept-Ranges: none`으로 응답합니다.
+`/backup/workspace`와 `/backup/snapshot`은 요청마다 **새** 사본을 만들어 내고 스트리밍이
+끝나면 삭제하므로, 캐시되거나 재개된 응답은 서로 다른 두 내보내기의 바이트를 이어 붙여,
+멀쩡해 보이지만 그렇지 않은 파일 하나를 만들게 됩니다.
+
+`/backup/stored`는 예외입니다. 예약 백업을 `<workspaceId>-<name>.db`로 스트리밍하고 파일은
+그대로 두는데, 그 파일이 곧 백업이기 때문입니다.
 
 `/backup/snapshot`은 `<name>.zip`을 반환하며, 항목들은 스냅샷 루트 기준 상대
 경로이므로 압축을 풀면 `manifest.json` + `global.db` + `<workspaceId>/workspace.db`가
@@ -270,11 +293,12 @@ HTTP 파일 전송 엔드포인트가 아닙니다. 공개 리스너에서 이 �
 | 전송 스테이징               | `<dataDir>/backups/transfer/` — 작업 공간이며, 여기에 쓰는 라우트가 스윕합니다 |
 | 스냅샷 아카이브 이름          | `<snapshot directory name>.zip`                              |
 | 업로드 상한                 | 암호화된 `/backup/restore` 업로드당 8 GiB                  |
-| 보존                      | 설치 스냅샷: 수동 삭제. 워크스페이스 백업: 주간 파이프라인, 기본 30일 |
+| 보존                      | 설치 스냅샷: 수동 삭제. 워크스페이스 백업: 주간 파이프라인, 기본 30일, 또는 수동 삭제. 삭제된 워크스페이스의 백업: 수동 삭제만 가능 |
 
 `exports/`, `transfer/`, `workspace-backups/` 디렉터리는 설치 스냅샷이 아니며
 `server.listBackups`에서 제외됩니다. 마지막 디렉터리만 예약된 보존 정책을
-가지며, 설치 스냅샷을 삭제하려면 설치 소유자의 명시적인 조치가 필요합니다.
+가지되 그 워크스페이스가 존재하는 동안에만 해당하며, 설치 스냅샷을 삭제하려면 설치
+소유자의 명시적인 조치가 필요합니다.
 
 ## 함께 보기
 

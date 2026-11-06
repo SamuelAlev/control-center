@@ -2618,4 +2618,7 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get transcriptSignInExpiredBody =>
       'اجرا متوقف شد چون اعتبارنامهٔ ارائه‌دهنده دیگر کار نمی‌کند. آن را در تنظیمات ← ارائه‌دهندگان دوباره وصل کنید و سپس این نوبت را دوباره امتحان کنید.';
+
+  @override
+  String get permissionHostExecution => 'اجرای فرمان روی میزبان';
 }

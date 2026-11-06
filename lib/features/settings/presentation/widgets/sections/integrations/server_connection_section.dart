@@ -230,7 +230,7 @@ class _ServerRow extends StatelessWidget {
             CcIconButton(
               icon: AppIcons.trash2,
               size: CcButtonSize.sm,
-              variant: CcButtonVariant.ghost,
+              variant: CcButtonVariant.destructive,
               tooltip: removeHint ?? l10n.remove,
               onPressed: busy ? null : onRemove,
             ),

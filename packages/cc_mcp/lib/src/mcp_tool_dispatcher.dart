@@ -333,6 +333,15 @@ class McpToolDispatcher implements RpcDispatcher {
     if (tool == null) {
       return _errorResponse(-32602, _unknownToolMessage(toolName), request.id);
     }
+    if (tool.requiresRunGrant && scope?.attested != true) {
+      return {
+        'jsonrpc': '2.0',
+        'id': request.id,
+        'result': CallResult.error(
+          '${tool.name} can only be called by a Control Center agent run.',
+        ).toJson(),
+      };
+    }
     final missingScope = (scope ?? const McpCallScope()).firstMissing(
       tool.requiredScopeKeys,
     );

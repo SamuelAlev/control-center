@@ -6,10 +6,27 @@ import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/host/editor_layout_codec.dart';
 import 'package:control_center/shared/editor/host/editor_layout_memo.dart';
 
+/// One read of a layout from the server, from [EditorLayoutPersistence.fetch].
+typedef EditorLayoutFetch = ({
+  /// The decoded layout; null when the server holds none, its payload is
+  /// unrestorable, or the read [failed].
+  EditorLayoutController? layout,
+
+  /// The read itself failed, so nothing is known about the server's copy.
+  /// The host keeps what it shows and must not save over the server's copy.
+  bool failed,
+
+  /// The server's payload differs from what the memo held when the read
+  /// began: another device (or session) saved this layout since.
+  bool changed,
+});
+
 /// Debounced, workspace-scoped persistence of an editor split tree.
 ///
 /// Wraps the [EditorLayoutCodec] and a [CacheRepository] (server-backed
-/// `cache.read`/`cache.write`, so layouts roam across devices). Writes are
+/// `cache.read`/`cache.write`, stored per person, so a layout roams across
+/// that person's devices). A write the server is known to already hold is
+/// skipped. Writes are
 /// debounced (`debounce`, default 400ms) and coalesced; the host flushes
 /// synchronously on dispose / context switch. All I/O is fire-and-forget — a
 /// failed cache read or write must never surface in the UI: a transient RPC
@@ -71,11 +88,19 @@ class EditorLayoutPersistence {
     // the write (the next layout change re-schedules one); it must never
     // surface in the UI or the zone's unhandled-error handler.
     final payload = _codec.encode(l);
+    final memo = _memo;
+    // Unchanged since the server last confirmed it: writing it back would
+    // only replace a newer layout another device saved in the meantime.
+    if (memo != null &&
+        memo.isSynced(workspaceId, _cacheKind, cacheKey, payload)) {
+      return;
+    }
     // Recorded before the RPC: a host that switches away and straight back
     // restores this, not whatever the server answered earlier.
-    _memo?.put(workspaceId, _cacheKind, cacheKey, payload);
+    memo?.put(workspaceId, _cacheKind, cacheKey, payload);
     try {
       await _cache.put(workspaceId, _cacheKind, cacheKey, payload);
+      memo?.confirm(workspaceId, _cacheKind, cacheKey, payload);
     } on RemoteRpcException {
       // Refused / errored server-side — the layout cache is a nicety.
     } on RemoteRpcClientClosedException {
@@ -96,24 +121,48 @@ class EditorLayoutPersistence {
     if (warm != null) {
       return warm.layout;
     }
+    return (await fetch(workspaceId: workspaceId, cacheKey: cacheKey)).layout;
+  }
+
+  /// Reads the server's copy of ([workspaceId], [cacheKey]), bypassing the
+  /// memo: a memo entry is only as fresh as this client's last read or write,
+  /// and the same person may have moved on to another tab on another device
+  /// since. The memo takes the answer unless it holds a local write the
+  /// server has not confirmed, or one landed while the read was in flight:
+  /// that write is newer than the answer, so the answer is not reported as
+  /// changed.
+  Future<EditorLayoutFetch> fetch({
+    required String workspaceId,
+    required String cacheKey,
+  }) async {
+    final memo = _memo;
+    final knewBefore = memo?.knows(workspaceId, _cacheKind, cacheKey) ?? false;
+    final before = memo?.get(workspaceId, _cacheKind, cacheKey);
+    final unsynced =
+        memo?.hasUnsyncedWrite(workspaceId, _cacheKind, cacheKey) ?? false;
     final String? payload;
     try {
       payload = await _cache.read(workspaceId, _cacheKind, cacheKey);
     } on RemoteRpcException {
-      return null;
+      return (layout: null, failed: true, changed: false);
     } on RemoteRpcClientClosedException {
-      return null;
+      return (layout: null, failed: true, changed: false);
     } on TimeoutException {
-      return null;
+      return (layout: null, failed: true, changed: false);
     }
-    // A write since the read started is newer than what the server said.
-    if (_memo?.knows(workspaceId, _cacheKind, cacheKey) == false) {
-      _memo?.put(workspaceId, _cacheKind, cacheKey, payload);
+    final localIsNewer =
+        unsynced ||
+        (memo != null &&
+            (memo.knows(workspaceId, _cacheKind, cacheKey) != knewBefore ||
+                memo.get(workspaceId, _cacheKind, cacheKey) != before));
+    if (!localIsNewer) {
+      memo?.put(workspaceId, _cacheKind, cacheKey, payload, synced: true);
     }
-    if (payload == null) {
-      return null;
-    }
-    return _codec.decode(payload);
+    return (
+      layout: payload == null ? null : _codec.decode(payload),
+      failed: false,
+      changed: !localIsNewer && (!knewBefore || before != payload),
+    );
   }
 
   /// The layout for ([workspaceId], [cacheKey]) when the memo already knows
