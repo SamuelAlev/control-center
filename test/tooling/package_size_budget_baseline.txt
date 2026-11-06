@@ -56,9 +56,10 @@ packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3356
 # and the native window library's candidates.
 # Lowered 2026-11-06: messaging.retry/cancelSpaceProvisioning moved to
 # catalog/space_provisioning_ops.dart, the row writers to space_provisioning_row_writers.dart.
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8219
+# Lowered 2026-11-07: f2500ccfa landed these two smaller than it recorded.
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8208
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
-packages/cc_server_core/lib/src/local_rpc_server.dart  2560
+packages/cc_server_core/lib/src/local_rpc_server.dart  2536
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1715
 packages/cc_server_core/lib/src/remote_rpc_catalog.dart  15853
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2633

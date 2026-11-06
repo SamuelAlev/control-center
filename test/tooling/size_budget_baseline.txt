@@ -37,10 +37,18 @@
 # growing plan_studio_screen.dart past the previous floor.
 # Raised 2026-11-06: the PR page's Environment tab is wired through the detail
 # screen and the sidebar's environment section (8 lines each).
-lib/features/agents/presentation/screens/agent_registry_screen.dart  609
+# Raised 2026-11-07 to the line counts f2500ccfa landed with: editing an unsent
+# PR comment with a draft that survives scrolling (comment_thread_widget.dart,
+# pr_comment_actions.dart, and the draft provider in the diff and composer
+# files), repo rows that open on click (repos_settings_view.dart, whose 553 was
+# recorded mid-refactor; it was 578 before that commit), the New agent button
+# following a selected agent on narrow windows (agent_registry_screen.dart),
+# and the destructive button variant on confirm dialogs.
+# Lowered the four files that commit shrank.
+lib/features/agents/presentation/screens/agent_registry_screen.dart  628
 lib/features/agents/presentation/widgets/agent_form_dialog.dart  745
 lib/features/agents/presentation/widgets/agent_logs_tab.dart  483
-lib/features/agents/presentation/widgets/org_chart_view.dart  514
+lib/features/agents/presentation/widgets/org_chart_view.dart  509
 lib/features/calendar/presentation/screens/calendar_screen.dart  671
 lib/features/calendar/presentation/widgets/calendar_event_detail_panel.dart  1071
 lib/features/calendar/presentation/widgets/calendar_kalender_host.dart  1257
@@ -67,7 +75,7 @@ lib/features/messaging/presentation/widgets/context_usage_flyout.dart  304
 lib/features/messaging/presentation/widgets/conversations_sidebar_section.dart  530
 lib/features/messaging/presentation/widgets/message_feed.dart  315
 lib/features/newsfeed/presentation/screens/article_webview_screen.dart  430
-lib/features/newsfeed/presentation/settings/newsfeed_feeds_section.dart  501
+lib/features/newsfeed/presentation/settings/newsfeed_feeds_section.dart  503
 lib/features/newsfeed/presentation/widgets/adblocker_webview.dart  474
 lib/features/newsfeed/presentation/widgets/article_grid.dart  356
 lib/features/observability/presentation/widgets/insights/insights_toolbar.dart  355
@@ -79,12 +87,12 @@ lib/features/observability/presentation/widgets/sections/goal_section.dart  349
 lib/features/observability/presentation/widgets/sections/quota_section.dart  445
 lib/features/observability/presentation/widgets/usage/usage_trend_chart.dart  339
 lib/features/orchestration/presentation/widgets/orchestration_proposal_bubble.dart  392
-lib/features/pipelines/presentation/screens/pipeline_run_detail_screen.dart  503
+lib/features/pipelines/presentation/screens/pipeline_run_detail_screen.dart  504
 lib/features/pipelines/presentation/screens/pipeline_run_screen.dart  619
-lib/features/pipelines/presentation/screens/pipeline_template_editor_screen.dart  1033
+lib/features/pipelines/presentation/screens/pipeline_template_editor_screen.dart  1036
 lib/features/pipelines/presentation/screens/pipelines_screen.dart  510
 lib/features/pipelines/presentation/widgets/condition_config_editor.dart  450
-lib/features/pipelines/presentation/widgets/node_config_editor.dart  775
+lib/features/pipelines/presentation/widgets/node_config_editor.dart  776
 lib/features/pipelines/presentation/widgets/node_type_visuals.dart  354
 lib/features/pipelines/presentation/widgets/pipeline_canvas.dart  429
 lib/features/pipelines/presentation/widgets/pipeline_editor_canvas.dart  536
@@ -96,7 +104,7 @@ lib/features/pipelines/presentation/widgets/pipeline_run_waterfall.dart  463
 lib/features/pipelines/presentation/widgets/pipeline_step_detail_panel.dart  910
 lib/features/pipelines/presentation/widgets/trigger_node_panel.dart  388
 lib/features/plan_studio/presentation/screens/plan_studio_screen.dart  672
-lib/features/plan_studio/presentation/screens/plans_screen.dart  343
+lib/features/plan_studio/presentation/screens/plans_screen.dart  344
 lib/features/plan_studio/presentation/widgets/plan_canvas.dart  651
 lib/features/plan_studio/presentation/widgets/plan_node_inspector.dart  619
 lib/features/plan_studio/presentation/widgets/plan_version_panel.dart  306
@@ -120,7 +128,7 @@ lib/features/pr_review/presentation/widgets/merge_flyout_button.dart  461
 lib/features/pr_review/presentation/widgets/open_in_ide_button.dart  640
 lib/features/pr_review/presentation/widgets/picker_flyout.dart  387
 lib/features/pr_review/presentation/widgets/pr_activity_timeline.dart  1795
-lib/features/pr_review/presentation/widgets/pr_comment_actions.dart  411
+lib/features/pr_review/presentation/widgets/pr_comment_actions.dart  434
 lib/features/pr_review/presentation/widgets/pr_detail_skeleton.dart  445
 lib/features/pr_review/presentation/widgets/pr_diff_file_tree.dart  1074
 lib/features/pr_review/presentation/widgets/pr_diff_view.dart  312
@@ -138,12 +146,12 @@ lib/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_comp
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart  1235
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver_input.dart  562
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver_painting.dart  468
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart  3824
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart  3827
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart  929
 lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_bar.dart  406
 lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_menu.dart  1280
-lib/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart  407
-lib/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart  1072
+lib/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart  408
+lib/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart  1137
 lib/features/pr_review/presentation/widgets/pr_inline_comments/inline_reply_form.dart  450
 lib/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_renderer.dart  308
 lib/features/pr_review/presentation/widgets/pr_meta_strip.dart  465
@@ -155,39 +163,39 @@ lib/features/pr_review/presentation/widgets/pr_worktree_search_panel.dart  917
 lib/features/pr_review/presentation/widgets/reaction_bar.dart  396
 lib/features/pr_review/presentation/widgets/review_accordion_item.dart  500
 lib/features/pr_review/presentation/widgets/review_accordion_list.dart  641
-lib/features/pr_review/presentation/widgets/review_overlay.dart  796
+lib/features/pr_review/presentation/widgets/review_overlay.dart  797
 lib/features/pr_review/presentation/widgets/reviewer_picker_flyout.dart  569
 lib/features/pr_review/presentation/widgets/sticky_header.dart  331
 lib/features/pr_review/presentation/widgets/workflow_job_detail.dart  1074
 lib/features/pr_review/presentation/widgets/workflow_run_canvas.dart  440
 lib/features/remote_control/presentation/widgets/server_pairing_panel.dart  393
-lib/features/repos/presentation/settings/repos_settings_view.dart  553
+lib/features/repos/presentation/settings/repos_settings_view.dart  596
 lib/features/repos/presentation/widgets/add_repo_dialog.dart  495
 lib/features/service_status/presentation/widgets/service_status_indicator.dart  627
 lib/features/settings/presentation/widgets/adapter_enforcement_section.dart  351
 lib/features/settings/presentation/widgets/font_picker.dart  517
-lib/features/settings/presentation/widgets/harness_provider_login.dart  499
+lib/features/settings/presentation/widgets/harness_provider_login.dart  500
 lib/features/settings/presentation/widgets/model_browser_dialog.dart  533
-lib/features/settings/presentation/widgets/providers/add_provider_pane.dart  341
+lib/features/settings/presentation/widgets/providers/add_provider_pane.dart  342
 lib/features/settings/presentation/widgets/providers/model_edit_dialog.dart  341
-lib/features/settings/presentation/widgets/providers/provider_model_list.dart  324
-lib/features/settings/presentation/widgets/sections/general/notifications_section.dart  544
+lib/features/settings/presentation/widgets/providers/provider_model_list.dart  325
+lib/features/settings/presentation/widgets/sections/general/notifications_section.dart  545
 lib/features/settings/presentation/widgets/sections/integrations/server_sharing_section.dart  345
 lib/features/settings/presentation/widgets/sections/skills/skill_scan_widgets.dart  390
 lib/features/settings/presentation/widgets/sections/skills/skill_sources_panel.dart  1039
 lib/features/settings/presentation/widgets/sections/system/audio_input_row.dart  329
-lib/features/settings/presentation/widgets/sections/system/backup_snapshots_section.dart  481
+lib/features/settings/presentation/widgets/sections/system/backup_snapshots_section.dart  447
 lib/features/settings/presentation/widgets/sections/system/workspace_data_row.dart  402
 lib/features/settings/presentation/widgets/sections/workspace/activity_formatting.dart  397
 lib/features/settings/presentation/widgets/sections/workspace/meeting_templates_section.dart  334
 lib/features/settings/presentation/widgets/sections/workspace/members_roster_section.dart  522
 lib/features/settings/presentation/widgets/sections/workspace/workspace_activity_section.dart  577
-lib/features/settings/presentation/widgets/skills_settings.dart  877
+lib/features/settings/presentation/widgets/skills_settings.dart  871
 lib/features/shell/presentation/widgets/notification_bell.dart  572
 lib/features/shell/presentation/widgets/server_shutdown_overlay.dart  438
 lib/features/shell/presentation/widgets/title_bar_workspace_chip.dart  363
 lib/features/teams/presentation/widgets/team_detail_panel.dart  559
-lib/features/teams/presentation/widgets/teams_management_view.dart  406
+lib/features/teams/presentation/widgets/teams_management_view.dart  402
 lib/features/ticketing/presentation/screens/project_overview_screen.dart  550
 lib/features/ticketing/presentation/screens/tickets_screen.dart  1147
 lib/features/ticketing/presentation/widgets/new_ticket_dialog.dart  569
