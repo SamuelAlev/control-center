@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:control_center/app/tray/main_window_visibility.dart';
+import 'package:control_center/app/tray/tray_icon_host.dart';
 import 'package:control_center/app/window_geometry_watcher.dart';
 import 'package:control_center/app/window_placement.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
@@ -51,6 +53,11 @@ const String meetingToolbarWindowTitle = 'Recording \\\\ Control Center';
 
 /// Title of the floating soundscape mini-player HUD window.
 const String soundscapeMiniPlayerWindowTitle = 'Soundscape \\\\ Control Center';
+
+/// Title of the tray (menu bar) panel. Ends with the app's name like the
+/// HUDs, so neither [isMainWindowTitle] nor the Windows runner's second-launch
+/// raise (which matches titles STARTING with it) mistakes it for the app.
+const String trayPanelWindowTitle = 'Tray \\\\ Control Center';
 
 /// Fixed content size of the floating focus pill HUD. Matches the meeting
 /// toolbar's height so the two HUDs read as siblings rather than one dwarfing
@@ -212,6 +219,46 @@ void styleWindowOnShow(Window window, AppPreferences prefs) {
           soundscapeMiniPlayerSize,
         ),
       );
+    case trayPanelWindowTitle:
+      _styleTrayPanel(window);
+  }
+}
+
+/// The tray panel: a frameless popover against the tray icon.
+///
+/// Unlike the HUDs it is focusable — it takes the keyboard (arrows, Return,
+/// Escape) and closes when it loses focus, the way a menu-bar popover does.
+/// It stays out of the taskbar and the window cycle, rides along to every
+/// Space and over a full-screen app, and is placed fresh on each opening:
+/// each opening is a new window, and the icon may have moved.
+void _styleTrayPanel(Window window) {
+  final layout = _readDisplayLayout();
+  final primaryWorkArea = layout.primary;
+  final bounds = primaryWorkArea == null
+      ? null
+      : resolveTrayPanelBounds(
+          anchor: TrayIconHost.instance.lastAnchor,
+          workAreas: layout.workAreas,
+          primaryWorkArea: primaryWorkArea,
+          preferTop: defaultTargetPlatform == TargetPlatform.macOS,
+        );
+  final size = (bounds?.size ?? trayPanelSize).toNative();
+  window
+    ..minimumSize = size
+    ..maximumSize = size
+    ..isResizable = false
+    ..isMinimizable = false
+    ..isMaximizable = false
+    ..isFullScreenable = false
+    ..titleBarStyle = TitleBarStyle.hidden
+    ..isWindowControlButtonsVisible = false
+    ..isAlwaysOnTop = true
+    ..isVisibleInTaskbar = false
+    ..isVisibleOnAllWorkspaces = true
+    ..hasShadow = true
+    ..backgroundColor = _transparent.toNative();
+  if (bounds != null && _geometryRestoredWindowIds.add(window.id)) {
+    window.bounds = bounds.toNative();
   }
 }
 
@@ -408,6 +455,13 @@ Offset _hudPosition(
 /// Brings the primary application window to the front (show + focus). Used when
 /// returning from a HUD (e.g. expanding the focus pill, stopping a recording).
 void focusPrimaryWindow() {
+  // Through the window's own handle when it is known: a main window hidden in
+  // the tray is not in Windows' window list, and revealing it also clears the
+  // hidden state the tray reads.
+  if (MainWindowVisibility.instance.attached) {
+    MainWindowVisibility.instance.reveal();
+    return;
+  }
   for (final window in WindowManager.instance.getAll()) {
     if (window.title == primaryWindowTitle) {
       window

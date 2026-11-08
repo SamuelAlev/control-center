@@ -8,9 +8,7 @@ SubscriptionUsage _ok([double used = 0.4]) => SubscriptionUsage(
   providerId: 'claude',
   displayName: 'Claude',
   status: SubscriptionStatus.ok,
-  windows: [
-    SubscriptionWindow(id: '5h', label: 'Session', usedFraction: used),
-  ],
+  windows: [SubscriptionWindow(id: '5h', label: 'Session', usedFraction: used)],
 );
 
 const _throttled = SubscriptionUsage(
@@ -136,5 +134,74 @@ void main() {
     cache.invalidate('/a');
     await cache.get('/a');
     expect(calls, 2);
+  });
+
+  group('observe', () {
+    const session = SubscriptionWindow(
+      id: '5h',
+      label: 'Session',
+      usedFraction: 0.1,
+    );
+    const weekly = SubscriptionWindow(
+      id: '7d',
+      label: 'Weekly',
+      usedFraction: 0.2,
+    );
+
+    SubscriptionUsage reading(SubscriptionStatus status) => SubscriptionUsage(
+      providerId: 'claude',
+      displayName: 'Claude',
+      status: status,
+      windows: const [session, weekly],
+      fetchedAt: DateTime.utc(2030),
+    );
+
+    test('a live report replaces the window it names', () async {
+      var fetches = 0;
+      final cache = ClaudeUsageCache(
+        fetch: (_) async {
+          fetches++;
+          return reading(SubscriptionStatus.ok);
+        },
+      );
+      await cache.get('/a');
+
+      cache.observe('/a', const [
+        SubscriptionWindow(id: '5h', label: 'Session', usedFraction: 0.9),
+      ]);
+      final usage = await cache.get('/a');
+
+      expect(usage.windows.map((w) => w.usedFraction), [0.9, 0.2]);
+      expect(fetches, 1);
+    });
+
+    test('a report cannot invent a reading that was never taken', () async {
+      var fetches = 0;
+      final cache = ClaudeUsageCache(
+        fetch: (_) async {
+          fetches++;
+          return reading(SubscriptionStatus.ok);
+        },
+      );
+
+      cache.observe('/a', const [session]);
+      await cache.get('/a');
+
+      expect(fetches, 1);
+    });
+
+    test('a failed reading stays failed', () async {
+      final cache = ClaudeUsageCache(
+        fetch: (_) async => reading(SubscriptionStatus.error),
+      );
+      await cache.get('/a');
+
+      cache.observe('/a', const [
+        SubscriptionWindow(id: '5h', label: 'Session', usedFraction: 0.9),
+      ]);
+
+      expect((await cache.get('/a')).status, SubscriptionStatus.error);
+      expect((await cache.get('/a')).windows.first.usedFraction, 0.1);
+    });
   });
 }

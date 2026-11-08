@@ -256,6 +256,11 @@ String settingsAgentAttributionRoute(String workspaceId) =>
 String settingsAudioRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/you/audio';
 
+/// Settings → You → Desktop app (tray icon, closing the window, opening at
+/// login). Desktop-only: the page configures the native process.
+String settingsDesktopAppRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/you/desktop';
+
 /// Settings → You → Your devices (paired phones + remote control).
 String settingsRemoteControlRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/you/devices';

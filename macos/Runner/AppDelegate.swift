@@ -186,6 +186,12 @@ class AppDelegate: FlutterAppDelegate {
   private let windowsWithSystemDragDisabled = NSHashTable<NSWindow>.weakObjects()
   private var windowDragObserver: NSObjectProtocol?
 
+  // Whether macOS started this process as a login item. Read once at launch:
+  // the Apple Event that says so is only current while the launch is being
+  // handled, and Dart asks for it later (`launchContext`) to decide whether
+  // the main window opens or the app starts in the menu bar.
+  private var launchedAtLogin = false
+
   override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     // Dart owns both user-requested close-to-quit (`_QuitOnCloseDelegate`) and
     // programmatic window replacement. Closing the setup window during boot,
@@ -198,7 +204,33 @@ class AppDelegate: FlutterAppDelegate {
     return true
   }
 
+  /// A Dock-icon click (or a relaunch from Finder/Spotlight while running).
+  ///
+  /// With "close to tray" the main window is ordered out rather than
+  /// destroyed, and AppKit's default reopen handling only de-miniaturizes; it
+  /// never orders a hidden window back in. Dart owns which window that is and
+  /// whether it is hidden, so the click is forwarded unconditionally — even
+  /// with `flag` true, because a floating HUD (focus pill, recording toolbar)
+  /// counts as a visible window while the main one is gone. Returning true
+  /// keeps AppKit's own de-miniaturize for a window that was merely minimized.
+  override func applicationShouldHandleReopen(
+    _ sender: NSApplication, hasVisibleWindows flag: Bool
+  ) -> Bool {
+    appChannel?.invokeMethod("reopen", arguments: nil)
+    return true
+  }
+
   override func applicationDidFinishLaunching(_ notification: Notification) {
+    // Must run first, while the launch's Apple Event is still the current one.
+    // An SMAppService main-app login item is launched with
+    // `keyAELaunchedAsLogInItem` as the open event's property data.
+    if let event = NSAppleEventManager.shared().currentAppleEvent {
+      launchedAtLogin =
+        event.eventID == AEEventID(kAEOpenApplication)
+        && event.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))?.enumCodeValue
+          == OSType(keyAELaunchedAsLogInItem)
+    }
+
     // Before the engine exists: its first frame already draws from the
     // back-buffer cache this patches (flutter/flutter#185394).
     SurfaceCacheGuard.install()
@@ -289,6 +321,10 @@ class AppDelegate: FlutterAppDelegate {
       case "endBackgroundActivity":
         self?.endBackgroundActivity()
         result(nil)
+      case "launchContext":
+        // How this process was started, for the startup-window decision
+        // (lib/app/tray/launch_context.dart).
+        result(["launchedAtLogin": self?.launchedAtLogin ?? false])
       default:
         result(FlutterMethodNotImplemented)
       }

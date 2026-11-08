@@ -33,6 +33,7 @@ import 'package:control_center/features/settings/presentation/screens/agents_set
 import 'package:control_center/features/settings/presentation/screens/appearance_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/audio_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/backup_settings_screen.dart';
+import 'package:control_center/features/settings/presentation/screens/desktop_app_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/diagnostics_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/environments_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/links_settings_screen.dart';
@@ -533,6 +534,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: settingsAudioRoute(workspaceIdParam),
             pageBuilder: (context, state) =>
                 buildPage(state, _absorb(const AudioSettingsScreen())),
+          ),
+          GoRoute(
+            path: settingsDesktopAppRoute(workspaceIdParam),
+            pageBuilder: (context, state) =>
+                buildPage(state, _absorb(const DesktopAppSettingsScreen())),
           ),
           GoRoute(
             path: settingsRemoteControlRoute(workspaceIdParam),

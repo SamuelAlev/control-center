@@ -7,8 +7,9 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 /// The real startup lives behind a conditional-import seam (`bootstrap.dart`):
 /// on the VM it runs the full native multi-window desktop bootstrap; on web it
 /// runs the connect-then-render thin-client bootstrap. Both expose
-/// `bootstrapAndRun`, so this shim is target-agnostic.
-void main() {
+/// `bootstrapAndRun`, so this shim is target-agnostic. [arguments] are the
+/// program's own (the desktop runners forward theirs).
+void main(List<String> arguments) {
   markAppLaunch();
   // Use clean path-based URLs on web (`/workspaces/<id>/dashboard` instead of
   // `/#/workspaces/<id>/dashboard`). This also frees the URL fragment for the
@@ -17,5 +18,5 @@ void main() {
   // app already serves index.html for every path (wrangler.jsonc
   // `single-page-application`), so deep-link reloads resolve to the app shell.
   usePathUrlStrategy();
-  bootstrapAndRun();
+  bootstrapAndRun(arguments);
 }

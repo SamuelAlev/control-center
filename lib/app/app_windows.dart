@@ -7,9 +7,12 @@
 
 import 'dart:ui' show AppExitType;
 
+import 'package:control_center/app/native_window_handle.dart';
+import 'package:control_center/app/tray/main_window_visibility.dart';
 import 'package:control_center/app/window_chrome.dart';
 import 'package:control_center/app/window_placement.dart';
 import 'package:control_center/core/observability/sentry_bootstrap.dart';
+import 'package:control_center/features/desktop_app/presentation/tray/tray_presenter.dart';
 import 'package:control_center/features/focus_mode/presentation/screens/focus_pill_window.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_toolbar_controller.dart';
@@ -44,6 +47,21 @@ class _QuitOnCloseDelegate extends WindowControllerDelegate {
     // `cancelable` so any `onExitRequested` handler (stops the spawned server)
     // runs and can veto; in this app it always approves, so the process exits.
     WidgetsBinding.instance.exitApplication(AppExitType.cancelable);
+  }
+}
+
+/// The primary window's close: hide to the tray when the operator chose to
+/// keep running ([MainWindowVisibility.interceptClose]), quit otherwise.
+///
+/// Only the primary window gets this. The setup and boot-failure windows keep
+/// [_QuitOnCloseDelegate]: there is no session behind them to keep running.
+class _PrimaryCloseDelegate extends _QuitOnCloseDelegate {
+  @override
+  void onWindowCloseRequested(WindowController controller) {
+    if (MainWindowVisibility.instance.interceptClose()) {
+      return;
+    }
+    super.onWindowCloseRequested(controller);
   }
 }
 
@@ -126,7 +144,9 @@ class _SessionHudWindows extends ConsumerWidget {
     );
     final toolbarOpen = ref.watch(meetingToolbarControllerProvider);
     final soundscapeOpen = ref.watch(soundscapeMiniPlayerControllerProvider);
-    return ViewCollection(
+    // The presenter owns the tray icon for this session and adds the tray
+    // panel to these views while it is open.
+    return TrayPresenter(
       views: [
         if (focusCompact) const FocusPillWindow(),
         if (toolbarOpen) const MeetingToolbarWindow(),
@@ -151,9 +171,10 @@ class PrimaryWindow extends StatefulWidget {
 
 class _PrimaryWindowState extends State<PrimaryWindow> {
   // Closing the main window quits the app (and stops the spawned server)
-  // rather than leaving a headless engine running with no windows. Held here
-  // so the app-drawn close button can take the very same path.
-  static final WindowControllerDelegate _quitOnClose = _QuitOnCloseDelegate();
+  // rather than leaving a headless engine running with no windows — unless
+  // the operator keeps it running in the tray, which hides the window
+  // instead. Held here so the app-drawn close button takes the same path.
+  static final WindowControllerDelegate _quitOnClose = _PrimaryCloseDelegate();
 
   final WindowController _controller = WindowController(
     // Shared with the restore path so the size the window is CREATED at and
@@ -175,14 +196,20 @@ class _PrimaryWindowState extends State<PrimaryWindow> {
     _quitOnClose,
   );
 
+  nativeapi.Window? _resolveNative() => nativeWindowOf(_controller);
+
   @override
   void initState() {
     super.initState();
+    // Before the first show, so a login launch that starts hidden can keep
+    // the window from ever appearing (see the will-show hook).
+    MainWindowVisibility.instance.attach(_resolveNative);
     _showMainWindowOnCreate(_controller);
   }
 
   @override
   void dispose() {
+    MainWindowVisibility.instance.detach(_resolveNative);
     // Unmounted mid-frame when the app gives way to the server setup window:
     // defer the native destroy past the frame for the same focus reason as
     // `_ServerSetupWindowState.dispose`. Server switches keep this State.

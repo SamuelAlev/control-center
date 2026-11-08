@@ -234,6 +234,7 @@ import 'package:cc_server_core/src/review_fix_dispatch.dart';
 import 'package:cc_server_core/src/rig_event_listener.dart';
 import 'package:cc_server_core/src/rpc_exception_mapper.dart';
 import 'package:cc_server_core/src/run_log_reader.dart';
+import 'package:cc_server_core/src/runtime/claude_session_runtime.dart';
 import 'package:cc_server_core/src/runtime/review_impact_payloads.dart';
 import 'package:cc_server_core/src/runtime/server_extra_ops.dart';
 import 'package:cc_server_core/src/runtime/server_fleet_wiring.dart';
@@ -2343,6 +2344,9 @@ Future<CcServer> runCcServer({
     return [for (final r in repos) r.path];
   }
 
+  final claudeSessions = ClaudeSessionRuntime(dataDir: config.dataDir);
+  final claudeUsageCache = claudeSessions.usageCache;
+
   agentDispatch = SandboxedAgentDispatchAdapter(
     // Injecting the LOOP (not a fake dispatch port, and not just a scripted
     // provider) is what makes a public demo safe: the dispatch path builds its
@@ -2403,6 +2407,9 @@ Future<CcServer> runCcServer({
     toolOutputStore: toolOutputStore,
     claudeSessionStore: claudeSessionStore,
     claudeContextWindowOf: claudeCodeModels.contextWindowOf,
+    onClaudeUsageWindows: claudeUsageCache.observe,
+    claudeSessionSettings: claudeSessions.settings.read,
+    claudeIdleCompactor: claudeSessions.compactor,
     llmCallRecordRepository: llmCallRecordRepository,
     // The `debug` tool: a stopped frame answers every question about that
     // moment at once, where a print statement answers one and costs a run.
@@ -2524,6 +2531,7 @@ Future<CcServer> runCcServer({
     // `<cwd>/.mcp.json` so a port/token change is always picked up, each
     // agent's config is isolated to its own overlay cwd and the `X-CC-*`
     // scope headers pin the session to its workspace server-side.
+    mcpServersResolver: mcpControl.agentMcpServersForDispatch,
     mcpConfigPathResolver:
         (cwd, {workspaceId, agentId, conversationId, spaceId, runToken}) async {
           await mcpControl.ensureRunningForDispatch();
@@ -2685,20 +2693,6 @@ Future<CcServer> runCcServer({
   // Which harness credentials are out of quota. Persisted so a rotation does
   // not re-enter a spent key on every dispatch and pay a 429 to relearn it.
   final credentialCooldowns = CredentialCooldownStore(dataDir: config.dataDir);
-  // ONE cache in front of the usage endpoint, shared by every reader.
-  //
-  // `/api/oauth/usage` rate-limits callers hard (the service says so, and it
-  // returned 429s once this fan-out went per-account). Reading it once per
-  // account instead of once per machine multiplies the traffic by the number
-  // of accounts, and two independent readers — the title-bar pill and the
-  // dispatch-time headroom check — would double it again. Going through one
-  // cache keeps the fan-out from throttling itself, which is the failure that
-  // reads to an operator as "no usage reported" on every account at once.
-  final claudeUsageCache = ClaudeUsageCache(
-    fetch: (configDir) => SubscriptionUsageService(
-      httpClient: createHttpClient(),
-    ).fetchClaudeForConfigDir(configDir),
-  );
   claudeAccountStore = ClaudeAccountStore(
     dataDir: config.dataDir,
     // The tightest window decides: whichever of the 5-hour and weekly limits
@@ -3095,6 +3089,7 @@ Future<CcServer> runCcServer({
           spaceId,
         ),
       );
+  claudeSessions.compactThrough(messagingService.dispatchAgentRun);
   goalSupervisor = GoalSupervisor(
     goalRepository: agentGoalRunRepository,
     runLogRepository: agentRunLogRepository,
@@ -5534,6 +5529,7 @@ Future<CcServer> runCcServer({
     // usectrl.dev/changelog.md (token-less). The thin client parses it with
     // `ChangelogRelease.parseMarkdown`.
     fetchChangelog: () => ChangelogService(createHttpClient()).fetchMarkdown(),
+    claudeSessionSettings: claudeSessions.settings,
     fleetOps: fleetOps,
     fleetWatchQueries: fleetWatchQueries,
     telemetryConfig: telemetry.config,

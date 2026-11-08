@@ -63,6 +63,16 @@ void main() {
     );
   });
 
+  test('the desktop app page is desktop-only and listed off the web', () {
+    final desktop = kSettingsNavItems.firstWhere((e) => e.id == 'you.desktop');
+    expect(desktop.desktopOnly, isTrue);
+    // Tests run off the web, so every page is available here.
+    expect(kAvailableSettingsNavItems, contains(desktop));
+    expect(kSettingsNavItems.where((e) => e.desktopOnly).map((e) => e.id), [
+      'you.desktop',
+    ]);
+  });
+
   test('a page that opens records stays selected on them', () {
     for (final entry in kSettingsNavItems) {
       if (entry.detailRoutes.isNotEmpty) {

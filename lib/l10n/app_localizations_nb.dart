@@ -16498,4 +16498,256 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Oppsettslogger';
+
+  @override
+  String get claudeCompactionTitle => 'Komprimering';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Hvordan Claude Code holder lange samtaler innenfor kontekstvinduet.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Komprimer automatisk etter';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Tokens, fra $min til $max. La stå tomt for å bruke standardverdien i Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Skriv inn et tall fra $min til $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Komprimer inaktive samtaler';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Komprimerer en samtale over $threshold tokens rett før prompt-bufferen utløper, slik at det koster mindre å komme tilbake til den. Hver komprimering bruker av abonnementet ditt.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed =>
+      'Kunne ikke lagre denne innstillingen.';
+
+  @override
+  String get navDesktopApp => 'Skrivebordsapp';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Ikonet i systemstatusfeltet, lukking av vinduet og åpning ved pålogging.';
+
+  @override
+  String get desktopSectionMenuBar => 'Menylinje';
+
+  @override
+  String get desktopSectionTray => 'Systemstatusfelt';
+
+  @override
+  String get desktopTrayTitleMac => 'Vis i menylinjen';
+
+  @override
+  String get desktopTrayTitle => 'Vis i systemstatusfeltet';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Status, det som venter på deg, områdene dine og abonnementsbruken, ett klikk unna.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Fant ikke noe systemstatusfelt';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Dette skrivebordet viser ikke ikoner i systemstatusfeltet. På GNOME installerer du utvidelsen AppIndicator og starter deretter Control Center på nytt.';
+
+  @override
+  String get desktopSectionClosing => 'Lukke vinduet';
+
+  @override
+  String get desktopCloseTitle => 'Når du lukker vinduet';
+
+  @override
+  String get desktopCloseKeepRunning => 'Fortsett å kjøre';
+
+  @override
+  String get desktopCloseQuit => 'Avslutt';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Agenter og varslinger fortsetter. Åpne vinduet igjen fra Dock eller menylinjen.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Agenter og varslinger fortsetter. Åpne vinduet igjen fra ikonet i systemstatusfeltet.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Når du lukker vinduet, avsluttes Control Center. Varslinger stopper til du åpner det igjen.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Slå på ikonet i systemstatusfeltet for å holde Control Center i gang med vinduet lukket.';
+
+  @override
+  String get desktopSectionLogin => 'Oppstart';
+
+  @override
+  String get desktopLoginTitle => 'Åpne ved pålogging';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Start Control Center når du logger på, så varslingene kommer fra starten av.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Dette systemet støtter ikke åpning av apper ved pålogging.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Tillat Control Center i Påloggingsobjekter for å fullføre aktiveringen.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Åpne Påloggingsobjekter';
+
+  @override
+  String get desktopLoginRefused =>
+      'Systemet godtok ikke endringen. Det kan hende administratoren din styrer den.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Start i bakgrunnen';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Åpnes uten vindu ved pålogging. Du finner det i Dock eller menylinjen.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Åpnes uten vindu ved pålogging. Du finner det i systemstatusfeltet.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Krever ikonet i systemstatusfeltet, slik at du har en måte å åpne vinduet på.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Holde Control Center i gang?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Agentene fortsetter å jobbe og varslingene fortsetter å komme mens vinduet er lukket. Åpne det igjen fra ikonet i systemstatusfeltet. Du kan endre dette under Innstillinger → Skrivebordsapp.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Avslutt';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Fortsett å kjøre';
+
+  @override
+  String get trayStatusOffline => 'Frakoblet';
+
+  @override
+  String get trayStatusReconnecting => 'Kobler til på nytt…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count venter på deg',
+      one: '1 venter på deg',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jobber',
+      one: '1 jobber',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Alt er rolig';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spørsmål',
+      one: '1 spørsmål',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count godkjenninger venter',
+      one: '1 godkjenning venter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Åpne Control Center';
+
+  @override
+  String get trayMenuSettings => 'Innstillinger…';
+
+  @override
+  String get trayMenuQuit => 'Avslutt Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Åpne Control Center for å velge et arbeidsområde.';
+
+  @override
+  String get trayPanelOpenApp => 'Åpne Control Center';
+
+  @override
+  String get trayPanelSettings => 'Innstillinger for skrivebordsappen';
+
+  @override
+  String get trayPanelNeedsYou => 'Venter på deg';
+
+  @override
+  String get trayPanelApprovals => 'Godkjenninger';
+
+  @override
+  String get trayPanelSpaces => 'Områder';
+
+  @override
+  String get trayPanelNoSpaces => 'Ingen områder ennå.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Alle $count områdene',
+      one: 'Alle områder',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Bruk';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Bytt arbeidsområde';
 }

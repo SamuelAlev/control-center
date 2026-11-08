@@ -16672,4 +16672,261 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Jurnale de configurare';
+
+  @override
+  String get claudeCompactionTitle => 'Compactare';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Cum păstrează Claude Code conversațiile lungi în fereastra de context.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Compactează automat după';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Tokenuri, de la $min la $max. Lasă gol pentru valoarea implicită din Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Introdu un număr de la $min la $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Compactează conversațiile inactive';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Compactează o conversație de peste $threshold tokenuri chiar înainte să expire memoria cache a promptului, ca revenirea la ea să coste mai puțin. Fiecare compactare consumă din planul tău.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed =>
+      'Această setare nu a putut fi salvată.';
+
+  @override
+  String get navDesktopApp => 'Aplicație desktop';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Pictograma din tava de sistem, închiderea ferestrei și deschiderea la autentificare.';
+
+  @override
+  String get desktopSectionMenuBar => 'Bara de meniu';
+
+  @override
+  String get desktopSectionTray => 'Tava de sistem';
+
+  @override
+  String get desktopTrayTitleMac => 'Afișează în bara de meniu';
+
+  @override
+  String get desktopTrayTitle => 'Afișează în tava de sistem';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Starea, ce te așteaptă, spațiile tale și utilizarea abonamentului, la un clic distanță.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Nu s-a găsit nicio tavă de sistem';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Acest desktop nu afișează pictograme în tava de sistem. Pe GNOME, instalează extensia AppIndicator, apoi repornește Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'Închiderea ferestrei';
+
+  @override
+  String get desktopCloseTitle => 'Când închizi fereastra';
+
+  @override
+  String get desktopCloseKeepRunning => 'Continuă rularea';
+
+  @override
+  String get desktopCloseQuit => 'Ieși';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Agenții și notificările continuă. Redeschide fereastra din Dock sau din bara de meniu.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Agenții și notificările continuă. Redeschide fereastra de la pictograma din tava de sistem.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Închiderea ferestrei oprește Control Center. Notificările se opresc până îl redeschizi.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Activează pictograma din tava de sistem ca să păstrezi Control Center pornit cu fereastra închisă.';
+
+  @override
+  String get desktopSectionLogin => 'Pornire';
+
+  @override
+  String get desktopLoginTitle => 'Deschide la autentificare';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Pornește Control Center când te autentifici, ca notificările să sosească de la început.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Acest sistem nu permite deschiderea aplicațiilor la autentificare.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Permite Control Center în Articole de autentificare ca să finalizezi activarea.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Deschide Articole de autentificare';
+
+  @override
+  String get desktopLoginRefused =>
+      'Sistemul nu a acceptat modificarea. Este posibil ca administratorul tău să o gestioneze.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Pornește în fundal';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Se deschide fără fereastră la autentificare. Îl găsești în Dock sau în bara de meniu.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Se deschide fără fereastră la autentificare. Îl găsești în tava de sistem.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Necesită pictograma din tava de sistem, ca să existe o cale de a deschide fereastra.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Păstrezi Control Center pornit?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Cu fereastra închisă, agenții continuă să lucreze și notificările continuă să sosească. Redeschide-o de la pictograma din tava de sistem. Poți schimba asta în Setări → Aplicație desktop.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Ieși';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Continuă rularea';
+
+  @override
+  String get trayStatusOffline => 'Offline';
+
+  @override
+  String get trayStatusReconnecting => 'Se reconectează…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count te așteaptă',
+      few: '$count te așteaptă',
+      one: '1 te așteaptă',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lucrează',
+      few: '$count lucrează',
+      one: '1 lucrează',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Totul e liniștit';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de întrebări',
+      few: '$count întrebări',
+      one: '1 întrebare',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de aprobări în așteptare',
+      few: '$count aprobări în așteptare',
+      one: '1 aprobare în așteptare',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Deschide Control Center';
+
+  @override
+  String get trayMenuSettings => 'Setări…';
+
+  @override
+  String get trayMenuQuit => 'Ieși din Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Deschide Control Center ca să alegi un spațiu de lucru.';
+
+  @override
+  String get trayPanelOpenApp => 'Deschide Control Center';
+
+  @override
+  String get trayPanelSettings => 'Setările aplicației desktop';
+
+  @override
+  String get trayPanelNeedsYou => 'Te așteaptă';
+
+  @override
+  String get trayPanelApprovals => 'Aprobări';
+
+  @override
+  String get trayPanelSpaces => 'Spații';
+
+  @override
+  String get trayPanelNoSpaces => 'Încă nu există spații.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Toate cele $count de spații',
+      few: 'Toate cele $count spații',
+      one: 'Toate spațiile',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Utilizare';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Schimbă spațiul de lucru';
 }

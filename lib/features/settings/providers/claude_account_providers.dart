@@ -1,5 +1,6 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
+import 'package:cc_domain/features/settings/domain/entities/claude_session_settings.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,6 +17,11 @@ final claudeAccountsRepositoryProvider = Provider<RpcClaudeAccountsRepository>(
 /// / rename / setDefault, and after a login terminal closes.
 final claudeAccountsProvider = FutureProvider<List<ClaudeAccountView>>(
   (ref) => ref.watch(claudeAccountsRepositoryProvider).list(),
+);
+
+/// How this server manages the length of Claude Code sessions.
+final claudeSessionSettingsProvider = FutureProvider<ClaudeSessionSettings>(
+  (ref) => ref.watch(claudeAccountsRepositoryProvider).sessionSettings(),
 );
 
 /// How many Claude Code accounts this install manages.

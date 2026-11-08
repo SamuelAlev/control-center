@@ -16124,4 +16124,251 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => '설정 로그';
+
+  @override
+  String get claudeCompactionTitle => '압축';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Claude Code가 긴 대화를 컨텍스트 창 안에 유지하는 방식입니다.';
+
+  @override
+  String get claudeAutoCompactLabel => '자동 압축 기준';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return '토큰 수($min~$max). 비워 두면 Claude Code 기본값을 사용합니다.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return '$min~$max 사이의 숫자를 입력하세요.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => '유휴 대화 압축';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return '$threshold 토큰이 넘는 대화를 프롬프트 캐시가 만료되기 직전에 압축하여 다시 돌아올 때 비용을 줄입니다. 압축할 때마다 요금제 사용량이 소모됩니다.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => '이 설정을 저장하지 못했습니다.';
+
+  @override
+  String get navDesktopApp => '데스크톱 앱';
+
+  @override
+  String get desktopAppSettingsSubtitle => '트레이 아이콘, 창을 닫을 때의 동작, 로그인 시 열기.';
+
+  @override
+  String get desktopSectionMenuBar => '메뉴 막대';
+
+  @override
+  String get desktopSectionTray => '시스템 트레이';
+
+  @override
+  String get desktopTrayTitleMac => '메뉴 막대에 표시';
+
+  @override
+  String get desktopTrayTitle => '시스템 트레이에 표시';
+
+  @override
+  String get desktopTraySubtitle =>
+      '상태, 확인이 필요한 항목, 스페이스와 구독 사용량을 클릭 한 번으로 볼 수 있습니다.';
+
+  @override
+  String get desktopTrayMissingTitle => '시스템 트레이를 찾을 수 없음';
+
+  @override
+  String get desktopTrayMissingBody =>
+      '이 데스크톱은 트레이 아이콘을 표시하지 않습니다. GNOME에서는 AppIndicator 확장 프로그램을 설치한 뒤 Control Center를 다시 시작하세요.';
+
+  @override
+  String get desktopSectionClosing => '창 닫기';
+
+  @override
+  String get desktopCloseTitle => '창을 닫을 때';
+
+  @override
+  String get desktopCloseKeepRunning => '계속 실행';
+
+  @override
+  String get desktopCloseQuit => '종료';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      '에이전트와 알림은 계속 작동합니다. Dock이나 메뉴 막대에서 창을 다시 열 수 있습니다.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      '에이전트와 알림은 계속 작동합니다. 트레이 아이콘에서 창을 다시 열 수 있습니다.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      '창을 닫으면 Control Center가 종료됩니다. 다시 열 때까지 알림을 받을 수 없습니다.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      '창을 닫은 상태에서도 Control Center를 계속 실행하려면 트레이 아이콘을 켜세요.';
+
+  @override
+  String get desktopSectionLogin => '시작';
+
+  @override
+  String get desktopLoginTitle => '로그인 시 열기';
+
+  @override
+  String get desktopLoginSubtitle =>
+      '로그인할 때 Control Center를 시작해 처음부터 알림을 받습니다.';
+
+  @override
+  String get desktopLoginUnsupported => '이 시스템은 로그인 시 앱 열기를 지원하지 않습니다.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      '이 설정을 마저 켜려면 로그인 항목에서 Control Center를 허용하세요.';
+
+  @override
+  String get desktopLoginOpenLoginItems => '로그인 항목 열기';
+
+  @override
+  String get desktopLoginRefused =>
+      '시스템이 변경 사항을 받아들이지 않았습니다. 관리자가 관리하는 설정일 수 있습니다.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => '백그라운드에서 시작';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      '로그인 시 창 없이 열립니다. Dock이나 메뉴 막대에서 찾을 수 있습니다.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      '로그인 시 창 없이 열립니다. 트레이에서 찾을 수 있습니다.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray => '창을 열 수 있도록 트레이 아이콘이 필요합니다.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Control Center를 계속 실행할까요?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      '창을 닫아도 에이전트는 계속 작업하고 알림도 계속 도착합니다. 트레이 아이콘에서 다시 열 수 있습니다. 설정 → 데스크톱 앱에서 변경할 수 있습니다.';
+
+  @override
+  String get closeToTrayPromptQuit => '종료';
+
+  @override
+  String get closeToTrayPromptKeepRunning => '계속 실행';
+
+  @override
+  String get trayStatusOffline => '오프라인';
+
+  @override
+  String get trayStatusReconnecting => '다시 연결하는 중…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '확인 필요 $count개',
+      one: '확인 필요 1개',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '작업 중 $count개',
+      one: '작업 중 1개',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => '활동 없음';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '질문 $count개',
+      one: '질문 1개',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '승인 대기 $count개',
+      one: '승인 대기 1개',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Control Center 열기';
+
+  @override
+  String get trayMenuSettings => '설정…';
+
+  @override
+  String get trayMenuQuit => 'Control Center 종료';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace => 'Control Center를 열어 워크스페이스를 선택하세요.';
+
+  @override
+  String get trayPanelOpenApp => 'Control Center 열기';
+
+  @override
+  String get trayPanelSettings => '데스크톱 앱 설정';
+
+  @override
+  String get trayPanelNeedsYou => '확인 필요';
+
+  @override
+  String get trayPanelApprovals => '승인';
+
+  @override
+  String get trayPanelSpaces => '스페이스';
+
+  @override
+  String get trayPanelNoSpaces => '아직 스페이스가 없습니다.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '모든 스페이스 ($count)',
+      one: '모든 스페이스',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => '사용량';
+
+  @override
+  String get trayPanelSwitchWorkspace => '워크스페이스 전환';
 }

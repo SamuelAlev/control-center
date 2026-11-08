@@ -16731,4 +16731,267 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Dzienniki konfiguracji';
+
+  @override
+  String get claudeCompactionTitle => 'Kompaktowanie';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Jak Claude Code utrzymuje długie rozmowy w oknie kontekstu.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Kompaktuj automatycznie po';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Tokeny, od $min do $max. Zostaw puste, aby użyć wartości domyślnej Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Wpisz liczbę od $min do $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Kompaktuj nieaktywne rozmowy';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Kompaktuje rozmowę powyżej $threshold tokenów tuż przed wygaśnięciem jej pamięci podręcznej promptów, dzięki czemu powrót do niej kosztuje mniej. Każde kompaktowanie zużywa Twój plan.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed =>
+      'Nie udało się zapisać tego ustawienia.';
+
+  @override
+  String get navDesktopApp => 'Aplikacja desktopowa';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Ikona w zasobniku, zamykanie okna i otwieranie podczas logowania.';
+
+  @override
+  String get desktopSectionMenuBar => 'Pasek menu';
+
+  @override
+  String get desktopSectionTray => 'Zasobnik systemowy';
+
+  @override
+  String get desktopTrayTitleMac => 'Pokazuj na pasku menu';
+
+  @override
+  String get desktopTrayTitle => 'Pokazuj w zasobniku systemowym';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Status, to, co czeka na Ciebie, Twoje przestrzenie i zużycie subskrypcji – na jedno kliknięcie.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Nie znaleziono zasobnika systemowego';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'To środowisko pulpitu nie wyświetla ikon w zasobniku. W GNOME zainstaluj rozszerzenie AppIndicator, a następnie uruchom ponownie Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'Zamykanie okna';
+
+  @override
+  String get desktopCloseTitle => 'Po zamknięciu okna';
+
+  @override
+  String get desktopCloseKeepRunning => 'Pozostaw w tle';
+
+  @override
+  String get desktopCloseQuit => 'Zakończ';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Agenci i powiadomienia działają dalej. Otwórz okno ponownie z Docka lub paska menu.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Agenci i powiadomienia działają dalej. Otwórz okno ponownie z ikony w zasobniku.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Zamknięcie okna kończy działanie Control Center. Powiadomienia nie będą przychodzić, dopóki nie otworzysz go ponownie.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Włącz ikonę w zasobniku, aby Control Center działał dalej po zamknięciu okna.';
+
+  @override
+  String get desktopSectionLogin => 'Uruchamianie';
+
+  @override
+  String get desktopLoginTitle => 'Otwieraj podczas logowania';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Uruchamiaj Control Center po zalogowaniu, aby powiadomienia przychodziły od samego początku.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Ten system nie obsługuje otwierania aplikacji podczas logowania.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Aby dokończyć włączanie, zezwól na Control Center w sekcji „Rzeczy otwierane podczas logowania”.';
+
+  @override
+  String get desktopLoginOpenLoginItems =>
+      'Otwórz „Rzeczy otwierane podczas logowania”';
+
+  @override
+  String get desktopLoginRefused =>
+      'System nie zaakceptował zmiany. Może nią zarządzać Twój administrator.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Uruchamiaj w tle';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Po zalogowaniu otwiera się bez okna. Znajdziesz je w Docku lub na pasku menu.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Po zalogowaniu otwiera się bez okna. Znajdziesz je w zasobniku.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Wymaga ikony w zasobniku, aby można było otworzyć okno.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Pozostawić Control Center w tle?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Po zamknięciu okna agenci nadal pracują, a powiadomienia nadal przychodzą. Otwórz je ponownie z ikony w zasobniku. Możesz to zmienić w Ustawienia → Aplikacja desktopowa.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Zakończ';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Pozostaw w tle';
+
+  @override
+  String get trayStatusOffline => 'Offline';
+
+  @override
+  String get trayStatusReconnecting => 'Ponowne łączenie…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count czeka na Ciebie',
+      many: '$count czeka na Ciebie',
+      few: '$count czekają na Ciebie',
+      one: '$count czeka na Ciebie',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pracuje',
+      many: '$count pracuje',
+      few: '$count pracują',
+      one: '$count pracuje',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Wszystko spokojnie';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pytania',
+      many: '$count pytań',
+      few: '$count pytania',
+      one: '$count pytanie',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count czeka na zatwierdzenie',
+      many: '$count czeka na zatwierdzenie',
+      few: '$count czekają na zatwierdzenie',
+      one: '$count czeka na zatwierdzenie',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Otwórz Control Center';
+
+  @override
+  String get trayMenuSettings => 'Ustawienia…';
+
+  @override
+  String get trayMenuQuit => 'Zakończ Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Otwórz Control Center, aby wybrać obszar roboczy.';
+
+  @override
+  String get trayPanelOpenApp => 'Otwórz Control Center';
+
+  @override
+  String get trayPanelSettings => 'Ustawienia aplikacji desktopowej';
+
+  @override
+  String get trayPanelNeedsYou => 'Czeka na Ciebie';
+
+  @override
+  String get trayPanelApprovals => 'Zatwierdzenia';
+
+  @override
+  String get trayPanelSpaces => 'Przestrzenie';
+
+  @override
+  String get trayPanelNoSpaces => 'Nie ma jeszcze przestrzeni.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Wszystkie $count przestrzeni',
+      many: 'Wszystkie $count przestrzeni',
+      few: 'Wszystkie $count przestrzenie',
+      one: 'Wszystkie przestrzenie',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Zużycie';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Przełącz obszar roboczy';
 }

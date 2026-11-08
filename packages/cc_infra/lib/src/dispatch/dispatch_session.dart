@@ -54,6 +54,7 @@ import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
 import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
+import 'package:cc_infra/src/dispatch/claude_idle_compactor.dart';
 import 'package:cc_infra/src/dispatch/claude_refusal_message.dart';
 import 'package:cc_infra/src/dispatch/claude_subagent_runs.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session_deps.dart';
@@ -89,6 +90,7 @@ part 'dispatch_session_acp.dart';
 part 'dispatch_session_harness.dart';
 part 'dispatch_session_subagent.dart';
 part 'dispatch_session_claude_cli.dart';
+part 'dispatch_session_claude_control.dart';
 part 'dispatch_session_claude_credentials.dart';
 part 'dispatch_session_gateway.dart';
 part 'dispatch_session_account_pool.dart';
@@ -466,6 +468,27 @@ class DispatchSession implements SteeringSessionView {
   /// failover restarts the turn on a fresh process, which gets these again
   /// after the prompt: the cards are already marked injected.
   final List<String> _claudeSteered = [];
+
+  /// Limit crossings this run has already acted on; see [_onClaudeRateLimit].
+  final Set<String> _claudeLimitCrossings = {};
+
+  /// The first lines of a turn, held until the MCP servers are answered for.
+  List<String>? _claudeHeldLines;
+
+  /// The `mcp_set_servers` request those lines wait on.
+  String? _claudeMcpRequestId;
+
+  Timer? _claudeMcpAnswerTimer;
+  int _claudeControlRequests = 0;
+
+  /// Completes when stdin closes, for a stop waiting on the turn to end.
+  Completer<void>? _claudeStdinClosed;
+
+  /// The size of the latest main-thread call, for [ClaudeIdleCompactor].
+  int _claudeContextTokens = 0;
+
+  /// How long the session's newest prompt cache entry lasts, when known.
+  Duration? _claudeCacheTtl;
 
   /// Whether a microtask is already due to drain the steering queue into
   /// [_claudeStdin], so a burst of pushes is written in one pass.
@@ -1847,6 +1870,7 @@ class DispatchSession implements SteeringSessionView {
     // Record the stop before yielding: killing the child can complete `run()`
     // and close the transcript while process teardown is still in progress.
     _failRun(failure);
+    await _interruptClaudeTurn();
     _claudeParser = null;
     unawaited(_closeClaudeSubagents());
     await _teardownAcp();
@@ -2023,7 +2047,12 @@ class DispatchSession implements SteeringSessionView {
   void _forwardSandboxEvent(SandboxEvent event) {
     // The stop path owns completion. Late output from the dying process must
     // not replace its reason or leak unparsed stream-json into the transcript.
+    // The one exception is the `result` of a turn being interrupted, which
+    // carries what the turn spent.
     if (_cancelSource.isCancelled) {
+      if (_claudeStdinClosed != null && event.type == SandboxEventType.stdout) {
+        _readInterruptedClaudeResult(event.content);
+      }
       return;
     }
     switch (event.type) {
@@ -2595,39 +2624,4 @@ class DispatchSession implements SteeringSessionView {
       }),
     );
   }
-}
-
-/// A [SubagentSpawner] backed by a closure, so the `task` tool can spawn a
-/// subagent without the tool holding a reference to the whole dispatch session.
-/// Adapts a closure to [VibeWorkerRunner], so the roster tools stay free of
-/// the dispatch layer exactly as `task` does.
-class _ClosureVibeRunner implements VibeWorkerRunner {
-  _ClosureVibeRunner(this._run);
-
-  final Future<SubagentResult> Function(
-    VibeWorker worker,
-    String brief,
-    HarnessToolContext context,
-    SubagentType type,
-    String? modelOverride,
-  )
-  _run;
-
-  @override
-  Future<SubagentResult> run({
-    required VibeWorker worker,
-    required String brief,
-    required HarnessToolContext context,
-    required SubagentType type,
-    String? modelOverride,
-  }) => _run(worker, brief, context, type, modelOverride);
-}
-
-class _ClosureSubagentSpawner implements SubagentSpawner {
-  _ClosureSubagentSpawner(this._run);
-
-  final Future<SubagentResult> Function(SubagentSpawnRequest request) _run;
-
-  @override
-  Future<SubagentResult> spawn(SubagentSpawnRequest request) => _run(request);
 }

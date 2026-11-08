@@ -16481,4 +16481,265 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'יומני הכנה';
+
+  @override
+  String get claudeCompactionTitle => 'דחיסה';
+
+  @override
+  String get claudeCompactionDescription =>
+      'כיצד Claude Code שומר שיחות ארוכות בתוך חלון ההקשר שלו.';
+
+  @override
+  String get claudeAutoCompactLabel => 'דחיסה אוטומטית אחרי';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'טוקנים, מ-$min עד $max. השאירו ריק כדי להשתמש בברירת המחדל של Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'הזינו מספר מ-$min עד $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'דחיסת שיחות לא פעילות';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'דוחס שיחה שמעל $threshold טוקנים רגע לפני שמטמון ההנחיות שלה פג, כך שהחזרה אליה עולה פחות. כל דחיסה צורכת מהתוכנית שלכם.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => 'לא ניתן לשמור את ההגדרה הזו.';
+
+  @override
+  String get navDesktopApp => 'אפליקציית שולחן עבודה';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'סמל המגש, סגירת החלון ופתיחה בעת ההתחברות.';
+
+  @override
+  String get desktopSectionMenuBar => 'שורת התפריטים';
+
+  @override
+  String get desktopSectionTray => 'מגש המערכת';
+
+  @override
+  String get desktopTrayTitleMac => 'הצגה בשורת התפריטים';
+
+  @override
+  String get desktopTrayTitle => 'הצגה במגש המערכת';
+
+  @override
+  String get desktopTraySubtitle =>
+      'הסטטוס, מה שממתין לכם, המרחבים שלכם והשימוש במסלול, במרחק לחיצה אחת.';
+
+  @override
+  String get desktopTrayMissingTitle => 'לא נמצא מגש מערכת';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'סביבת שולחן העבודה הזו לא מציגה סמלי מגש. ב-GNOME, התקינו את ההרחבה AppIndicator ואז הפעילו מחדש את Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'סגירת החלון';
+
+  @override
+  String get desktopCloseTitle => 'בסגירת החלון';
+
+  @override
+  String get desktopCloseKeepRunning => 'השאר פועל';
+
+  @override
+  String get desktopCloseQuit => 'יציאה';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'הסוכנים וההתראות ממשיכים לפעול. אפשר לפתוח שוב את החלון מה-Dock או משורת התפריטים.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'הסוכנים וההתראות ממשיכים לפעול. אפשר לפתוח שוב את החלון מסמל המגש.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'סגירת החלון סוגרת את Control Center. ההתראות ייפסקו עד שתפתחו אותו שוב.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'הפעילו את סמל המגש כדי ש-Control Center ימשיך לפעול גם כשהחלון סגור.';
+
+  @override
+  String get desktopSectionLogin => 'הפעלה';
+
+  @override
+  String get desktopLoginTitle => 'פתיחה בעת ההתחברות';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Control Center יופעל כשתתחברו, כך שההתראות יגיעו כבר מההתחלה.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'המערכת הזו לא תומכת בפתיחת אפליקציות בעת ההתחברות.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'אשרו את Control Center בפריטי ההתחברות כדי לסיים את ההפעלה.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'פתיחת פריטי התחברות';
+
+  @override
+  String get desktopLoginRefused =>
+      'המערכת לא קיבלה את השינוי. ייתכן שמנהל המערכת שלכם מנהל את ההגדרה הזו.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'הפעלה ברקע';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'נפתח ללא חלון בעת ההתחברות. אפשר למצוא אותו ב-Dock או בשורת התפריטים.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'נפתח ללא חלון בעת ההתחברות. אפשר למצוא אותו במגש המערכת.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'נדרש סמל מגש, כדי שתהיה דרך לפתוח את החלון.';
+
+  @override
+  String get closeToTrayPromptTitle => 'להשאיר את Control Center פועל?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'כשהחלון סגור, הסוכנים ממשיכים לעבוד וההתראות ממשיכות להגיע. אפשר לפתוח אותו שוב מסמל המגש. ניתן לשנות זאת בהגדרות ← אפליקציית שולחן עבודה.';
+
+  @override
+  String get closeToTrayPromptQuit => 'יציאה';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'השאר פועל';
+
+  @override
+  String get trayStatusOffline => 'מנותק';
+
+  @override
+  String get trayStatusReconnecting => 'מתחבר מחדש…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ממתינים לכם',
+      many: '$count ממתינים לכם',
+      two: '$count ממתינים לכם',
+      one: '1 ממתין לכם',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פועלים',
+      many: '$count פועלים',
+      two: '$count פועלים',
+      one: '1 פועל',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'הכול שקט';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count שאלות',
+      many: '$count שאלות',
+      two: 'שתי שאלות',
+      one: 'שאלה אחת',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count אישורים ממתינים',
+      many: '$count אישורים ממתינים',
+      two: 'שני אישורים ממתינים',
+      one: 'אישור אחד ממתין',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'פתיחת Control Center';
+
+  @override
+  String get trayMenuSettings => 'הגדרות…';
+
+  @override
+  String get trayMenuQuit => 'יציאה מ-Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'פתחו את Control Center כדי לבחור סביבת עבודה.';
+
+  @override
+  String get trayPanelOpenApp => 'פתיחת Control Center';
+
+  @override
+  String get trayPanelSettings => 'הגדרות אפליקציית שולחן העבודה';
+
+  @override
+  String get trayPanelNeedsYou => 'ממתין לכם';
+
+  @override
+  String get trayPanelApprovals => 'אישורים';
+
+  @override
+  String get trayPanelSpaces => 'מרחבים';
+
+  @override
+  String get trayPanelNoSpaces => 'אין עדיין מרחבים.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'כל $count המרחבים',
+      many: 'כל $count המרחבים',
+      two: 'שני המרחבים',
+      one: 'כל המרחבים',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'שימוש';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'החלפת סביבת עבודה';
 }

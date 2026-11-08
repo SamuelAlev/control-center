@@ -1,5 +1,6 @@
 import 'package:cc_data/src/absent_op.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
+import 'package:cc_domain/features/settings/domain/entities/claude_session_settings.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
 /// Reads and manages the host's Claude Code logins over RPC.
@@ -32,6 +33,20 @@ class RpcClaudeAccountsRepository {
         if (a is Map) ClaudeAccountView.fromJson(a.cast<String, dynamic>()),
     ];
   }
+
+  /// How this server manages the length of Claude Code sessions.
+  Future<ClaudeSessionSettings> sessionSettings() async {
+    final data = await _client.readOr(
+      'claude_accounts.sessionSettings',
+      const {},
+      const {},
+    );
+    return ClaudeSessionSettings.fromJson(data);
+  }
+
+  /// Replaces the server's session settings.
+  Future<void> setSessionSettings(ClaudeSessionSettings settings) =>
+      _client.call('claude_accounts.setSessionSettings', settings.toJson());
 
   /// Creates an empty, signed-out account directory.
   Future<ClaudeAccount?> create({String? label}) async {

@@ -82,6 +82,15 @@ void FlutterWindow::RaiseAppWindows() {
       0);
 }
 
+void FlutterWindow::RequestReopen() {
+  // RaiseAppWindows only reaches VISIBLE windows. A main window closed to the
+  // notification area is hidden, not gone, and Dart is the side that knows it
+  // hid it: it shows and focuses it again (lib/app/tray/main_window_visibility.dart).
+  if (app_channel_ != nullptr) {
+    app_channel_->InvokeMethod("reopen", nullptr);
+  }
+}
+
 void FlutterWindow::OnDestroy() {
   app_channel_.reset();
   if (flutter_controller_) {
@@ -124,6 +133,7 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
               std::make_unique<flutter::EncodableValue>(url));
         }
         RaiseAppWindows();
+        RequestReopen();
         return TRUE;
       }
       break;
@@ -132,6 +142,7 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     case kRaiseAppWindowsMessage:
       // A second launch with nothing to hand over: bring the app forward.
       RaiseAppWindows();
+      RequestReopen();
       return 0;
   }
 

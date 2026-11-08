@@ -1,6 +1,7 @@
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 
 /// Who a setting affects — the axis the settings surface is organised around.
@@ -47,6 +48,7 @@ class SettingsNavItem {
     this.matchesSubroutes = false,
     this.detailRoutes = const [],
     this.ownerOnly = false,
+    this.desktopOnly = false,
   });
 
   /// Stable identifier, used by tests and to key the route registry.
@@ -79,6 +81,16 @@ class SettingsNavItem {
   /// carries `is_server_owner` precisely so the UI can tell the truth up
   /// front; before this it was decoded and never read.
   final bool ownerOnly;
+
+  /// When true the destination exists only in the desktop app: it configures
+  /// the native process itself (its tray icon, its window, its login launch),
+  /// which a browser tab does not have.
+  final bool desktopOnly;
+
+  /// Whether this build offers the destination at all. Every list built from
+  /// the nav model filters on this, so a browser never shows, cycles to or
+  /// searches for a page it cannot render.
+  bool get availableHere => !desktopOnly || !kIsWeb;
 }
 
 /// A scope-labelled group of settings destinations.
@@ -145,6 +157,13 @@ const List<SettingsNavGroup> kSettingsNav = [
         icon: AppIcons.gitCommit,
         label: _attributionLabel,
         route: settingsAgentAttributionRoute,
+      ),
+      SettingsNavItem(
+        id: 'you.desktop',
+        icon: AppIcons.monitor,
+        label: _desktopAppLabel,
+        route: settingsDesktopAppRoute,
+        desktopOnly: true,
       ),
       SettingsNavItem(
         id: 'you.devices',
@@ -320,6 +339,13 @@ List<SettingsNavItem> get kSettingsNavItems => [
   for (final group in kSettingsNav) ...group.items,
 ];
 
+/// The destinations this build offers ([SettingsNavItem.availableHere]), in
+/// sidebar order: what the J/K cycle walks.
+List<SettingsNavItem> get kAvailableSettingsNavItems => [
+  for (final item in kSettingsNavItems)
+    if (item.availableHere) item,
+];
+
 // Tear-offs, so the nav model stays a `const` list. A closure would make each
 // entry non-const and the whole structure rebuild per frame.
 String _youLabel(AppLocalizations l) => l.settingsScopeYou;
@@ -331,6 +357,7 @@ String _appearanceLabel(AppLocalizations l) => l.appearance;
 String _notificationsLabel(AppLocalizations l) => l.notifications;
 String _attributionLabel(AppLocalizations l) => l.settingsAgentAttributionTitle;
 String _audioSettingsLabel(AppLocalizations l) => l.settingsAudio;
+String _desktopAppLabel(AppLocalizations l) => l.navDesktopApp;
 String _devicesLabel(AppLocalizations l) => l.settingsYourDevices;
 String _newsfeedLabel(AppLocalizations l) => l.newsfeedLabel;
 String _linksLabel(AppLocalizations l) => l.settingsLinks;

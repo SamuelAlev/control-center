@@ -27,6 +27,9 @@
 # Lowered 2026-10-20: the Claude account-credential gate moved to
 # dispatch_session_claude_credentials.dart, taking dispatch_session_claude_cli.dart
 # under budget; _closeClaudeSubagents joined its sibling in the Claude CLI part.
+# Lowered 2026-11-07: Claude control, rate limit and stream event types moved
+# out; dispatch_session_claude_control.dart and claude_session_runtime.dart
+# took the rest of that work, so each file ends under its old floor.
 # Raised 2026-10-27: 3d78806c1 (thread permission requests, plan refinement in
 # the plan's conversation, re-approving a failed plan, join double-scheduling
 # guard, continueOnFail failure markers) grew the files past the floor.
@@ -38,7 +41,7 @@ packages/cc_harness/lib/src/loop/agent_loop_runner.dart  2195
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1868
 # Raised 2026-11-06 by 2: the space environment seam (an import and the
 # sandbox scope argument); its helpers live in dispatch_session_gateway.dart.
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2633
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2627
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1764
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1585
 packages/cc_infra/lib/src/network/github_graphql_client.dart  2372
@@ -48,7 +51,7 @@ packages/cc_infra/lib/src/rigs/cdp_client.dart  2509
 packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1803
 packages/cc_infra/lib/src/rigs/rig_service.dart  2918
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2043
-packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1722
+packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1666
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2835
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3356
 # Raised 2026-11-06 by 22: the call that wires space environments
@@ -57,7 +60,7 @@ packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3356
 # Lowered 2026-11-06: messaging.retry/cancelSpaceProvisioning moved to
 # catalog/space_provisioning_ops.dart, the row writers to space_provisioning_row_writers.dart.
 # Lowered 2026-11-07: f2500ccfa landed these two smaller than it recorded.
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8208
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8204
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2854
 packages/cc_server_core/lib/src/local_rpc_server.dart  2536
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1715

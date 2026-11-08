@@ -16700,4 +16700,266 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Журнали налаштування';
+
+  @override
+  String get claudeCompactionTitle => 'Стиснення';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Як Claude Code утримує довгі розмови в межах контекстного вікна.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Автоматично стискати після';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Токени, від $min до $max. Залиште порожнім, щоб використати типове значення Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Введіть число від $min до $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Стискати неактивні розмови';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Стискає розмову понад $threshold токенів незадовго до завершення дії кешу промпту, щоб повернення до неї коштувало менше. Кожне стиснення витрачає ваш план.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed =>
+      'Не вдалося зберегти це налаштування.';
+
+  @override
+  String get navDesktopApp => 'Настільна програма';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Значок у системному лотку, закриття вікна та відкриття під час входу.';
+
+  @override
+  String get desktopSectionMenuBar => 'Смуга меню';
+
+  @override
+  String get desktopSectionTray => 'Системний лоток';
+
+  @override
+  String get desktopTrayTitleMac => 'Показувати в смузі меню';
+
+  @override
+  String get desktopTrayTitle => 'Показувати в системному лотку';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Стан, усе, що чекає на вас, ваші простори й використання плану — за один клік.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Системний лоток не знайдено';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Це робоче середовище не показує значки в лотку. У GNOME встановіть розширення AppIndicator, а потім перезапустіть Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'Закриття вікна';
+
+  @override
+  String get desktopCloseTitle => 'Коли ви закриваєте вікно';
+
+  @override
+  String get desktopCloseKeepRunning => 'Залишити в роботі';
+
+  @override
+  String get desktopCloseQuit => 'Вийти';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Агенти й сповіщення працюють далі. Знову відкрийте вікно з Dock або смуги меню.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Агенти й сповіщення працюють далі. Знову відкрийте вікно через значок у лотку.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Закриття вікна завершує роботу Control Center. Сповіщення не надходитимуть, доки ви знову його не відкриєте.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Увімкніть значок у лотку, щоб Control Center працював і з закритим вікном.';
+
+  @override
+  String get desktopSectionLogin => 'Запуск';
+
+  @override
+  String get desktopLoginTitle => 'Відкривати під час входу';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Запускати Control Center під час входу в систему, щоб сповіщення надходили від самого початку.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Ця система не підтримує відкриття програм під час входу.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Дозвольте Control Center у розділі «Об’єкти входу», щоб завершити ввімкнення.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Відкрити «Об’єкти входу»';
+
+  @override
+  String get desktopLoginRefused =>
+      'Система не прийняла зміну. Можливо, цим керує ваш адміністратор.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Запускати у фоні';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Під час входу відкривається без вікна. Шукайте програму в Dock або смузі меню.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Під час входу відкривається без вікна. Шукайте програму в системному лотку.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Потрібен значок у лотку, щоб було як відкрити вікно.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Залишити Control Center працювати?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Коли вікно закрите, агенти працюють далі, а сповіщення надходять. Знову відкрийте його через значок у лотку. Це можна змінити в розділі Налаштування → Настільна програма.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Вийти';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Залишити в роботі';
+
+  @override
+  String get trayStatusOffline => 'Офлайн';
+
+  @override
+  String get trayStatusReconnecting => 'Перепідключення…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count чекають на вас',
+      many: '$count чекають на вас',
+      few: '$count чекають на вас',
+      one: '$count чекає на вас',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count працюють',
+      many: '$count працюють',
+      few: '$count працюють',
+      one: '$count працює',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Усе спокійно';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count запитання',
+      many: '$count запитань',
+      few: '$count запитання',
+      one: '$count запитання',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count запиту чекають на схвалення',
+      many: '$count запитів чекають на схвалення',
+      few: '$count запити чекають на схвалення',
+      one: '$count запит чекає на схвалення',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Відкрити Control Center';
+
+  @override
+  String get trayMenuSettings => 'Налаштування…';
+
+  @override
+  String get trayMenuQuit => 'Вийти з Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Відкрийте Control Center, щоб вибрати робочий простір.';
+
+  @override
+  String get trayPanelOpenApp => 'Відкрити Control Center';
+
+  @override
+  String get trayPanelSettings => 'Налаштування настільної програми';
+
+  @override
+  String get trayPanelNeedsYou => 'Чекає на вас';
+
+  @override
+  String get trayPanelApprovals => 'Схвалення';
+
+  @override
+  String get trayPanelSpaces => 'Простори';
+
+  @override
+  String get trayPanelNoSpaces => 'Просторів ще немає.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Усі $count простору',
+      many: 'Усі $count просторів',
+      few: 'Усі $count простори',
+      one: 'Усі простори',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Використання';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Змінити робочий простір';
 }

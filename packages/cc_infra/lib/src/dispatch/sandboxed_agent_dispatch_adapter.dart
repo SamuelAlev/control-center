@@ -24,7 +24,9 @@ import 'package:cc_domain/features/guardrails/domain/services/action_guard_servi
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
 import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant_service.dart';
+import 'package:cc_domain/features/settings/domain/entities/claude_session_settings.dart';
 import 'package:cc_domain/features/skills/domain/ports/skill_scan_port.dart';
+import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
 import 'package:cc_harness/context.dart' show ToolOutputStore;
 import 'package:cc_harness/loop.dart';
@@ -35,6 +37,7 @@ import 'package:cc_infra/src/blobs/blob_store.dart';
 import 'package:cc_infra/src/dap/debug_session.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/backend_registry.dart';
+import 'package:cc_infra/src/dispatch/claude_idle_compactor.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
@@ -73,6 +76,14 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
       String? runToken,
     })?
     mcpConfigPathResolver,
+    Future<Map<String, Object?>?> Function({
+      String? workspaceId,
+      String? agentId,
+      String? conversationId,
+      String? spaceId,
+      String? runToken,
+    })?
+    mcpServersResolver,
     Future<List<String>> Function(String workspaceId)? protectedPathsResolver,
     BackendRegistry? backendRegistry,
     this.sandboxManager,
@@ -89,6 +100,10 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     ClaudeMcpDiscoveryCachePolicy claudeMcpDiscoveryCache =
         ClaudeMcpDiscoveryCachePolicy.disabled,
     Future<int?> Function(String? modelId)? claudeContextWindowOf,
+    void Function(String configDir, List<SubscriptionWindow> windows)?
+    onClaudeUsageWindows,
+    ClaudeSessionSettings Function()? claudeSessionSettings,
+    ClaudeIdleCompactor? claudeIdleCompactor,
     DebugSessionSupervisor? debugSupervisor,
     Future<KernelLauncher> Function({
       required String workingDirectory,
@@ -132,6 +147,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          runTranscriptRecorder: runTranscriptRecorder,
          eventBus: eventBus,
          mcpConfigPathResolver: mcpConfigPathResolver,
+         mcpServersResolver: mcpServersResolver,
          protectedPathsResolver: protectedPathsResolver,
          backendRegistry: backendRegistry ?? buildBackendRegistry(),
          sandboxManager: sandboxManager,
@@ -147,6 +163,9 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          claudeSessionStore: claudeSessionStore,
          claudeMcpDiscoveryCache: claudeMcpDiscoveryCache,
          claudeContextWindowOf: claudeContextWindowOf,
+         onClaudeUsageWindows: onClaudeUsageWindows,
+         claudeSessionSettings: claudeSessionSettings,
+         claudeIdleCompactor: claudeIdleCompactor,
          debugSupervisor: debugSupervisor,
          kernelLauncherFactory: kernelLauncherFactory,
          actionGuard: actionGuard,

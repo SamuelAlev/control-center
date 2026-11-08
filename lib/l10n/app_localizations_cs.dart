@@ -16675,4 +16675,266 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Protokoly nastavení';
+
+  @override
+  String get claudeCompactionTitle => 'Komprimace';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Jak Claude Code udržuje dlouhé konverzace v rámci kontextového okna.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Automaticky komprimovat po';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Tokeny, od $min do $max. Ponechte prázdné pro výchozí hodnotu Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Zadejte číslo od $min do $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Komprimovat nečinné konverzace';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Zkomprimuje konverzaci nad $threshold tokenů těsně před vypršením mezipaměti promptu, takže návrat k ní stojí méně. Každá komprimace čerpá z vašeho plánu.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed =>
+      'Toto nastavení se nepodařilo uložit.';
+
+  @override
+  String get navDesktopApp => 'Desktopová aplikace';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Ikona v oznamovací oblasti, zavírání okna a otevírání po přihlášení.';
+
+  @override
+  String get desktopSectionMenuBar => 'Řádek nabídek';
+
+  @override
+  String get desktopSectionTray => 'Oznamovací oblast';
+
+  @override
+  String get desktopTrayTitleMac => 'Zobrazit v řádku nabídek';
+
+  @override
+  String get desktopTrayTitle => 'Zobrazit v oznamovací oblasti';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Stav, co na vás čeká, vaše prostory a využití tarifu na jedno kliknutí.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Oznamovací oblast nebyla nalezena';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Toto prostředí nezobrazuje ikony v oznamovací oblasti. V GNOME nainstalujte rozšíření AppIndicator a potom Control Center restartujte.';
+
+  @override
+  String get desktopSectionClosing => 'Zavření okna';
+
+  @override
+  String get desktopCloseTitle => 'Po zavření okna';
+
+  @override
+  String get desktopCloseKeepRunning => 'Nechat běžet';
+
+  @override
+  String get desktopCloseQuit => 'Ukončit';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Agenti a oznámení fungují dál. Okno znovu otevřete z Docku nebo z řádku nabídek.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Agenti a oznámení fungují dál. Okno znovu otevřete ikonou v oznamovací oblasti.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Zavřením okna se Control Center ukončí. Oznámení přestanou chodit, dokud ho znovu neotevřete.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Zapněte ikonu v oznamovací oblasti, aby Control Center běžel i se zavřeným oknem.';
+
+  @override
+  String get desktopSectionLogin => 'Spuštění';
+
+  @override
+  String get desktopLoginTitle => 'Otevřít po přihlášení';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Spustí Control Center po přihlášení, aby oznámení přicházela hned od začátku.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Tento systém nepodporuje otevírání aplikací po přihlášení.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Zapnutí dokončíte povolením aplikace Control Center v sekci Položky po přihlášení.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Otevřít Položky po přihlášení';
+
+  @override
+  String get desktopLoginRefused =>
+      'Systém změnu nepřijal. Možná ji spravuje váš správce.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Spustit na pozadí';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Po přihlášení se otevře bez okna. Najdete ho v Docku nebo v řádku nabídek.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Po přihlášení se otevře bez okna. Najdete ho v oznamovací oblasti.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Vyžaduje ikonu v oznamovací oblasti, aby šlo okno otevřít.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Nechat Control Center běžet?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Se zavřeným oknem agenti dál pracují a oznámení dál přicházejí. Okno znovu otevřete ikonou v oznamovací oblasti. Změnit to můžete v Nastavení → Desktopová aplikace.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Ukončit';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Nechat běžet';
+
+  @override
+  String get trayStatusOffline => 'Offline';
+
+  @override
+  String get trayStatusReconnecting => 'Znovu se připojuje…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count na vás čeká',
+      many: '$count na vás čeká',
+      few: '$count na vás čekají',
+      one: '1 na vás čeká',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pracuje',
+      many: '$count pracuje',
+      few: '$count pracují',
+      one: '1 pracuje',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Vše v klidu';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count otázek',
+      many: '$count otázek',
+      few: '$count otázky',
+      one: '1 otázka',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count schválení čeká',
+      many: '$count schválení čeká',
+      few: '$count schválení čekají',
+      one: '1 schválení čeká',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Otevřít Control Center';
+
+  @override
+  String get trayMenuSettings => 'Nastavení…';
+
+  @override
+  String get trayMenuQuit => 'Ukončit Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Otevřete Control Center a vyberte pracovní prostor.';
+
+  @override
+  String get trayPanelOpenApp => 'Otevřít Control Center';
+
+  @override
+  String get trayPanelSettings => 'Nastavení desktopové aplikace';
+
+  @override
+  String get trayPanelNeedsYou => 'Čeká na vás';
+
+  @override
+  String get trayPanelApprovals => 'Schválení';
+
+  @override
+  String get trayPanelSpaces => 'Prostory';
+
+  @override
+  String get trayPanelNoSpaces => 'Zatím žádné prostory.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Všech $count prostorů',
+      many: 'Všech $count prostorů',
+      few: 'Všechny $count prostory',
+      one: 'Všechny prostory',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Využití';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Přepnout pracovní prostor';
 }

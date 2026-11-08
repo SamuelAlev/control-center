@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
+import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
@@ -990,6 +991,206 @@ void main() {
       await process.stdin.close();
       return (exitCode: await process.exitCode, out: await out, err: await err);
     }
+
+    /// Runs the real hook for one of Claude Code's own tools, on a run whose
+    /// working tree is [worktree].
+    Future<({int exitCode, String err})> nativeHook(
+      String tool,
+      Map<String, Object?> input, {
+      required String worktree,
+      List<String> stateDirs = const [],
+      Mode mode = Mode.chat,
+    }) async {
+      final run = (await gateway.open(
+        AgentRunGrant(
+          workspaceId: 'w1',
+          conversationId: 'c1',
+          agentId: 'a1',
+          spaceId: 's1',
+          mode: mode,
+          worktreeRoot: worktree,
+          runnerStateDirs: stateDirs,
+        ),
+      ))!;
+      final settings = jsonDecode(AgentRunLease.claudeHookSettings(run)) as Map;
+      final entry =
+          ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
+      final handler = (entry['hooks'] as List).single as Map;
+      final process = await Process.start(
+        'sh',
+        ['-c', handler['command'] as String],
+        environment: {AgentRunLease.tokenEnvKey: run.secret},
+      );
+      final err = process.stderr.transform(utf8.decoder).join();
+      unawaited(process.stdout.drain<void>());
+      process.stdin.write(jsonEncode({'tool_name': tool, 'tool_input': input}));
+      await process.stdin.close();
+      return (exitCode: await process.exitCode, err: await err);
+    }
+
+    group('native tools', () {
+      late Directory tree;
+
+      setUp(() => tree = Directory.systemTemp.createTempSync('cc-hook-tree-'));
+      tearDown(() => tree.deleteSync(recursive: true));
+
+      test('the hook matches every tool the policy has a rule for', () {
+        final settings =
+            jsonDecode(AgentRunLease.claudeHookSettings(lease)) as Map;
+        final entry =
+            ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
+
+        expect((entry['matcher'] as String).split('|'), {
+          'Bash',
+          'Write',
+          'Edit',
+          'MultiEdit',
+          'NotebookEdit',
+          'WebFetch',
+          'WebSearch',
+        });
+      });
+
+      test('without a lease only Bash is blocked', () {
+        final settings =
+            jsonDecode(AgentRunLease.claudeHookSettings(null)) as Map;
+        final entry =
+            ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
+
+        expect(entry['matcher'], 'Bash');
+      });
+
+      test('a write inside the worktree asks nothing', () async {
+        rule(ActionClass.fileWriteOutsideWorktree, ActionDecision.deny);
+
+        final result = await nativeHook('Write', {
+          'file_path': '${tree.path}/lib/new.dart',
+          'content': 'x',
+        }, worktree: tree.path);
+
+        expect(result.exitCode, 0);
+      });
+
+      test('a write outside the worktree meets the rule', () async {
+        rule(ActionClass.fileWriteOutsideWorktree, ActionDecision.deny);
+
+        for (final tool in ['Write', 'Edit', 'MultiEdit']) {
+          final result = await nativeHook(tool, {
+            'file_path': '/somewhere/else.txt',
+          }, worktree: tree.path);
+
+          expect(result.exitCode, 2, reason: tool);
+          expect(result.err, contains('Control Center policy'), reason: tool);
+        }
+      });
+
+      test('a notebook names its path differently', () async {
+        rule(ActionClass.fileWriteOutsideWorktree, ActionDecision.deny);
+
+        final result = await nativeHook('NotebookEdit', {
+          'notebook_path': '/somewhere/else.ipynb',
+        }, worktree: tree.path);
+
+        expect(result.exitCode, 2);
+      });
+
+      test('dot-dots cannot walk a write out', () async {
+        rule(ActionClass.fileWriteOutsideWorktree, ActionDecision.deny);
+
+        final result = await nativeHook('Write', {
+          'file_path': '${tree.path}/a/../../escape.txt',
+        }, worktree: tree.path);
+
+        expect(result.exitCode, 2);
+      });
+
+      test('a symlink cannot walk a write out', () async {
+        rule(ActionClass.fileWriteOutsideWorktree, ActionDecision.deny);
+        final outside = Directory.systemTemp.createTempSync('cc-hook-out-');
+        addTearDown(() => outside.deleteSync(recursive: true));
+        Link('${tree.path}/link').createSync(outside.path);
+
+        final result = await nativeHook('Write', {
+          'file_path': '${tree.path}/link/new.txt',
+        }, worktree: tree.path);
+
+        expect(result.exitCode, 2);
+      });
+
+      test('a read-only mode still writes its own plan file', () async {
+        final state = Directory.systemTemp.createTempSync('cc-hook-state-');
+        addTearDown(() => state.deleteSync(recursive: true));
+
+        final plan = await nativeHook(
+          'Write',
+          {'file_path': '${state.path}/plans/plan.md'},
+          worktree: tree.path,
+          stateDirs: [state.path],
+          mode: Mode.plan,
+        );
+        final elsewhere = await nativeHook(
+          'Write',
+          {'file_path': '/somewhere/else.txt'},
+          worktree: tree.path,
+          stateDirs: [state.path],
+          mode: Mode.plan,
+        );
+
+        expect(plan.exitCode, 0);
+        expect(elsewhere.exitCode, 2);
+      });
+
+      test('a file larger than a megabyte reaches the policy', () async {
+        final result = await nativeHook('Write', {
+          'file_path': '${tree.path}/big.txt',
+          'content': 'x' * (3 * 1024 * 1024),
+        }, worktree: tree.path);
+
+        expect(result.exitCode, 0);
+      });
+
+      test('web tools meet the egress rule', () async {
+        rule(ActionClass.networkEgress, ActionDecision.deny);
+
+        final fetch = await nativeHook('WebFetch', {
+          'url': 'https://example.com/a',
+          'prompt': 'read it',
+        }, worktree: tree.path);
+        final search = await nativeHook('WebSearch', {
+          'query': 'dart',
+        }, worktree: tree.path);
+
+        expect(fetch.exitCode, 2);
+        expect(search.exitCode, 2);
+      });
+
+      test('a host rule can tell one fetch from another', () async {
+        rule(
+          ActionClass.networkEgress,
+          ActionDecision.deny,
+          constraint: const ActionConstraint(hosts: ['example.com']),
+        );
+
+        final blocked = await nativeHook('WebFetch', {
+          'url': 'https://example.com/a',
+        }, worktree: tree.path);
+        final allowed = await nativeHook('WebFetch', {
+          'url': 'https://dart.dev/a',
+        }, worktree: tree.path);
+
+        expect(blocked.exitCode, 2);
+        expect(allowed.exitCode, 0);
+      });
+
+      test('a tool that does not say what it touches is refused', () async {
+        final result = await nativeHook('Write', {
+          'content': 'x',
+        }, worktree: tree.path);
+
+        expect(result.exitCode, 2);
+        expect(result.err, contains('invalid tool permission request'));
+      });
+    });
 
     test('a denied rule blocks Bash, with the reason', () async {
       rule(ActionClass.prCreate, ActionDecision.deny);

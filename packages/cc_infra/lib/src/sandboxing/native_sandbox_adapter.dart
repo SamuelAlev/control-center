@@ -17,6 +17,7 @@ import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/sandboxing/env_sanitizer.dart';
 import 'package:cc_infra/src/sandboxing/linux_sandbox.dart';
+import 'package:cc_infra/src/sandboxing/process_group_supervisor.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
@@ -46,6 +47,7 @@ class NativeSandboxAdapter implements SandboxPort {
   final Map<String, Process> _processes = {};
   final Map<String, SandboxConfig> _configs = {};
   final Map<String, SandboxHandle> _handles = {};
+  final Set<String> _supervised = {};
   String? _activeSession;
   StreamSubscription<SandboxViolation>? _violationSub;
 
@@ -93,6 +95,11 @@ class NativeSandboxAdapter implements SandboxPort {
   Future<SandboxHandle> launch(SandboxSpec spec) async {
     _streams[spec.sessionId] = StreamController<SandboxEvent>.broadcast();
     _configs[spec.sessionId] = await _buildConfigForSpec(spec);
+    // Linux needs no watcher: bwrap's `--die-with-parent --unshare-pid` already
+    // ends the tree with its parent.
+    if (spec.superviseProcessGroup && Platform.isMacOS) {
+      _supervised.add(spec.sessionId);
+    }
     final handle = SandboxHandle(
       sessionId: spec.sessionId,
       backend: SandboxBackend.native,
@@ -177,9 +184,12 @@ class NativeSandboxAdapter implements SandboxPort {
       ...?env,
     };
 
+    final launch = _supervised.contains(handle.sessionId)
+        ? superviseProcessGroup(wrap.executable, wrap.argv)
+        : (executable: wrap.executable, argv: wrap.argv);
     final process = await Process.start(
-      wrap.executable,
-      wrap.argv,
+      launch.executable,
+      launch.argv,
       workingDirectory: workingDirectory,
       environment: mergedEnv,
       includeParentEnvironment: false,
@@ -291,6 +301,7 @@ class NativeSandboxAdapter implements SandboxPort {
       }
     }
     _configs.remove(handle.sessionId);
+    _supervised.remove(handle.sessionId);
     await _streams.remove(handle.sessionId)?.close();
     await _manager.disposeSession(handle.sessionId);
     if (_activeSession == handle.sessionId) {

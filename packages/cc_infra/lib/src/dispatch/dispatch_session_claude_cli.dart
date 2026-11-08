@@ -1,5 +1,12 @@
 part of 'dispatch_session.dart';
 
+/// The prompt of a run that only compacts its native session.
+///
+/// Slash commands never reach a dispatch from a person: the messaging layer
+/// handles `/compact` itself. So on the Claude lane this exact prompt can only
+/// come from `ClaudeIdleCompactor`.
+const kClaudeIdleCompactionPrompt = '/compact';
+
 /// One stream-json user message, as `claude -p --input-format stream-json`
 /// reads it from stdin.
 String _claudeUserLine(String text) =>
@@ -115,13 +122,50 @@ extension _ClaudeCliMethods on DispatchSession {
       }
     }
 
-    // Point `claude` at the Control Center MCP server explicitly. The derived
-    // client config (`<cwd>/.mcp.json`, written per-session from the live
-    // `mcp_config.json` posture) is the ONE config `--strict-mcp-config` loads,
-    // so the agent reliably gets the `mcp__*` tool surface (incl.
-    // `submit_output`, which writes a pipeline run's structured output so the
-    // step resume listener can harvest it). Null resolver → no `--mcp-config`.
-    var mcpConfigPath = await _resolveMcpConfigPath();
+    // Capability-resolve FIRST: one effective-resume decision then governs the
+    // argv, the stdin prompt, the diagnostics and the accounting baseline. An
+    // older `claude` without `--resume` (or without `--effort`) must never be
+    // handed a flag it will reject — and must never be sent a delta prompt with
+    // no session to attach it to.
+    final capabilities = await ClaudeCliBackend.detectCapabilities(claudePath);
+    _claudeCapabilities = capabilities;
+    final compactOnly = _claudeCompactOnly;
+    final startedIn = conversationId;
+    if (workspaceId != null && startedIn != null) {
+      deps.claudeIdleCompactor?.runStarted(workspaceId!, startedIn);
+    }
+    if (capabilities.version == null) {
+      // Actionable, not cosmetic: without a version the adapter refuses to
+      // treat the persisted baseline as restorable, so a resumed turn reports
+      // its own spend instead of a delta against totals this build may not
+      // restore (which would silently swallow spend).
+      addEvent(
+        DebugEvent(
+          content:
+              '[claude] could not read the claude version (`--version` probe '
+              'failed or produced nothing) — session cost totals are NOT '
+              'assumed to be restored on resume.',
+        ),
+      );
+    }
+
+    // Point `claude` at the Control Center MCP server explicitly, so the agent
+    // reliably gets the `mcp__*` tool surface (incl. `submit_output`, which
+    // writes a pipeline run's structured output so the step resume listener can
+    // harvest it). The server's token and this run's secret go over stdin where
+    // the CLI can take them that way, so they never land in a file the agent can
+    // read. Otherwise the derived client config (`<cwd>/.mcp.json`, written
+    // per-session from the live `mcp_config.json` posture) is the ONE config
+    // `--strict-mcp-config` loads. No resolver → no MCP at all.
+    final mcpServers = capabilities.supportsMcpSetServers
+        ? await _resolveMcpServers()
+        : null;
+    var mcpConfigPath = mcpServers == null
+        ? await _resolveMcpConfigPath()
+        : null;
+    if (mcpServers != null) {
+      _removeStaleMcpConfig();
+    }
     // `--strict-mcp-config` makes `claude` treat a missing/unreadable config
     // file as FATAL: it exits 1 before emitting any stream event ("nothing
     // visible, then exited with code 1"). If the resolver handed back a path
@@ -143,29 +187,7 @@ extension _ClaudeCliMethods on DispatchSession {
     // own prompt gate is off.
     final hookSettings = AgentRunLease.claudeHookSettings(_gatewayLease);
     final permissionMode = _claudePermissionMode(mode);
-    _claudeMcpExpected = mcpConfigPath != null;
-
-    // Capability-resolve FIRST: one effective-resume decision then governs the
-    // argv, the stdin prompt, the diagnostics and the accounting baseline. An
-    // older `claude` without `--resume` (or without `--effort`) must never be
-    // handed a flag it will reject — and must never be sent a delta prompt with
-    // no session to attach it to.
-    final capabilities = await ClaudeCliBackend.detectCapabilities(claudePath);
-    _claudeCapabilities = capabilities;
-    if (capabilities.version == null) {
-      // Actionable, not cosmetic: without a version the adapter refuses to
-      // treat the persisted baseline as restorable, so a resumed turn reports
-      // its own spend instead of a delta against totals this build may not
-      // restore (which would silently swallow spend).
-      addEvent(
-        DebugEvent(
-          content:
-              '[claude] could not read the claude version (`--version` probe '
-              'failed or produced nothing) — session cost totals are NOT '
-              'assumed to be restored on resume.',
-        ),
-      );
-    }
+    _claudeMcpExpected = mcpConfigPath != null || mcpServers != null;
 
     // Everything a resumed session would silently inherit from the OLD
     // process — model, effort, permission surface, the Control Center mode, the
@@ -177,6 +199,7 @@ extension _ClaudeCliMethods on DispatchSession {
     final policy = _claudePolicyFingerprint(
       permissionMode: permissionMode,
       mcpConfigPath: mcpConfigPath,
+      mcpServers: mcpServers,
       settingsJson: hookSettings,
     );
     if (claudeResumeReset) {
@@ -201,7 +224,21 @@ extension _ClaudeCliMethods on DispatchSession {
         ? parts.deltaPromptFor(_deliveredContextOf(resumeCandidate))
         : null;
     // An untracked context forces a fresh session even when a record exists.
-    final activeResumeRecord = delta != null ? resumeCandidate : null;
+    // A compaction carries no context, so it only needs the session itself.
+    final activeResumeRecord = delta != null || compactOnly
+        ? resumeCandidate
+        : null;
+    if (compactOnly && activeResumeRecord == null) {
+      // The session moved on or never existed: starting a fresh one to compact
+      // would spend a turn on nothing.
+      addEvent(
+        DebugEvent(content: '[claude] no native session left to compact'),
+      );
+      unawaited(_closeRunLog(exitCode: 0));
+      addEvent(DoneEvent());
+      _completeRun();
+      return;
+    }
     if (parts != null && resumeRecord != null && !capabilities.supportsResume) {
       addEvent(
         DebugEvent(
@@ -248,11 +285,16 @@ extension _ClaudeCliMethods on DispatchSession {
       );
     }
 
+    final autoCompactWindow = deps.claudeSessionSettings
+        ?.call()
+        .autoCompactWindow;
     final claudeFlags = ClaudeCliBackend.buildClaudeArgs(
       modelId: modelId,
       permissionMode: permissionMode,
       mcpConfigPath: mcpConfigPath,
+      mcpOverStdin: mcpServers != null,
       settingsJson: hookSettings,
+      autoCompactWindow: autoCompactWindow,
       effortLevel: effortLevel,
       capabilities: capabilities,
     );
@@ -272,6 +314,7 @@ extension _ClaudeCliMethods on DispatchSession {
         execGrantRoots: await _execGrants(wsId),
         loopbackPorts: _gatewayLoopbackPorts,
         environmentScope: _environment.scope,
+        superviseProcessGroup: true,
       ),
       emit: addEvent,
     );
@@ -379,6 +422,7 @@ extension _ClaudeCliMethods on DispatchSession {
     while (i < attempts.length && !_cancelSource.isCancelled) {
       final attempt = attempts[i];
       ClaudeTerminalError? terminal;
+      ClaudeRateLimitInfo? blockedBy;
       completedTurn = false;
       var producedOutput = false;
       // Claude Code's own auto-compactions in this attempt.
@@ -436,15 +480,30 @@ extension _ClaudeCliMethods on DispatchSession {
           // measured against the agent's configured window, else the one the
           // `--model` id runs with. A setting the model cannot honour is
           // shown as set — the run, not the meter, is where it fails.
-          onCallUsage: (u) => addEvent(
-            ContextWindowEvent(
-              contextTokens: u.contextTokens,
-              windowTokens: modelWindow,
-              compactions: compactions,
-            ),
-          ),
+          onCallUsage: (u) {
+            _claudeContextTokens = u.contextTokens;
+            addEvent(
+              ContextWindowEvent(
+                contextTokens: u.contextTokens,
+                windowTokens: modelWindow,
+                compactions: compactions,
+              ),
+            );
+          },
           onCompactBoundary: (preTokens) {
             compactions++;
+            if (compactOnly) {
+              // The run's whole output: without it the conversation shows an
+              // empty reply from an agent nobody spoke to.
+              addEvent(
+                TextEvent(
+                  content:
+                      'Compacted this conversation'
+                      '${preTokens == null ? '' : ' from $preTokens tokens'} '
+                      'before its prompt cache expired.',
+                ),
+              );
+            }
             addEvent(
               DebugEvent(
                 content:
@@ -472,11 +531,22 @@ extension _ClaudeCliMethods on DispatchSession {
           // NOT gated on `producedOutput` — usage is accounting, not output, and
           // an attempt that spent tokens and then failed over to the next
           // account must still be counted.
-          onUsage: _onClaudeResultUsage,
+          onUsage: (usage) {
+            _claudeCacheTtl = usage.cacheTtl ?? _claudeCacheTtl;
+            _onClaudeResultUsage(usage);
+          },
           // Held, not emitted: a capacity failure we are about to retry is not
           // something to show as an error, and the decision needs the exit code
           // that has not arrived yet.
-          onTerminalError: (e) => terminal = e,
+          onTerminalError: (e) {
+            final limit = blockedBy;
+            terminal = limit == null ? e : e.blockedBy(limit);
+          },
+          onControlResponse: _onClaudeControlResponse,
+          onRateLimit: (info) {
+            blockedBy = info.blocked ? info : null;
+            _onClaudeRateLimit(info, attempt);
+          },
           onResult: () {
             completedTurn = _onClaudeTurnEnded(failed: terminal != null);
           },
@@ -500,11 +570,14 @@ extension _ClaudeCliMethods on DispatchSession {
         // one failed — sends the full prompt. A delta without `--resume` would
         // silently drop the standing brief and the conversation, so the two
         // always move together.
-        continuing != null
+        compactOnly
+            ? kClaudeIdleCompactionPrompt
+            : continuing != null
             ? kClaudeContinueAfterSignInPrompt
             : i == 0 && _claudeResumeId != null
             ? _claudeDeltaPrompt ?? prompt
             : prompt,
+        mcpServers: mcpServers,
       );
       if (!steeringAnnounced) {
         steeringAnnounced = true;
@@ -529,7 +602,9 @@ extension _ClaudeCliMethods on DispatchSession {
                 modelId: modelId,
                 permissionMode: permissionMode,
                 mcpConfigPath: mcpConfigPath,
+                mcpOverStdin: mcpServers != null,
                 settingsJson: hookSettings,
+                autoCompactWindow: autoCompactWindow,
                 effortLevel: effortLevel,
                 resumeSessionId: _claudeResumeId,
                 capabilities: capabilities,
@@ -569,7 +644,9 @@ extension _ClaudeCliMethods on DispatchSession {
       // than continued.
       final accountFailure =
           failure != null && (failure.isCapacity || failure.isAuth);
-      if (accountFailure && !turnProducedOutput && hasNext) {
+      // A compaction is an optimisation for one session on one account. It
+      // never moves to another account or stops to ask anyone to sign in.
+      if (accountFailure && !turnProducedOutput && hasNext && !compactOnly) {
         if (attempt.accountId.isNotEmpty) {
           await _reportClaudeAccountFailure(attempt.accountId, failure);
         }
@@ -610,7 +687,8 @@ extension _ClaudeCliMethods on DispatchSession {
       if (failure != null &&
           failure.isAuth &&
           !turnProducedOutput &&
-          reauthParks < 2) {
+          reauthParks < 2 &&
+          !compactOnly) {
         if (attempt.accountId.isNotEmpty) {
           await _reportClaudeAccountFailure(attempt.accountId, failure);
         }
@@ -691,11 +769,11 @@ extension _ClaudeCliMethods on DispatchSession {
           // failure anyway so the NEXT dispatch starts somewhere usable.
           await _reportClaudeAccountFailure(attempt.accountId, failure);
         }
+        final detail = redactSecrets('[claude] ${failure.message}');
         addEvent(
-          _claudeErrorEvent(
-            redactSecrets('[claude] ${failure.message}'),
-            auth: failure.isAuth,
-          ),
+          compactOnly
+              ? DebugEvent(content: detail)
+              : _claudeErrorEvent(detail, auth: failure.isAuth),
         );
         explained = true;
       }
@@ -716,6 +794,9 @@ extension _ClaudeCliMethods on DispatchSession {
     await _closeClaudeSubagents();
     if (_cancelSource.isCancelled) {
       return;
+    }
+    if (exitCode == 0 && completedTurn && !compactOnly) {
+      _reportClaudeTurnSettled();
     }
     unawaited(_closeRunLog(exitCode: exitCode));
 
@@ -741,82 +822,6 @@ extension _ClaudeCliMethods on DispatchSession {
     _completeRun();
   }
 
-  /// Opens the stdin lane for one `claude -p` attempt: [firstMessage] as the
-  /// first stream-json user message, then everything this run already steered
-  /// (a failover attempt replays the turn as the operator last shaped it).
-  ///
-  /// [firstMessage] is the DELTA prompt when this attempt resumes a native
-  /// session and the FULL prompt otherwise — never the delta without
-  /// `--resume`, which would drop the standing brief and the conversation.
-  StreamController<String> _openClaudeStdin(String firstMessage) {
-    final stdin = StreamController<String>()
-      ..add(_claudeUserLine(firstMessage));
-    for (final text in _claudeSteered) {
-      stdin.add(_claudeUserLine(text));
-    }
-    _claudeStdin = stdin;
-    return stdin;
-  }
-
-  /// Closes the open stdin lane, which lets `claude` exit once it has answered
-  /// what it was already sent. Steering from here on stays queued.
-  void _closeClaudeStdin() {
-    final stdin = _claudeStdin;
-    _claudeStdin = null;
-    if (stdin != null) {
-      unawaited(stdin.close());
-    }
-  }
-
-  /// Drains on the next microtask rather than inside the push: the steering
-  /// queue service pushes several rows in a row (reorder, run-start flush),
-  /// and queue surgery mid-push would interleave with it.
-  void _scheduleClaudeSteeringPump() {
-    if (_claudeSteeringPumpScheduled) {
-      return;
-    }
-    _claudeSteeringPumpScheduled = true;
-    scheduleMicrotask(() {
-      _claudeSteeringPumpScheduled = false;
-      _pumpClaudeSteering();
-    });
-  }
-
-  /// Writes the steering and aside lanes to the open stdin. Claude Code
-  /// injects a user message that arrives mid-turn at its next tool boundary.
-  /// Follow-ups wait for [_onClaudeTurnEnded]: they are for once the agent
-  /// would otherwise stop.
-  void _pumpClaudeSteering() {
-    final stdin = _claudeStdin;
-    if (stdin == null) {
-      return;
-    }
-    _writeClaudeSteering(stdin, [
-      ..._steering.drainSteering(),
-      ..._steering.drainAside(),
-    ]);
-  }
-
-  void _writeClaudeSteering(
-    StreamController<String> stdin,
-    List<SteeringMessage> messages,
-  ) {
-    if (messages.isEmpty) {
-      return;
-    }
-    for (final message in messages) {
-      _claudeSteered.add(message.content);
-      stdin.add(_claudeUserLine(message.content));
-    }
-    addEvent(
-      DebugEvent(
-        content:
-            '[claude] steered the running turn with ${messages.length} '
-            'queued message${messages.length == 1 ? '' : 's'}',
-      ),
-    );
-  }
-
   /// The turn's `result`. Anything still queued — follow-ups included — starts
   /// the next turn on this same process, context intact. Otherwise stdin
   /// closes and the process exits; a failed turn always closes, since the
@@ -826,6 +831,12 @@ extension _ClaudeCliMethods on DispatchSession {
   bool _onClaudeTurnEnded({required bool failed}) {
     final stdin = _claudeStdin;
     if (stdin == null) {
+      return false;
+    }
+    // A stopped run takes nothing more: queued work must not start a turn on
+    // the process that is being shut down.
+    if (_cancelSource.isCancelled) {
+      _closeClaudeStdin();
       return false;
     }
     if (!failed) {
@@ -888,10 +899,16 @@ extension _ClaudeCliMethods on DispatchSession {
   String _claudePolicyFingerprint({
     required String? permissionMode,
     required String? mcpConfigPath,
+    required Map<String, Object?>? mcpServers,
     required String? settingsJson,
   }) {
     var mcp = '';
-    if (mcpConfigPath != null && mcpConfigPath.isNotEmpty) {
+    if (mcpServers != null) {
+      // The shape of the file, so moving between the two forks no session.
+      mcp = AgentRunLease.withoutRunSecret(
+        jsonEncode({'mcpServers': mcpServers}),
+      );
+    } else if (mcpConfigPath != null && mcpConfigPath.isNotEmpty) {
       try {
         mcp = AgentRunLease.withoutRunSecret(
           File(mcpConfigPath).readAsStringSync(),
@@ -901,7 +918,8 @@ extension _ClaudeCliMethods on DispatchSession {
       }
     }
     final hasControlCenterMcp =
-        mcpConfigPath != null && mcpConfigPath.isNotEmpty;
+        mcpServers != null ||
+        (mcpConfigPath != null && mcpConfigPath.isNotEmpty);
     final canonical = [
       'model=${modelId ?? ''}',
       'effort=${effortLevel ?? ''}',
@@ -922,7 +940,7 @@ extension _ClaudeCliMethods on DispatchSession {
       'settings=${sha256.convert(utf8.encode(settingsJson ?? ''))}',
       'append=${ClaudeCliBackend.appendedSystemPrompt(hasControlCenterMcp: hasControlCenterMcp)}',
       if (hasControlCenterMcp)
-        'disallowed=${ClaudeCliBackend.nativeChecklistTools}',
+        'disallowed=${ClaudeCliBackend.replacedNativeTools}',
     ].join('\u0000');
     return sha256.convert(utf8.encode(canonical)).toString();
   }
@@ -1046,6 +1064,9 @@ extension _ClaudeCliMethods on DispatchSession {
     final previous = _claudeResumeRecord;
     final now = DateTime.now().toUtc();
     final baseline = ledger?.baseline;
+    // A compaction sent the session nothing, so whatever arrived in the
+    // conversation since its last turn is still owed to the next one.
+    final delivered = normalExit && !_claudeCompactOnly;
     final record = ClaudeNativeSessionRecord(
       storageKey: storeKey,
       sessionId: sessionId,
@@ -1056,19 +1077,19 @@ extension _ClaudeCliMethods on DispatchSession {
       lastUsedAt: now,
       // Empty means "cursor unknown": a later resume must NOT build a delta
       // from it.
-      conversationRevision: normalExit
+      conversationRevision: delivered
           ? (promptParts?.conversationRevision ?? '')
           : (previous?.conversationRevision ?? ''),
       // Only a clean exit advances the cursor: an interrupted run may never
       // have been read, so the next resume re-delivers what changed. The lists
       // are BOUNDED (most recent window) — a cursor, not a log.
       deliveredConversationKeys: ClaudeNativeSessionRecord.bound(
-        normalExit
+        delivered
             ? (promptParts?.deliveredConversationKeysFor() ?? const [])
             : (previous?.deliveredConversationKeys ?? const []),
       ),
       deliveredSectionKeys: ClaudeNativeSessionRecord.bound(
-        normalExit
+        delivered
             ? (promptParts?.deliveredSectionKeysFor() ?? const [])
             : (previous?.deliveredSectionKeys ?? const []),
       ),

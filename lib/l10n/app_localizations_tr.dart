@@ -16486,4 +16486,256 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Kurulum günlükleri';
+
+  @override
+  String get claudeCompactionTitle => 'Sıkıştırma';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Claude Code\'un uzun konuşmaları bağlam penceresinde nasıl tuttuğu.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Şu noktadan sonra otomatik sıkıştır';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Token, $min ile $max arasında. Claude Code varsayılanını kullanmak için boş bırakın.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return '$min ile $max arasında bir sayı girin.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Boştaki konuşmaları sıkıştır';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return '$threshold tokeni aşan bir konuşmayı istem önbelleğinin süresi dolmadan hemen önce sıkıştırır, böylece konuşmaya dönmek daha az maliyetli olur. Her sıkıştırma planınızdan harcar.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => 'Bu ayar kaydedilemedi.';
+
+  @override
+  String get navDesktopApp => 'Masaüstü uygulaması';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Tepsi simgesi, pencereyi kapatma ve oturum açıldığında açılma.';
+
+  @override
+  String get desktopSectionMenuBar => 'Menü çubuğu';
+
+  @override
+  String get desktopSectionTray => 'Sistem tepsisi';
+
+  @override
+  String get desktopTrayTitleMac => 'Menü çubuğunda göster';
+
+  @override
+  String get desktopTrayTitle => 'Sistem tepsisinde göster';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Durum, sizi bekleyenler, alanlarınız ve plan kullanımı tek tıkla elinizin altında.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Sistem tepsisi bulunamadı';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Bu masaüstü tepsi simgelerini göstermiyor. GNOME\'da AppIndicator uzantısını yükleyin, ardından Control Center\'ı yeniden başlatın.';
+
+  @override
+  String get desktopSectionClosing => 'Pencereyi kapatma';
+
+  @override
+  String get desktopCloseTitle => 'Pencereyi kapattığınızda';
+
+  @override
+  String get desktopCloseKeepRunning => 'Çalışmaya devam et';
+
+  @override
+  String get desktopCloseQuit => 'Çık';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Ajanlar ve bildirimler devam eder. Pencereyi Dock\'tan veya menü çubuğundan yeniden açın.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Ajanlar ve bildirimler devam eder. Pencereyi tepsi simgesinden yeniden açın.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Pencereyi kapattığınızda Control Center\'dan çıkılır. Yeniden açana kadar bildirimler durur.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Control Center\'ın penceresi kapalıyken çalışmaya devam etmesi için tepsi simgesini açın.';
+
+  @override
+  String get desktopSectionLogin => 'Başlangıç';
+
+  @override
+  String get desktopLoginTitle => 'Oturum açıldığında aç';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Oturum açtığınızda Control Center\'ı başlatır, böylece bildirimler ilk andan itibaren gelir.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Bu sistem, uygulamaların oturum açıldığında açılmasını desteklemiyor.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Bunu açmayı tamamlamak için Giriş Öğeleri\'nde Control Center\'a izin verin.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Giriş Öğeleri\'ni aç';
+
+  @override
+  String get desktopLoginRefused =>
+      'Sistem değişikliği kabul etmedi. Bu ayar yöneticiniz tarafından yönetiliyor olabilir.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Arka planda başlat';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Oturum açıldığında pencere olmadan açılır. Dock\'ta veya menü çubuğunda bulabilirsiniz.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Oturum açıldığında pencere olmadan açılır. Sistem tepsisinde bulabilirsiniz.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Pencereyi açmanın bir yolu olması için tepsi simgesi gerekir.';
+
+  @override
+  String get closeToTrayPromptTitle =>
+      'Control Center çalışmaya devam etsin mi?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Pencere kapalıyken ajanlar çalışmaya, bildirimler gelmeye devam eder. Yeniden açmak için tepsi simgesini kullanın. Bunu Ayarlar → Masaüstü uygulaması bölümünden değiştirebilirsiniz.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Çık';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Çalışmaya devam et';
+
+  @override
+  String get trayStatusOffline => 'Çevrimdışı';
+
+  @override
+  String get trayStatusReconnecting => 'Yeniden bağlanılıyor…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sizi bekliyor',
+      one: '1 sizi bekliyor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count çalışıyor',
+      one: '1 çalışıyor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Her şey sakin';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count soru',
+      one: '1 soru',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count onay bekliyor',
+      one: '1 onay bekliyor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Control Center\'ı aç';
+
+  @override
+  String get trayMenuSettings => 'Ayarlar…';
+
+  @override
+  String get trayMenuQuit => 'Control Center\'dan çık';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Bir çalışma alanı seçmek için Control Center\'ı açın.';
+
+  @override
+  String get trayPanelOpenApp => 'Control Center\'ı aç';
+
+  @override
+  String get trayPanelSettings => 'Masaüstü uygulaması ayarları';
+
+  @override
+  String get trayPanelNeedsYou => 'Sizi bekleyenler';
+
+  @override
+  String get trayPanelApprovals => 'Onaylar';
+
+  @override
+  String get trayPanelSpaces => 'Alanlar';
+
+  @override
+  String get trayPanelNoSpaces => 'Henüz alan yok.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tüm $count alan',
+      one: 'Tüm alanlar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Kullanım';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Çalışma alanını değiştir';
 }

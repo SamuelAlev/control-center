@@ -16511,4 +16511,255 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Log persediaan';
+
+  @override
+  String get claudeCompactionTitle => 'Pemadatan';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Cara Claude Code mengekalkan perbualan panjang dalam tetingkap konteksnya.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Padatkan secara automatik selepas';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Token, dari $min hingga $max. Biarkan kosong untuk menggunakan lalai Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Masukkan nombor dari $min hingga $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Padatkan perbualan melahu';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Memadatkan perbualan melebihi $threshold token sejurus sebelum cache gesaannya tamat tempoh, supaya kembali kepadanya lebih murah. Setiap pemadatan menggunakan pelan anda.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => 'Tidak dapat menyimpan tetapan ini.';
+
+  @override
+  String get navDesktopApp => 'Apl desktop';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Ikon dulang, menutup tetingkap dan membuka apl semasa log masuk.';
+
+  @override
+  String get desktopSectionMenuBar => 'Bar menu';
+
+  @override
+  String get desktopSectionTray => 'Dulang sistem';
+
+  @override
+  String get desktopTrayTitleMac => 'Tunjukkan dalam bar menu';
+
+  @override
+  String get desktopTrayTitle => 'Tunjukkan dalam dulang sistem';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Status, perkara yang menunggu anda, ruang anda dan penggunaan langganan, hanya satu klik.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Dulang sistem tidak ditemui';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Desktop ini tidak menunjukkan ikon dulang. Pada GNOME, pasang sambungan AppIndicator, kemudian mulakan semula Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'Menutup tetingkap';
+
+  @override
+  String get desktopCloseTitle => 'Apabila anda menutup tetingkap';
+
+  @override
+  String get desktopCloseKeepRunning => 'Teruskan berjalan';
+
+  @override
+  String get desktopCloseQuit => 'Keluar';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Ejen dan pemberitahuan terus berjalan. Buka semula tetingkap dari Dock atau bar menu.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Ejen dan pemberitahuan terus berjalan. Buka semula tetingkap dari ikon dulang.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Menutup tetingkap akan keluar dari Control Center. Pemberitahuan berhenti sehingga anda membukanya semula.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Hidupkan ikon dulang supaya Control Center terus berjalan walaupun tetingkapnya ditutup.';
+
+  @override
+  String get desktopSectionLogin => 'Permulaan';
+
+  @override
+  String get desktopLoginTitle => 'Buka semasa log masuk';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Mulakan Control Center apabila anda log masuk, supaya pemberitahuan tiba dari awal.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Sistem ini tidak menyokong pembukaan apl semasa log masuk.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Benarkan Control Center dalam Item Daftar Masuk untuk selesai menghidupkan pilihan ini.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Buka Item Daftar Masuk';
+
+  @override
+  String get desktopLoginRefused =>
+      'Sistem tidak menerima perubahan ini. Pentadbir anda mungkin mengurusnya.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Mulakan di latar belakang';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Dibuka tanpa tetingkap semasa log masuk. Cari dalam Dock atau bar menu.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Dibuka tanpa tetingkap semasa log masuk. Cari dalam dulang.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Memerlukan ikon dulang, supaya ada cara untuk membuka tetingkap.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Biarkan Control Center terus berjalan?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Ejen terus bekerja dan pemberitahuan terus tiba walaupun tetingkap ditutup. Buka semula dari ikon dulang. Anda boleh menukar ini dalam Tetapan → Apl desktop.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Keluar';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Teruskan berjalan';
+
+  @override
+  String get trayStatusOffline => 'Luar talian';
+
+  @override
+  String get trayStatusReconnecting => 'Menyambung semula…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count menunggu anda',
+      one: '1 menunggu anda',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sedang bekerja',
+      one: '1 sedang bekerja',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Semua tenang';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count soalan',
+      one: '1 soalan',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count menunggu kelulusan',
+      one: '1 menunggu kelulusan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Buka Control Center';
+
+  @override
+  String get trayMenuSettings => 'Tetapan…';
+
+  @override
+  String get trayMenuQuit => 'Keluar dari Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Buka Control Center untuk memilih ruang kerja.';
+
+  @override
+  String get trayPanelOpenApp => 'Buka Control Center';
+
+  @override
+  String get trayPanelSettings => 'Tetapan apl desktop';
+
+  @override
+  String get trayPanelNeedsYou => 'Menunggu anda';
+
+  @override
+  String get trayPanelApprovals => 'Kelulusan';
+
+  @override
+  String get trayPanelSpaces => 'Ruang';
+
+  @override
+  String get trayPanelNoSpaces => 'Belum ada ruang.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Semua $count ruang',
+      one: 'Semua ruang',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Penggunaan';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Tukar ruang kerja';
 }

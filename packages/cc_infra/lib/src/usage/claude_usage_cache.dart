@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 
-/// Short-lived single-flight cache in front of Claude's usage endpoint.
+/// Short-lived single-flight cache in front of Claude's usage reading.
 ///
-/// `/api/oauth/usage` rate-limits hard; multi-account × pill + dispatch readers
-/// caused 429s that looked like "all plans broken". Guarantees: one in-flight
-/// future per config dir; success reused for [ttl]; failures cached for
-/// [errorTtl] (immediate 429 retries sustain the throttle).
+/// Each reading spawns the `claude` CLI, and the CLI asks a rate-limited
+/// endpoint: multi-account × pill + dispatch readers once caused 429s that
+/// looked like "all plans broken". Guarantees: one in-flight future per config
+/// dir; success reused for [ttl]; failures cached for [errorTtl] (immediate
+/// retries sustain a throttle).
 class ClaudeUsageCache {
   /// Creates a [ClaudeUsageCache] over [_fetch].
   ClaudeUsageCache({
@@ -67,6 +68,31 @@ class ClaudeUsageCache {
       // explicitly keeps the analyzer from reading that as a forgotten await.
       unawaited(_inFlight.remove(configDir) ?? Future<void>.value());
     }
+  }
+
+  /// Folds [windows] from a live run into [configDir]'s reading.
+  ///
+  /// A running `claude` reports the plan's windows with its responses, so an
+  /// account in use never needs another CLI spawn to stay current, and the
+  /// rotation sees a window closing without waiting out [ttl]. Only a good
+  /// reading is updated: a run reports windows alone, so it cannot stand in for
+  /// a reading that failed or has yet to be taken.
+  void observe(String configDir, List<SubscriptionWindow> windows) {
+    final cached = _entries[configDir];
+    if (cached == null ||
+        windows.isEmpty ||
+        cached.usage.status != SubscriptionStatus.ok) {
+      return;
+    }
+    final fresh = {for (final w in windows) w.id: w};
+    final merged = [
+      for (final w in cached.usage.windows) fresh.remove(w.id) ?? w,
+      ...fresh.values,
+    ];
+    _entries[configDir] = (
+      at: _now(),
+      usage: cached.usage.copyWith(windows: merged),
+    );
   }
 
   /// Forgets [configDir]'s reading, so the next call refetches.

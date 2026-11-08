@@ -55,6 +55,23 @@ void main() {
         });
       }
 
+      test('the auto-compact window is left to Claude Code unless set', () {
+        Map<String, dynamic> settingsOf(List<String> args) =>
+            jsonDecode(args[args.indexOf('--settings') + 1])
+                as Map<String, dynamic>;
+
+        expect(
+          settingsOf(ClaudeCliBackend.buildClaudeArgs()),
+          isNot(contains('autoCompactWindow')),
+        );
+        expect(
+          settingsOf(
+            ClaudeCliBackend.buildClaudeArgs(autoCompactWindow: 400000),
+          ),
+          containsPair('autoCompactWindow', 400000),
+        );
+      });
+
       test('adds --dangerously-skip-permissions by default', () {
         final args = ClaudeCliBackend.buildClaudeArgs();
         expect(args, contains('--dangerously-skip-permissions'));
@@ -168,6 +185,45 @@ void main() {
       test('returns empty when nothing provided', () {
         const backend = ClaudeCliBackend();
         expect(backend.buildArgs(), isEmpty);
+      });
+    });
+
+    group('buildClaudeArgs thinking summaries', () {
+      test('asks for summaries a CLI that takes the flag can stream', () {
+        final args = ClaudeCliBackend.buildClaudeArgs();
+        final i = args.indexOf('--thinking-display');
+        expect(args[i + 1], 'summarized');
+      });
+
+      test('never hands the hidden flag to a CLI of unknown version', () {
+        expect(
+          ClaudeCliBackend.buildClaudeArgs(
+            capabilities: ClaudeCliCapabilities.conservative,
+          ),
+          isNot(contains('--thinking-display')),
+        );
+      });
+
+      test('the setting rides along for builds that read it', () {
+        final args = ClaudeCliBackend.buildClaudeArgs();
+        final settings =
+            jsonDecode(args[args.indexOf('--settings') + 1])
+                as Map<String, dynamic>;
+        expect(settings['showThinkingSummaries'], isTrue);
+      });
+    });
+
+    group('buildClaudeArgs MCP over stdin', () {
+      test('keeps the lockdown without naming a config file', () {
+        final args = ClaudeCliBackend.buildClaudeArgs(mcpOverStdin: true);
+
+        expect(args, isNot(contains('--mcp-config')));
+        expect(args, contains('--strict-mcp-config'));
+        expect(args, contains('--disallowedTools'));
+        expect(
+          args[args.indexOf('--append-system-prompt') + 1],
+          ClaudeCliBackend.appendedSystemPrompt(hasControlCenterMcp: true),
+        );
       });
     });
 

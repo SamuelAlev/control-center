@@ -16469,4 +16469,256 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Nhật ký thiết lập';
+
+  @override
+  String get claudeCompactionTitle => 'Nén ngữ cảnh';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Cách Claude Code giữ các cuộc trò chuyện dài trong cửa sổ ngữ cảnh.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Tự động nén sau';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Số token, từ $min đến $max. Để trống để dùng giá trị mặc định của Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Nhập một số từ $min đến $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel =>
+      'Nén các cuộc trò chuyện không hoạt động';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Nén cuộc trò chuyện trên $threshold token ngay trước khi bộ nhớ đệm prompt hết hạn, để quay lại sẽ tốn ít chi phí hơn. Mỗi lần nén đều dùng gói của bạn.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => 'Không thể lưu cài đặt này.';
+
+  @override
+  String get navDesktopApp => 'Ứng dụng máy tính';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Biểu tượng khay hệ thống, việc đóng cửa sổ và mở khi đăng nhập.';
+
+  @override
+  String get desktopSectionMenuBar => 'Thanh menu';
+
+  @override
+  String get desktopSectionTray => 'Khay hệ thống';
+
+  @override
+  String get desktopTrayTitleMac => 'Hiển thị trên thanh menu';
+
+  @override
+  String get desktopTrayTitle => 'Hiển thị trong khay hệ thống';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Trạng thái, việc cần bạn xử lý, các không gian và mức dùng gói của bạn, chỉ cách một cú nhấp.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Không tìm thấy khay hệ thống';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Môi trường desktop này không hiển thị biểu tượng khay. Trên GNOME, hãy cài tiện ích mở rộng AppIndicator rồi khởi động lại Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'Đóng cửa sổ';
+
+  @override
+  String get desktopCloseTitle => 'Khi bạn đóng cửa sổ';
+
+  @override
+  String get desktopCloseKeepRunning => 'Tiếp tục chạy';
+
+  @override
+  String get desktopCloseQuit => 'Thoát';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Agent và thông báo vẫn tiếp tục. Mở lại cửa sổ từ Dock hoặc thanh menu.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Agent và thông báo vẫn tiếp tục. Mở lại cửa sổ từ biểu tượng khay.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Đóng cửa sổ sẽ thoát Control Center. Thông báo sẽ dừng cho đến khi bạn mở lại.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Bật biểu tượng khay để Control Center tiếp tục chạy khi cửa sổ đã đóng.';
+
+  @override
+  String get desktopSectionLogin => 'Khởi động';
+
+  @override
+  String get desktopLoginTitle => 'Mở khi đăng nhập';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Khởi động Control Center khi bạn đăng nhập để nhận thông báo ngay từ đầu.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Hệ thống này không hỗ trợ mở ứng dụng khi đăng nhập.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Hãy cho phép Control Center trong Mục đăng nhập để hoàn tất việc bật tính năng này.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Mở Mục đăng nhập';
+
+  @override
+  String get desktopLoginRefused =>
+      'Hệ thống không chấp nhận thay đổi. Có thể quản trị viên của bạn đang quản lý cài đặt này.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Khởi động trong nền';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Mở mà không hiện cửa sổ khi đăng nhập. Tìm ứng dụng trong Dock hoặc thanh menu.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Mở mà không hiện cửa sổ khi đăng nhập. Tìm ứng dụng trong khay hệ thống.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Cần biểu tượng khay để có cách mở cửa sổ.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Để Control Center tiếp tục chạy?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Agent vẫn làm việc và thông báo vẫn đến khi cửa sổ đã đóng. Mở lại từ biểu tượng khay. Bạn có thể thay đổi điều này trong Cài đặt → Ứng dụng máy tính.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Thoát';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Tiếp tục chạy';
+
+  @override
+  String get trayStatusOffline => 'Ngoại tuyến';
+
+  @override
+  String get trayStatusReconnecting => 'Đang kết nối lại…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count việc cần bạn',
+      one: '1 việc cần bạn',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count đang hoạt động',
+      one: '1 đang hoạt động',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Mọi thứ yên ắng';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count câu hỏi',
+      one: '1 câu hỏi',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mục chờ phê duyệt',
+      one: '1 mục chờ phê duyệt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Mở Control Center';
+
+  @override
+  String get trayMenuSettings => 'Cài đặt…';
+
+  @override
+  String get trayMenuQuit => 'Thoát Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Mở Control Center để chọn một không gian làm việc.';
+
+  @override
+  String get trayPanelOpenApp => 'Mở Control Center';
+
+  @override
+  String get trayPanelSettings => 'Cài đặt ứng dụng máy tính';
+
+  @override
+  String get trayPanelNeedsYou => 'Cần bạn';
+
+  @override
+  String get trayPanelApprovals => 'Phê duyệt';
+
+  @override
+  String get trayPanelSpaces => 'Không gian';
+
+  @override
+  String get trayPanelNoSpaces => 'Chưa có không gian nào.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tất cả $count không gian',
+      one: 'Tất cả không gian',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Mức dùng';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Chuyển không gian làm việc';
 }

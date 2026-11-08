@@ -106,6 +106,14 @@ static void my_application_activate(GApplication* application) {
       }
     }
     g_list_free(toplevels);
+    // Only VISIBLE windows were presented above. A main window closed to the
+    // tray is hidden, and Dart is the side that hid it: ask it to show and
+    // focus it again (lib/app/tray/main_window_visibility.dart).
+    if (app_method_channel != nullptr) {
+      fl_method_channel_invoke_method(app_method_channel, "reopen", nullptr,
+                                      nullptr, app_method_channel_response_cb,
+                                      nullptr);
+    }
     return;
   }
 
@@ -178,6 +186,20 @@ static void my_application_open(GApplication* application, GFile** files,
   g_application_activate(application);
 }
 
+// Passed by the XDG autostart entry the app writes for "Open at login"
+// (lib/app/tray/launch_at_login_io.dart).
+static constexpr const gchar* kLaunchedAtLoginFlag = "--launched-at-login";
+
+// Whether [flag] is one of [arguments] (a NULL-terminated vector).
+static gboolean has_argument(gchar** arguments, const gchar* flag) {
+  for (gchar** a = arguments; a != nullptr && *a != nullptr; a++) {
+    if (g_strcmp0(*a, flag) == 0) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
 // Returns the first argument that looks like one of our custom-scheme deep
 // links (the `control-center://` app scheme or the reversed-client-id Google
 // OAuth redirect `com.googleusercontent.apps.<client>:/…`), or nullptr.
@@ -215,7 +237,9 @@ static gboolean my_application_local_command_line(GApplication* application, gch
       g_autoptr(GFile) file = g_file_new_for_uri(url);
       GFile* files[1] = {file};
       g_application_open(application, files, 1, "");
-    } else {
+    } else if (!has_argument(*arguments + 1, kLaunchedAtLoginFlag)) {
+      // A login-item start that finds the app already running is not the
+      // user asking for the window, so it does not activate it.
       g_application_activate(application);
     }
     *exit_status = 0;

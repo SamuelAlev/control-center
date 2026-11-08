@@ -14579,5 +14579,289 @@
   "spaceSetupLogs": "Setup logs",
   "@spaceSetupLogs": {
     "description": "Title of the tab following what a space's workspace preparation prints: the copy, the fetch, the checkout and any setup tasks."
+  },
+  "claudeCompactionTitle": "Compaction",
+  "claudeCompactionDescription": "How Claude Code keeps long conversations within its context window.",
+  "claudeAutoCompactLabel": "Auto-compact after",
+  "claudeAutoCompactHint": "Tokens, from {min} to {max}. Leave empty to use Claude Code's default.",
+  "@claudeAutoCompactHint": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "claudeAutoCompactInvalid": "Enter a number from {min} to {max}.",
+  "@claudeAutoCompactInvalid": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "claudeIdleCompactLabel": "Compact idle conversations",
+  "claudeIdleCompactDescription": "Compacts a conversation over {threshold} tokens just before its prompt cache expires, so coming back to it costs less. Each compaction uses your plan.",
+  "@claudeIdleCompactDescription": {
+    "placeholders": {
+      "threshold": {
+        "type": "String"
+      }
+    }
+  },
+  "claudeCompactionSaveFailed": "Couldn't save this setting.",
+  "navDesktopApp": "Desktop app",
+  "@navDesktopApp": {
+    "description": "Settings sidebar entry (under You) for the desktop app's tray, closing and login behaviour"
+  },
+  "desktopAppSettingsSubtitle": "The tray icon, closing the window and opening at login.",
+  "@desktopAppSettingsSubtitle": {
+    "description": "Subtitle of the Settings → Desktop app page"
+  },
+  "desktopSectionMenuBar": "Menu bar",
+  "@desktopSectionMenuBar": {
+    "description": "macOS: section label for the menu bar (status item) icon settings"
+  },
+  "desktopSectionTray": "System tray",
+  "@desktopSectionTray": {
+    "description": "Windows/Linux: section label for the system tray icon settings"
+  },
+  "desktopTrayTitleMac": "Show in the menu bar",
+  "@desktopTrayTitleMac": {
+    "description": "macOS: switch that shows the app's icon in the menu bar"
+  },
+  "desktopTrayTitle": "Show in the system tray",
+  "@desktopTrayTitle": {
+    "description": "Windows/Linux: switch that shows the app's icon in the system tray"
+  },
+  "desktopTraySubtitle": "Status, what needs you, your spaces and plan usage, one click away.",
+  "@desktopTraySubtitle": {
+    "description": "Explains what the tray/menu bar icon offers"
+  },
+  "desktopTrayMissingTitle": "No system tray found",
+  "@desktopTrayMissingTitle": {
+    "description": "Linux: warning title when the desktop shows no tray icons"
+  },
+  "desktopTrayMissingBody": "This desktop doesn't show tray icons. On GNOME, install the AppIndicator extension, then restart Control Center.",
+  "@desktopTrayMissingBody": {
+    "description": "Linux: how to get a tray. 'GNOME', 'AppIndicator' and 'Control Center' are names, keep them as-is"
+  },
+  "desktopSectionClosing": "Closing the window",
+  "@desktopSectionClosing": {
+    "description": "Section label for what the window's close button does"
+  },
+  "desktopCloseTitle": "When you close the window",
+  "@desktopCloseTitle": {
+    "description": "Label of the choice between keeping the app running and quitting when the main window is closed"
+  },
+  "desktopCloseKeepRunning": "Keep running",
+  "@desktopCloseKeepRunning": {
+    "description": "Segment: closing the window hides it and the app keeps running. Short, fits a segmented control"
+  },
+  "desktopCloseQuit": "Quit",
+  "@desktopCloseQuit": {
+    "description": "Segment: closing the window quits the app. Short, fits a segmented control"
+  },
+  "desktopCloseKeepRunningSubtitleMac": "Agents and notifications carry on. Open the window again from the Dock or the menu bar.",
+  "@desktopCloseKeepRunningSubtitleMac": {
+    "description": "macOS: what Keep running means"
+  },
+  "desktopCloseKeepRunningSubtitle": "Agents and notifications carry on. Open the window again from the tray icon.",
+  "@desktopCloseKeepRunningSubtitle": {
+    "description": "Windows/Linux: what Keep running means"
+  },
+  "desktopCloseQuitSubtitle": "Closing the window quits Control Center. Notifications stop until you open it again.",
+  "@desktopCloseQuitSubtitle": {
+    "description": "What Quit means"
+  },
+  "desktopCloseNeedsTray": "Turn on the tray icon to keep Control Center running with its window closed.",
+  "@desktopCloseNeedsTray": {
+    "description": "Windows/Linux: the close choice is disabled because without a tray icon there would be no way back to the window"
+  },
+  "desktopSectionLogin": "Startup",
+  "@desktopSectionLogin": {
+    "description": "Section label for opening the app when the user signs in to the computer"
+  },
+  "desktopLoginTitle": "Open at login",
+  "@desktopLoginTitle": {
+    "description": "Switch: start the app automatically when the user signs in to the computer"
+  },
+  "desktopLoginSubtitle": "Start Control Center when you sign in, so notifications arrive from the start.",
+  "@desktopLoginSubtitle": {
+    "description": "Explains Open at login"
+  },
+  "desktopLoginUnsupported": "This system doesn't support opening apps at login.",
+  "@desktopLoginUnsupported": {
+    "description": "Shown instead of the explanation when the OS has no login item support"
+  },
+  "desktopLoginNeedsApproval": "Allow Control Center in Login Items to finish turning this on.",
+  "@desktopLoginNeedsApproval": {
+    "description": "macOS: the login item is waiting for the user's approval in System Settings → General → Login Items. 'Login Items' is the macOS settings pane name"
+  },
+  "desktopLoginOpenLoginItems": "Open Login Items",
+  "@desktopLoginOpenLoginItems": {
+    "description": "macOS: button that opens System Settings → General → Login Items. Use the localized macOS name of that pane"
+  },
+  "desktopLoginRefused": "The system didn't accept the change. Your administrator may manage it.",
+  "@desktopLoginRefused": {
+    "description": "Windows/Linux: registering or removing the login launch failed"
+  },
+  "desktopLoginStartHiddenTitle": "Start in the background",
+  "@desktopLoginStartHiddenTitle": {
+    "description": "Switch: when opened at login, the app starts without showing its window"
+  },
+  "desktopLoginStartHiddenSubtitleMac": "Opens without a window at login. Find it in the Dock or the menu bar.",
+  "@desktopLoginStartHiddenSubtitleMac": {
+    "description": "macOS: explains Start in the background"
+  },
+  "desktopLoginStartHiddenSubtitle": "Opens without a window at login. Find it in the tray.",
+  "@desktopLoginStartHiddenSubtitle": {
+    "description": "Windows/Linux: explains Start in the background"
+  },
+  "desktopLoginStartHiddenNeedsTray": "Needs the tray icon, so there's a way to open the window.",
+  "@desktopLoginStartHiddenNeedsTray": {
+    "description": "Windows/Linux: why Start in the background is disabled"
+  },
+  "closeToTrayPromptTitle": "Keep Control Center running?",
+  "@closeToTrayPromptTitle": {
+    "description": "Windows/Linux: dialog title shown the first time the user closes the main window"
+  },
+  "closeToTrayPromptBody": "Agents keep working and notifications keep arriving with the window closed. Open it again from the tray icon. You can change this in Settings → Desktop app.",
+  "@closeToTrayPromptBody": {
+    "description": "Body of the first-close dialog. 'Settings → Desktop app' names the settings page; translate both parts like navDesktopApp"
+  },
+  "closeToTrayPromptQuit": "Quit",
+  "@closeToTrayPromptQuit": {
+    "description": "First-close dialog button: quit the app"
+  },
+  "closeToTrayPromptKeepRunning": "Keep running",
+  "@closeToTrayPromptKeepRunning": {
+    "description": "First-close dialog button: hide the window and keep running in the tray"
+  },
+  "trayStatusOffline": "Offline",
+  "@trayStatusOffline": {
+    "description": "Tray status: the app is not connected to its server. Short status tag"
+  },
+  "trayStatusReconnecting": "Reconnecting…",
+  "@trayStatusReconnecting": {
+    "description": "Tray status: the connection to the server is being re-established. Short status tag"
+  },
+  "trayStatusNeedsYou": "{count, plural, =1{1 needs you} other{{count} need you}}",
+  "@trayStatusNeedsYou": {
+    "description": "Tray status: how many agent questions and approvals wait on the user. Joined with trayStatusWorking by ' · '",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trayStatusWorking": "{count, plural, =1{1 working} other{{count} working}}",
+  "@trayStatusWorking": {
+    "description": "Tray status: how many spaces have an agent working right now",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trayStatusAllQuiet": "All quiet",
+  "@trayStatusAllQuiet": {
+    "description": "Tray status: nothing is running and nothing waits on the user"
+  },
+  "trayTooltip": "Control Center · {status}",
+  "@trayTooltip": {
+    "description": "Hover text of the tray icon: the app name, then the status line",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "trayMenuSpaceQuestions": "{space} · {count, plural, =1{1 question} other{{count} questions}}",
+  "@trayMenuSpaceQuestions": {
+    "description": "Tray menu line: a space and how many agent questions there wait on the user",
+    "placeholders": {
+      "space": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trayApprovalsWaiting": "{count, plural, =1{1 approval waiting} other{{count} approvals waiting}}",
+  "@trayApprovalsWaiting": {
+    "description": "Tray menu line: agent actions waiting for the user's approval",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trayMenuOpen": "Open Control Center",
+  "@trayMenuOpen": {
+    "description": "Tray menu item: show the main window"
+  },
+  "trayMenuSettings": "Settings…",
+  "@trayMenuSettings": {
+    "description": "Tray menu item: open the Desktop app settings (ellipsis because it opens a window)"
+  },
+  "trayMenuQuit": "Quit Control Center",
+  "@trayMenuQuit": {
+    "description": "Tray menu item and panel button tooltip: quit the app"
+  },
+  "trayPanelTitle": "Control Center",
+  "@trayPanelTitle": {
+    "description": "Tray panel header when no workspace is active (the product name; keep as-is unless the product name is localized elsewhere)"
+  },
+  "trayPanelNoWorkspace": "Open Control Center to choose a workspace.",
+  "@trayPanelNoWorkspace": {
+    "description": "Tray panel body when no workspace is active"
+  },
+  "trayPanelOpenApp": "Open Control Center",
+  "@trayPanelOpenApp": {
+    "description": "Tray panel button: show the main window"
+  },
+  "trayPanelSettings": "Desktop app settings",
+  "@trayPanelSettings": {
+    "description": "Tray panel icon button tooltip: open Settings → Desktop app"
+  },
+  "trayPanelNeedsYou": "Needs you",
+  "@trayPanelNeedsYou": {
+    "description": "Tray panel section heading (shown uppercase): what waits on the user"
+  },
+  "trayPanelApprovals": "Approvals",
+  "@trayPanelApprovals": {
+    "description": "Tray panel row: agent actions waiting for approval (a count follows)"
+  },
+  "trayPanelSpaces": "Spaces",
+  "@trayPanelSpaces": {
+    "description": "Tray panel section heading (shown uppercase): the workspace's spaces"
+  },
+  "trayPanelNoSpaces": "No spaces yet.",
+  "@trayPanelNoSpaces": {
+    "description": "Tray panel: the workspace has no spaces"
+  },
+  "trayPanelAllSpaces": "{count, plural, =1{All spaces} other{All {count} spaces}}",
+  "@trayPanelAllSpaces": {
+    "description": "Tray panel row that opens the full spaces list; count is the total number of spaces",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trayPanelUsage": "Usage",
+  "@trayPanelUsage": {
+    "description": "Tray panel section heading (shown uppercase): subscription plan usage"
+  },
+  "trayPanelSwitchWorkspace": "Switch workspace",
+  "@trayPanelSwitchWorkspace": {
+    "description": "Tray panel header: accessible name of the workspace switcher (the workspace name and status open a menu of workspaces)"
   }
 }

@@ -1,68 +1,34 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
+import 'package:cc_infra/src/usage/claude_cli_usage_probe.dart';
 import 'package:cc_infra/src/usage/subscription_usage_strategy.dart';
-import 'package:rhttp/rhttp.dart';
 
-/// Claude Code usage via `GET https://api.anthropic.com/api/oauth/usage`.
+/// Claude Code usage, read through the `claude` CLI itself.
 ///
-/// Reads the OAuth access token from `~/.claude/.credentials.json` (or an
-/// explicit `CLAUDE_CONFIG_DIR` / [SubscriptionUsageAccount.configDir]),
-/// falling back to the macOS Keychain. An explicit config dir is exclusive:
-/// falling back to `~/.claude` or the keychain would silently report a
-/// different account's quota.
+/// See [ClaudeCliUsageProbe] for why this never touches the account's token.
+/// [SubscriptionUsageAccount.configDir] names one account; without it the
+/// reading is the operator's own login.
 class ClaudeUsageStrategy extends SubscriptionUsageStrategy {
   /// Creates a [ClaudeUsageStrategy].
-  ClaudeUsageStrategy({
-    required this._httpClient,
-    required Map<String, String> environment,
-    String? homeDir,
-    this.readClaudeKeychain = true,
-  }) : _env = environment,
-       _home = homeDir,
-       super(providerId: 'claude', displayName: 'Claude');
+  ClaudeUsageStrategy({required this._read})
+    : super(providerId: 'claude', displayName: 'Claude');
 
-  final RhttpClient _httpClient;
-  final Map<String, String> _env;
-  final String? _home;
+  final ClaudeUsageReader _read;
 
-  /// Whether to fall back to the macOS Keychain for the Claude token (disabled
-  /// in tests to keep them independent of the host's real Claude Code login).
-  final bool readClaudeKeychain;
-
-  static const _usageUrl = 'https://api.anthropic.com/api/oauth/usage';
-  static const _beta = 'oauth-2025-04-20';
-  // The usage endpoint aggressively rate-limits callers without a recognised
-  // Claude Code User-Agent (returns persistent 429s), so we send one.
-  static const _userAgent = 'claude-code/2.1.0';
-
-  String? get _homeDir => _home ?? _env['HOME'] ?? _env['USERPROFILE'];
+  static const _signIn = 'Sign in to Claude Code to see usage.';
 
   @override
   Future<SubscriptionUsage> fetchAccount(
     SubscriptionUsageAccount account,
   ) async {
     try {
-      final explicit = account.accessToken?.trim();
-      final token = (explicit != null && explicit.isNotEmpty)
-          ? explicit
-          : await _readToken(configDir: account.configDir);
-      if (token == null || token.isEmpty) {
-        return unconfigured('Sign in to Claude Code to see usage.');
+      final reading = await _read(configDir: account.configDir);
+      if (reading == null || reading.signedOut) {
+        return unconfigured(_signIn);
       }
-      final resp = await boundedRequest(
-        (token0) => _httpClient.get(
-          _usageUrl,
-          headers: HttpHeaders.rawMap({
-            'Authorization': 'Bearer $token',
-            'anthropic-beta': _beta,
-            'User-Agent': _userAgent,
-          }),
-          cancelToken: token0,
-        ),
-      );
-      final data = jsonObject(resp) ?? const {};
+      if (!reading.available) {
+        return unconfigured('No usage reported.');
+      }
+      final data = reading.rateLimits;
       final windows = <SubscriptionWindow>[];
       void add(String key, String wid, String label) {
         final w = data[key];
@@ -98,88 +64,6 @@ class ClaudeUsageStrategy extends SubscriptionUsageStrategy {
       return ok(windows, spend: spend);
     } catch (e) {
       return error(shortError(e));
-    }
-  }
-
-  /// Reads the Claude Code OAuth access token from `.credentials.json`,
-  /// falling back to the macOS Keychain (Claude Code 2.1+ stores the same JSON
-  /// blob there). Returns null when unavailable.
-  Future<String?> _readToken({String? configDir}) async {
-    final home = _homeDir;
-    final dir = configDir ?? _env['CLAUDE_CONFIG_DIR'];
-    // An EXPLICIT config dir is exclusive: it names one account, and falling
-    // back to `~/.claude` or the keychain would silently report a different
-    // account's quota next to that account's name.
-    final candidates = <String>[
-      if (dir != null && dir.isNotEmpty) '$dir/.credentials.json',
-      if (configDir == null && home != null) '$home/.claude/.credentials.json',
-    ];
-    for (final path in candidates) {
-      final token = _tokenFromCredentialsBlob(await _readFileOrNull(path));
-      if (token != null) {
-        return token;
-      }
-    }
-    if (configDir == null && readClaudeKeychain && Platform.isMacOS) {
-      return _readKeychain();
-    }
-    return null;
-  }
-
-  Future<String?> _readKeychain() async {
-    for (final service in const ['Claude Code-credentials', 'claudeAiOauth']) {
-      try {
-        final r = await Process.run('security', [
-          'find-generic-password',
-          '-s',
-          service,
-          '-w',
-        ]).timeout(const Duration(seconds: 5));
-        if (r.exitCode != 0) {
-          continue;
-        }
-        final out = (r.stdout as String).trim();
-        if (out.isEmpty) {
-          continue;
-        }
-        final token = _tokenFromCredentialsBlob(out);
-        if (token != null) {
-          return token;
-        }
-      } catch (_) {
-        // Keychain unavailable / denied — fall through to the next service.
-      }
-    }
-    return null;
-  }
-
-  /// Extracts `claudeAiOauth.accessToken` from a credentials JSON blob.
-  String? _tokenFromCredentialsBlob(String? raw) {
-    if (raw == null || raw.isEmpty) {
-      return null;
-    }
-    try {
-      final json = jsonDecode(raw);
-      final oauth = json is Map ? json['claudeAiOauth'] : null;
-      final token = oauth is Map ? oauth['accessToken'] : null;
-      if (token is String && token.isNotEmpty) {
-        return token;
-      }
-    } catch (_) {
-      // Not JSON — ignore.
-    }
-    return null;
-  }
-
-  Future<String?> _readFileOrNull(String path) async {
-    try {
-      final f = File(path);
-      if (!f.existsSync()) {
-        return null;
-      }
-      return await f.readAsString();
-    } catch (_) {
-      return null;
     }
   }
 }

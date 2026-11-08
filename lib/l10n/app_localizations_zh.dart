@@ -15935,6 +15935,245 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => '设置日志';
+
+  @override
+  String get claudeCompactionTitle => '压缩';
+
+  @override
+  String get claudeCompactionDescription => 'Claude Code 如何将长对话保持在上下文窗口内。';
+
+  @override
+  String get claudeAutoCompactLabel => '自动压缩阈值';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return '令牌数，$min 到 $max。留空则使用 Claude Code 的默认值。';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return '请输入 $min 到 $max 之间的数字。';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => '压缩空闲对话';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return '在提示缓存过期前压缩超过 $threshold 个令牌的对话，让再次回到对话时花费更少。每次压缩都会消耗你的套餐用量。';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => '无法保存此设置。';
+
+  @override
+  String get navDesktopApp => '桌面应用';
+
+  @override
+  String get desktopAppSettingsSubtitle => '托盘图标、关闭窗口和登录时打开。';
+
+  @override
+  String get desktopSectionMenuBar => '菜单栏';
+
+  @override
+  String get desktopSectionTray => '系统托盘';
+
+  @override
+  String get desktopTrayTitleMac => '在菜单栏中显示';
+
+  @override
+  String get desktopTrayTitle => '在系统托盘中显示';
+
+  @override
+  String get desktopTraySubtitle => '状态、待你处理的事项、你的空间和套餐用量，一键即达。';
+
+  @override
+  String get desktopTrayMissingTitle => '未找到系统托盘';
+
+  @override
+  String get desktopTrayMissingBody =>
+      '此桌面环境不显示托盘图标。在 GNOME 上，请安装 AppIndicator 扩展，然后重启 Control Center。';
+
+  @override
+  String get desktopSectionClosing => '关闭窗口';
+
+  @override
+  String get desktopCloseTitle => '关闭窗口时';
+
+  @override
+  String get desktopCloseKeepRunning => '保持运行';
+
+  @override
+  String get desktopCloseQuit => '退出';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      '智能体和通知不会中断。可从 Dock 或菜单栏重新打开窗口。';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle => '智能体和通知不会中断。可从托盘图标重新打开窗口。';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      '关闭窗口将退出 Control Center。在你重新打开之前，通知会停止。';
+
+  @override
+  String get desktopCloseNeedsTray => '开启托盘图标后，Control Center 才能在窗口关闭时继续运行。';
+
+  @override
+  String get desktopSectionLogin => '启动';
+
+  @override
+  String get desktopLoginTitle => '登录时打开';
+
+  @override
+  String get desktopLoginSubtitle => '在你登录时启动 Control Center，从一开始就能收到通知。';
+
+  @override
+  String get desktopLoginUnsupported => '此系统不支持在登录时打开应用。';
+
+  @override
+  String get desktopLoginNeedsApproval => '请在“登录项”中允许 Control Center，以完成启用。';
+
+  @override
+  String get desktopLoginOpenLoginItems => '打开登录项';
+
+  @override
+  String get desktopLoginRefused => '系统未接受此更改。该设置可能由你的管理员管理。';
+
+  @override
+  String get desktopLoginStartHiddenTitle => '在后台启动';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      '登录时打开但不显示窗口。可在 Dock 或菜单栏中找到它。';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle => '登录时打开但不显示窗口。可在托盘中找到它。';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray => '需要托盘图标，才能有办法打开窗口。';
+
+  @override
+  String get closeToTrayPromptTitle => '让 Control Center 保持运行？';
+
+  @override
+  String get closeToTrayPromptBody =>
+      '关闭窗口后，智能体仍会继续工作，通知也会照常送达。可从托盘图标重新打开窗口。你可以在“设置 → 桌面应用”中更改此项。';
+
+  @override
+  String get closeToTrayPromptQuit => '退出';
+
+  @override
+  String get closeToTrayPromptKeepRunning => '保持运行';
+
+  @override
+  String get trayStatusOffline => '离线';
+
+  @override
+  String get trayStatusReconnecting => '正在重新连接…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 项待你处理',
+      one: '1 项待你处理',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个运行中',
+      one: '1 个运行中',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => '一切平静';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个问题',
+      one: '1 个问题',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 项审批待处理',
+      one: '1 项审批待处理',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => '打开 Control Center';
+
+  @override
+  String get trayMenuSettings => '设置…';
+
+  @override
+  String get trayMenuQuit => '退出 Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace => '打开 Control Center 以选择工作区。';
+
+  @override
+  String get trayPanelOpenApp => '打开 Control Center';
+
+  @override
+  String get trayPanelSettings => '桌面应用设置';
+
+  @override
+  String get trayPanelNeedsYou => '待你处理';
+
+  @override
+  String get trayPanelApprovals => '审批';
+
+  @override
+  String get trayPanelSpaces => '空间';
+
+  @override
+  String get trayPanelNoSpaces => '暂无空间。';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '全部 $count 个空间',
+      one: '所有空间',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => '用量';
+
+  @override
+  String get trayPanelSwitchWorkspace => '切换工作区';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -31870,6 +32109,245 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get spaceSetupLogs => '設定記錄';
+
+  @override
+  String get claudeCompactionTitle => '壓縮';
+
+  @override
+  String get claudeCompactionDescription => 'Claude Code 如何將長對話維持在上下文視窗內。';
+
+  @override
+  String get claudeAutoCompactLabel => '自動壓縮門檻';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return '權杖數，$min 至 $max。留空則使用 Claude Code 的預設值。';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return '請輸入 $min 至 $max 之間的數字。';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => '壓縮閒置對話';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return '在提示快取到期前壓縮超過 $threshold 個權杖的對話，令再次回到對話時花費更少。每次壓縮都會消耗你的計劃用量。';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => '無法儲存此設定。';
+
+  @override
+  String get navDesktopApp => '桌面應用程式';
+
+  @override
+  String get desktopAppSettingsSubtitle => '系統匣圖示、關閉視窗與登入時開啟。';
+
+  @override
+  String get desktopSectionMenuBar => '選單列';
+
+  @override
+  String get desktopSectionTray => '系統匣';
+
+  @override
+  String get desktopTrayTitleMac => '在選單列中顯示';
+
+  @override
+  String get desktopTrayTitle => '在系統匣中顯示';
+
+  @override
+  String get desktopTraySubtitle => '狀態、等你處理的事項、你的空間與方案用量，一鍵即達。';
+
+  @override
+  String get desktopTrayMissingTitle => '找不到系統匣';
+
+  @override
+  String get desktopTrayMissingBody =>
+      '此桌面環境不會顯示系統匣圖示。在 GNOME 上，請安裝 AppIndicator 擴充套件，然後重新啟動 Control Center。';
+
+  @override
+  String get desktopSectionClosing => '關閉視窗';
+
+  @override
+  String get desktopCloseTitle => '關閉視窗時';
+
+  @override
+  String get desktopCloseKeepRunning => '繼續執行';
+
+  @override
+  String get desktopCloseQuit => '結束';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      '代理與通知不會中斷。可從 Dock 或選單列重新開啟視窗。';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle => '代理與通知不會中斷。可從系統匣圖示重新開啟視窗。';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      '關閉視窗會結束 Control Center。在你重新開啟之前，通知會停止。';
+
+  @override
+  String get desktopCloseNeedsTray => '開啟系統匣圖示後，Control Center 才能在視窗關閉時繼續執行。';
+
+  @override
+  String get desktopSectionLogin => '啟動';
+
+  @override
+  String get desktopLoginTitle => '登入時開啟';
+
+  @override
+  String get desktopLoginSubtitle => '在你登入時啟動 Control Center，令通知從一開始就能送達。';
+
+  @override
+  String get desktopLoginUnsupported => '此系統不支援在登入時開啟應用程式。';
+
+  @override
+  String get desktopLoginNeedsApproval => '請在「登入項目」中允許 Control Center，以完成啟用。';
+
+  @override
+  String get desktopLoginOpenLoginItems => '開啟登入項目';
+
+  @override
+  String get desktopLoginRefused => '系統未接受此變更。此設定可能由你的管理員管理。';
+
+  @override
+  String get desktopLoginStartHiddenTitle => '在背景啟動';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      '登入時開啟但不顯示視窗。可在 Dock 或選單列中找到它。';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle => '登入時開啟但不顯示視窗。可在系統匣中找到它。';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray => '需要系統匣圖示，才能有方法開啟視窗。';
+
+  @override
+  String get closeToTrayPromptTitle => '要 Control Center 繼續執行嗎？';
+
+  @override
+  String get closeToTrayPromptBody =>
+      '關閉視窗後，代理仍會繼續工作，通知也會照常送達。可從系統匣圖示重新開啟視窗。你可以在「設定 → 桌面應用程式」中變更此設定。';
+
+  @override
+  String get closeToTrayPromptQuit => '結束';
+
+  @override
+  String get closeToTrayPromptKeepRunning => '繼續執行';
+
+  @override
+  String get trayStatusOffline => '離線';
+
+  @override
+  String get trayStatusReconnecting => '正在重新連接…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 項等你處理',
+      one: '1 項等你處理',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個執行中',
+      one: '1 個執行中',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => '一切平靜';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個問題',
+      one: '1 個問題',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 項待核准',
+      one: '1 項待核准',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => '開啟 Control Center';
+
+  @override
+  String get trayMenuSettings => '設定…';
+
+  @override
+  String get trayMenuQuit => '結束 Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace => '開啟 Control Center 以選擇工作區。';
+
+  @override
+  String get trayPanelOpenApp => '開啟 Control Center';
+
+  @override
+  String get trayPanelSettings => '桌面應用程式設定';
+
+  @override
+  String get trayPanelNeedsYou => '等你處理';
+
+  @override
+  String get trayPanelApprovals => '核准';
+
+  @override
+  String get trayPanelSpaces => '空間';
+
+  @override
+  String get trayPanelNoSpaces => '尚無空間。';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '全部 $count 個空間',
+      one: '所有空間',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => '用量';
+
+  @override
+  String get trayPanelSwitchWorkspace => '切換工作區';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -47806,4 +48284,243 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get spaceSetupLogs => '設定記錄';
+
+  @override
+  String get claudeCompactionTitle => '壓縮';
+
+  @override
+  String get claudeCompactionDescription => 'Claude Code 如何將長對話維持在上下文視窗內。';
+
+  @override
+  String get claudeAutoCompactLabel => '自動壓縮門檻';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return '權杖數，$min 到 $max。留空則使用 Claude Code 的預設值。';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return '請輸入 $min 到 $max 之間的數字。';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => '壓縮閒置對話';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return '在提示快取到期前壓縮超過 $threshold 個權杖的對話，讓再次回到對話時花費更少。每次壓縮都會消耗你的方案用量。';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => '無法儲存此設定。';
+
+  @override
+  String get navDesktopApp => '桌面應用程式';
+
+  @override
+  String get desktopAppSettingsSubtitle => '系統匣圖示、關閉視窗與登入時開啟。';
+
+  @override
+  String get desktopSectionMenuBar => '選單列';
+
+  @override
+  String get desktopSectionTray => '系統匣';
+
+  @override
+  String get desktopTrayTitleMac => '在選單列中顯示';
+
+  @override
+  String get desktopTrayTitle => '在系統匣中顯示';
+
+  @override
+  String get desktopTraySubtitle => '狀態、等你處理的事項、你的空間與方案用量，一鍵即達。';
+
+  @override
+  String get desktopTrayMissingTitle => '找不到系統匣';
+
+  @override
+  String get desktopTrayMissingBody =>
+      '此桌面環境不會顯示系統匣圖示。在 GNOME 上，請安裝 AppIndicator 擴充套件，然後重新啟動 Control Center。';
+
+  @override
+  String get desktopSectionClosing => '關閉視窗';
+
+  @override
+  String get desktopCloseTitle => '關閉視窗時';
+
+  @override
+  String get desktopCloseKeepRunning => '繼續執行';
+
+  @override
+  String get desktopCloseQuit => '結束';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      '代理與通知不會中斷。可從 Dock 或選單列重新開啟視窗。';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle => '代理與通知不會中斷。可從系統匣圖示重新開啟視窗。';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      '關閉視窗會結束 Control Center。在你重新開啟之前，通知會停止。';
+
+  @override
+  String get desktopCloseNeedsTray => '開啟系統匣圖示後，Control Center 才能在視窗關閉時繼續執行。';
+
+  @override
+  String get desktopSectionLogin => '啟動';
+
+  @override
+  String get desktopLoginTitle => '登入時開啟';
+
+  @override
+  String get desktopLoginSubtitle => '在你登入時啟動 Control Center，讓通知從一開始就能送達。';
+
+  @override
+  String get desktopLoginUnsupported => '此系統不支援在登入時開啟應用程式。';
+
+  @override
+  String get desktopLoginNeedsApproval => '請在「登入項目」中允許 Control Center，以完成啟用。';
+
+  @override
+  String get desktopLoginOpenLoginItems => '開啟登入項目';
+
+  @override
+  String get desktopLoginRefused => '系統未接受此變更。此設定可能由你的管理員管理。';
+
+  @override
+  String get desktopLoginStartHiddenTitle => '在背景啟動';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      '登入時開啟但不顯示視窗。可在 Dock 或選單列中找到它。';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle => '登入時開啟但不顯示視窗。可在系統匣中找到它。';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray => '需要系統匣圖示，才能有方法開啟視窗。';
+
+  @override
+  String get closeToTrayPromptTitle => '要讓 Control Center 繼續執行嗎？';
+
+  @override
+  String get closeToTrayPromptBody =>
+      '關閉視窗後，代理仍會繼續工作，通知也會照常送達。可從系統匣圖示重新開啟視窗。你可以在「設定 → 桌面應用程式」中變更此設定。';
+
+  @override
+  String get closeToTrayPromptQuit => '結束';
+
+  @override
+  String get closeToTrayPromptKeepRunning => '繼續執行';
+
+  @override
+  String get trayStatusOffline => '離線';
+
+  @override
+  String get trayStatusReconnecting => '正在重新連線…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 項等你處理',
+      one: '1 項等你處理',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個執行中',
+      one: '1 個執行中',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => '一切平靜';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個問題',
+      one: '1 個問題',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 項待核准',
+      one: '1 項待核准',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => '開啟 Control Center';
+
+  @override
+  String get trayMenuSettings => '設定…';
+
+  @override
+  String get trayMenuQuit => '結束 Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace => '開啟 Control Center 以選擇工作區。';
+
+  @override
+  String get trayPanelOpenApp => '開啟 Control Center';
+
+  @override
+  String get trayPanelSettings => '桌面應用程式設定';
+
+  @override
+  String get trayPanelNeedsYou => '等你處理';
+
+  @override
+  String get trayPanelApprovals => '核准';
+
+  @override
+  String get trayPanelSpaces => '空間';
+
+  @override
+  String get trayPanelNoSpaces => '尚無空間。';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '全部 $count 個空間',
+      one: '所有空間',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => '用量';
+
+  @override
+  String get trayPanelSwitchWorkspace => '切換工作區';
 }

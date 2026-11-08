@@ -16557,4 +16557,256 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Beállítási naplók';
+
+  @override
+  String get claudeCompactionTitle => 'Tömörítés';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Hogyan tartja a Claude Code a hosszú beszélgetéseket a kontextusablakán belül.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Automatikus tömörítés ennyi után';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Tokenek, $min és $max között. Hagyja üresen a Claude Code alapértékéhez.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Adjon meg egy számot $min és $max között.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Tétlen beszélgetések tömörítése';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'A(z) $threshold tokennél hosszabb beszélgetést közvetlenül a prompt-gyorsítótár lejárta előtt tömöríti, így a visszatérés kevesebbe kerül. Minden tömörítés az előfizetését terheli.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed =>
+      'Ezt a beállítást nem sikerült menteni.';
+
+  @override
+  String get navDesktopApp => 'Asztali alkalmazás';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'A tálcaikon, az ablak bezárása és a megnyitás bejelentkezéskor.';
+
+  @override
+  String get desktopSectionMenuBar => 'Menüsor';
+
+  @override
+  String get desktopSectionTray => 'Rendszertálca';
+
+  @override
+  String get desktopTrayTitleMac => 'Megjelenítés a menüsorban';
+
+  @override
+  String get desktopTrayTitle => 'Megjelenítés a rendszertálcán';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Az állapot, az Önre váró teendők, a terei és a csomaghasználat egy kattintásnyira.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Nem található rendszertálca';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Ez az asztali környezet nem jelenít meg tálcaikonokat. GNOME alatt telepítse az AppIndicator bővítményt, majd indítsa újra a Control Centert.';
+
+  @override
+  String get desktopSectionClosing => 'Az ablak bezárása';
+
+  @override
+  String get desktopCloseTitle => 'Az ablak bezárásakor';
+
+  @override
+  String get desktopCloseKeepRunning => 'Futtatás folytatása';
+
+  @override
+  String get desktopCloseQuit => 'Kilépés';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Az ügynökök és az értesítések tovább működnek. Az ablakot a Dockból vagy a menüsorból nyithatja meg újra.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Az ügynökök és az értesítések tovább működnek. Az ablakot a tálcaikonról nyithatja meg újra.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Az ablak bezárásával kilép a Control Centerből. Az értesítések szünetelnek, amíg újra meg nem nyitja.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Kapcsolja be a tálcaikont, hogy a Control Center bezárt ablakkal is tovább fusson.';
+
+  @override
+  String get desktopSectionLogin => 'Indítás';
+
+  @override
+  String get desktopLoginTitle => 'Megnyitás bejelentkezéskor';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'A Control Center elindul, amikor bejelentkezik, így az értesítések már az elejétől megérkeznek.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Ez a rendszer nem támogatja az alkalmazások megnyitását bejelentkezéskor.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'A bekapcsolás befejezéséhez engedélyezze a Control Centert a Bejelentkezési elemek között.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Bejelentkezési elemek megnyitása';
+
+  @override
+  String get desktopLoginRefused =>
+      'A rendszer nem fogadta el a módosítást. Lehet, hogy ezt a beállítást a rendszergazda kezeli.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Indítás a háttérben';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Bejelentkezéskor ablak nélkül nyílik meg. A Dockban vagy a menüsorban találja.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Bejelentkezéskor ablak nélkül nyílik meg. A rendszertálcán találja.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Tálcaikon szükséges hozzá, hogy meg lehessen nyitni az ablakot.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Fusson tovább a Control Center?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Bezárt ablaknál az ügynökök tovább dolgoznak, és az értesítések továbbra is megérkeznek. Az ablakot a tálcaikonról nyithatja meg újra. Ezt itt módosíthatja: Beállítások → Asztali alkalmazás.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Kilépés';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Futtatás folytatása';
+
+  @override
+  String get trayStatusOffline => 'Offline';
+
+  @override
+  String get trayStatusReconnecting => 'Újracsatlakozás…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Önre vár',
+      one: '$count Önre vár',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dolgozik',
+      one: '$count dolgozik',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Minden csendes';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kérdés',
+      one: '$count kérdés',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jóváhagyás vár',
+      one: '$count jóváhagyás vár',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Control Center megnyitása';
+
+  @override
+  String get trayMenuSettings => 'Beállítások…';
+
+  @override
+  String get trayMenuQuit => 'Kilépés a Control Centerből';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Nyissa meg a Control Centert, és válasszon munkaterületet.';
+
+  @override
+  String get trayPanelOpenApp => 'Control Center megnyitása';
+
+  @override
+  String get trayPanelSettings => 'Asztali alkalmazás beállításai';
+
+  @override
+  String get trayPanelNeedsYou => 'Önre vár';
+
+  @override
+  String get trayPanelApprovals => 'Jóváhagyások';
+
+  @override
+  String get trayPanelSpaces => 'Terek';
+
+  @override
+  String get trayPanelNoSpaces => 'Még nincsenek terek.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Mind a(z) $count tér',
+      one: 'Minden tér',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Használat';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Munkaterület váltása';
 }

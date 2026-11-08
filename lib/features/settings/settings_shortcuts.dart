@@ -69,7 +69,8 @@ class _SettingsShortcutsState extends ConsumerState<SettingsShortcuts> {
       // sidebar but missing from the old hardcoded list, so J/K silently
       // skipped it.
       final routes = [
-        for (final entry in kSettingsNavItems) entry.route(workspaceId),
+        for (final entry in kAvailableSettingsNavItems)
+          entry.route(workspaceId),
       ];
       // Match against the concrete (prefixed) current location.
       final location = router.state.uri.path;

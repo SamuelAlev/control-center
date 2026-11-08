@@ -46,6 +46,11 @@ class ClaudeCliBackend implements AgentBackend {
   static const nativeChecklistTools =
       'TodoWrite,TaskCreate,TaskUpdate,TaskGet,TaskList';
 
+  /// Native tools Control Center replaces when its MCP server is connected.
+  /// `AskUserQuestion` has nobody to answer it in `claude -p`, where `ask_user`
+  /// renders a form in the conversation and waits.
+  static const replacedNativeTools = '$nativeChecklistTools,AskUserQuestion';
+
   // Keep this shell-policy-safe for the same reason as the Bash instruction.
   static const _controlCenterSystemPrompt =
       '$bashDescriptionInstruction '
@@ -54,6 +59,9 @@ class ClaudeCliBackend implements AgentBackend {
       'mcp__control-center__render_media. It returns images using bundled '
       'renderers. Do not ask the user to install FFmpeg or invoke system '
       'media tools. '
+      'To ask the user a question, use tool search to load '
+      'mcp__control-center__ask_user. It shows a form in the conversation and '
+      'waits for the answer. '
       'For multi-step work or a user-provided task list, you MUST use the '
       'Control Center checklist. Use your tool search to load '
       'mcp__control-center__todo_read and mcp__control-center__todo_write '
@@ -94,8 +102,10 @@ class ClaudeCliBackend implements AgentBackend {
   /// Builds the `claude -p` flag list (everything after the binary path,
   /// excluding the positional `-p` itself and the prompt). [modelId] selects
   /// the model; [permissionMode] maps to `--permission-mode`; [mcpConfigPath]
-  /// points Claude at the Control Center MCP server; [settingsJson] is passed
-  /// as `--settings` (the action-policy hooks); [skipPermissions] adds
+  /// points Claude at the Control Center MCP server, unless [mcpOverStdin]
+  /// says the session sends it over stdin instead; [settingsJson] is passed
+  /// as `--settings` (the action-policy hooks), along with
+  /// [autoCompactWindow] when the operator set one; [skipPermissions] adds
   /// `--dangerously-skip-permissions` for non-interactive automation.
   /// [appendedSystemPrompt] rides as `--append-system-prompt`. With an MCP
   /// config, native checklist tools are disabled in favor of Control Center.
@@ -114,14 +124,16 @@ class ClaudeCliBackend implements AgentBackend {
     String? modelId,
     String? permissionMode,
     String? mcpConfigPath,
+    bool mcpOverStdin = false,
     String? settingsJson,
+    int? autoCompactWindow,
     bool skipPermissions = true,
     String? effortLevel,
     String? resumeSessionId,
     ClaudeCliCapabilities capabilities = ClaudeCliCapabilities.baseline,
   }) {
-    final hasControlCenterMcp =
-        mcpConfigPath != null && mcpConfigPath.isNotEmpty;
+    final hasConfigFile = mcpConfigPath != null && mcpConfigPath.isNotEmpty;
+    final hasControlCenterMcp = hasConfigFile || mcpOverStdin;
     final args = <String>[
       '-p',
       '--input-format',
@@ -144,6 +156,9 @@ class ClaudeCliBackend implements AgentBackend {
     if (effort != null) {
       args.addAll(['--effort', effort]);
     }
+    if (capabilities.supportsThinkingSummaries) {
+      args.addAll(['--thinking-display', 'summarized']);
+    }
     if (permissionMode != null && permissionMode.isNotEmpty) {
       args.addAll(['--permission-mode', permissionMode]);
     }
@@ -155,12 +170,14 @@ class ClaudeCliBackend implements AgentBackend {
       // cannot call `complete_ticket`. `--strict-mcp-config` makes Claude use
       // ONLY this config, avoiding a duplicate of the same server picked up
       // from project discovery.
+      //
+      // [mcpOverStdin] leaves the file out: the server arrives by
+      // `mcp_set_servers`, which `--strict-mcp-config` does not refuse.
       args.addAll([
-        '--mcp-config',
-        mcpConfigPath,
+        if (hasConfigFile) ...['--mcp-config', mcpConfigPath],
         '--strict-mcp-config',
         '--disallowedTools',
-        nativeChecklistTools,
+        replacedNativeTools,
       ]);
     }
     // Command-line settings also cover non-pooled accounts and beat project
@@ -173,6 +190,8 @@ class ClaudeCliBackend implements AgentBackend {
         ...jsonDecode(settingsJson) as Map<String, dynamic>,
       'attribution': const {'commit': '', 'pr': ''},
       'autoMemoryEnabled': false,
+      'showThinkingSummaries': true,
+      'autoCompactWindow': ?autoCompactWindow,
     };
     args.addAll(['--settings', jsonEncode(settings)]);
     if (resumeSessionId != null &&
@@ -335,6 +354,14 @@ class ClaudeCliBackend implements AgentBackend {
       supportsSubagentSystemPrompt:
           flags.supportsSubagentSystemPrompt ||
           ClaudeCliCapabilities._versionAtLeast(version, 205),
+      supportsThinkingSummaries: ClaudeCliCapabilities._versionAtLeast(
+        version,
+        ClaudeCliCapabilities._controlProtocolFloor,
+      ),
+      supportsMcpSetServers: ClaudeCliCapabilities._versionAtLeast(
+        version,
+        ClaudeCliCapabilities._controlProtocolFloor,
+      ),
       restoresSessionTotals:
           ClaudeCliCapabilities.restoresSessionTotalsForVersion(version),
       version: version,
@@ -358,10 +385,18 @@ class ClaudeCliCapabilities {
     required this.supportsResume,
     required this.supportsSessionId,
     this.supportsSubagentSystemPrompt = false,
+    this.supportsThinkingSummaries = false,
+    this.supportsMcpSetServers = false,
     this.effortValues = const {'low', 'medium', 'high', 'xhigh', 'max'},
     this.restoresSessionTotals = false,
     this.version,
   });
+
+  /// The oldest 2.1.x patch trusted with the hidden `--thinking-display` flag
+  /// and `mcp_set_servers`. Neither shows in `--help`, so this is the oldest
+  /// release other Agent SDK hosts are known to drive them on, not a measured
+  /// first appearance.
+  static const _controlProtocolFloor = 248;
 
   /// Documented flag set for the pinned CLI line (2.1.293).
   ///
@@ -373,6 +408,8 @@ class ClaudeCliCapabilities {
     supportsResume: true,
     supportsSessionId: true,
     supportsSubagentSystemPrompt: true,
+    supportsThinkingSummaries: true,
+    supportsMcpSetServers: true,
   );
 
   /// A binary whose help was READABLE but advertises none of these flags.
@@ -411,6 +448,19 @@ class ClaudeCliCapabilities {
   /// The headless flag is absent from interactive help, so the version probe
   /// also enables it starting with Claude Code 2.1.205.
   final bool supportsSubagentSystemPrompt;
+
+  /// Whether `--thinking-display summarized` is accepted.
+  ///
+  /// Without it `claude -p` streams almost no thinking: measured on 2.1.316,
+  /// one delta where the flag gave fifteen, and the `showThinkingSummaries`
+  /// setting alone changed nothing. The flag is hidden from `--help`, and an
+  /// unknown flag ends the run before it emits anything, so only a version
+  /// known to carry it gets it.
+  final bool supportsThinkingSummaries;
+
+  /// Whether the control protocol's `mcp_set_servers` request is available, so
+  /// the Control Center server can arrive over stdin instead of a config file.
+  final bool supportsMcpSetServers;
 
   /// The effort levels advertised by `--effort`, when it is present.
   final Set<String> effortValues;

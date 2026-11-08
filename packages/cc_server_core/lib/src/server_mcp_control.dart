@@ -265,6 +265,49 @@ class ServerMcpControl implements McpServerControl {
     String? spaceId,
     String? runToken,
   }) async {
+    await _writeJson(target, {
+      'mcpServers': await agentMcpServers(
+        workspaceId: workspaceId,
+        agentId: agentId,
+        conversationId: conversationId,
+        spaceId: spaceId,
+        runToken: runToken,
+      ),
+    });
+    return target.path;
+  }
+
+  /// [agentMcpServers] for a run about to start, with the server listening.
+  /// Preferred over the file when the CLI can take it: the bearer token and the
+  /// run's secret then reach `claude` over stdin and never rest in a directory
+  /// the agent can read.
+  Future<Map<String, Object?>> agentMcpServersForDispatch({
+    String? workspaceId,
+    String? agentId,
+    String? conversationId,
+    String? spaceId,
+    String? runToken,
+  }) async {
+    await ensureRunningForDispatch();
+    return agentMcpServers(
+      workspaceId: workspaceId,
+      agentId: agentId,
+      conversationId: conversationId,
+      spaceId: spaceId,
+      runToken: runToken,
+    );
+  }
+
+  /// The server map behind [writeAgentMcpConfig], for a CLI that takes it over
+  /// stdin. Never written to disk on that path: it holds the bearer token and
+  /// the run's secret, and the agent can read its own working directory.
+  Future<Map<String, Object?>> agentMcpServers({
+    String? workspaceId,
+    String? agentId,
+    String? conversationId,
+    String? spaceId,
+    String? runToken,
+  }) async {
     await _ensureLoaded();
     final headers = <String, String>{
       if (_config.token != null && _config.token!.isNotEmpty)
@@ -286,10 +329,7 @@ class ServerMcpControl implements McpServerControl {
       'url': 'http://127.0.0.1:$_agentPort/mcp',
       'headers': headers,
     };
-    await _writeJson(target, {
-      'mcpServers': {'control-center': server},
-    });
-    return target.path;
+    return {'control-center': server};
   }
 
   Future<void> _writeJson(File target, Map<String, dynamic> json) async {

@@ -16721,4 +16721,275 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'سجلات الإعداد';
+
+  @override
+  String get claudeCompactionTitle => 'الضغط';
+
+  @override
+  String get claudeCompactionDescription =>
+      'كيف يُبقي Claude Code المحادثات الطويلة ضمن نافذة السياق.';
+
+  @override
+  String get claudeAutoCompactLabel => 'الضغط التلقائي بعد';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'عدد الرموز، من $min إلى $max. اتركه فارغًا لاستخدام الإعداد الافتراضي في Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'أدخل رقمًا من $min إلى $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'ضغط المحادثات الخاملة';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'يضغط المحادثة التي تتجاوز $threshold رمز قبيل انتهاء ذاكرة التخزين المؤقت للمطالبة، فتقل تكلفة العودة إليها. تستهلك كل عملية ضغط من خطتك.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => 'تعذّر حفظ هذا الإعداد.';
+
+  @override
+  String get navDesktopApp => 'تطبيق سطح المكتب';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'أيقونة علبة النظام، وإغلاق النافذة، والفتح عند تسجيل الدخول.';
+
+  @override
+  String get desktopSectionMenuBar => 'شريط القائمة';
+
+  @override
+  String get desktopSectionTray => 'علبة النظام';
+
+  @override
+  String get desktopTrayTitleMac => 'الإظهار في شريط القائمة';
+
+  @override
+  String get desktopTrayTitle => 'الإظهار في علبة النظام';
+
+  @override
+  String get desktopTraySubtitle =>
+      'الحالة، وما ينتظرك، ومساحاتك، واستخدام الخطة، على بُعد نقرة واحدة.';
+
+  @override
+  String get desktopTrayMissingTitle => 'لم يتم العثور على علبة النظام';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'لا يعرض سطح المكتب هذا أيقونات علبة النظام. على GNOME، ثبّت امتداد AppIndicator، ثم أعد تشغيل Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'إغلاق النافذة';
+
+  @override
+  String get desktopCloseTitle => 'عند إغلاق النافذة';
+
+  @override
+  String get desktopCloseKeepRunning => 'الإبقاء قيد التشغيل';
+
+  @override
+  String get desktopCloseQuit => 'إنهاء';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'يستمر الوكلاء والإشعارات في العمل. أعد فتح النافذة من Dock أو من شريط القائمة.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'يستمر الوكلاء والإشعارات في العمل. أعد فتح النافذة من أيقونة علبة النظام.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'يؤدي إغلاق النافذة إلى إنهاء Control Center. تتوقف الإشعارات حتى تفتحه مجددًا.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'شغّل أيقونة علبة النظام ليبقى Control Center قيد التشغيل بعد إغلاق نافذته.';
+
+  @override
+  String get desktopSectionLogin => 'بدء التشغيل';
+
+  @override
+  String get desktopLoginTitle => 'الفتح عند تسجيل الدخول';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'يبدأ Control Center عند تسجيل دخولك، فتصلك الإشعارات منذ البداية.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'لا يدعم هذا النظام فتح التطبيقات عند تسجيل الدخول.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'اسمح لـ Control Center ضمن عناصر تسجيل الدخول لإكمال التفعيل.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'فتح عناصر تسجيل الدخول';
+
+  @override
+  String get desktopLoginRefused =>
+      'لم يقبل النظام التغيير. ربما يديره المسؤول لديك.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'البدء في الخلفية';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'يُفتح دون نافذة عند تسجيل الدخول. ستجده في Dock أو في شريط القائمة.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'يُفتح دون نافذة عند تسجيل الدخول. ستجده في علبة النظام.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'يتطلب أيقونة علبة النظام حتى يمكن فتح النافذة.';
+
+  @override
+  String get closeToTrayPromptTitle =>
+      'هل تريد إبقاء Control Center قيد التشغيل؟';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'يواصل الوكلاء العمل وتستمر الإشعارات في الوصول والنافذة مغلقة. أعد فتحها من أيقونة علبة النظام. يمكنك تغيير ذلك من الإعدادات ← تطبيق سطح المكتب.';
+
+  @override
+  String get closeToTrayPromptQuit => 'إنهاء';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'الإبقاء قيد التشغيل';
+
+  @override
+  String get trayStatusOffline => 'غير متصل';
+
+  @override
+  String get trayStatusReconnecting => 'جارٍ إعادة الاتصال…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عنصر بانتظارك',
+      many: '$count عنصرًا بانتظارك',
+      few: '$count عناصر بانتظارك',
+      two: 'عنصران بانتظارك',
+      one: 'عنصر واحد بانتظارك',
+      zero: 'لا شيء بانتظارك',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count قيد العمل',
+      many: '$count قيد العمل',
+      few: '$count قيد العمل',
+      two: 'اثنان قيد العمل',
+      one: 'واحد قيد العمل',
+      zero: 'لا شيء قيد العمل',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'كل شيء هادئ';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count سؤال',
+      many: '$count سؤالًا',
+      few: '$count أسئلة',
+      two: 'سؤالان',
+      one: 'سؤال واحد',
+      zero: 'لا أسئلة',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count موافقة قيد الانتظار',
+      many: '$count موافقةً قيد الانتظار',
+      few: '$count موافقات قيد الانتظار',
+      two: 'موافقتان قيد الانتظار',
+      one: 'موافقة واحدة قيد الانتظار',
+      zero: 'لا موافقات قيد الانتظار',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'فتح Control Center';
+
+  @override
+  String get trayMenuSettings => 'الإعدادات…';
+
+  @override
+  String get trayMenuQuit => 'إنهاء Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace => 'افتح Control Center لاختيار مساحة عمل.';
+
+  @override
+  String get trayPanelOpenApp => 'فتح Control Center';
+
+  @override
+  String get trayPanelSettings => 'إعدادات تطبيق سطح المكتب';
+
+  @override
+  String get trayPanelNeedsYou => 'بانتظارك';
+
+  @override
+  String get trayPanelApprovals => 'الموافقات';
+
+  @override
+  String get trayPanelSpaces => 'المساحات';
+
+  @override
+  String get trayPanelNoSpaces => 'لا توجد مساحات بعد.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'كل المساحات ($count)',
+      many: 'كل المساحات ($count)',
+      few: 'كل المساحات ($count)',
+      two: 'كلتا المساحتين',
+      one: 'كل المساحات',
+      zero: 'كل المساحات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'الاستخدام';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'تبديل مساحة العمل';
 }

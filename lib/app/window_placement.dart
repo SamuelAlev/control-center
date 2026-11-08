@@ -181,3 +181,111 @@ Rect _centerIn(Size size, Rect area) => Rect.fromLTWH(
   size.width,
   size.height,
 );
+
+/// Size of the tray (menu bar) panel. Fixed: it is a popover, not a window
+/// the operator arranges.
+const Size trayPanelSize = Size(360, 560);
+
+/// Breathing room between the panel and the tray icon or the display edge.
+const double _trayPanelGap = 6;
+
+/// Where the tray panel opens, given where the tray icon is.
+///
+/// [anchor] is the icon's frame in the global top-left space window frames
+/// use, or a zero-size rect at the pointer on hosts that cannot report the
+/// icon (Linux's StatusNotifierItem), or null when nothing is known. The
+/// icon sits in a bar the work areas exclude, so which side of its display's
+/// work area it lies on says where that bar is:
+///
+/// - above it (the macOS menu bar, a top panel): the panel hangs below,
+///   centered on the icon;
+/// - below it (the Windows taskbar, a bottom panel): it stands above;
+/// - beside it (a vertical taskbar): it opens toward the screen.
+///
+/// An anchor inside the work area (the pointer, or Windows' overflow
+/// flyout) opens toward the larger free space around it. With no anchor the
+/// panel takes the primary display's top-end corner on [preferTop] desktops,
+/// else its bottom-end one. Every answer is clamped into one work area.
+Rect resolveTrayPanelBounds({
+  required Rect? anchor,
+  required List<Rect> workAreas,
+  required Rect primaryWorkArea,
+  required bool preferTop,
+  Size size = trayPanelSize,
+}) {
+  final w = math.min(size.width, primaryWorkArea.width);
+  if (anchor == null) {
+    final area = primaryWorkArea;
+    final h = math.min(size.height, area.height - 2 * _trayPanelGap);
+    final left = area.right - w - _trayPanelGap;
+    final top = preferTop
+        ? area.top + _trayPanelGap
+        : area.bottom - h - _trayPanelGap;
+    return Rect.fromLTWH(left, top, w, h);
+  }
+  final area = _workAreaNearest(anchor, workAreas) ?? primaryWorkArea;
+  final h = math.min(size.height, area.height - 2 * _trayPanelGap);
+  final width = math.min(w, area.width - 2 * _trayPanelGap);
+
+  double centeredX() => _clampAxis(
+    anchor.center.dx - width / 2,
+    area.left + _trayPanelGap,
+    area.right - _trayPanelGap,
+    width,
+  );
+  double centeredY() => _clampAxis(
+    anchor.center.dy - h / 2,
+    area.top + _trayPanelGap,
+    area.bottom - _trayPanelGap,
+    h,
+  );
+
+  final Offset topLeft;
+  if (anchor.bottom <= area.top + 1) {
+    topLeft = Offset(centeredX(), area.top + _trayPanelGap);
+  } else if (anchor.top >= area.bottom - 1) {
+    topLeft = Offset(centeredX(), area.bottom - h - _trayPanelGap);
+  } else if (anchor.left >= area.right - 1) {
+    topLeft = Offset(area.right - width - _trayPanelGap, centeredY());
+  } else if (anchor.right <= area.left + 1) {
+    topLeft = Offset(area.left + _trayPanelGap, centeredY());
+  } else {
+    // Inside the work area: open below the point when there is more room
+    // below it, else above, and keep it on screen sideways.
+    final below = area.bottom - anchor.bottom >= anchor.top - area.top;
+    final y = below
+        ? anchor.bottom + _trayPanelGap
+        : anchor.top - h - _trayPanelGap;
+    topLeft = Offset(
+      centeredX(),
+      _clampAxis(y, area.top + _trayPanelGap, area.bottom - _trayPanelGap, h),
+    );
+  }
+  return Rect.fromLTWH(topLeft.dx, topLeft.dy, width, h);
+}
+
+/// The work area [anchor] belongs to: the one containing its center, else
+/// the nearest — the tray icon sits just outside every work area.
+Rect? _workAreaNearest(Rect anchor, List<Rect> workAreas) {
+  Rect? best;
+  var bestDistance = double.infinity;
+  for (final area in workAreas) {
+    if (area.contains(anchor.center)) {
+      return area;
+    }
+    final dx = math.max(
+      0.0,
+      math.max(area.left - anchor.center.dx, anchor.center.dx - area.right),
+    );
+    final dy = math.max(
+      0.0,
+      math.max(area.top - anchor.center.dy, anchor.center.dy - area.bottom),
+    );
+    final distance = math.sqrt(dx * dx + dy * dy);
+    if (distance < bestDistance) {
+      best = area;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}

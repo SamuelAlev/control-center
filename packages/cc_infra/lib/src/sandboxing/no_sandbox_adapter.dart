@@ -12,6 +12,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_infra/src/sandboxing/process_group_supervisor.dart';
 import 'package:cc_infra/src/sandboxing/stdin_pipe.dart';
 
 /// `SandboxPort` implementation that intentionally provides no isolation —
@@ -26,6 +27,7 @@ class NoSandboxAdapter implements SandboxPort {
   final Map<String, StreamController<SandboxEvent>> _streams = {};
   final Map<String, Process> _processes = {};
   final Map<String, SandboxHandle> _handles = {};
+  final Set<String> _supervised = {};
 
   @override
   SandboxBackend get backend => SandboxBackend.none;
@@ -42,6 +44,9 @@ class NoSandboxAdapter implements SandboxPort {
   @override
   Future<SandboxHandle> launch(SandboxSpec spec) async {
     _streams[spec.sessionId] = StreamController<SandboxEvent>.broadcast();
+    if (spec.superviseProcessGroup && canSuperviseProcessGroup) {
+      _supervised.add(spec.sessionId);
+    }
     // Without a sandbox the bind mounts collapse to "run on the host" — we
     // just pick the first mount's host path as the default working dir.
     final defaultDir = spec.bindMounts.isNotEmpty
@@ -106,9 +111,12 @@ class NoSandboxAdapter implements SandboxPort {
         workdir ??
         _handles[handle.sessionId]?.details['workingDirectory'] as String?;
 
+    final launch = _supervised.contains(handle.sessionId)
+        ? superviseProcessGroup(argv.first, argv.skip(1).toList())
+        : (executable: argv.first, argv: argv.skip(1).toList());
     final process = await Process.start(
-      argv.first,
-      argv.skip(1).toList(),
+      launch.executable,
+      launch.argv,
       workingDirectory: workingDirectory,
       environment: env,
       includeParentEnvironment: true,
@@ -179,6 +187,7 @@ class NoSandboxAdapter implements SandboxPort {
     // SIGTERM → 3s → SIGKILL, and AWAIT it. A bare `kill()` that returns
     // immediately leaves a SIGTERM-ignoring child running while the caller
     // believes the sandbox is gone.
+    _supervised.remove(handle.sessionId);
     final process = _processes.remove(handle.sessionId);
     if (process != null) {
       process.kill();

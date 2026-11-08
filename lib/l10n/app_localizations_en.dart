@@ -16449,6 +16449,257 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Setup logs';
+
+  @override
+  String get claudeCompactionTitle => 'Compaction';
+
+  @override
+  String get claudeCompactionDescription =>
+      'How Claude Code keeps long conversations within its context window.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Auto-compact after';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Tokens, from $min to $max. Leave empty to use Claude Code\'s default.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Enter a number from $min to $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Compact idle conversations';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Compacts a conversation over $threshold tokens just before its prompt cache expires, so coming back to it costs less. Each compaction uses your plan.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => 'Couldn\'t save this setting.';
+
+  @override
+  String get navDesktopApp => 'Desktop app';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'The tray icon, closing the window and opening at login.';
+
+  @override
+  String get desktopSectionMenuBar => 'Menu bar';
+
+  @override
+  String get desktopSectionTray => 'System tray';
+
+  @override
+  String get desktopTrayTitleMac => 'Show in the menu bar';
+
+  @override
+  String get desktopTrayTitle => 'Show in the system tray';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Status, what needs you, your spaces and plan usage, one click away.';
+
+  @override
+  String get desktopTrayMissingTitle => 'No system tray found';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'This desktop doesn\'t show tray icons. On GNOME, install the AppIndicator extension, then restart Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'Closing the window';
+
+  @override
+  String get desktopCloseTitle => 'When you close the window';
+
+  @override
+  String get desktopCloseKeepRunning => 'Keep running';
+
+  @override
+  String get desktopCloseQuit => 'Quit';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Agents and notifications carry on. Open the window again from the Dock or the menu bar.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Agents and notifications carry on. Open the window again from the tray icon.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Closing the window quits Control Center. Notifications stop until you open it again.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Turn on the tray icon to keep Control Center running with its window closed.';
+
+  @override
+  String get desktopSectionLogin => 'Startup';
+
+  @override
+  String get desktopLoginTitle => 'Open at login';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Start Control Center when you sign in, so notifications arrive from the start.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'This system doesn\'t support opening apps at login.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Allow Control Center in Login Items to finish turning this on.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Open Login Items';
+
+  @override
+  String get desktopLoginRefused =>
+      'The system didn\'t accept the change. Your administrator may manage it.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Start in the background';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Opens without a window at login. Find it in the Dock or the menu bar.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Opens without a window at login. Find it in the tray.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Needs the tray icon, so there\'s a way to open the window.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Keep Control Center running?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Agents keep working and notifications keep arriving with the window closed. Open it again from the tray icon. You can change this in Settings → Desktop app.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Quit';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Keep running';
+
+  @override
+  String get trayStatusOffline => 'Offline';
+
+  @override
+  String get trayStatusReconnecting => 'Reconnecting…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count need you',
+      one: '1 needs you',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count working',
+      one: '1 working',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'All quiet';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '1 question',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count approvals waiting',
+      one: '1 approval waiting',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Open Control Center';
+
+  @override
+  String get trayMenuSettings => 'Settings…';
+
+  @override
+  String get trayMenuQuit => 'Quit Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Open Control Center to choose a workspace.';
+
+  @override
+  String get trayPanelOpenApp => 'Open Control Center';
+
+  @override
+  String get trayPanelSettings => 'Desktop app settings';
+
+  @override
+  String get trayPanelNeedsYou => 'Needs you';
+
+  @override
+  String get trayPanelApprovals => 'Approvals';
+
+  @override
+  String get trayPanelSpaces => 'Spaces';
+
+  @override
+  String get trayPanelNoSpaces => 'No spaces yet.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'All $count spaces',
+      one: 'All spaces',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Usage';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Switch workspace';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

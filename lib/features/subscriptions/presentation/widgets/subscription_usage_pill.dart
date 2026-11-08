@@ -68,24 +68,11 @@ class _SubscriptionUsagePillState extends ConsumerState<SubscriptionUsagePill> {
     // loading-with-previous state — keeps the last snapshot on screen.
     final providers = async.value ?? const <SubscriptionUsage>[];
 
-    // Only configured providers are shown: a provider that isn't set up
-    // ([SubscriptionStatus.unconfigured]) holds no quota, so its "sign in"
-    // block is noise in the breakdown. When nothing is set up at all the
-    // pill itself drops out of the title bar entirely.
-    // A provider that isn't set up holds no quota, so its "sign in" block is
-    // noise. An ACCOUNT of a configured provider is different: dropping the one
-    // whose plan reports nothing would leave three accounts paging as two, and
-    // the operator counting them and finding one missing. Those stay, and their
-    // page says so.
-    final withAccounts = {
-      for (final p in providers)
-        if (p.accountId != null) p.providerId,
-    };
+    // Only configured providers are shown (see [subscriptionAccountGroups]).
+    // When nothing is set up at all the pill itself drops out of the title
+    // bar entirely.
     final configured = [
-      for (final p in providers)
-        if (p.status != SubscriptionStatus.unconfigured ||
-            withAccounts.contains(p.providerId))
-          p,
+      for (final group in subscriptionAccountGroups(providers)) ...group,
     ];
     if (configured.isEmpty) {
       return const SizedBox.shrink();
@@ -167,22 +154,8 @@ class _UsageOverlay extends StatelessWidget {
   }
 
   /// One group per provider, holding its accounts in report order.
-  ///
-  /// Grouping rather than one flat list because a provider with several logins
-  /// is still ONE thing in the breakdown — showing "Claude" three times would
-  /// read as three providers, and the operator's question is "which of my
-  /// Claude accounts has room", not "how many blocks are there".
-  List<List<SubscriptionUsage>> get groups {
-    final byProvider = <String, List<SubscriptionUsage>>{};
-    final order = <String>[];
-    for (final p in providers) {
-      if (!byProvider.containsKey(p.providerId)) {
-        order.add(p.providerId);
-      }
-      byProvider.putIfAbsent(p.providerId, () => []).add(p);
-    }
-    return [for (final id in order) byProvider[id]!];
-  }
+  List<List<SubscriptionUsage>> get groups =>
+      subscriptionAccountGroups(providers);
 
   @override
   Widget build(BuildContext context) {

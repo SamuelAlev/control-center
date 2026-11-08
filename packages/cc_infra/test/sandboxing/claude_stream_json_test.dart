@@ -1170,6 +1170,48 @@ void main() {
       'modelUsage': ?modelUsage,
     };
 
+    group('cache lifetime', () {
+      Duration? ttl(Map<String, Object?>? creation) =>
+          ClaudeUsage.tryFromResult({
+            'type': 'result',
+            'usage': {
+              'input_tokens': 1,
+              'output_tokens': 1,
+              'cache_creation': ?creation,
+            },
+            'total_cost_usd': 0.1,
+          })!.cacheTtl;
+
+      test('follows the tier the call wrote', () {
+        expect(
+          ttl({'ephemeral_1h_input_tokens': 10}),
+          const Duration(hours: 1),
+        );
+        expect(
+          ttl({'ephemeral_5m_input_tokens': 10}),
+          const Duration(minutes: 5),
+        );
+      });
+
+      test('the shorter tier wins when a call wrote both', () {
+        expect(
+          ttl({
+            'ephemeral_1h_input_tokens': 10,
+            'ephemeral_5m_input_tokens': 10,
+          }),
+          const Duration(minutes: 5),
+        );
+      });
+
+      test('is unknown when nothing was written', () {
+        expect(ttl(null), isNull);
+        expect(
+          ttl({'ephemeral_1h_input_tokens': 0, 'ephemeral_5m_input_tokens': 0}),
+          isNull,
+        );
+      });
+    });
+
     test('reads the per-turn usage and the cumulative cost', () {
       final usage = ClaudeUsage.tryFromResult(result())!;
       expect(usage.inputTokens, 10);
@@ -1643,6 +1685,96 @@ void main() {
       expect(restored.cumulativeCostUsd, closeTo(0.75, 1e-9));
       expect(restored.modelUsage['main']!.inputTokens, 40);
       expect(restored.turns, 1);
+    });
+  });
+
+  group('rate limits', () {
+    ClaudeRateLimitInfo? last;
+    final parser = ClaudeStreamJsonParser(
+      ClaudeStreamJsonCallbacks(onRateLimit: (info) => last = info),
+    );
+
+    setUp(() => last = null);
+
+    test('reads the shape the CLI sends', () {
+      parser.process({
+        'type': 'rate_limit_event',
+        'rate_limit_info': {
+          'status': 'allowed_warning',
+          'resetsAt': 1893456000,
+          'rateLimitType': 'five_hour',
+          'overageStatus': 'rejected',
+          'isUsingOverage': false,
+          'unifiedWindows': {
+            'five_hour': {
+              'utilization': 0.12,
+              'resetsAt': 1893456000,
+              'status': 'allowed',
+            },
+          },
+        },
+      });
+
+      expect(last?.warning, isTrue);
+      expect(last?.blocked, isFalse);
+      expect(last?.resetsAt, DateTime.utc(2030));
+      expect(last?.windows['five_hour']?.usedFraction, 0.12);
+      expect(last?.usageWindows.single.id, '5h');
+    });
+
+    test('a rejection extra usage covers is not a block', () {
+      for (final info in <Map<String, Object?>>[
+        {'status': 'rejected', 'overageStatus': 'allowed'},
+        {'status': 'rejected', 'overageStatus': 'allowed_warning'},
+        {'status': 'rejected', 'isUsingOverage': true},
+        {'status': 'rejected', 'overageInUse': true},
+      ]) {
+        expect(ClaudeRateLimitInfo.tryParse(info)?.blocked, isFalse);
+      }
+      expect(
+        ClaudeRateLimitInfo.tryParse({
+          'status': 'rejected',
+          'overageStatus': 'rejected',
+        })?.blocked,
+        isTrue,
+      );
+    });
+
+    test('reads the report repeated on a blocked assistant message', () {
+      parser.process({
+        'type': 'assistant',
+        'error': 'rate_limit',
+        'parent_tool_use_id': null,
+        'message': {'model': '<synthetic>', 'content': const <Object>[]},
+        'api_error_params': {
+          'rate_limit_info': {'status': 'rejected', 'resetsAt': 1893456000},
+        },
+      });
+
+      expect(last?.blocked, isTrue);
+    });
+
+    test('ignores what is not a report', () {
+      parser.process({'type': 'rate_limit_event'});
+      parser.process({
+        'type': 'rate_limit_event',
+        'rate_limit_info': {'status': ''},
+      });
+
+      expect(last, isNull);
+    });
+
+    test('a blocked report makes any failure a capacity failure', () {
+      const failure = ClaudeTerminalError(message: 'something new');
+      expect(failure.isCapacity, isFalse);
+
+      final info = ClaudeRateLimitInfo.tryParse({
+        'status': 'rejected',
+        'resetsAt': 1893456000,
+      })!;
+
+      expect(failure.blockedBy(info).isCapacity, isTrue);
+      expect(failure.blockedBy(info).resetsAt, DateTime.utc(2030));
     });
   });
 }

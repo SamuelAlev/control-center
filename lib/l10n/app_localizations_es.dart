@@ -16603,6 +16603,257 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Registros de configuración';
+
+  @override
+  String get claudeCompactionTitle => 'Compactación';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Cómo mantiene Claude Code las conversaciones largas dentro de su ventana de contexto.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Compactar automáticamente tras';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Tokens, de $min a $max. Déjalo vacío para usar el valor predeterminado de Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Introduce un número de $min a $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Compactar conversaciones inactivas';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Compacta una conversación de más de $threshold tokens justo antes de que caduque su caché de prompts, para que volver a ella cueste menos. Cada compactación consume tu plan.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => 'No se pudo guardar este ajuste.';
+
+  @override
+  String get navDesktopApp => 'Aplicación de escritorio';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'El icono de la bandeja, el cierre de la ventana y la apertura al iniciar sesión.';
+
+  @override
+  String get desktopSectionMenuBar => 'Barra de menús';
+
+  @override
+  String get desktopSectionTray => 'Bandeja del sistema';
+
+  @override
+  String get desktopTrayTitleMac => 'Mostrar en la barra de menús';
+
+  @override
+  String get desktopTrayTitle => 'Mostrar en la bandeja del sistema';
+
+  @override
+  String get desktopTraySubtitle =>
+      'El estado, lo que te necesita, tus espacios y el uso del plan, a un clic.';
+
+  @override
+  String get desktopTrayMissingTitle => 'No se encontró la bandeja del sistema';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Este escritorio no muestra iconos en la bandeja. En GNOME, instala la extensión AppIndicator y reinicia Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'Cierre de la ventana';
+
+  @override
+  String get desktopCloseTitle => 'Al cerrar la ventana';
+
+  @override
+  String get desktopCloseKeepRunning => 'Mantener en marcha';
+
+  @override
+  String get desktopCloseQuit => 'Salir';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Los agentes y las notificaciones siguen funcionando. Vuelve a abrir la ventana desde el Dock o la barra de menús.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Los agentes y las notificaciones siguen funcionando. Vuelve a abrir la ventana desde el icono de la bandeja.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Al cerrar la ventana se sale de Control Center. Las notificaciones se detienen hasta que lo vuelvas a abrir.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Activa el icono de la bandeja para que Control Center siga en marcha con la ventana cerrada.';
+
+  @override
+  String get desktopSectionLogin => 'Inicio';
+
+  @override
+  String get desktopLoginTitle => 'Abrir al iniciar sesión';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Abre Control Center al iniciar sesión para que las notificaciones lleguen desde el primer momento.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Este sistema no permite abrir aplicaciones al iniciar sesión.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Permite Control Center en Ítems de inicio para terminar de activar esta opción.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Abrir Ítems de inicio';
+
+  @override
+  String get desktopLoginRefused =>
+      'El sistema no aceptó el cambio. Es posible que lo gestione tu administrador.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Iniciar en segundo plano';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Se abre sin ventana al iniciar sesión. Lo encontrarás en el Dock o en la barra de menús.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Se abre sin ventana al iniciar sesión. Lo encontrarás en la bandeja.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Requiere el icono de la bandeja para poder abrir la ventana.';
+
+  @override
+  String get closeToTrayPromptTitle => '¿Mantener Control Center en marcha?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Con la ventana cerrada, los agentes siguen trabajando y las notificaciones siguen llegando. Vuelve a abrirla desde el icono de la bandeja. Puedes cambiar esto en Ajustes → Aplicación de escritorio.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Salir';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Mantener en marcha';
+
+  @override
+  String get trayStatusOffline => 'Sin conexión';
+
+  @override
+  String get trayStatusReconnecting => 'Reconectando…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count te necesitan',
+      one: '1 te necesita',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count en curso',
+      one: '1 en curso',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Todo tranquilo';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count preguntas',
+      one: '1 pregunta',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aprobaciones pendientes',
+      one: '1 aprobación pendiente',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Abrir Control Center';
+
+  @override
+  String get trayMenuSettings => 'Ajustes…';
+
+  @override
+  String get trayMenuQuit => 'Salir de Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Abre Control Center para elegir un espacio de trabajo.';
+
+  @override
+  String get trayPanelOpenApp => 'Abrir Control Center';
+
+  @override
+  String get trayPanelSettings => 'Ajustes de la aplicación de escritorio';
+
+  @override
+  String get trayPanelNeedsYou => 'Te necesita';
+
+  @override
+  String get trayPanelApprovals => 'Aprobaciones';
+
+  @override
+  String get trayPanelSpaces => 'Espacios';
+
+  @override
+  String get trayPanelNoSpaces => 'Aún no hay espacios.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Los $count espacios',
+      one: 'Todos los espacios',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Uso';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Cambiar de espacio de trabajo';
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

@@ -11,6 +11,9 @@ import 'package:cc_ui/cc_ui.dart' show CcToastScope, CcToastVariant;
 import 'package:control_center/app/app_windows.dart'
     show AppWindows, runBootFailureWindow, runDesktopBootWindow;
 import 'package:control_center/app/control_center_app.dart';
+import 'package:control_center/app/tray/launch_context.dart';
+import 'package:control_center/app/tray/main_window_visibility.dart';
+import 'package:control_center/app/tray/native_desktop_shell.dart';
 import 'package:control_center/app/window_chrome.dart';
 import 'package:control_center/app/window_geometry_watcher.dart';
 import 'package:control_center/app/window_visibility_guard.dart';
@@ -25,6 +28,7 @@ import 'package:control_center/core/media/media_disk_cache.dart';
 import 'package:control_center/core/notifications/rpc_notification_mapper.dart';
 import 'package:control_center/core/observability/sentry_bootstrap.dart';
 import 'package:control_center/core/providers/app_log_provider.dart';
+import 'package:control_center/core/providers/desktop_shell_provider.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/core/providers/media_proxy_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
@@ -48,6 +52,7 @@ import 'package:control_center/core/utils/cc_infra_logging.dart';
 import 'package:control_center/di/agent_wait_reminder_provider.dart';
 import 'package:control_center/di/notification_providers.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/desktop_app/providers/desktop_app_preferences.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/repos/presentation/repo_link_workspace_dialog.dart';
@@ -104,10 +109,13 @@ bool _mediaPlaybackAvailable = true;
 /// `runAppWithSentry` with `_DesktopAppHost`. The desktop is a thin client like
 /// web: it hosts no server, no MCP, no database. The web counterpart is
 /// `bootstrap_web.dart`.
-Future<void> bootstrapAndRun() async {
+///
+/// [arguments] are the program's own; the Windows and Linux login entries
+/// mark a login launch with one (see `resolveLaunchContext`).
+Future<void> bootstrapAndRun([List<String> arguments = const []]) async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await _prepareDesktop();
+    await _prepareDesktop(arguments);
   } on Object catch (error, stack) {
     // Startup can fail before the first window or while the localized boot
     // surface is visible. Replace either state with an actionable error.
@@ -127,7 +135,7 @@ Future<void> bootstrapAndRun() async {
 /// Separated from [bootstrapAndRun] so a failure in here is distinguishable
 /// from one thrown after the app tree is mounted — only the former may replace
 /// the app with the boot-failure window.
-Future<void> _prepareDesktop() async {
+Future<void> _prepareDesktop(List<String> arguments) async {
   // Cap the engine image cache well below Flutter's default (~100MB / 1000
   // images). The desktop shows mostly small avatars and feed thumbnails
   // (already downscaled via ResizeImage); decoded bitmaps stay resident
@@ -227,6 +235,20 @@ Future<void> _prepareDesktop() async {
 
   final prefs = AppPreferences(desktopPrefsBackend);
 
+  // A login launch the operator asked to keep in the tray starts with the main
+  // window hidden: the will-show hook below then styles it (its geometry is
+  // restored for when it is revealed) without showing it. Only where
+  // something stays on screen to bring it back: the Dock on macOS, the tray
+  // icon elsewhere.
+  await resolveLaunchContext(arguments);
+  if (wasLaunchedAtLogin &&
+      (prefs.getBool(startHiddenAtLoginKey) ?? false) &&
+      (Platform.isMacOS ||
+          (NativeDesktopShell.instance.traySupported &&
+              (prefs.getBool(trayIconVisibleKey) ?? true)))) {
+    MainWindowVisibility.instance.startHidden();
+  }
+
   // Multi-window chrome: nativeapi observes and controls the windows that
   // Flutter's windowing layer creates (see `AppWindows`). Style each window the
   // moment it is about to show — restore the primary window's geometry (clamped
@@ -245,6 +267,19 @@ Future<void> _prepareDesktop() async {
     if (window != null) {
       styleWindowOnShow(window, prefs);
     }
+    final title = window?.title;
+    final visibility = MainWindowVisibility.instance;
+    if (title == primaryWindowTitle && visibility.startingHidden) {
+      // Starting in the tray: styled above, deliberately not shown. Linux's
+      // hook observes a show it cannot veto, so the window is also ordered
+      // back out once the show returns.
+      scheduleMicrotask(() {
+        if (visibility.startingHidden) {
+          windowManager.get(windowId)?.hide();
+        }
+      });
+      return;
+    }
     // Showing the window is OUR job while this hook is installed. nativeapi
     // swizzles `NSWindow makeKeyAndOrderFront:` and, when a will-show hook is
     // registered, calls the hook INSTEAD of the original ("Hook handles all
@@ -254,16 +289,22 @@ Future<void> _prepareDesktop() async {
     // empty screen. This must stay AFTER the styling (that is the point of
     // styling on show) and must run even for a window we could not resolve.
     windowManager.callOriginalShow(windowId);
+    if (title == primaryWindowTitle) {
+      visibility.noteShown();
+    }
     // Reconcile after the native show returns, then arm frame repairs. The
     // guard needs real visibility/focus to distinguish stale `hidden` from
     // the operator intentionally hiding the app.
-    scheduleMicrotask(
-      () => dressKnownWindows(
+    scheduleMicrotask(() {
+      dressKnownWindows(
         windowManager,
         prefs,
         onMainWindow: (_) => WindowVisibilityGuard.instance.onMainWindowShown(),
-      ),
-    );
+      );
+      if (title == trayPanelWindowTitle) {
+        WindowVisibilityGuard.instance.onAuxiliaryWindowShown();
+      }
+    });
   });
   // The save side of the same feature. It POLLS rather than listening to
   // `WindowMovedEvent` / `WindowResizedEvent`: the listener that used to live
@@ -450,6 +491,9 @@ class DesktopBackendSession {
         mediaPlaybackAvailableProvider.overrideWithValue(
           _mediaPlaybackAvailable,
         ),
+        // Process-wide, like the tray icon and the window it drives: a server
+        // switch hands the next container the same shell.
+        desktopShellProvider.overrideWithValue(NativeDesktopShell.instance),
       ],
     );
 
@@ -781,12 +825,20 @@ class _DesktopAppHostState extends State<_DesktopAppHost> {
           return;
         }
       }
+      // A Dock click, or a second launch handed to this instance: bring the
+      // main window back, even from the tray. Needs no session — the window
+      // outlives every one of them.
+      if (call.method == 'reopen') {
+        MainWindowVisibility.instance.reveal();
+        return;
+      }
       final container = _container;
       if (container == null) {
         return;
       }
       switch (call.method) {
         case 'openSettings':
+          MainWindowVisibility.instance.reveal();
           final router = container.read(routerProvider);
           if (isAuthenticationRoute(
             router.routerDelegate.currentConfiguration.uri.path,
@@ -800,6 +852,8 @@ class _DesktopAppHostState extends State<_DesktopAppHost> {
         case 'openUrl':
           final rawUrl = call.arguments as String?;
           if (rawUrl != null && rawUrl.isNotEmpty) {
+            // A link opens where it can be seen, even from the tray.
+            MainWindowVisibility.instance.reveal();
             await _handleIncomingUrl(container, rawUrl);
           }
         case 'checkForUpdates':

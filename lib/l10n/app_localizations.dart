@@ -27856,6 +27856,378 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Setup logs'**
   String get spaceSetupLogs;
+
+  /// No description provided for @claudeCompactionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compaction'**
+  String get claudeCompactionTitle;
+
+  /// No description provided for @claudeCompactionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'How Claude Code keeps long conversations within its context window.'**
+  String get claudeCompactionDescription;
+
+  /// No description provided for @claudeAutoCompactLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-compact after'**
+  String get claudeAutoCompactLabel;
+
+  /// No description provided for @claudeAutoCompactHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens, from {min} to {max}. Leave empty to use Claude Code\'s default.'**
+  String claudeAutoCompactHint(String min, String max);
+
+  /// No description provided for @claudeAutoCompactInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number from {min} to {max}.'**
+  String claudeAutoCompactInvalid(String min, String max);
+
+  /// No description provided for @claudeIdleCompactLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact idle conversations'**
+  String get claudeIdleCompactLabel;
+
+  /// No description provided for @claudeIdleCompactDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Compacts a conversation over {threshold} tokens just before its prompt cache expires, so coming back to it costs less. Each compaction uses your plan.'**
+  String claudeIdleCompactDescription(String threshold);
+
+  /// No description provided for @claudeCompactionSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save this setting.'**
+  String get claudeCompactionSaveFailed;
+
+  /// Settings sidebar entry (under You) for the desktop app's tray, closing and login behaviour
+  ///
+  /// In en, this message translates to:
+  /// **'Desktop app'**
+  String get navDesktopApp;
+
+  /// Subtitle of the Settings → Desktop app page
+  ///
+  /// In en, this message translates to:
+  /// **'The tray icon, closing the window and opening at login.'**
+  String get desktopAppSettingsSubtitle;
+
+  /// macOS: section label for the menu bar (status item) icon settings
+  ///
+  /// In en, this message translates to:
+  /// **'Menu bar'**
+  String get desktopSectionMenuBar;
+
+  /// Windows/Linux: section label for the system tray icon settings
+  ///
+  /// In en, this message translates to:
+  /// **'System tray'**
+  String get desktopSectionTray;
+
+  /// macOS: switch that shows the app's icon in the menu bar
+  ///
+  /// In en, this message translates to:
+  /// **'Show in the menu bar'**
+  String get desktopTrayTitleMac;
+
+  /// Windows/Linux: switch that shows the app's icon in the system tray
+  ///
+  /// In en, this message translates to:
+  /// **'Show in the system tray'**
+  String get desktopTrayTitle;
+
+  /// Explains what the tray/menu bar icon offers
+  ///
+  /// In en, this message translates to:
+  /// **'Status, what needs you, your spaces and plan usage, one click away.'**
+  String get desktopTraySubtitle;
+
+  /// Linux: warning title when the desktop shows no tray icons
+  ///
+  /// In en, this message translates to:
+  /// **'No system tray found'**
+  String get desktopTrayMissingTitle;
+
+  /// Linux: how to get a tray. 'GNOME', 'AppIndicator' and 'Control Center' are names, keep them as-is
+  ///
+  /// In en, this message translates to:
+  /// **'This desktop doesn\'t show tray icons. On GNOME, install the AppIndicator extension, then restart Control Center.'**
+  String get desktopTrayMissingBody;
+
+  /// Section label for what the window's close button does
+  ///
+  /// In en, this message translates to:
+  /// **'Closing the window'**
+  String get desktopSectionClosing;
+
+  /// Label of the choice between keeping the app running and quitting when the main window is closed
+  ///
+  /// In en, this message translates to:
+  /// **'When you close the window'**
+  String get desktopCloseTitle;
+
+  /// Segment: closing the window hides it and the app keeps running. Short, fits a segmented control
+  ///
+  /// In en, this message translates to:
+  /// **'Keep running'**
+  String get desktopCloseKeepRunning;
+
+  /// Segment: closing the window quits the app. Short, fits a segmented control
+  ///
+  /// In en, this message translates to:
+  /// **'Quit'**
+  String get desktopCloseQuit;
+
+  /// macOS: what Keep running means
+  ///
+  /// In en, this message translates to:
+  /// **'Agents and notifications carry on. Open the window again from the Dock or the menu bar.'**
+  String get desktopCloseKeepRunningSubtitleMac;
+
+  /// Windows/Linux: what Keep running means
+  ///
+  /// In en, this message translates to:
+  /// **'Agents and notifications carry on. Open the window again from the tray icon.'**
+  String get desktopCloseKeepRunningSubtitle;
+
+  /// What Quit means
+  ///
+  /// In en, this message translates to:
+  /// **'Closing the window quits Control Center. Notifications stop until you open it again.'**
+  String get desktopCloseQuitSubtitle;
+
+  /// Windows/Linux: the close choice is disabled because without a tray icon there would be no way back to the window
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on the tray icon to keep Control Center running with its window closed.'**
+  String get desktopCloseNeedsTray;
+
+  /// Section label for opening the app when the user signs in to the computer
+  ///
+  /// In en, this message translates to:
+  /// **'Startup'**
+  String get desktopSectionLogin;
+
+  /// Switch: start the app automatically when the user signs in to the computer
+  ///
+  /// In en, this message translates to:
+  /// **'Open at login'**
+  String get desktopLoginTitle;
+
+  /// Explains Open at login
+  ///
+  /// In en, this message translates to:
+  /// **'Start Control Center when you sign in, so notifications arrive from the start.'**
+  String get desktopLoginSubtitle;
+
+  /// Shown instead of the explanation when the OS has no login item support
+  ///
+  /// In en, this message translates to:
+  /// **'This system doesn\'t support opening apps at login.'**
+  String get desktopLoginUnsupported;
+
+  /// macOS: the login item is waiting for the user's approval in System Settings → General → Login Items. 'Login Items' is the macOS settings pane name
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Control Center in Login Items to finish turning this on.'**
+  String get desktopLoginNeedsApproval;
+
+  /// macOS: button that opens System Settings → General → Login Items. Use the localized macOS name of that pane
+  ///
+  /// In en, this message translates to:
+  /// **'Open Login Items'**
+  String get desktopLoginOpenLoginItems;
+
+  /// Windows/Linux: registering or removing the login launch failed
+  ///
+  /// In en, this message translates to:
+  /// **'The system didn\'t accept the change. Your administrator may manage it.'**
+  String get desktopLoginRefused;
+
+  /// Switch: when opened at login, the app starts without showing its window
+  ///
+  /// In en, this message translates to:
+  /// **'Start in the background'**
+  String get desktopLoginStartHiddenTitle;
+
+  /// macOS: explains Start in the background
+  ///
+  /// In en, this message translates to:
+  /// **'Opens without a window at login. Find it in the Dock or the menu bar.'**
+  String get desktopLoginStartHiddenSubtitleMac;
+
+  /// Windows/Linux: explains Start in the background
+  ///
+  /// In en, this message translates to:
+  /// **'Opens without a window at login. Find it in the tray.'**
+  String get desktopLoginStartHiddenSubtitle;
+
+  /// Windows/Linux: why Start in the background is disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Needs the tray icon, so there\'s a way to open the window.'**
+  String get desktopLoginStartHiddenNeedsTray;
+
+  /// Windows/Linux: dialog title shown the first time the user closes the main window
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Control Center running?'**
+  String get closeToTrayPromptTitle;
+
+  /// Body of the first-close dialog. 'Settings → Desktop app' names the settings page; translate both parts like navDesktopApp
+  ///
+  /// In en, this message translates to:
+  /// **'Agents keep working and notifications keep arriving with the window closed. Open it again from the tray icon. You can change this in Settings → Desktop app.'**
+  String get closeToTrayPromptBody;
+
+  /// First-close dialog button: quit the app
+  ///
+  /// In en, this message translates to:
+  /// **'Quit'**
+  String get closeToTrayPromptQuit;
+
+  /// First-close dialog button: hide the window and keep running in the tray
+  ///
+  /// In en, this message translates to:
+  /// **'Keep running'**
+  String get closeToTrayPromptKeepRunning;
+
+  /// Tray status: the app is not connected to its server. Short status tag
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get trayStatusOffline;
+
+  /// Tray status: the connection to the server is being re-established. Short status tag
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting…'**
+  String get trayStatusReconnecting;
+
+  /// Tray status: how many agent questions and approvals wait on the user. Joined with trayStatusWorking by ' · '
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 needs you} other{{count} need you}}'**
+  String trayStatusNeedsYou(int count);
+
+  /// Tray status: how many spaces have an agent working right now
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 working} other{{count} working}}'**
+  String trayStatusWorking(int count);
+
+  /// Tray status: nothing is running and nothing waits on the user
+  ///
+  /// In en, this message translates to:
+  /// **'All quiet'**
+  String get trayStatusAllQuiet;
+
+  /// Hover text of the tray icon: the app name, then the status line
+  ///
+  /// In en, this message translates to:
+  /// **'Control Center · {status}'**
+  String trayTooltip(String status);
+
+  /// Tray menu line: a space and how many agent questions there wait on the user
+  ///
+  /// In en, this message translates to:
+  /// **'{space} · {count, plural, =1{1 question} other{{count} questions}}'**
+  String trayMenuSpaceQuestions(String space, int count);
+
+  /// Tray menu line: agent actions waiting for the user's approval
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 approval waiting} other{{count} approvals waiting}}'**
+  String trayApprovalsWaiting(int count);
+
+  /// Tray menu item: show the main window
+  ///
+  /// In en, this message translates to:
+  /// **'Open Control Center'**
+  String get trayMenuOpen;
+
+  /// Tray menu item: open the Desktop app settings (ellipsis because it opens a window)
+  ///
+  /// In en, this message translates to:
+  /// **'Settings…'**
+  String get trayMenuSettings;
+
+  /// Tray menu item and panel button tooltip: quit the app
+  ///
+  /// In en, this message translates to:
+  /// **'Quit Control Center'**
+  String get trayMenuQuit;
+
+  /// Tray panel header when no workspace is active (the product name; keep as-is unless the product name is localized elsewhere)
+  ///
+  /// In en, this message translates to:
+  /// **'Control Center'**
+  String get trayPanelTitle;
+
+  /// Tray panel body when no workspace is active
+  ///
+  /// In en, this message translates to:
+  /// **'Open Control Center to choose a workspace.'**
+  String get trayPanelNoWorkspace;
+
+  /// Tray panel button: show the main window
+  ///
+  /// In en, this message translates to:
+  /// **'Open Control Center'**
+  String get trayPanelOpenApp;
+
+  /// Tray panel icon button tooltip: open Settings → Desktop app
+  ///
+  /// In en, this message translates to:
+  /// **'Desktop app settings'**
+  String get trayPanelSettings;
+
+  /// Tray panel section heading (shown uppercase): what waits on the user
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get trayPanelNeedsYou;
+
+  /// Tray panel row: agent actions waiting for approval (a count follows)
+  ///
+  /// In en, this message translates to:
+  /// **'Approvals'**
+  String get trayPanelApprovals;
+
+  /// Tray panel section heading (shown uppercase): the workspace's spaces
+  ///
+  /// In en, this message translates to:
+  /// **'Spaces'**
+  String get trayPanelSpaces;
+
+  /// Tray panel: the workspace has no spaces
+  ///
+  /// In en, this message translates to:
+  /// **'No spaces yet.'**
+  String get trayPanelNoSpaces;
+
+  /// Tray panel row that opens the full spaces list; count is the total number of spaces
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{All spaces} other{All {count} spaces}}'**
+  String trayPanelAllSpaces(int count);
+
+  /// Tray panel section heading (shown uppercase): subscription plan usage
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get trayPanelUsage;
+
+  /// Tray panel header: accessible name of the workspace switcher (the workspace name and status open a menu of workspaces)
+  ///
+  /// In en, this message translates to:
+  /// **'Switch workspace'**
+  String get trayPanelSwitchWorkspace;
 }
 
 class _AppLocalizationsDelegate

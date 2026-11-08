@@ -16580,6 +16580,258 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Logs de configuração';
+
+  @override
+  String get claudeCompactionTitle => 'Compactação';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Como o Claude Code mantém conversas longas dentro da janela de contexto.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Compactar automaticamente após';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Tokens, de $min a $max. Deixe em branco para usar o padrão do Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Digite um número de $min a $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Compactar conversas inativas';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Compacta uma conversa com mais de $threshold tokens logo antes de o cache de prompt expirar, para que voltar a ela custe menos. Cada compactação consome seu plano.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed =>
+      'Não foi possível salvar esta configuração.';
+
+  @override
+  String get navDesktopApp => 'App de desktop';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'O ícone na bandeja, o fechamento da janela e a abertura ao iniciar sessão.';
+
+  @override
+  String get desktopSectionMenuBar => 'Barra de menus';
+
+  @override
+  String get desktopSectionTray => 'Bandeja do sistema';
+
+  @override
+  String get desktopTrayTitleMac => 'Mostrar na barra de menus';
+
+  @override
+  String get desktopTrayTitle => 'Mostrar na bandeja do sistema';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Status, o que aguarda você, seus espaços e o uso da assinatura, a um clique de distância.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Nenhuma bandeja do sistema encontrada';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Este desktop não mostra ícones de bandeja. No GNOME, instale a extensão AppIndicator e reinicie o Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'Fechar a janela';
+
+  @override
+  String get desktopCloseTitle => 'Ao fechar a janela';
+
+  @override
+  String get desktopCloseKeepRunning => 'Manter em execução';
+
+  @override
+  String get desktopCloseQuit => 'Encerrar';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Agentes e notificações continuam funcionando. Abra a janela novamente pelo Dock ou pela barra de menus.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Agentes e notificações continuam funcionando. Abra a janela novamente pelo ícone na bandeja.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Fechar a janela encerra o Control Center. As notificações param até você abri-lo de novo.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Ative o ícone na bandeja para manter o Control Center em execução com a janela fechada.';
+
+  @override
+  String get desktopSectionLogin => 'Inicialização';
+
+  @override
+  String get desktopLoginTitle => 'Abrir ao iniciar sessão';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Abra o Control Center ao iniciar sessão, para que as notificações cheguem desde o começo.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Este sistema não permite abrir apps ao iniciar sessão.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Permita o Control Center em Itens de Início para concluir a ativação.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Abrir Itens de Início';
+
+  @override
+  String get desktopLoginRefused =>
+      'O sistema não aceitou a alteração. Talvez ela seja gerenciada pelo seu administrador.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Iniciar em segundo plano';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Abre sem janela ao iniciar sessão. Encontre-o no Dock ou na barra de menus.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Abre sem janela ao iniciar sessão. Encontre-o na bandeja.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Requer o ícone na bandeja, para que haja como abrir a janela.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Manter o Control Center em execução?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Com a janela fechada, os agentes continuam trabalhando e as notificações continuam chegando. Abra-a novamente pelo ícone na bandeja. Você pode mudar isso em Configurações → App de desktop.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Encerrar';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Manter em execução';
+
+  @override
+  String get trayStatusOffline => 'Offline';
+
+  @override
+  String get trayStatusReconnecting => 'Reconectando…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aguardando você',
+      one: '1 aguardando você',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count trabalhando',
+      one: '1 trabalhando',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Tudo tranquilo';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count perguntas',
+      one: '1 pergunta',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aprovações pendentes',
+      one: '1 aprovação pendente',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Abrir o Control Center';
+
+  @override
+  String get trayMenuSettings => 'Configurações…';
+
+  @override
+  String get trayMenuQuit => 'Encerrar o Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Abra o Control Center para escolher um espaço de trabalho.';
+
+  @override
+  String get trayPanelOpenApp => 'Abrir o Control Center';
+
+  @override
+  String get trayPanelSettings => 'Configurações do app de desktop';
+
+  @override
+  String get trayPanelNeedsYou => 'Aguardando você';
+
+  @override
+  String get trayPanelApprovals => 'Aprovações';
+
+  @override
+  String get trayPanelSpaces => 'Espaços';
+
+  @override
+  String get trayPanelNoSpaces => 'Nenhum espaço ainda.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Todos os $count espaços',
+      one: 'Todos os espaços',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Uso';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Trocar de espaço de trabalho';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -18398,4 +18650,123 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get connectPasteLinkTarget => 'Liga a';
+
+  @override
+  String get navDesktopApp => 'Aplicação para computador';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'O ícone na área de notificação, o fecho da janela e a abertura ao iniciar sessão.';
+
+  @override
+  String get desktopSectionTray => 'Área de notificação';
+
+  @override
+  String get desktopTrayTitle => 'Mostrar na área de notificação';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Estado, o que está à sua espera, os seus espaços e a utilização do plano, à distância de um clique.';
+
+  @override
+  String get desktopTrayMissingTitle =>
+      'Nenhuma área de notificação encontrada';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Este ambiente de trabalho não mostra ícones na área de notificação. No GNOME, instale a extensão AppIndicator e reinicie o Control Center.';
+
+  @override
+  String get desktopCloseQuit => 'Sair';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Os agentes e as notificações continuam a funcionar. Volte a abrir a janela a partir da Dock ou da barra de menus.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Os agentes e as notificações continuam a funcionar. Volte a abrir a janela a partir do ícone na área de notificação.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Fechar a janela encerra o Control Center. As notificações param até o voltar a abrir.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Ative o ícone na área de notificação para manter o Control Center em execução com a janela fechada.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Este sistema não permite abrir aplicações ao iniciar sessão.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Permita o Control Center em Elementos de início de sessão para concluir a ativação.';
+
+  @override
+  String get desktopLoginOpenLoginItems =>
+      'Abrir Elementos de início de sessão';
+
+  @override
+  String get desktopLoginRefused =>
+      'O sistema não aceitou a alteração. Pode ser gerida pelo seu administrador.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Abre sem janela ao iniciar sessão. Encontre-o na Dock ou na barra de menus.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Abre sem janela ao iniciar sessão. Encontre-o na área de notificação.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Requer o ícone na área de notificação, para haver forma de abrir a janela.';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Com a janela fechada, os agentes continuam a trabalhar e as notificações continuam a chegar. Volte a abri-la a partir do ícone na área de notificação. Pode alterar isto em Definições → Aplicação para computador.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Sair';
+
+  @override
+  String get trayStatusReconnecting => 'A restabelecer a ligação…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count à sua espera',
+      one: '1 à sua espera',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count a trabalhar',
+      one: '1 a trabalhar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuSettings => 'Definições…';
+
+  @override
+  String get trayMenuQuit => 'Sair do Control Center';
+
+  @override
+  String get trayPanelSettings => 'Definições da aplicação para computador';
+
+  @override
+  String get trayPanelNeedsYou => 'À sua espera';
+
+  @override
+  String get trayPanelUsage => 'Utilização';
 }

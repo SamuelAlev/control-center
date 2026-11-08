@@ -16701,4 +16701,266 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Журналы настройки';
+
+  @override
+  String get claudeCompactionTitle => 'Сжатие';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Как Claude Code удерживает длинные беседы в пределах контекстного окна.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Автоматически сжимать после';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Токены, от $min до $max. Оставьте пустым, чтобы использовать значение Claude Code по умолчанию.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Введите число от $min до $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Сжимать неактивные беседы';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Сжимает беседу длиннее $threshold токенов незадолго до истечения кеша промпта, чтобы возвращение к ней стоило дешевле. Каждое сжатие расходует ваш тариф.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed =>
+      'Не удалось сохранить этот параметр.';
+
+  @override
+  String get navDesktopApp => 'Приложение для компьютера';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Значок в трее, закрытие окна и открытие при входе в систему.';
+
+  @override
+  String get desktopSectionMenuBar => 'Строка меню';
+
+  @override
+  String get desktopSectionTray => 'Системный трей';
+
+  @override
+  String get desktopTrayTitleMac => 'Показывать в строке меню';
+
+  @override
+  String get desktopTrayTitle => 'Показывать в системном трее';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Статус, всё, что ждёт вас, ваши пространства и использование подписки — в один клик.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Системный трей не найден';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Это окружение рабочего стола не показывает значки в трее. В GNOME установите расширение AppIndicator, затем перезапустите Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'Закрытие окна';
+
+  @override
+  String get desktopCloseTitle => 'При закрытии окна';
+
+  @override
+  String get desktopCloseKeepRunning => 'Продолжить работу';
+
+  @override
+  String get desktopCloseQuit => 'Завершить';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Агенты и уведомления продолжают работать. Снова откройте окно из Dock или строки меню.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Агенты и уведомления продолжают работать. Снова откройте окно с помощью значка в трее.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Закрытие окна завершает Control Center. Уведомления не приходят, пока вы снова его не откроете.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Включите значок в трее, чтобы Control Center продолжал работать с закрытым окном.';
+
+  @override
+  String get desktopSectionLogin => 'Запуск';
+
+  @override
+  String get desktopLoginTitle => 'Открывать при входе';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Запускать Control Center при входе в систему, чтобы уведомления приходили с самого начала.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Эта система не поддерживает открытие приложений при входе.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Разрешите Control Center в разделе «Объекты входа», чтобы завершить включение.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Открыть «Объекты входа»';
+
+  @override
+  String get desktopLoginRefused =>
+      'Система не приняла изменение. Возможно, им управляет ваш администратор.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Запускать в фоне';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'При входе открывается без окна. Найдите его в Dock или строке меню.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'При входе открывается без окна. Найдите его в трее.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Нужен значок в трее, чтобы было как открыть окно.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Оставить Control Center работать?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Когда окно закрыто, агенты продолжают работать, а уведомления продолжают приходить. Снова откройте его с помощью значка в трее. Это можно изменить в «Настройки → Приложение для компьютера».';
+
+  @override
+  String get closeToTrayPromptQuit => 'Завершить';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Продолжить работу';
+
+  @override
+  String get trayStatusOffline => 'Офлайн';
+
+  @override
+  String get trayStatusReconnecting => 'Переподключение…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ждут вас',
+      many: '$count ждут вас',
+      few: '$count ждут вас',
+      one: '$count ждёт вас',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count работают',
+      many: '$count работают',
+      few: '$count работают',
+      one: '$count работает',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Всё спокойно';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count вопроса',
+      many: '$count вопросов',
+      few: '$count вопроса',
+      one: '$count вопрос',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count действия ждут подтверждения',
+      many: '$count действий ждут подтверждения',
+      few: '$count действия ждут подтверждения',
+      one: '$count действие ждёт подтверждения',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Открыть Control Center';
+
+  @override
+  String get trayMenuSettings => 'Настройки…';
+
+  @override
+  String get trayMenuQuit => 'Завершить Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Откройте Control Center, чтобы выбрать рабочее пространство.';
+
+  @override
+  String get trayPanelOpenApp => 'Открыть Control Center';
+
+  @override
+  String get trayPanelSettings => 'Настройки приложения для компьютера';
+
+  @override
+  String get trayPanelNeedsYou => 'Ждут вас';
+
+  @override
+  String get trayPanelApprovals => 'Подтверждения';
+
+  @override
+  String get trayPanelSpaces => 'Пространства';
+
+  @override
+  String get trayPanelNoSpaces => 'Пространств пока нет.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Все $count пространства',
+      many: 'Все $count пространств',
+      few: 'Все $count пространства',
+      one: 'Все пространства',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Использование';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Сменить рабочее пространство';
 }

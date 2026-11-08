@@ -16550,4 +16550,256 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Installatielogboeken';
+
+  @override
+  String get claudeCompactionTitle => 'Compactie';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Hoe Claude Code lange gesprekken binnen het contextvenster houdt.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Automatisch compacteren na';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Tokens, van $min tot $max. Laat leeg om de standaardwaarde van Claude Code te gebruiken.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Voer een getal in van $min tot $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Inactieve gesprekken compacteren';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Compacteert een gesprek van meer dan $threshold tokens vlak voordat de promptcache verloopt, zodat terugkeren minder kost. Elke compactie gaat ten koste van je abonnement.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed =>
+      'Deze instelling kan niet worden opgeslagen.';
+
+  @override
+  String get navDesktopApp => 'Desktop-app';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Het pictogram in het systeemvak, het sluiten van het venster en openen bij inloggen.';
+
+  @override
+  String get desktopSectionMenuBar => 'Menubalk';
+
+  @override
+  String get desktopSectionTray => 'Systeemvak';
+
+  @override
+  String get desktopTrayTitleMac => 'Toon in de menubalk';
+
+  @override
+  String get desktopTrayTitle => 'Toon in het systeemvak';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Status, wat op je wacht, je ruimtes en je abonnementsgebruik, met één klik binnen handbereik.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Geen systeemvak gevonden';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Deze desktop toont geen pictogrammen in het systeemvak. Installeer op GNOME de extensie AppIndicator en start Control Center daarna opnieuw.';
+
+  @override
+  String get desktopSectionClosing => 'Venster sluiten';
+
+  @override
+  String get desktopCloseTitle => 'Als je het venster sluit';
+
+  @override
+  String get desktopCloseKeepRunning => 'Laten doorlopen';
+
+  @override
+  String get desktopCloseQuit => 'Stoppen';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Agenten en meldingen gaan gewoon door. Open het venster weer via het Dock of de menubalk.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Agenten en meldingen gaan gewoon door. Open het venster weer via het pictogram in het systeemvak.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Als je het venster sluit, stopt Control Center. Je krijgt geen meldingen meer tot je het weer opent.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Zet het pictogram in het systeemvak aan om Control Center te laten doorlopen als het venster gesloten is.';
+
+  @override
+  String get desktopSectionLogin => 'Opstarten';
+
+  @override
+  String get desktopLoginTitle => 'Open bij inloggen';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Start Control Center wanneer je inlogt, zodat meldingen meteen binnenkomen.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Dit systeem ondersteunt het openen van apps bij inloggen niet.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Sta Control Center toe in Inlogonderdelen om dit volledig in te schakelen.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Open Inlogonderdelen';
+
+  @override
+  String get desktopLoginRefused =>
+      'Het systeem heeft de wijziging niet geaccepteerd. Mogelijk beheert je beheerder deze instelling.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Op de achtergrond starten';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Opent zonder venster bij inloggen. Je vindt het in het Dock of de menubalk.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Opent zonder venster bij inloggen. Je vindt het in het systeemvak.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Vereist het pictogram in het systeemvak, zodat je het venster kunt openen.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Control Center laten doorlopen?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Agenten blijven werken en meldingen blijven binnenkomen terwijl het venster gesloten is. Open het weer via het pictogram in het systeemvak. Je kunt dit wijzigen in Instellingen → Desktop-app.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Stoppen';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Laten doorlopen';
+
+  @override
+  String get trayStatusOffline => 'Offline';
+
+  @override
+  String get trayStatusReconnecting => 'Opnieuw verbinden…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count wachten op jou',
+      one: '1 wacht op jou',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bezig',
+      one: '1 bezig',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Alles rustig';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vragen',
+      one: '1 vraag',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count goedkeuringen wachten',
+      one: '1 goedkeuring wacht',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Open Control Center';
+
+  @override
+  String get trayMenuSettings => 'Instellingen…';
+
+  @override
+  String get trayMenuQuit => 'Stop Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Open Control Center om een werkruimte te kiezen.';
+
+  @override
+  String get trayPanelOpenApp => 'Open Control Center';
+
+  @override
+  String get trayPanelSettings => 'Instellingen van de desktop-app';
+
+  @override
+  String get trayPanelNeedsYou => 'Wacht op jou';
+
+  @override
+  String get trayPanelApprovals => 'Goedkeuringen';
+
+  @override
+  String get trayPanelSpaces => 'Ruimtes';
+
+  @override
+  String get trayPanelNoSpaces => 'Nog geen ruimtes.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Alle $count ruimtes',
+      one: 'Alle ruimtes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Gebruik';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Van werkruimte wisselen';
 }

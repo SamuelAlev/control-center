@@ -32,7 +32,7 @@ class _SettingsCommandSource implements CommandSource {
     return [
       for (final group in kSettingsNav)
         for (final item in group.items)
-          if (!item.ownerOnly || isServerOwner)
+          if ((!item.ownerOnly || isServerOwner) && item.availableHere)
             CommandItem(
               id: 'settings:${item.id}',
               label: item.label(l10n),

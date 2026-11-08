@@ -15,6 +15,7 @@ import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
 import 'package:cc_infra/src/dispatch/host_commit_signer.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:path/path.dart' as p;
 
 /// Who a registered agent run is, as the action policy needs to know it.
 class AgentRunGrant {
@@ -30,6 +31,8 @@ class AgentRunGrant {
     this.repoOwner,
     this.repoName,
     this.committerEmail,
+    this.worktreeRoot,
+    this.runnerStateDirs = const [],
   });
 
   /// Workspace the run belongs to — every rule is resolved against it.
@@ -63,6 +66,13 @@ class AgentRunGrant {
   /// The run's git committer email (`GIT_COMMITTER_EMAIL`). The host signs
   /// only objects committed or tagged as this identity; null signs nothing.
   final String? committerEmail;
+
+  /// The run's working tree. A native write inside it is the agent's own work.
+  final String? worktreeRoot;
+
+  /// Directories the runner keeps its own state in, such as a Claude account's
+  /// config dir. Plan mode writes its plan file there.
+  final List<String> runnerStateDirs;
 }
 
 /// A registered run's handle on the gateway: what to put in its environment
@@ -193,11 +203,18 @@ class AgentRunLease {
     return out;
   }
 
+  /// Every Claude Code tool the action policy has a rule for. Reading tools
+  /// have none: the sandbox decides what they can see.
+  static const guardedClaudeTools =
+      'Bash|Write|Edit|MultiEdit|NotebookEdit|WebFetch|WebSearch';
+
   /// Claude's command hook blocks with exit 2 unless the gateway explicitly
   /// allows the call. HTTP hooks fail open on transport errors; curl has its
   /// own deadline inside the hook timeout so those errors instead deny.
   ///
   /// A missing lease installs a blocking hook, never an unguarded Bash tool.
+  /// Only Bash: the file and web tools stay usable, because the OS sandbox
+  /// bounds them without help from the gateway and Bash it cannot.
   static String claudeHookSettings(AgentRunLease? lease) {
     final command = lease == null
         ? "printf '%s\\n' 'Control Center permission gateway is unavailable.' >&2; exit 2"
@@ -219,7 +236,7 @@ exit 2
       'hooks': {
         'PreToolUse': [
           {
-            'matcher': 'Bash',
+            'matcher': lease == null ? 'Bash' : guardedClaudeTools,
             'hooks': [
               {
                 'type': 'command',
@@ -232,6 +249,100 @@ exit 2
       },
     });
   }
+}
+
+/// What one of Claude Code's own file or web tools is about to do, in the
+/// action policy's terms.
+class _NativeToolAction {
+  const _NativeToolAction(this.summary, this.request);
+
+  /// Reads a hook's `tool_name` and `tool_input`. Null when the tool is not one
+  /// the policy governs, or its input does not say what it would touch.
+  static _NativeToolAction? of(
+    Object? toolName,
+    Map<dynamic, dynamic> input,
+    AgentRunGrant grant,
+  ) {
+    switch (toolName) {
+      case 'Write' || 'Edit' || 'MultiEdit':
+        return _write(input['file_path'], grant);
+      case 'NotebookEdit':
+        return _write(input['notebook_path'], grant);
+      case 'WebFetch':
+        final url = input['url'];
+        if (url is! String || url.trim().isEmpty) {
+          return null;
+        }
+        final host = Uri.tryParse(url)?.host ?? '';
+        return _NativeToolAction(
+          'web fetch: $url',
+          ActionRequest(
+            classes: const {ActionClass.networkEgress},
+            hosts: [if (host.isNotEmpty) host],
+          ),
+        );
+      case 'WebSearch':
+        final query = input['query'];
+        if (query is! String || query.trim().isEmpty) {
+          return null;
+        }
+        return _NativeToolAction(
+          'web search: $query',
+          const ActionRequest(classes: {ActionClass.networkEgress}),
+        );
+    }
+    return null;
+  }
+
+  /// A write is only a policy question when it leaves the run's own ground.
+  /// Inside it nothing is declared, as for the harness's own write tools.
+  static _NativeToolAction? _write(Object? raw, AgentRunGrant grant) {
+    if (raw is! String || raw.trim().isEmpty) {
+      return null;
+    }
+    final root = grant.worktreeRoot;
+    final target = _resolved(raw, relativeTo: root);
+    final owned = [?root, ...grant.runnerStateDirs].map(_resolved);
+    final inside = owned.any((dir) => p.isWithin(dir, target));
+    return _NativeToolAction(
+      'write: $target',
+      ActionRequest(
+        classes: {if (!inside) ActionClass.fileWriteOutsideWorktree},
+        paths: [target],
+      ),
+    );
+  }
+
+  /// [path] with `..` and symlinks gone, so neither can walk a write out of
+  /// its directory. A file about to be created resolves through its deepest
+  /// ancestor that exists.
+  static String _resolved(String path, {String? relativeTo}) {
+    var existing = p.normalize(
+      p.isAbsolute(path) ? path : p.join(relativeTo ?? '', path),
+    );
+    final missing = <String>[];
+    while (true) {
+      try {
+        return p.joinAll([
+          File(existing).resolveSymbolicLinksSync(),
+          ...missing.reversed,
+        ]);
+      } on FileSystemException {
+        final parent = p.dirname(existing);
+        if (parent == existing) {
+          return p.joinAll([existing, ...missing.reversed]);
+        }
+        missing.add(p.basename(existing));
+        existing = parent;
+      }
+    }
+  }
+
+  /// How the action reads in an approval and the audit trail.
+  final String summary;
+
+  /// What the policy can match on.
+  final ActionRequest request;
 }
 
 /// The host side of the action policy for code running inside an agent's
@@ -299,8 +410,9 @@ class AgentRunGateway {
   /// commands are a few hundred bytes; anything this large is not a push.
   static const int _maxPreambleBytes = 1024 * 1024;
 
-  /// Cap on a hook request body.
-  static const int _maxHookBodyBytes = 1024 * 1024;
+  /// Cap on a hook request body. Generous because a `Write` carries the whole
+  /// file: refusing a large one here would block work no rule objected to.
+  static const int _maxHookBodyBytes = 32 * 1024 * 1024;
 
   /// Cap on a git object posted for signing.
   static const int _maxSignBodyBytes = 8 * 1024 * 1024;
@@ -505,6 +617,13 @@ class AgentRunGateway {
     final body = await _readCapped(request, _maxHookBodyBytes);
     final decoded = body == null ? null : _tryJson(utf8.decode(body));
     final input = decoded is Map ? decoded['tool_input'] : null;
+    if (decoded is Map && input is Map && decoded['tool_name'] != 'Bash') {
+      return _nativeToolDecision(
+        request,
+        grant,
+        _NativeToolAction.of(decoded['tool_name'], input, grant),
+      );
+    }
     final command = input is Map ? input['command'] : null;
     if (decoded is! Map ||
         decoded['tool_name'] != 'Bash' ||
@@ -574,6 +693,45 @@ class AgentRunGateway {
         until: DateTime.now().add(shellPushApprovalWindow),
       );
     }
+    return _hookDecision(
+      request,
+      allowed: verdict.allowed,
+      reason: 'Control Center policy: ${verdict.reason ?? 'denied'}',
+    );
+  }
+
+  /// The policy's answer for one of Claude Code's own file or web tools. Null
+  /// [action] is a request this hook cannot read, which is refused.
+  Future<void> _nativeToolDecision(
+    HttpRequest request,
+    AgentRunGrant grant,
+    _NativeToolAction? action,
+  ) async {
+    if (action == null) {
+      return _hookDecision(
+        request,
+        allowed: false,
+        reason: 'Control Center: invalid tool permission request.',
+      );
+    }
+    final verdict = await _guard
+        .check(
+          workspaceId: grant.workspaceId,
+          classes: action.request.classes,
+          spaceId: grant.spaceId,
+          conversationId: grant.conversationId,
+          agentId: grant.agentId,
+          mode: grant.mode,
+          actionSummary: action.summary,
+          onBehalfOfUserId: grant.actingUserId,
+          runId: grant.runId,
+          request: action.request,
+        )
+        .timeout(
+          hookDecisionDeadline,
+          onTimeout: () =>
+              const GuardVerdict.deny('Nobody answered the approval in time.'),
+        );
     return _hookDecision(
       request,
       allowed: verdict.allowed,

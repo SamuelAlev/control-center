@@ -39,6 +39,10 @@ class FlutterWindow : public Win32Window {
   // shown, so raising it (rather than them) would do nothing.
   static void RaiseAppWindows();
 
+  // Asks Dart to reveal its main window, which may be hidden in the
+  // notification area where RaiseAppWindows cannot see it.
+  void RequestReopen();
+
   flutter::DartProject project_;
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
   std::string pending_deep_link_;

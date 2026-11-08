@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_infra/src/network/app_network.dart';
+import 'package:cc_infra/src/usage/claude_cli_usage_probe.dart';
 import 'package:cc_infra/src/usage/subscription_usage_service.dart';
 import 'package:cc_infra/testing/http_client.dart';
 import 'package:rhttp/rhttp.dart';
@@ -33,33 +32,42 @@ String? header(HttpRequest request, String name) {
   return null;
 }
 
+/// A machine without Claude Code: keeps these tests off the host's real login.
+Future<ClaudeCliUsage?> noClaude({String? configDir}) async => null;
+
 (SubscriptionUsageService, TestHttpClient) build(
   Handler handler, {
-  String? homeDir,
-  Map<String, String>? environment,
-  bool readClaudeKeychain = false,
+  ClaudeUsageReader claudeUsageReader = noClaude,
 }) {
   final client = TestHttpClient(handler: handler);
   final service = SubscriptionUsageService(
     httpClient: client,
-    homeDir: homeDir,
-    environment: environment ?? const <String, String>{},
-    readClaudeKeychain: readClaudeKeychain,
+    claudeUsageReader: claudeUsageReader,
   );
   return (service, client);
 }
+
+/// A service whose Claude reading is [rateLimits]; any HTTP call fails, since
+/// Claude usage must never reach the network from this process.
+SubscriptionUsageService claudeReporting(Map<String, dynamic> rateLimits) =>
+    build(
+      (request) => fail('unexpected request to ${request.url}'),
+      claudeUsageReader: ({configDir}) async => ClaudeCliUsage(
+        available: true,
+        signedOut: false,
+        rateLimits: rateLimits,
+      ),
+    ).$1;
 
 void main() {
   group('fetchAll with nothing configured', () {
     test(
       'returns an unconfigured snapshot per provider with no credentials',
       () async {
-        // Empty environment + null home → no Claude token, no Codex auth dir,
-        // no z.ai key, no Kimi Code token, no Cursor token, no Mistral key.
+        // No Claude Code, no Codex auth dir, no z.ai key, no Kimi Code token,
+        // no Cursor token, no Mistral key.
         final (service, _) = build(
           (request) => httpTextResponse(request, const {}),
-          homeDir: null,
-          environment: const {},
         );
 
         final results = await service.fetchAll();
@@ -99,234 +107,148 @@ void main() {
   });
 
   group('Claude Code', () {
-    test(
-      'parses five-hour and seven-day windows from a 200 response',
-      () async {
-        final tmpHome = Directory.systemTemp.createTempSync('cc_claude_');
-        addTearDown(() => tmpHome.deleteSync(recursive: true));
-        final claudeDir = Directory('${tmpHome.path}/.claude')..createSync();
-        File('${claudeDir.path}/.credentials.json').writeAsStringSync(
-          jsonEncode({
-            'claudeAiOauth': {'accessToken': 'tok-123'},
-          }),
-        );
+    SubscriptionUsage claudeOf(List<SubscriptionUsage> results) =>
+        results.firstWhere((u) => u.providerId == 'claude');
 
-        HttpResponse handler(HttpRequest request) {
-          expect(request.url, contains('api.anthropic.com'));
-          expect(header(request, 'authorization'), 'Bearer tok-123');
-          return httpTextResponse(request, {
-            'five_hour': {
-              'utilization': 42,
-              'resets_at': '2024-01-02T00:00:00Z',
-            },
-            'seven_day': {'utilization': 7},
-          });
-        }
-
-        final (service, _) = build(handler, homeDir: tmpHome.path);
-
-        final results = await service.fetchAll(zaiApiKey: '');
-        final claude = results.firstWhere((u) => u.providerId == 'claude');
-        expect(claude.status, SubscriptionStatus.ok);
-        expect(claude.windows, hasLength(2));
-        final five = claude.windows.firstWhere((w) => w.id == '5h');
-        expect(five.label, 'Session');
-        expect(five.usedFraction, closeTo(0.42, 1e-9));
-        expect(five.resetsAt, DateTime.utc(2024, 1, 2));
-        final seven = claude.windows.firstWhere((w) => w.id == '7d');
-        expect(seven.label, 'Weekly');
-        expect(seven.usedFraction, closeTo(0.07, 1e-9));
-        expect(seven.resetsAt, isNull);
-      },
-    );
-
-    // A per-token (enterprise/API) seat reports NO windows — `five_hour` and
-    // `seven_day` come back null — and a dollar balance instead. Reading only
-    // the windows told the operator "no usage reported" for an account they
-    // were actively spending on.
-    test('an account with no windows still reports its credit spend', () async {
-      final tmpHome = Directory.systemTemp.createTempSync('cc_claude_spend_');
-      addTearDown(() => tmpHome.deleteSync(recursive: true));
-      Directory('${tmpHome.path}/.claude').createSync();
-      File('${tmpHome.path}/.claude/.credentials.json').writeAsStringSync(
-        jsonEncode({
-          'claudeAiOauth': {'accessToken': 'tok-123'},
-        }),
+    test('parses the 5-hour and 7-day windows the CLI reports', () async {
+      final claude = claudeOf(
+        await claudeReporting({
+          'five_hour': {'utilization': 42, 'resets_at': '2030-01-01T00:00:00Z'},
+          'seven_day': {'utilization': 18, 'resets_at': '2030-01-05T00:00:00Z'},
+        }).fetchAll(),
       );
 
-      HttpResponse handler(HttpRequest request) => httpTextResponse(request, {
-        'five_hour': null,
-        'seven_day': null,
-        'spend': {
-          'used': {'amount_minor': 141, 'currency': 'USD', 'exponent': 2},
-          'limit': {'amount_minor': 60000, 'currency': 'USD', 'exponent': 2},
-          'percent': 0,
-        },
-      });
+      expect(claude.status, SubscriptionStatus.ok);
+      expect(claude.windows.map((w) => w.id), ['5h', '7d']);
+      expect(claude.windows.map((w) => w.label), ['Session', 'Weekly']);
+      expect(claude.windows.first.usedFraction, closeTo(0.42, 1e-9));
+      expect(claude.windows.first.resetsAt, DateTime.utc(2030));
+    });
 
-      final (service, _) = build(handler, homeDir: tmpHome.path);
-      final results = await service.fetchAll(zaiApiKey: '');
-      final claude = results.firstWhere((u) => u.providerId == 'claude');
+    test('an account with no windows still reports its credit spend', () async {
+      final claude = claudeOf(
+        await claudeReporting({
+          'five_hour': null,
+          'seven_day': null,
+          'spend': {
+            'used': {'amount_minor': 141, 'currency': 'USD', 'exponent': 2},
+            'limit': {'amount_minor': 60000, 'currency': 'USD', 'exponent': 2},
+          },
+        }).fetchAll(),
+      );
 
       expect(claude.status, SubscriptionStatus.ok);
       expect(claude.windows, isEmpty);
-      final spend = claude.spend!;
-      expect(spend.used, closeTo(1.41, 1e-9));
-      expect(spend.limit, closeTo(600, 1e-9));
-      expect(spend.currency, 'USD');
-      // 0.24%, which is why the dollars are what gets shown: the endpoint's
-      // own `percent` rounds this to 0.
-      expect(spend.usedFraction, closeTo(0.00235, 1e-5));
+      expect(claude.spend?.used, closeTo(1.41, 1e-9));
+      expect(claude.spend?.limit, closeTo(600, 1e-9));
+      expect(claude.spend?.currency, 'USD');
+      expect(claude.spend?.usedFraction, closeTo(0.00235, 1e-6));
     });
 
-    test('a PLAN account\'s empty spend block is not a zero balance', () async {
-      // A plan account also carries `spend`, with null `used`/`limit`.
-      // Rendering that as "$0.00 of $0.00" would invent a cap it does not have.
-      final tmpHome = Directory.systemTemp.createTempSync('cc_claude_nospend_');
-      addTearDown(() => tmpHome.deleteSync(recursive: true));
-      Directory('${tmpHome.path}/.claude').createSync();
-      File('${tmpHome.path}/.claude/.credentials.json').writeAsStringSync(
-        jsonEncode({
-          'claudeAiOauth': {'accessToken': 'tok-123'},
-        }),
+    test('a PLAN account\'s uncapped spend is not a zero balance', () async {
+      // The live shape: `used` is an amount, `limit` is null.
+      final claude = claudeOf(
+        await claudeReporting({
+          'five_hour': {'utilization': 12},
+          'spend': {
+            'used': {'amount_minor': 0, 'currency': 'USD', 'exponent': 2},
+            'limit': null,
+            'percent': 0,
+            'enabled': false,
+          },
+        }).fetchAll(),
       );
 
-      HttpResponse handler(HttpRequest request) => httpTextResponse(request, {
-        'five_hour': {'utilization': 42},
-        'spend': {'used': null, 'limit': null, 'percent': 0},
-      });
-
-      final (service, _) = build(handler, homeDir: tmpHome.path);
-      final results = await service.fetchAll(zaiApiKey: '');
-      final claude = results.firstWhere((u) => u.providerId == 'claude');
+      expect(claude.status, SubscriptionStatus.ok);
       expect(claude.spend, isNull);
-      expect(claude.windows, hasLength(1));
     });
 
     test('no windows AND no spend is still unconfigured', () async {
-      final tmpHome = Directory.systemTemp.createTempSync('cc_claude_none_');
-      addTearDown(() => tmpHome.deleteSync(recursive: true));
-      Directory('${tmpHome.path}/.claude').createSync();
-      File('${tmpHome.path}/.claude/.credentials.json').writeAsStringSync(
-        jsonEncode({
-          'claudeAiOauth': {'accessToken': 'tok-123'},
-        }),
+      final claude = claudeOf(
+        await claudeReporting({'five_hour': null, 'spend': null}).fetchAll(),
       );
-      HttpResponse handler(HttpRequest request) =>
-          httpTextResponse(request, {'five_hour': null, 'seven_day': null});
-      final (service, _) = build(handler, homeDir: tmpHome.path);
-      final results = await service.fetchAll(zaiApiKey: '');
-      final claude = results.firstWhere((u) => u.providerId == 'claude');
+
       expect(claude.status, SubscriptionStatus.unconfigured);
+      expect(claude.error, 'No usage reported.');
     });
 
     test('clamps over-100 utilization to 1.0', () async {
-      final tmpHome = Directory.systemTemp.createTempSync('cc_claude_over_');
-      addTearDown(() => tmpHome.deleteSync(recursive: true));
-      Directory('${tmpHome.path}/.claude').createSync();
-      File('${tmpHome.path}/.claude/.credentials.json').writeAsStringSync(
-        jsonEncode({
-          'claudeAiOauth': {'accessToken': 't'},
-        }),
+      final claude = claudeOf(
+        await claudeReporting({
+          'five_hour': {'utilization': 140},
+        }).fetchAll(),
       );
 
-      final (service, _) = build(
-        (request) => httpTextResponse(request, {
-          'five_hour': {'utilization': 250},
-        }),
-        homeDir: tmpHome.path,
-      );
-      final results = await service.fetchAll(zaiApiKey: '');
-      final claude = results.firstWhere((u) => u.providerId == 'claude');
       expect(claude.windows.single.usedFraction, 1.0);
     });
 
-    test(
-      'reports unconfigured "No usage reported" when no windows parsed',
-      () async {
-        final tmpHome = Directory.systemTemp.createTempSync('cc_claude_empty_');
-        addTearDown(() => tmpHome.deleteSync(recursive: true));
-        Directory('${tmpHome.path}/.claude').createSync();
-        File('${tmpHome.path}/.claude/.credentials.json').writeAsStringSync(
-          jsonEncode({
-            'claudeAiOauth': {'accessToken': 't'},
-          }),
-        );
-
-        // Both windows present but missing utilization → none parsed.
-        final (service, _) = build(
-          (request) => httpTextResponse(request, {
-            'five_hour': {'resets_at': 'x'},
-            'seven_day': <String, dynamic>{},
-          }),
-          homeDir: tmpHome.path,
-        );
-        final claude = (await service.fetchAll(
-          zaiApiKey: '',
-        )).firstWhere((u) => u.providerId == 'claude');
-        expect(claude.status, SubscriptionStatus.unconfigured);
-        expect(claude.error, 'No usage reported.');
-      },
-    );
-
-    test('degrades to error on a non-2xx response', () async {
-      final tmpHome = Directory.systemTemp.createTempSync('cc_claude_err_');
-      addTearDown(() => tmpHome.deleteSync(recursive: true));
-      Directory('${tmpHome.path}/.claude').createSync();
-      File('${tmpHome.path}/.claude/.credentials.json').writeAsStringSync(
-        jsonEncode({
-          'claudeAiOauth': {'accessToken': 't'},
-        }),
-      );
-
-      HttpResponse handler(HttpRequest request) =>
-          httpTextResponse(request, const {}, statusCode: 500);
-      final (service, _) = build(handler, homeDir: tmpHome.path);
-      final claude = (await service.fetchAll(
-        zaiApiKey: '',
-      )).firstWhere((u) => u.providerId == 'claude');
-      expect(claude.status, SubscriptionStatus.error);
-      expect(claude.error, 'HTTP 500');
-    });
-
-    test('honours CLAUDE_CONFIG_DIR over the default home path', () async {
-      final cfgDir = Directory.systemTemp.createTempSync('cc_claude_cfg_');
-      addTearDown(() => cfgDir.deleteSync(recursive: true));
-      File('${cfgDir.path}/.credentials.json').writeAsStringSync(
-        jsonEncode({
-          'claudeAiOauth': {'accessToken': 'cfg-tok'},
-        }),
-      );
-
+    test('a signed-out CLI asks the operator to sign in', () async {
       final (service, _) = build(
-        (request) => httpTextResponse(request, {
-          'five_hour': {'utilization': 10},
-        }),
-        environment: {'CLAUDE_CONFIG_DIR': cfgDir.path},
+        (request) => fail('unexpected request to ${request.url}'),
+        claudeUsageReader: ({configDir}) async => ClaudeCliUsage.fromControl(
+          init: const {
+            'account': {'tokenSource': 'none', 'apiProvider': 'firstParty'},
+          },
+          usage: const {'rate_limits_available': false, 'rate_limits': null},
+        ),
       );
-      final claude = (await service.fetchAll(
-        zaiApiKey: '',
-      )).firstWhere((u) => u.providerId == 'claude');
-      expect(claude.status, SubscriptionStatus.ok);
-      expect(claude.windows.single.id, '5h');
-    });
 
-    test('ignores a credentials blob without an access token', () async {
-      final tmpHome = Directory.systemTemp.createTempSync('cc_claude_notok_');
-      addTearDown(() => tmpHome.deleteSync(recursive: true));
-      Directory('${tmpHome.path}/.claude').createSync();
-      File(
-        '${tmpHome.path}/.claude/.credentials.json',
-      ).writeAsStringSync(jsonEncode({'claudeAiOauth': <String, dynamic>{}}));
+      final claude = claudeOf(await service.fetchAll());
 
-      final (service, _) = build(
-        (request) => httpTextResponse(request, const {}),
-        homeDir: tmpHome.path,
-      );
-      final claude = (await service.fetchAll(
-        zaiApiKey: '',
-      )).firstWhere((u) => u.providerId == 'claude');
       expect(claude.status, SubscriptionStatus.unconfigured);
+      expect(claude.error, contains('to see usage'));
+    });
+
+    test('a login with no plan limits reports no usage', () async {
+      final (service, _) = build(
+        (request) => fail('unexpected request to ${request.url}'),
+        claudeUsageReader: ({configDir}) async => ClaudeCliUsage.fromControl(
+          init: const {
+            'account': {'apiProvider': 'bedrock'},
+          },
+          usage: const {'rate_limits_available': false, 'rate_limits': null},
+        ),
+      );
+
+      final claude = claudeOf(await service.fetchAll());
+
+      expect(claude.status, SubscriptionStatus.unconfigured);
+      expect(claude.error, 'No usage reported.');
+    });
+
+    test('degrades to error when the CLI cannot be driven', () async {
+      final (service, _) = build(
+        (request) => fail('unexpected request to ${request.url}'),
+        claudeUsageReader: ({configDir}) async =>
+            throw StateError('claude exited mid-probe'),
+      );
+
+      final claude = claudeOf(await service.fetchAll());
+
+      expect(claude.status, SubscriptionStatus.error);
+      expect(claude.error, 'Unavailable');
+    });
+
+    test('a named account reads its own config dir, and only that', () async {
+      final asked = <String?>[];
+      final (service, _) = build(
+        (request) => fail('unexpected request to ${request.url}'),
+        claudeUsageReader: ({configDir}) async {
+          asked.add(configDir);
+          return const ClaudeCliUsage(
+            available: true,
+            signedOut: false,
+            rateLimits: {
+              'five_hour': {'utilization': 7},
+            },
+          );
+        },
+      );
+
+      final usage = await service.fetchClaudeForConfigDir('/accounts/work');
+
+      expect(usage.status, SubscriptionStatus.ok);
+      expect(asked, ['/accounts/work']);
     });
   });
 

@@ -16435,4 +16435,255 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'سیٹ اپ لاگز';
+
+  @override
+  String get claudeCompactionTitle => 'کمپیکشن';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Claude Code لمبی گفتگوؤں کو اپنی کانٹیکسٹ ونڈو میں کیسے رکھتا ہے۔';
+
+  @override
+  String get claudeAutoCompactLabel => 'اس کے بعد خودکار کمپیکٹ کریں';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'ٹوکن، $min سے $max تک۔ Claude Code کی ڈیفالٹ قدر استعمال کرنے کے لیے خالی چھوڑ دیں۔';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return '$min سے $max تک کوئی عدد درج کریں۔';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'غیر فعال گفتگوئیں کمپیکٹ کریں';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return '$threshold ٹوکن سے زیادہ کی گفتگو کو اس کے پرامپٹ کیش کی میعاد ختم ہونے سے ذرا پہلے کمپیکٹ کرتا ہے، تاکہ اس پر واپس آنا سستا پڑے۔ ہر کمپیکشن آپ کے پلان سے خرچ ہوتا ہے۔';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => 'یہ ترتیب محفوظ نہیں ہو سکی۔';
+
+  @override
+  String get navDesktopApp => 'ڈیسک ٹاپ ایپ';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'ٹرے آئیکن، ونڈو بند کرنا اور لاگ اِن پر کھلنا۔';
+
+  @override
+  String get desktopSectionMenuBar => 'مینو بار';
+
+  @override
+  String get desktopSectionTray => 'سسٹم ٹرے';
+
+  @override
+  String get desktopTrayTitleMac => 'مینو بار میں دکھائیں';
+
+  @override
+  String get desktopTrayTitle => 'سسٹم ٹرے میں دکھائیں';
+
+  @override
+  String get desktopTraySubtitle =>
+      'اسٹیٹس، آپ کے منتظر کام، آپ کی اسپیسز اور پلان استعمال، بس ایک کلک پر۔';
+
+  @override
+  String get desktopTrayMissingTitle => 'کوئی سسٹم ٹرے نہیں ملی';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'یہ ڈیسک ٹاپ ٹرے آئیکن نہیں دکھاتا۔ GNOME پر AppIndicator ایکسٹینشن انسٹال کریں، پھر Control Center دوبارہ شروع کریں۔';
+
+  @override
+  String get desktopSectionClosing => 'ونڈو بند کرنا';
+
+  @override
+  String get desktopCloseTitle => 'جب آپ ونڈو بند کریں';
+
+  @override
+  String get desktopCloseKeepRunning => 'چلتا رہنے دیں';
+
+  @override
+  String get desktopCloseQuit => 'بند کریں';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'ایجنٹس اور اطلاعات جاری رہتی ہیں۔ ونڈو دوبارہ Dock یا مینو بار سے کھولیں۔';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'ایجنٹس اور اطلاعات جاری رہتی ہیں۔ ونڈو دوبارہ ٹرے آئیکن سے کھولیں۔';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'ونڈو بند کرنے سے Control Center بند ہو جاتا ہے۔ دوبارہ کھولنے تک اطلاعات رک جاتی ہیں۔';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'ونڈو بند ہونے پر بھی Control Center کو چلتا رکھنے کے لیے ٹرے آئیکن آن کریں۔';
+
+  @override
+  String get desktopSectionLogin => 'اسٹارٹ اپ';
+
+  @override
+  String get desktopLoginTitle => 'لاگ اِن پر کھولیں';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'سائن اِن کرتے ہی Control Center شروع کریں، تاکہ اطلاعات شروع سے موصول ہوں۔';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'یہ سسٹم لاگ اِن پر ایپس کھولنے کی سہولت نہیں دیتا۔';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'اسے آن کرنا مکمل کرنے کے لیے لاگ اِن آئٹمز میں Control Center کو اجازت دیں۔';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'لاگ اِن آئٹمز کھولیں';
+
+  @override
+  String get desktopLoginRefused =>
+      'سسٹم نے تبدیلی قبول نہیں کی۔ ممکن ہے آپ کا ایڈمنسٹریٹر اسے منظم کرتا ہو۔';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'پس منظر میں شروع کریں';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'لاگ اِن پر ونڈو کے بغیر کھلتا ہے۔ اسے Dock یا مینو بار میں تلاش کریں۔';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'لاگ اِن پر ونڈو کے بغیر کھلتا ہے۔ اسے ٹرے میں تلاش کریں۔';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'ٹرے آئیکن درکار ہے، تاکہ ونڈو کھولنے کا کوئی راستہ ہو۔';
+
+  @override
+  String get closeToTrayPromptTitle => 'Control Center کو چلتا رہنے دیں؟';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'ونڈو بند ہونے پر بھی ایجنٹس کام کرتے رہتے ہیں اور اطلاعات آتی رہتی ہیں۔ اسے دوبارہ ٹرے آئیکن سے کھولیں۔ آپ اسے ترتیبات ← ڈیسک ٹاپ ایپ میں تبدیل کر سکتے ہیں۔';
+
+  @override
+  String get closeToTrayPromptQuit => 'بند کریں';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'چلتا رہنے دیں';
+
+  @override
+  String get trayStatusOffline => 'آف لائن';
+
+  @override
+  String get trayStatusReconnecting => 'دوبارہ جڑ رہا ہے…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count آپ کے منتظر',
+      one: '1 آپ کا منتظر',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count کام کر رہے ہیں',
+      one: '1 کام کر رہا ہے',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'سب پرسکون ہے';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count سوالات',
+      one: '1 سوال',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count منظوریاں زیرِ التوا',
+      one: '1 منظوری زیرِ التوا',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Control Center کھولیں';
+
+  @override
+  String get trayMenuSettings => 'ترتیبات…';
+
+  @override
+  String get trayMenuQuit => 'Control Center بند کریں';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'ورک اسپیس منتخب کرنے کے لیے Control Center کھولیں۔';
+
+  @override
+  String get trayPanelOpenApp => 'Control Center کھولیں';
+
+  @override
+  String get trayPanelSettings => 'ڈیسک ٹاپ ایپ کی ترتیبات';
+
+  @override
+  String get trayPanelNeedsYou => 'آپ کے منتظر';
+
+  @override
+  String get trayPanelApprovals => 'منظوریاں';
+
+  @override
+  String get trayPanelSpaces => 'اسپیسز';
+
+  @override
+  String get trayPanelNoSpaces => 'ابھی کوئی اسپیس نہیں۔';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تمام $count اسپیسز',
+      one: 'تمام اسپیسز',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'استعمال';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'ورک اسپیس تبدیل کریں';
 }

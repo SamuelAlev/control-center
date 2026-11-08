@@ -116,6 +116,23 @@ class WindowVisibilityGuard with WidgetsBindingObserver {
     }
   }
 
+  /// Records that a focusable non-main window (the tray panel) is being shown.
+  ///
+  /// The panel opens while the main window may be hidden in the tray, which
+  /// is exactly when the engine reports `hidden` and disables frames: the
+  /// panel would paint its first frame and then freeze. The panel takes key
+  /// focus, which [_repair] accepts as proof the app is frontmost. Unlike
+  /// [onMainWindowShown] it adds no unconditional nudge: that resizes a main
+  /// window, and opening the panel over a healthy app must not touch it.
+  void onAuxiliaryWindowShown() {
+    _armed = true;
+    _repair();
+    _cancelRechecks();
+    for (final delay in _recheckDelays.take(3)) {
+      _rechecks.add(Timer(delay, _repair));
+    }
+  }
+
   void _cancelRechecks() {
     for (final timer in _rechecks) {
       timer.cancel();

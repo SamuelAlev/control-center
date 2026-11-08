@@ -11,6 +11,7 @@ import 'package:cc_domain/features/telemetry/telemetry.dart'
 import 'package:cc_host/cc_host.dart' show RepoOp, WatchQuery;
 import 'package:cc_infra/cc_infra.dart'
     show
+        ClaudeSessionSettingsStore,
         FilterListService,
         FontsourceCatalogService,
         ModelCatalogService,
@@ -22,6 +23,7 @@ import 'package:cc_server_core/src/agents/agent_create_rpc.dart';
 import 'package:cc_server_core/src/backup/backup_rpc.dart';
 import 'package:cc_server_core/src/catalog/account_pool_ops.dart';
 import 'package:cc_server_core/src/catalog/changelog_ops.dart';
+import 'package:cc_server_core/src/catalog/claude_session_settings_ops.dart';
 import 'package:cc_server_core/src/catalog/conversation_title_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
 import 'package:cc_server_core/src/catalog/provider_oauth_ops.dart';
@@ -56,6 +58,7 @@ typedef ExtraOpsResult = ({List<RepoOp> ops, List<WatchQuery> watches});
 /// list-builder invoked?".
 ExtraOpsResult buildServerExtraOps({
   required ChangelogFetcher fetchChangelog,
+  required ClaudeSessionSettingsStore claudeSessionSettings,
   required List<RepoOp> fleetOps,
   required List<WatchQuery> fleetWatchQueries,
   required DaoAgentRepository agentRepository,
@@ -99,6 +102,7 @@ ExtraOpsResult buildServerExtraOps({
     ...buildContextOps(inspection: contextInspection),
     ...buildWeatherOps(weatherService),
     ...buildChangelogOps(fetchChangelog),
+    ...buildClaudeSessionSettingsOps(claudeSessionSettings),
     ...buildFontsOps(fontCatalog),
     ...buildFilterListOps(filterLists),
     ...buildModelsDevOps(source: modelsDevSource, catalog: modelCatalogService),

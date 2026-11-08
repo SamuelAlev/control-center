@@ -19,14 +19,6 @@ class SubscriptionProviderBlock extends StatefulWidget {
       _SubscriptionProviderBlockState();
 }
 
-/// `$1.41` / `€12.00` — minor units are already folded in by the entity.
-String _money(double amount, String currency) {
-  const symbols = {'USD': r'$', 'EUR': '€', 'GBP': '£'};
-  final symbol = symbols[currency];
-  final text = amount.toStringAsFixed(2);
-  return symbol != null ? '$symbol$text' : '$text $currency';
-}
-
 class _SubscriptionProviderBlockState extends State<SubscriptionProviderBlock> {
   int _index = 0;
 
@@ -210,10 +202,16 @@ class _SubscriptionProviderBlockState extends State<SubscriptionProviderBlock> {
                       // something else.
                       valueOverride: spend.hasLimit
                           ? l10n.subscriptionUsageSpend(
-                              _money(spend.used, spend.currency),
-                              _money(spend.limit, spend.currency),
+                              formatSubscriptionMoney(
+                                spend.used,
+                                spend.currency,
+                              ),
+                              formatSubscriptionMoney(
+                                spend.limit,
+                                spend.currency,
+                              ),
                             )
-                          : _money(spend.used, spend.currency),
+                          : formatSubscriptionMoney(spend.used, spend.currency),
                     ),
                   ],
                 ],

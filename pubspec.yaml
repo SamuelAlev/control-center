@@ -120,6 +120,10 @@ dependencies:
   # Desktop-only — imported solely from lib/core/server/lan_discovery.dart,
   # which only desktop code paths reach (the package is dart:io-based).
   multicast_dns: ^0.3.3+1
+  # Session-bus queries from the desktop shell: whether a Linux session has a
+  # tray host at all (lib/app/tray/linux_tray_host_probe.dart). Pure Dart over
+  # a socket, so no subprocess; desktop-only like the above.
+  dbus: ^0.7.15
 
   # Diff
   diff_match_patch: ^0.4.1
@@ -323,6 +327,7 @@ flutter:
     - assets/sandbox/seccomp/
     - assets/sounds/
     - assets/logo_with_background.svg
+    - assets/tray/
 
   # The app bundles NO fonts of its own. Both defaults — Manrope (UI) and Fira
   # Code (code) — are owned by the cc_ui package and resolved by their

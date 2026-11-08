@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
+
+import 'package:cc_infra/src/detection/claude_control_session.dart';
 
 /// One model as the Claude Code CLI itself advertises it.
 class ClaudeCodeProbedModel {
@@ -189,7 +190,7 @@ class ClaudeCodeModelProbe {
             'CLAUDE_CONFIG_DIR': configDir,
         },
       );
-      final session = _ControlSession(process, requestTimeout);
+      final session = ClaudeControlSession(process, requestTimeout);
       return await _run(
         session,
         listCatalog: listCatalog,
@@ -206,7 +207,7 @@ class ClaudeCodeModelProbe {
   }
 
   Future<ClaudeCodeProbeResult> _run(
-    _ControlSession session, {
+    ClaudeControlSession session, {
     required bool listCatalog,
     required List<String> extraIds,
   }) async {
@@ -254,88 +255,8 @@ class ClaudeCodeModelProbe {
   }
 }
 
-/// A request/response lane over one CLI process's stdin/stdout.
-class _ControlSession {
-  _ControlSession(this._process, this._requestTimeout) {
-    _sub = _process.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen(_onLine, onDone: _onDone, onError: (_) => _onDone());
-    // Drained so a chatty stderr can never fill its pipe and stall the CLI.
-    _process.stderr.listen((_) {});
-  }
-
-  final Process _process;
-  final Duration _requestTimeout;
-  late final StreamSubscription<String> _sub;
-  final _pending = <String, Completer<Map<String, dynamic>>>{};
-  var _next = 0;
-  var _closed = false;
-
-  void _onLine(String line) {
-    final Object? decoded;
-    try {
-      decoded = jsonDecode(line);
-    } on FormatException {
-      return;
-    }
-    if (decoded is! Map || decoded['type'] != 'control_response') {
-      return;
-    }
-    final response = decoded['response'];
-    if (response is! Map) {
-      return;
-    }
-    final completer = _pending.remove(response['request_id']);
-    if (completer == null || completer.isCompleted) {
-      return;
-    }
-    if (response['subtype'] == 'success') {
-      final body = response['response'];
-      completer.complete(
-        body is Map ? Map<String, dynamic>.from(body) : const {},
-      );
-    } else {
-      completer.completeError(
-        StateError('${response['error'] ?? 'control request failed'}'),
-      );
-    }
-  }
-
-  void _onDone() {
-    _closed = true;
-    for (final c in _pending.values) {
-      if (!c.isCompleted) {
-        c.completeError(StateError('claude exited mid-probe'));
-      }
-    }
-    _pending.clear();
-    unawaited(_sub.cancel());
-  }
-
-  Future<Map<String, dynamic>> request(Map<String, Object?> body) {
-    if (_closed) {
-      return Future.error(StateError('claude exited mid-probe'));
-    }
-    final id = 'cc-models-${_next++}';
-    final completer = Completer<Map<String, dynamic>>();
-    _pending[id] = completer;
-    _process.stdin.writeln(
-      jsonEncode({
-        'type': 'control_request',
-        'request_id': id,
-        'request': body,
-      }),
-    );
-    return completer.future.timeout(
-      _requestTimeout,
-      onTimeout: () {
-        _pending.remove(id);
-        throw TimeoutException('claude control request timed out');
-      },
-    );
-  }
-
+/// The model reads the probe makes over a [ClaudeControlSession].
+extension on ClaudeControlSession {
   /// The current model's window, or null when the CLI could not say.
   Future<({int? window, String? model})?> contextUsage() async {
     try {

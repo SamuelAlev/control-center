@@ -16664,4 +16664,257 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Αρχεία καταγραφής ρύθμισης';
+
+  @override
+  String get claudeCompactionTitle => 'Συμπίεση';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Πώς το Claude Code διατηρεί τις μεγάλες συνομιλίες εντός του παραθύρου περιβάλλοντος.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Αυτόματη συμπίεση μετά από';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Tokens, από $min έως $max. Αφήστε το κενό για την προεπιλογή του Claude Code.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Εισαγάγετε έναν αριθμό από $min έως $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Συμπίεση ανενεργών συνομιλιών';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Συμπιέζει μια συνομιλία άνω των $threshold tokens λίγο πριν λήξει η κρυφή μνήμη προτροπών της, ώστε η επιστροφή σε αυτήν να κοστίζει λιγότερο. Κάθε συμπίεση χρησιμοποιεί το πρόγραμμά σας.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed =>
+      'Δεν ήταν δυνατή η αποθήκευση αυτής της ρύθμισης.';
+
+  @override
+  String get navDesktopApp => 'Εφαρμογή υπολογιστή';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Το εικονίδιο στην περιοχή ειδοποιήσεων, το κλείσιμο του παραθύρου και το άνοιγμα κατά τη σύνδεση.';
+
+  @override
+  String get desktopSectionMenuBar => 'Γραμμή μενού';
+
+  @override
+  String get desktopSectionTray => 'Περιοχή ειδοποιήσεων';
+
+  @override
+  String get desktopTrayTitleMac => 'Εμφάνιση στη γραμμή μενού';
+
+  @override
+  String get desktopTrayTitle => 'Εμφάνιση στην περιοχή ειδοποιήσεων';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Η κατάσταση, ό,τι σας περιμένει, οι χώροι σας και η χρήση του πλάνου, με ένα κλικ.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Δεν βρέθηκε περιοχή ειδοποιήσεων';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Αυτό το περιβάλλον εργασίας δεν εμφανίζει εικονίδια στην περιοχή ειδοποιήσεων. Στο GNOME, εγκαταστήστε την επέκταση AppIndicator και, στη συνέχεια, επανεκκινήστε το Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'Κλείσιμο του παραθύρου';
+
+  @override
+  String get desktopCloseTitle => 'Όταν κλείνετε το παράθυρο';
+
+  @override
+  String get desktopCloseKeepRunning => 'Συνέχεια εκτέλεσης';
+
+  @override
+  String get desktopCloseQuit => 'Έξοδος';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Οι πράκτορες και οι ειδοποιήσεις συνεχίζουν. Ανοίξτε ξανά το παράθυρο από το Dock ή τη γραμμή μενού.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Οι πράκτορες και οι ειδοποιήσεις συνεχίζουν. Ανοίξτε ξανά το παράθυρο από το εικονίδιο στην περιοχή ειδοποιήσεων.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'Το κλείσιμο του παραθύρου τερματίζει το Control Center. Οι ειδοποιήσεις σταματούν μέχρι να το ανοίξετε ξανά.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Ενεργοποιήστε το εικονίδιο στην περιοχή ειδοποιήσεων, ώστε το Control Center να συνεχίζει να εκτελείται με κλειστό το παράθυρο.';
+
+  @override
+  String get desktopSectionLogin => 'Εκκίνηση';
+
+  @override
+  String get desktopLoginTitle => 'Άνοιγμα κατά τη σύνδεση';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Εκκίνηση του Control Center κατά τη σύνδεσή σας, ώστε οι ειδοποιήσεις να φτάνουν από την αρχή.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Αυτό το σύστημα δεν υποστηρίζει το άνοιγμα εφαρμογών κατά τη σύνδεση.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Επιτρέψτε το Control Center στα Στοιχεία σύνδεσης για να ολοκληρωθεί η ενεργοποίηση.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Άνοιγμα Στοιχείων σύνδεσης';
+
+  @override
+  String get desktopLoginRefused =>
+      'Το σύστημα δεν αποδέχτηκε την αλλαγή. Ίσως ελέγχεται από τον διαχειριστή σας.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Εκκίνηση στο παρασκήνιο';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Ανοίγει χωρίς παράθυρο κατά τη σύνδεση. Θα το βρείτε στο Dock ή στη γραμμή μενού.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Ανοίγει χωρίς παράθυρο κατά τη σύνδεση. Θα το βρείτε στην περιοχή ειδοποιήσεων.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Απαιτεί το εικονίδιο στην περιοχή ειδοποιήσεων, ώστε να υπάρχει τρόπος να ανοίξει το παράθυρο.';
+
+  @override
+  String get closeToTrayPromptTitle =>
+      'Να συνεχίσει να εκτελείται το Control Center;';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Με κλειστό το παράθυρο, οι πράκτορες συνεχίζουν να δουλεύουν και οι ειδοποιήσεις συνεχίζουν να φτάνουν. Ανοίξτε το ξανά από το εικονίδιο στην περιοχή ειδοποιήσεων. Μπορείτε να το αλλάξετε στις Ρυθμίσεις → Εφαρμογή υπολογιστή.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Έξοδος';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Συνέχεια εκτέλεσης';
+
+  @override
+  String get trayStatusOffline => 'Εκτός σύνδεσης';
+
+  @override
+  String get trayStatusReconnecting => 'Επανασύνδεση…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count σας περιμένουν',
+      one: '1 σας περιμένει',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count σε εξέλιξη',
+      one: '1 σε εξέλιξη',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Όλα ήσυχα';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ερωτήσεις',
+      one: '1 ερώτηση',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count εγκρίσεις σε αναμονή',
+      one: '1 έγκριση σε αναμονή',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Άνοιγμα του Control Center';
+
+  @override
+  String get trayMenuSettings => 'Ρυθμίσεις…';
+
+  @override
+  String get trayMenuQuit => 'Έξοδος από το Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Ανοίξτε το Control Center για να επιλέξετε χώρο εργασίας.';
+
+  @override
+  String get trayPanelOpenApp => 'Άνοιγμα του Control Center';
+
+  @override
+  String get trayPanelSettings => 'Ρυθμίσεις εφαρμογής υπολογιστή';
+
+  @override
+  String get trayPanelNeedsYou => 'Σας περιμένει';
+
+  @override
+  String get trayPanelApprovals => 'Εγκρίσεις';
+
+  @override
+  String get trayPanelSpaces => 'Χώροι';
+
+  @override
+  String get trayPanelNoSpaces => 'Δεν υπάρχουν ακόμη χώροι.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Όλοι οι $count χώροι',
+      one: 'Όλοι οι χώροι',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Χρήση';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Εναλλαγή χώρου εργασίας';
 }

@@ -29,6 +29,36 @@ final subscriptionUsageProvider =
       SubscriptionUsageNotifier.new,
     );
 
+/// The reports worth showing, one group per provider holding its accounts in
+/// report order: what the title-bar pill's flyout and the tray panel page
+/// through.
+///
+/// A provider that isn't set up ([SubscriptionStatus.unconfigured]) holds no
+/// quota, so its "sign in" report is noise. An ACCOUNT of a configured
+/// provider is different: dropping the one whose plan reports nothing would
+/// leave three accounts paging as two, and the operator counting them and
+/// finding one missing. Those stay, and their page says so.
+///
+/// Grouped because a provider with several logins is still ONE thing in the
+/// breakdown: showing "Claude" three times would read as three providers, and
+/// the operator's question is "which of my Claude accounts has room".
+List<List<SubscriptionUsage>> subscriptionAccountGroups(
+  List<SubscriptionUsage> reports,
+) {
+  final withAccounts = {
+    for (final p in reports)
+      if (p.accountId != null) p.providerId,
+  };
+  final byProvider = <String, List<SubscriptionUsage>>{};
+  for (final p in reports) {
+    if (p.status != SubscriptionStatus.unconfigured ||
+        withAccounts.contains(p.providerId)) {
+      byProvider.putIfAbsent(p.providerId, () => []).add(p);
+    }
+  }
+  return byProvider.values.toList();
+}
+
 /// Notifier that fetches subscription usage and refreshes it on a timer.
 class SubscriptionUsageNotifier extends AsyncNotifier<List<SubscriptionUsage>> {
   Timer? _timer;

@@ -16509,4 +16509,256 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'Konfigurationsloggar';
+
+  @override
+  String get claudeCompactionTitle => 'Komprimering';
+
+  @override
+  String get claudeCompactionDescription =>
+      'Hur Claude Code håller långa konversationer inom sitt kontextfönster.';
+
+  @override
+  String get claudeAutoCompactLabel => 'Komprimera automatiskt efter';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'Tokens, från $min till $max. Lämna tomt för att använda Claude Codes standardvärde.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'Ange ett tal från $min till $max.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'Komprimera inaktiva konversationer';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'Komprimerar en konversation över $threshold tokens precis innan dess promptcache går ut, så att det kostar mindre att återvända till den. Varje komprimering förbrukar din plan.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed =>
+      'Det gick inte att spara den här inställningen.';
+
+  @override
+  String get navDesktopApp => 'Skrivbordsapp';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'Ikonen i systemfältet, stängning av fönstret och öppning vid inloggning.';
+
+  @override
+  String get desktopSectionMenuBar => 'Menyrad';
+
+  @override
+  String get desktopSectionTray => 'Systemfält';
+
+  @override
+  String get desktopTrayTitleMac => 'Visa i menyraden';
+
+  @override
+  String get desktopTrayTitle => 'Visa i systemfältet';
+
+  @override
+  String get desktopTraySubtitle =>
+      'Status, det som behöver dig, dina ytor och plananvändning, bara ett klick bort.';
+
+  @override
+  String get desktopTrayMissingTitle => 'Inget systemfält hittades';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'Det här skrivbordet visar inga ikoner i systemfältet. På GNOME installerar du tillägget AppIndicator och startar sedan om Control Center.';
+
+  @override
+  String get desktopSectionClosing => 'Stänga fönstret';
+
+  @override
+  String get desktopCloseTitle => 'När du stänger fönstret';
+
+  @override
+  String get desktopCloseKeepRunning => 'Fortsätt köra';
+
+  @override
+  String get desktopCloseQuit => 'Avsluta';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'Agenter och aviseringar fortsätter. Öppna fönstret igen från Dock eller menyraden.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'Agenter och aviseringar fortsätter. Öppna fönstret igen från ikonen i systemfältet.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'När du stänger fönstret avslutas Control Center. Aviseringarna upphör tills du öppnar det igen.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'Slå på ikonen i systemfältet för att låta Control Center köras med fönstret stängt.';
+
+  @override
+  String get desktopSectionLogin => 'Uppstart';
+
+  @override
+  String get desktopLoginTitle => 'Öppna vid inloggning';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'Starta Control Center när du loggar in, så att aviseringar når dig från början.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'Det här systemet har inte stöd för att öppna appar vid inloggning.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Tillåt Control Center under Inloggningsobjekt för att slutföra aktiveringen.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'Öppna Inloggningsobjekt';
+
+  @override
+  String get desktopLoginRefused =>
+      'Systemet godtog inte ändringen. Den kan hanteras av din administratör.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'Starta i bakgrunden';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'Öppnas utan fönster vid inloggning. Du hittar appen i Dock eller menyraden.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'Öppnas utan fönster vid inloggning. Du hittar appen i systemfältet.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'Kräver ikonen i systemfältet, så att det finns ett sätt att öppna fönstret.';
+
+  @override
+  String get closeToTrayPromptTitle => 'Ska Control Center fortsätta köras?';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'Agenter fortsätter arbeta och aviseringar fortsätter komma när fönstret är stängt. Öppna det igen från ikonen i systemfältet. Du kan ändra detta under Inställningar → Skrivbordsapp.';
+
+  @override
+  String get closeToTrayPromptQuit => 'Avsluta';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'Fortsätt köra';
+
+  @override
+  String get trayStatusOffline => 'Offline';
+
+  @override
+  String get trayStatusReconnecting => 'Ansluter igen…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count behöver dig',
+      one: '1 behöver dig',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count arbetar',
+      one: '1 arbetar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'Allt lugnt';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count frågor',
+      one: '1 fråga',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count godkännanden väntar',
+      one: '1 godkännande väntar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'Öppna Control Center';
+
+  @override
+  String get trayMenuSettings => 'Inställningar…';
+
+  @override
+  String get trayMenuQuit => 'Avsluta Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'Öppna Control Center för att välja en arbetsyta.';
+
+  @override
+  String get trayPanelOpenApp => 'Öppna Control Center';
+
+  @override
+  String get trayPanelSettings => 'Inställningar för skrivbordsappen';
+
+  @override
+  String get trayPanelNeedsYou => 'Behöver dig';
+
+  @override
+  String get trayPanelApprovals => 'Godkännanden';
+
+  @override
+  String get trayPanelSpaces => 'Ytor';
+
+  @override
+  String get trayPanelNoSpaces => 'Inga ytor än.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Alla $count ytor',
+      one: 'Alla ytor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'Användning';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'Byt arbetsyta';
 }

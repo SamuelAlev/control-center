@@ -17,6 +17,7 @@ import 'package:control_center/core/notifications/live_notification_lane.dart';
 import 'package:control_center/core/notifications/notification_service.dart';
 import 'package:control_center/core/notifications/recording_notification_port.dart';
 import 'package:control_center/core/providers/analytics_providers.dart';
+import 'package:control_center/core/providers/desktop_shell_provider.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/di/providers.dart';
@@ -77,7 +78,12 @@ final desktopNotificationServiceProvider = Provider<NotificationPort>((ref) {
   return LocalNotificationService(
     preferences: preferences,
     delivery: createDesktopNotificationDelivery(
-      onNavigate: router.go,
+      // A notification is clicked while the window may be hidden in the
+      // tray: bring it back before routing into it.
+      onNavigate: (route) {
+        ref.read(desktopShellProvider).revealMainWindow();
+        router.go(route);
+      },
       onApproval: (id, {required approved}) => unawaited(
         answerApprovalFromNotification(ref, id, approved: approved),
       ),

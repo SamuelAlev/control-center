@@ -16,7 +16,9 @@ import 'package:cc_domain/features/guardrails/domain/services/action_guard_servi
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
 import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant_service.dart';
+import 'package:cc_domain/features/settings/domain/entities/claude_session_settings.dart';
 import 'package:cc_domain/features/skills/domain/ports/skill_scan_port.dart';
+import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
 import 'package:cc_harness/context.dart' show TokenCalibration, ToolOutputStore;
 import 'package:cc_harness/loop.dart';
@@ -26,6 +28,7 @@ import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
 import 'package:cc_infra/src/dap/debug_session.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
+import 'package:cc_infra/src/dispatch/claude_idle_compactor.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
 import 'package:cc_infra/src/harness/ast_parser_provider.dart';
 import 'package:cc_infra/src/harness/cc_natives_file_search_port.dart';
@@ -56,6 +59,7 @@ class SandboxDispatchDeps {
     this.todoRepo,
     this.runTranscriptRecorder,
     this.mcpConfigPathResolver,
+    this.mcpServersResolver,
     this.protectedPathsResolver,
     this.sandboxManager,
     this.confirmationPort,
@@ -70,6 +74,9 @@ class SandboxDispatchDeps {
     this.claudeSessionStore,
     this.claudeMcpDiscoveryCache = ClaudeMcpDiscoveryCachePolicy.disabled,
     this.claudeContextWindowOf,
+    this.onClaudeUsageWindows,
+    this.claudeSessionSettings,
+    this.claudeIdleCompactor,
     this.debugSupervisor,
     this.kernelLauncherFactory,
     this.actionGuard,
@@ -186,6 +193,18 @@ class SandboxDispatchDeps {
   })?
   mcpConfigPathResolver;
 
+  /// The same server as [mcpConfigPathResolver], as the `{name: config}` map
+  /// `mcp_set_servers` takes, for a CLI that can receive it over stdin. Null
+  /// falls back to [mcpConfigPathResolver].
+  final Future<Map<String, Object?>?> Function({
+    String? workspaceId,
+    String? agentId,
+    String? conversationId,
+    String? spaceId,
+    String? runToken,
+  })?
+  mcpServersResolver;
+
   /// Resolves host paths that must never be writable inside any sandbox for a
   /// workspace — the ORIGINAL registered repo checkouts (`repos.path`). They
   /// become sandbox deny-write rules in every mode; agents only ever write in
@@ -278,6 +297,18 @@ class SandboxDispatchDeps {
   /// measures against when the agent sets no size of its own. Null (unwired)
   /// or a null answer leaves the window unreported.
   final Future<int?> Function(String? modelId)? claudeContextWindowOf;
+
+  /// Receives the plan windows a running `claude` reports for the account in
+  /// `configDir`, so usage stays current without another read.
+  final void Function(String configDir, List<SubscriptionWindow> windows)?
+  onClaudeUsageWindows;
+
+  /// The server's Claude session settings. Null means the defaults.
+  final ClaudeSessionSettings Function()? claudeSessionSettings;
+
+  /// Told when Claude runs start and settle, so an idle session can be
+  /// compacted before its prompt cache expires.
+  final ClaudeIdleCompactor? claudeIdleCompactor;
 
   /// Content-addressed storage for images a tool returned (screenshots from
   /// `browser_use` / `computer_use` / `mobile_use` / `ios_use`, rendered output).

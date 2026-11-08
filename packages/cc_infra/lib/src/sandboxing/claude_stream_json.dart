@@ -1,144 +1,12 @@
 import 'dart:convert';
 
-import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_infra/src/dispatch/render_media_image_refs.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
+import 'package:cc_infra/src/sandboxing/claude_rate_limit.dart';
+import 'package:cc_infra/src/sandboxing/claude_stream_events.dart';
 
-/// A completed tool invocation surfaced from a `tool_use` content block.
-class ClaudeToolUse {
-  /// Creates a [ClaudeToolUse].
-  const ClaudeToolUse({required this.id, required this.name, this.input});
-
-  /// Anthropic tool_use id.
-  final String id;
-
-  /// Tool name (e.g. `Bash`, `Edit`).
-  final String name;
-
-  /// Decoded tool input.
-  final Object? input;
-}
-
-/// The result of a tool invocation, paired back to its [ClaudeToolUse] by id.
-class ClaudeToolResult {
-  /// Creates a [ClaudeToolResult].
-  const ClaudeToolResult({
-    required this.id,
-    required this.outputs,
-    this.images = const [],
-    this.isError = false,
-    this.isAsync = false,
-  });
-
-  /// The `tool_use_id` this result answers.
-  final String id;
-
-  /// Flattened result text.
-  final String outputs;
-
-  /// Durable image references from render_media, never inline base64.
-  final List<ToolImageRef> images;
-
-  /// Whether the tool reported a failure.
-  final bool isError;
-
-  /// The tool returned a background-launch acknowledgement, not its outcome.
-  final bool isAsync;
-}
-
-/// Work a subagent (the `Agent` / `Task` tool) did inside a `claude -p` run.
-///
-/// `claude` reports a subagent on the same stdout as its parent, tagging each
-/// line with `parent_tool_use_id`: the id of the spawn call it is working for.
-/// The subagent's turns arrive as whole `assistant` / `user` messages (no
-/// partial deltas). Foreground answers arrive as spawn-call results; background
-/// completion arrives through task lifecycle messages.
-sealed class ClaudeSubagentEvent {
-  const ClaudeSubagentEvent(this.spawnToolUseId);
-
-  /// The `tool_use` id of the spawn call this subagent is working for.
-  final String spawnToolUseId;
-}
-
-/// `claude` started a subagent (`system` / `task_started`).
-class ClaudeSubagentStarted extends ClaudeSubagentEvent {
-  /// Creates a [ClaudeSubagentStarted].
-  const ClaudeSubagentStarted(
-    super.spawnToolUseId, {
-    this.description,
-    this.subagentType,
-  });
-
-  /// The short task description the parent gave it.
-  final String? description;
-
-  /// Which subagent definition runs it (`general-purpose`, `Explore`, …).
-  final String? subagentType;
-}
-
-/// Terminal outcomes reported by Claude's task lifecycle.
-enum ClaudeSubagentStatus {
-  /// The child finished successfully.
-  completed,
-
-  /// The child failed.
-  failed,
-
-  /// The child was stopped before finishing.
-  stopped,
-}
-
-/// A background subagent ended independently of its spawn tool call.
-class ClaudeSubagentFinished extends ClaudeSubagentEvent {
-  /// Creates a [ClaudeSubagentFinished].
-  const ClaudeSubagentFinished(
-    super.spawnToolUseId, {
-    required this.status,
-    this.summary,
-  });
-
-  /// The task's terminal outcome.
-  final ClaudeSubagentStatus status;
-
-  /// The completion summary or failure reason, when supplied.
-  final String? summary;
-}
-
-/// A whole text block the subagent wrote.
-class ClaudeSubagentText extends ClaudeSubagentEvent {
-  /// Creates a [ClaudeSubagentText].
-  const ClaudeSubagentText(super.spawnToolUseId, this.text);
-
-  /// The block's text.
-  final String text;
-}
-
-/// A whole thinking block the subagent wrote.
-class ClaudeSubagentThinking extends ClaudeSubagentEvent {
-  /// Creates a [ClaudeSubagentThinking].
-  const ClaudeSubagentThinking(super.spawnToolUseId, this.text);
-
-  /// The block's reasoning text.
-  final String text;
-}
-
-/// A tool call the subagent made.
-class ClaudeSubagentToolCall extends ClaudeSubagentEvent {
-  /// Creates a [ClaudeSubagentToolCall].
-  const ClaudeSubagentToolCall(super.spawnToolUseId, this.call);
-
-  /// The call, with its decoded input.
-  final ClaudeToolUse call;
-}
-
-/// The result of one of the subagent's tool calls.
-class ClaudeSubagentToolResult extends ClaudeSubagentEvent {
-  /// Creates a [ClaudeSubagentToolResult].
-  const ClaudeSubagentToolResult(super.spawnToolUseId, this.result);
-
-  /// The result, paired to its call by id.
-  final ClaudeToolResult result;
-}
+export 'package:cc_infra/src/sandboxing/claude_rate_limit.dart';
+export 'package:cc_infra/src/sandboxing/claude_stream_events.dart';
 
 /// What ONE `claude -p` turn's terminal `result` event reports.
 ///
@@ -182,6 +50,7 @@ class ClaudeUsage {
     this.subtype,
     this.sessionId,
     this.numTurns,
+    this.cacheTtl,
   });
 
   /// Reads the usage block off a terminal `result` event.
@@ -225,10 +94,33 @@ class ClaudeUsage {
       subtype: subtype is String ? subtype : null,
       sessionId: sessionId is String && sessionId.isNotEmpty ? sessionId : null,
       numTurns: numTurns is num ? numTurns.toInt() : null,
+      cacheTtl: _cacheTtlOf(usage['cache_creation']),
     );
   }
 
+  /// How long what the turn wrote to the prompt cache lasts: an hour on a
+  /// subscription, five minutes on an API key. Null when it wrote nothing,
+  /// which says nothing about the entries it read.
+  static Duration? _cacheTtlOf(Object? creation) {
+    if (creation is! Map) {
+      return null;
+    }
+    bool wrote(String key) {
+      final tokens = creation[key];
+      return tokens is num && tokens > 0;
+    }
+
+    return wrote('ephemeral_5m_input_tokens')
+        ? const Duration(minutes: 5)
+        : wrote('ephemeral_1h_input_tokens')
+        ? const Duration(hours: 1)
+        : null;
+  }
+
   static int? _intOrNull(Object? value) => value is num ? value.toInt() : null;
+
+  /// How long the prompt cache entry this turn wrote lasts, when it wrote one.
+  final Duration? cacheTtl;
 
   /// Uncached input tokens for THIS turn's main loop.
   final int inputTokens;
@@ -1092,11 +984,21 @@ class ClaudeStreamJsonCallbacks {
     this.onInit,
     this.onConversationReset,
     this.onApiRetry,
+    this.onRateLimit,
+    this.onControlResponse,
     this.onError,
     this.onTerminalError,
     this.onSubagent,
     this.onResult,
   });
+
+  /// The plan's limit state, as the CLI saw it on the latest response. Fires
+  /// on a `rate_limit_event` and on a blocked assistant message, which repeats
+  /// the same report because the CLI throttles unchanged events.
+  final void Function(ClaudeRateLimitInfo info)? onRateLimit;
+
+  /// The answer to a control request this run wrote to stdin.
+  final void Function(ClaudeControlResponse response)? onControlResponse;
 
   /// Streamed assistant text delta.
   final void Function(String delta)? onText;
@@ -1184,6 +1086,7 @@ class ClaudeTerminalError {
     required this.message,
     this.httpStatus,
     this.resetsAt,
+    this.rateLimited = false,
   });
 
   /// Classifies a failed `result` event.
@@ -1199,22 +1102,38 @@ class ClaudeTerminalError {
     );
   }
 
+  /// This failure with what [info] says about it: the CLI's structured report
+  /// outranks anything read out of the message's wording.
+  ClaudeTerminalError blockedBy(ClaudeRateLimitInfo info) =>
+      ClaudeTerminalError(
+        message: message,
+        httpStatus: httpStatus,
+        resetsAt: info.resetsAt ?? resetsAt,
+        rateLimited: true,
+      );
+
   /// The human-readable message (already includes the HTTP status when known).
   final String message;
 
   /// The upstream HTTP status, when `claude` reported one.
   final int? httpStatus;
 
-  /// When the plan's window reopens, when the message carried it.
+  /// When the plan's window reopens, when the CLI reported it.
   final DateTime? resetsAt;
+
+  /// Whether the CLI reported the plan as blocked before this failure.
+  final bool rateLimited;
 
   /// Whether this is a capacity failure — the account is out of headroom.
   ///
-  /// Two signals, because the CLI uses both: an upstream `429`, and its own
+  /// Three signals, because the CLI uses all of them: its structured
+  /// [rateLimited] report, an upstream `429`, and its own
   /// `Claude AI usage limit reached|<epoch>` sentence, which is what a
   /// subscription (rather than an API key) actually hits.
   bool get isCapacity =>
-      httpStatus == 429 || _usageLimit.hasMatch(message.toLowerCase());
+      rateLimited ||
+      httpStatus == 429 ||
+      _usageLimit.hasMatch(message.toLowerCase());
 
   static final RegExp _usageLimit = RegExp(
     r'usage limit reached|rate limit|quota exceeded|overloaded',
@@ -1313,6 +1232,31 @@ class ClaudeStreamJsonParser {
         _handleEvent(event);
       }
       return;
+    }
+    if (type == 'rate_limit_event') {
+      final info = ClaudeRateLimitInfo.tryParse(obj['rate_limit_info']);
+      if (info != null) {
+        _callbacks.onRateLimit?.call(info);
+      }
+      return;
+    }
+    if (type == 'control_response') {
+      final response = ClaudeControlResponse.tryParse(obj);
+      if (response != null) {
+        _callbacks.onControlResponse?.call(response);
+      }
+      return;
+    }
+    if (type == 'assistant' && obj['error'] == 'rate_limit') {
+      // Not a `rate_limit_event`: the CLI throttles unchanged ones, so a
+      // blocked response is often the only report of a limit still in force.
+      final params = obj['api_error_params'];
+      final info = ClaudeRateLimitInfo.tryParse(
+        params is Map ? params['rate_limit_info'] : null,
+      );
+      if (info != null) {
+        _callbacks.onRateLimit?.call(info);
+      }
     }
     if (type == 'system' && _handleSubagentTask(obj)) {
       return;

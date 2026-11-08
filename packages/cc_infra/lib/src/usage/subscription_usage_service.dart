@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
+import 'package:cc_infra/src/usage/claude_cli_usage_probe.dart';
 import 'package:cc_infra/src/usage/claude_usage_strategy.dart';
 import 'package:cc_infra/src/usage/codex_usage_strategy.dart';
 import 'package:cc_infra/src/usage/cursor_usage_strategy.dart';
@@ -47,30 +46,22 @@ class SubscriptionUsageService {
   /// Creates a [SubscriptionUsageService].
   ///
   /// [_httpClient] is the outbound HTTP client (the host passes its shared
-  /// `createHttpClient` instance). [homeDir]/[environment] default to the
-  /// process environment. [fetchClaudeCached] is the single-flight cache in
-  /// front of Claude's rate-limited usage endpoint — the pill and the
-  /// dispatch-time headroom check share it so multi-account does not 429
-  /// itself.
+  /// `createHttpClient` instance). [claudeUsageReader] defaults to asking the
+  /// installed `claude` CLI; tests replace it so they stay independent of the
+  /// host's real Claude Code login. [fetchClaudeCached] is the single-flight
+  /// cache in front of that read, which spawns a process: the pill and the
+  /// dispatch-time headroom check share it.
   SubscriptionUsageService({
     required this._httpClient,
-    String? homeDir,
-    Map<String, String>? environment,
-    this.readClaudeKeychain = true,
+    ClaudeUsageReader? claudeUsageReader,
     this.fetchClaudeCached,
-  }) : _env = environment ?? Platform.environment,
-       _home = homeDir;
+  }) : _claudeUsageReader = claudeUsageReader ?? ClaudeCliUsageProbe().read;
 
   final RhttpClient _httpClient;
-  final Map<String, String> _env;
-  final String? _home;
-
-  /// Whether to fall back to the macOS Keychain for the Claude token (disabled
-  /// in tests to keep them independent of the host's real Claude Code login).
-  final bool readClaudeKeychain;
+  final ClaudeUsageReader _claudeUsageReader;
 
   /// Optional Claude usage cache. When set, a named Claude account is read
-  /// through it instead of hitting the endpoint on every poll.
+  /// through it instead of spawning the CLI on every poll.
   final Future<SubscriptionUsage> Function(String configDir)? fetchClaudeCached;
 
   /// Fetches usage for every provider concurrently.
@@ -232,12 +223,8 @@ class SubscriptionUsageService {
     return usage;
   }
 
-  ClaudeUsageStrategy _claude() => ClaudeUsageStrategy(
-    httpClient: _httpClient,
-    environment: _env,
-    homeDir: _home,
-    readClaudeKeychain: readClaudeKeychain,
-  );
+  ClaudeUsageStrategy _claude() =>
+      ClaudeUsageStrategy(read: _claudeUsageReader);
 
   static bool _present(String? value) =>
       value != null && value.trim().isNotEmpty;

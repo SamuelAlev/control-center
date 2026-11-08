@@ -4,6 +4,7 @@ import 'package:control_center/features/settings/presentation/widgets/adapter_en
 import 'package:control_center/features/settings/presentation/widgets/adapters/adapter_launch_controls.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/claude_accounts_section.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/claude_compaction_section.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -123,6 +124,8 @@ class AdapterDetailPane extends StatelessWidget {
           if (detected.adapter.transport == AdapterTransport.claudeCli) ...[
             const SizedBox(height: AppSpacing.lg),
             const ClaudeAccountsSection(),
+            const SizedBox(height: AppSpacing.lg),
+            const ClaudeCompactionSection(),
           ],
           const SizedBox(height: AppSpacing.lg),
           SettingsGroup(

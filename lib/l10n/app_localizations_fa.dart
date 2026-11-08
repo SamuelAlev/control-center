@@ -16435,4 +16435,255 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'گزارش‌های راه‌اندازی';
+
+  @override
+  String get claudeCompactionTitle => 'فشرده‌سازی';
+
+  @override
+  String get claudeCompactionDescription =>
+      'اینکه Claude Code چگونه گفتگوهای طولانی را در پنجرهٔ زمینه نگه می‌دارد.';
+
+  @override
+  String get claudeAutoCompactLabel => 'فشرده‌سازی خودکار پس از';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'توکن، از $min تا $max. برای استفاده از مقدار پیش‌فرض Claude Code خالی بگذارید.';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'عددی از $min تا $max وارد کنید.';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'فشرده‌سازی گفتگوهای بیکار';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'گفتگوی بالای $threshold توکن را درست پیش از پایان اعتبار حافظهٔ نهان پرامپت فشرده می‌کند تا بازگشت به آن هزینهٔ کمتری داشته باشد. هر فشرده‌سازی از طرح شما مصرف می‌کند.';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => 'این تنظیم ذخیره نشد.';
+
+  @override
+  String get navDesktopApp => 'برنامهٔ دسکتاپ';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'نماد سینی سیستم، بستن پنجره و باز شدن هنگام ورود.';
+
+  @override
+  String get desktopSectionMenuBar => 'نوار منو';
+
+  @override
+  String get desktopSectionTray => 'سینی سیستم';
+
+  @override
+  String get desktopTrayTitleMac => 'نمایش در نوار منو';
+
+  @override
+  String get desktopTrayTitle => 'نمایش در سینی سیستم';
+
+  @override
+  String get desktopTraySubtitle =>
+      'وضعیت، کارهای منتظر شما، فضاهایتان و مصرف طرح، با یک کلیک.';
+
+  @override
+  String get desktopTrayMissingTitle => 'سینی سیستم پیدا نشد';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'این میزکار نمادهای سینی سیستم را نشان نمی‌دهد. در GNOME افزونهٔ AppIndicator را نصب کنید، سپس Control Center را دوباره راه‌اندازی کنید.';
+
+  @override
+  String get desktopSectionClosing => 'بستن پنجره';
+
+  @override
+  String get desktopCloseTitle => 'هنگام بستن پنجره';
+
+  @override
+  String get desktopCloseKeepRunning => 'ادامه اجرا';
+
+  @override
+  String get desktopCloseQuit => 'خروج';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'عامل‌ها و اعلان‌ها به کار ادامه می‌دهند. پنجره را دوباره از Dock یا نوار منو باز کنید.';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'عامل‌ها و اعلان‌ها به کار ادامه می‌دهند. پنجره را دوباره از نماد سینی سیستم باز کنید.';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'با بستن پنجره از Control Center خارج می‌شوید. اعلان‌ها تا وقتی دوباره بازش کنید متوقف می‌مانند.';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'نماد سینی سیستم را روشن کنید تا Control Center با پنجرهٔ بسته هم در حال اجرا بماند.';
+
+  @override
+  String get desktopSectionLogin => 'راه‌اندازی';
+
+  @override
+  String get desktopLoginTitle => 'باز شدن هنگام ورود';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'با ورود شما، Control Center اجرا می‌شود تا اعلان‌ها از همان ابتدا برسند.';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'این سیستم از باز شدن برنامه‌ها هنگام ورود پشتیبانی نمی‌کند.';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'Control Center را در موارد ورود (Login Items) مجاز کنید تا روشن شدن این گزینه کامل شود.';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'باز کردن موارد ورود';
+
+  @override
+  String get desktopLoginRefused =>
+      'سیستم این تغییر را نپذیرفت. شاید مدیر سیستم شما آن را مدیریت کند.';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'شروع در پس‌زمینه';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'هنگام ورود بدون پنجره باز می‌شود. آن را در Dock یا نوار منو پیدا کنید.';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'هنگام ورود بدون پنجره باز می‌شود. آن را در سینی سیستم پیدا کنید.';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'به نماد سینی سیستم نیاز دارد تا راهی برای باز کردن پنجره باشد.';
+
+  @override
+  String get closeToTrayPromptTitle => 'اجرای Control Center ادامه یابد؟';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'با پنجرهٔ بسته، عامل‌ها به کار ادامه می‌دهند و اعلان‌ها همچنان می‌رسند. آن را دوباره از نماد سینی سیستم باز کنید. می‌توانید این را در تنظیمات ← برنامهٔ دسکتاپ تغییر دهید.';
+
+  @override
+  String get closeToTrayPromptQuit => 'خروج';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'ادامه اجرا';
+
+  @override
+  String get trayStatusOffline => 'آفلاین';
+
+  @override
+  String get trayStatusReconnecting => 'در حال اتصال دوباره…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مورد منتظر شما',
+      one: '1 مورد منتظر شما',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count در حال کار',
+      one: '1 در حال کار',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'همه‌چیز آرام است';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count پرسش',
+      one: '1 پرسش',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تأییدیه در انتظار',
+      one: '1 تأییدیه در انتظار',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'باز کردن Control Center';
+
+  @override
+  String get trayMenuSettings => 'تنظیمات…';
+
+  @override
+  String get trayMenuQuit => 'خروج از Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace =>
+      'برای انتخاب فضای کاری، Control Center را باز کنید.';
+
+  @override
+  String get trayPanelOpenApp => 'باز کردن Control Center';
+
+  @override
+  String get trayPanelSettings => 'تنظیمات برنامهٔ دسکتاپ';
+
+  @override
+  String get trayPanelNeedsYou => 'منتظر شما';
+
+  @override
+  String get trayPanelApprovals => 'تأییدیه‌ها';
+
+  @override
+  String get trayPanelSpaces => 'فضاها';
+
+  @override
+  String get trayPanelNoSpaces => 'هنوز فضایی نیست.';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'همهٔ $count فضا',
+      one: 'همهٔ فضاها',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'مصرف';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'تغییر فضای کاری';
 }

@@ -41,7 +41,7 @@ class SettingsSidebarNav extends ConsumerWidget {
     final needsIntegrationSetup = !ref.watch(hasAnyForgeConnectedProvider);
 
     CcSidebarItem? item(SettingsNavItem entry) {
-      if (entry.ownerOnly && !isServerOwner) {
+      if ((entry.ownerOnly && !isServerOwner) || !entry.availableHere) {
         return null;
       }
       final route = entry.route(workspaceId);

@@ -682,3 +682,38 @@ extension _DispatchSessionSubagent on DispatchSession {
     return thinking.resolve(requested);
   }
 }
+
+/// A [SubagentSpawner] backed by a closure, so the `task` tool can spawn a
+/// subagent without the tool holding a reference to the whole dispatch session.
+/// Adapts a closure to [VibeWorkerRunner], so the roster tools stay free of
+/// the dispatch layer exactly as `task` does.
+class _ClosureVibeRunner implements VibeWorkerRunner {
+  _ClosureVibeRunner(this._run);
+
+  final Future<SubagentResult> Function(
+    VibeWorker worker,
+    String brief,
+    HarnessToolContext context,
+    SubagentType type,
+    String? modelOverride,
+  )
+  _run;
+
+  @override
+  Future<SubagentResult> run({
+    required VibeWorker worker,
+    required String brief,
+    required HarnessToolContext context,
+    required SubagentType type,
+    String? modelOverride,
+  }) => _run(worker, brief, context, type, modelOverride);
+}
+
+class _ClosureSubagentSpawner implements SubagentSpawner {
+  _ClosureSubagentSpawner(this._run);
+
+  final Future<SubagentResult> Function(SubagentSpawnRequest request) _run;
+
+  @override
+  Future<SubagentResult> spawn(SubagentSpawnRequest request) => _run(request);
+}

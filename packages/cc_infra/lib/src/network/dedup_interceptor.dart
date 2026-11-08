@@ -144,8 +144,8 @@ class DedupInterceptor extends Interceptor {
     // header. Same URL + different token is a different question with a
     // different answer, and coalescing the two hands the second caller the
     // first one's data. That stayed invisible while every endpoint was read
-    // once per machine; a per-account fan-out (three Claude subscriptions
-    // asking `/api/oauth/usage` at once) made all three report identical usage.
+    // once per machine; a per-account fan-out (three subscriptions asking one
+    // usage URL at once) made all three report identical usage.
     //
     // The shared chain runs the caller's auth interceptor BEFORE this one, so
     // the credential is already on the request when the key is computed.

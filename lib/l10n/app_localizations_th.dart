@@ -16342,4 +16342,254 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get spaceSetupLogs => 'บันทึกการตั้งค่า';
+
+  @override
+  String get claudeCompactionTitle => 'การบีบอัด';
+
+  @override
+  String get claudeCompactionDescription =>
+      'วิธีที่ Claude Code รักษาบทสนทนายาวให้อยู่ในหน้าต่างบริบท';
+
+  @override
+  String get claudeAutoCompactLabel => 'บีบอัดอัตโนมัติหลังจาก';
+
+  @override
+  String claudeAutoCompactHint(String min, String max) {
+    return 'จำนวนโทเค็น ตั้งแต่ $min ถึง $max เว้นว่างไว้เพื่อใช้ค่าเริ่มต้นของ Claude Code';
+  }
+
+  @override
+  String claudeAutoCompactInvalid(String min, String max) {
+    return 'ป้อนตัวเลขตั้งแต่ $min ถึง $max';
+  }
+
+  @override
+  String get claudeIdleCompactLabel => 'บีบอัดบทสนทนาที่ไม่มีการใช้งาน';
+
+  @override
+  String claudeIdleCompactDescription(String threshold) {
+    return 'บีบอัดบทสนทนาที่เกิน $threshold โทเค็นก่อนแคชพรอมต์จะหมดอายุ เพื่อให้กลับมาใช้ต่อได้ในราคาที่ถูกลง การบีบอัดแต่ละครั้งจะใช้แพ็กเกจของคุณ';
+  }
+
+  @override
+  String get claudeCompactionSaveFailed => 'ไม่สามารถบันทึกการตั้งค่านี้ได้';
+
+  @override
+  String get navDesktopApp => 'แอปเดสก์ท็อป';
+
+  @override
+  String get desktopAppSettingsSubtitle =>
+      'ไอคอนในถาดระบบ การปิดหน้าต่าง และการเปิดเมื่อเข้าสู่ระบบ';
+
+  @override
+  String get desktopSectionMenuBar => 'แถบเมนู';
+
+  @override
+  String get desktopSectionTray => 'ถาดระบบ';
+
+  @override
+  String get desktopTrayTitleMac => 'แสดงในแถบเมนู';
+
+  @override
+  String get desktopTrayTitle => 'แสดงในถาดระบบ';
+
+  @override
+  String get desktopTraySubtitle =>
+      'สถานะ สิ่งที่รอคุณอยู่ สเปซของคุณ และการใช้งานแผน เข้าถึงได้ในคลิกเดียว';
+
+  @override
+  String get desktopTrayMissingTitle => 'ไม่พบถาดระบบ';
+
+  @override
+  String get desktopTrayMissingBody =>
+      'เดสก์ท็อปนี้ไม่แสดงไอคอนในถาดระบบ บน GNOME ให้ติดตั้งส่วนขยาย AppIndicator แล้วรีสตาร์ท Control Center';
+
+  @override
+  String get desktopSectionClosing => 'การปิดหน้าต่าง';
+
+  @override
+  String get desktopCloseTitle => 'เมื่อคุณปิดหน้าต่าง';
+
+  @override
+  String get desktopCloseKeepRunning => 'ให้รันต่อไป';
+
+  @override
+  String get desktopCloseQuit => 'ออก';
+
+  @override
+  String get desktopCloseKeepRunningSubtitleMac =>
+      'เอเจนต์และการแจ้งเตือนยังทำงานต่อ เปิดหน้าต่างอีกครั้งได้จาก Dock หรือแถบเมนู';
+
+  @override
+  String get desktopCloseKeepRunningSubtitle =>
+      'เอเจนต์และการแจ้งเตือนยังทำงานต่อ เปิดหน้าต่างอีกครั้งได้จากไอคอนในถาดระบบ';
+
+  @override
+  String get desktopCloseQuitSubtitle =>
+      'การปิดหน้าต่างจะออกจาก Control Center การแจ้งเตือนจะหยุดจนกว่าคุณจะเปิดอีกครั้ง';
+
+  @override
+  String get desktopCloseNeedsTray =>
+      'เปิดไอคอนในถาดระบบเพื่อให้ Control Center ทำงานต่อได้ขณะปิดหน้าต่าง';
+
+  @override
+  String get desktopSectionLogin => 'การเริ่มต้น';
+
+  @override
+  String get desktopLoginTitle => 'เปิดเมื่อเข้าสู่ระบบ';
+
+  @override
+  String get desktopLoginSubtitle =>
+      'เริ่ม Control Center เมื่อคุณเข้าสู่ระบบ เพื่อให้ได้รับการแจ้งเตือนตั้งแต่แรก';
+
+  @override
+  String get desktopLoginUnsupported =>
+      'ระบบนี้ไม่รองรับการเปิดแอปเมื่อเข้าสู่ระบบ';
+
+  @override
+  String get desktopLoginNeedsApproval =>
+      'อนุญาต Control Center ในรายการเข้าสู่ระบบเพื่อเปิดใช้ให้เสร็จสมบูรณ์';
+
+  @override
+  String get desktopLoginOpenLoginItems => 'เปิดรายการเข้าสู่ระบบ';
+
+  @override
+  String get desktopLoginRefused =>
+      'ระบบไม่ยอมรับการเปลี่ยนแปลง ผู้ดูแลระบบของคุณอาจเป็นผู้จัดการการตั้งค่านี้';
+
+  @override
+  String get desktopLoginStartHiddenTitle => 'เริ่มในเบื้องหลัง';
+
+  @override
+  String get desktopLoginStartHiddenSubtitleMac =>
+      'เปิดโดยไม่แสดงหน้าต่างเมื่อเข้าสู่ระบบ ดูได้ที่ Dock หรือแถบเมนู';
+
+  @override
+  String get desktopLoginStartHiddenSubtitle =>
+      'เปิดโดยไม่แสดงหน้าต่างเมื่อเข้าสู่ระบบ ดูได้ที่ถาดระบบ';
+
+  @override
+  String get desktopLoginStartHiddenNeedsTray =>
+      'ต้องใช้ไอคอนในถาดระบบ เพื่อให้มีทางเปิดหน้าต่างได้';
+
+  @override
+  String get closeToTrayPromptTitle => 'ให้ Control Center ทำงานต่อไหม';
+
+  @override
+  String get closeToTrayPromptBody =>
+      'เอเจนต์ยังทำงานต่อและการแจ้งเตือนยังเข้ามาแม้ปิดหน้าต่างแล้ว เปิดอีกครั้งได้จากไอคอนในถาดระบบ คุณเปลี่ยนการตั้งค่านี้ได้ที่ การตั้งค่า → แอปเดสก์ท็อป';
+
+  @override
+  String get closeToTrayPromptQuit => 'ออก';
+
+  @override
+  String get closeToTrayPromptKeepRunning => 'ให้รันต่อไป';
+
+  @override
+  String get trayStatusOffline => 'ออฟไลน์';
+
+  @override
+  String get trayStatusReconnecting => 'กำลังเชื่อมต่อใหม่…';
+
+  @override
+  String trayStatusNeedsYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count รายการรอคุณ',
+      one: '1 รายการรอคุณ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trayStatusWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count กำลังทำงาน',
+      one: '1 กำลังทำงาน',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayStatusAllQuiet => 'ทุกอย่างเรียบร้อย';
+
+  @override
+  String trayTooltip(String status) {
+    return 'Control Center · $status';
+  }
+
+  @override
+  String trayMenuSpaceQuestions(String space, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count คำถาม',
+      one: '1 คำถาม',
+    );
+    return '$space · $_temp0';
+  }
+
+  @override
+  String trayApprovalsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count รายการรอการอนุมัติ',
+      one: '1 รายการรอการอนุมัติ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayMenuOpen => 'เปิด Control Center';
+
+  @override
+  String get trayMenuSettings => 'การตั้งค่า…';
+
+  @override
+  String get trayMenuQuit => 'ออกจาก Control Center';
+
+  @override
+  String get trayPanelTitle => 'Control Center';
+
+  @override
+  String get trayPanelNoWorkspace => 'เปิด Control Center เพื่อเลือกเวิร์กสเปซ';
+
+  @override
+  String get trayPanelOpenApp => 'เปิด Control Center';
+
+  @override
+  String get trayPanelSettings => 'การตั้งค่าแอปเดสก์ท็อป';
+
+  @override
+  String get trayPanelNeedsYou => 'รอคุณอยู่';
+
+  @override
+  String get trayPanelApprovals => 'การอนุมัติ';
+
+  @override
+  String get trayPanelSpaces => 'สเปซ';
+
+  @override
+  String get trayPanelNoSpaces => 'ยังไม่มีสเปซ';
+
+  @override
+  String trayPanelAllSpaces(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'สเปซทั้งหมด $count รายการ',
+      one: 'สเปซทั้งหมด',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trayPanelUsage => 'การใช้งาน';
+
+  @override
+  String get trayPanelSwitchWorkspace => 'สลับเวิร์กสเปซ';
 }

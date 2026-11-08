@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
@@ -21,6 +20,9 @@ String? _header(HttpRequest request, String name) {
   }
   return null;
 }
+
+/// A machine without Claude Code: keeps these tests off the host's real login.
+Future<ClaudeCliUsage?> noClaude({String? configDir}) async => null;
 
 void main() {
   late Directory home;
@@ -68,9 +70,7 @@ void main() {
 
     final svc = SubscriptionUsageService(
       httpClient: client,
-      homeDir: home.path,
-      environment: {'HOME': home.path},
-      readClaudeKeychain: false,
+      claudeUsageReader: noClaude,
     );
     final result = await svc.fetchAll(zaiApiKey: 'zai-secret');
 
@@ -99,9 +99,7 @@ void main() {
       );
       final svc = SubscriptionUsageService(
         httpClient: client,
-        homeDir: home.path,
-        environment: {'HOME': home.path},
-        readClaudeKeychain: false,
+        claudeUsageReader: noClaude,
       );
       final zai = byId(await svc.fetchAll(zaiApiKey: 'k'), 'zai');
 
@@ -121,9 +119,7 @@ void main() {
 
     final svc = SubscriptionUsageService(
       httpClient: client,
-      homeDir: home.path,
-      environment: {'HOME': home.path},
-      readClaudeKeychain: false,
+      claudeUsageReader: noClaude,
     );
     final result = await svc.fetchAll();
 
@@ -132,49 +128,30 @@ void main() {
     expect(client.requests, isEmpty);
   });
 
-  test(
-    'Claude usage parses five_hour/seven_day from the credentials file',
-    () async {
-      Directory('${home.path}/.claude').createSync(recursive: true);
-      File('${home.path}/.claude/.credentials.json').writeAsStringSync(
-        jsonEncode({
-          'claudeAiOauth': {'accessToken': 'tok-abc'},
-        }),
-      );
+  test('Claude usage parses five_hour/seven_day from the CLI reading', () async {
+    final client = TestHttpClient(
+      handler: (request) => fail('unexpected request to ${request.url}'),
+    );
 
-      final client = TestHttpClient(
-        handler: (request) {
-          expect(Uri.parse(request.url).host, 'api.anthropic.com');
-          expect(_header(request, 'authorization'), 'Bearer tok-abc');
-          expect(_header(request, 'anthropic-beta'), 'oauth-2025-04-20');
-          return httpTextResponse(request, {
-            'five_hour': {
-              'utilization': 68,
-              'resets_at': '2030-01-01T00:00:00Z',
-            },
-            'seven_day': {
-              'utilization': 20,
-              'resets_at': '2030-01-02T00:00:00Z',
-            },
-          });
+    final svc = SubscriptionUsageService(
+      httpClient: client,
+      claudeUsageReader: ({configDir}) async => const ClaudeCliUsage(
+        available: true,
+        signedOut: false,
+        rateLimits: {
+          'five_hour': {'utilization': 68, 'resets_at': '2030-01-01T00:00:00Z'},
+          'seven_day': {'utilization': 20, 'resets_at': '2030-01-02T00:00:00Z'},
         },
-      );
+      ),
+    );
+    final result = await svc.fetchAll();
 
-      final svc = SubscriptionUsageService(
-        httpClient: client,
-        homeDir: home.path,
-        environment: {'HOME': home.path},
-        readClaudeKeychain: false,
-      );
-      final result = await svc.fetchAll();
-
-      final claude = byId(result, 'claude');
-      expect(claude.status, SubscriptionStatus.ok);
-      expect(claude.windows.length, 2);
-      expect(claude.peakUsedFraction, closeTo(0.68, 1e-9));
-      expect(claude.windows.first.resetsAt, DateTime.utc(2030, 1, 1));
-    },
-  );
+    final claude = byId(result, 'claude');
+    expect(claude.status, SubscriptionStatus.ok);
+    expect(claude.windows.length, 2);
+    expect(claude.peakUsedFraction, closeTo(0.68, 1e-9));
+    expect(claude.windows.first.resetsAt, DateTime.utc(2030, 1, 1));
+  });
 
   test('Codex without auth.json reports unconfigured (no spawn)', () async {
     final client = TestHttpClient(
@@ -182,9 +159,7 @@ void main() {
     );
     final svc = SubscriptionUsageService(
       httpClient: client,
-      homeDir: home.path,
-      environment: {'HOME': home.path},
-      readClaudeKeychain: false,
+      claudeUsageReader: noClaude,
     );
     final result = await svc.fetchAll();
 
@@ -198,9 +173,7 @@ void main() {
     );
     final svc = SubscriptionUsageService(
       httpClient: client,
-      homeDir: home.path,
-      environment: {'HOME': home.path},
-      readClaudeKeychain: false,
+      claudeUsageReader: noClaude,
     );
     final result = await svc.fetchAll();
     expect(result.map((p) => p.providerId).toSet(), {

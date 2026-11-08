@@ -55,6 +55,7 @@ class SandboxSpec {
     this.execGrantRoots = const [],
     this.loopbackPorts = const [],
     this.environmentScope,
+    this.superviseProcessGroup = false,
   });
 
   /// Stable id for the sandbox session (typically the space id).
@@ -136,6 +137,11 @@ class SandboxSpec {
   /// definition. Lets the run's own proxy admit that environment's hostnames.
   final String? environmentScope;
 
+  /// Runs each `exec` in its own process group under a watcher, so stopping it
+  /// (or the server dying) stops everything it started. Adapters whose sandbox
+  /// already ties the tree to its parent ignore this.
+  final bool superviseProcessGroup;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -171,7 +177,8 @@ class SandboxSpec {
             loopbackPorts,
             other.loopbackPorts,
           ) &&
-          environmentScope == other.environmentScope;
+          environmentScope == other.environmentScope &&
+          superviseProcessGroup == other.superviseProcessGroup;
 
   @override
   int get hashCode => Object.hash(
@@ -188,5 +195,6 @@ class SandboxSpec {
     Object.hashAll(execGrantRoots),
     Object.hashAll(loopbackPorts),
     environmentScope,
+    superviseProcessGroup,
   );
 }

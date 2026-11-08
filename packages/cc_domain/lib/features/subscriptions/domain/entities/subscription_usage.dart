@@ -323,18 +323,21 @@ class SubscriptionUsage {
       : windows.reduce((a, b) => a.usedFraction >= b.usedFraction ? a : b);
 
   /// Returns a copy with the given overrides.
-  SubscriptionUsage copyWith({String? accountId, String? accountLabel}) =>
-      SubscriptionUsage(
-        providerId: providerId,
-        displayName: displayName,
-        status: status,
-        windows: windows,
-        error: error,
-        fetchedAt: fetchedAt,
-        accountId: accountId ?? this.accountId,
-        accountLabel: accountLabel ?? this.accountLabel,
-        spend: spend,
-      );
+  SubscriptionUsage copyWith({
+    String? accountId,
+    String? accountLabel,
+    List<SubscriptionWindow>? windows,
+  }) => SubscriptionUsage(
+    providerId: providerId,
+    displayName: displayName,
+    status: status,
+    windows: windows ?? this.windows,
+    error: error,
+    fetchedAt: fetchedAt,
+    accountId: accountId ?? this.accountId,
+    accountLabel: accountLabel ?? this.accountLabel,
+    spend: spend,
+  );
 
   /// Whether this snapshot has anything to show — windows, or a spend balance.
   bool get hasReading => windows.isNotEmpty || spend != null;

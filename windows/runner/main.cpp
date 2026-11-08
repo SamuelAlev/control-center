@@ -5,6 +5,7 @@
 #include "flutter_window.h"
 #include "utils.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,11 @@ constexpr const wchar_t kSingleInstanceMutex[] =
 // carries the same title under the engine's FLUTTER_HOST_WINDOW class.
 constexpr const wchar_t kWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
 constexpr const wchar_t kWindowTitle[] = L"Control Center";
+
+// Passed by the HKCU Run entry the app writes for "Open at login"
+// (lib/app/tray/launch_at_login_io.dart). Dart reads it to start in the
+// notification area instead of opening the main window.
+constexpr const char kLaunchedAtLoginFlag[] = "--launched-at-login";
 
 std::string GetExecutablePath() {
   wchar_t buffer[MAX_PATH];
@@ -121,6 +127,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   std::vector<std::string> command_line_arguments = GetCommandLineArguments();
   std::string deep_link_url = FindDeepLinkUrl(command_line_arguments);
+  const bool launched_at_login =
+      std::find(command_line_arguments.begin(), command_line_arguments.end(),
+                kLaunchedAtLoginFlag) != command_line_arguments.end();
 
   // Single-instance: if the app is already running, hand off our work (a
   // deep-link URL, or just a focus request) to it and exit. This is what routes
@@ -148,7 +157,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
       ::AllowSetForegroundWindow(primary_pid);
       if (!deep_link_url.empty()) {
         ForwardDeepLinkToPrimary(primary, deep_link_url);
-      } else {
+      } else if (!launched_at_login) {
+        // A login-item start that finds the app already running (a second
+        // sign-in session, a restarted Explorer) is not the user asking for
+        // the window: leave it wherever it is.
         ::PostMessageW(primary, kRaiseAppWindowsMessage, 0, 0);
       }
     }

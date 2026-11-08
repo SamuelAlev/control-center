@@ -23,6 +23,8 @@ extension _DispatchSessionGateway on DispatchSession {
         repoOwner: repoOwner,
         repoName: repoName,
         committerEmail: _gitIdentityEnv['GIT_COMMITTER_EMAIL'],
+        worktreeRoot: agentDirHostPath,
+        runnerStateDirs: _runnerStateDirs,
       ),
     );
     await _openEnvironmentAccess();

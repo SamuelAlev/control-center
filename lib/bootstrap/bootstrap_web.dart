@@ -54,7 +54,10 @@ import 'package:web/web.dart' as web;
 /// root. On a successful connection it renders the full app over the connected
 /// RPC client (no Sentry, no background services, no local database — the
 /// server owns execution).
-Future<void> bootstrapAndRun() async {
+///
+/// [arguments] are accepted for parity with the desktop bootstrap; a browser
+/// passes none.
+Future<void> bootstrapAndRun([List<String> arguments = const []]) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize media_kit's web player (an HTML media element backend) before

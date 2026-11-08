@@ -108,3 +108,12 @@ String formatSubscriptionReset(DateTime when) {
   }
   return '${d.inDays}d';
 }
+
+/// `$1.41` / `€12.00` / `12.00 CHF`: a spend amount, minor units already
+/// folded in by the entity.
+String formatSubscriptionMoney(double amount, String currency) {
+  const symbols = {'USD': r'$', 'EUR': '€', 'GBP': '£'};
+  final symbol = symbols[currency];
+  final text = amount.toStringAsFixed(2);
+  return symbol != null ? '$symbol$text' : '$text $currency';
+}
