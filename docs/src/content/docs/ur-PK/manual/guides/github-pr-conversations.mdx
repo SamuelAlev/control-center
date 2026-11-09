@@ -11,7 +11,7 @@ sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 
 ## پیشگی شرائط
 
-- workspace کی ایک GitHub lane ہو: سرور کی اپنی GitHub App یا Connect، جس کی app اس اکاؤنٹ پر [انسٹال](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/#انسٹال-کریں-جہاں-آپ-کے-repositories-ہیں) ہو جس کی ملکیت میں repository ہے۔ اپنی app کو **Pull requests** اور **Issues** پر read اور write درکار ہے، جو **Create my GitHub App** پہلے سے دیتی ہے
+- workspace کی ایک GitHub lane ہو: سرور کی اپنی GitHub App یا Connect، جس کی app اس اکاؤنٹ پر [انسٹال](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/#انسٹال-کریں-جہاں-آپ-کے-repositories-ہیں) ہو جس کی ملکیت میں repository ہے۔ اپنی app کو **Pull requests** اور **Issues** پر read اور write درکار ہے، جو **میری GitHub ایپ بنائیں** پہلے سے دیتی ہے
 - repository Control Center میں کسی workspace سے جڑی ہو
 - آپ اس سرور پر [GitHub میں sign in](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/) ہوں اور repository پر push کر سکتے ہوں
 - کوئی webhook URL نہیں، کوئی tunnel نہیں، کوئی callback نہیں — نیٹ ورک کی طرف سے ترتیب دینے کو کچھ نہیں
@@ -22,9 +22,9 @@ sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 
 app کا اپنا login، `<appslug>[bot]`، اور مختصر `@appslug` شکل بھی کام کرتی ہے۔ اپنی app پر اس اختیاری عرف کو تلاش کرنے کے لیے:
 
-1. **Settings → Server → Single sign-on** پر جائیں اور **Provider apps** کارڈ تک اسکرول کریں
-2. **GitHub** بلاک کھولیں اور **Test** پر کلک کریں
-3. **Bot login** بھرنے پر اسے کاپی کریں۔ اگر اب بھی خالی اشارہ دکھائے تو login ہمیشہ `<appslug>[bot]` ہوتا ہے — وہی ٹائپ کریں، یا مختصر `@appslug`
+1. **ترتیبات → سرور → سنگل سائن آن** پر جائیں اور **فراہم کنندہ ایپس** کارڈ تک اسکرول کریں
+2. **GitHub** بلاک کھولیں اور **ٹیسٹ** پر کلک کریں
+3. **بوٹ لاگ اِن** بھرنے پر اسے کاپی کریں۔ اگر اب بھی خالی اشارہ دکھائے تو login ہمیشہ `<appslug>[bot]` ہوتا ہے — وہی ٹائپ کریں، یا مختصر `@appslug`
 
 GitHub `@` کی خودکار تکمیل میں app اکاؤنٹس نہیں دیتا، اس لیے app کے عرف ٹائپ یا کاپی کرنے ہوں گے۔ مخصوص `@usectrl` user ڈیفالٹ کال ہے؛ `@myapp` اور `@myapp[bot]` دونوں app کے قبول شدہ عرف رہتے ہیں۔
 
@@ -34,7 +34,7 @@ GitHub `@` کی خودکار تکمیل میں app اکاؤنٹس نہیں دی�
 
 ## GitHub سے ریویو کی درخواست
 
-دو طریقے، جو دونوں وہی seeded `pr_review` پائپ لائن شروع کرتے ہیں جو **Ask AI** بٹن شروع کرتا ہے:
+دو طریقے، جو دونوں وہی seeded `pr_review` پائپ لائن شروع کرتے ہیں جو **AI سے پوچھیں** بٹن شروع کرتا ہے:
 
 - PR پر **`ai-review` لیبل شامل کریں**۔ یہ GitHub کی طرف سے بوٹ کو ریویور بنانے کے قریب ترین طریقہ ہے، کیونکہ app اکاؤنٹس مقامی requested-reviewer جگہ نہیں رکھ سکتے۔ آپ کا اکاؤنٹ PR پر 👀 ری ایکشن دیتا ہے اور ریویو Control Center میں شروع ہوتا ہے؛ کوئی تبصرہ پوسٹ نہیں ہوتا
 - PR گفتگو میں **`@usectrl review`** (یا صرف `@usectrl`) لکھیں۔ آپ کے تبصرے پر 👀 ظاہر ہوتا ہے، پھر ایک جواب بتاتا ہے کہ ریویو شروع ہو گیا (یا ایک پہلے ہی چل رہا ہے)
@@ -77,7 +77,7 @@ PR گفتگو کی timeline پر فالو اپ ایک نیا اعلیٰ سطحی
 
 سرور تبصرے کے مصنف، یا جس نے `ai-review` لیبل شامل کیا، اسے کچھ کرنے سے پہلے پہچانتا ہے:
 
-- **GitHub اکاؤنٹ اس سرور پر sign in ہونا چاہیے**۔ مطابقت GitHub کے عددی account id پر ہوتی ہے، کبھی login پر نہیں۔ **Settings → Workspace → Profile & identity → Code hosting** سے sign in کریں
+- **GitHub اکاؤنٹ اس سرور پر sign in ہونا چاہیے**۔ مطابقت GitHub کے عددی account id پر ہوتی ہے، کبھی login پر نہیں۔ **ترتیبات → ورک اسپیس → پروفائل اور شناخت → کوڈ ہوسٹنگ** سے sign in کریں
 - **وہ workspace میں لکھنے کے role والا رکن ہو** (`member`، `admin` یا `owner`) جو repository کو جوڑتا ہے
 - **وہ GitHub پر repository میں push کر سکے**۔ جوابات اس شخص کی رسائی تک محدود ٹوکن استعمال کرتے ہیں، اس لیے جو صرف پڑھ سکتا ہے اسے جواب نہیں ملتا
 
@@ -104,7 +104,7 @@ PR گفتگو کی timeline پر فالو اپ ایک نیا اعلیٰ سطحی
 
 - کیا app اس اکاؤنٹ پر **انسٹال** ہے جس کی ملکیت میں repo ہے، اور کیا repo کسی workspace سے **جڑا** ہے؟ غیر جڑا repo کچھ ریکارڈ ہونے سے پہلے چھوڑ دیا جاتا ہے، اس لیے بعد میں جوڑنے سے بھی جواب پہنچ جاتا ہے
 - کیا آپ اس سرور پر GitHub میں sign in ہیں، لکھنے کے role والے رکن ہیں، اور repo پر push کر سکتے ہیں؟ سرور کسی اور کو جواب دیے بغیر نظرانداز کرتا ہے
-- Control Center کی مشترکہ App پر، کیا اس organization کی installation اس سرور کے لیے مجاز ہے؟ دیکھیں [اس سرور کو کسی organization کے لیے مجاز کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/#authorize-this-server-for-an-organization)
+- Control Center کی مشترکہ App پر، کیا اس organization کی installation اس سرور کے لیے مجاز ہے؟ دیکھیں [اس سرور کو کسی organization کے لیے مجاز کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/#اس-سرور-کو-کسی-organization-کی-installation-کے-لیے-مجاز-کریں)
 - ابھی بھی کچھ نہیں؟ سرور کا log کسی ناکامی پر sweep اور PR کا نام بتاتا ہے؛ `pr_conversation:` (poller) اور `github_pr_conversation:` (bridge) تلاش کریں
 
 **لیبل ریویو شروع نہیں کرتا۔**

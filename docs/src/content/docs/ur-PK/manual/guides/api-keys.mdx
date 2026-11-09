@@ -23,19 +23,19 @@ sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
 - **آپ کا**، **GitHub میں sign in** سے۔ یہ ہر اُس درخواست میں استعمال ہوتا ہے جو _آپ کی جانب سے_ ہو، اس لیے آپ کے لیے پوسٹ کیا گیا ریویو آپ کا نام رکھتا ہے۔ کوئی دوسرا رکن اسے استعمال نہیں کر سکتا اور وہ خود sign in کرتا ہے۔ چسپاں کرنے کے لیے کوئی GitHub ٹوکن نہیں ہوتا
 - **وہ کام جو کوئی ٹائپ نہیں کر رہا** (ایجنٹس، pipelines، polling، بوٹ کے جوابات) ہر بار ایک ریپو کا ٹوکن لیتا ہے، جو سرور کی GitHub App یا Control Center Connect کے ذریعے جاری ہوتا ہے، اور اس تک محدود ہے جو ایک ذمہ دار رکن وہاں کر سکتا ہے۔ یہ کبھی آپ کا sign-in مکمل طور پر منتقل نہیں ہوتا
 
-آپ کا اپنا **Code hosting** کارڈ میں **Settings → Workspace → Profile & identity** کے تحت ہے؛ سرور کی app **Provider apps** میں **Settings → Server → Single sign-on** کے تحت ہے۔ دیکھیں [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/) اور [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)۔
+آپ کا اپنا **کوڈ ہوسٹنگ** کارڈ میں **ترتیبات → ورک اسپیس → پروفائل اور شناخت** کے تحت ہے؛ سرور کی app **فراہم کنندہ ایپس** میں **ترتیبات → سرور → سنگل سائن آن** کے تحت ہے۔ دیکھیں [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/) اور [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)۔
 
 GitLab اور Bitbucket اب بھی ایک ذاتی ٹوکن چسپاں کرنے سے لیتے ہیں، اور اسی طرح محفوظ ہوتے ہیں۔ دیکھیں [کوڈ ہوسٹ جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کوڈ-ہوسٹ-جوڑیں/)۔
 
 :::note[ایک صفحہ صرف URL سے بھی موجود ہے]
-‏`/workspaces/<workspaceId>/api-keys` وہی دو کارڈ دکھاتا ہے جو آن بورڈنگ کا پہلا مرحلہ دکھاتا ہے۔ **UI میں کہیں بھی اس کا nav entry نہیں ہے**؛ صرف URL ٹائپ کر کے پہنچا جا سکتا ہے۔ اس کی بجائے **Settings → Workspace → Profile & identity** استعمال کریں۔
+‏`/workspaces/<workspaceId>/api-keys` وہی دو کارڈ دکھاتا ہے جو آن بورڈنگ کا پہلا مرحلہ دکھاتا ہے۔ **UI میں کہیں بھی اس کا nav entry نہیں ہے**؛ صرف URL ٹائپ کر کے پہنچا جا سکتا ہے۔ اس کی بجائے **ترتیبات → ورک اسپیس → پروفائل اور شناخت** استعمال کریں۔
 :::
 
 ## Model provider keys ترتیب دینا
 
 built-in adapter providers کی خود تصدیق کرتا ہے، اور یہ credentials سرور پر محفوظ ہوتے ہیں۔
 
-1. **Settings → Server → Model providers** پر جائیں
+1. **ترتیبات → سرور → ماڈل فراہم کنندگان** پر جائیں
 2. **Providers and models** تک اسکرول کریں
 3. provider کو connect کریں — OpenAI، Codex، Cursor اور Kimi Code کے لیے براؤزر میں OAuth؛ Anthropic اور باقیوں کے لیے API key
 
@@ -45,28 +45,28 @@ built-in adapter providers کی خود تصدیق کرتا ہے، اور یہ cr
 
 بیرونی adapters کی CLI اپنے credentials اپنی settings میں، سرور کے host پر رکھتی ہے — Control Center انہیں منظم نہیں کرتا۔ Claude Code کو اس کی دستاویزات کے مطابق authenticate کریں، اس مشین پر جہاں `cc_server` چلتا ہے۔
 
-ہر adapter کی **Environment variables** گفتگو ایسی لگتی ہے جیسے یہاں ایک کی key رکھی جا سکتی ہے، لیکن ایسا نہیں: یہ گفتگو آپ کی مشین پر لکھتی ہے، جبکہ سرور اپنی کاپی پڑھتا ہے، اور ان دونوں کے درمیان کوئی پل نہیں۔ دیکھیں [adapters اور models منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/)۔
+ہر adapter کی **ماحول کے ویری ایبلز** گفتگو ایسی لگتی ہے جیسے یہاں ایک کی key رکھی جا سکتی ہے، لیکن ایسا نہیں: یہ گفتگو آپ کی مشین پر لکھتی ہے، جبکہ سرور اپنی کاپی پڑھتا ہے، اور ان دونوں کے درمیان کوئی پل نہیں۔ دیکھیں [adapters اور models منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/اڈاپٹرز/)۔
 
 ## ٹکٹ فراہم کنندہ جوڑنا
 
-**Settings → Workspace → General** پر **Ticketing** کارڈ دونوں حصے رکھتا ہے: آپ کے tickets کس provider میں رہتے ہیں، اور Control Center جب اس سے بات کرتا ہے تو وہ کون ہے۔ **Local** چننے سے Linear کی قطاریں چھپ جاتی ہیں — مقامی tickets اسی سرور کے database میں رہتے ہیں اور ان کے لیے تصدیق کی ضرورت نہیں۔
+**ترتیبات → ورک اسپیس → عام** پر **ٹکٹنگ** کارڈ دونوں حصے رکھتا ہے: آپ کے tickets کس provider میں رہتے ہیں، اور Control Center جب اس سے بات کرتا ہے تو وہ کون ہے۔ **مقامی** چننے سے Linear کی قطاریں چھپ جاتی ہیں — مقامی tickets اسی سرور کے database میں رہتے ہیں اور ان کے لیے تصدیق کی ضرورت نہیں۔
 
-Linear کے دو sign-ins ہیں اور کوئی چسپاں key نہیں: **Linear** آپ کا ہے، آپ کے کاموں کے لیے، اور **Linear automation** workspace کی Control Center app ہے جسے ایک admin نے جوڑا، ticket sync، pipelines اور agents کے لیے۔ سرور کے پاس **Provider apps** میں ایک **Service API key** بھی ہو سکتی ہے ان workspaces کے لیے جن کی automation نہیں جڑی۔ کسی ticketing credential کو ایجنٹ کے sandbox میں inject نہیں کیا جاتا؛ ایجنٹس tickets کو Control Center کے ٹولز کے ذریعے لکھتے ہیں جو **Write to an external tracker** قاعدے سے پوچھتے ہیں۔ دیکھیں [Linear انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/linear-انضمام/)۔
+Linear کے دو sign-ins ہیں اور کوئی چسپاں key نہیں: **Linear** آپ کا ہے، آپ کے کاموں کے لیے، اور **Linear آٹومیشن** workspace کی Control Center app ہے جسے ایک admin نے جوڑا، ticket sync، pipelines اور agents کے لیے۔ سرور کے پاس **فراہم کنندہ ایپس** میں ایک **سروس API کلید** بھی ہو سکتی ہے ان workspaces کے لیے جن کی automation نہیں جڑی۔ کسی ticketing credential کو ایجنٹ کے sandbox میں inject نہیں کیا جاتا؛ ایجنٹس tickets کو Control Center کے ٹولز کے ذریعے لکھتے ہیں جو **بیرونی ٹریکر پر لکھیں** قاعدے سے پوچھتے ہیں۔ دیکھیں [Linear انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/linear-انضمام/)۔
 
 ## تبدیل یا منسوخ کرنا
 
-- **آپ کا GitHub sign-in**: **Disconnect** دبائیں، پھر **Sign in to GitHub** دوبارہ۔ Disconnect آپ کی جانب سے سرور کے جاری کردہ ہر ٹوکن کو بھی باطل کر دیتا ہے
-- **GitLab یا Bitbucket کا ٹوکن**: **Update token** دبائیں اور نیا چسپاں کریں، پھر پرانا code host پر منسوخ کریں
-- **سرور کی app**: app کے provider صفحے پر نیا private key یا secret بنائیں، اسے **Provider apps** میں چسپاں کریں اور **Test** دبائیں
-- **Connect install key**: Control Center Connect کارڈ پر **Rotate key**، یا `cc_server connect rotate-key --yes`۔ جو بھی Connect کے ذریعے sign in تھا وہ دوبارہ sign in کرے گا۔ دیکھیں [Control Center Connect](/ur-PK/ہدایت-نامہ/حوالہ/connect/)
+- **آپ کا GitHub sign-in**: **منقطع کریں** دبائیں، پھر **Sign in to GitHub** دوبارہ۔ Disconnect آپ کی جانب سے سرور کے جاری کردہ ہر ٹوکن کو بھی باطل کر دیتا ہے
+- **GitLab یا Bitbucket کا ٹوکن**: **ٹوکن اپ ڈیٹ کریں** دبائیں اور نیا چسپاں کریں، پھر پرانا code host پر منسوخ کریں
+- **سرور کی app**: app کے provider صفحے پر نیا private key یا secret بنائیں، اسے **فراہم کنندہ ایپس** میں چسپاں کریں اور **ٹیسٹ** دبائیں
+- **Connect install key**: Control Center Connect کارڈ پر **کلید بدلیں**، یا `cc_server connect rotate-key --yes`۔ جو بھی Connect کے ذریعے sign in تھا وہ دوبارہ sign in کرے گا۔ دیکھیں [Control Center Connect](/ur-PK/ہدایت-نامہ/حوالہ/connect/)
 - **Model provider**: اس کی قطار پر sign out کریں (OAuth) یا key ہٹائیں، پھر دوبارہ connect کریں
-- **Slack**: اپنی app کے لیے، connect dialog میں tokens دوبارہ چسپاں کریں۔ مشترکہ Control Center app کا rotate کرنے کے لیے کوئی token نہیں: اس کا bot token Connect کے ذریعے renew ہوتا ہے، اور **Disconnect** اسے باطل کرتا ہے اور Slack سے bot کو uninstall کرتا ہے۔ دیکھیں [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
+- **Slack**: اپنی app کے لیے، connect dialog میں tokens دوبارہ چسپاں کریں۔ مشترکہ Control Center app کا rotate کرنے کے لیے کوئی token نہیں: اس کا bot token Connect کے ذریعے renew ہوتا ہے، اور **منقطع کریں** اسے باطل کرتا ہے اور Slack سے bot کو uninstall کرتا ہے۔ دیکھیں [Slack انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام/)
 
 ## خرابیوں کا ازالہ
 
 ### GitLab یا Bitbucket کا ٹوکن `curl` میں کام کرتا ہے مگر یہاں نہیں
 
-**Code hosting** قطار کی سب ٹائٹل دیکھیں۔ اگر اس میں "from the environment" لکھا ہو تو جو credential جواب دے رہا ہے وہ سرور کا ہے، آپ کا نہیں — آپ کا محفوظ نہیں ہوا۔
+**کوڈ ہوسٹنگ** قطار کی سب ٹائٹل دیکھیں۔ اگر اس میں "from the environment" لکھا ہو تو جو credential جواب دے رہا ہے وہ سرور کا ہے، آپ کا نہیں — آپ کا محفوظ نہیں ہوا۔
 
 ### GitLab یا Bitbucket کا ٹوکن قبول ہوتا ہے مگر بعد کی درخواستیں ناکام ہوتی ہیں
 
@@ -74,7 +74,7 @@ Linear کے دو sign-ins ہیں اور کوئی چسپاں key نہیں: **Line
 
 ### کوئی provider کہتا ہے کہ اس سرور پر sign-in سیٹ نہیں ہے
 
-سرور کے پاس نہ اس provider کی اپنی app ہے نہ Control Center Connect۔ سرور کا مالک **Settings → Server → Single sign-on** میں ان میں سے ایک چنتا ہے۔
+سرور کے پاس نہ اس provider کی اپنی app ہے نہ Control Center Connect۔ سرور کا مالک **ترتیبات → سرور → سنگل سائن آن** میں ان میں سے ایک چنتا ہے۔
 
 ## متعلقہ گائیڈز
 

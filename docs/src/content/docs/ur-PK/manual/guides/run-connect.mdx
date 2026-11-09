@@ -10,7 +10,7 @@ Control Center Connect ان سرورز کے لیے provider sign-ins (GitHub، G
 Connect کیا دیکھ سکتا ہے اور کیا نہیں، یہ [Connect reference](/ur-PK/ہدایت-نامہ/حوالہ/connect/) میں ہے۔ اگر آپ فیصلہ کر رہے ہیں کہ Connect چلانا ہے یا نہیں، تو پہلے اسے پڑھیں۔
 
 :::note[ہو سکتا ہے آپ کو اس کی ضرورت نہ ہو]
-ایک سرور اس کے بجائے اپنی apps خود رجسٹر کر سکتا ہے: **Settings → Server → Single sign-on → Provider apps**، جہاں **Create my GitHub App** ایک قدم میں GitHub سیٹ کر دیتا ہے۔ کسی provider کے لیے صرف **Use my own apps** کے تحت سرور کی اپنی app استعمال ہوتی ہے: Control Center Connect یا custom Connect کے ساتھ Connect ہر lane چلاتا ہے، اور workspace کی اپنی app ہر mode میں لاگو رہتی ہے۔ Connect اس وقت چلائیں جب کئی سرورز کو apps کا ایک ہی مجموعہ بانٹنا ہو۔
+ایک سرور اس کے بجائے اپنی apps خود رجسٹر کر سکتا ہے: **ترتیبات → سرور → سنگل سائن آن → فراہم کنندہ ایپس**، جہاں **میری GitHub ایپ بنائیں** ایک قدم میں GitHub سیٹ کر دیتا ہے۔ کسی provider کے لیے صرف **اپنی ایپس استعمال کریں** کے تحت سرور کی اپنی app استعمال ہوتی ہے: Control Center Connect یا custom Connect کے ساتھ Connect ہر lane چلاتا ہے، اور workspace کی اپنی app ہر mode میں لاگو رہتی ہے۔ Connect اس وقت چلائیں جب کئی سرورز کو apps کا ایک ہی مجموعہ بانٹنا ہو۔
 :::
 
 ## پیشگی شرائط
@@ -43,8 +43,8 @@ Connect کو کبھی GitHub App کی private key کی ضرورت نہیں ہو�
 
 Connect صرف ان سرورز کو جواب دیتا ہے جو اس کی allowlist پر ہوں۔ ہر سرور پر، اسے اپنے Connect کی طرف اشارہ کریں، پھر اس کا install id پڑھیں:
 
-1. **Settings → Server → Single sign-on** پر جائیں، **Control Center Connect** کارڈ کھولیں، اور **Use a custom Connect server** منتخب کریں
-2. اپنا URL درج کریں اور save کریں۔ کارڈ سرور کا **Install id** دکھاتا ہے
+1. **ترتیبات → سرور → سنگل سائن آن** پر جائیں، **Control Center Connect** کارڈ کھولیں، اور **اپنا Connect سرور استعمال کریں** منتخب کریں
+2. اپنا URL درج کریں اور save کریں۔ کارڈ سرور کا **انسٹال آئی ڈی** دکھاتا ہے
 
 سرور کے host پر terminal سے وہی کام یوں ہوتا ہے:
 
@@ -92,7 +92,7 @@ docker run -d --name cc-connect -p 8790:8790 \
 
 Connect شروع ہونے سے انکار کرتا ہے (exit code `78`) جب اس کی configuration کھلی، غیر محفوظ یا نامکمل ہو، اور بتاتا ہے کہ کون سا variable غلط ہے۔ allowlist کا نہ ہونا، loopback کے علاوہ `http` پتہ، غلط seal key، یا `NAME` اور `NAME_FILE` دونوں کا مقرر ہونا، یہ سب اسے روک دیتے ہیں۔
 
-Checkpoint: ہر سرور پر Connect کارڈ **Working** پڑھتا ہے، اور **Where each sign-in runs** ہر اس provider کے لیے **Connect** دکھاتا ہے جو آپ نے رجسٹر کیا۔ `cc_server connect status` ایک `Health: ok` اور وہی lanes پرنٹ کرتا ہے۔
+Checkpoint: ہر سرور پر Connect کارڈ **کام کر رہا ہے** پڑھتا ہے، اور **ہر سائن اِن کہاں چلتا ہے** ہر اس provider کے لیے **منسلک ہوں** دکھاتا ہے جو آپ نے رجسٹر کیا۔ `cc_server connect status` ایک `Health: ok` اور وہی lanes پرنٹ کرتا ہے۔
 
 ## cc_server کے اندر Connect mount کریں
 
@@ -137,7 +137,7 @@ provider redirects کو `https://<server>/connect` کے خلاف رجسٹر کر
 | `CONNECT_HOST`، `CONNECT_PORT`  | `0.0.0.0`، `8790` | bind پتہ اور port                                                                                                                 |
 | `CONNECT_TRUST_PROXY`           | `0`       | `X-Forwarded-For` میں قابلِ اعتماد proxy hops (0 تا 8)۔ صرف فی پتہ rate limit کے لیے استعمال ہوتا ہے                              |
 
-### provider lanes
+### فراہم کنندہ کی لینیں
 
 | Variable                                                                    | Default | مطلب                                                                        |
 | --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
@@ -198,7 +198,7 @@ seal key rotate کرنے کے لیے، پہلے `CONNECT_SEAL_KEYS` کے آغا�
 
 ## app تبدیل کرنا
 
-سرورز اپنے پہلے استعمال پر یاد رکھتے ہیں کہ آپ کے Connect نے کون سی app اور client ids کا اعلان کیا تھا۔ اگر آپ کوئی app بدلتے ہیں تو ہر سرور کے Connect کارڈ پر **Connect's apps changed** ظاہر ہوتا ہے، اور Connect کے ذریعے sign-ins اس وقت تک رک جاتے ہیں جب تک اس کا owner **Trust new apps** نہ دبائے۔ تبدیلی سے پہلے سرور owners کو بتا دیں، تاکہ وہ جانیں کہ یہ prompt آپ کی طرف سے ہے۔
+سرورز اپنے پہلے استعمال پر یاد رکھتے ہیں کہ آپ کے Connect نے کون سی app اور client ids کا اعلان کیا تھا۔ اگر آپ کوئی app بدلتے ہیں تو ہر سرور کے Connect کارڈ پر **Connect کی ایپس بدل گئی ہیں** ظاہر ہوتا ہے، اور Connect کے ذریعے sign-ins اس وقت تک رک جاتے ہیں جب تک اس کا owner **نئی ایپس پر بھروسہ کریں** نہ دبائے۔ تبدیلی سے پہلے سرور owners کو بتا دیں، تاکہ وہ جانیں کہ یہ prompt آپ کی طرف سے ہے۔
 
 ## سرور کو block کرنا
 

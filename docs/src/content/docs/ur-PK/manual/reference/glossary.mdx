@@ -284,9 +284,9 @@ export const glossaryTerms = [
 
 **Credential seal**: ایک انکرپٹڈ credential (`credential_seal`) جسے صرف وہی Connect کھول سکتا ہے جس نے اسے بنایا، جو provider، Connect کے پتے، install id، workspace، account، app اور secret generation سے منسلک ہے۔ سرور seal اور وہ install id محفوظ کرتا ہے جس کے لیے یہ بنایا گیا؛ access tokens memory میں رہتے ہیں۔ جس seal کا install id اب مطابقت نہ رکھے وہ حذف ہو جاتا ہے، اور اس کا مالک دوبارہ sign in کرتا ہے۔
 
-**Install id**: ایک Connect پتے کے سامنے سرور کی شناخت (`install_id`)، جو اس کی secrets فائل میں install key سے اخذ ہوتی ہے۔ Connect سرورز کو install id سے allowlist کرتا ہے۔ key rotate کرنے سے نیا id بنتا ہے اور سب Connect lanes سے sign out ہو جاتے ہیں۔
+**انسٹال آئی ڈی**: ایک Connect پتے کے سامنے سرور کی شناخت (`install_id`)، جو اس کی secrets فائل میں install key سے اخذ ہوتی ہے۔ Connect سرورز کو install id سے allowlist کرتا ہے۔ key rotate کرنے سے نیا id بنتا ہے اور سب Connect lanes سے sign out ہو جاتے ہیں۔
 
-**Install binding**: Connect کا ریکارڈ (`install_binding`) کہ کون سے سرورز shared App کا GitHub installation استعمال کر سکتے ہیں۔ ایک سرور کے ذریعے installation اسے bind کرتی ہے؛ organization admin کا **Authorize this server** دوسرا سرور bind کرتا ہے۔
+**Install binding**: Connect کا ریکارڈ (`install_binding`) کہ کون سے سرورز shared App کا GitHub installation استعمال کر سکتے ہیں۔ ایک سرور کے ذریعے installation اسے bind کرتی ہے؛ organization admin کا **اس سرور کو مجاز کریں** دوسرا سرور bind کرتا ہے۔
 
 **Sign-in lane**: ایک provider کا browser sign-in — `github`، `google`، `linear`، `linear_app` یا `slack`۔ lane سرور کی اپنی app پر چلتی ہے جب وہ مکمل ہو، ورنہ Connect کے ذریعے، ورنہ غیر دستیاب؛ جزوی طور پر ترتیب شدہ اپنی app ایک خرابی ہے، کبھی fallback نہیں۔
 

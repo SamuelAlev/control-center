@@ -10,7 +10,7 @@ sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 ## پیشگی شرائط
 
 - ایک GitHub اکاؤنٹ جس کی ان repos تک رسائی ہو جن پر آپ کام کرنا چاہتے ہیں
-- ایک سرور جو لوگوں کو GitHub میں sign in کرا سکے: یا اپنی GitHub App (دیکھیں [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/))، یا Control Center Connect، جسے سرور کا مالک **Settings → Server → Single sign-on** میں چنتا ہے
+- ایک سرور جو لوگوں کو GitHub میں sign in کرا سکے: یا اپنی GitHub App (دیکھیں [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/))، یا Control Center Connect، جسے سرور کا مالک **ترتیبات → سرور → سنگل سائن آن** میں چنتا ہے
 
 :::note[اعتبارنامے سرور پر رہتے ہیں اور آپ سے منسلک ہیں]
 جس مشین پر آپ ٹائپ کر رہے ہیں اس پر کچھ بھی محفوظ نہیں ہوتا۔ آپ کا GitHub sign-in آپ کے `cc_server` کے پاس رہتا ہے، آپ کے user id سے کلید کیا ہوا، اور جس آلے سے بھی آپ sign in کریں وہ اسے استعمال کرتا ہے: desktop، web اور phone۔ اسی سرور کا کوئی اور رکن اسے استعمال نہیں کر سکتا، اور انہیں sign in کرانا ان کا اپنا کام ہے۔
@@ -20,7 +20,7 @@ sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
 
 GitHub صرف sign-in ہے: کوئی ٹوکن چسپاں کرنے کی ضرورت نہیں۔
 
-1. **Settings → Workspace → Profile & identity → Code hosting** پر جائیں (یا آن بورڈنگ کے پہلے مرحلے پر)
+1. **ترتیبات → ورک اسپیس → پروفائل اور شناخت → کوڈ ہوسٹنگ** پر جائیں (یا آن بورڈنگ کے پہلے مرحلے پر)
 2. **GitHub** قطار پر، **Sign in to GitHub** پر کلک کریں
 3. آپ کا براؤزر GitHub کھولتا ہے۔ app کی منظوری دیں
 
@@ -31,9 +31,9 @@ sign-in کیسے ختم ہوتا ہے، اس کا انحصار اس پر ہے ک
 
 checkpoint: **GitHub** قطار پڑھتی ہے "Signed in as _your-username_"۔
 
-dialog ایسا کوڈ یا لنک رد کرتا ہے جو اس نے خود شروع نہیں کیا، اور **Sign-in not started here** دکھاتا ہے۔ اگر کوئی آپ کو sign-in کا لنک بھیجے تو آگے نہ بڑھیں: اسے مکمل کرنے سے آپ کا اکاؤنٹ ان کے سرور سے جڑ جائے گا۔
+dialog ایسا کوڈ یا لنک رد کرتا ہے جو اس نے خود شروع نہیں کیا، اور **یہ سائن اِن یہاں سے شروع نہیں ہوا** دکھاتا ہے۔ اگر کوئی آپ کو sign-in کا لنک بھیجے تو آگے نہ بڑھیں: اسے مکمل کرنے سے آپ کا اکاؤنٹ ان کے سرور سے جڑ جائے گا۔
 
-اپنا sign-in ہٹانے کے لیے **Disconnect** پر کلک کریں۔ GitHub سے sign out کرنا، یا workspace سے ہٹایا جانا، سرور کے آپ کی جانب سے جاری کیے ہوئے ہر ٹوکن کو بھی باطل کر دیتا ہے۔
+اپنا sign-in ہٹانے کے لیے **منقطع کریں** پر کلک کریں۔ GitHub سے sign out کرنا، یا workspace سے ہٹایا جانا، سرور کے آپ کی جانب سے جاری کیے ہوئے ہر ٹوکن کو بھی باطل کر دیتا ہے۔
 
 ## آپ کا credential کس کی نمائندگی کرتا ہے
 
@@ -64,7 +64,7 @@ chip پر کلک کریں تو ہر provider کی حالت اور refresh بٹن
 ## جانیں کہ ایجنٹس GitHub پر کیسے عمل کرتے ہیں
 
 - GitHub worktree میں کام کرنے والا ایجنٹ اس ایک repository کا ٹوکن لیتا ہے۔ وہ کوڈ پڑھ سکتا ہے اور جب ذمہ دار رکن push کر سکے تو pull requests پر تبصرہ کر سکتا ہے، اور جب نہ کر سکے تو صرف پڑھ سکتا ہے۔ push Control Center سے گزرتا ہے، جو **push to a remote** قاعدے سے پوچھتا ہے اور پھر اسے ایک write ٹوکن پر آگے بڑھاتا ہے جو ایجنٹ کبھی نہیں رکھتا۔ دیکھیں [sandbox policies ترتیب دیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/سینڈ-باکس-پالیسیاں/)
-- ایجنٹ کے کامیٹس ہمیشہ requester کی Git شناخت کو author اور committer دونوں کے طور پر استعمال کرتے ہیں۔ پہلے سے طے شدہ طور پر، `Co-Authored-By: Control Center <hi@usectrl.dev>` trailer GitHub `@usectrl` کو co-author کے طور پر کریڈٹ دیتا ہے۔ **Settings → You → Commit attribution** اس co-author کریڈٹ کو بغیر آپ کی شناخت بدلے بند کر سکتا ہے۔ **Settings → Workspace → General** میں workspace کی سطح کی تبدیلی مقدم ہوتی ہے اور اس ذاتی toggle کو لاک کر دیتی ہے۔ Claude Code کی اپنی attribution ہمیشہ غیر فعال ہے۔ commit signing کو اپنی درست کنفیگریشن درکار ہے
+- ایجنٹ کے کامیٹس ہمیشہ requester کی Git شناخت کو author اور committer دونوں کے طور پر استعمال کرتے ہیں۔ پہلے سے طے شدہ طور پر، `Co-Authored-By: Control Center <hi@usectrl.dev>` trailer GitHub `@usectrl` کو co-author کے طور پر کریڈٹ دیتا ہے۔ **ترتیبات → آپ → کمیٹ کی نسبت** اس co-author کریڈٹ کو بغیر آپ کی شناخت بدلے بند کر سکتا ہے۔ **ترتیبات → ورک اسپیس → عام** میں workspace کی سطح کی تبدیلی مقدم ہوتی ہے اور اس ذاتی toggle کو لاک کر دیتی ہے۔ Claude Code کی اپنی attribution ہمیشہ غیر فعال ہے۔ commit signing کو اپنی درست کنفیگریشن درکار ہے
 - rig پر آپ جو terminal کھولتے ہیں وہ آپ کا اپنا sign-in لیتا ہے، ایک repository تک محدود، اس لیے وہاں کے pushes آپ کے ہیں
 - جب کوئی ٹوکن جاری نہ ہو سکے (کوئی ذمہ دار شخص sign in نہیں، app مالک پر انسٹال نہیں، یا installation معطل ہے)، تو run ٹوکن کے بغیر شروع ہوتا ہے اور اس کی notes وجہ بتاتے ہیں۔ کوئی fallback credential نہیں
 
@@ -72,11 +72,11 @@ chip پر کلک کریں تو ہر provider کی حالت اور refresh بٹن
 
 ### PR فہرست خالی ہے اور کہتی ہے GitHub متصل نہیں
 
-آپ اس سرور پر GitHub میں sign in نہیں ہیں۔ **Code hosting** کے تحت **Sign in to GitHub** پر کلک کریں۔ دوسرے forges کے repos متاثر نہیں ہوتے۔
+آپ اس سرور پر GitHub میں sign in نہیں ہیں۔ **کوڈ ہوسٹنگ** کے تحت **Sign in to GitHub** پر کلک کریں۔ دوسرے forges کے repos متاثر نہیں ہوتے۔
 
 ### GitHub قطار کہتی ہے اس سرور پر sign-in سیٹ نہیں
 
-سرور کے پاس نہ اپنی GitHub App ہے نہ Connect۔ سرور کا مالک **Settings → Server → Single sign-on** میں ایک چنتا ہے: **Create my GitHub App** تقریباً دو منٹ لیتا ہے۔ دیکھیں [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)۔
+سرور کے پاس نہ اپنی GitHub App ہے نہ Connect۔ سرور کا مالک **ترتیبات → سرور → سنگل سائن آن** میں ایک چنتا ہے: **میری GitHub ایپ بنائیں** تقریباً دو منٹ لیتا ہے۔ دیکھیں [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/)۔
 
 ### dialog کہتا ہے کوڈ میل نہیں کھاتا
 
@@ -84,7 +84,7 @@ chip پر کلک کریں تو ہر provider کی حالت اور refresh بٹن
 
 ### sign-in کہتا ہے app انسٹال نہیں ہے
 
-GitHub App کی اس اکاؤنٹ پر کوئی installation نہیں جس کی ملکیت میں repository ہے۔ ایک workspace admin اسے **Settings → Workspace → General → GitHub App installations** سے انسٹال کرتا ہے۔ Control Center کی مشترکہ App پر کسی organization کے لیے، اس organization کے کسی admin کو **Authorize this server** پر کلک کرنا پڑ سکتا ہے۔ دیکھیں [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/#authorize-this-server-for-an-organization)۔
+GitHub App کی اس اکاؤنٹ پر کوئی installation نہیں جس کی ملکیت میں repository ہے۔ ایک workspace admin اسے **ترتیبات → ورک اسپیس → عام → GitHub ایپ کی انسٹالیشنز** سے انسٹال کرتا ہے۔ Control Center کی مشترکہ App پر کسی organization کے لیے، اس organization کے کسی admin کو **اس سرور کو مجاز کریں** پر کلک کرنا پڑ سکتا ہے۔ دیکھیں [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/#اس-سرور-کو-کسی-organization-کی-installation-کے-لیے-مجاز-کریں)۔
 
 ### سب کو دوبارہ GitHub میں sign in کرنا پڑتا ہے
 

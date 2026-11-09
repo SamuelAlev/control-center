@@ -9,15 +9,15 @@ Control Center میں Linear کی دو شناختیں ہیں، اور دونوں
 
 ## پیشگی شرائط
 
-- سرور لوگوں کو Linear میں sign in کرا سکے: Control Center Connect کے ذریعے، یا سرور کی اپنی Linear application کے ساتھ ([اپنی Linear application رجسٹر کریں](#اپنی-linear-application-رجسٹر-کریں))۔ سرور کا مالک **Settings → Server → Single sign-on** میں انتخاب کرتا ہے
+- سرور لوگوں کو Linear میں sign in کرا سکے: Control Center Connect کے ذریعے، یا سرور کی اپنی Linear application کے ساتھ ([اپنی Linear application رجسٹر کریں](#اپنی-linear-application-رجسٹر-کریں))۔ سرور کا مالک **ترتیبات → سرور → سنگل سائن آن** میں انتخاب کرتا ہے
 - ایک workspace admin، تاکہ Linear کو ticketing provider چنا جا سکے اور Linear automation جوڑا جا سکے
 
 ## workspace کے لیے Linear چنیں
 
-1. **Settings → Workspace → General** پر جائیں اور **Ticketing** کارڈ تلاش کریں
-2. **Ticketing provider** کو **Linear** پر سیٹ کریں
+1. **ترتیبات → ورک اسپیس → عام** پر جائیں اور **ٹکٹنگ** کارڈ تلاش کریں
+2. **ٹکٹنگ فراہم کنندہ** کو **Linear** پر سیٹ کریں
 
-اس کے بعد آپ کے بنائے tickets `provider: linear` کے نشان کے ساتھ آتے ہیں۔ **Local** tickets کو اسی سرور کے اپنے database میں رکھتا ہے اور Linear کی قطاریں چھپا دیتا ہے: تصدیق کے لیے کچھ نہیں ہوتا۔
+اس کے بعد آپ کے بنائے tickets `provider: linear` کے نشان کے ساتھ آتے ہیں۔ **مقامی** tickets کو اسی سرور کے اپنے database میں رکھتا ہے اور Linear کی قطاریں چھپا دیتا ہے: تصدیق کے لیے کچھ نہیں ہوتا۔
 
 ## Linear میں sign in
 
@@ -31,34 +31,34 @@ Control Center سے Linear میں آپ جو بھی کرتے ہیں وہ اسی s
 
 ## Linear automation جوڑیں
 
-**Linear automation** قطار workspace کی Control Center app ہے جو Linear میں ہے۔ ticket sync، pipelines اور agents اسی سے لکھتے ہیں، اس لیے خودکار issues اور تبصرے کسی فرد کے بجائے Control Center کے نام سے ظاہر ہوتے ہیں۔
+**Linear آٹومیشن** قطار workspace کی Control Center app ہے جو Linear میں ہے۔ ticket sync، pipelines اور agents اسی سے لکھتے ہیں، اس لیے خودکار issues اور تبصرے کسی فرد کے بجائے Control Center کے نام سے ظاہر ہوتے ہیں۔
 
-1. ایک workspace admin **Connect Linear for automation** پر کلک کرتا ہے
+1. ایک workspace admin **آٹومیشن کے لیے Linear منسلک کریں** پر کلک کرتا ہے
 2. وہ براؤزر میں app کو Linear workspace کے لیے منظور کرتا ہے، جیسا اوپر ہے
 
 قطار پھر یہ پڑھتی ہے "Connected to _your Linear workspace_"۔ صرف workspace admins اسے جوڑ یا توڑ سکتے ہیں۔
 
-کسی بھی Linear credential کو agent کے sandbox میں نہیں رکھا جاتا: ایجنٹس tickets کو Control Center کے اپنے ٹولز کے ذریعے لکھتے ہیں، جو پہلے **Write to an external tracker** قاعدے سے پوچھتے ہیں۔
+کسی بھی Linear credential کو agent کے sandbox میں نہیں رکھا جاتا: ایجنٹس tickets کو Control Center کے اپنے ٹولز کے ذریعے لکھتے ہیں، جو پہلے **بیرونی ٹریکر پر لکھیں** قاعدے سے پوچھتے ہیں۔
 
 ## اپنی Linear application رجسٹر کریں
 
-اپنی application صرف اس وقت استعمال کریں جب آپ نے **Use my own apps** چنا ہو۔ سرور کی application صرف تب لاگو ہوتی ہے: Control Center Connect یا custom Connect کے ساتھ، Connect ہر lane چلاتا ہے، Linear سمیت، اور سرور کی application اور service API key محفوظ رہتی ہیں مگر استعمال نہیں ہوتیں۔ workspace کی اپنی application ([نیچے](#ایک-workspace-کو-اپنی-linear-application-دیں)) ہر mode میں لاگو رہتی ہے۔
+اپنی application صرف اس وقت استعمال کریں جب آپ نے **اپنی ایپس استعمال کریں** چنا ہو۔ سرور کی application صرف تب لاگو ہوتی ہے: Control Center Connect یا custom Connect کے ساتھ، Connect ہر lane چلاتا ہے، Linear سمیت، اور سرور کی application اور service API key محفوظ رہتی ہیں مگر استعمال نہیں ہوتیں۔ workspace کی اپنی application ([نیچے](#ایک-workspace-کو-اپنی-linear-application-دیں)) ہر mode میں لاگو رہتی ہے۔
 
 1. [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new) پر ایک OAuth application بنائیں
-2. دونوں callback URLs شامل کریں جو **Settings → Server → Single sign-on → Provider apps → Linear** کے تحت **Callback URLs** میں دکھائے گئے ہیں، ہو بہو:
+2. دونوں callback URLs شامل کریں جو **ترتیبات → سرور → سنگل سائن آن → فراہم کنندہ ایپس → Linear** کے تحت **کال بیک URLs** میں دکھائے گئے ہیں، ہو بہو:
    `<server origin>/oauth/linear/callback` اور `<server origin>/oauth/linear_app/callback`
 3. **Client id** کو Linear بلاک میں چسپاں کریں
 
 کوئی client secret نہیں: سرور PKCE کے ساتھ sign in کرتا ہے۔ Linear کے refresh tokens 30 دن استعمال نہ ہونے پر ختم ہو جاتے ہیں، اس لیے سرور 20 دن سے پرانی ہر Linear sign-in کو روزانہ ایک بار تازہ کرتا ہے۔
 
-اسی بلاک میں ایک اختیاری **Service API key** بھی ہے۔ یہ سرور کا اپنا Linear credential ہے جو ان workspaces میں automation کے لیے ہے جنہوں نے Linear automation نہیں جوڑی۔ اسے **Settings** میں یا سرور کی `.env` فائل میں `LINEAR_API_KEY` کے طور پر رکھیں: سرور اس وقت شروع ہونے سے انکار کرتا ہے جب `LINEAR_API_KEY` اس کے process ماحول میں ایکسپورٹ ہو۔
+اسی بلاک میں ایک اختیاری **سروس API کلید** بھی ہے۔ یہ سرور کا اپنا Linear credential ہے جو ان workspaces میں automation کے لیے ہے جنہوں نے Linear automation نہیں جوڑی۔ اسے **ترتیبات** میں یا سرور کی `.env` فائل میں `LINEAR_API_KEY` کے طور پر رکھیں: سرور اس وقت شروع ہونے سے انکار کرتا ہے جب `LINEAR_API_KEY` اس کے process ماحول میں ایکسپورٹ ہو۔
 
 ## ایک workspace کو اپنی Linear application دیں
 
 workspace سرور کی application کے بجائے اپنی application کے ذریعے Linear میں sign in کر سکتا ہے۔ یہ صرف workspace admin یا owner ترتیب دے سکتا ہے۔
 
 1. اوپر کے مراحل کی طرح ایک Linear OAuth application بنائیں
-2. **Settings → Workspace → General → پرووائیڈر ایپس** پر جائیں اور **Linear** کھولیں
+2. **ترتیبات → ورک اسپیس → عام → پرووائیڈر ایپس** پر جائیں اور **Linear** کھولیں
 3. **اس ورک اسپیس کی اپنی ایپ استعمال کریں** چنیں
 4. row کے **کال بیک URLs** کے تحت دکھائے گئے دونوں callback URLs کو Linear application میں ہو بہو شامل کریں
 5. اس کا **Client id** چسپاں کریں، اور اختیاری طور پر اس workspace کے automation کے لیے **سروس API کلید** شامل کریں
@@ -71,11 +71,11 @@ workspace کی application پھر اس workspace میں ہر Linear sign-in او
 
 ### Linear قطار کہتی ہے sign-in سیٹ نہیں ہے
 
-سرور کے پاس نہ اپنی Linear application ہے نہ Connect۔ سرور کا مالک **Settings → Server → Single sign-on** میں ان میں سے ایک چنتا ہے۔ جب workspace اپنی application استعمال کرتا ہے تو row کے بجائے بتاتی ہے کہ اس کا سیٹ اپ مکمل نہیں: workspace admin **Settings → Workspace → General → پرووائیڈر ایپس** میں client id شامل کرتا ہے۔
+سرور کے پاس نہ اپنی Linear application ہے نہ Connect۔ سرور کا مالک **ترتیبات → سرور → سنگل سائن آن** میں ان میں سے ایک چنتا ہے۔ جب workspace اپنی application استعمال کرتا ہے تو row کے بجائے بتاتی ہے کہ اس کا سیٹ اپ مکمل نہیں: workspace admin **ترتیبات → ورک اسپیس → عام → پرووائیڈر ایپس** میں client id شامل کرتا ہے۔
 
 ### ticket sync authentication error کے ساتھ ناکام ہوتا ہے
 
-workspace کے ساتھ کوئی Linear automation نہیں جڑی اور سرور کے پاس service API key نہیں، اس لیے sync کے پاس کوئی credential نہیں۔ ایک workspace admin **Connect Linear for automation** پر کلک کرتا ہے۔
+workspace کے ساتھ کوئی Linear automation نہیں جڑی اور سرور کے پاس service API key نہیں، اس لیے sync کے پاس کوئی credential نہیں۔ ایک workspace admin **آٹومیشن کے لیے Linear منسلک کریں** پر کلک کرتا ہے۔
 
 ### automation جوڑتے وقت کہتا ہے کہ Linear workspace کہیں اور جڑا ہے
 

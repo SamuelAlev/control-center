@@ -7,7 +7,7 @@ sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
 
 یہ گائیڈ دکھاتی ہے کہ اپنے سرور کو اس کی اپنی GitHub App کیسے دیں۔ اس میں تقریباً دو منٹ لگتے ہیں، صرف سرور کا مالک یہ کرتا ہے، اور ہر سرور کے لیے یہ صرف ایک بار ہونا ضروری ہے۔
 
-جب Control Center Connect آن ہو تو لوگ Control Center کی مشترکہ App کے ذریعے یا اس App کے ذریعے GitHub میں sign in کرتے ہیں جسے آپ کی تنظیم کا Connect استعمال کرتا ہے۔ اپنی App تب رجسٹر کریں جب آپ **Use my own apps** چنیں، یا جب آپ کے سرور کی GitHub رسائی ایسی App سے گزرنی چاہیے جسے آپ کنٹرول کرتے ہوں۔ دیکھیں [Control Center Connect](/ur-PK/ہدایت-نامہ/حوالہ/connect/)۔
+جب Control Center Connect آن ہو تو لوگ Control Center کی مشترکہ App کے ذریعے یا اس App کے ذریعے GitHub میں sign in کرتے ہیں جسے آپ کی تنظیم کا Connect استعمال کرتا ہے۔ اپنی App تب رجسٹر کریں جب آپ **اپنی ایپس استعمال کریں** چنیں، یا جب آپ کے سرور کی GitHub رسائی ایسی App سے گزرنی چاہیے جسے آپ کنٹرول کرتے ہوں۔ دیکھیں [Control Center Connect](/ur-PK/ہدایت-نامہ/حوالہ/connect/)۔
 
 بعد میں اپنے اکاؤنٹ میں sign in کے لیے دیکھیں [GitHub انضمام سیٹ کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-انضمام/)۔
 
@@ -22,23 +22,23 @@ sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
 
 دوسرا کام کبھی کسی فرد کا credential مکمل طور پر ادھار نہیں لیتا۔ سرور جو بھی ٹوکن بناتا ہے وہ ایک repository کو کور کرتا ہے اور اس تک محدود ہے کہ ایک ذمہ دار رکن وہاں کیا کر سکتا ہے۔ جڑے ہوئے repository کو پڑھنے کے لیے صرف app درکار ہے؛ جو کچھ لکھتا ہے اسے ایسے رکن کی ضرورت ہے جو push کر سکے۔ خودکارسازی کبھی pull request کو منظور نہیں کرتی۔
 
-سرور کی اپنی app صرف **Use my own apps** کے تحت استعمال ہوتی ہے۔ Control Center Connect یا custom Connect کے ساتھ، Connect ہر lane چلاتا ہے، GitHub سمیت؛ سرور کی app محفوظ رہتی ہے مگر استعمال نہیں ہوتی جب تک آپ واپس نہ جائیں۔ workspace کی اپنی app ([ایک workspace کو مختلف app دیں](#ایک-workspace-کو-مختلف-app-دیں)) ہر mode میں لاگو رہتی ہے۔ وہ app جس کے کچھ فیلڈز خالی ہوں وہ fall back نہیں بلکہ غلطی ہے: جب تک تمام فیلڈز سیٹ نہ ہوں، GitHub sign-ins رد ہوتے ہیں۔
+سرور کی اپنی app صرف **اپنی ایپس استعمال کریں** کے تحت استعمال ہوتی ہے۔ Control Center Connect یا custom Connect کے ساتھ، Connect ہر lane چلاتا ہے، GitHub سمیت؛ سرور کی app محفوظ رہتی ہے مگر استعمال نہیں ہوتی جب تک آپ واپس نہ جائیں۔ workspace کی اپنی app ([ایک workspace کو مختلف app دیں](#ایک-workspace-کو-مختلف-app-دیں)) ہر mode میں لاگو رہتی ہے۔ وہ app جس کے کچھ فیلڈز خالی ہوں وہ fall back نہیں بلکہ غلطی ہے: جب تک تمام فیلڈز سیٹ نہ ہوں، GitHub sign-ins رد ہوتے ہیں۔
 
 ## پیشگی شرائط
 
-- آپ **سرور کے مالک** ہیں۔ **Provider apps** کارڈ باقی سب کے لیے نظر نہیں آتا
+- آپ **سرور کے مالک** ہیں۔ **فراہم کنندہ ایپس** کارڈ باقی سب کے لیے نظر نہیں آتا
 - ایک GitHub اکاؤنٹ۔ app اسی کے تحت بنتی ہے
 - ایک سرور کا پتہ جس تک آپ کا براؤزر پہنچ سکے۔ سرور کا عوامی URL (یا desktop کے اپنے سرور کے لیے loopback) وہ جگہ ہے جہاں GitHub آپ کو واپس بھیجتا ہے
 
 ## ایک کلک میں بنائیں
 
-1. **Settings → Server → Single sign-on** پر جائیں اور **Provider apps** کارڈ تک اسکرول کریں
-2. **GitHub** بلاک پر، اگر چاہیں تو **Organization (optional)** میں وہ GitHub organization لکھیں جس کے پاس app ہونی چاہیے۔ خالی چھوڑنے پر app آپ کے اپنے اکاؤنٹ کے تحت بنتی ہے؛ کسی organization کے تحت بنانے کے لیے اس organization کا owner ہونا ضروری ہے
-3. **Create my GitHub App** پر کلک کریں
+1. **ترتیبات → سرور → سنگل سائن آن** پر جائیں اور **فراہم کنندہ ایپس** کارڈ تک اسکرول کریں
+2. **GitHub** بلاک پر، اگر چاہیں تو **تنظیم (اختیاری)** میں وہ GitHub organization لکھیں جس کے پاس app ہونی چاہیے۔ خالی چھوڑنے پر app آپ کے اپنے اکاؤنٹ کے تحت بنتی ہے؛ کسی organization کے تحت بنانے کے لیے اس organization کا owner ہونا ضروری ہے
+3. **میری GitHub ایپ بنائیں** پر کلک کریں
 4. آپ کا براؤزر GitHub کھولتا ہے جس میں app پہلے سے بھری ہوتی ہے۔ **Create GitHub App** پر کلک کریں
 5. GitHub آپ کو سرور پر واپس بھیجتا ہے، جو app id، private key، client id اور client secret محفوظ کرتا ہے، پھر app کا install page کھولتا ہے
 
-کچھ بھی ہاتھ سے کاپی نہیں ہوتا، اور conversion کوڈ GitHub سے سیدھا آپ کے سرور تک جاتا ہے۔ یہ لنک ایک بار کام کرتا ہے اور دس منٹ بعد ختم ہو جاتا ہے؛ اگر ختم ہو جائے تو **Create my GitHub App** دوبارہ دبائیں۔
+کچھ بھی ہاتھ سے کاپی نہیں ہوتا، اور conversion کوڈ GitHub سے سیدھا آپ کے سرور تک جاتا ہے۔ یہ لنک ایک بار کام کرتا ہے اور دس منٹ بعد ختم ہو جاتا ہے؛ اگر ختم ہو جائے تو **میری GitHub ایپ بنائیں** دوبارہ دبائیں۔
 
 app کا نام `Control Center <code>` ہے اور وہ بالکل وہی مانگتی ہے جو Control Center استعمال کرتا ہے:
 
@@ -51,7 +51,7 @@ app کا نام `Control Center <code>` ہے اور وہ بالکل وہی ما�
 | Checks، Actions، Commit statuses           | پڑھنا           |
 | Organization members                       | پڑھنا           |
 
-Webhooks بند ہیں: سرور polling کرتا ہے۔ اگر آپ نے اپنے اکاؤنٹ کے تحت بنی app کو بعد میں کسی organization میں منتقل کرنا ہو تو GitHub پر app کی advanced settings میں **Transfer ownership** استعمال کریں۔
+Webhooks بند ہیں: سرور polling کرتا ہے۔ اگر آپ نے اپنے اکاؤنٹ کے تحت بنی app کو بعد میں کسی organization میں منتقل کرنا ہو تو GitHub پر app کی advanced settings میں **ملکیت منتقل کریں** استعمال کریں۔
 
 checkpoint: GitHub بلاک کہتا ہے "The server can act as itself, and people can sign in"۔
 
@@ -62,29 +62,29 @@ checkpoint: GitHub بلاک کہتا ہے "The server can act as itself, and peo
 1. GitHub کے کھولے ہوئے install page پر وہ اکاؤنٹ یا organization چنیں جس کے پاس آپ کے repositories ہیں
 2. **All repositories** چنیں، یا وہ repositories منتخب کریں جنہیں یہ سرور دیکھے
 
-بعد میں کسی دوسرے اکاؤنٹ پر انسٹال کرنے کے لیے، workspace admin **Settings → Workspace → General** پر جاتا ہے، GitHub identity کارڈ پر **GitHub App installations** تلاش کرتا ہے اور **Install GitHub App** پر کلک کرتا ہے۔ فہرست ہر اکاؤنٹ دکھاتی ہے جس پر app انسٹال ہے اور معطل installation کو نشان زد کرتی ہے۔
+بعد میں کسی دوسرے اکاؤنٹ پر انسٹال کرنے کے لیے، workspace admin **ترتیبات → ورک اسپیس → عام** پر جاتا ہے، GitHub identity کارڈ پر **GitHub ایپ کی انسٹالیشنز** تلاش کرتا ہے اور **GitHub ایپ انسٹال کریں** پر کلک کرتا ہے۔ فہرست ہر اکاؤنٹ دکھاتی ہے جس پر app انسٹال ہے اور معطل installation کو نشان زد کرتی ہے۔
 
 ## اس سرور کو کسی organization کی installation کے لیے مجاز کریں
 
-Control Center کی مشترکہ App پر، کسی organization کی installation صرف ان سرورز کو خدمت دیتی ہے جن کو اس کے admins نے مجاز کیا ہو۔ **Install GitHub App** کے ذریعے انسٹال کرنا اس سرور کو مجاز کرتا ہے جس نے اسے شروع کیا۔ کسی پہلے سے موجود installation کے لیے:
+Control Center کی مشترکہ App پر، کسی organization کی installation صرف ان سرورز کو خدمت دیتی ہے جن کو اس کے admins نے مجاز کیا ہو۔ **GitHub ایپ انسٹال کریں** کے ذریعے انسٹال کرنا اس سرور کو مجاز کرتا ہے جس نے اسے شروع کیا۔ کسی پہلے سے موجود installation کے لیے:
 
 1. اس organization کا ایک admin اس سرور پر GitHub میں sign in کرتا ہے
-2. وہ **Settings → Workspace → General → GitHub App installations** کھولتا ہے
-3. organization کی قطار **Not authorized** کہتی ہے۔ وہ **Authorize this server** پر کلک کرتا ہے
+2. وہ **ترتیبات → ورک اسپیس → عام → GitHub ایپ کی انسٹالیشنز** کھولتا ہے
+3. organization کی قطار **غیر مجاز** کہتی ہے۔ وہ **اس سرور کو مجاز کریں** پر کلک کرتا ہے
 
-قطار پھر **Authorized** پڑھتی ہے۔ آپ کی اپنی app کو ان میں سے کچھ بھی درکار نہیں: اس کی ہر installation آپ کے سرور کی ملکیت ہے۔
+قطار پھر **مجاز** پڑھتی ہے۔ آپ کی اپنی app کو ان میں سے کچھ بھی درکار نہیں: اس کی ہر installation آپ کے سرور کی ملکیت ہے۔
 
 ## بجائے اس کے، دستی طور پر رجسٹر کریں
 
-**Provider apps** کارڈ قدریں براہِ راست بھی قبول کرتا ہے، اس app کے لیے جو آپ نے خود رجسٹر کی ہو:
+**فراہم کنندہ ایپس** کارڈ قدریں براہِ راست بھی قبول کرتا ہے، اس app کے لیے جو آپ نے خود رجسٹر کی ہو:
 
 | گروپ                              | فیلڈز                                                                                                                       |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **سرور کے طور پر عمل**            | **App id**، اور **Private key** (پوری `.pem` فائل، `BEGIN` اور `END` لائنز سمیت)                                             |
-| **لوگوں کو sign in کرانا**        | **Client id** اور **Client secret**۔ **Callback URLs** وہ URL دکھاتا ہے جو رجسٹر کرنا ہے، ہو بہو                             |
-| **Pull request گفتگوئیں**         | **Bot login**، جو کنکشن ٹیسٹ کرنے پر حل ہوتا ہے                                                                             |
+| **سرور کے طور پر عمل**            | **App id**، اور **پرائیویٹ کلید** (پوری `.pem` فائل، `BEGIN` اور `END` لائنز سمیت)                                             |
+| **لوگوں کو sign in کرانا**        | **Client id** اور **Client secret**۔ **کال بیک URLs** وہ URL دکھاتا ہے جو رجسٹر کرنا ہے، ہو بہو                             |
+| **Pull request گفتگوئیں**         | **بوٹ لاگ اِن**، جو کنکشن ٹیسٹ کرنے پر حل ہوتا ہے                                                                             |
 
-callback URL `<server origin>/oauth/github/callback` کو بالکل ویسے رجسٹر کریں جیسا کارڈ دکھاتا ہے، **Expire user authorization tokens** کو آن رکھیں، اور اوپر کے جدول کی اجازتیں دیں۔ **Test** پر کلک کریں: یہ GitHub سے پوچھتا ہے کہ app کن اکاؤنٹس پر انسٹال ہے، تاکہ "محفوظ" اور "کام کرتا ہے" آپس میں الجھ نہ جائیں۔
+callback URL `<server origin>/oauth/github/callback` کو بالکل ویسے رجسٹر کریں جیسا کارڈ دکھاتا ہے، **Expire user authorization tokens** کو آن رکھیں، اور اوپر کے جدول کی اجازتیں دیں۔ **ٹیسٹ** پر کلک کریں: یہ GitHub سے پوچھتا ہے کہ app کن اکاؤنٹس پر انسٹال ہے، تاکہ "محفوظ" اور "کام کرتا ہے" آپس میں الجھ نہ جائیں۔
 
 ## سرور کی `.env` سے کنفیگر کریں
 
@@ -101,7 +101,7 @@ key کو **ایک لائن** میں رکھیں: `.env` کی قدر ایک لائ
 
 ## ایک workspace کو مختلف app دیں
 
-ایک workspace سرور کی app کے بجائے اپنی app استعمال کر سکتا ہے۔ ایک workspace admin **Settings → Workspace → General** پر جاتا ہے، **GitHub identity** کارڈ پر **Use a different GitHub App** چنتا ہے اور اس app کا id، private key، client id اور client secret درج کرتا ہے۔ اراکین پھر اس workspace کے لیے اس app میں sign in کرتے ہیں۔ جس workspace کی اپنی app ہو وہ کبھی سرور کی app یا Connect پر fall back نہیں کرتا: جب تک اس کے فیلڈز مکمل نہ ہوں، اس کا GitHub کام رد ہوتا ہے۔
+ایک workspace سرور کی app کے بجائے اپنی app استعمال کر سکتا ہے۔ ایک workspace admin **ترتیبات → ورک اسپیس → عام** پر جاتا ہے، **GitHub شناخت** کارڈ پر **کوئی اور GitHub App استعمال کریں** چنتا ہے اور اس app کا id، private key، client id اور client secret درج کرتا ہے۔ اراکین پھر اس workspace کے لیے اس app میں sign in کرتے ہیں۔ جس workspace کی اپنی app ہو وہ کبھی سرور کی app یا Connect پر fall back نہیں کرتا: جب تک اس کے فیلڈز مکمل نہ ہوں، اس کا GitHub کام رد ہوتا ہے۔
 
 یہی بات **پرووائیڈر ایپس** کارڈ پر Google Calendar، Linear اور GIF search کے لیے بھی ہے۔ دیکھیں [ایک workspace کو اپنی Linear application دیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/linear-انضمام/#ایک-workspace-کو-اپنی-linear-application-دیں) اور [ایک workspace کو اپنا Google client دیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/#ایک-workspace-کو-اپنا-google-client-دیں)۔
 
@@ -117,7 +117,7 @@ key کو **ایک لائن** میں رکھیں: `.env` کی قدر ایک لائ
 
 ### Test کہتا ہے اعتبارنامے کام کرتے ہیں مگر app کہیں انسٹال نہیں
 
-رجسٹریشن اور انسٹالیشن الگ مراحل ہیں۔ app کا install page کھولیں، یا Workspace → General میں **Install GitHub App** استعمال کریں۔
+رجسٹریشن اور انسٹالیشن الگ مراحل ہیں۔ app کا install page کھولیں، یا Workspace → General میں **GitHub ایپ انسٹال کریں** استعمال کریں۔
 
 ### Test کہتا ہے private key پڑھی نہیں جا سکی
 

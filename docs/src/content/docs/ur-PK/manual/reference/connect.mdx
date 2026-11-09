@@ -5,11 +5,11 @@ slug: ur-PK/ہدایت-نامہ/حوالہ/connect
 sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
 ---
 
-Control Center Connect ان سرورز کے لیے provider sign-ins چلاتا ہے جنہوں نے اپنی apps رجسٹر نہیں کیں۔ ایک سرور یا تو Control Center کے hosted Connect کو استعمال کرتا ہے، یا اس Connect کو جسے اس کی تنظیم چلاتی ہے ([Connect سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں/))، یا کوئی نہیں۔ انتخاب **Settings → Server → Single sign-on → Control Center Connect** میں، `cc_server connect` کمانڈ میں، یا `CC_CONNECT_URL` میں ہوتا ہے۔
+Control Center Connect ان سرورز کے لیے provider sign-ins چلاتا ہے جنہوں نے اپنی apps رجسٹر نہیں کیں۔ ایک سرور یا تو Control Center کے hosted Connect کو استعمال کرتا ہے، یا اس Connect کو جسے اس کی تنظیم چلاتی ہے ([Connect سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں/))، یا کوئی نہیں۔ انتخاب **ترتیبات → سرور → سنگل سائن آن → Control Center Connect** میں، `cc_server connect` کمانڈ میں، یا `CC_CONNECT_URL` میں ہوتا ہے۔
 
-## Lanes
+## لینیں
 
-**Use my own apps** کے تحت (یا کسی کے انتخاب سے پہلے) ایک lane سرور کی اپنی app پر چلتی ہے جب وہ مکمل طور پر configured ہو؛ ورنہ وہ unavailable ہے۔ Control Center's apps یا custom Connect کے ساتھ، Connect وہ ہر lane چلاتا ہے جو وہ فراہم کرتا ہے: سرور کی اپنی apps محفوظ رہتی ہیں مگر استعمال نہیں ہوتیں، نہ sign-ins کے لیے، نہ سرور automation کے لیے، نہ اس status کے لیے جو سرور رپورٹ کرتا ہے۔ workspace کی اپنی app ہر mode میں فوقیت رکھتی ہے۔
+**اپنی ایپس استعمال کریں** کے تحت (یا کسی کے انتخاب سے پہلے) ایک lane سرور کی اپنی app پر چلتی ہے جب وہ مکمل طور پر configured ہو؛ ورنہ وہ unavailable ہے۔ Control Center's apps یا custom Connect کے ساتھ، Connect وہ ہر lane چلاتا ہے جو وہ فراہم کرتا ہے: سرور کی اپنی apps محفوظ رہتی ہیں مگر استعمال نہیں ہوتیں، نہ sign-ins کے لیے، نہ سرور automation کے لیے، نہ اس status کے لیے جو سرور رپورٹ کرتا ہے۔ workspace کی اپنی app ہر mode میں فوقیت رکھتی ہے۔
 
 | Lane         | اپنی app کی ضرورت                                  | Connect کے ذریعے                                              |
 | ------------ | -------------------------------------------------- | ------------------------------------------------------------- |
@@ -20,7 +20,7 @@ Control Center Connect ان سرورز کے لیے provider sign-ins چلاتا 
 | `slack`      | workspace کی اپنی Slack app کنکشن                  | workspace admin Slack کو مشترکہ Slack app سے جوڑتا ہے            |
 | `klipy`      | `KLIPY_APP_KEY`                                    | GIF search، Connect کے ذریعے proxy ہوتی ہے                       |
 
-جزوی طور پر configured اپنی app اس کی lane کو error بنا دیتی ہے، کبھی خاموشی سے Connect کی طرف fall back نہیں ہوتی۔ جو workspace اپنی GitHub App استعمال کرتا ہے (**Settings → Workspace → General → GitHub identity**) وہ GitHub کے لیے کبھی Connect سے نہیں گزرتا۔ اور جو workspace اپنی Google، Linear یا Klipy app استعمال کرتا ہے (**Settings → Workspace → General → Provider apps**) وہ اس provider کے لیے کبھی سرور کی app یا Connect سے نہیں گزرتا۔ Connect کا انتخاب بدلنے سے کوئی بھی workspace کی اپنی app سے sign out نہیں ہوتا۔
+جزوی طور پر configured اپنی app اس کی lane کو error بنا دیتی ہے، کبھی خاموشی سے Connect کی طرف fall back نہیں ہوتی۔ جو workspace اپنی GitHub App استعمال کرتا ہے (**ترتیبات → ورک اسپیس → عام → GitHub شناخت**) وہ GitHub کے لیے کبھی Connect سے نہیں گزرتا۔ اور جو workspace اپنی Google، Linear یا Klipy app استعمال کرتا ہے (**ترتیبات → ورک اسپیس → عام → فراہم کنندہ ایپس**) وہ اس provider کے لیے کبھی سرور کی app یا Connect سے نہیں گزرتا۔ Connect کا انتخاب بدلنے سے کوئی بھی workspace کی اپنی app سے sign out نہیں ہوتا۔
 
 ## Connect کیا دیکھتا ہے اور کیا کبھی نہیں دیکھتا
 
@@ -36,14 +36,14 @@ Control Center Connect ان سرورز کے لیے provider sign-ins چلاتا 
 
 Connect کم عمر state (staged sign-ins، nonces، caches) زیادہ سے زیادہ 15 منٹ رکھتا ہے۔ اس کے صرف دیرپا records installation bindings ہیں: کون سے سرورز کون سا GitHub installation استعمال کر سکتے ہیں، اور ہر Slack team کس سرور سے منسلک ہے۔ errors میں صرف ایک code ہوتا ہے، provider کا response کبھی نہیں، اور logs install ids کو صرف keyed hashes کے طور پر ریکارڈ کرتے ہیں۔
 
-## Modes
+## موڈز
 
 | Mode     | Setting                          | رویہ                                                                                                              |
 | -------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Unset    | نیا سرور                        | کوئی lane Connect استعمال نہیں کرتی۔ onboarding سرور owner سے انتخاب کرنے کو کہتا ہے                                 |
-| `hosted` | **Use Control Center's apps**    | `https://connect.usectrl.dev`، offline-signed configuration کے ساتھ۔ سرور کی اپنی apps استعمال نہیں ہوتیں                                                |
-| `custom` | **Use a custom Connect server**  | HTTPS URL پر Connect (صرف loopback پر `http`)، پہلے استعمال پر trusted ہو جاتا ہے۔ سرور کی اپنی apps استعمال نہیں ہوتیں                                    |
-| `off`    | **Use my own apps**              | کوئی lane Connect استعمال نہیں کرتی۔ صرف اپنی apps لوگوں کو sign in کراتی ہیں                                       |
+| `hosted` | **Control Center کی ایپس استعمال کریں**    | `https://connect.usectrl.dev`، offline-signed configuration کے ساتھ۔ سرور کی اپنی apps استعمال نہیں ہوتیں                                                |
+| `custom` | **اپنا Connect سرور استعمال کریں**  | HTTPS URL پر Connect (صرف loopback پر `http`)، پہلے استعمال پر trusted ہو جاتا ہے۔ سرور کی اپنی apps استعمال نہیں ہوتیں                                    |
+| `off`    | **اپنی ایپس استعمال کریں**              | کوئی lane Connect استعمال نہیں کرتی۔ صرف اپنی apps لوگوں کو sign in کراتی ہیں                                       |
 
 سرور کے environment یا `.env` میں `CC_CONNECT_URL` انتخاب کو lock کرتا ہے: `hosted`، `off`، یا ایک Connect URL۔ پھر Settings lock دکھاتی ہے اور اسے بدل نہیں سکتی۔
 
@@ -51,7 +51,7 @@ Connect کم عمر state (staged sign-ins، nonces، caches) زیادہ سے ز
 
 سرور زیادہ سے زیادہ ہر 10 منٹ میں Connect کی configuration پڑھتا ہے، اور ہر call کے لیے زیادہ سے زیادہ 5 سیکنڈ انتظار کرتا ہے۔ جب Connect تک رسائی نہ ہو تو آخری درست configuration استعمال ہوتی رہتی ہے اور Settings اسے stale نشان زد کرتی ہے۔
 
-## Install identity
+## انسٹال کی شناخت
 
 | Item             | یہ کیا ہے                                                                                                                      |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -61,7 +61,7 @@ Connect کم عمر state (staged sign-ins، nonces، caches) زیادہ سے ز
 
 ایک ہی سرور کا ہر Connect پتے کے لیے مختلف install id ہوتا ہے۔ id صرف اس وقت بدلتا ہے جب key rotate ہو۔
 
-## Sealed credentials
+## مختوم اسناد
 
 Connect کے ذریعے sign-in ایک **credential seal** واپس دیتا ہے: ایک encrypted blob جسے صرف وہی Connect کھول سکتا ہے جس نے اسے بنایا۔ یہ provider، Connect کے پتے، install id، workspace، provider account، app اور secret generation سے منسلک ہوتا ہے۔
 
@@ -70,12 +70,12 @@ Connect کے ذریعے sign-in ایک **credential seal** واپس دیتا ہ�
 - جس seal کا install id یا Connect پتہ اب مطابقت نہ رکھتا ہو وہ اگلی بار پڑھنے پر حذف ہو جاتا ہے، اور وہ شخص دوبارہ sign in کرتا ہے۔ یہ key rotation کے بعد، کسی دوسرے Connect پر منتقلی کے بعد، یا کسی دوسرے سرور پر بحال شدہ data directory کے بعد ہوتا ہے
 - وہ seal جسے Connect نہیں کھول سکتا `access_denied` کے ساتھ مسترد ہوتا ہے
 
-## GitHub installations
+## GitHub انسٹالز
 
 مشترکہ GitHub App کا installation کسی سرور کے لیے صرف اسی وقت قابلِ استعمال ہے جب Connect اسے اس سرور کے install id سے bind کر چکا ہو۔
 
-- **Settings → Workspace → General** میں **Install GitHub App** ایک 15 منٹ کے ticket کے ساتھ GitHub کھولتا ہے۔ Connect نیا installation اس وقت bind کرتا ہے جب installer ذاتی account کا مالک ہو یا organization کا admin ہو
-- **Authorize this server** پہلے سے موجود installation کو bind کرتا ہے۔ یہ صرف organization admin کر سکتا ہے
+- **ترتیبات → ورک اسپیس → عام** میں **GitHub ایپ انسٹال کریں** ایک 15 منٹ کے ticket کے ساتھ GitHub کھولتا ہے۔ Connect نیا installation اس وقت bind کرتا ہے جب installer ذاتی account کا مالک ہو یا organization کا admin ہو
+- **اس سرور کو مجاز کریں** پہلے سے موجود installation کو bind کرتا ہے۔ یہ صرف organization admin کر سکتا ہے
 - ایک organization installation کئی سرورز سے bind ہو سکتا ہے؛ ہر ایک کو کسی admin کی authorization چاہیے
 
 ## Configuration پر اعتماد
@@ -83,9 +83,9 @@ Connect کے ذریعے sign-in ایک **credential seal** واپس دیتا ہ�
 | Connect | سرور اپنی configuration پر کیسے اعتماد کرتا ہے                                                                                                                                                                                                                          |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Hosted  | build میں compile شدہ keys کے خلاف Ed25519 signature verify کرتا ہے۔ اس سے کم epoch کو مسترد کرتا ہے جو اس نے سب سے زیادہ دیکھا (`rollback`)                                                                                                                 |
-| Custom  | پہلے استعمال پر GitHub app id اور client id، Google اور Linear client ids، اور Slack app اور client ids کو pin کرتا ہے۔ تبدیلی Connect sign-ins کو روک دیتی ہے (`pins_changed`) جب تک سرور owner **Trust new apps** نہ دبائے                                              |
+| Custom  | پہلے استعمال پر GitHub app id اور client id، Google اور Linear client ids، اور Slack app اور client ids کو pin کرتا ہے۔ تبدیلی Connect sign-ins کو روک دیتی ہے (`pins_changed`) جب تک سرور owner **نئی ایپس پر بھروسہ کریں** نہ دبائے                                              |
 
-## Operations
+## عملیات
 
 Connect کی تمام settings صرف سرور owner کے لیے ہیں۔
 
@@ -106,18 +106,18 @@ sign-ins خود `oauth.lanes`، `oauth.begin`، `oauth.status`، `oauth.complete
 3. Connect ایک 8-character code اور ایک `control-center://oauth-done` link دکھاتا ہے
 4. شخص code کو app میں ٹائپ کرتا ہے، یا link پر جاتا ہے۔ سرور code اور request کے اپنے ثبوت کے ساتھ sign-in claim کرتا ہے
 
-sign-in 10 منٹ میں ختم ہو جاتا ہے۔ پانچ غلط codes اسے ختم کر دیتے ہیں۔ جو link یہ app شروع نہیں کرتی وہ **Sign-in not started here** کے ساتھ مسترد ہوتا ہے۔
+sign-in 10 منٹ میں ختم ہو جاتا ہے۔ پانچ غلط codes اسے ختم کر دیتے ہیں۔ جو link یہ app شروع نہیں کرتی وہ **یہ سائن اِن یہاں سے شروع نہیں ہوا** کے ساتھ مسترد ہوتا ہے۔
 
 ## Install key rotate کرنا
 
-Connect card پر **Rotate key**، یا `cc_server connect rotate-key --yes`:
+Connect card پر **کلید بدلیں**، یا `cc_server connect rotate-key --yes`:
 
 - سرور کو نیا install key اور نیا install id دیتا ہے
 - اس Connect کے ذریعے چلنے والی ہر lane سے سب کو sign out کر دیتا ہے
 - سرور کی اپنی apps کے ذریعے sign-ins کو اپنی حالت پر چھوڑ دیتا ہے
 - custom Connect کی allowlist میں نیا install id شامل کرنے کی ضرورت ہوتی ہے
 
-## Status codes
+## اسٹیٹس کوڈز
 
 | Code                   | مطلب                                                                 |
 | ---------------------- | -------------------------------------------------------------------- |

@@ -32,24 +32,24 @@ calendar accounts، Control Center کی باقی ہر چیز کی طرح، works
 
 اعتبارنامے کبھی سرور سے باہر نہیں جاتے۔ یہ سرور کی data directory میں `secrets.json` میں لکھے جاتے ہیں، `google_google:<workspaceId>:<userId>:<email>` کی کلید کے ساتھ، databases کے ساتھ اور اسی host-filesystem trust boundary کے تحت۔ اپنے client سے sign-in اپنے access اور refresh tokens محفوظ کرتا ہے۔ Connect کے ذریعے sign-in صرف ایک sealed credential محفوظ کرتا ہے جسے Connect صرف اس سرور کے لیے کھولتا ہے؛ access token memory میں رہتا ہے۔ سرور access خودکار طور پر refresh کرتا ہے، اور جب Google کسی account کو مستقل طور پر باطل کر دے (منسوخ یا بہت پرانا session)، تو `CalendarAuthExpired` شائع کرتا ہے اور خاموشی سے ناکام ہونے کے بجائے **reconnect** بینر دکھاتا ہے۔ وہ sign-in جو یہ سرور اب استعمال نہیں کر سکتا (کسی اور اپنے client نے جاری کیا، یا کسی اور install یا Connect کے لیے sealed ہے) اگلی بار پڑھے جانے پر صاف ہو جاتا ہے اور وہی بینر دکھاتا ہے۔
 
-کوئی build Google credentials ساتھ نہیں رکھتا۔ سرور کا client **Settings → Server → Single sign-on → Provider apps** سے یا سرور کی `.env` فائل سے آتا ہے (`GOOGLE_OAUTH_CLIENT_ID`، `GOOGLE_OAUTH_CLIENT_SECRET`)۔ جان بوجھ کر کوئی command-line فلیگ نہیں ہے: کمانڈ لائن پر secret `ps` سے پڑھا جا سکتا ہے، اور سرور شروع ہونے سے انکار کرتا ہے جب secret اس کے process ماحول میں ایکسپورٹ ہو۔
+کوئی build Google credentials ساتھ نہیں رکھتا۔ سرور کا client **ترتیبات → سرور → سنگل سائن آن → فراہم کنندہ ایپس** سے یا سرور کی `.env` فائل سے آتا ہے (`GOOGLE_OAUTH_CLIENT_ID`، `GOOGLE_OAUTH_CLIENT_SECRET`)۔ جان بوجھ کر کوئی command-line فلیگ نہیں ہے: کمانڈ لائن پر secret `ps` سے پڑھا جا سکتا ہے، اور سرور شروع ہونے سے انکار کرتا ہے جب secret اس کے process ماحول میں ایکسپورٹ ہو۔
 
 اپنا Google پروجیکٹ چلانے کے لیے دیکھیں [Google Calendar جوڑیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں/)۔
 
-## sync
+## مطابقت سازی
 
 سرور ہر جڑے ہوئے account کے events کی ایک متحرک window ہر **دو منٹ** بعد کھینچتا ہے — account کا ہر calendar، صرف primary نہیں — اور مانگنے پر بھی (شروع، connect، دستی refresh)۔ یہ مختصر وقفہ اس لیے مقرون بہ صرفہ ہے کیونکہ بررسی افزائشی ہے: ہر calendar اپنا sync token رکھتا ہے، اس لیے بغیر تبدیلی والا calendar پانچ ماہ کی window دوبارہ لانے کے بجائے ایک تقریباً خالی جواب کی لاگت رکھتا ہے۔
 
 دہرائے جانے والے events سرور پر کھولے جاتے ہیں، اس لیے کوئی کلائنٹ کبھی recurrence rule کا تجزیہ نہیں کرتا۔ موجودہ window سے باہر کے مہینے پر جانا اس بازے کو سست بارگی سے لوڈ کرتا ہے۔ حذف شدہ یا window سے باہر جانے والے events اگلے sync پر صاف ہو جاتے ہیں۔
 
-## views
+## مناظر
 
 | View           | کیا دکھاتا ہے                                              |
 | -------------- | ---------------------------------------------------------- |
-| **Month**      | پورے مہینے کا grid (`kalender` package کے ذریعے)            |
-| **Week**       | ایک ہفتے کے وقت والے events ایک time-grid میں               |
-| **Day**        | ایک دن کے وقت والے events ایک time-grid میں                 |
-| **Agenda**     | آنے والے events کی scrollable فہرست                          |
+| **مہینہ**      | پورے مہینے کا grid (`kalender` package کے ذریعے)            |
+| **ہفتہ**       | ایک ہفتے کے وقت والے events ایک time-grid میں               |
+| **دن**        | ایک دن کے وقت والے events ایک time-grid میں                 |
+| **ایجنڈا**     | آنے والے events کی scrollable فہرست                          |
 
 کیلنڈر `/calendar` پر کھولیں؛ کوئی event چننے سے اس کی تفصیل `/calendar/:eventId` پر کھلتی ہے۔ آپ جو view چنتے ہیں وہ اس کلائنٹ کی اپنی ترجیحات میں محفوظ ہوتا ہے، اس لیے وہ کسی اور آلے پر نہیں جاتا۔
 
@@ -63,7 +63,7 @@ calendar accounts، Control Center کی باقی ہر چیز کی طرح، works
 
 کسی calendar event سے آپ ایک [میٹنگ ریکارڈنگ](/ur-PK/ہدایت-نامہ/تصورات/میٹنگز/) شروع کر سکتے ہیں جو event کے عنوان سے شروع ہو۔ Control Center ریکارڈنگ اور event کے درمیان ایک سے ایک لنک محفوظ کرتا ہے، تاکہ میٹنگ کے نوٹس اور calendar کی entry بغیر اس کے کہ کوئی ایک فیچر دوسرے پر منحصر ہو جڑے رہیں۔
 
-**Start recording & link** صرف desktop پر ہے۔ web کلائنٹ پر یہ عمل بتاتا ہے کہ ریکارڈنگ دستیاب نہیں ہے — حالانکہ میٹنگز کی اسکرین کا اپنا ریکارڈ فلو براؤزر میں کام کرتا ہے۔
+**ریکارڈنگ شروع کریں اور لنک کریں** صرف desktop پر ہے۔ web کلائنٹ پر یہ عمل بتاتا ہے کہ ریکارڈنگ دستیاب نہیں ہے — حالانکہ میٹنگز کی اسکرین کا اپنا ریکارڈ فلو براؤزر میں کام کرتا ہے۔
 
 :::note[ایجنٹس آپ کا calendar نہیں پڑھ سکتے]
 کوئی calendar MCP tool نہیں ہے۔ ایک ایجنٹ events کی فہرست نہیں بنا سکتا، کسی event کی تفصیلات نہیں پڑھ سکتا، یا آپ کی جانب سے event بنا، منتقل یا حذف نہیں کر سکتا، یا RSVP نہیں کر سکتا؛ `calendar.*` سطح صرف انسانی کلائنٹس کے لیے RPC ہے۔

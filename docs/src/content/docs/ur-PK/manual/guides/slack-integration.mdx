@@ -25,12 +25,12 @@ bridge ساخت کے لحاظ سے provider سے آزاد ہے — ہر provider
 
 | Mode                          | کیا درکار ہے                                                                                                       | آپ کو کیا ملتا ہے                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| **Shared Control Center app** | سرور Control Center Connect استعمال کرتا ہے (**Settings → Server → Single sign-on**) اور Connect Slack فراہم کرتا ہے | ایک کلک اور Slack sign-in۔ کوئی app بنانا نہیں، کوئی token چسپاں نہیں، کچھ rotate نہیں کرنا |
-| **Your own app**              | آپ کے Slack workspace میں ایک Slack app، جو نیچے دیے گئے تین طریقوں میں سے کسی ایک سے بنی ہو                         | آپ کا اپنا bot نام، descriptions اور slash command، جو Control Center سے editable ہیں        |
+| **مشترکہ Control Center ایپ** | سرور Control Center Connect استعمال کرتا ہے (**ترتیبات → سرور → سنگل سائن آن**) اور Connect Slack فراہم کرتا ہے | ایک کلک اور Slack sign-in۔ کوئی app بنانا نہیں، کوئی token چسپاں نہیں، کچھ rotate نہیں کرنا |
+| **آپ کی اپنی ایپ**              | آپ کے Slack workspace میں ایک Slack app، جو نیچے دیے گئے تین طریقوں میں سے کسی ایک سے بنی ہو                         | آپ کا اپنا bot نام، descriptions اور slash command، جو Control Center سے editable ہیں        |
 
-### Shared Control Center app شامل کریں
+### مشترکہ Control Center ایپ شامل کریں
 
-1. Control Center میں **Settings → Workspace → General** پر جائیں اور **Chat bridges** کارڈ تک اسکرول کریں
+1. Control Center میں **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
 2. Slack والے بلاک پر **Add Control Center to Slack** قطار تلاش کریں اور **Add to Slack** پر کلک کریں
 3. آپ کا براؤزر Slack کھولتا ہے۔ Slack کے ساتھ sign in کریں، Slack workspace چنیں اور install کی منظوری دیں
 4. جب براؤزر ایک کوڈ دکھائے، تو اسے اس dialog میں درج کریں جو Control Center نے کھلا چھوڑا ہے۔ اگر براؤزر خود آپ کو app میں واپس لے آئے تو کچھ ٹائپ کرنے کی ضرورت نہیں
@@ -42,7 +42,7 @@ bridge ساخت کے لحاظ سے provider سے آزاد ہے — ہر provider
 
 - Slack shared app کے events کو Connect کو بھیجتا ہے۔ Connect صرف ایک reference رکھتا ہے (team، channel اور message id) اور message text گرا دیتا ہے؛ سرور Connect سے references کے لیے long-poll کرتا ہے اور ہر message خود Slack سے پڑھتا ہے۔ slash command کا text Connect سے گزرتا ہے، اسی لیے [`/cc ticket`](#ticket-drafts-from-slack) صرف ایک draft بناتا ہے
 - bot token اس سرور کے لیے sealed ہوتا ہے اور Connect کے ذریعے renew ہوتا ہے، اس لیے کوئی token چسپاں یا rotate کرنے کی ضرورت نہیں
-- bot کا نام، descriptions اور slash command shared app کے ہیں۔ Slack قطار بتاتی ہے کہ کنکشن shared app پر چل رہا ہے اور **Customize bot** نہیں دیتی
+- bot کا نام، descriptions اور slash command shared app کے ہیں۔ Slack قطار بتاتی ہے کہ کنکشن shared app پر چل رہا ہے اور **بوٹ حسبِ ضرورت** نہیں دیتی
 - ایک Slack workspace ایک وقت میں ایک Control Center سرور سے جڑا ہوتا ہے۔ کسی دوسرے سرور سے app شامل کرنے سے وہ وہاں منتقل ہو جاتا ہے اور اس سرور کا کنکشن رک جاتا ہے
 
 mode بدلنے کے لیے، disconnect کریں اور دوسری سمت سے connect کریں۔
@@ -51,24 +51,24 @@ mode بدلنے کے لیے، disconnect کریں اور دوسری سمت سے 
 
 | راستہ               | آپ کیا فراہم کرتے ہیں                   | Control Center کیا کرتا ہے                                                                                                                  |
 | ------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Guided**          | ایک app configuration token (`xoxe-…`) | app کو صحیح scopes، events، Socket Mode اور slash command کے ساتھ بناتا ہے؛ وہ دو مرحلے دیتا ہے جن کے لیے Slack کے پاس API نہیں            |
-| **Create in Slack** | کچھ نہیں                                 | وہی configuration پہلے سے بھرا ہوا Slack کھولتا ہے؛ آپ workspace چنتے اور تصدیق کرتے ہیں                                                    |
-| **By hand**         | مکمل app کے tokens                      | انہیں verify کرتا ہے اور جوڑ دیتا ہے                                                                                                          |
+| **رہنمائی شدہ**          | ایک app configuration token (`xoxe-…`) | app کو صحیح scopes، events، Socket Mode اور slash command کے ساتھ بناتا ہے؛ وہ دو مرحلے دیتا ہے جن کے لیے Slack کے پاس API نہیں            |
+| **Slack میں بنائیں** | کچھ نہیں                                 | وہی configuration پہلے سے بھرا ہوا Slack کھولتا ہے؛ آپ workspace چنتے اور تصدیق کرتے ہیں                                                    |
+| **دستی**         | مکمل app کے tokens                      | انہیں verify کرتا ہے اور جوڑ دیتا ہے                                                                                                          |
 
-صرف Guided راستہ app کو Control Center سے _قابلِ انتظام_ بھی رکھتا ہے، اور یہی [chat bot کو حسب ضرورت بنانے](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-بوٹ-حسب-ضرورت/) کو ممکن بناتا ہے۔ ایک **Create in Slack** app بعد میں connect dialog میں configuration token چسپاں کر کے قابلِ انتظام بنائی جا سکتی ہے۔
+صرف رہنمائی شدہ راستہ app کو Control Center سے _قابلِ انتظام_ بھی رکھتا ہے، اور یہی [chat bot کو حسب ضرورت بنانے](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/چیٹ-بوٹ-حسب-ضرورت/) کو ممکن بناتا ہے۔ ایک **Slack میں بنائیں** app بعد میں connect dialog میں configuration token چسپاں کر کے قابلِ انتظام بنائی جا سکتی ہے۔
 
 آپ کی اپنی app کے events کبھی Connect سے نہیں گزرتے: Socket Mode انہیں براہِ راست اس سرور تک پہنچاتا ہے۔
 
 ## آپشن A: Control Center کو app بنانے دیں
 
 1. [api.slack.com/apps](https://api.slack.com/apps) پر app configuration token کا جوڑا بنائیں اور **refresh** token (`xoxe-…`) کاپی کریں
-2. Control Center میں **Settings → Workspace → General** پر جائیں اور **Chat bridges** کارڈ تک اسکرول کریں
-3. Slack والے بلاک پر **Create app for me** پر کلک کریں
-4. token چسپاں کریں، app کا نام، bot نام، descriptions اور slash command ایڈجسٹ کریں، پھر **Create app** پر کلک کریں
+2. Control Center میں **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
+3. Slack والے بلاک پر **میرے لیے ایپ بنائیں** پر کلک کریں
+4. token چسپاں کریں، app کا نام، bot نام، descriptions اور slash command ایڈجسٹ کریں، پھر **ایپ بنائیں** پر کلک کریں
 5. dialog کے دکھائے ہوئے باقی دو مراحل پورے کریں، ہر ایک Slack کا لنک ہے:
    - **Basic Information → App-Level Tokens**: `connections:write` scope کے ساتھ ایک token بنائیں (`xapp-…`)
    - **Install App**: workspace میں install کریں اور **Bot User OAuth Token** (`xoxb-…`) کاپی کریں
-6. **Paste the credentials** پر کلک کریں اور [Connect](#connect) کے ساتھ جاری رکھیں
+6. **کریڈینشلز پیسٹ کریں** پر کلک کریں اور [منسلک ہوں](#منسلک-ہوں) کے ساتھ جاری رکھیں
 
 configuration token ہر استعمال پر rotate ہوتا ہے۔ Control Center rotated value کو جیسے جیسے آگے بڑھتا ہے محفوظ کرتا ہے، اس لیے آپ کو اسے دوبارہ چسپاں نہیں کرنا پڑتا۔
 
@@ -76,17 +76,17 @@ configuration token ہر استعمال پر rotate ہوتا ہے۔ Control Cent
 
 وہی app، configuration token کے بغیر — Slack آپ کو اپنی create screen دکھاتا ہے جس میں پورا manifest پہلے سے بھرا ہوتا ہے۔
 
-1. Control Center میں **Settings → Workspace → General** پر جائیں اور **Chat bridges** کارڈ تک اسکرول کریں
-2. Slack والے بلاک پر **Create app for me** پر کلک کریں
+1. Control Center میں **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
+2. Slack والے بلاک پر **میرے لیے ایپ بنائیں** پر کلک کریں
 3. app کا نام، bot نام، descriptions اور slash command ایڈجسٹ کریں — یہ link کے ساتھ جاتے ہیں
-4. **Create in Slack** پر کلک کریں۔ آپ کا براؤزر Slack کا app-creation page کھولتا ہے جس میں configuration پہلے سے بھری ہوتی ہے
+4. **Slack میں بنائیں** پر کلک کریں۔ آپ کا براؤزر Slack کا app-creation page کھولتا ہے جس میں configuration پہلے سے بھری ہوتی ہے
 5. Slack workspace چنیں اور تصدیق کریں۔ scopes، events، Socket Mode اور slash command پہلے سے درست ہیں
 6. Control Center پر واپس آ کر dialog کے دکھائے ہوئے باقی دو مراحل پورے کریں:
    - **Basic Information → App-Level Tokens**: `connections:write` scope کے ساتھ ایک token بنائیں (`xapp-…`)
    - **Install App**: workspace میں install کریں اور **Bot User OAuth Token** (`xoxb-…`) کاپی کریں
-7. **Paste the credentials** پر کلک کریں اور [Connect](#connect) کے ساتھ جاری رکھیں
+7. **کریڈینشلز پیسٹ کریں** پر کلک کریں اور [منسلک ہوں](#منسلک-ہوں) کے ساتھ جاری رکھیں
 
-Slack نہیں بتاتا کہ اس نے کون سی app بنائی، اس لیے Control Center app id نہیں جانتا، اور مرحلہ 6 کے لنک آپ کی app کے بجائے آپ کی app کی فہرست پر جاتے ہیں۔ **Customize bot** کے لیے configuration token درکار ہے۔
+Slack نہیں بتاتا کہ اس نے کون سی app بنائی، اس لیے Control Center app id نہیں جانتا، اور مرحلہ 6 کے لنک آپ کی app کے بجائے آپ کی app کی فہرست پر جاتے ہیں۔ **بوٹ حسبِ ضرورت** کے لیے configuration token درکار ہے۔
 
 ## آپشن C: app خود بنائیں
 
@@ -126,11 +126,11 @@ message.im
 
 **Tokens**: `connections:write` کے ساتھ ایک app-level token بنائیں، پھر app انسٹال کریں اور bot user OAuth token کاپی کریں۔
 
-## Connect
+## منسلک ہوں
 
 آپ کی اپنی app کے tokens اسی طرح Control Center تک پہنچتے ہیں۔ shared app کو ان میں سے کسی کی ضرورت نہیں۔
 
-1. **Settings → Workspace → General** پر جائیں اور **Chat bridges** کارڈ تک اسکرول کریں
+1. **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
 2. Slack والے بلاک پر **Connect Slack** پر کلک کریں
 3. فیلڈز بھریں:
 
@@ -142,7 +142,7 @@ message.im
 
 ہر قدر کا prefix کوئی بھی چیز بھیجنے سے پہلے دونوں طرف جانچا جاتا ہے، اس لیے غلط خانے میں چسپاں قدر دونوں صورتوں میں ایک ہی جملے کے ساتھ مسترد ہوتی ہے۔
 
-4. **Connect** پر کلک کریں
+4. **منسلک ہوں** پر کلک کریں
 
 Control Center کچھ بھی محفوظ کرنے سے _پہلے_ bot token کو Slack کے `auth.test` سے verify کرتا ہے، تاکہ ٹائپو کی اطلاع آپ کو ملے نہ کہ ایک ایسا socket بن جائے جو خاموشی سے کبھی کام نہ کرے۔ app-level token صرف socket کھول کر ہی ثابت ہو سکتا ہے، اس لیے خراب token ایک لمحے بعد اسی قطار میں connection error کے طور پر ظاہر ہوتا ہے۔
 
@@ -163,7 +163,7 @@ bridge تک رسائی workspace کی **رکنیت** سے ہے، کسی token ک
 
 ## تصدیق
 
-Slack کی قطار ایک status tag دکھاتی ہے: **Live**، **Connecting…**، **Connection error** (ساتھ میں Slack کی اپنی error)، یا **Not connected**۔ سرے سے سرے تک جانچنے کے لیے:
+Slack کی قطار ایک status tag دکھاتی ہے: **لائیو**، **منسلک ہو رہا ہے…**، **کنکشن خرابی** (ساتھ میں Slack کی اپنی error)، یا **منسلک نہیں**۔ سرے سے سرے تک جانچنے کے لیے:
 
 1. Slack میں، بوٹ کو channel میں مدعو کریں: `/invite @your-bot-name`
 2. ایک request کے ساتھ اسے mention کریں
@@ -189,7 +189,7 @@ reasoning دیوار جیسے متن اور tool output کے طور پر رہت�
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-`|` سے پہلے کا متن عنوان ہے، اور اس کے بعد کا متن تفصیل۔ بوٹ جواب دیتا ہے کہ اس نے ticket کا draft بنا دیا ہے۔ ابھی کچھ نہیں بنایا جاتا اور نہ ہی ticket automation چلتا ہے: draft آپ کے لیے **Settings → Workspace → Profile & identity → Ticket drafts from chat** میں منتظر رہتا ہے، جہاں آپ عنوان اور تفصیل درست کر سکتے ہیں، پھر **Create ticket** یا **Discard** پر کلک کریں۔
+`|` سے پہلے کا متن عنوان ہے، اور اس کے بعد کا متن تفصیل۔ بوٹ جواب دیتا ہے کہ اس نے ticket کا draft بنا دیا ہے۔ ابھی کچھ نہیں بنایا جاتا اور نہ ہی ticket automation چلتا ہے: draft آپ کے لیے **ترتیبات → ورک اسپیس → پروفائل اور شناخت → چیٹ سے ٹکٹ کے مسودے** میں منتظر رہتا ہے، جہاں آپ عنوان اور تفصیل درست کر سکتے ہیں، پھر **ٹکٹ بنائیں** یا **مسترد کریں** پر کلک کریں۔
 
 - صرف وہ رکن جس نے کمانڈ چلائی، draft دیکھتا ہے
 - جو draft آپ چھوڑ دیں وہ ایک دن بعد ختم ہو جاتا ہے۔ drafts صرف memory میں رہتے ہیں، اس لیے سرور کا restart انہیں بھی ختم کر دیتا ہے
@@ -201,13 +201,13 @@ reasoning دیوار جیسے متن اور tool output کے طور پر رہت�
 
 یہ سیکشن آپ کی اپنی app پر لاگو ہوتا ہے۔ shared app کا کوئی token rotate کرنے کے لیے نہیں ہے۔
 
-connect dialog میں نئی قدر دوبارہ چسپاں کریں اور **Connect** پر کلک کریں۔ connect کرنے سے اس workspace کے لیے چلنے والا کوئی بھی کنکشن بدل جاتا ہے، اس لیے socket نئی credentials کے ساتھ دوبارہ کھولا جاتا ہے۔
+connect dialog میں نئی قدر دوبارہ چسپاں کریں اور **منسلک ہوں** پر کلک کریں۔ connect کرنے سے اس workspace کے لیے چلنے والا کوئی بھی کنکشن بدل جاتا ہے، اس لیے socket نئی credentials کے ساتھ دوبارہ کھولا جاتا ہے۔
 
 دونوں مطلوبہ tokens ہر connect پر موجود ہونے چاہئیں۔ اختیاری app configuration token جب آپ باکس خالی چھوڑیں تو اپنی محفوظ قدر رکھتا ہے، اس لیے bot token کو rotate کرنے سے app میں ترمیم کرنے کی صلاحیت کبھی ضائع نہیں ہوتی۔
 
-## Disconnect
+## منقطع کریں
 
-Slack قطار پر **Disconnect** پر کلک کریں (صرف admins)۔ کنکشن بند ہو جاتا ہے اور اعتبارنامے بھلا دیے جاتے ہیں۔ shared app کے لیے Control Center bot کو Slack workspace سے uninstall بھی کرتا ہے اور اس سرور سے اس کا binding جاری کرتا ہے۔
+Slack قطار پر **منقطع کریں** پر کلک کریں (صرف admins)۔ کنکشن بند ہو جاتا ہے اور اعتبارنامے بھلا دیے جاتے ہیں۔ shared app کے لیے Control Center bot کو Slack workspace سے uninstall بھی کرتا ہے اور اس سرور سے اس کا binding جاری کرتا ہے۔
 
 spaces اور user links جان بوجھ کر باقی رہتے ہیں: اسی app کو دوبارہ connect کرنے سے ہر bridged Slack thread بحال ہو جاتا ہے۔ یہ workspace کے دائرے کی rows ہیں، اس لیے workspace کو delete کرنے سے یہ ویسے بھی ختم ہو جاتی ہیں۔
 
@@ -242,9 +242,9 @@ stream ہونے کے لیے Slack thread anchor بھی درکار ہے، اس ل
 
 Slack کے task cards اسی نئی Agents & AI Apps سطح کا حصہ ہیں جس میں stream بھی ہے، اور Slack انہیں صرف کال کے وقت مسترد کرتا ہے۔ جب ایسا ہو تو Control Center جواب رکھتا ہے اور کارڈ کو اس کنکشن کی باقی عمر کے لیے ہٹا دیتا ہے — بغیر جواب کے status line سے بہتر ہے بغیر status line کے جواب۔
 
-### "Control Center needs an app configuration token to edit the bot"
+### "بوٹ ترمیم کے لیے Control Center کو ایپ کنفیگریشن ٹوکن چاہیے"
 
-**Customize bot** قطار غیر فعال ہے کیونکہ کنکشن میں app configuration token نہیں ہے۔ (shared app میں **Customize bot** قطار سرے سے نہیں ہوتی: بوٹ shared app کا ہے۔) یہ ہاتھ سے یا **Create in Slack** کے ذریعے بنی app کے لیے متوقع ہے — Slack نے کبھی Control Center کو نہیں بتایا کہ وہ کون سی app ہے۔ api.slack.com/apps پر ایک token جوڑا بنائیں اور refresh token بھر کر دوبارہ connect کریں۔
+**بوٹ حسبِ ضرورت** قطار غیر فعال ہے کیونکہ کنکشن میں app configuration token نہیں ہے۔ (shared app میں **بوٹ حسبِ ضرورت** قطار سرے سے نہیں ہوتی: بوٹ shared app کا ہے۔) یہ ہاتھ سے یا **Slack میں بنائیں** کے ذریعے بنی app کے لیے متوقع ہے — Slack نے کبھی Control Center کو نہیں بتایا کہ وہ کون سی app ہے۔ api.slack.com/apps پر ایک token جوڑا بنائیں اور refresh token بھر کر دوبارہ connect کریں۔
 
 ### طویل جواب کٹ جاتا ہے
 

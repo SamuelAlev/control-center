@@ -273,7 +273,7 @@ node tool/stage_resource_assets.mjs build/web
 
 ## مرحلہ 6: منتخب کریں کہ لوگ کیسے sign in کریں
 
-مالک سرور کے طور پر پہلا کلائنٹ جو جڑتا ہے اس سے پوچھا جاتا ہے کہ یہ سرور لوگوں کو GitHub، Google Calendar اور Linear میں کیسے sign in کرائے: **Use Control Center's apps**، **Use my own apps** یا **Use a custom Connect server**۔ ٹرمینل سے یہی انتخاب یوں ہے:
+مالک سرور کے طور پر پہلا کلائنٹ جو جڑتا ہے اس سے پوچھا جاتا ہے کہ یہ سرور لوگوں کو GitHub، Google Calendar اور Linear میں کیسے sign in کرائے: **Control Center کی ایپس استعمال کریں**، **اپنی ایپس استعمال کریں** یا **اپنا Connect سرور استعمال کریں**۔ ٹرمینل سے یہی انتخاب یوں ہے:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server connect status --data-dir ./data
@@ -281,7 +281,7 @@ node tool/stage_resource_assets.mjs build/web
 ./build/cli/<os_arch>/bundle/bin/cc_server connect disable --data-dir ./data
 ```
 
-`CC_CONNECT_URL` (`hosted`، `off` یا ایک URL) سرور کے ماحول یا `.env` میں اس کی بجائے انتخاب کو لاک کرتا ہے۔ **Use my own apps** کے ساتھ، ہر provider کو **Settings ← Server ← Single sign-on ← Provider apps** کے تحت رجسٹر کریں؛ **Create my GitHub App** GitHub کو ایک قدم میں سیٹ کرتا ہے۔ provider secrets سرور کی `.env` فائل سے تعلق رکھتے ہیں، کبھی برآمد شدہ ماحول سے نہیں۔ دیکھیں [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/) اور [Control Center Connect](/ur-PK/ہدایت-نامہ/حوالہ/connect/)۔
+`CC_CONNECT_URL` (`hosted`، `off` یا ایک URL) سرور کے ماحول یا `.env` میں اس کی بجائے انتخاب کو لاک کرتا ہے۔ **اپنی ایپس استعمال کریں** کے ساتھ، ہر provider کو **ترتیبات ← سرور ← سنگل سائن آن ← فراہم کنندہ ایپس** کے تحت رجسٹر کریں؛ **میری GitHub ایپ بنائیں** GitHub کو ایک قدم میں سیٹ کرتا ہے۔ provider secrets سرور کی `.env` فائل سے تعلق رکھتے ہیں، کبھی برآمد شدہ ماحول سے نہیں۔ دیکھیں [GitHub App بنائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/github-app/) اور [Control Center Connect](/ur-PK/ہدایت-نامہ/حوالہ/connect/)۔
 
 Connect کے ذریعے sign-ins براؤزر کے دکھائے ہوئے کوڈ پر ختم ہوتے ہیں، اس لیے سرور کو ان کے لیے عوامی پتے کی ضرورت نہیں۔ اپنی apps کے ذریعے sign-ins براؤزر کو سرور کے عوامی URL پر واپس بھیجتے ہیں، اس لیے `--public-url` کو ایسے پتے پر سیٹ کریں جس تک لوگوں کے براؤزر پہنچ سکیں۔
 

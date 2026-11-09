@@ -9,14 +9,14 @@ sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 
 ## پیشگی شرائط
 
-- سرور لوگوں کو Google میں sign in کرا سکے: یا Control Center Connect کے ذریعے، یا سرور کے اپنے Google client کے ساتھ ([اپنا Google client لائیں](#اپنا-google-client-لائیں))۔ سرور کا مالک **Settings → Server → Single sign-on** میں انتخاب کرتا ہے
+- سرور لوگوں کو Google میں sign in کرا سکے: یا Control Center Connect کے ذریعے، یا سرور کے اپنے Google client کے ساتھ ([اپنا Google client لائیں](#اپنا-google-client-لائیں))۔ سرور کا مالک **ترتیبات → سرور → سنگل سائن آن** میں انتخاب کرتا ہے
 - ایک workspace کھلا ہو: calendar account ہمیشہ ایک workspace سے تعلق رکھتا ہے
 
 ## ایک account جوڑنا
 
-1. سائیڈ بار میں **Calendar** کھولیں۔
-2. calendar سائیڈ بار میں **Add calendar account** پر کلک کریں۔ (یہی حصہ **Settings → Workspace → Profile & identity** کے تحت **Google Calendar** میں بھی ہے۔)
-3. **Connect Google Calendar** پر کلک کریں۔ آپ کا براؤزر Google کا consent page کھولتا ہے۔
+1. سائیڈ بار میں **کیلنڈر** کھولیں۔
+2. calendar سائیڈ بار میں **کیلنڈر اکاؤنٹ شامل کریں** پر کلک کریں۔ (یہی حصہ **ترتیبات → ورک اسپیس → پروفائل اور شناخت** کے تحت **Google Calendar** میں بھی ہے۔)
+3. **Google Calendar منسلک کریں** پر کلک کریں۔ آپ کا براؤزر Google کا consent page کھولتا ہے۔
 4. account چنیں اور اپنے calendar events اور calendar list تک رسائی کی منظوری دیں۔
 
 یہ کیسے ختم ہوتا ہے، اس کا انحصار اس پر ہے کہ sign-in کون چلا رہا ہے:
@@ -54,13 +54,13 @@ connect flow ہر client کے ساتھ `calendar.events` اور `calendar.calend
 
 ## منقضی account کو دوبارہ جوڑنا
 
-اگر Google کسی account کے sign-in کو مستقل طور پر باطل کر دے (منسوخ یا بہت پرانا session)، تو sync رک جاتا ہے اور Control Center calendar پر ایک **Reconnect** بینر دکھاتا ہے، ساتھ میں desktop notification بھی۔ **Reconnect** پر کلک کریں اور دوبارہ sign in کریں؛ بینر اگلے کامیاب sync پر غائب ہو جاتا ہے۔
+اگر Google کسی account کے sign-in کو مستقل طور پر باطل کر دے (منسوخ یا بہت پرانا session)، تو sync رک جاتا ہے اور Control Center calendar پر ایک **دوبارہ منسلک کریں** بینر دکھاتا ہے، ساتھ میں desktop notification بھی۔ **دوبارہ منسلک کریں** پر کلک کریں اور دوبارہ sign in کریں؛ بینر اگلے کامیاب sync پر غائب ہو جاتا ہے۔
 
 یہی بینر اس وقت بھی ظاہر ہوتا ہے جب یہ سرور اس sign-in کو مزید استعمال نہ کر سکے: سرور کے مالک نے Connect سرورز بدلے یا Connect key rotate کی، سرور کا اپنا Google client بدل گیا، یا data directory کسی اور مشین پر بحال کی گئی۔
 
 ## account کو disconnect کرنا
 
-calendar سائیڈ بار سے (یا **Settings → Workspace → Profile & identity** سے) اس account پر **Disconnect** پر کلک کریں۔ اس سے اس کے sync شدہ events حذف ہو جاتے ہیں اور سرور پر اس کا محفوظ credential صاف ہو جاتا ہے۔
+calendar سائیڈ بار سے (یا **ترتیبات → ورک اسپیس → پروفائل اور شناخت** سے) اس account پر **منقطع کریں** پر کلک کریں۔ اس سے اس کے sync شدہ events حذف ہو جاتے ہیں اور سرور پر اس کا محفوظ credential صاف ہو جاتا ہے۔
 
 ## اپنا Google client لائیں
 
@@ -68,7 +68,7 @@ calendar سائیڈ بار سے (یا **Settings → Workspace → Profile & ide
 
 1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) میں **Google Calendar API** فعال کریں اور **OAuth consent screen** ترتیب دیں، جس میں `calendar.events`، `calendar.calendarlist.readonly`، `openid` اور `email` scopes شامل ہوں۔ جب تک app verify نہ ہو، خود کو **test user** کے طور پر شامل کریں۔ 
 2. **Web application** قسم کا ایک **OAuth client ID** بنائیں۔
-3. مجاز redirect URI `<server origin>/oauth/google/callback` شامل کریں۔ **Settings → Server → Single sign-on → Provider apps → Google** درست URL **Callback URLs** کے تحت دکھاتا ہے؛ اسے ہو بہو کاپی کریں۔
+3. مجاز redirect URI `<server origin>/oauth/google/callback` شامل کریں۔ **ترتیبات → سرور → سنگل سائن آن → فراہم کنندہ ایپس → Google** درست URL **کال بیک URLs** کے تحت دکھاتا ہے؛ اسے ہو بہو کاپی کریں۔
 4. **Client id** اور **Client secret** اسی Google بلاک میں چسپاں کریں، یا انہیں سرور کی `.env` فائل میں `GOOGLE_OAUTH_CLIENT_ID` اور `GOOGLE_OAUTH_CLIENT_SECRET` کے طور پر رکھیں۔
 
 سرور اس وقت شروع ہونے سے انکار کرتا ہے جب `GOOGLE_OAUTH_CLIENT_SECRET` اس کے پروسیس ماحول میں ایکسپورٹ ہو؛ اسے `.env` فائل میں رکھیں (Docker میں، اسے `/app/bin/.env` پر mount کریں)۔ راز کبھی سرور سے باہر نہیں جاتا: کوئی RPC response اسے نہیں لے کر جاتا۔ بغیر secret کے client id ایک نامکمل سیٹ اپ ہے، اور دونوں مقرر ہونے تک Google sign-ins رد کیے جاتے ہیں۔
@@ -80,7 +80,7 @@ calendar سائیڈ بار سے (یا **Settings → Workspace → Profile & ide
 ایک workspace سرور کے client کے بجائے اپنے client کے ذریعے Google Calendar جوڑ سکتا ہے۔ یہ صرف workspace admin یا owner ترتیب دے سکتا ہے۔
 
 1. اوپر کے مراحل 1 اور 2 کی طرح **Web application** client بنائیں
-2. **Settings → Workspace → General → پرووائیڈر ایپس** پر جائیں اور **Google Calendar** کھولیں
+2. **ترتیبات → ورک اسپیس → عام → پرووائیڈر ایپس** پر جائیں اور **Google Calendar** کھولیں
 3. **اس ورک اسپیس کی اپنی ایپ استعمال کریں** چنیں
 4. row کے **Callback URL** کے تحت دکھایا گیا redirect URI client میں ہو بہو شامل کریں
 5. **Client id** اور **Client secret** چسپاں کریں
@@ -93,8 +93,8 @@ calendar سائیڈ بار سے (یا **Settings → Workspace → Profile & ide
 
 | علامت                                                | ممکنہ وجہ                                                                                                                                 |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| **Connect Google Calendar** کہتا ہے sign-in سیٹ نہیں | سرور کے پاس نہ اپنا Google client ہے نہ Connect۔ سرور کا مالک **Settings → Server → Single sign-on** میں ایک چنتا ہے                       |
-| Google `redirect_uri_mismatch` دکھاتا ہے               | client پر رجسٹر redirect **Callback URLs** کی قدر سے ہو بہو مطابقت نہیں رکھتا، یا سرور کا عوامی URL بدل گیا                                |
+| **Google Calendar منسلک کریں** کہتا ہے sign-in سیٹ نہیں | سرور کے پاس نہ اپنا Google client ہے نہ Connect۔ سرور کا مالک **ترتیبات → سرور → سنگل سائن آن** میں ایک چنتا ہے                       |
+| Google `redirect_uri_mismatch` دکھاتا ہے               | client پر رجسٹر redirect **کال بیک URLs** کی قدر سے ہو بہو مطابقت نہیں رکھتا، یا سرور کا عوامی URL بدل گیا                                |
 | Google سے `invalid_client`                            | id اور secret مختلف clients کے ہیں، یا client حذف ہو گیا                                                                                  |
 | منظوری کامیاب مگر sync خالی                           | آپ کا account consent screen پر **test user** نہیں، یا درخواست کیے گئے کسی scope کو نہیں دیا گیا                                                   |
 | dialog کہتا ہے کوڈ میل نہیں کھاتا                       | 8 حروف بالکل ویسے ٹائپ کریں جیسے براؤزر دکھاتا ہے۔ پانچ غلط کوڈ sign-in ختم کر دیتے ہیں؛ دوبارہ شروع کریں                                  |
